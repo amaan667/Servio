@@ -298,8 +298,8 @@ async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise
     console.log('File is large, prioritizing OpenAI Vision...');
     const methods = [
       { name: 'OpenAI Vision', fn: extractTextWithOpenAIVision },
-      { name: 'Google Vision', fn: extractTextWithGoogleVision },
-      { name: 'OCR.space', fn: extractTextWithOcrSpace },
+      // { name: 'Google Vision', fn: extractTextWithGoogleVision },
+      // { name: 'OCR.space', fn: extractTextWithOcrSpace },
     ];
     
     for (const method of methods) {
@@ -318,9 +318,9 @@ async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise
   } else {
     // For smaller files, try OCR.space first (faster and free)
     const methods = [
-      { name: 'OCR.space', fn: extractTextWithOcrSpace },
+      // { name: 'OCR.space', fn: extractTextWithOcrSpace },
       { name: 'OpenAI Vision', fn: extractTextWithOpenAIVision },
-      { name: 'Google Vision', fn: extractTextWithGoogleVision },
+      // { name: 'Google Vision', fn: extractTextWithGoogleVision },
     ];
     
     for (const method of methods) {
