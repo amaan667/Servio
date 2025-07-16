@@ -24,23 +24,8 @@ export function DatabaseConnectionError() {
                 This application requires a connection to a Supabase project to function correctly. The necessary
                 Supabase credentials are missing from your environment configuration.
               </p>
-              <p>
-                If you are running this project on Vercel, the easiest way to fix this is by adding the Supabase
-                integration to your project.
-              </p>
             </AlertDescription>
           </Alert>
-          <a
-            href="https://vercel.com/integrations/supabase"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full"
-          >
-            <Button className="w-full">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Add Supabase Integration on Vercel
-            </Button>
-          </a>
           <div className="text-xs text-gray-500">
             <p className="font-semibold">Running locally?</p>
             <p>

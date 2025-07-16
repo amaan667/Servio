@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import * as cheerio from "cheerio";
 
 export const config = {
   api: {
@@ -58,28 +59,66 @@ async function extractMenuWithGPT(text: string): Promise<any[]> {
   }
 }
 
+async function extractTextFromHtmlUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const html = await res.text();
+  const $ = cheerio.load(html);
+  let lines: string[] = [];
+  $("li, .menu-item, .item, .dish, .product, tr").each((_: unknown, el: any) => {
+    const text = $(el).text().trim();
+    if (text.length > 2) lines.push(text);
+  });
+  if (lines.length < 5) {
+    lines = $("body").text().split("\n").map((l: string) => l.trim()).filter(Boolean);
+  }
+  return lines.join("\n");
+}
+
+async function fetchUrlAsBuffer(url: string): Promise<{ buffer: Buffer, mimetype: string }> {
+  const res = await fetch(url);
+  const arrayBuffer = await res.arrayBuffer();
+  const contentType = res.headers.get("content-type") || "application/octet-stream";
+  return { buffer: Buffer.from(arrayBuffer), mimetype: contentType };
+}
+
 export async function POST(req: Request) {
   console.log('API: upload-menu-file POST called');
   try {
     if (req.method && req.method !== "POST") {
-      console.log('API: Not a POST request');
       return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
     }
-    const { base64, mimetype } = await req.json();
-    if (!base64 || !mimetype) {
-      console.log('API: Missing base64 or mimetype');
-      return new Response(JSON.stringify({ error: "No file uploaded." }), { status: 400 });
+    let base64, mimetype, url;
+    try {
+      const body = await req.json();
+      base64 = body.base64;
+      mimetype = body.mimetype;
+      url = body.url;
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Invalid request body." }), { status: 400 });
     }
-    const fileBuffer = Buffer.from(base64, "base64");
-    console.log('API: decoded fileBuffer', fileBuffer.length, mimetype);
-    const text = await extractTextWithOcrSpace(fileBuffer, mimetype);
-    console.log('API: OCR.space extracted text', text.slice(0, 100));
+
+    let text = "";
+    if (url) {
+      console.log('API: URL provided', url);
+      // Determine if URL is PDF or HTML
+      if (url.endsWith('.pdf')) {
+        // Download PDF and OCR
+        const { buffer, mimetype: urlMime } = await fetchUrlAsBuffer(url);
+        text = await extractTextWithOcrSpace(buffer, urlMime);
+      } else {
+        // Try HTML extraction
+        text = await extractTextFromHtmlUrl(url);
+      }
+    } else if (base64 && mimetype) {
+      const fileBuffer = Buffer.from(base64, "base64");
+      text = await extractTextWithOcrSpace(fileBuffer, mimetype);
+    } else {
+      return new Response(JSON.stringify({ error: "No file or URL provided." }), { status: 400 });
+    }
     if (!text.trim()) {
-      console.log('API: No text extracted');
-      return new Response(JSON.stringify({ error: "Failed to extract text from file." }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Failed to extract text from input." }), { status: 400 });
     }
     const items = await extractMenuWithGPT(text);
-    console.log('API: GPT extracted items', items.length);
     return new Response(JSON.stringify({ items }), { status: 200 });
   } catch (err: any) {
     console.error('API: error', err);

@@ -118,74 +118,87 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     setError(null)
 
     try {
-      // For demo purposes, we'll simulate menu extraction
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      const extractedItems = [
-        { name: "Margherita Pizza", description: "Fresh tomato, mozzarella, basil", price: 12.99, category: "Pizza" },
-        { name: "Caesar Salad", description: "Romaine lettuce, parmesan, croutons", price: 8.99, category: "Salads" },
-        { name: "Cappuccino", description: "Espresso with steamed milk foam", price: 3.50, category: "Beverages" }
-      ]
-      const itemsToInsert = extractedItems.map(item => ({
-        ...item,
-        venue_id: venueUuid,
-        available: true
-      }))
-      // Use API route to insert
-      const res = await fetch("/api/extract-menu", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: itemsToInsert, venue_id: venueUuid }),
-      })
-      const result = await res.json()
-      if (!res.ok || result.error) {
-        setError(result.error || "Failed to save extracted menu.")
-      } else {
-        setError(null)
-        // fetchMenu will be called via real-time subscription
-      }
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target?.result?.toString().split(",")[1];
+        const res = await fetch("/api/upload-menu-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64, mimetype: file.type }),
+        });
+        const result = await res.json();
+        if (!res.ok || result.error) {
+          setError(result.error || "Failed to process menu file.");
+          setUploading(false);
+          return;
+        }
+        // Insert extracted items into the menu
+        const itemsToInsert = (result.items || []).map((item: any) => ({
+          ...item,
+          venue_id: venueUuid,
+          available: true,
+        }));
+        const saveRes = await fetch("/api/extract-menu", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: itemsToInsert, venue_id: venueUuid }),
+        });
+        const saveResult = await saveRes.json();
+        if (!saveRes.ok || saveResult.error) {
+          setError(saveResult.error || "Failed to save extracted menu.");
+        } else {
+          setError(null);
+        }
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
     } catch (error: any) {
-      setError("Failed to process menu file. Please try again.")
-    } finally {
-      setUploading(false)
+      setError("Failed to process menu file. Please try again.");
+      setUploading(false);
     }
   }
 
   const handleUrlExtraction = async () => {
     if (!menuUrl.trim()) {
-      setError("Please enter a valid URL.")
-      return
+      setError("Please enter a valid URL.");
+      return;
     }
-    setExtracting(true)
-    setError(null)
+    setExtracting(true);
+    setError(null);
     try {
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      const extractedItems = [
-        { name: "Grilled Salmon", description: "Atlantic salmon with herbs", price: 18.99, category: "Main Course" },
-        { name: "Chocolate Cake", description: "Rich chocolate layer cake", price: 6.99, category: "Desserts" },
-        { name: "House Wine", description: "Red or white wine selection", price: 5.99, category: "Beverages" }
-      ]
-      const itemsToInsert = extractedItems.map(item => ({
+      const res = await fetch("/api/upload-menu-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: menuUrl.trim() }),
+      });
+      const result = await res.json();
+      if (!res.ok || result.error) {
+        setError(result.error || "Failed to extract menu from URL.");
+        setExtracting(false);
+        return;
+      }
+      // Insert extracted items into the menu
+      const itemsToInsert = (result.items || []).map((item: any) => ({
         ...item,
         venue_id: venueUuid,
-        available: true
-      }))
-      // Use API route to insert
-      const res = await fetch("/api/extract-menu", {
+        available: true,
+      }));
+      const saveRes = await fetch("/api/extract-menu", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: itemsToInsert, venue_id: venueUuid }),
-      })
-      const result = await res.json()
-      if (!res.ok || result.error) {
-        setError(result.error || "Failed to save extracted menu.")
+      });
+      const saveResult = await saveRes.json();
+      if (!saveRes.ok || saveResult.error) {
+        setError(saveResult.error || "Failed to save extracted menu.");
       } else {
-        setMenuUrl("")
-        setError(null)
+        setMenuUrl("");
+        setError(null);
       }
+      setExtracting(false);
     } catch (error: any) {
-      setError("Failed to extract menu from URL. Please try again.")
-    } finally {
-      setExtracting(false)
+      setError("Failed to extract menu from URL. Please try again.");
+      setExtracting(false);
     }
   }
 
