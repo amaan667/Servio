@@ -76,10 +76,13 @@ async function extractTextWithOpenAIVision(file: Buffer, mimetype: string): Prom
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
   
   console.log('OpenAI Vision: Starting extraction');
+  console.log('OpenAI Vision: File size:', file.length, 'bytes');
+  console.log('OpenAI Vision: Mime type:', mimetype);
   
   try {
     const openai = new OpenAI({ apiKey });
     const base64Image = file.toString('base64');
+    console.log('OpenAI Vision: Base64 length:', base64Image.length);
     
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
@@ -105,9 +108,13 @@ async function extractTextWithOpenAIVision(file: Buffer, mimetype: string): Prom
 
     const text = response.choices[0]?.message?.content || '';
     console.log('OpenAI Vision: Extracted text length:', text.length);
+    console.log('OpenAI Vision: First 100 chars:', text.substring(0, 100));
     return text;
   } catch (error: any) {
-    console.error('OpenAI Vision: Error:', error);
+    console.error('OpenAI Vision: Detailed error:', error);
+    console.error('OpenAI Vision: Error message:', error.message);
+    console.error('OpenAI Vision: Error code:', error.code);
+    console.error('OpenAI Vision: Error status:', error.status);
     throw new Error(`OpenAI Vision failed: ${error.message}`);
   }
 }
@@ -308,6 +315,7 @@ async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise
       }
     } catch (error: any) {
       console.log('PDF page-by-page extraction failed:', error.message);
+      console.log('Continuing with other extraction methods...');
       // Continue with other methods
     }
   }
