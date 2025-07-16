@@ -11,24 +11,62 @@ async function extractTextWithOcrSpace(file: Buffer, mimetype: string): Promise<
   const apiKey = process.env.OCR_SPACE_API_KEY;
   if (!apiKey) throw new Error("Missing OCR_SPACE_API_KEY");
 
+  console.log('OCR: Starting extraction with mimetype:', mimetype);
+  console.log('OCR: File size:', file.length, 'bytes');
+
   const formData = new FormData();
-  formData.append("file", new Blob([file]), "menu." + (mimetype.split("/")[1] || "pdf"));
+  const fileName = "menu." + (mimetype.split("/")[1] || "pdf");
+  formData.append("file", new Blob([file]), fileName);
   formData.append("language", "eng");
   formData.append("isOverlayRequired", "false");
+  formData.append("OCREngine", "2"); // Use more accurate OCR engine
 
-  const res = await fetch("https://api.ocr.space/parse/image", {
-    method: "POST",
-    headers: {
-      apikey: apiKey,
-    },
-    body: formData as any,
-  });
+  console.log('OCR: Sending request to OCR.space...');
+  
+  try {
+    const res = await fetch("https://api.ocr.space/parse/image", {
+      method: "POST",
+      headers: {
+        apikey: apiKey,
+      },
+      body: formData as any,
+    });
 
-  const result = await res.json();
-  if (!result || !result.ParsedResults || !result.ParsedResults[0]) {
-    throw new Error("OCR.space failed to extract text.");
+    console.log('OCR: Response status:', res.status);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('OCR: HTTP error:', res.status, errorText);
+      throw new Error(`OCR.space HTTP error: ${res.status} - ${errorText}`);
+    }
+
+    const result = await res.json();
+    console.log('OCR: Response received:', JSON.stringify(result, null, 2));
+    
+    if (!result) {
+      throw new Error("OCR.space returned empty response");
+    }
+    
+    if (result.IsErroredOnProcessing) {
+      throw new Error(`OCR.space processing error: ${result.ErrorMessage || 'Unknown error'}`);
+    }
+    
+    if (!result.ParsedResults || !result.ParsedResults[0]) {
+      throw new Error("OCR.space returned no parsed results");
+    }
+    
+    const extractedText = result.ParsedResults[0].ParsedText || "";
+    console.log('OCR: Extracted text length:', extractedText.length);
+    
+    if (!extractedText.trim()) {
+      throw new Error("OCR.space extracted empty text");
+    }
+    
+    return extractedText;
+  } catch (error: any) {
+    console.error('OCR: Detailed error:', error);
+    throw new Error(`OCR.space failed to extract text: ${error.message}`);
   }
-  return result.ParsedResults[0].ParsedText || "";
 }
 
 async function extractMenuWithGPT(text: string): Promise<any[]> {
@@ -93,6 +131,7 @@ export async function POST(req: Request) {
       base64 = body.base64;
       mimetype = body.mimetype;
       url = body.url;
+      console.log('API: Request data - URL:', !!url, 'Base64:', !!base64, 'Mimetype:', mimetype);
     } catch (e) {
       return new Response(JSON.stringify({ error: "Invalid request body." }), { status: 400 });
     }
@@ -103,22 +142,32 @@ export async function POST(req: Request) {
       // Determine if URL is PDF or HTML
       if (url.endsWith('.pdf')) {
         // Download PDF and OCR
+        console.log('API: Processing PDF URL');
         const { buffer, mimetype: urlMime } = await fetchUrlAsBuffer(url);
         text = await extractTextWithOcrSpace(buffer, urlMime);
       } else {
         // Try HTML extraction
+        console.log('API: Processing HTML URL');
         text = await extractTextFromHtmlUrl(url);
       }
     } else if (base64 && mimetype) {
+      console.log('API: Processing base64 file');
       const fileBuffer = Buffer.from(base64, "base64");
       text = await extractTextWithOcrSpace(fileBuffer, mimetype);
     } else {
       return new Response(JSON.stringify({ error: "No file or URL provided." }), { status: 400 });
     }
+    
+    console.log('API: Extracted text length:', text.length);
+    
     if (!text.trim()) {
       return new Response(JSON.stringify({ error: "Failed to extract text from input." }), { status: 400 });
     }
+    
+    console.log('API: Calling GPT for menu extraction');
     const items = await extractMenuWithGPT(text);
+    console.log('API: GPT returned', items.length, 'items');
+    
     return new Response(JSON.stringify({ items }), { status: 200 });
   } catch (err: any) {
     console.error('API: error', err);
