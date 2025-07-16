@@ -293,6 +293,10 @@ async function fetchUrlAsBuffer(url: string): Promise<{ buffer: Buffer, mimetype
 async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise<string> {
   const fileSizeKB = file.length / 1024;
   
+  // Check if OpenAI API key is available
+  const openaiKey = process.env.OPENAI_API_KEY;
+  console.log('OpenAI API Key available:', !!openaiKey);
+  
   // For large files, prioritize OpenAI Vision (no size limits)
   if (fileSizeKB > 1024) {
     console.log('File is large, prioritizing OpenAI Vision...');
@@ -338,6 +342,11 @@ async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise
     }
   }
 
+  // Provide more specific error message
+  if (!openaiKey) {
+    throw new Error('OpenAI API key is missing. Please add OPENAI_API_KEY to your environment variables.');
+  }
+  
   throw new Error('All text extraction methods failed. Try using the Text Input tab for large files.');
 }
 
