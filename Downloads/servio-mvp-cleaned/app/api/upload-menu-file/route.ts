@@ -1,12 +1,123 @@
 import OpenAI from "openai";
 import * as cheerio from "cheerio";
 import { PDFDocument } from "pdf-lib";
+import pdfParse from "pdf-parse";
 
 export const config = {
   api: {
     bodyParser: false,
   },
 };
+
+// Helper function to extract text directly from PDF without OCR
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  try {
+    console.log('PDF: Attempting direct text extraction with pdf-parse');
+    
+    const data = await pdfParse(buffer);
+    const text = data.text;
+    
+    console.log('PDF: Extracted text length:', text.length);
+    console.log('PDF: Number of pages:', data.numpages);
+    
+    if (!text.trim()) {
+      throw new Error('No text could be extracted directly from PDF');
+    }
+    
+    return text;
+  } catch (error) {
+    console.error('PDF: Direct text extraction failed:', error);
+    throw error;
+  }
+}
+
+// Alternative OCR service using Google Cloud Vision (if available)
+async function extractTextWithGoogleVision(file: Buffer, mimetype: string): Promise<string> {
+  const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
+  if (!apiKey) {
+    throw new Error("Google Cloud Vision API key not configured");
+  }
+
+  console.log('Google Vision: Starting extraction');
+  
+  try {
+    const base64Image = file.toString('base64');
+    const requestBody = {
+      requests: [{
+        image: {
+          content: base64Image
+        },
+        features: [{
+          type: 'TEXT_DETECTION',
+          maxResults: 1
+        }]
+      }]
+    };
+
+    const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Google Vision API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const text = result.responses?.[0]?.textAnnotations?.[0]?.description || '';
+    
+    console.log('Google Vision: Extracted text length:', text.length);
+    return text;
+  } catch (error: any) {
+    console.error('Google Vision: Error:', error);
+    throw new Error(`Google Vision failed: ${error.message}`);
+  }
+}
+
+// Fallback: Use OpenAI's vision model for image analysis
+async function extractTextWithOpenAIVision(file: Buffer, mimetype: string): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+  
+  console.log('OpenAI Vision: Starting extraction');
+  
+  try {
+    const openai = new OpenAI({ apiKey });
+    const base64Image = file.toString('base64');
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract all menu items from this image. Return only the text content, no formatting or explanations."
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimetype};base64,${base64Image}`
+              }
+            }
+          ]
+        }
+      ],
+      max_tokens: 1000,
+    });
+
+    const text = response.choices[0]?.message?.content || '';
+    console.log('OpenAI Vision: Extracted text length:', text.length);
+    return text;
+  } catch (error: any) {
+    console.error('OpenAI Vision: Error:', error);
+    throw new Error(`OpenAI Vision failed: ${error.message}`);
+  }
+}
 
 // Helper function to compress PDF
 async function compressPDF(buffer: Buffer): Promise<Buffer> {
@@ -185,6 +296,31 @@ async function fetchUrlAsBuffer(url: string): Promise<{ buffer: Buffer, mimetype
   return { buffer: Buffer.from(arrayBuffer), mimetype: contentType };
 }
 
+// Multi-method text extraction with fallbacks
+async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise<string> {
+  const methods = [
+    { name: 'OCR.space', fn: extractTextWithOcrSpace },
+    { name: 'OpenAI Vision', fn: extractTextWithOpenAIVision },
+    { name: 'Google Vision', fn: extractTextWithGoogleVision },
+  ];
+
+  for (const method of methods) {
+    try {
+      console.log(`Trying ${method.name}...`);
+      const text = await method.fn(file, mimetype);
+      if (text && text.trim()) {
+        console.log(`${method.name} succeeded`);
+        return text;
+      }
+    } catch (error: any) {
+      console.log(`${method.name} failed:`, error.message);
+      continue;
+    }
+  }
+
+  throw new Error('All text extraction methods failed');
+}
+
 export async function POST(req: Request) {
   console.log('API: upload-menu-file POST called');
   try {
@@ -207,7 +343,7 @@ export async function POST(req: Request) {
       console.log('API: URL provided', url);
       // Determine if URL is PDF or HTML
       if (url.endsWith('.pdf')) {
-        // Download PDF and OCR
+        // Download PDF and try multiple extraction methods
         console.log('API: Processing PDF URL');
         const { buffer, mimetype: urlMime } = await fetchUrlAsBuffer(url);
         
@@ -224,9 +360,14 @@ export async function POST(req: Request) {
             console.log('API: Compressed PDF size:', compressedSizeKB, 'KB');
             
             if (compressedSizeKB > 1024) {
-              return new Response(JSON.stringify({ 
-                error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
-              }), { status: 400 });
+              // Try direct text extraction as last resort
+              try {
+                text = await extractTextFromPDF(processedBuffer);
+              } catch (error) {
+                return new Response(JSON.stringify({ 
+                  error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
+                }), { status: 400 });
+              }
             }
           } catch (compressionError) {
             console.error('API: PDF compression failed:', compressionError);
@@ -236,7 +377,9 @@ export async function POST(req: Request) {
           }
         }
         
-        text = await extractTextWithOcrSpace(processedBuffer, urlMime);
+        if (!text) {
+          text = await extractTextWithFallbacks(processedBuffer, urlMime);
+        }
       } else {
         // Try HTML extraction
         console.log('API: Processing HTML URL');
@@ -259,9 +402,14 @@ export async function POST(req: Request) {
           console.log('API: Compressed PDF size:', compressedSizeKB, 'KB');
           
           if (compressedSizeKB > 1024) {
-            return new Response(JSON.stringify({ 
-              error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
-            }), { status: 400 });
+            // Try direct text extraction as last resort
+            try {
+              text = await extractTextFromPDF(processedBuffer);
+            } catch (error) {
+              return new Response(JSON.stringify({ 
+                error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
+              }), { status: 400 });
+            }
           }
         } catch (compressionError) {
           console.error('API: PDF compression failed:', compressionError);
@@ -275,7 +423,9 @@ export async function POST(req: Request) {
         }), { status: 400 });
       }
       
-      text = await extractTextWithOcrSpace(processedBuffer, mimetype);
+      if (!text) {
+        text = await extractTextWithFallbacks(processedBuffer, mimetype);
+      }
     } else {
       return new Response(JSON.stringify({ error: "No file or URL provided." }), { status: 400 });
     }
