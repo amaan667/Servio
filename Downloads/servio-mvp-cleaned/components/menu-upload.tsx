@@ -267,6 +267,7 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
       return;
     }
 
+    // Warn about large files but allow them to proceed
     if (sizeCheck.message) {
       setStatusMessage(sizeCheck.message);
     }

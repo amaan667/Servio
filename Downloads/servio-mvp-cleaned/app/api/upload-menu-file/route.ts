@@ -144,6 +144,17 @@ export async function POST(req: Request) {
         // Download PDF and OCR
         console.log('API: Processing PDF URL');
         const { buffer, mimetype: urlMime } = await fetchUrlAsBuffer(url);
+        
+        // Check file size before OCR
+        const fileSizeKB = buffer.length / 1024;
+        console.log('API: PDF file size:', fileSizeKB, 'KB');
+        
+        if (fileSizeKB > 1024) {
+          return new Response(JSON.stringify({ 
+            error: `File size (${fileSizeKB.toFixed(1)}KB) exceeds OCR.space limit (1024KB). Please use a smaller file or try the Text Input option.` 
+          }), { status: 400 });
+        }
+        
         text = await extractTextWithOcrSpace(buffer, urlMime);
       } else {
         // Try HTML extraction
@@ -153,6 +164,17 @@ export async function POST(req: Request) {
     } else if (base64 && mimetype) {
       console.log('API: Processing base64 file');
       const fileBuffer = Buffer.from(base64, "base64");
+      
+      // Check file size before OCR
+      const fileSizeKB = fileBuffer.length / 1024;
+      console.log('API: File size:', fileSizeKB, 'KB');
+      
+      if (fileSizeKB > 1024) {
+        return new Response(JSON.stringify({ 
+          error: `File size (${fileSizeKB.toFixed(1)}KB) exceeds OCR.space limit (1024KB). Please use a smaller file or try the Text Input option.` 
+        }), { status: 400 });
+      }
+      
       text = await extractTextWithOcrSpace(fileBuffer, mimetype);
     } else {
       return new Response(JSON.stringify({ error: "No file or URL provided." }), { status: 400 });
