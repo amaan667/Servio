@@ -297,6 +297,21 @@ async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise
   const openaiKey = process.env.OPENAI_API_KEY;
   console.log('OpenAI API Key available:', !!openaiKey);
   
+  // For large PDF files, try page-by-page extraction first
+  if (fileSizeKB > 1024 && mimetype === 'application/pdf') {
+    console.log('Large PDF detected, trying page-by-page extraction...');
+    try {
+      const text = await extractTextFromPDFPages(file);
+      if (text && text.trim()) {
+        console.log('PDF page-by-page extraction succeeded');
+        return text;
+      }
+    } catch (error: any) {
+      console.log('PDF page-by-page extraction failed:', error.message);
+      // Continue with other methods
+    }
+  }
+  
   // For large files, prioritize OpenAI Vision (no size limits)
   if (fileSizeKB > 1024) {
     console.log('File is large, prioritizing OpenAI Vision...');
@@ -348,6 +363,59 @@ async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise
   }
   
   throw new Error('All text extraction methods failed. Try using the Text Input tab for large files.');
+}
+
+// Convert PDF pages to images and OCR each page
+async function extractTextFromPDFPages(file: Buffer): Promise<string> {
+  console.log('PDF Pages: Starting page-by-page extraction');
+  
+  try {
+    const pdfDoc = await PDFDocument.load(file);
+    const pageCount = pdfDoc.getPageCount();
+    console.log('PDF Pages: Total pages:', pageCount);
+    
+    let allText = '';
+    
+    // Process each page individually
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+      console.log(`PDF Pages: Processing page ${pageIndex + 1}/${pageCount}`);
+      
+      try {
+        // Create a new document with just this page
+        const singlePageDoc = await PDFDocument.create();
+        const [copiedPage] = await singlePageDoc.copyPages(pdfDoc, [pageIndex]);
+        singlePageDoc.addPage(copiedPage);
+        
+        // Convert to buffer
+        const pageBuffer = Buffer.from(await singlePageDoc.save());
+        
+        // Try to extract text from this page using OpenAI Vision
+        const pageText = await extractTextWithOpenAIVision(pageBuffer, 'application/pdf');
+        
+        if (pageText && pageText.trim()) {
+          allText += pageText + '\n\n';
+          console.log(`PDF Pages: Page ${pageIndex + 1} extracted successfully`);
+        } else {
+          console.log(`PDF Pages: Page ${pageIndex + 1} returned empty text`);
+        }
+      } catch (pageError: any) {
+        console.error(`PDF Pages: Error processing page ${pageIndex + 1}:`, pageError.message);
+        // Continue with next page
+        continue;
+      }
+    }
+    
+    if (!allText.trim()) {
+      throw new Error('No text could be extracted from any PDF pages');
+    }
+    
+    console.log('PDF Pages: Total extracted text length:', allText.length);
+    return allText;
+    
+  } catch (error: any) {
+    console.error('PDF Pages: Error:', error);
+    throw new Error(`PDF page extraction failed: ${error.message}`);
+  }
 }
 
 export async function POST(req: Request) {
