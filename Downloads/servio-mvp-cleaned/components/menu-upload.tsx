@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { LinkIcon, Upload, FileText, Loader2, CheckCircle, X, AlertCircle } from "lucide-react"
 import { supabase, hasSupabaseConfig, type MenuItem } from "@/lib/supabase"
+
 // Use dynamic import for extractMenu only in Node.js environments
 let extractMenu: any = null;
 let ExtractedMenuItem: any = null;
@@ -31,6 +32,68 @@ interface MenuUploadProps {
   venueId: string
   onMenuUpdate: (items: MenuItem[]) => void
 }
+
+// Helper function to compress image files
+const compressImage = (file: File, maxSizeKB: number = 800): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      resolve(file); // Don't compress non-images
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      // Calculate new dimensions to reduce file size
+      let { width, height } = img;
+      const maxDimension = 1200; // Max width/height
+      
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = (height * maxDimension) / width;
+          width = maxDimension;
+        } else {
+          width = (width * maxDimension) / height;
+          height = maxDimension;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx?.drawImage(img, 0, 0, width, height);
+
+      // Try different quality levels to get under the size limit
+      const tryCompress = (quality: number) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Failed to compress image'));
+            return;
+          }
+
+          const sizeKB = blob.size / 1024;
+          if (sizeKB <= maxSizeKB || quality <= 0.1) {
+            // Create a new file with the compressed blob
+            const compressedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: file.lastModified,
+            });
+            resolve(compressedFile);
+          } else {
+            // Try with lower quality
+            tryCompress(quality - 0.1);
+          }
+        }, file.type, quality);
+      };
+
+      tryCompress(0.8); // Start with 80% quality
+    };
+
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+};
 
 export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
   const [isLoading, setIsLoading] = useState(false)
@@ -179,27 +242,42 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
     setUploadStatus("idle");
     setStatusMessage("Processing your menu file...");
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const base64 = e.target?.result?.toString().split(",")[1];
-      const res = await fetch("/api/upload-menu-file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ base64, mimetype: file.type }),
-      });
-      const result = await res.json();
-      if (!res.ok || result.error) {
-        setUploadStatus("error");
-        setStatusMessage(result.error || "Failed to process file.");
-        setIsLoading(false);
-        return;
+    try {
+      // Check file size and compress if needed
+      const fileSizeKB = file.size / 1024;
+      let processedFile = file;
+      
+      if (fileSizeKB > 800) { // If file is larger than 800KB
+        setStatusMessage("File is large, compressing for better processing...");
+        processedFile = await compressImage(file, 800); // Compress to under 800KB
       }
-      setExtractedItems(result.items);
-      setUploadStatus("success");
-      setStatusMessage(`Successfully extracted ${result.items.length} menu items!`);
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target?.result?.toString().split(",")[1];
+        const res = await fetch("/api/upload-menu-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64, mimetype: processedFile.type }),
+        });
+        const result = await res.json();
+        if (!res.ok || result.error) {
+          setUploadStatus("error");
+          setStatusMessage(result.error || "Failed to process file.");
+          setIsLoading(false);
+          return;
+        }
+        setExtractedItems(result.items);
+        setUploadStatus("success");
+        setStatusMessage(`Successfully extracted ${result.items.length} menu items!`);
+        setIsLoading(false);
+      };
+      reader.readAsDataURL(processedFile);
+    } catch (error) {
+      setUploadStatus("error");
+      setStatusMessage("Failed to process file. Please try a smaller file or different format.");
       setIsLoading(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   const handleTextUpload = async () => {
