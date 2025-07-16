@@ -291,23 +291,50 @@ async function fetchUrlAsBuffer(url: string): Promise<{ buffer: Buffer, mimetype
 
 // Multi-method text extraction with fallbacks
 async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise<string> {
-  const methods = [
-    { name: 'OCR.space', fn: extractTextWithOcrSpace },
-    { name: 'OpenAI Vision', fn: extractTextWithOpenAIVision },
-    { name: 'Google Vision', fn: extractTextWithGoogleVision },
-  ];
-
-  for (const method of methods) {
-    try {
-      console.log(`Trying ${method.name}...`);
-      const text = await method.fn(file, mimetype);
-      if (text && text.trim()) {
-        console.log(`${method.name} succeeded`);
-        return text;
+  const fileSizeKB = file.length / 1024;
+  
+  // For large files, prioritize OpenAI Vision (no size limits)
+  if (fileSizeKB > 1024) {
+    console.log('File is large, prioritizing OpenAI Vision...');
+    const methods = [
+      { name: 'OpenAI Vision', fn: extractTextWithOpenAIVision },
+      { name: 'Google Vision', fn: extractTextWithGoogleVision },
+      { name: 'OCR.space', fn: extractTextWithOcrSpace },
+    ];
+    
+    for (const method of methods) {
+      try {
+        console.log(`Trying ${method.name}...`);
+        const text = await method.fn(file, mimetype);
+        if (text && text.trim()) {
+          console.log(`${method.name} succeeded`);
+          return text;
+        }
+      } catch (error: any) {
+        console.log(`${method.name} failed:`, error.message);
+        continue;
       }
-    } catch (error: any) {
-      console.log(`${method.name} failed:`, error.message);
-      continue;
+    }
+  } else {
+    // For smaller files, try OCR.space first (faster and free)
+    const methods = [
+      { name: 'OCR.space', fn: extractTextWithOcrSpace },
+      { name: 'OpenAI Vision', fn: extractTextWithOpenAIVision },
+      { name: 'Google Vision', fn: extractTextWithGoogleVision },
+    ];
+    
+    for (const method of methods) {
+      try {
+        console.log(`Trying ${method.name}...`);
+        const text = await method.fn(file, mimetype);
+        if (text && text.trim()) {
+          console.log(`${method.name} succeeded`);
+          return text;
+        }
+      } catch (error: any) {
+        console.log(`${method.name} failed:`, error.message);
+        continue;
+      }
     }
   }
 
@@ -352,22 +379,18 @@ export async function POST(req: Request) {
             const compressedSizeKB = processedBuffer.length / 1024;
             console.log('API: Compressed PDF size:', compressedSizeKB, 'KB');
             
+            // Even if still large, proceed with alternative methods
             if (compressedSizeKB > 1024) {
-              return new Response(JSON.stringify({ 
-                error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
-              }), { status: 400 });
+              console.log('API: PDF still large after compression, using alternative OCR methods');
             }
           } catch (compressionError) {
             console.error('API: PDF compression failed:', compressionError);
-            return new Response(JSON.stringify({ 
-              error: `PDF compression failed. Please use a smaller file or try the Text Input option.` 
-            }), { status: 400 });
+            // Continue with original buffer if compression fails
           }
         }
         
-        if (!text) {
-          text = await extractTextWithFallbacks(processedBuffer, urlMime);
-        }
+        // Try all available extraction methods
+        text = await extractTextWithFallbacks(processedBuffer, urlMime);
       } else {
         // Try HTML extraction
         console.log('API: Processing HTML URL');
@@ -389,26 +412,23 @@ export async function POST(req: Request) {
           const compressedSizeKB = processedBuffer.length / 1024;
           console.log('API: Compressed PDF size:', compressedSizeKB, 'KB');
           
+          // Even if still large, proceed with alternative methods
           if (compressedSizeKB > 1024) {
-            return new Response(JSON.stringify({ 
-              error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
-            }), { status: 400 });
+            console.log('API: PDF still large after compression, using alternative OCR methods');
           }
         } catch (compressionError) {
           console.error('API: PDF compression failed:', compressionError);
-          return new Response(JSON.stringify({ 
-            error: `PDF compression failed. Please use a smaller file or try the Text Input option.` 
-          }), { status: 400 });
+          // Continue with original buffer if compression fails
         }
-      } else if (fileSizeKB > 1024) {
+      } else if (fileSizeKB > 1024 && !mimetype.startsWith('image/')) {
+        // For non-PDF, non-image files that are too large
         return new Response(JSON.stringify({ 
           error: `File size (${fileSizeKB.toFixed(1)}KB) exceeds OCR.space limit (1024KB). Please use a smaller file or try the Text Input option.` 
         }), { status: 400 });
       }
       
-      if (!text) {
-        text = await extractTextWithFallbacks(processedBuffer, mimetype);
-      }
+      // Try all available extraction methods
+      text = await extractTextWithFallbacks(processedBuffer, mimetype);
     } else {
       return new Response(JSON.stringify({ error: "No file or URL provided." }), { status: 400 });
     }
