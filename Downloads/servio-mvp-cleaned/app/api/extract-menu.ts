@@ -1,0 +1,36 @@
+import { NextRequest, NextResponse } from "next/server";
+import { extractMenu } from "../../../scripts/extract-menu";
+import { createClient } from "@supabase/supabase-js";
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    // If items and venue_id are provided, save to Supabase using service role key
+    if (body.items && Array.isArray(body.items) && body.venue_id) {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      // Attach venue_id to each item if not present
+      const itemsToInsert = body.items.map((item: any) => ({
+        ...item,
+        venue_id: body.venue_id,
+        available: item.available !== false, // default to true
+      }));
+      const { error } = await supabase.from("menu_items").insert(itemsToInsert);
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      return NextResponse.json({ success: true });
+    }
+    // Otherwise, fallback to extraction by url
+    const { url } = body;
+    if (!url || typeof url !== "string") {
+      return NextResponse.json({ error: "Missing or invalid 'url' field." }, { status: 400 });
+    }
+    const items = await extractMenu(url);
+    return NextResponse.json({ items });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || "Failed to extract or save menu." }, { status: 500 });
+  }
+} 
