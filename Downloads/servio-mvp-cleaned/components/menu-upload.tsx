@@ -95,42 +95,56 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
   }
 
   const extractMenuFromWebsite = async (url: string): Promise<MenuItem[]> => {
-    if (!extractMenu || !ExtractedMenuItem) {
-      throw new Error("Menu extraction script not available in this environment.");
+    const res = await fetch("/api/upload-menu-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    const result = await res.json();
+    if (!res.ok || result.error) {
+      throw new Error(result.error || "Failed to extract menu from website.");
     }
-    const extracted: any[] = await extractMenu(url);
-    return extracted.map((item) => ({
+    return (result.items || []).map((item: any) => ({
+      ...item,
       id: `web-${Date.now()}-${Math.random()}`,
       venue_id: venueId,
-      name: item.name,
-      description: item.description || "",
-      price: item.price,
-      category: item.category || "Uncategorized",
       available: true,
       created_at: new Date().toISOString(),
     }));
   };
 
   const extractMenuFromPDF = async (file: File): Promise<MenuItem[]> => {
-    // Upload file to backend API for extraction
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/upload-menu-file", {
-      method: "POST",
-      body: formData,
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target?.result?.toString().split(",")[1];
+        const res = await fetch("/api/upload-menu-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64, mimetype: file.type }),
+        });
+        const result = await res.json();
+        if (!res.ok || result.error) {
+          setUploadStatus("error");
+          setStatusMessage(result.error || "Failed to process file.");
+          setIsLoading(false);
+          reject(new Error(result.error || "Failed to process file."));
+          return;
+        }
+        setExtractedItems(result.items);
+        setUploadStatus("success");
+        setStatusMessage(`Successfully extracted ${result.items.length} menu items!`);
+        setIsLoading(false);
+        resolve((result.items || []).map((item: any) => ({
+          ...item,
+          id: `extracted-${Date.now()}-${Math.random()}`,
+          venue_id: venueId,
+          available: true,
+          created_at: new Date().toISOString(),
+        })));
+      };
+      reader.readAsDataURL(file);
     });
-    const result = await res.json();
-    if (!res.ok || result.error) {
-      throw new Error(result.error || "Failed to extract menu from file.");
-    }
-    // Add unique IDs for client-side editing
-    return (result.items || []).map((item: any) => ({
-      ...item,
-      id: `extracted-${Date.now()}-${Math.random()}`,
-      venue_id: venueId,
-      available: true,
-      created_at: new Date().toISOString(),
-    }));
   };
 
   const handleUrlUpload = async () => {
