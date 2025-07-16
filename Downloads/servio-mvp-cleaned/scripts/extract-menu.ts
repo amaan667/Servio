@@ -1,28 +1,12 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import fs from "fs";
-import path from "path";
-// @ts-ignore
-import pdfParse from "pdf-parse";
-import puppeteer from "puppeteer";
-import { Configuration, OpenAIApi } from "openai";
+import OpenAI from "openai";
 
 interface ExtractedMenuItem {
   name: string;
   price: number;
   category?: string;
   description?: string;
-}
-
-// Helper: Download file
-async function downloadFile(url: string, dest: string) {
-  const writer = fs.createWriteStream(dest);
-  const response = await axios({ url, method: "GET", responseType: "stream" });
-  response.data.pipe(writer);
-  return new Promise<void>((resolve, reject) => {
-    writer.on("finish", () => resolve());
-    writer.on("error", reject);
-  });
 }
 
 function parseMenuLines(lines: string[]): ExtractedMenuItem[] {
@@ -69,9 +53,9 @@ function parseMenuLines(lines: string[]): ExtractedMenuItem[] {
 async function extractMenuWithGPT(text: string): Promise<ExtractedMenuItem[]> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
-  const openai = new OpenAIApi(new Configuration({ apiKey }));
+  const openai = new OpenAI({ apiKey });
   const prompt = `Extract all menu items from the following restaurant menu text. For each item, return a JSON object with fields: name, price (number), category (if available), and description (if available). Return a JSON array.\n\nMenu text:\n${text}\n\nJSON:`;
-  const response = await openai.createChatCompletion({
+  const response = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [
       { role: "system", content: "You are a helpful assistant that extracts structured menu data from unstructured text." },
@@ -80,7 +64,7 @@ async function extractMenuWithGPT(text: string): Promise<ExtractedMenuItem[]> {
     temperature: 0.2,
     max_tokens: 1200,
   });
-  const content = response.data.choices[0]?.message?.content || "";
+  const content = response.choices[0]?.message?.content || "";
   try {
     const jsonStart = content.indexOf("[");
     const jsonEnd = content.lastIndexOf("]");
@@ -91,23 +75,6 @@ async function extractMenuWithGPT(text: string): Promise<ExtractedMenuItem[]> {
     return JSON.parse(content);
   } catch (err) {
     throw new Error("Failed to parse GPT menu extraction response");
-  }
-}
-
-// Extract from PDF
-async function extractFromPdf(url: string) {
-  const tmpPath = path.join(__dirname, "menu.pdf");
-  await downloadFile(url, tmpPath);
-  const data = fs.readFileSync(tmpPath);
-  // @ts-ignore
-  const pdfData = await pdfParse(data);
-  fs.unlinkSync(tmpPath);
-  const lines = pdfData.text.split("\n").map((line: string) => line.trim()).filter(Boolean);
-  const text = lines.join("\n");
-  try {
-    return await extractMenuWithGPT(text);
-  } catch (err) {
-    return parseMenuLines(lines);
   }
 }
 
@@ -132,40 +99,14 @@ async function extractFromHtml(url: string) {
   }
 }
 
-// Extract from JS-rendered page using Puppeteer
-async function extractFromJsRendered(url: string) {
-  const browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
-  await page.goto(url, { waitUntil: "networkidle2" });
-  const lines: string[] = await page.evaluate(() => {
-    const elements = Array.from(document.querySelectorAll("li, .menu-item, .item, .dish, .product, tr"));
-    let lines = elements.map(el => el.textContent?.trim() || "").filter(Boolean);
-    if (lines.length < 5) {
-      lines = document.body.innerText.split("\n").map(l => l.trim()).filter(Boolean);
-    }
-    return lines;
-  });
-  await browser.close();
-  return parseMenuLines(lines);
-}
-
 // Main function
 async function extractMenu(url: string): Promise<ExtractedMenuItem[]> {
-  if (url.endsWith(".pdf")) {
-    return await extractFromPdf(url);
-  }
   try {
     const htmlItems = await extractFromHtml(url);
     if (htmlItems.length > 0) return htmlItems;
-    // If not enough items, try JS-rendered
-    const jsItems = await extractFromJsRendered(url);
-    return jsItems;
+    throw new Error("No menu items found");
   } catch (err) {
-    // If HTML fails, try PDF as fallback
-    if (url.match(/\.pdf$/i)) {
-      return await extractFromPdf(url);
-    }
-    throw err;
+    throw new Error(`Failed to extract menu from URL: ${err}`);
   }
 }
 
