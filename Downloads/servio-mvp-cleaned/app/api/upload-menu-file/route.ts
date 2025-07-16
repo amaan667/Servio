@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 import * as cheerio from "cheerio";
 import { PDFDocument } from "pdf-lib";
-import pdfParse from "pdf-parse";
 
 export const config = {
   api: {
@@ -12,19 +11,13 @@ export const config = {
 // Helper function to extract text directly from PDF without OCR
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
-    console.log('PDF: Attempting direct text extraction with pdf-parse');
+    console.log('PDF: Attempting direct text extraction');
     
-    const data = await pdfParse(buffer);
-    const text = data.text;
+    // For now, we'll skip direct PDF text extraction since pdf-parse causes build issues
+    // In a production environment, you could use a different PDF parsing library
+    // or implement a custom solution that doesn't have test file dependencies
     
-    console.log('PDF: Extracted text length:', text.length);
-    console.log('PDF: Number of pages:', data.numpages);
-    
-    if (!text.trim()) {
-      throw new Error('No text could be extracted directly from PDF');
-    }
-    
-    return text;
+    throw new Error('Direct PDF text extraction not available - using alternative methods');
   } catch (error) {
     console.error('PDF: Direct text extraction failed:', error);
     throw error;
@@ -318,7 +311,7 @@ async function extractTextWithFallbacks(file: Buffer, mimetype: string): Promise
     }
   }
 
-  throw new Error('All text extraction methods failed');
+  throw new Error('All text extraction methods failed. Try using the Text Input tab for large files.');
 }
 
 export async function POST(req: Request) {
@@ -360,14 +353,9 @@ export async function POST(req: Request) {
             console.log('API: Compressed PDF size:', compressedSizeKB, 'KB');
             
             if (compressedSizeKB > 1024) {
-              // Try direct text extraction as last resort
-              try {
-                text = await extractTextFromPDF(processedBuffer);
-              } catch (error) {
-                return new Response(JSON.stringify({ 
-                  error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
-                }), { status: 400 });
-              }
+              return new Response(JSON.stringify({ 
+                error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
+              }), { status: 400 });
             }
           } catch (compressionError) {
             console.error('API: PDF compression failed:', compressionError);
@@ -402,14 +390,9 @@ export async function POST(req: Request) {
           console.log('API: Compressed PDF size:', compressedSizeKB, 'KB');
           
           if (compressedSizeKB > 1024) {
-            // Try direct text extraction as last resort
-            try {
-              text = await extractTextFromPDF(processedBuffer);
-            } catch (error) {
-              return new Response(JSON.stringify({ 
-                error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
-              }), { status: 400 });
-            }
+            return new Response(JSON.stringify({ 
+              error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
+            }), { status: 400 });
           }
         } catch (compressionError) {
           console.error('API: PDF compression failed:', compressionError);
