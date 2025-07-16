@@ -95,6 +95,27 @@ const compressImage = (file: File, maxSizeKB: number = 800): Promise<File> => {
   });
 };
 
+// Helper function to check and warn about file size
+const checkFileSize = (file: File): { isValid: boolean; message: string } => {
+  const fileSizeMB = file.size / (1024 * 1024);
+  
+  if (fileSizeMB > 10) {
+    return { 
+      isValid: false, 
+      message: "File is too large (over 10MB). Please use a smaller file." 
+    };
+  }
+  
+  if (fileSizeMB > 1) {
+    return { 
+      isValid: true, 
+      message: `File is ${fileSizeMB.toFixed(1)}MB. OCR.space has a 1MB limit for free tier. Consider upgrading to paid plan or using a smaller file.` 
+    };
+  }
+  
+  return { isValid: true, message: "" };
+};
+
 export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle")
@@ -238,6 +259,18 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Check file size first
+    const sizeCheck = checkFileSize(file);
+    if (!sizeCheck.isValid) {
+      setUploadStatus("error");
+      setStatusMessage(sizeCheck.message);
+      return;
+    }
+
+    if (sizeCheck.message) {
+      setStatusMessage(sizeCheck.message);
+    }
+
     setIsLoading(true);
     setUploadStatus("idle");
     setStatusMessage("Processing your menu file...");
@@ -247,7 +280,7 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
       const fileSizeKB = file.size / 1024;
       let processedFile = file;
       
-      if (fileSizeKB > 800) { // If file is larger than 800KB
+      if (fileSizeKB > 800 && file.type.startsWith('image/')) { // Only compress images
         setStatusMessage("File is large, compressing for better processing...");
         processedFile = await compressImage(file, 800); // Compress to under 800KB
       }
@@ -399,8 +432,20 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
                   <label htmlFor="menu-file" className="cursor-pointer">
                     <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                     <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                    <p className="text-xs text-gray-500 mt-1">PDF, JPG, PNG up to 10MB</p>
+                    <p className="text-xs text-gray-500 mt-1">PDF, JPG, PNG up to 1MB (free OCR limit)</p>
+                    <p className="text-xs text-orange-600 mt-1">Large files? Try the Text Input tab instead</p>
                   </label>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>File Size Limits:</strong>
+                  </p>
+                  <ul className="text-xs text-blue-700 mt-1 space-y-1">
+                    <li>• Free OCR: 1MB max (PDF, images)</li>
+                    <li>• Large files: Use Text Input tab</li>
+                    <li>• Images: Auto-compressed if needed</li>
+                    <li>• PDFs: Consider upgrading OCR plan</li>
+                  </ul>
                 </div>
                 <p className="text-sm text-gray-500">
                   Upload a PDF menu or image. We'll use OCR to extract items automatically.
