@@ -18,7 +18,7 @@ async function compressPDF(buffer: Buffer): Promise<Buffer> {
     const pages = pdfDoc.getPages();
     console.log('PDF: Original pages:', pages.length);
     
-    // Create a new document with compressed settings
+    // Create a new document with aggressive compression settings
     const compressedDoc = await PDFDocument.create();
     
     // Copy pages with compression
@@ -27,16 +27,38 @@ async function compressPDF(buffer: Buffer): Promise<Buffer> {
       compressedDoc.addPage(copiedPage);
     }
     
-    // Save with compression settings
-    const compressedBytes = await compressedDoc.save({
-      useObjectStreams: true,
-      addDefaultPage: false,
-      objectsPerTick: 20,
-      updateFieldAppearances: false,
-    });
+    // Try multiple compression levels
+    const compressionLevels = [
+      { useObjectStreams: true, addDefaultPage: false, objectsPerTick: 20, updateFieldAppearances: false },
+      { useObjectStreams: true, addDefaultPage: false, objectsPerTick: 10, updateFieldAppearances: false },
+      { useObjectStreams: true, addDefaultPage: false, objectsPerTick: 5, updateFieldAppearances: false }
+    ];
+    
+    let bestCompressedBytes: Uint8Array | null = null;
+    let bestSize = buffer.length;
+    
+    for (const settings of compressionLevels) {
+      try {
+        const compressedBytes = await compressedDoc.save(settings);
+        const compressedSize = compressedBytes.length;
+        
+        console.log('PDF: Compression attempt - size:', compressedSize, 'bytes');
+        
+        if (compressedSize < bestSize) {
+          bestSize = compressedSize;
+          bestCompressedBytes = compressedBytes;
+        }
+      } catch (error) {
+        console.log('PDF: Compression level failed, trying next...');
+      }
+    }
+    
+    if (!bestCompressedBytes) {
+      throw new Error('All compression attempts failed');
+    }
     
     const originalSize = buffer.length;
-    const compressedSize = compressedBytes.length;
+    const compressedSize = bestCompressedBytes.length;
     const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
     
     console.log('PDF: Compression complete');
@@ -44,7 +66,7 @@ async function compressPDF(buffer: Buffer): Promise<Buffer> {
     console.log('PDF: Compressed size:', compressedSize, 'bytes');
     console.log('PDF: Compression ratio:', compressionRatio + '%');
     
-    return Buffer.from(compressedBytes.buffer, compressedBytes.byteOffset, compressedBytes.byteLength);
+    return Buffer.from(bestCompressedBytes.buffer, bestCompressedBytes.byteOffset, bestCompressedBytes.byteLength);
   } catch (error) {
     console.error('PDF: Compression failed:', error);
     throw new Error('Failed to compress PDF');
@@ -203,7 +225,7 @@ export async function POST(req: Request) {
             
             if (compressedSizeKB > 1024) {
               return new Response(JSON.stringify({ 
-                error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. Please use a smaller file or try the Text Input option.` 
+                error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
               }), { status: 400 });
             }
           } catch (compressionError) {
@@ -238,7 +260,7 @@ export async function POST(req: Request) {
           
           if (compressedSizeKB > 1024) {
             return new Response(JSON.stringify({ 
-              error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. Please use a smaller file or try the Text Input option.` 
+              error: `PDF is still too large (${compressedSizeKB.toFixed(1)}KB) after compression. This PDF likely contains high-resolution images or complex layouts that can't be compressed further. Try:\n\n1. Use the Text Input tab to copy/paste menu text\n2. Convert PDF to images and compress them\n3. Use a smaller PDF file\n4. Upgrade to paid OCR plan for larger files` 
             }), { status: 400 });
           }
         } catch (compressionError) {
