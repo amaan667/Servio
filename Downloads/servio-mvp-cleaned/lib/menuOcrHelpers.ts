@@ -56,6 +56,11 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
         ],
       },
     },
+    documentOutputConfig: {
+      gcsOutputConfig: {
+        gcsUri: `gs://${outputBucket}/documentai-output/`,
+      },
+    },
   };
   logger.info("Document AI request constructed", { request });
   console.log("Document AI request constructed", JSON.stringify(request, null, 2)); // Always log request
