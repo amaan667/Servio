@@ -83,7 +83,7 @@ export function getValidatedSession(): AuthSession | null {
         currentSession = session
         return session
       } catch (error) {
-        logger.error("SESSION", "Failed to parse stored session", error)
+        logger.error("Failed to parse stored session", { error })
         localStorage.removeItem("servio_session")
       }
     }
@@ -106,7 +106,7 @@ export async function signUpUser(email: string, password: string, fullName: stri
   }
 
   try {
-    logger.info("AUTH", { message: "Attempting sign up", email, fullName })
+    logger.info("Attempting sign up", { email, fullName })
 
     // Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
@@ -119,7 +119,7 @@ export async function signUpUser(email: string, password: string, fullName: stri
     })
 
     if (error || !data.user) {
-      logger.error("AUTH", { message: "Failed to sign up user", error })
+      logger.error("Failed to sign up user", { error })
       return { success: false, message: error?.message || "Failed to create account" }
     }
 
@@ -157,12 +157,12 @@ export async function signUpUser(email: string, password: string, fullName: stri
           .eq("owner_id", userId)
           .single();
         if (fetchError || !existingVenue) {
-          logger.error("AUTH", { message: "Failed to fetch existing venue after unique violation", error: fetchError })
+          logger.error("Failed to fetch existing venue after unique violation", { error: fetchError })
           return { success: false, message: "Failed to fetch existing venue for this user" }
         }
         venueData = existingVenue;
       } else if (createVenueError || !newVenue) {
-        logger.error("AUTH", { message: "Failed to create venue", error: createVenueError })
+        logger.error("Failed to create venue", { error: createVenueError })
         return { success: false, message: "Failed to set up your business" }
       } else {
         venueData = newVenue;
@@ -179,10 +179,10 @@ export async function signUpUser(email: string, password: string, fullName: stri
       venue: venueData,
     }
     setSession(session)
-    logger.info("AUTH", { message: "Sign up successful", userId, venueId })
+    logger.info("Sign up successful", { userId, venueId })
     return { success: true, session }
   } catch (error) {
-    logger.error("AUTH", { message: "Sign up error", error })
+    logger.error("Sign up error", { error })
     return { success: false, message: "An unexpected error occurred" }
   }
 }
@@ -193,10 +193,10 @@ export async function signInUser(email: string, password: string) {
   }
 
   try {
-    logger.info("AUTH", { message: "Attempting sign in", email })
+    logger.info("Attempting sign in", { email })
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error || !data.user) {
-      logger.error("AUTH", { message: "Sign in failed", error })
+      logger.error("Sign in failed", { error })
       return { success: false, message: error?.message || "Invalid email or password" }
     }
     // Fetch venue for user
@@ -228,12 +228,12 @@ export async function signInUser(email: string, password: string) {
           .eq("owner_id", userId)
           .single();
         if (fetchError || !existingVenue) {
-          logger.error("AUTH", { message: "Failed to fetch existing venue after unique violation", error: fetchError })
+          logger.error("Failed to fetch existing venue after unique violation", { error: fetchError })
           return { success: false, message: "Failed to fetch existing venue for this user" }
         }
         venueData = existingVenue;
       } else if (createVenueError || !newVenue) {
-        logger.error("AUTH", { message: "Failed to create venue on sign-in", error: createVenueError })
+        logger.error("Failed to create venue on sign-in", { error: createVenueError })
         return { success: false, message: "Failed to create venue for this user" }
       } else {
         venueData = newVenue;
@@ -252,7 +252,7 @@ export async function signInUser(email: string, password: string) {
     setSession(session)
     return { success: true, session }
   } catch (error) {
-    logger.error("AUTH", { message: "Sign in error", error })
+    logger.error("Sign in error", { error })
     return { success: false, message: "An unexpected error occurred" }
   }
 }
@@ -263,9 +263,9 @@ export async function signOutUser() {
   try {
     await supabase.auth.signOut()
     clearSession()
-    logger.info("AUTH", { message: "User signed out" })
+    logger.info("User signed out")
   } catch (error) {
-    logger.error("AUTH", { message: "Sign out error", error })
+    logger.error("Sign out error", { error })
   }
 }
 
@@ -286,14 +286,14 @@ export async function createMenuItem(venueId: string, item: Omit<MenuItem, "id" 
       .single()
 
     if (error) {
-      logger.error("MENU", { message: "Failed to create menu item", error, venueId })
+      logger.error("Failed to create menu item", { error, venueId })
       return { success: false, message: "Failed to create menu item" }
     }
 
-    logger.info("MENU", { message: "Menu item created", itemId: data.id, venueId })
+    logger.info("Menu item created", { itemId: data.id, venueId })
     return { success: true, data }
   } catch (error) {
-    logger.error("MENU", { message: "Create menu item error", error })
+    logger.error("Create menu item error", { error })
     return { success: false, message: "An unexpected error occurred" }
   }
 }
@@ -307,14 +307,14 @@ export async function updateMenuItem(itemId: string, updates: Partial<MenuItem>)
     const { data, error } = await supabase.from("menu_items").update(updates).eq("id", itemId).select().single()
 
     if (error) {
-      logger.error("MENU", { message: "Failed to update menu item", error, itemId })
+      logger.error("Failed to update menu item", { error, itemId })
       return { success: false, message: "Failed to update menu item" }
     }
 
-    logger.info("MENU", { message: "Menu item updated", itemId })
+    logger.info("Menu item updated", { itemId })
     return { success: true, data }
   } catch (error) {
-    logger.error("MENU", { message: "Update menu item error", error })
+    logger.error("Update menu item error", { error })
     return { success: false, message: "An unexpected error occurred" }
   }
 }
@@ -328,14 +328,14 @@ export async function deleteMenuItem(itemId: string) {
     const { error } = await supabase.from("menu_items").delete().eq("id", itemId)
 
     if (error) {
-      logger.error("MENU", { message: "Failed to delete menu item", error, itemId })
+      logger.error("Failed to delete menu item", { error, itemId })
       return { success: false, message: "Failed to delete menu item" }
     }
 
-    logger.info("MENU", { message: "Menu item deleted", itemId })
+    logger.info("Menu item deleted", { itemId })
     return { success: true }
   } catch (error) {
-    logger.error("MENU", { message: "Delete menu item error", error })
+    logger.error("Delete menu item error", { error })
     return { success: false, message: "An unexpected error occurred" }
   }
 }
@@ -360,7 +360,7 @@ export async function createOrder(orderData: {
   }
 
   try {
-    logger.info("ORDER", { message: "Creating order", venueId: orderData.venue_id, tableNumber: orderData.table_number, customerName: orderData.customer_name, itemCount: orderData.items.length, totalAmount: orderData.total_amount })
+    logger.info("Creating order", { venueId: orderData.venue_id, tableNumber: orderData.table_number, customerName: orderData.customer_name, itemCount: orderData.items.length, totalAmount: orderData.total_amount })
 
     // Create the order
     const { data: order, error: orderError } = await supabase
@@ -378,7 +378,7 @@ export async function createOrder(orderData: {
       .single()
 
     if (orderError || !order) {
-      logger.error("ORDER", { message: "Failed to create order", error: orderError })
+      logger.error("Failed to create order", { error: orderError })
       return { success: false, message: "Failed to create order" }
     }
 
@@ -394,15 +394,15 @@ export async function createOrder(orderData: {
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
 
     if (itemsError) {
-      logger.error("ORDER", { message: "Failed to create order items", error: itemsError })
+      logger.error("Failed to create order items", { error: itemsError })
       return { success: false, message: "Failed to create order items" }
     }
 
-    logger.info("ORDER", { message: "Order created successfully", orderId: order.id, orderNumber: order.order_number })
+    logger.info("Order created successfully", { orderId: order.id, orderNumber: order.order_number })
 
     return { success: true, data: order }
   } catch (error) {
-    logger.error("ORDER", { message: "Create order error", error })
+    logger.error("Create order error", { error })
     return { success: false, message: "An unexpected error occurred" }
   }
 }
