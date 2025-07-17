@@ -36,12 +36,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Upload to GCS
     const fileName = `menus/${Date.now()}-${filename}`;
-    const gcsInputUri = await uploadPDFToGCS(tempFilePath, fileName);
+    const gcsInputUri = await uploadPDFToGCS(tempFilePath, fileName, mimetype);
 
     // Use Document AI for extraction
     let ocrText = '';
     try {
-      ocrText = await runDocumentAI(gcsInputUri);
+      ocrText = await runDocumentAI(gcsInputUri, mimetype || "application/pdf");
       console.log('Extracted OCR text length:', ocrText.length);
       console.log('Extracted OCR text (truncated):', ocrText.slice(0, 500));
     } catch (ocrErr) {

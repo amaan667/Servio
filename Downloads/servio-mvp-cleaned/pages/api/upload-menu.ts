@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const mimetype = file.mimetype || "application/pdf";
     const gcsInputUri = await uploadPDFToGCS(filePath, fileName, mimetype);
-    const ocrText = await runDocumentAI(gcsInputUri);
+    const ocrText = await runDocumentAI(gcsInputUri, mimetype);
 
     // GPT-4 structuring
     const parsedResponse = await fetch("https://api.openai.com/v1/chat/completions", {
