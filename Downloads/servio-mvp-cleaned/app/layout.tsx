@@ -10,10 +10,10 @@ export const metadata: Metadata = {
   title: "Servio - QR Code Ordering System",
   description: "Transform your restaurant with digital menus and seamless QR code ordering",
   keywords: "restaurant, QR code, digital menu, ordering system, POS",
-  authors: [{ name: "Servio Team" }],
-  viewport: "width=device-width, initial-scale=1",
-    generator: 'v0.dev'
+  authors: [{ name: "Servio Team" }]
 }
+
+export const viewport = "width=device-width, initial-scale=1";
 
 export default function RootLayout({
   children,
