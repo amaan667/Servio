@@ -42,6 +42,7 @@ export async function uploadPDFToGCS(filePath: string, fileName: string, mimetyp
 }
 
 export async function runDocumentAI(gcsInputUri: string, mimeType: string = "application/pdf"): Promise<string> {
+  console.log("Input URI (inside runDocumentAI):", gcsInputUri);
   // Minimal, working Document AI batchProcessDocuments request
   const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
   const uniqueOutputPrefix = `documentai-output/${Date.now()}/`;
