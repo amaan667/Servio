@@ -16,7 +16,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const filePath = file.filepath;
     const fileName = `menus/${Date.now()}-${file.originalFilename}`;
 
-    const gcsInputUri = await uploadPDFToGCS(filePath, fileName);
+    const mimetype = file.mimetype || "application/pdf";
+    const gcsInputUri = await uploadPDFToGCS(filePath, fileName, mimetype);
     const ocrText = await runDocumentAI(gcsInputUri);
 
     // GPT-4 structuring
