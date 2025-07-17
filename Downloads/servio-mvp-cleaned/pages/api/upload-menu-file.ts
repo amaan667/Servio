@@ -1,4 +1,4 @@
-import formidable from "formidable";
+const formidable = require("formidable");
 import { uploadPDFToGCS, runVisionOCR, readOCRResult } from "@/lib/menuOcrHelpers";
 
 export const config = { api: { bodyParser: false } };
