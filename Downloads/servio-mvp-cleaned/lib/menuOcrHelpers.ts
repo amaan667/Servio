@@ -33,6 +33,7 @@ export async function uploadPDFToGCS(filePath: string, fileName: string, mimetyp
     });
     const uri = `gs://${bucketName}/${fileName}`;
     logger.info("File uploaded to GCS", { uri, mimetype });
+    console.log("GCS Input URI:", uri); // Always log GCS URI
     return uri;
   } catch (error: any) {
     logger.error("Failed to upload file to GCS", { error });
@@ -54,6 +55,7 @@ export async function runDocumentAI(gcsInputUri: string): Promise<string> {
     documentOutputConfig: undefined,
   };
   logger.info("Document AI request constructed", { request });
+  console.log("Document AI request constructed", JSON.stringify(request, null, 2)); // Always log request
   try {
     const [result] = await documentAiClient.batchProcessDocuments(request);
     logger.info("Document AI batch process started", { operation: result.name });
