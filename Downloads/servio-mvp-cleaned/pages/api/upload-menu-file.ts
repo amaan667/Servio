@@ -45,10 +45,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await runVisionOCR(gcsInputUri, gcsOutputUri);
 
     // Read OCR result (returns text)
-    const ocrText = await readOCRResult(gcsOutputUri);
+    let ocrText = '';
+    try {
+      ocrText = await readOCRResult(gcsOutputUri);
+      console.log('Extracted OCR text length:', ocrText.length);
+      console.log('Extracted OCR text (truncated):', ocrText.slice(0, 500));
+    } catch (ocrErr) {
+      console.error('OCR extraction error:', ocrErr);
+      await unlink(tempFilePath);
+      return res.status(500).json({ error: 'Failed to extract text from file (OCR step failed).', details: (ocrErr as any)?.message || String(ocrErr) });
+    }
 
     // Clean up temp file
     await unlink(tempFilePath);
+
+    // If OCR text is empty or too short, return a user-friendly error
+    if (!ocrText || ocrText.length < 50) {
+      return res.status(400).json({ error: 'OCR failed: No text extracted from file. Please upload a clearer or different file.' });
+    }
 
     // Prepare prompt for GPT
     const prompt = `Extract and return this restaurant menu as a JSON array. Each item should have: name, description, price, and category. Return ONLY the JSON array, no commentary or markdown.\n\n${ocrText}`;
