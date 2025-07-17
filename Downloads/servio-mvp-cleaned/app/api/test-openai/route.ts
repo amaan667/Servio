@@ -1,9 +1,11 @@
 import OpenAI from 'openai';
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 
-const supabase = createServerClient({ req, res });
+export async function GET(req: Request) {
+  // If you need Supabase, you must use the Node.js request/response objects.
+  // In Next.js app router, you can only use the web Request object, so skip Supabase unless you use edge SSR helpers.
+  // Remove or comment out Supabase usage if not needed for this test route.
 
-export async function GET() {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -14,9 +16,7 @@ export async function GET() {
     }
 
     console.log('Testing OpenAI API key...');
-    
     const openai = new OpenAI({ apiKey });
-    
     // Test with a simple text completion
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -25,15 +25,12 @@ export async function GET() {
       ],
       max_tokens: 10,
     });
-
     const text = response.choices[0]?.message?.content || '';
-    
     return new Response(JSON.stringify({ 
       success: true,
       message: text,
       available: true 
     }), { status: 200 });
-    
   } catch (error: any) {
     console.error('OpenAI test failed:', error);
     return new Response(JSON.stringify({ 
