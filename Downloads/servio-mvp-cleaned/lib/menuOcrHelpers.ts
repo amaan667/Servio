@@ -7,12 +7,19 @@ if (process.env.GCLOUD_SERVICE_KEY) {
 
 import { Storage } from "@google-cloud/storage";
 import { v1 as vision } from "@google-cloud/vision";
+import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
 
 const bucketName = process.env.GCS_BUCKET!;
 const outputBucket = process.env.GCS_OUTPUT_BUCKET!;
 
 const storage = new Storage();
 const visionClient = new vision.ImageAnnotatorClient();
+
+// Document AI config
+const projectId = process.env.GCLOUD_PROJECT_ID!;
+const location = process.env.DOCUMENT_AI_LOCATION || 'us';
+const processorId = process.env.DOCUMENT_AI_PROCESSOR_ID!; // e.g. "YOUR_PROCESSOR_ID"
+const documentAiClient = new DocumentProcessorServiceClient();
 
 export async function uploadPDFToGCS(filePath: string, fileName: string): Promise<string> {
   await storage.bucket(bucketName).upload(filePath, {
@@ -22,24 +29,24 @@ export async function uploadPDFToGCS(filePath: string, fileName: string): Promis
   return `gs://${bucketName}/${fileName}`;
 }
 
-export async function runVisionOCR(gcsInputUri: string, gcsOutputUri: string) {
+export async function runDocumentAI(gcsInputUri: string): Promise<string> {
+  const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
   const request = {
-    requests: [
-      {
-        inputConfig: {
-          mimeType: "application/pdf",
-          gcsSource: { uri: gcsInputUri },
-        },
-        features: [{ type: 'DOCUMENT_TEXT_DETECTION' as const }],
-        outputConfig: {
-          gcsDestination: { uri: gcsOutputUri },
-          batchSize: 2,
-        },
+    name,
+    rawDocument: undefined,
+    inputDocuments: {
+      gcsPrefix: {
+        gcsUriPrefix: gcsInputUri,
       },
-    ],
+    },
+    documentOutputConfig: undefined,
   };
-  const [operation] = await visionClient.asyncBatchAnnotateFiles(request);
-  await operation.promise(); // Wait for completion
+  const [result] = await documentAiClient.batchProcessDocuments(request);
+  // Wait for operation to complete
+  await result.promise();
+  // Download and parse the output from GCS (similar to readOCRResult)
+  // For simplicity, reuse readOCRResult for now
+  return await readOCRResult(gcsInputUri.replace(bucketName, outputBucket));
 }
 
 export async function readOCRResult(gcsOutputUri: string): Promise<string> {
