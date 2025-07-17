@@ -75,7 +75,8 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
   console.log("Processor ID:", processorId);
   console.log("Project ID:", projectId);
   console.log("Location:", location);
-  console.log("Sending batchProcessDocuments with request:", JSON.stringify(request, null, 2));
+  console.log("🚨 FINAL payload being sent to Document AI:");
+  console.log(JSON.stringify(request, null, 2));
   try {
     const [operation] = await documentAiClient.batchProcessDocuments(request);
     await operation.promise();
