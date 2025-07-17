@@ -24,15 +24,15 @@ const location = process.env.DOCUMENT_AI_LOCATION || 'us';
 const processorId = process.env.DOCUMENT_AI_PROCESSOR_ID!; // e.g. "YOUR_PROCESSOR_ID"
 const documentAiClient = new DocumentProcessorServiceClient();
 
-export async function uploadPDFToGCS(filePath: string, fileName: string): Promise<string> {
-  logger.info("Uploading file to GCS", { filePath, fileName, bucketName });
+export async function uploadPDFToGCS(filePath: string, fileName: string, mimetype: string): Promise<string> {
+  logger.info("Uploading file to GCS", { filePath, fileName, bucketName, mimetype });
   try {
     await storage.bucket(bucketName).upload(filePath, {
       destination: fileName,
-      contentType: "application/pdf",
+      contentType: mimetype,
     });
     const uri = `gs://${bucketName}/${fileName}`;
-    logger.info("File uploaded to GCS", { uri });
+    logger.info("File uploaded to GCS", { uri, mimetype });
     return uri;
   } catch (error: any) {
     logger.error("Failed to upload file to GCS", { error });
@@ -53,6 +53,7 @@ export async function runDocumentAI(gcsInputUri: string): Promise<string> {
     },
     documentOutputConfig: undefined,
   };
+  logger.info("Document AI request constructed", { request });
   try {
     const [result] = await documentAiClient.batchProcessDocuments(request);
     logger.info("Document AI batch process started", { operation: result.name });
@@ -61,7 +62,7 @@ export async function runDocumentAI(gcsInputUri: string): Promise<string> {
     // Download and parse the output from GCS
     return await readOCRResult(gcsInputUri.replace(bucketName, outputBucket));
   } catch (error: any) {
-    logger.error("Document AI extraction failed", { error });
+    logger.error("Document AI extraction failed", { error, request });
     throw new Error("Document AI step failed: " + (error.message || error));
   }
 }
