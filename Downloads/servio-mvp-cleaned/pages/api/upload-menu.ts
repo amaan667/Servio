@@ -1,9 +1,10 @@
 import formidable from "formidable";
-import { uploadPDFToGCS, runVisionOCR, readOCRResult } from "@/lib/menuOcrHelpers";
+import { uploadPDFToGCS, runDocumentAI } from "@/lib/menuOcrHelpers";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 export const config = { api: { bodyParser: false } };
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const form = new formidable.IncomingForm();
@@ -11,14 +12,12 @@ export default async function handler(req, res) {
   form.parse(req, async (err, fields, files) => {
     if (err) return res.status(500).json({ error: "File upload error" });
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
+    if (!file) return res.status(400).json({ error: "No file uploaded" });
     const filePath = file.filepath;
     const fileName = `menus/${Date.now()}-${file.originalFilename}`;
 
     const gcsInputUri = await uploadPDFToGCS(filePath, fileName);
-    const gcsOutputUri = `gs://${process.env.GCS_OUTPUT_BUCKET}/results/${Date.now()}/`;
-
-    await runVisionOCR(gcsInputUri, gcsOutputUri);
-    const ocrText = await readOCRResult(gcsOutputUri);
+    const ocrText = await runDocumentAI(gcsInputUri);
 
     // GPT-4 structuring
     const parsedResponse = await fetch("https://api.openai.com/v1/chat/completions", {

@@ -6,14 +6,12 @@ if (process.env.GCLOUD_SERVICE_KEY) {
 }
 
 import { Storage } from "@google-cloud/storage";
-import { v1 as vision } from "@google-cloud/vision";
 import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
 
 const bucketName = process.env.GCS_BUCKET!;
 const outputBucket = process.env.GCS_OUTPUT_BUCKET!;
 
 const storage = new Storage();
-const visionClient = new vision.ImageAnnotatorClient();
 
 // Document AI config
 const projectId = process.env.GCLOUD_PROJECT_ID!;
@@ -44,8 +42,7 @@ export async function runDocumentAI(gcsInputUri: string): Promise<string> {
   const [result] = await documentAiClient.batchProcessDocuments(request);
   // Wait for operation to complete
   await result.promise();
-  // Download and parse the output from GCS (similar to readOCRResult)
-  // For simplicity, reuse readOCRResult for now
+  // Download and parse the output from GCS
   return await readOCRResult(gcsInputUri.replace(bucketName, outputBucket));
 }
 
