@@ -12,6 +12,7 @@ if (process.env.GCLOUD_SERVICE_KEY) {
 import { Storage } from "@google-cloud/storage";
 import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
 import { logger } from "./logger";
+import { readFile } from "fs/promises";
 
 const bucketName = process.env.GCS_BUCKET!;
 const outputBucket = process.env.GCS_OUTPUT_BUCKET!;
@@ -63,6 +64,31 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
     console.error("Document AI extraction failed", error, request);
     throw new Error("Document AI step failed: " + (error.message || error));
   }
+}
+
+export async function runDocumentAIFromLocalBuffer(filePath: string, mimeType: string = "application/pdf"): Promise<string> {
+  const projectId = process.env.GCLOUD_PROJECT_ID || "alien-scope-440914-a7";
+  const location = process.env.DOCUMENT_AI_LOCATION || "eu";
+  const processorId = process.env.DOCUMENT_AI_PROCESSOR_ID || "60d448e349618384";
+  const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
+
+  const fileBuffer = await readFile(filePath);
+
+  const requestPayload = {
+    name,
+    rawDocument: {
+      content: fileBuffer.toString("base64"),
+      mimeType,
+    },
+  };
+
+  console.log("🚨 FINAL payload being sent to Document AI (rawDocument):");
+  console.log(JSON.stringify({ ...requestPayload, rawDocument: { ...requestPayload.rawDocument, content: '[base64 omitted]' } }, null, 2));
+
+  const [result] = await documentAiClient.processDocument(requestPayload);
+  const extractedText = result?.document?.text || "";
+  console.log("✅ Extracted text:", extractedText.slice(0, 500)); // Preview
+  return extractedText;
 }
 
 export async function readOCRResult(gcsOutputUri: string): Promise<string> {
