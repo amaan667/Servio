@@ -66,41 +66,26 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
   }
 }
 
-export async function runDocumentAIFromLocalBuffer(filePath: string, mimeType: string = "application/pdf"): Promise<string> {
-  const projectId = process.env.GCLOUD_PROJECT_ID || "alien-scope-440914-a7";
-  const location = process.env.DOCUMENT_AI_LOCATION || "eu";
-  const processorId = process.env.DOCUMENT_AI_PROCESSOR_ID || "9c2ad31eb255c72b"; // ✅ REPLACED ID
-  const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
+export async function runDocumentAIFromLocalBuffer(filePath: string): Promise<string> {
+  const name = "projects/alien-scope-440914-a7/locations/eu/processors/9c2ad31eb255c72b";
 
   const fileBuffer = await readFile(filePath);
-
-  // Log file and payload details
-  console.log("📦 File size (bytes):", fileBuffer.length);
-  const base64Content = fileBuffer.toString("base64");
-  console.log("📦 Base64 length:", base64Content.length);
-  console.log("📤 Payload:", JSON.stringify({
-    name,
-    rawDocument: {
-      content: base64Content.slice(0, 50) + "...", // preview only
-      mimeType,
-    }
-  }, null, 2));
+  const base64Content = fileBuffer.toString("base64").trim();
 
   const requestPayload = {
     name,
     rawDocument: {
       content: base64Content,
-      mimeType,
-    },
+      mimeType: 'application/pdf'
+    }
   };
 
-  console.log("🚨 FINAL payload being sent to Document AI (rawDocument):");
-  console.log(JSON.stringify({ ...requestPayload, rawDocument: { ...requestPayload.rawDocument, content: '[base64 omitted]' } }, null, 2));
+  console.log("📤 Payload size:", base64Content.length);
 
   const [result] = await documentAiClient.processDocument(requestPayload);
-  const extractedText = result?.document?.text || "";
-  console.log("✅ Extracted text:", extractedText.slice(0, 500)); // Preview
-  return extractedText;
+  console.log("✅ Output preview:\n", result.document?.text?.slice(0, 500));
+
+  return result.document?.text || "";
 }
 
 export async function readOCRResult(gcsOutputUri: string): Promise<string> {
