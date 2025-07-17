@@ -1,69 +1,45 @@
-// Using standard pdfjs-dist import for serverless compatibility
-import * as pdfjsLib from "pdfjs-dist";
+import formidable from "formidable";
+import { uploadPDFToGCS } from "@/lib/uploadPDFToGCS";
+import { runVisionOCR } from "@/lib/runVisionOCR";
+import { readOCRResult } from "@/lib/readOCRResult";
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+export const config = { api: { bodyParser: false } };
 
-// Helper: Extract text from all pages of a PDF buffer
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  // pdfjs-dist expects Uint8Array
-  const uint8Array = new Uint8Array(buffer);
+export default async function handler(req, res) {
+  const form = new formidable.IncomingForm();
 
-  // Load the PDF
-  const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
-  const pdf = await loadingTask.promise;
+  form.parse(req, async (err, fields, files) => {
+    if (err) return res.status(500).json({ error: "File upload error" });
+    const file = files.file[0];
+    const filePath = file.filepath;
+    const fileName = `menus/${Date.now()}-${file.originalFilename}`;
 
-  let allText = "";
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const pageText = content.items.map((item: any) => item.str).join(" ");
-    allText += pageText + "\n";
-  }
-  return allText.trim();
-}
+    const gcsInputUri = await uploadPDFToGCS(filePath, fileName);
+    const gcsOutputUri = `gs://menu-parser-bucket/results/${Date.now()}/`;
 
-export async function POST(req: Request) {
-  try {
-    if (req.method && req.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
-    }
-    let base64, mimetype, url;
-    try {
-      const body = await req.json();
-      base64 = body.base64;
-      mimetype = body.mimetype;
-      url = body.url;
-    } catch (e) {
-      return new Response(JSON.stringify({ error: "Invalid request body." }), { status: 400 });
-    }
+    await runVisionOCR(gcsInputUri, gcsOutputUri);
+    const ocrText = await readOCRResult(gcsOutputUri);
 
-    let text = "";
-    if (url) {
-      if (!url.endsWith('.pdf')) {
-        return new Response(JSON.stringify({ error: "Only PDF URLs are supported for direct extraction." }), { status: 400 });
-      }
-      const res = await fetch(url);
-      const arrayBuffer = await res.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      text = await extractTextFromPDF(buffer);
-    } else if (base64 && mimetype === 'application/pdf') {
-      const fileBuffer = Buffer.from(base64, "base64");
-      text = await extractTextFromPDF(fileBuffer);
-    } else {
-      return new Response(JSON.stringify({ error: "No PDF file or URL provided." }), { status: 400 });
-    }
+    const parsedResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "user",
+            content: `Extract and return this restaurant menu in JSON format:\n\n${ocrText}`,
+          },
+        ],
+      }),
+    });
 
-    if (!text.trim()) {
-      return new Response(JSON.stringify({ error: "Failed to extract text from PDF. Make sure your PDF is text-based, not a scan or image." }), { status: 500 });
-    }
+    const gptJSON = await parsedResponse.json();
+    const structuredMenu = JSON.parse(gptJSON.choices[0].message.content);
 
-    return new Response(JSON.stringify({ text }), { status: 200 });
-  } catch (err: any) {
-    console.error('API: error', err);
-    return new Response(JSON.stringify({ error: err?.message || "Failed to process menu file." }), { status: 500 });
-  }
+    res.status(200).json({ ocrText });
+  });
 } 
