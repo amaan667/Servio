@@ -1,7 +1,7 @@
 import formidable from "formidable";
 import { uploadPDFToGCS } from "@/lib/uploadPDFToGCS";
 import { runVisionOCR } from "@/lib/runVisionOCR";
-import { readOCRResult } from "@/lib/readOCRResult";
+import { readOCRResult } from "@/lib/menuOcrHelpers";
 
 export const config = { api: { bodyParser: false } };
 
