@@ -1,3 +1,10 @@
+// Write Google service account key to disk for serverless environments
+if (process.env.GCLOUD_SERVICE_KEY) {
+  const key = JSON.parse(process.env.GCLOUD_SERVICE_KEY);
+  require("fs").writeFileSync("/tmp/gcloud-key.json", JSON.stringify(key));
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = "/tmp/gcloud-key.json";
+}
+
 import { Storage } from "@google-cloud/storage";
 import { v1 as vision } from "@google-cloud/vision";
 
@@ -23,7 +30,7 @@ export async function runVisionOCR(gcsInputUri: string, gcsOutputUri: string) {
           mimeType: "application/pdf",
           gcsSource: { uri: gcsInputUri },
         },
-        features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
+        features: [{ type: 'DOCUMENT_TEXT_DETECTION' as const }],
         outputConfig: {
           gcsDestination: { uri: gcsOutputUri },
           batchSize: 2,
