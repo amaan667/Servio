@@ -1,3 +1,4 @@
+// Using standard pdfjs-dist import for serverless compatibility
 import * as pdfjsLib from "pdfjs-dist";
 
 export const config = {
