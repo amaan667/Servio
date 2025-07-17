@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@google-cloud/documentai':
+        specifier: ^9.3.0
+        version: 9.3.0
       '@google-cloud/storage':
         specifier: ^7.16.0
         version: 7.16.0
@@ -397,6 +400,10 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@google-cloud/documentai@9.3.0':
+    resolution: {integrity: sha512-uXGtTpNb2fq3OE5EMPiMhFonC3Q5PCJ98vYKHsD7G4b5SS+Y0qQ9QTI6HQGKesruHepe1jTJq2c6AcbeyyqOGA==}
+    engines: {node: '>=18'}
 
   '@google-cloud/paginator@5.0.2':
     resolution: {integrity: sha512-DJS3s0OVH4zFDB1PzjxAsHqJT6sKVbRwwML0ZBP9PbU7Yebtu/7SWMRzvO2J3nUi9pRNITCfu4LJeooM2w4pjg==}
@@ -3185,6 +3192,12 @@ snapshots:
       react-dom: 19.1.0(react@19.1.0)
 
   '@floating-ui/utils@0.2.10': {}
+
+  '@google-cloud/documentai@9.3.0':
+    dependencies:
+      google-gax: 5.0.1
+    transitivePeerDependencies:
+      - supports-color
 
   '@google-cloud/paginator@5.0.2':
     dependencies:
