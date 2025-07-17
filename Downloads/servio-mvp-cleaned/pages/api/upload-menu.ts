@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const form = new formidable.IncomingForm();
 
-  form.parse(req, async (err, fields, files) => {
+  form.parse(req, async (err: any, fields: formidable.Fields, files: formidable.Files) => {
     if (err) return res.status(500).json({ error: "File upload error" });
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
     if (!file) return res.status(400).json({ error: "No file uploaded" });
