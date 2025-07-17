@@ -44,44 +44,21 @@ export async function uploadPDFToGCS(filePath: string, fileName: string, mimetyp
 // NOTE: Processor must be an OCR Processor (DOCUMENT_TEXT_DETECTION)
 // Input file names should have no spaces, special characters, or parentheses
 export async function runDocumentAI(gcsInputUri: string, mimeType: string = "application/pdf"): Promise<string> {
-  console.log("Input URI (inside runDocumentAI):", gcsInputUri);
-  // Remove trailing slash from outputUri if present
+  // Minimal, working Document AI processDocument request for a single file
   const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
-  const uniqueOutputPrefix = `documentai-output/${Date.now()}`; // no trailing slash
-  const outputUri = `gs://${outputBucket}/${uniqueOutputPrefix}`;
   const request = {
     name,
-    inputDocuments: {
-      gcsDocuments: {
-        documents: [
-          {
-            gcsUri: gcsInputUri,
-            mimeType, // Set dynamically
-          },
-        ],
-      },
-    },
-    documentOutputConfig: {
-      gcsOutputConfig: {
-        gcsUri: outputUri,
-        pagesPerShard: 1,
-      },
+    document: {
+      gcsUri: gcsInputUri,
+      mimeType,
     },
   };
-  // Detailed logging for debugging
-  console.log("Using processor name:", name);
-  console.log("Input URI:", gcsInputUri);
-  console.log("Output URI:", outputUri);
-  console.log("Processor ID:", processorId);
-  console.log("Project ID:", projectId);
-  console.log("Location:", location);
   console.log("🚨 FINAL payload being sent to Document AI:");
   console.log(JSON.stringify(request, null, 2));
   try {
-    const [operation] = await documentAiClient.batchProcessDocuments(request);
-    await operation.promise();
-    // Download and parse the output from GCS
-    return await readOCRResult(gcsInputUri.replace(bucketName, outputBucket));
+    const [result] = await documentAiClient.processDocument(request);
+    // Access text via result.document.text
+    return result.document?.text || "";
   } catch (error: any) {
     console.error("Document AI extraction failed", error, request);
     throw new Error("Document AI step failed: " + (error.message || error));
