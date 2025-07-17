@@ -1,3 +1,4 @@
+// Trivial change: trigger redeploy
 // Write Google service account key to disk for serverless environments
 if (process.env.GCLOUD_SERVICE_KEY) {
   const key = JSON.parse(process.env.GCLOUD_SERVICE_KEY);
