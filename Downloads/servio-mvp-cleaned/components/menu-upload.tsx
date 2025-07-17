@@ -280,33 +280,33 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
       // Check file size and compress if needed
       const fileSizeKB = file.size / 1024;
       let processedFile = file;
-      
-      if (fileSizeKB > 800 && file.type.startsWith('image/')) { // Only compress images
+      if (fileSizeKB > 800 && file.type.startsWith('image/')) {
         setStatusMessage("File is large, compressing for better processing...");
-        processedFile = await compressImage(file, 800); // Compress to under 800KB
+        processedFile = await compressImage(file, 800);
       }
 
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target?.result?.toString().split(",")[1];
-        const res = await fetch("/api/upload-menu-file", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ base64, mimetype: processedFile.type }),
-        });
-        const result = await res.json();
-        if (!res.ok || result.error) {
-          setUploadStatus("error");
-          setStatusMessage(result.error || "Failed to process file.");
-          setIsLoading(false);
-          return;
-        }
-        setExtractedItems(result.items);
-        setUploadStatus("success");
-        setStatusMessage(`Successfully extracted ${result.items.length} menu items!`);
+      // Prepare FormData for upload
+      const formData = new FormData();
+      formData.append("menu", processedFile);
+      formData.append("venueId", venueId);
+
+      const res = await fetch("/api/upload-menu", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await res.json();
+      if (!res.ok || result.error) {
+        setUploadStatus("error");
+        setStatusMessage(result.error || "Failed to process file.");
         setIsLoading(false);
-      };
-      reader.readAsDataURL(processedFile);
+        return;
+      }
+      setExtractedItems(result.items || []);
+      setUploadStatus("success");
+      setStatusMessage(`Successfully extracted ${result.items?.length || 0} menu items!`);
+      setIsLoading(false);
+      // Optionally trigger a menu refresh in parent
+      if (onMenuUpdate) onMenuUpdate(result.items || []);
     } catch (error) {
       setUploadStatus("error");
       setStatusMessage("Failed to process file. Please try a smaller file or different format.");
