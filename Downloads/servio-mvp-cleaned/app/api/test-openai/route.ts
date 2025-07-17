@@ -1,4 +1,7 @@
 import OpenAI from 'openai';
+import { createServerClient } from '@supabase/auth-helpers-nextjs';
+
+const supabase = createServerClient({ req, res });
 
 export async function GET() {
   try {
