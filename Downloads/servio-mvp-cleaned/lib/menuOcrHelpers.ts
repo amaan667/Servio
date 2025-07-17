@@ -44,6 +44,8 @@ export async function uploadPDFToGCS(filePath: string, fileName: string, mimetyp
 export async function runDocumentAI(gcsInputUri: string, mimeType: string = "application/pdf"): Promise<string> {
   logger.info("Starting Document AI batch process", { gcsInputUri, processorId, projectId, location });
   const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
+  // Use a unique output subfolder for every request to avoid INVALID_ARGUMENT errors
+  const uniqueOutputPrefix = `documentai-output/${Date.now()}/`;
   const request = {
     name,
     inputDocuments: {
@@ -58,7 +60,7 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
     },
     documentOutputConfig: {
       gcsOutputConfig: {
-        gcsUri: `gs://${outputBucket}/documentai-output/`,
+        gcsUri: `gs://${outputBucket}/${uniqueOutputPrefix}`,
       },
     },
   };
