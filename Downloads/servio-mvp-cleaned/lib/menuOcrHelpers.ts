@@ -67,7 +67,8 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
 }
 
 export async function runDocumentAIFromLocalBuffer(filePath: string): Promise<string> {
-  const name = "projects/alien-scope-440914-a7/locations/eu/processors/9c2ad31eb255c72b";
+  // Use Google's public prebuilt Document OCR processor for testing
+  const name = "projects/alien-scope-440914-a7/locations/us/processors/ocr-v1";
 
   const fileBuffer = await readFile(filePath);
   const base64Content = fileBuffer.toString("base64").trim();
