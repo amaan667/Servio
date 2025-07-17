@@ -4,6 +4,9 @@ if (process.env.GCLOUD_SERVICE_KEY) {
   const key = JSON.parse(process.env.GCLOUD_SERVICE_KEY);
   require("fs").writeFileSync("/tmp/gcloud-key.json", JSON.stringify(key));
   process.env.GOOGLE_APPLICATION_CREDENTIALS = "/tmp/gcloud-key.json";
+  // Add logging for debugging
+  console.log("Service account key written to /tmp/gcloud-key.json");
+  console.log("GOOGLE_APPLICATION_CREDENTIALS set to:", process.env.GOOGLE_APPLICATION_CREDENTIALS);
 }
 
 import { Storage } from "@google-cloud/storage";
