@@ -64,6 +64,7 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
     documentOutputConfig: {
       gcsOutputConfig: {
         gcsUri: outputUri,
+        pagesPerShard: 1,
       },
     },
   };
