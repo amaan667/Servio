@@ -69,7 +69,7 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
 export async function runDocumentAIFromLocalBuffer(filePath: string, mimeType: string = "application/pdf"): Promise<string> {
   const projectId = process.env.GCLOUD_PROJECT_ID || "alien-scope-440914-a7";
   const location = process.env.DOCUMENT_AI_LOCATION || "eu";
-  const processorId = process.env.DOCUMENT_AI_PROCESSOR_ID || "60d448e349618384";
+  const processorId = process.env.DOCUMENT_AI_PROCESSOR_ID || "9c2ad31eb255c72b"; // ✅ REPLACED ID
   const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
 
   const fileBuffer = await readFile(filePath);
