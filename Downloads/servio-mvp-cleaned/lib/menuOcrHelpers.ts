@@ -74,10 +74,22 @@ export async function runDocumentAIFromLocalBuffer(filePath: string, mimeType: s
 
   const fileBuffer = await readFile(filePath);
 
+  // Log file and payload details
+  console.log("📦 File size (bytes):", fileBuffer.length);
+  const base64Content = fileBuffer.toString("base64");
+  console.log("📦 Base64 length:", base64Content.length);
+  console.log("📤 Payload:", JSON.stringify({
+    name,
+    rawDocument: {
+      content: base64Content.slice(0, 50) + "...", // preview only
+      mimeType,
+    }
+  }, null, 2));
+
   const requestPayload = {
     name,
     rawDocument: {
-      content: fileBuffer.toString("base64"),
+      content: base64Content,
       mimeType,
     },
   };
