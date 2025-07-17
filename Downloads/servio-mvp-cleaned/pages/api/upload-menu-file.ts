@@ -50,6 +50,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Clean up temp file
     await unlink(tempFilePath);
 
+    // Prepare prompt for GPT
+    const prompt = `Extract and return this restaurant menu as a JSON array. Each item should have: name, description, price, and category. Return ONLY the JSON array, no commentary or markdown.\n\n${ocrText}`;
+
+    // Log the prompt sent to GPT (truncate for privacy/log size)
+    console.log('GPT prompt (truncated):', prompt.slice(0, 500));
+
     // Send to OpenAI for structuring
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -62,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         messages: [
           {
             role: 'user',
-            content: `Extract and return this restaurant menu in JSON array format. Each item should have: name, description, price, and category.\n\n${ocrText}`,
+            content: prompt,
           },
         ],
         temperature: 0.2,
@@ -73,16 +79,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let gptRaw = '';
     try {
       gptRaw = gptJSON.choices?.[0]?.message?.content || '';
-      items = JSON.parse(gptRaw);
+      // Log the raw GPT response (truncate for log size)
+      console.log('GPT raw response (truncated):', gptRaw.slice(0, 500));
+      // Remove markdown/code fences
+      const clean = gptRaw.replace(/```json|```/g, '').trim();
+      // Extract JSON array/object
+      const match = clean.match(/\[[\s\S]*\]/) || clean.match(/\{[\s\S]*\}/);
+      if (match) items = JSON.parse(match[0]);
+      else items = JSON.parse(clean);
     } catch (e) {
-      // fallback: try to extract JSON from the string
-      try {
-        // Extract JSON array from the string (across newlines)
-        const match = gptRaw.match(/\[[\s\S]*\]/);
-        if (match) items = JSON.parse(match[0]);
-      } catch (e2) {
-        items = null;
-      }
+      console.error('Failed to parse GPT response:', gptRaw, e);
+      items = null;
     }
 
     if (!items) {
