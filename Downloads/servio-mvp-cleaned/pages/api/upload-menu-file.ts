@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Use Document AI for extraction
     let ocrText = '';
     try {
-      ocrText = await runDocumentAI(gcsInputUri, mimetype || "application/pdf");
+      ocrText = await runDocumentAI(gcsInputUri, mimetype);
       console.log('Extracted OCR text length:', ocrText.length);
       console.log('Extracted OCR text (truncated):', ocrText.slice(0, 500));
     } catch (ocrErr) {

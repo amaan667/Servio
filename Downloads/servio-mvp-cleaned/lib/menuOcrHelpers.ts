@@ -41,11 +41,13 @@ export async function uploadPDFToGCS(filePath: string, fileName: string, mimetyp
   }
 }
 
+// NOTE: Processor must be an OCR Processor (DOCUMENT_TEXT_DETECTION)
+// Input file names should have no spaces, special characters, or parentheses
 export async function runDocumentAI(gcsInputUri: string, mimeType: string = "application/pdf"): Promise<string> {
   console.log("Input URI (inside runDocumentAI):", gcsInputUri);
-  // Minimal, working Document AI batchProcessDocuments request
+  // Remove trailing slash from outputUri if present
   const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
-  const uniqueOutputPrefix = `documentai-output/${Date.now()}/`;
+  const uniqueOutputPrefix = `documentai-output/${Date.now()}`; // no trailing slash
   const outputUri = `gs://${outputBucket}/${uniqueOutputPrefix}`;
   const request = {
     name,
@@ -54,7 +56,7 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
         documents: [
           {
             gcsUri: gcsInputUri,
-            mimeType: "application/pdf",
+            mimeType, // Set dynamically
           },
         ],
       },
