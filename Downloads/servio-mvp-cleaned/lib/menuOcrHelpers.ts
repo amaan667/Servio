@@ -42,10 +42,10 @@ export async function uploadPDFToGCS(filePath: string, fileName: string, mimetyp
 }
 
 export async function runDocumentAI(gcsInputUri: string, mimeType: string = "application/pdf"): Promise<string> {
-  logger.info("Starting Document AI batch process", { gcsInputUri, processorId, projectId, location });
+  // Minimal, working Document AI batchProcessDocuments request
   const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
-  // Use a unique output subfolder for every request to avoid INVALID_ARGUMENT errors
   const uniqueOutputPrefix = `documentai-output/${Date.now()}/`;
+  const outputUri = `gs://${outputBucket}/${uniqueOutputPrefix}`;
   const request = {
     name,
     inputDocuments: {
@@ -53,28 +53,32 @@ export async function runDocumentAI(gcsInputUri: string, mimeType: string = "app
         documents: [
           {
             gcsUri: gcsInputUri,
-            mimeType,
+            mimeType: "application/pdf",
           },
         ],
       },
     },
     documentOutputConfig: {
       gcsOutputConfig: {
-        gcsUri: `gs://${outputBucket}/${uniqueOutputPrefix}`,
+        gcsUri: outputUri,
       },
     },
   };
-  logger.info("Document AI request constructed", { request });
-  console.log("Document AI request constructed", JSON.stringify(request, null, 2)); // Always log request
+  // Detailed logging for debugging
+  console.log("Using processor name:", name);
+  console.log("Input URI:", gcsInputUri);
+  console.log("Output URI:", outputUri);
+  console.log("Processor ID:", processorId);
+  console.log("Project ID:", projectId);
+  console.log("Location:", location);
+  console.log("Sending batchProcessDocuments with request:", JSON.stringify(request, null, 2));
   try {
-    const [result] = await documentAiClient.batchProcessDocuments(request);
-    logger.info("Document AI batch process started", { operation: result.name });
-    await result.promise();
-    logger.info("Document AI batch process completed", { operation: result.name });
+    const [operation] = await documentAiClient.batchProcessDocuments(request);
+    await operation.promise();
     // Download and parse the output from GCS
     return await readOCRResult(gcsInputUri.replace(bucketName, outputBucket));
   } catch (error: any) {
-    logger.error("Document AI extraction failed", { error, request });
+    console.error("Document AI extraction failed", error, request);
     throw new Error("Document AI step failed: " + (error.message || error));
   }
 }
