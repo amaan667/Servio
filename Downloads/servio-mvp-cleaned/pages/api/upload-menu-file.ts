@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import { runDocumentAI, uploadPDFToGCS } from '@/lib/menuOcrHelpers';
+import { runDocumentAIFromLocalBuffer } from '@/lib/menuOcrHelpers';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -34,15 +34,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const tempFilePath = path.join('/tmp', `${Date.now()}-${filename}`);
     await writeFile(tempFilePath, buffer);
 
-    // Upload to GCS
-    const fileName = `menus/${Date.now()}-${filename}`;
-    const gcsInputUri = await uploadPDFToGCS(tempFilePath, fileName, mimetype);
-    console.log("Calling runDocumentAI with input URI:", gcsInputUri);
-
-    // Use Document AI for extraction
+    // Use Document AI for extraction (rawDocument)
     let ocrText = '';
     try {
-      ocrText = await runDocumentAI(gcsInputUri, mimetype);
+      ocrText = await runDocumentAIFromLocalBuffer(tempFilePath, mimetype);
       console.log('Extracted OCR text length:', ocrText.length);
       console.log('Extracted OCR text (truncated):', ocrText.slice(0, 500));
     } catch (ocrErr) {
