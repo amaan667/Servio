@@ -40,17 +40,13 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   const venueUuid = session.venue.id
 
   const fetchMenu = useCallback(async () => {
-    logger.info("MENU_MANAGEMENT", "Fetching menu items", {
-      venueUuid,
-      hasSupabase: !!supabase,
-      hasConfig: hasSupabaseConfig,
-    })
+    logger.info("Fetching menu items", { venueUuid })
 
     setLoading(true)
     setError(null)
 
     if (!hasSupabaseConfig || !supabase) {
-      logger.error("MENU_MANAGEMENT", "Supabase not configured")
+      logger.error("Supabase not configured")
       setError("Service is not configured.")
       setLoading(false)
       return
@@ -65,21 +61,21 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         .order("name", { ascending: true })
 
       if (error) {
-        logger.error("MENU_MANAGEMENT", "Failed to fetch menu from Supabase", {
+        logger.error("Failed to fetch menu from Supabase", {
           error: error.message,
           code: error.code,
           venueUuid,
         })
         setError("Failed to load menu items.")
       } else {
-        logger.info("MENU_MANAGEMENT", "Menu fetched successfully", {
+        logger.info("Menu fetched successfully", {
           itemCount: data?.length || 0,
           categories: [...new Set(data?.map((item) => item.category) || [])],
         })
         setMenuItems(data || [])
       }
     } catch (error: any) {
-      logger.error("MENU_MANAGEMENT", "Unexpected error fetching menu", error)
+      logger.error("Unexpected error fetching menu", { error })
       setError("An unexpected error occurred.")
     } finally {
       setLoading(false)
@@ -91,25 +87,27 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
 
     if (!supabase) return
 
-    logger.debug("MENU_MANAGEMENT", "Setting up real-time subscription")
+    logger.debug("Setting up real-time subscription")
     const channel = supabase
       .channel(`menu-management-${venueUuid}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "menu_items", filter: `venue_id=eq.${venueUuid}` },
         (payload) => {
-          logger.info("MENU_MANAGEMENT", "Real-time change detected, refetching menu", payload)
+          logger.info("Real-time change detected, refetching menu", { payload })
           fetchMenu()
         },
       )
       .subscribe((status) => {
-        logger.debug("MENU_MANAGEMENT", "Real-time subscription status", { status })
+        logger.debug("Real-time subscription status", { status })
       })
 
     return () => {
-      logger.debug("MENU_MANAGEMENT", "Cleaning up real-time subscription")
-      supabase.removeChannel(channel)
-    }
+      logger.debug("Cleaning up real-time subscription");
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [fetchMenu, venueUuid])
 
   // Enhanced file upload handler for both input and drag-and-drop
@@ -218,7 +216,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   }
 
   const handleAddItem = async () => {
-    logger.info("MENU_MANAGEMENT", "Starting add item process", {
+    logger.info("Starting add item process", {
       name: newItem.name.trim(),
       category: newItem.category.trim(),
       price: newItem.price,
@@ -247,18 +245,18 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       })
       const result = await res.json()
       if (!res.ok || result.error) {
-        logger.error("MENU_MANAGEMENT", "Failed to add item to Supabase", {
+        logger.error("Failed to add item to Supabase", {
           error: result.error,
           venueUuid,
           userId: session.user.id,
         })
         setError(result.error || "Failed to add item.")
       } else {
-        logger.info("MENU_MANAGEMENT", "Item added successfully")
+        logger.info("Item added successfully")
         setNewItem({ name: "", description: "", price: 0, category: "", available: true })
       }
     } catch (error: any) {
-      logger.error("MENU_MANAGEMENT", "Unexpected error adding item", error)
+      logger.error("Unexpected error adding item", { error })
       setError("An unexpected error occurred.")
     } finally {
       setSaving(null)
@@ -266,7 +264,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   }
 
   const handleUpdateItem = async (itemId: string, updates: Partial<MenuItem>) => {
-    logger.info("MENU_MANAGEMENT", "Updating item", { itemId, updates })
+    logger.info("Updating item", { itemId, updates })
 
     if (!supabase) return
 
@@ -276,17 +274,17 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       const { error } = await supabase.from("menu_items").update(updates).eq("id", itemId)
 
       if (error) {
-        logger.error("MENU_MANAGEMENT", "Failed to update item", {
+        logger.error("Failed to update item", {
           itemId,
           error: error.message,
           code: error.code,
         })
         setError(`Failed to update item: ${error.message}`)
       } else {
-        logger.info("MENU_MANAGEMENT", "Item updated successfully", { itemId })
+        logger.info("Item updated successfully", { itemId })
       }
     } catch (error: any) {
-      logger.error("MENU_MANAGEMENT", "Unexpected error updating item", error)
+      logger.error("Unexpected error updating item", { error })
       setError("An unexpected error occurred.")
     } finally {
       setSaving(null)
@@ -294,7 +292,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   }
 
   const handleDeleteItem = async (itemId: string) => {
-    logger.info("MENU_MANAGEMENT", "Deleting item", { itemId })
+    logger.info("Deleting item", { itemId })
 
     if (!supabase) return
 
@@ -304,17 +302,17 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       const { error } = await supabase.from("menu_items").delete().eq("id", itemId)
 
       if (error) {
-        logger.error("MENU_MANAGEMENT", "Failed to delete item", {
+        logger.error("Failed to delete item", {
           itemId,
           error: error.message,
           code: error.code,
         })
         setError(`Failed to delete item: ${error.message}`)
       } else {
-        logger.info("MENU_MANAGEMENT", "Item deleted successfully", { itemId })
+        logger.info("Item deleted successfully", { itemId })
       }
     } catch (error: any) {
-      logger.error("MENU_MANAGEMENT", "Unexpected error deleting item", error)
+      logger.error("Unexpected error deleting item", { error })
       setError("An unexpected error occurred.")
     } finally {
       setSaving(null)
