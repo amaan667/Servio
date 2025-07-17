@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,6 +34,8 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     category: "",
     available: true,
   })
+  const dropRef = useRef<HTMLDivElement>(null);
+  const [dragActive, setDragActive] = useState<boolean>(false);
 
   const venueUuid = session.venue.id
 
@@ -110,53 +112,66 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     }
   }, [fetchMenu, venueUuid])
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setUploading(true)
-    setError(null)
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target?.result?.toString().split(",")[1];
-        const res = await fetch("/api/upload-menu-file", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ base64, mimetype: file.type }),
-        });
-        const result = await res.json();
-        if (!res.ok || result.error) {
-          setError(result.error || "Failed to process menu file.");
-          setUploading(false);
-          return;
-        }
-        // Insert extracted items into the menu
-        const itemsToInsert = (result.items || []).map((item: any) => ({
-          ...item,
-          venue_id: venueUuid,
-          available: true,
-        }));
-        const saveRes = await fetch("/api/extract-menu", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: itemsToInsert, venue_id: venueUuid }),
-        });
-        const saveResult = await saveRes.json();
-        if (!saveRes.ok || saveResult.error) {
-          setError(saveResult.error || "Failed to save extracted menu.");
-        } else {
-          setError(null);
-        }
+  // Enhanced file upload handler for both input and drag-and-drop
+  const handleFile = (file: File) => {
+    setUploading(true);
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target?.result?.toString().split(",")[1];
+      const res = await fetch("/api/upload-menu-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base64, mimetype: file.type, filename: file.name }),
+      });
+      const result = await res.json();
+      if (!res.ok || result.error) {
+        setError(result.error || "Failed to process menu file.");
         setUploading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (error: any) {
-      setError("Failed to process menu file. Please try again.");
+        return;
+      }
+      // Insert extracted items into the menu
+      const itemsToInsert = (result.items || []).map((item: any) => ({
+        ...item,
+        venue_id: venueUuid,
+        available: true,
+      }));
+      const saveRes = await fetch("/api/extract-menu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: itemsToInsert, venue_id: venueUuid }),
+      });
+      const saveResult = await saveRes.json();
+      if (!saveRes.ok || saveResult.error) {
+        setError(saveResult.error || "Failed to save extracted menu.");
+      } else {
+        setError(null);
+      }
       setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  // Drag-and-drop handlers
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    else if (e.type === "dragleave") setDragActive(false);
+  };
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
     }
-  }
+  };
 
   const handleUrlExtraction = async () => {
     if (!menuUrl.trim()) {
@@ -424,7 +439,15 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
               <CardDescription>Upload a photo or PDF of your menu and we'll extract the items automatically.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <div
+                ref={dropRef}
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive ? 'border-servio-purple bg-purple-50' : 'border-gray-300'}`}
+                style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}
+              >
                 <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <div className="space-y-2">
                   <Label htmlFor="menu-file" className="cursor-pointer">
@@ -443,6 +466,11 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                   />
                   <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
                 </div>
+                {dragActive && (
+                  <div className="absolute inset-0 bg-servio-purple/10 border-4 border-servio-purple rounded-lg pointer-events-none flex items-center justify-center">
+                    <span className="text-servio-purple font-semibold text-lg">Drop your file here</span>
+                  </div>
+                )}
               </div>
               {uploading && (
                 <div className="text-center">
