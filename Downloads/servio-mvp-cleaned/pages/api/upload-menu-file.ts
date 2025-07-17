@@ -9,7 +9,13 @@ const unlink = promisify(fs.unlink);
 
 const outputBucket = process.env.GCS_OUTPUT_BUCKET!;
 
-export const config = { api: { bodyParser: true } };
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '20mb',
+    },
+  },
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
