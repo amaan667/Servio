@@ -133,22 +133,41 @@ export async function signUpUser(email: string, password: string, fullName: stri
     // Create default venue for the user (as authenticated user)
     const userId = data.user.id
     const venueId = `venue-${userId.slice(0, 8)}`
-    const { data: venueData, error: venueError } = await supabase
+    let { data: venueData, error: venueError } = await supabase
       .from("venues")
-      .insert({
-        venue_id: venueId,
-        name: venueName,
-        business_type: venueType,
-        owner_id: userId,
-      })
-      .select()
-      .single()
-
+      .select("*")
+      .eq("owner_id", userId)
+      .single();
     if (venueError || !venueData) {
-      logger.error("AUTH", { message: "Failed to create venue", error: venueError })
-      return { success: false, message: "Failed to set up your business" }
+      const { data: newVenue, error: createVenueError } = await supabase
+        .from("venues")
+        .insert({
+          venue_id: venueId,
+          name: venueName,
+          business_type: venueType,
+          owner_id: userId,
+        })
+        .select()
+        .single();
+      if (createVenueError && createVenueError.code === '23505') { // Unique violation
+        // Venue already exists, fetch it
+        const { data: existingVenue, error: fetchError } = await supabase
+          .from("venues")
+          .select("*")
+          .eq("owner_id", userId)
+          .single();
+        if (fetchError || !existingVenue) {
+          logger.error("AUTH", { message: "Failed to fetch existing venue after unique violation", error: fetchError })
+          return { success: false, message: "Failed to fetch existing venue for this user" }
+        }
+        venueData = existingVenue;
+      } else if (createVenueError || !newVenue) {
+        logger.error("AUTH", { message: "Failed to create venue", error: createVenueError })
+        return { success: false, message: "Failed to set up your business" }
+      } else {
+        venueData = newVenue;
+      }
     }
-
     // Set session (for client-side convenience)
     const session: AuthSession = {
       user: {
@@ -201,11 +220,24 @@ export async function signInUser(email: string, password: string) {
         })
         .select()
         .single();
-      if (createVenueError || !newVenue) {
+      if (createVenueError && createVenueError.code === '23505') { // Unique violation
+        // Venue already exists, fetch it
+        const { data: existingVenue, error: fetchError } = await supabase
+          .from("venues")
+          .select("*")
+          .eq("owner_id", userId)
+          .single();
+        if (fetchError || !existingVenue) {
+          logger.error("AUTH", { message: "Failed to fetch existing venue after unique violation", error: fetchError })
+          return { success: false, message: "Failed to fetch existing venue for this user" }
+        }
+        venueData = existingVenue;
+      } else if (createVenueError || !newVenue) {
         logger.error("AUTH", { message: "Failed to create venue on sign-in", error: createVenueError })
         return { success: false, message: "Failed to create venue for this user" }
+      } else {
+        venueData = newVenue;
       }
-      venueData = newVenue;
     }
     // Set session (for client-side convenience)
     const session: AuthSession = {
@@ -218,7 +250,6 @@ export async function signInUser(email: string, password: string) {
       venue: venueData,
     }
     setSession(session)
-    logger.info("AUTH", { message: "Sign in successful", userId, venueId: venueData.venue_id })
     return { success: true, session }
   } catch (error) {
     logger.error("AUTH", { message: "Sign in error", error })
