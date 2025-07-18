@@ -10,9 +10,7 @@ const nextConfig = {
     unoptimized: true,
   },
   output: 'standalone',
-  experimental: {
-    serverComponentsExternalPackages: ['tesseract.js', 'pdf-poppler']
-  }
+  serverExternalPackages: ['tesseract.js', 'pdf-poppler']
 }
 
 export default nextConfig
