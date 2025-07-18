@@ -15,6 +15,7 @@ export const config = {
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 export default function handler(req, res) {
+  console.log("🔥 OCR handler loaded: build 2025-07-18@14:02 - DEPLOYMENT CONFIRMED");
   upload.single('menu')(req, res, async (err) => {
     if (err) return res.status(500).json({ error: 'Upload failed' });
 
