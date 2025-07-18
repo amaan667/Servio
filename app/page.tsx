@@ -7,6 +7,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import GlobalNav from "@/components/global-nav"
 import {
   QrCode,
   Smartphone,
@@ -144,6 +145,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <GlobalNav />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 text-white overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
