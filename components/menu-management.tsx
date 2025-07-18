@@ -106,7 +106,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       logger.debug("Cleaning up real-time subscription");
       if (supabase) {
         supabase.removeChannel(channel);
-      }
+    }
     };
   }, [fetchMenu, venueUuid])
 
@@ -132,8 +132,8 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       }
       // Insert extracted items into the menu
       const itemsToInsert = (result.items || []).map((item: any) => ({
-        ...item,
-        venue_id: venueUuid,
+          ...item,
+          venue_id: venueUuid,
         available: true,
       }));
       return fetch("/api/extract-menu", {
@@ -146,7 +146,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     .then(saveResult => {
       if (saveResult.error) {
         setError(saveResult.error || "Failed to save extracted menu.");
-      } else {
+        } else {
         setError(null);
       }
       setUploading(false);

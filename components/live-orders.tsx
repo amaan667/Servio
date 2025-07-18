@@ -6,8 +6,28 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { RefreshCw, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
-import { supabase, hasSupabaseConfig, type OrderWithItems, type AuthSession } from "@/lib/supabase"
+import { supabase, hasSupabaseConfig, type AuthSession } from "@/lib/supabase"
 import { logger } from "@/lib/logger"
+
+// Add OrderWithItems type locally since it's not exported from supabase
+interface OrderWithItems {
+  id: string;
+  order_number: number;
+  venue_id: string;
+  table_number: number;
+  customer_name: string;
+  customer_phone?: string;
+  status: string;
+  total_amount: number;
+  notes?: string;
+  created_at: string;
+  order_items: Array<{
+    id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+  }>;
+}
 
 interface LiveOrdersProps {
   venueId: string // This is the text-based slug
@@ -23,7 +43,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const venueUuid = session.venue.id
 
   const fetchOrders = useCallback(async () => {
-    logger.info("LIVE_ORDERS", "Fetching orders", {
+    logger.info("LIVE_ORDERS: Fetching orders", {
       venueUuid,
       hasSupabase: !!supabase,
       hasConfig: hasSupabaseConfig,
@@ -33,7 +53,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     setError(null)
 
     if (!hasSupabaseConfig || !supabase) {
-      logger.error("LIVE_ORDERS", "Supabase not configured")
+      logger.error("LIVE_ORDERS: Supabase not configured")
       setError("Service is not configured.")
       setLoading(false)
       return
@@ -55,21 +75,21 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .order("created_at", { ascending: false })
 
       if (ordersError) {
-        logger.error("LIVE_ORDERS", "Failed to fetch orders from Supabase", {
+        logger.error("LIVE_ORDERS: Failed to fetch orders from Supabase", {
           error: ordersError.message,
           code: ordersError.code,
           venueUuid,
         })
         setError("Failed to load orders.")
       } else {
-        logger.info("LIVE_ORDERS", "Orders fetched successfully", {
+        logger.info("LIVE_ORDERS: Orders fetched successfully", {
           orderCount: ordersData?.length || 0,
           statuses: ordersData?.map((order) => order.status) || [],
         })
-        setOrders(ordersData || [])
+        setOrders((ordersData || []) as OrderWithItems[])
       }
     } catch (error: any) {
-      logger.error("LIVE_ORDERS", "Unexpected error fetching orders", error)
+      logger.error("LIVE_ORDERS: Unexpected error fetching orders", error)
       setError("An unexpected error occurred.")
     } finally {
       setLoading(false)
@@ -81,33 +101,33 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
     if (!supabase) return
 
-    logger.debug("LIVE_ORDERS", "Setting up real-time subscription")
+    logger.debug("LIVE_ORDERS: Setting up real-time subscription")
     const channel = supabase
       .channel(`live-orders-${venueUuid}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orders", filter: `venue_id=eq.${venueUuid}` },
-        (payload) => {
-          logger.info("LIVE_ORDERS", "Real-time change detected, refetching orders", payload)
+        (payload: any) => {
+          logger.info("LIVE_ORDERS: Real-time change detected, refetching orders", payload)
           fetchOrders()
         },
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, (payload) => {
-        logger.info("LIVE_ORDERS", "Order items change detected, refetching orders", payload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, (payload: any) => {
+        logger.info("LIVE_ORDERS: Order items change detected, refetching orders", payload)
         fetchOrders()
       })
-      .subscribe((status) => {
-        logger.debug("LIVE_ORDERS", "Real-time subscription status", { status })
+      .subscribe((status: any) => {
+        logger.debug("LIVE_ORDERS: Real-time subscription status", { status })
       })
 
     return () => {
-      logger.debug("LIVE_ORDERS", "Cleaning up real-time subscription")
+      logger.debug("LIVE_ORDERS: Cleaning up real-time subscription")
       supabase.removeChannel(channel)
     }
   }, [fetchOrders, venueUuid])
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    logger.info("LIVE_ORDERS", "Updating order status", { orderId, newStatus })
+    logger.info("LIVE_ORDERS: Updating order status", { orderId, newStatus })
 
     if (!supabase) return
 
@@ -117,7 +137,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId)
 
       if (error) {
-        logger.error("LIVE_ORDERS", "Failed to update order status", {
+        logger.error("LIVE_ORDERS: Failed to update order status", {
           orderId,
           newStatus,
           error: error.message,
@@ -125,11 +145,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         })
         setError(`Failed to update order: ${error.message}`)
       } else {
-        logger.info("LIVE_ORDERS", "Order status updated successfully", { orderId, newStatus })
+        logger.info("LIVE_ORDERS: Order status updated successfully", { orderId, newStatus })
         // Real-time subscription will handle the UI update
       }
     } catch (error: any) {
-      logger.error("LIVE_ORDERS", "Unexpected error updating order status", error)
+      logger.error("LIVE_ORDERS: Unexpected error updating order status", error)
       setError("An unexpected error occurred.")
     } finally {
       setUpdating(null)
@@ -210,7 +230,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             </div>
           ) : (
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              {orders.map((order) => (
+              {orders.map((order: OrderWithItems) => (
                 <div key={order.id} className="border p-4 rounded-lg hover:bg-gray-50">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">

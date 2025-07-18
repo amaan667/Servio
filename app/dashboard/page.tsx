@@ -161,12 +161,12 @@ export default function Dashboard() {
             <div className="pl-2">
               <h1 className="text-2xl font-bold text-gray-900">
                 {session.venue.name}{session.venue.name.endsWith('s') ? "'" : "'s"} Dashboard
-              </h1>
+                </h1>
             </div>
             <div className="mt-4 md:mt-0">
-              <Button variant="outline" onClick={handleSignOut}>
-                Sign Out
-              </Button>
+            <Button variant="outline" onClick={handleSignOut}>
+              Sign Out
+            </Button>
             </div>
           </div>
         </div>
@@ -328,7 +328,7 @@ export default function Dashboard() {
       <Button variant="destructive" onClick={handleDeleteAccount}>
         Delete Account
       </Button>
-    </div>
+      </div>
     </div>
   )
 }

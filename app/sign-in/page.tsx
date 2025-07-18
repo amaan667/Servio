@@ -25,7 +25,7 @@ export default function SignInPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    logger.info("SIGNIN_PAGE", { message: "Form submission started", email: formData.email })
+    logger.info("SIGNIN_PAGE: Form submission started", { email: formData.email })
 
     setError(null)
 
@@ -45,14 +45,14 @@ export default function SignInPage() {
       const result = await signInUser(formData.email.trim(), formData.password)
 
       if (result.success) {
-        logger.info("SIGNIN_PAGE", { message: "Sign-in successful, redirecting to dashboard" })
+        logger.info("SIGNIN_PAGE: Sign-in successful, redirecting to dashboard")
         router.push("/dashboard")
       } else {
-        logger.error("SIGNIN_PAGE", { message: "Sign-in failed", error: result.message })
+        logger.error("SIGNIN_PAGE: Sign-in failed", { error: result.message })
         setError(result.message || "Unknown error")
       }
     } catch (error: any) {
-      logger.error("SIGNIN_PAGE", { message: "Unexpected error during sign-in", error })
+      logger.error("SIGNIN_PAGE: Unexpected error during sign-in", { error })
       setError("An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)

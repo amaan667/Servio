@@ -191,9 +191,9 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
         resolve((result.items || []).map((item: any) => ({
           ...item,
           id: `extracted-${Date.now()}-${Math.random()}`,
-          venue_id: venueId,
-          available: true,
-          created_at: new Date().toISOString(),
+        venue_id: venueId,
+        available: true,
+        created_at: new Date().toISOString(),
         })));
       })
       .catch(error => {
