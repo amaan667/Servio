@@ -52,11 +52,11 @@ export default function CustomerOrderPage() {
   const loadMenuItems = async () => {
     const supabase = createClient()
     const { data, error } = await supabase
-      .from("menu_items")
-      .select("*")
+        .from("menu_items")
+        .select("*")
       .eq("available", true)
-      .eq("venue_id", venueId)
-      .order("category", { ascending: true })
+        .eq("venue_id", venueId)
+        .order("category", { ascending: true })
 
     if (data && !error) {
       setMenuItems(data)
@@ -124,7 +124,7 @@ export default function CustomerOrderPage() {
             id: item.id,
             name: item.name,
             price: item.price,
-            quantity: item.quantity,
+        quantity: item.quantity,
             special_instructions: item.special_instructions,
           })),
         })
@@ -133,8 +133,8 @@ export default function CustomerOrderPage() {
 
       if (orderError) throw orderError
 
-      setOrderSubmitted(true)
-      setCart([])
+        setOrderSubmitted(true)
+        setCart([])
       setCustomerInfo({ name: "", phone: "", table_number: "" })
     } catch (error) {
       console.error("Error submitting order:", error)
@@ -178,11 +178,11 @@ export default function CustomerOrderPage() {
               <Image src="/assets/servio-logo-updated.png" alt="Servio Logo" width={0} height={48} style={{ height: 48, width: "auto" }} priority />
               <h1 className="text-2xl font-bold text-gray-900">Order Menu</h1>
             </div>
-            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
               <ShoppingCart className="w-5 h-5" />
               <span className="font-medium">{getTotalItems()} items</span>
               <span className="text-green-600 font-bold">${getTotalPrice().toFixed(2)}</span>
-            </div>
+              </div>
           </div>
         </div>
       </div>
@@ -194,14 +194,14 @@ export default function CustomerOrderPage() {
             {/* Category Filter */}
             <div className="flex space-x-2 mb-6 overflow-x-auto">
               {categories.map((category) => (
-                <Button
+                                    <Button
                   key={category}
                   variant={selectedCategory === category ? "default" : "outline"}
                   onClick={() => setSelectedCategory(category)}
                   className="whitespace-nowrap capitalize"
-                >
+                                    >
                   {category}
-                </Button>
+                                    </Button>
               ))}
             </div>
 
@@ -247,18 +247,18 @@ export default function CustomerOrderPage() {
                             </Button>
                             <span className="font-medium">
                               {cart.find((cartItem) => cartItem.id === item.id)?.quantity}
-                            </span>
+                                    </span>
                             <Button size="sm" onClick={() => addToCart(item)}>
                               <Plus className="w-4 h-4" />
-                            </Button>
+                                  </Button>
                           </div>
                         ) : (
                           <Button onClick={() => addToCart(item)}>Add to Cart</Button>
                         )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
               ))}
             </div>
           </div>
@@ -266,13 +266,13 @@ export default function CustomerOrderPage() {
           {/* Cart & Checkout */}
           <div className="lg:col-span-1">
             <Card className="sticky top-24">
-              <CardHeader>
+                <CardHeader>
                 <CardTitle>Your Order</CardTitle>
-              </CardHeader>
+                </CardHeader>
               <CardContent className="space-y-4">
-                {cart.length === 0 ? (
+                  {cart.length === 0 ? (
                   <p className="text-gray-500 text-center py-4">Your cart is empty</p>
-                ) : (
+                  ) : (
                   <>
                     {/* Cart Items */}
                     <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -284,14 +284,14 @@ export default function CustomerOrderPage() {
                           </div>
 
                           <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2">
                               <Button size="sm" variant="outline" onClick={() => removeFromCart(item.id)}>
                                 <Minus className="w-3 h-3" />
-                              </Button>
+                            </Button>
                               <span>{item.quantity}</span>
                               <Button size="sm" onClick={() => addToCart(item)}>
                                 <Plus className="w-3 h-3" />
-                              </Button>
+                            </Button>
                             </div>
                             <span className="text-sm text-gray-600">${item.price.toFixed(2)} each</span>
                           </div>
@@ -313,7 +313,7 @@ export default function CustomerOrderPage() {
                         <span>Total:</span>
                         <span className="text-green-600">${getTotalPrice().toFixed(2)}</span>
                       </div>
-                    </div>
+                        </div>
 
                     {/* Customer Info */}
                     <div className="space-y-3 border-t pt-3">
@@ -322,7 +322,7 @@ export default function CustomerOrderPage() {
                         value={customerInfo.name}
                         onChange={(e) => setCustomerInfo((prev) => ({ ...prev, name: e.target.value }))}
                       />
-                      <Input
+                          <Input
                         placeholder="Phone number *"
                         value={customerInfo.phone}
                         onChange={(e) => setCustomerInfo((prev) => ({ ...prev, phone: e.target.value }))}
@@ -331,17 +331,17 @@ export default function CustomerOrderPage() {
                         placeholder="Table number (optional)"
                         value={customerInfo.table_number}
                         onChange={(e) => setCustomerInfo((prev) => ({ ...prev, table_number: e.target.value }))}
-                      />
-                    </div>
+                          />
+                        </div>
 
                     {/* Submit Button */}
                     <Button onClick={submitOrder} disabled={isSubmitting || cart.length === 0} className="w-full">
                       {isSubmitting ? "Submitting..." : "Place Order"}
-                    </Button>
+                        </Button>
                   </>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
           </div>
         </div>
       </div>

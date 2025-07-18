@@ -166,7 +166,7 @@ export async function signUpUser(email: string, password: string, fullName: stri
         return { success: false, message: "Failed to set up your business" }
       } else {
         venueData = newVenue;
-      }
+    }
     }
     // Set session (for client-side convenience)
     const session: AuthSession = {
@@ -211,14 +211,14 @@ export async function signInUser(email: string, password: string) {
       const venueId = `venue-${userId.slice(0, 8)}`
       const defaultVenueName = data.user.user_metadata?.venueName || (data.user.user_metadata?.full_name ? `${data.user.user_metadata.full_name.split(' ')[0]}'s Venue` : "My Venue");
       const { data: newVenue, error: createVenueError } = await supabase
-        .from("venues")
-        .insert({
-          venue_id: venueId,
+      .from("venues")
+      .insert({
+        venue_id: venueId,
           name: defaultVenueName,
           business_type: data.user.user_metadata?.venueType || "restaurant",
           owner_id: userId,
-        })
-        .select()
+      })
+      .select()
         .single();
       if (createVenueError && createVenueError.code === '23505') { // Unique violation
         // Venue already exists, fetch it

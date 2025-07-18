@@ -1,19 +1,14 @@
-import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import GlobalNav from "@/components/global-nav"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Servio - QR Code Ordering System",
-  description: "Transform your restaurant with digital menus and seamless QR code ordering",
-  keywords: "restaurant, QR code, digital menu, ordering system, POS",
-  authors: [{ name: "Servio Team" }]
+  title: "Servio - QR Code Ordering Made Simple",
+  description: "Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay - all from their phones.",
 }
-
-export const viewport = "width=device-width, initial-scale=1";
 
 export default function RootLayout({
   children,
@@ -21,10 +16,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <GlobalNav />
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -19,7 +19,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react"
-import { hasSupabaseConfig, createUserAccount } from "@/lib/supabase"
+import { hasSupabaseConfig, signUpUser } from "@/lib/supabase"
 import { logger } from "@/lib/logger"
 
 interface LocalAccount {
@@ -43,7 +43,7 @@ export function AccountMigrator() {
 
   useEffect(() => {
     loadLocalAccounts()
-    logger.info("ACCOUNT_MIGRATOR", "Component initialized", {
+    logger.info("ACCOUNT_MIGRATOR: Component initialized", {
       hasSupabase: hasSupabaseConfig,
       timestamp: new Date().toISOString(),
     })
@@ -54,9 +54,9 @@ export function AccountMigrator() {
       const stored = localStorage.getItem("servio-accounts")
       const accounts = stored ? JSON.parse(stored) : []
       setLocalAccounts(accounts)
-      logger.info("ACCOUNT_MIGRATOR", "Local accounts loaded", { count: accounts.length })
+      logger.info("ACCOUNT_MIGRATOR: Local accounts loaded", { count: accounts.length })
     } catch (error) {
-      logger.error("ACCOUNT_MIGRATOR", "Failed to load local accounts", error)
+      logger.error("ACCOUNT_MIGRATOR: Failed to load local accounts", error as any)
       setLocalAccounts([])
     }
   }
@@ -64,8 +64,8 @@ export function AccountMigrator() {
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
     const logEntry = `[${timestamp}] ${message}`
-    setLogs((prev) => [...prev, logEntry])
-    logger.info("MIGRATION_LOG", message)
+    setLogs((prev: string[]) => [...prev, logEntry])
+    logger.info("MIGRATION_LOG: " + message)
   }
 
   const migrateAccount = async (account: LocalAccount): Promise<boolean> => {
@@ -76,13 +76,13 @@ export function AccountMigrator() {
       const password = atob(account.passwordHash)
       addLog(`Decoded password for ${account.contactEmail}`)
 
-      const result = await createUserAccount({
-        email: account.contactEmail,
-        name: account.contactName,
-        password: password,
-        venueName: account.venueName,
-        venueType: account.venueType,
-      })
+      const result = await signUpUser(
+        account.contactEmail,
+        password,
+        account.contactName,
+        account.venueName,
+        account.venueType,
+      )
 
       if (result.success) {
         addLog(`✅ Successfully migrated ${account.contactEmail}`)
@@ -93,7 +93,7 @@ export function AccountMigrator() {
       }
     } catch (error: any) {
       addLog(`❌ Error migrating ${account.contactEmail}: ${error.message}`)
-      logger.error("ACCOUNT_MIGRATOR", "Migration error", { email: account.contactEmail, error })
+      logger.error("ACCOUNT_MIGRATOR: Migration error", { email: account.contactEmail, error } as any)
       return false
     }
   }
@@ -114,11 +114,11 @@ export function AccountMigrator() {
 
     for (let i = 0; i < localAccounts.length; i++) {
       const account = localAccounts[i]
-      setMigrationStatus((prev) => ({ ...prev, [account.contactEmail]: "pending" }))
+      setMigrationStatus((prev: Record<string, "pending" | "success" | "error">) => ({ ...prev, [account.contactEmail]: "pending" }))
 
       const success = await migrateAccount(account)
 
-      setMigrationStatus((prev) => ({
+      setMigrationStatus((prev: Record<string, "pending" | "success" | "error">) => ({
         ...prev,
         [account.contactEmail]: success ? "success" : "error",
       }))
@@ -142,7 +142,7 @@ export function AccountMigrator() {
       setLocalAccounts([])
       setMigrationStatus({})
       addLog("🗑️ Local accounts cleared")
-      logger.info("ACCOUNT_MIGRATOR", "Local accounts cleared")
+      logger.info("ACCOUNT_MIGRATOR: Local accounts cleared")
     }
   }
 
@@ -175,7 +175,7 @@ export function AccountMigrator() {
         }
       } catch (error) {
         addLog("❌ Failed to import accounts")
-        logger.error("ACCOUNT_MIGRATOR", "Import error", error)
+        logger.error("ACCOUNT_MIGRATOR: Import error", error as any)
       }
     }
     reader.readAsText(file)

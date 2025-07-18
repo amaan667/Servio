@@ -30,7 +30,7 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    logger.info("SIGNUP_PAGE", { message: "Form submission started", email: formData.email, venueName: formData.venueName, venueType: formData.venueType })
+    logger.info("SIGNUP_PAGE: Form submission started", { email: formData.email, venueName: formData.venueName, venueType: formData.venueType })
 
     setError(null)
 
@@ -82,14 +82,14 @@ export default function SignUpPage() {
       )
 
       if (result.success) {
-        logger.info("SIGNUP_PAGE", { message: "Sign-up successful, redirecting to dashboard" })
+        logger.info("SIGNUP_PAGE: Sign-up successful, redirecting to dashboard")
         router.push("/dashboard")
       } else {
-        logger.error("SIGNUP_PAGE", { message: "Sign-up failed", error: result.message })
+        logger.error("SIGNUP_PAGE: Sign-up failed", { error: result.message })
         setError(result.message || "Unknown error")
       }
     } catch (error: any) {
-      logger.error("SIGNUP_PAGE", { message: "Unexpected error during sign-up", error })
+      logger.error("SIGNUP_PAGE: Unexpected error during sign-up", { error })
       setError("An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
