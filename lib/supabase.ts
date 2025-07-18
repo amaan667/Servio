@@ -79,9 +79,14 @@ export function getValidatedSession(): AuthSession | null {
     const stored = localStorage.getItem("servio_session")
     if (stored) {
       try {
-        const session = JSON.parse(stored)
+        const session = safeJsonParse(stored)
+        if (session) {
         currentSession = session
         return session
+        } else {
+          logger.error("Failed to parse stored session: not valid JSON", { stored })
+          localStorage.removeItem("servio_session")
+        }
       } catch (error) {
         logger.error("Failed to parse stored session", { error })
         localStorage.removeItem("servio_session")
@@ -90,6 +95,19 @@ export function getValidatedSession(): AuthSession | null {
   }
 
   return null
+}
+
+function safeJsonParse(str: string) {
+  const trimmed = (str || '').trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      console.log('safeJsonParse error:', e, 'input:', trimmed);
+      return null;
+    }
+  }
+  return null;
 }
 
 export function clearSession() {
@@ -166,7 +184,7 @@ export async function signUpUser(email: string, password: string, fullName: stri
         return { success: false, message: "Failed to set up your business" }
       } else {
         venueData = newVenue;
-    }
+      }
     }
     // Set session (for client-side convenience)
     const session: AuthSession = {
@@ -211,14 +229,14 @@ export async function signInUser(email: string, password: string) {
       const venueId = `venue-${userId.slice(0, 8)}`
       const defaultVenueName = data.user.user_metadata?.venueName || (data.user.user_metadata?.full_name ? `${data.user.user_metadata.full_name.split(' ')[0]}'s Venue` : "My Venue");
       const { data: newVenue, error: createVenueError } = await supabase
-      .from("venues")
-      .insert({
-        venue_id: venueId,
+        .from("venues")
+        .insert({
+          venue_id: venueId,
           name: defaultVenueName,
           business_type: data.user.user_metadata?.venueType || "restaurant",
           owner_id: userId,
-      })
-      .select()
+        })
+        .select()
         .single();
       if (createVenueError && createVenueError.code === '23505') { // Unique violation
         // Venue already exists, fetch it
