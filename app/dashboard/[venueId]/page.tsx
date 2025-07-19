@@ -81,27 +81,6 @@ export default function VenueDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard")}> <ArrowLeft className="h-4 w-4" /> </Button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">{session.venue.name}</h1>
-                <p className="text-sm text-gray-600">
-                  {session.venue.business_type} • {session.user.full_name}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="secondary">{venueId}</Badge>
-              <Button variant="outline" onClick={handleSignOut}> Sign Out </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
