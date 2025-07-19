@@ -63,7 +63,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let v1 = fields.venueId;
         let v2 = fields.venue_id ?? "";
         venueId = Array.isArray(v1) ? v1[0] : v1 || Array.isArray(v2) ? v2[0] : v2 || null;
-        let fileField = files.file;
+        // Accept any file field
+        const fileField = Object.values(files)[0];
         const file: File | undefined = Array.isArray(fileField) ? fileField[0] : fileField;
         if (!file) {
           return res.status(400).json({ success: false, error: "No file uploaded." });
