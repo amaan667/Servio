@@ -363,6 +363,8 @@ async function extractTextFromPDF(pdfBuffer) {
 async function parseMenuTextWithGPT(text, pageNumber = 1) {
   try {
     console.log(`[GPT Text] Parsing menu text from page ${pageNumber}`);
+    console.log(`[GPT Text] Input text length: ${text.length} characters`);
+    console.log(`[GPT Text] Input text preview: ${text.substring(0, 200)}...`);
     
     const prompt = `
 Extract every menu item with name, price, description (optional), and category (if present). Return all items in this format:
@@ -385,7 +387,7 @@ ${text}`;
       messages: [
         {
           role: "system",
-          content: "You are a menu parsing expert. Be thorough and extract ALL menu items with prices, even if the formatting is imperfect."
+          content: "You are a menu parsing expert. Be thorough and extract ALL menu items with prices, even if the formatting is imperfect. ALWAYS return a valid JSON array, even if empty."
         },
         {
           role: "user",
@@ -397,6 +399,7 @@ ${text}`;
     
     const content = response.choices[0].message.content;
     console.log(`[GPT Text] Raw response from page ${pageNumber}:`, content);
+    console.log(`[GPT Text] Response length: ${content.length} characters`);
     
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
@@ -418,15 +421,114 @@ ${text}`;
         return menuItems;
       } catch (parseError) {
         console.error(`[GPT Text] JSON parse error for page ${pageNumber}:`, parseError);
+        console.error(`[GPT Text] Failed to parse this JSON:`, jsonMatch[0]);
         throw new Error('Failed to parse GPT response as JSON');
       }
     } else {
       console.error(`[GPT Text] No JSON array found in response for page ${pageNumber}`);
+      console.error(`[GPT Text] Full response content:`, content);
+      
+      // Try to find any JSON-like content
+      const anyJsonMatch = content.match(/\{.*\}/s);
+      if (anyJsonMatch) {
+        console.log(`[GPT Text] Found JSON object instead of array:`, anyJsonMatch[0]);
+      }
+      
+      // Try to extract items from text if JSON fails
+      console.log(`[GPT Text] Attempting to extract items from text response...`);
+      const fallbackItems = await extractItemsFromTextResponse(content, pageNumber);
+      if (fallbackItems.length > 0) {
+        console.log(`[GPT Text] Extracted ${fallbackItems.length} items from text response`);
+        return fallbackItems;
+      }
+      
+      // Try to force GPT to return JSON
+      console.log(`[GPT Text] Attempting to force GPT to return JSON...`);
+      const forcedItems = await forceGPTToReturnJSON(text, pageNumber);
+      if (forcedItems.length > 0) {
+        console.log(`[GPT Text] Forced JSON extraction found ${forcedItems.length} items`);
+        return forcedItems;
+      }
+      
       throw new Error('No valid JSON array found in GPT response');
     }
   } catch (error) {
     console.error(`[GPT Text] Error parsing page ${pageNumber}:`, error);
     throw error;
+  }
+}
+
+async function extractItemsFromTextResponse(text, pageNumber) {
+  try {
+    console.log(`[Fallback] Attempting to extract items from text response for page ${pageNumber}`);
+    
+    // Try to find price patterns in the text
+    const pricePattern = /([^£\n]+?)\s*£\s*(\d+(?:\.\d{1,2})?)/g;
+    const items = [];
+    let match;
+    
+    while ((match = pricePattern.exec(text)) !== null) {
+      const name = match[1].trim();
+      const price = parseFloat(match[2]);
+      
+      if (name && name.length > 2 && price > 0) {
+        items.push({
+          name: name,
+          price: price,
+          description: "",
+          category: "Uncategorized"
+        });
+      }
+    }
+    
+    console.log(`[Fallback] Extracted ${items.length} items using regex pattern`);
+    return items;
+  } catch (error) {
+    console.error(`[Fallback] Error extracting items from text:`, error);
+    return [];
+  }
+}
+
+async function forceGPTToReturnJSON(text, pageNumber) {
+  try {
+    console.log(`[Force JSON] Attempting to force GPT to return JSON for page ${pageNumber}`);
+    
+    const forcePrompt = `Convert the following text into a JSON array of menu items. Return ONLY the JSON array, nothing else:
+
+Text: ${text}
+
+JSON:`;
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are a JSON converter. Return ONLY valid JSON arrays, no explanations or other text."
+        },
+        {
+          role: "user",
+          content: forcePrompt
+        }
+      ],
+      max_tokens: 2000,
+    });
+    
+    const content = response.choices[0].message.content.trim();
+    console.log(`[Force JSON] Response:`, content);
+    
+    // Try to parse as JSON
+    try {
+      const menuItems = JSON.parse(content);
+      console.log(`[Force JSON] Successfully parsed ${menuItems.length} items`);
+      return Array.isArray(menuItems) ? menuItems : [];
+    } catch (parseError) {
+      console.error(`[Force JSON] Failed to parse JSON:`, parseError);
+      return [];
+    }
+  } catch (error) {
+    console.error(`[Force JSON] Error:`, error);
+    return [];
   }
 }
 
@@ -445,6 +547,7 @@ Return a JSON array with this exact format: [{ "name": "item name", "price": num
 ⚠️ If the name is unclear, use the text before the price as the name.
 ⚠️ Include add-ons, modifiers, and side items as separate menu items.
 ⚠️ Do not skip anything that looks like a menu item.
+⚠️ ALWAYS return a valid JSON array, even if empty.
 
 Text to parse (Page ${pageNumber}):
 ${text}`;
@@ -454,7 +557,7 @@ ${text}`;
       messages: [
         {
           role: "system",
-          content: "You are a menu parsing expert. Be very aggressive in finding menu items. Include every line with a £ symbol or price, even if the name is unclear."
+          content: "You are a menu parsing expert. Be very aggressive in finding menu items. Include every line with a £ symbol or price, even if the name is unclear. ALWAYS return a valid JSON array."
         },
         {
           role: "user",
@@ -476,10 +579,28 @@ ${text}`;
         return menuItems;
       } catch (parseError) {
         console.error(`[GPT Text Aggressive] JSON parse error for page ${pageNumber}:`, parseError);
+        console.error(`[GPT Text Aggressive] Failed to parse this JSON:`, jsonMatch[0]);
+        
+        // Try fallback extraction
+        const fallbackItems = await extractItemsFromTextResponse(content, pageNumber);
+        if (fallbackItems.length > 0) {
+          console.log(`[GPT Text Aggressive] Extracted ${fallbackItems.length} items using fallback`);
+          return fallbackItems;
+        }
+        
         return [];
       }
     } else {
       console.error(`[GPT Text Aggressive] No JSON array found in response for page ${pageNumber}`);
+      console.error(`[GPT Text Aggressive] Full response content:`, content);
+      
+      // Try fallback extraction
+      const fallbackItems = await extractItemsFromTextResponse(content, pageNumber);
+      if (fallbackItems.length > 0) {
+        console.log(`[GPT Text Aggressive] Extracted ${fallbackItems.length} items using fallback`);
+        return fallbackItems;
+      }
+      
       return [];
     }
   } catch (error) {
