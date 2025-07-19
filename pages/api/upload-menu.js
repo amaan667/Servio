@@ -874,6 +874,82 @@ function isLikelyItemName(line) {
     }
   }
   
+  // Known menu item patterns (both English and Arabic)
+  const menuPatterns = [
+    /burger/i,
+    /shakshuka/i,
+    /labneh/i,
+    /hummus/i,
+    /baba/i,
+    /halloumi/i,
+    /kibbeh/i,
+    /mutbal/i,
+    /mezze/i,
+    /tapas/i,
+    /bruschetta/i,
+    /spring roll/i,
+    /samosa/i,
+    /pakora/i,
+    /steak/i,
+    /chicken/i,
+    /beef/i,
+    /lamb/i,
+    /fish/i,
+    /salmon/i,
+    /pasta/i,
+    /rice/i,
+    /noodles/i,
+    /curry/i,
+    /stew/i,
+    /roast/i,
+    /cake/i,
+    /ice cream/i,
+    /pudding/i,
+    /cheesecake/i,
+    /brownie/i,
+    /chocolate/i,
+    /coffee/i,
+    /tea/i,
+    /juice/i,
+    /smoothie/i,
+    /milkshake/i,
+    /cocktail/i,
+    /beer/i,
+    /wine/i,
+    /salad/i,
+    /sandwich/i,
+    /wrap/i,
+    /panini/i,
+    /eggs/i,
+    /bacon/i,
+    /toast/i,
+    /pancake/i,
+    /waffle/i
+  ];
+  
+  // Check if line matches any known menu pattern
+  for (const pattern of menuPatterns) {
+    if (pattern.test(trimmed)) {
+      return true;
+    }
+  }
+  
+  // Check for capitalized words (common in menu items)
+  const words = trimmed.split(' ');
+  const capitalizedWords = words.filter(word => 
+    word.length > 0 && word[0] === word[0].toUpperCase()
+  );
+  
+  // If more than 50% of words are capitalized, likely a menu item
+  if (capitalizedWords.length > 0 && capitalizedWords.length >= words.length * 0.5) {
+    return true;
+  }
+  
+  // Check for Arabic text
+  if (/[ء-ي]/.test(trimmed)) {
+    return true;
+  }
+  
   // More lenient item detection - allow Arabic text and special characters
   return (
     trimmed.length > 2 &&
@@ -925,151 +1001,141 @@ function parseMenuFromSeparatedLines(lines) {
   const menu = [];
   let currentCategory = 'Uncategorized';
   let currentItem = null;
-  let state = 'scanning'; // scanning, item_name, item_description, price
+  const priceRegex = /£?\s?(\d+(?:\.\d{1,2})?)/;
 
-  // Semantic category matching
-  const categoryPatterns = {
-    starters: /^(starters?|appetizers?|entrees?|small plates?)/i,
-    mains: /^(main|mains|entrees?|dishes?|plates?)/i,
-    desserts: /^(desserts?|sweets?|puddings?)/i,
-    drinks: /^(drinks?|beverages?|coffee|tea|juices?|smoothies?)/i,
-    sides: /^(sides?|accompaniments?|extras?)/i
-  };
+  console.log(`[Parser] Processing ${lines.length} lines`);
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
     
-    console.log(`[Line ${i}] State: ${state}, Processing:`, JSON.stringify(line));
+    console.log(`[Parser] Line ${i}: "${line}"`);
 
-    // State machine logic
-    switch (state) {
-      case 'scanning':
-        // Look for category headers
-        if (isCategoryHeader(line)) {
-          currentCategory = detectCategory(line);
-          console.log(`[Line ${i}] Detected category: ${currentCategory}`);
-          state = 'scanning';
-          continue;
-        }
-        
-        // Look for item names
-        if (isLikelyItemName(line)) {
-          currentItem = { name: line, category: currentCategory };
-          state = 'item_name';
-          console.log(`[Line ${i}] Started item: ${line}`);
-          continue;
-        }
-        
-        // Look for standalone prices
-        const priceMatch = line.match(/£\s?(\d+(?:\.\d{1,2})?)/);
-        if (priceMatch && currentItem) {
-          currentItem.price = parseFloat(priceMatch[1]);
-          menu.push(currentItem);
-          console.log(`[Line ${i}] Completed item with price: ${currentItem.name} - £${currentItem.price}`);
-          currentItem = null;
-          state = 'scanning';
-          continue;
-        }
-        break;
-
-      case 'item_name':
-        // Check if line contains price
-        const inlinePriceMatch = line.match(/^(.*?)[.\-–—]*\s*£\s?(\d+(?:\.\d{1,2})?)/);
-        if (inlinePriceMatch) {
-          const name = inlinePriceMatch[1].trim();
-          const price = parseFloat(inlinePriceMatch[2]);
-          currentItem.name = name || currentItem.name;
-          currentItem.price = price;
-          menu.push(currentItem);
-          console.log(`[Line ${i}] Completed inline item: ${currentItem.name} - £${currentItem.price}`);
-          currentItem = null;
-          state = 'scanning';
-          continue;
-        }
-        
-        // Check if line is just a price
-        const standalonePriceMatch = line.match(/£\s?(\d+(?:\.\d{1,2})?)/);
-        if (standalonePriceMatch) {
-          currentItem.price = parseFloat(standalonePriceMatch[1]);
-          menu.push(currentItem);
-          console.log(`[Line ${i}] Completed item with standalone price: ${currentItem.name} - £${currentItem.price}`);
-          currentItem = null;
-          state = 'scanning';
-          continue;
-        }
-        
-        // Check if line continues the item name
-        if (isItemNameContinuation(line)) {
-          currentItem.name += ' ' + line;
-          console.log(`[Line ${i}] Extended item name: ${currentItem.name}`);
-          continue;
-        }
-        
-        // Check if line is a description
-        if (isDescription(line)) {
-          currentItem.description = line;
-          state = 'item_description';
-          console.log(`[Line ${i}] Added description: ${line}`);
-          continue;
-        }
-        
-        // If none of the above, assume it's a new item
-        if (isLikelyItemName(line)) {
-          // Save current item without price
-          if (currentItem) {
-            menu.push(currentItem);
-            console.log(`[Line ${i}] Saved incomplete item: ${currentItem.name}`);
-          }
-          currentItem = { name: line, category: currentCategory };
-          console.log(`[Line ${i}] Started new item: ${line}`);
-          continue;
-        }
-        break;
-
-      case 'item_description':
-        // Look for price after description
-        const descPriceMatch = line.match(/£\s?(\d+(?:\.\d{1,2})?)/);
-        if (descPriceMatch) {
-          currentItem.price = parseFloat(descPriceMatch[1]);
-          menu.push(currentItem);
-          console.log(`[Line ${i}] Completed item after description: ${currentItem.name} - £${currentItem.price}`);
-          currentItem = null;
-          state = 'scanning';
-          continue;
-        }
-        
-        // Continue description or start new item
-        if (isLikelyItemName(line)) {
-          if (currentItem) {
-            menu.push(currentItem);
-            console.log(`[Line ${i}] Saved incomplete item: ${currentItem.name}`);
-          }
-          currentItem = { name: line, category: currentCategory };
-          state = 'item_name';
-          console.log(`[Line ${i}] Started new item after description: ${line}`);
-          continue;
-        }
-        
-        // Continue description
-        if (isDescription(line)) {
-          currentItem.description += ' ' + line;
-          console.log(`[Line ${i}] Extended description: ${currentItem.description}`);
-          continue;
-        }
-        break;
+    // Check if line is a category header
+    if (isCategoryHeader(line)) {
+      currentCategory = detectCategory(line);
+      console.log(`[Parser] Detected category: ${currentCategory}`);
+      
+      // Save current item if it has both name and price
+      if (currentItem?.name && currentItem?.price) {
+        menu.push(currentItem);
+        console.log(`[Parser] Saved item before category: ${currentItem.name} - £${currentItem.price}`);
+        currentItem = null;
+      }
+      continue;
     }
+
+    // Check if line is just a price (for current item)
+    const priceMatch = line.match(priceRegex);
+    if (priceMatch && currentItem && !currentItem.price) {
+      const price = parseFloat(priceMatch[1]);
+      if (!isNaN(price) && price > 0) {
+        currentItem.price = price;
+        console.log(`[Parser] Added price to current item: ${currentItem.name} - £${currentItem.price}`);
+        
+        // Save the completed item
+        menu.push(currentItem);
+        console.log(`[Parser] Saved completed item: ${currentItem.name} - £${currentItem.price}`);
+        currentItem = null;
+      }
+      continue;
+    }
+
+    // Check if line contains both name and price inline
+    const inlineMatch = line.match(/^(.*?)[.\-–—]*\s*£\s?(\d+(?:\.\d{1,2})?)/);
+    if (inlineMatch) {
+      const name = inlineMatch[1].trim();
+      const price = parseFloat(inlineMatch[2]);
+      
+      if (name && price && !isNaN(price) && price > 0 && isLikelyItemName(name)) {
+        // Save current item if it exists
+        if (currentItem?.name && currentItem?.price) {
+          menu.push(currentItem);
+          console.log(`[Parser] Saved previous item: ${currentItem.name} - £${currentItem.price}`);
+        }
+        
+        // Create new item
+        currentItem = {
+          name: name,
+          price: price,
+          category: currentCategory,
+          description: ""
+        };
+        console.log(`[Parser] Created inline item: ${name} - £${price}`);
+        
+        // Save the completed item immediately
+        menu.push(currentItem);
+        console.log(`[Parser] Saved inline item: ${currentItem.name} - £${currentItem.price}`);
+        currentItem = null;
+      }
+      continue;
+    }
+
+    // Check if line looks like a new menu item
+    if (isLikelyItemName(line)) {
+      // Save previous item if it has both name and price
+      if (currentItem?.name && currentItem?.price) {
+        menu.push(currentItem);
+        console.log(`[Parser] Saved previous item: ${currentItem.name} - £${currentItem.price}`);
+      } else if (currentItem?.name) {
+        console.log(`[Parser] Discarded incomplete item: ${currentItem.name} (no price)`);
+      }
+      
+      // Start new item
+      currentItem = {
+        name: line,
+        price: null,
+        category: currentCategory,
+        description: ""
+      };
+      console.log(`[Parser] Started new item: ${line}`);
+      continue;
+    }
+
+    // Check if line is a description or continuation
+    if (isDescription(line) && currentItem) {
+      currentItem.description += (currentItem.description ? " " : "") + line;
+      console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
+      continue;
+    }
+
+    // Check if line might be a continuation of the current item name
+    if (currentItem && !currentItem.price && line.length < 50) {
+      // Try to extract price from this line
+      const continuationPriceMatch = line.match(priceRegex);
+      if (continuationPriceMatch) {
+        const price = parseFloat(continuationPriceMatch[1]);
+        if (!isNaN(price) && price > 0) {
+          currentItem.price = price;
+          console.log(`[Parser] Added price from continuation: ${currentItem.name} - £${currentItem.price}`);
+          
+          // Save the completed item
+          menu.push(currentItem);
+          console.log(`[Parser] Saved item with continuation price: ${currentItem.name} - £${currentItem.price}`);
+          currentItem = null;
+        }
+      } else {
+        // Might be a continuation of the name
+        currentItem.name += " " + line;
+        console.log(`[Parser] Extended item name: ${currentItem.name}`);
+      }
+      continue;
+    }
+
+    console.log(`[Parser] Skipped line: "${line}"`);
   }
 
   // Handle any remaining incomplete item
-  if (currentItem) {
+  if (currentItem?.name && currentItem?.price) {
     menu.push(currentItem);
-    console.log(`Final incomplete item: ${currentItem.name}`);
+    console.log(`[Parser] Saved final item: ${currentItem.name} - £${currentItem.price}`);
+  } else if (currentItem?.name) {
+    console.log(`[Parser] Discarded final incomplete item: ${currentItem.name} (no price)`);
   }
 
   // Post-processing
   const processedMenu = postProcessMenu(menu);
-  console.log('Final processed menu items:', processedMenu);
+  console.log(`[Parser] Final processed menu: ${processedMenu.length} items`);
   return processedMenu;
 }
 
