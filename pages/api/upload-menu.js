@@ -366,18 +366,18 @@ async function parseMenuTextWithGPT(text, pageNumber = 1) {
     console.log(`[GPT Text] Input text length: ${text.length} characters`);
     console.log(`[GPT Text] Input text preview: ${text.substring(0, 200)}...`);
     
-    const prompt = `
-Extract every menu item with name, price, description (optional), and category (if present). Return all items in this format:
+    const prompt = `You are an expert at menu parsing. Extract EVERY menu item from this text. Return a valid JSON array ONLY in this format:
 
 [
-  { "name": "", "price": number, "description": "", "category": "" },
+  { "name": "", "price": 0, "description": "", "category": "" },
   ...
 ]
 
-⚠️ Extract all items even if price or description is not perfectly aligned.
-⚠️ Include modifiers/add-ons (e.g., 'Add Egg £1.50') as standalone items.
-⚠️ If the category is unclear, use "Uncategorized".
-⚠️ Do not skip similar duplicates. Return all.
+⚠️ Do not nest JSON inside any field.
+⚠️ If a category isn't clear, set it to 'Uncategorized'.
+⚠️ Extract every add-on (e.g. 'Add Egg £1.50') as its own item.
+⚠️ Do NOT use 'menuItem:' or any other keys outside of this format.
+⚠️ Items with same name but different prices must both be included.
 
 Text to parse (Page ${pageNumber}):
 ${text}`;
@@ -387,7 +387,7 @@ ${text}`;
       messages: [
         {
           role: "system",
-          content: "You are a menu parsing expert. Be thorough and extract ALL menu items with prices, even if the formatting is imperfect. ALWAYS return a valid JSON array, even if empty."
+          content: "You are a menu parsing expert. Extract ALL menu items with prices. Return ONLY a valid JSON array in the exact format specified. Do not include any explanations or additional text."
         },
         {
           role: "user",
@@ -406,48 +406,51 @@ ${text}`;
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        console.log(`[GPT Text] Parsed ${menuItems.length} menu items from page ${pageNumber}`);
+        
+        // Validate and filter items
+        const validItems = menuItems.filter(item => {
+          return item && 
+                 typeof item.name === 'string' && 
+                 item.name.trim().length > 0 &&
+                 typeof item.price === 'number' && 
+                 item.price > 0;
+        });
+        
+        console.log(`[GPT Text] Parsed ${menuItems.length} items, ${validItems.length} valid from page ${pageNumber}`);
         
         // Check if we got enough items, if not, try aggressive parsing
-        if (menuItems.length < 15) {
-          console.log(`[GPT Text] Only ${menuItems.length} items found on page ${pageNumber}, trying aggressive parsing...`);
+        if (validItems.length < 15) {
+          console.log(`[GPT Text] Only ${validItems.length} valid items found on page ${pageNumber}, trying aggressive parsing...`);
           const aggressiveItems = await parseMenuTextWithGPTAggressive(text, pageNumber);
-          if (aggressiveItems.length > menuItems.length) {
-            console.log(`[GPT Text] Aggressive parsing found ${aggressiveItems.length} items vs ${menuItems.length} from normal parsing`);
+          if (aggressiveItems.length > validItems.length) {
+            console.log(`[GPT Text] Aggressive parsing found ${aggressiveItems.length} items vs ${validItems.length} from normal parsing`);
             return aggressiveItems;
           }
         }
         
-        return menuItems;
+        return validItems;
       } catch (parseError) {
         console.error(`[GPT Text] JSON parse error for page ${pageNumber}:`, parseError);
         console.error(`[GPT Text] Failed to parse this JSON:`, jsonMatch[0]);
+        
+        // Try markdown fallback
+        const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber);
+        if (markdownItems.length > 0) {
+          console.log(`[GPT Text] Markdown fallback found ${markdownItems.length} items`);
+          return markdownItems;
+        }
+        
         throw new Error('Failed to parse GPT response as JSON');
       }
     } else {
       console.error(`[GPT Text] No JSON array found in response for page ${pageNumber}`);
       console.error(`[GPT Text] Full response content:`, content);
       
-      // Try to find any JSON-like content
-      const anyJsonMatch = content.match(/\{.*\}/s);
-      if (anyJsonMatch) {
-        console.log(`[GPT Text] Found JSON object instead of array:`, anyJsonMatch[0]);
-      }
-      
-      // Try to extract items from text if JSON fails
-      console.log(`[GPT Text] Attempting to extract items from text response...`);
-      const fallbackItems = await extractItemsFromTextResponse(content, pageNumber);
-      if (fallbackItems.length > 0) {
-        console.log(`[GPT Text] Extracted ${fallbackItems.length} items from text response`);
-        return fallbackItems;
-      }
-      
-      // Try to force GPT to return JSON
-      console.log(`[GPT Text] Attempting to force GPT to return JSON...`);
-      const forcedItems = await forceGPTToReturnJSON(text, pageNumber);
-      if (forcedItems.length > 0) {
-        console.log(`[GPT Text] Forced JSON extraction found ${forcedItems.length} items`);
-        return forcedItems;
+      // Try markdown fallback
+      const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber);
+      if (markdownItems.length > 0) {
+        console.log(`[GPT Text] Markdown fallback found ${markdownItems.length} items`);
+        return markdownItems;
       }
       
       throw new Error('No valid JSON array found in GPT response');
@@ -536,18 +539,20 @@ async function parseMenuTextWithGPTAggressive(text, pageNumber = 1) {
   try {
     console.log(`[GPT Text Aggressive] Parsing menu text from page ${pageNumber} with aggressive approach`);
     
-    const aggressivePrompt = `
-You missed some items. Re-read this page carefully and extract **every visible** menu item with a price.
+    const aggressivePrompt = `You are an expert at menu parsing. Extract EVERY menu item from this text, being very aggressive. Return a valid JSON array ONLY in this format:
 
-Extract ALL menu items from this text, being very aggressive. Include every line with a £ symbol or price.
+[
+  { "name": "", "price": 0, "description": "", "category": "" },
+  ...
+]
 
-Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }].
-
-⚠️ If you see any line with a £ symbol or price, include it as a menu item.
+⚠️ Do not nest JSON inside any field.
+⚠️ If a category isn't clear, set it to 'Uncategorized'.
+⚠️ Extract every add-on (e.g. 'Add Egg £1.50') as its own item.
+⚠️ Do NOT use 'menuItem:' or any other keys outside of this format.
+⚠️ Items with same name but different prices must both be included.
+⚠️ Include every line with a £ symbol or price.
 ⚠️ If the name is unclear, use the text before the price as the name.
-⚠️ Include add-ons, modifiers, and side items as separate menu items.
-⚠️ Do not skip anything that looks like a menu item.
-⚠️ ALWAYS return a valid JSON array, even if empty.
 
 Text to parse (Page ${pageNumber}):
 ${text}`;
@@ -557,7 +562,7 @@ ${text}`;
       messages: [
         {
           role: "system",
-          content: "You are a menu parsing expert. Be very aggressive in finding menu items. Include every line with a £ symbol or price, even if the name is unclear. ALWAYS return a valid JSON array."
+          content: "You are a menu parsing expert. Be very aggressive in finding menu items. Include every line with a £ symbol or price, even if the name is unclear. Return ONLY a valid JSON array in the exact format specified."
         },
         {
           role: "user",
@@ -575,17 +580,27 @@ ${text}`;
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        console.log(`[GPT Text Aggressive] Parsed ${menuItems.length} menu items from page ${pageNumber}`);
-        return menuItems;
+        
+        // Validate and filter items
+        const validItems = menuItems.filter(item => {
+          return item && 
+                 typeof item.name === 'string' && 
+                 item.name.trim().length > 0 &&
+                 typeof item.price === 'number' && 
+                 item.price > 0;
+        });
+        
+        console.log(`[GPT Text Aggressive] Parsed ${menuItems.length} items, ${validItems.length} valid from page ${pageNumber}`);
+        return validItems;
       } catch (parseError) {
         console.error(`[GPT Text Aggressive] JSON parse error for page ${pageNumber}:`, parseError);
         console.error(`[GPT Text Aggressive] Failed to parse this JSON:`, jsonMatch[0]);
         
-        // Try fallback extraction
-        const fallbackItems = await extractItemsFromTextResponse(content, pageNumber);
-        if (fallbackItems.length > 0) {
-          console.log(`[GPT Text Aggressive] Extracted ${fallbackItems.length} items using fallback`);
-          return fallbackItems;
+        // Try markdown fallback
+        const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber);
+        if (markdownItems.length > 0) {
+          console.log(`[GPT Text Aggressive] Markdown fallback found ${markdownItems.length} items`);
+          return markdownItems;
         }
         
         return [];
@@ -594,11 +609,11 @@ ${text}`;
       console.error(`[GPT Text Aggressive] No JSON array found in response for page ${pageNumber}`);
       console.error(`[GPT Text Aggressive] Full response content:`, content);
       
-      // Try fallback extraction
-      const fallbackItems = await extractItemsFromTextResponse(content, pageNumber);
-      if (fallbackItems.length > 0) {
-        console.log(`[GPT Text Aggressive] Extracted ${fallbackItems.length} items using fallback`);
-        return fallbackItems;
+      // Try markdown fallback
+      const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber);
+      if (markdownItems.length > 0) {
+        console.log(`[GPT Text Aggressive] Markdown fallback found ${markdownItems.length} items`);
+        return markdownItems;
       }
       
       return [];
@@ -606,6 +621,120 @@ ${text}`;
   } catch (error) {
     console.error(`[GPT Text Aggressive] Error parsing page ${pageNumber}:`, error);
     return [];
+  }
+}
+
+async function parseMenuTextAsMarkdown(text, pageNumber) {
+  try {
+    console.log(`[Markdown] Converting text to markdown format for page ${pageNumber}`);
+    
+    // Convert text to markdown format
+    const markdownText = convertTextToMarkdown(text);
+    console.log(`[Markdown] Converted text to markdown:`, markdownText.substring(0, 300) + '...');
+    
+    const markdownPrompt = `Convert this markdown menu into a JSON array of objects with fields: name, price, description, category.
+
+Return ONLY a valid JSON array in this format:
+[
+  { "name": "", "price": 0, "description": "", "category": "" },
+  ...
+]
+
+Markdown menu:
+${markdownText}`;
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are a markdown-to-JSON converter. Convert menu items from markdown to JSON array. Return ONLY valid JSON."
+        },
+        {
+          role: "user",
+          content: markdownPrompt
+        }
+      ],
+      max_tokens: 3000,
+    });
+    
+    const content = response.choices[0].message.content;
+    console.log(`[Markdown] Raw response:`, content);
+    
+    // Try to extract JSON from the response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (jsonMatch) {
+      try {
+        const menuItems = JSON.parse(jsonMatch[0]);
+        
+        // Validate and filter items
+        const validItems = menuItems.filter(item => {
+          return item && 
+                 typeof item.name === 'string' && 
+                 item.name.trim().length > 0 &&
+                 typeof item.price === 'number' && 
+                 item.price > 0;
+        });
+        
+        console.log(`[Markdown] Parsed ${menuItems.length} items, ${validItems.length} valid`);
+        return validItems;
+      } catch (parseError) {
+        console.error(`[Markdown] JSON parse error:`, parseError);
+        return [];
+      }
+    } else {
+      console.error(`[Markdown] No JSON array found in response`);
+      return [];
+    }
+  } catch (error) {
+    console.error(`[Markdown] Error:`, error);
+    return [];
+  }
+}
+
+function convertTextToMarkdown(text) {
+  try {
+    console.log(`[Markdown] Converting text to markdown format`);
+    
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    let markdown = '';
+    let currentCategory = 'Uncategorized';
+    
+    for (const line of lines) {
+      // Check if line is a category header (all caps, short)
+      if (/^[A-Z\s&()]+$/.test(line) && line.length > 2 && line.length < 50) {
+        currentCategory = line;
+        markdown += `\n### ${line}\n\n`;
+        continue;
+      }
+      
+      // Check if line contains a price
+      const priceMatch = line.match(/^(.*?)[.\-–—]*\s*£\s*(\d+(?:\.\d{1,2})?)/);
+      if (priceMatch) {
+        const name = priceMatch[1].trim();
+        const price = priceMatch[2];
+        
+        if (name && name.length > 2) {
+          markdown += `- ${name} – £${price}\n`;
+          
+          // Look for description on next line
+          const nextLineIndex = lines.indexOf(line) + 1;
+          if (nextLineIndex < lines.length) {
+            const nextLine = lines[nextLineIndex];
+            if (nextLine && !nextLine.match(/£\s*\d/) && nextLine.length < 100) {
+              markdown += `  ${nextLine}\n`;
+            }
+          }
+          markdown += '\n';
+        }
+      }
+    }
+    
+    console.log(`[Markdown] Generated markdown with ${markdown.split('-').length - 1} items`);
+    return markdown;
+  } catch (error) {
+    console.error(`[Markdown] Error converting to markdown:`, error);
+    return text; // Return original text if conversion fails
   }
 }
 
