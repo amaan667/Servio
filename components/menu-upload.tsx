@@ -207,22 +207,57 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
 
     setIsLoading(true)
     setUploadStatus("idle")
-    setStatusMessage("Analyzing website content...")
+    setStatusMessage("Processing image URL...")
 
     const progressInterval = simulateProgress(3000)
 
     try {
-      const items = await extractMenuFromWebsite(menuUrl.trim())
-      setUploadProgress(100)
-      setExtractedItems(items)
-      setUploadStatus("success")
-      setStatusMessage(`Successfully extracted ${items.length} menu items from website!`)
+      // Check if URL is an image
+      const isImageUrl = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(menuUrl) || 
+                        menuUrl.includes('image') || 
+                        menuUrl.includes('photo');
+      
+      if (isImageUrl) {
+        // Process image URL
+        const response = await fetch("/api/upload-menu", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            imageUrl: menuUrl.trim(),
+            venueId: venueId,
+          }),
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok || result.error) {
+          throw new Error(result.error || "Failed to process image URL");
+        }
+
+        setUploadProgress(100);
+        setExtractedItems(result.items || []);
+        setUploadStatus("success");
+        setStatusMessage(`Successfully extracted ${result.items?.length || 0} menu items from image!`);
+        
+        // Optionally trigger a menu refresh in parent
+        if (onMenuUpdate) onMenuUpdate(result.items || []);
+      } else {
+        // Try website extraction (legacy support)
+        const items = await extractMenuFromWebsite(menuUrl.trim());
+        setUploadProgress(100);
+        setExtractedItems(items);
+        setUploadStatus("success");
+        setStatusMessage(`Successfully extracted ${items.length} menu items from website!`);
+      }
     } catch (error) {
-      setUploadStatus("error")
-      setStatusMessage("Failed to extract menu from website. Please try a different URL or upload manually.")
+      setUploadStatus("error");
+      const errorMessage = error instanceof Error ? error.message : "Failed to extract menu from URL. Please try a different URL or upload manually.";
+      setStatusMessage(errorMessage);
     } finally {
-      clearInterval(progressInterval)
-      setIsLoading(false)
+      clearInterval(progressInterval);
+      setIsLoading(false);
     }
   }
 
@@ -362,18 +397,18 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
         <CardContent>
           <Tabs defaultValue="url" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="url">Website URL</TabsTrigger>
-              <TabsTrigger value="file">PDF/Image Upload</TabsTrigger>
+              <TabsTrigger value="url">Image URL</TabsTrigger>
+              <TabsTrigger value="file">File Upload</TabsTrigger>
               <TabsTrigger value="text">Text Input</TabsTrigger>
             </TabsList>
 
             <TabsContent value="url" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="menu-url">Menu Website URL</Label>
+                <Label htmlFor="menu-url">Menu Image URL</Label>
                 <div className="flex space-x-2">
                   <Input
                     id="menu-url"
-                    placeholder="https://your-restaurant.com/menu"
+                    placeholder="https://example.com/menu-image.jpg"
                     value={menuUrl}
                     onChange={(e) => setMenuUrl(e.target.value)}
                     disabled={isLoading}
@@ -384,8 +419,13 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
                   </Button>
                 </div>
                 <p className="text-sm text-gray-500">
-                  Paste a link to your online menu and we'll automatically extract the items.
+                  Paste a direct link to a menu image (JPG, PNG, etc.) and we'll extract the menu items automatically.
                 </p>
+                <div className="text-xs text-gray-400">
+                  <p>• Supported formats: JPG, JPEG, PNG, GIF, WebP, BMP</p>
+                  <p>• Make sure the image is clear and well-lit for best results</p>
+                  <p>• Maximum file size: 10MB</p>
+                </div>
               </div>
             </TabsContent>
 
