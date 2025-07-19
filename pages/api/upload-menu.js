@@ -998,10 +998,10 @@ function isDescription(line) {
 }
 
 function parseMenuFromSeparatedLines(lines) {
-  const menu = [];
-  let currentCategory = 'Uncategorized';
+  let items = [];
   let currentItem = null;
-  const priceRegex = /£?\s?(\d+(?:\.\d{1,2})?)/;
+  let currentCategory = 'Uncategorized';
+  const priceRegex = /£?\s?(\d+(\.\d{1,2})?)/;
 
   console.log(`[Parser] Processing ${lines.length} lines`);
 
@@ -1011,21 +1011,21 @@ function parseMenuFromSeparatedLines(lines) {
     
     console.log(`[Parser] Line ${i}: "${line}"`);
 
-    // Check if line is a category header
+    // Is it a new category?
     if (isCategoryHeader(line)) {
       currentCategory = detectCategory(line);
       console.log(`[Parser] Detected category: ${currentCategory}`);
       
-      // Save current item if it has both name and price
+      // Save previous item if valid
       if (currentItem?.name && currentItem?.price) {
-        menu.push(currentItem);
+        items.push({ ...currentItem, category: currentCategory });
         console.log(`[Parser] Saved item before category: ${currentItem.name} - £${currentItem.price}`);
         currentItem = null;
       }
       continue;
     }
 
-    // Check if line is just a price (for current item)
+    // Is it a price-only line?
     const priceMatch = line.match(priceRegex);
     if (priceMatch && currentItem && !currentItem.price) {
       const price = parseFloat(priceMatch[1]);
@@ -1034,7 +1034,7 @@ function parseMenuFromSeparatedLines(lines) {
         console.log(`[Parser] Added price to current item: ${currentItem.name} - £${currentItem.price}`);
         
         // Save the completed item
-        menu.push(currentItem);
+        items.push({ ...currentItem, category: currentCategory });
         console.log(`[Parser] Saved completed item: ${currentItem.name} - £${currentItem.price}`);
         currentItem = null;
       }
@@ -1047,10 +1047,10 @@ function parseMenuFromSeparatedLines(lines) {
       const name = inlineMatch[1].trim();
       const price = parseFloat(inlineMatch[2]);
       
-      if (name && price && !isNaN(price) && price > 0 && isLikelyItemName(name)) {
-        // Save current item if it exists
+      if (name && price && !isNaN(price) && price > 0) {
+        // Save current item if it exists and is complete
         if (currentItem?.name && currentItem?.price) {
-          menu.push(currentItem);
+          items.push({ ...currentItem, category: currentCategory });
           console.log(`[Parser] Saved previous item: ${currentItem.name} - £${currentItem.price}`);
         }
         
@@ -1058,83 +1058,63 @@ function parseMenuFromSeparatedLines(lines) {
         currentItem = {
           name: name,
           price: price,
-          category: currentCategory,
           description: ""
         };
         console.log(`[Parser] Created inline item: ${name} - £${price}`);
         
         // Save the completed item immediately
-        menu.push(currentItem);
+        items.push({ ...currentItem, category: currentCategory });
         console.log(`[Parser] Saved inline item: ${currentItem.name} - £${currentItem.price}`);
         currentItem = null;
       }
       continue;
     }
 
-    // Check if line looks like a new menu item
-    if (isLikelyItemName(line)) {
-      // Save previous item if it has both name and price
+    // New item detected (with capitalized keywords or starter word)
+    if (isLikelyNewItem(line)) {
+      // Save previous item if valid
       if (currentItem?.name && currentItem?.price) {
-        menu.push(currentItem);
+        items.push({ ...currentItem, category: currentCategory });
         console.log(`[Parser] Saved previous item: ${currentItem.name} - £${currentItem.price}`);
       } else if (currentItem?.name) {
         console.log(`[Parser] Discarded incomplete item: ${currentItem.name} (no price)`);
       }
-      
-      // Start new item
+
       currentItem = {
         name: line,
         price: null,
-        category: currentCategory,
         description: ""
       };
       console.log(`[Parser] Started new item: ${line}`);
       continue;
     }
 
-    // Check if line is a description or continuation
-    if (isDescription(line) && currentItem) {
-      currentItem.description += (currentItem.description ? " " : "") + line;
-      console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
-      continue;
-    }
-
-    // Check if line might be a continuation of the current item name
-    if (currentItem && !currentItem.price && line.length < 50) {
-      // Try to extract price from this line
-      const continuationPriceMatch = line.match(priceRegex);
-      if (continuationPriceMatch) {
-        const price = parseFloat(continuationPriceMatch[1]);
-        if (!isNaN(price) && price > 0) {
-          currentItem.price = price;
-          console.log(`[Parser] Added price from continuation: ${currentItem.name} - £${currentItem.price}`);
-          
-          // Save the completed item
-          menu.push(currentItem);
-          console.log(`[Parser] Saved item with continuation price: ${currentItem.name} - £${currentItem.price}`);
-          currentItem = null;
-        }
-      } else {
-        // Might be a continuation of the name
+    // If it's part of current item's description or name continuation
+    if (currentItem) {
+      if (!currentItem.price) {
+        // Continue building the name
         currentItem.name += " " + line;
         console.log(`[Parser] Extended item name: ${currentItem.name}`);
+      } else {
+        // Add to description
+        currentItem.description += (currentItem.description ? " " : "") + line;
+        console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
       }
-      continue;
+    } else {
+      console.log(`[Parser] Skipped line (no current item): "${line}"`);
     }
-
-    console.log(`[Parser] Skipped line: "${line}"`);
   }
 
-  // Handle any remaining incomplete item
+  // Final push
   if (currentItem?.name && currentItem?.price) {
-    menu.push(currentItem);
+    items.push({ ...currentItem, category: currentCategory });
     console.log(`[Parser] Saved final item: ${currentItem.name} - £${currentItem.price}`);
   } else if (currentItem?.name) {
     console.log(`[Parser] Discarded final incomplete item: ${currentItem.name} (no price)`);
   }
 
   // Post-processing
-  const processedMenu = postProcessMenu(menu);
+  const processedMenu = postProcessMenu(items);
   console.log(`[Parser] Final processed menu: ${processedMenu.length} items`);
   return processedMenu;
 }
@@ -1328,24 +1308,24 @@ function filterValidMenuItems(items) {
     // Check if item has valid price
     const hasValidPrice = typeof item.price === 'number' && !isNaN(item.price) && item.price > 0;
     
-    // Check if item name is valid
-    const isValidName = item.name && item.name.trim().length > 0;
+    // Check if item name is valid (relaxed - allow short names)
+    const hasValidName = item.name && item.name.trim().length > 0;
     
-    // Check if item passes menu item validation
-    const passesValidation = isValidMenuItem(item.name);
+    // Check if item passes basic validation (relaxed)
+    const passesBasicValidation = hasValidName && hasValidPrice;
     
     if (!hasValidPrice) {
       console.log(`[Filter] Excluded item with invalid price: "${item.name}" (price: ${item.price})`);
       return false;
     }
     
-    if (!isValidName) {
+    if (!hasValidName) {
       console.log(`[Filter] Excluded item with invalid name: "${item.name}"`);
       return false;
     }
     
-    if (!passesValidation) {
-      console.log(`[Filter] Excluded non-menu item: "${item.name}"`);
+    if (!passesBasicValidation) {
+      console.log(`[Filter] Excluded item failing basic validation: "${item.name}" (price: ${item.price})`);
       return false;
     }
     
@@ -1354,4 +1334,89 @@ function filterValidMenuItems(items) {
   
   console.log(`[Filter] Filtered ${items.length} items down to ${validItems.length} valid items`);
   return validItems;
+}
+
+function isLikelyNewItem(line) {
+  const trimmed = line.trim();
+  
+  // Exclude common non-menu items
+  const excludePatterns = [
+    /^w\/|^with\s/i,
+    /^add\s/i,
+    /^includes\s/i,
+    /^served\s+with\s/i,
+    /^or\s/i,
+    /^and\s/i,
+    /^extra\s/i,
+    /^topping\s/i,
+    /^side\s/i,
+    /^option\s/i,
+    /^choice\s/i,
+    /^selection\s/i,
+    /^substitute\s/i,
+    /^replace\s/i,
+    /^instead\s+of\s/i
+  ];
+  
+  // Check if line matches any exclusion pattern
+  for (const pattern of excludePatterns) {
+    if (pattern.test(trimmed)) {
+      return false;
+    }
+  }
+  
+  // Known menu item patterns (both English and Arabic) - more comprehensive
+  const menuPatterns = [
+    /burger/i, /shakshuka/i, /labneh/i, /hummus/i, /baba/i,
+    /halloumi/i, /kibbeh/i, /mutbal/i, /mezze/i, /tapas/i,
+    /bruschetta/i, /spring roll/i, /samosa/i, /pakora/i,
+    /steak/i, /chicken/i, /beef/i, /lamb/i, /fish/i, /salmon/i,
+    /pasta/i, /rice/i, /noodles/i, /curry/i, /stew/i, /roast/i,
+    /cake/i, /ice cream/i, /pudding/i, /cheesecake/i, /brownie/i,
+    /chocolate/i, /coffee/i, /tea/i, /juice/i, /smoothie/i,
+    /milkshake/i, /cocktail/i, /beer/i, /wine/i, /salad/i,
+    /sandwich/i, /wrap/i, /panini/i, /eggs/i, /bacon/i,
+    /toast/i, /pancake/i, /waffle/i, /nuts/i, /fries/i,
+    /chips/i, /mash/i, /rocket/i, /cheese/i, /sauce/i
+  ];
+  
+  // Check if line matches any known menu pattern
+  for (const pattern of menuPatterns) {
+    if (pattern.test(trimmed)) {
+      return true;
+    }
+  }
+  
+  // Check for Arabic text
+  if (/[ء-ي]/.test(trimmed)) {
+    return true;
+  }
+  
+  // Check for capitalized words (common in menu items)
+  const words = trimmed.split(' ');
+  const capitalizedWords = words.filter(word => 
+    word.length > 0 && word[0] === word[0].toUpperCase()
+  );
+  
+  // If more than 50% of words are capitalized, likely a menu item
+  if (capitalizedWords.length > 0 && capitalizedWords.length >= words.length * 0.5) {
+    return true;
+  }
+  
+  // More relaxed detection - allow short names and common food words
+  return (
+    trimmed.length > 0 &&
+    trimmed.length < 100 &&
+    !/^£/.test(trimmed) &&
+    !isCategoryHeader(trimmed) &&
+    !isDescription(trimmed) &&
+    // Allow short names like "Nuts", "Fries", etc.
+    (trimmed.length >= 1) &&
+    // Don't block common food words
+    !['served with', 'add ', 'with ', 'and ', 'or ', 'freshly made', 'grilled'].some(word => 
+      trimmed.toLowerCase().startsWith(word)
+    ) &&
+    // Allow lines that contain food-related content
+    (trimmed.length > 0 || /[ء-ي]/.test(trimmed) || /[A-Z]/.test(trimmed))
+  );
 }
