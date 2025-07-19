@@ -130,26 +130,11 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         setUploading(false);
         return;
       }
-      // Insert extracted items into the menu
-      const itemsToInsert = (result.items || []).map((item: any) => ({
-          ...item,
-          venue_id: venueUuid,
-        available: true,
-      }));
-      return fetch("/api/extract-menu", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: itemsToInsert, venue_id: venueUuid }),
-      });
-    })
-    .then(saveRes => saveRes.json())
-    .then(saveResult => {
-      if (saveResult.error) {
-        setError(saveResult.error || "Failed to save extracted menu.");
-        } else {
-        setError(null);
-      }
+      // Success - the upload-menu API handles both upload and database insertion
+      setError(null);
       setUploading(false);
+      // Refresh the menu to show new items
+      fetchMenu();
     })
     .catch(error => {
       setError("Failed to process menu file.");

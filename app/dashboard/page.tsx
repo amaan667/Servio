@@ -154,24 +154,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between h-auto md:h-16 py-4 md:py-0">
-            <div className="pl-2">
-              <h1 className="text-2xl font-bold text-gray-900">
-                {session.venue.name}{session.venue.name.endsWith('s') ? "'" : "'s"} Dashboard
-                </h1>
-            </div>
-            <div className="mt-4 md:mt-0">
-            <Button variant="outline" onClick={handleSignOut}>
-              Sign Out
-            </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
