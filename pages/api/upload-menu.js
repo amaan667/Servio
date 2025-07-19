@@ -384,7 +384,7 @@ function extractFromLines(lines, currentCategory) {
     }
     
     // Method 1: Check if line contains both name and price inline
-    const inlineMatch = content.match(/^(.*?)[.\-–—]*\s*£\s?(\d+(?:\.\d{1,2})?)/);
+    const inlineMatch = content.match(/^(.*?)[.\-–—]*\s*£\s?(\d{1,3}(?:\.\d{1,2})?)/);
     if (inlineMatch) {
       const name = inlineMatch[1].trim();
       const price = parseFloat(inlineMatch[2]);
@@ -599,14 +599,14 @@ async function processExtractedData(result, venueId, res) {
         return res.status(400).json({ error: 'No menu items found or venueId missing' });
       }
     } else {
-      // Process text-based extraction
+      // Process text-based extraction with new OCR parser
       const text = result.data;
       console.log("OCR RAW TEXT >>>", text.slice(0, 100));
       console.log("FULL OCR TEXT >>>", text);
       
-      const lines = cleanOCRLines(text);
-      const structuredMenu = parseMenuFromSeparatedLines(lines);
-      console.log('Structured menu from line parsing:', structuredMenu);
+      // Use the new cleaner parsing approach
+      const structuredMenu = parseMenuFromOCR(text);
+      console.log('Structured menu from new OCR parser:', structuredMenu);
 
       if (venueId && structuredMenu.length > 0) {
         // Filter valid menu items before inserting
@@ -1107,6 +1107,233 @@ function isLikelyFragment(line) {
     (/^[a-z]/.test(line) || /,$/.test(line) || /and$/.test(line) || /with$/.test(line)) &&
     !looksLikePrice(line)
   );
+}
+
+function parseMenuFromOCR(ocrText) {
+  const lines = ocrText.split('\n').map(line => line.trim()).filter(Boolean);
+  const menuItems = [];
+  let currentCategory = null;
+  let currentItem = null;
+  
+  // Define proper category keywords
+  const categoryKeywords = [
+    'STARTERS', 'ALL DAY BRUNCH', 'KIDS', 'MAINS', 'SALAD', 
+    'WRAPS & SANDWICHES', 'ON SOURDOUGH', 'DESSERTS', 
+    'HOT COFFEE', 'ICED COFFEE', 'SPECIALITY COFFEE', 
+    'NOT COFFEE', 'LOOSE LEAVES TEA', 'JUICES', 'SMOOTHIES', 
+    'MILKSHAKES', 'EXTRAS', 'SPECIALS'
+  ];
+  
+  // Price regex - more flexible
+  const priceRegex = /£(\d+(?:\.\d{2})?)/g;
+  
+  console.log(`[Parser] Processing ${lines.length} lines from OCR`);
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const nextLine = lines[i + 1] || '';
+    
+    console.log(`[Parser] Line ${i}: "${line}"`);
+    
+    // Skip header lines
+    if (line.includes('NUR CAFE') || line.includes('MENU') || 
+        line.match(/^J[OĄ].*J$/)) {
+      console.log(`[Parser] Skipped header line: "${line}"`);
+      continue;
+    }
+    
+    // Check if this is a category
+    if (categoryKeywords.some(cat => line.toUpperCase().includes(cat))) {
+      // Save previous item if exists
+      if (currentItem) {
+        menuItems.push(currentItem);
+        console.log(`[Parser] Saved item before category: ${currentItem.name} - £${currentItem.price}`);
+        currentItem = null;
+      }
+      
+      currentCategory = line.toUpperCase().replace(/[^\w\s&]/g, '').trim();
+      console.log(`[Category] Found: ${currentCategory}`);
+      continue;
+    }
+    
+    // Skip if no category set yet
+    if (!currentCategory) {
+      console.log(`[Parser] Skipped line (no category): "${line}"`);
+      continue;
+    }
+    
+    // Check if line contains a price
+    const priceMatch = line.match(priceRegex);
+    
+    if (priceMatch) {
+      // This line has a price - could be item name + price or just price
+      const price = priceMatch[priceMatch.length - 1]; // Get last price if multiple
+      const nameWithoutPrice = line.replace(priceRegex, '').trim();
+      
+      if (nameWithoutPrice && nameWithoutPrice.length > 2) {
+        // Line has both name and price
+        if (currentItem) {
+          menuItems.push(currentItem);
+          console.log(`[Parser] Saved item: ${currentItem.name} - £${currentItem.price}`);
+        }
+        
+        currentItem = {
+          name: cleanItemName(nameWithoutPrice),
+          price: price,
+          category: currentCategory,
+          description: ''
+        };
+        console.log(`[Parser] Created item with inline price: ${currentItem.name} - £${currentItem.price}`);
+      } else if (currentItem) {
+        // Just a price line - attach to current item
+        currentItem.price = price;
+        console.log(`[Parser] Attached price to current item: ${currentItem.name} - £${currentItem.price}`);
+      } else {
+        console.log(`[Parser] Found orphaned price: £${price}`);
+      }
+    } else {
+      // No price in this line
+      if (isItemName(line)) {
+        // Save previous item
+        if (currentItem) {
+          menuItems.push(currentItem);
+          console.log(`[Parser] Saved item: ${currentItem.name} - £${currentItem.price}`);
+        }
+        
+        // Start new item
+        currentItem = {
+          name: cleanItemName(line),
+          price: '',
+          category: currentCategory,
+          description: ''
+        };
+        console.log(`[Parser] Started new item: ${currentItem.name}`);
+      } else if (currentItem && isDescription(line)) {
+        // Add to description
+        currentItem.description += (currentItem.description ? ' ' : '') + line;
+        console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
+      } else {
+        console.log(`[Parser] Skipped line: "${line}"`);
+      }
+    }
+  }
+  
+  // Don't forget the last item
+  if (currentItem) {
+    menuItems.push(currentItem);
+    console.log(`[Parser] Saved final item: ${currentItem.name} - £${currentItem.price}`);
+  }
+  
+  console.log(`[Parser] Total items extracted: ${menuItems.length}`);
+  return menuItems;
+}
+
+// Helper functions
+function cleanItemName(name) {
+  return name
+    .replace(/^[^\w]+/, '') // Remove leading non-word chars
+    .replace(/\s+/g, ' ')   // Normalize spaces
+    .trim();
+}
+
+function isItemName(line) {
+  // Check if line looks like an item name
+  const upperLine = line.toUpperCase();
+  
+  // Skip common non-item patterns
+  if (line.length < 3) return false;
+  if (line.startsWith('+') || line.startsWith('-')) return false;
+  if (line.match(/^\d+\s*(pcs?|pieces?|people?)/i)) return false;
+  if (line.match(/^(add|with|served|ask)/i)) return false;
+  
+  // Likely an item if it has food-related words or is in caps
+  return upperLine === line || 
+         line.match(/\b(served|with|chicken|beef|egg|cheese|bread)\b/i);
+}
+
+
+
+// Enhanced processing pipeline
+async function processMenuFile(fileBuffer, mimetype) {
+  try {
+    console.log('[Process] Starting menu processing...');
+    
+    // 1. Upload to storage
+    const fileUrl = await uploadToStorage(fileBuffer, mimetype);
+    
+    // 2. Extract text using OCR
+    let extractedText = '';
+    if (mimetype === 'application/pdf') {
+      extractedText = await extractTextFromPDF(fileUrl);
+    } else {
+      extractedText = await extractTextFromImage(fileUrl);
+    }
+    
+    console.log('[OCR] Extracted text length:', extractedText.length);
+    
+    // 3. Parse with improved logic
+    const menuItems = parseMenuFromOCR(extractedText);
+    
+    console.log('[Parse] Extracted items:', menuItems.length);
+    
+    // 4. Post-process with GPT for cleanup
+    const cleanedItems = await cleanupWithGPT(menuItems);
+    
+    return {
+      success: true,
+      items: cleanedItems,
+      totalItems: cleanedItems.length
+    };
+    
+  } catch (error) {
+    console.error('[Process] Error:', error);
+    throw error;
+  }
+}
+
+// GPT cleanup for better accuracy
+async function cleanupWithGPT(rawItems) {
+  try {
+    const prompt = `
+Clean up this menu data. Fix any OCR errors, standardize formatting, and ensure all items have proper names, prices, and categories.
+
+Raw menu items:
+${JSON.stringify(rawItems, null, 2)}
+
+Return clean JSON with structure:
+{
+  "items": [
+    {
+      "name": "Clean item name",
+      "price": "£X.XX",
+      "category": "Category Name",
+      "description": "Clean description"
+    }
+  ]
+}
+`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are a menu data cleaner. Fix OCR errors and standardize menu item formatting."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.1
+    });
+
+    const result = JSON.parse(response.choices[0].message.content);
+    return result.items || [];
+  } catch (e) {
+    console.error('[GPT] Parse error:', e);
+    return rawItems; // Fallback to raw items
+  }
 }
 
 function parseMenuFromSeparatedLines(rawLines) {
