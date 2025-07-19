@@ -272,13 +272,24 @@ async function processImageFile(filePath, mimeType) {
     } else if (mimeType.startsWith('image/')) {
       console.log('[Process] Processing image with GPT Vision');
       
-      const menuItems = await processImageWithGPTVision(fileBuffer, mimeType);
-      
-      if (Array.isArray(menuItems) && menuItems.length > 0) {
-        console.log(`[Process] Found ${menuItems.length} menu items`);
-        return { type: 'structured', data: menuItems };
-      } else {
-        throw new Error('No menu items found in image');
+      try {
+        const menuItems = await processImageWithGPTVision(fileBuffer, mimeType);
+        
+        if (Array.isArray(menuItems) && menuItems.length > 0) {
+          console.log(`[Process] Found ${menuItems.length} menu items`);
+          return { type: 'structured', data: menuItems };
+        } else {
+          throw new Error('No menu items found in image');
+        }
+      } catch (visionError) {
+        console.error(`[Process] GPT Vision error:`, visionError);
+        
+        // Handle quota errors specifically
+        if (visionError.message?.includes('quota') || visionError.message?.includes('OpenAI quota exceeded')) {
+          throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
+        }
+        
+        throw visionError;
       }
       
     } else {
@@ -363,6 +374,15 @@ async function processImageUrl(req, res, imageUrl, venueId) {
     
   } catch (error) {
     console.error('URL processing error:', error);
+    
+    // Handle quota errors specifically
+    if (error.message?.includes('quota') || error.message?.includes('OpenAI quota exceeded')) {
+      return res.status(429).json({ 
+        error: 'OpenAI quota exceeded. Please upgrade your plan or try again later.',
+        details: error.message 
+      });
+    }
+    
     res.status(500).json({ error: 'Failed to process image URL', detail: error.message });
   } finally {
     // Clean up temporary file
@@ -392,6 +412,15 @@ async function processFileUpload(req, res) {
       
     } catch (e) {
       console.error('File processing error:', e);
+      
+      // Handle quota errors specifically
+      if (e.message?.includes('quota') || e.message?.includes('OpenAI quota exceeded')) {
+        return res.status(429).json({ 
+          error: 'OpenAI quota exceeded. Please upgrade your plan or try again later.',
+          details: e.message 
+        });
+      }
+      
       res.status(500).json({ error: 'OCR failed', detail: e.message });
     } finally {
       // Clean up uploaded file
@@ -2174,50 +2203,63 @@ function isLikelyNewItem(line) {
 
 async function processImageWithGPTVision(imageBuffer, mimeType) {
   try {
-    console.log('[GPT Vision] Processing image with GPT-4 Vision');
-    
     // Generate hash for caching
     const imageHash = generateImageHash(imageBuffer);
+    
+    // Check cache first
     const cachedResult = getCachedResult(imageHash);
     if (cachedResult) {
-      console.log('[GPT Vision] Using cached result');
+      console.log(`[Vision] Using cached result for image hash: ${imageHash.substring(0, 8)}...`);
       return cachedResult;
     }
     
-    // Optimize image for Vision API
+    // Optimize image for vision API
     const optimizedBuffer = await optimizeImageForVision(imageBuffer, mimeType);
+    console.log(`[Vision] Optimized image: ${imageBuffer.length} → ${optimizedBuffer.length} bytes`);
     
-    // Convert buffer to base64
     const base64Image = optimizedBuffer.toString('base64');
-    const dataUrl = `data:${mimeType};base64,${base64Image}`;
-    
-    // Streamlined prompt for faster processing
-    const visionPrompt = `Extract all food items with name, price, description, and category from this image. Return in JSON format.`;
     
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       messages: [
         {
+          role: "system",
+          content: "You are a menu parsing expert. Extract ALL menu items with name, price, description, and category. Return ONLY a valid JSON array in this exact format: [{\"name\": \"\", \"price\": 0, \"description\": \"\", \"category\": \"\"}]. Do not include any explanations or additional text."
+        },
+        {
           role: "user",
           content: [
             {
-              type: "text",
-              text: visionPrompt
-            },
-            {
               type: "image_url",
               image_url: {
-                url: dataUrl
+                url: `data:image/${mimeType === 'image/jpeg' ? 'jpeg' : 'png'};base64,${base64Image}`,
+                detail: "high"
               }
+            },
+            {
+              type: "text",
+              text: `Extract EVERY menu item from this image. Return a valid JSON array ONLY in this format:
+
+[
+  { "name": "", "price": 0, "description": "", "category": "" },
+  ...
+]
+
+⚠️ Do not nest JSON inside any field.
+⚠️ For each item, extract the nearest visible category above it (e.g., "Mains", "Brunch", "Add-ons").
+⚠️ If no category is found, use "Uncategorized".
+⚠️ Extract every add-on (e.g. 'Add Egg £1.50') as its own item.
+⚠️ Do NOT use 'menuItem:' or any other keys outside of this format.
+⚠️ Items with same name but different prices must both be included.`
             }
           ]
         }
       ],
-      max_tokens: 2000, // Reduced for faster response
+      max_tokens: 2048,
     });
     
     const content = response.choices[0].message.content;
-    console.log('[GPT Vision] Raw response:', content);
+    console.log(`[Vision] Raw response:`, content);
     
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
@@ -2225,39 +2267,32 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
         
-        // Validate and filter items
+        // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
           return item && 
                  typeof item.name === 'string' && 
                  item.name.trim().length > 0 &&
                  typeof item.price === 'number' && 
                  item.price > 0;
-        });
+        }).map(item => ({
+          ...item,
+          category: normalizeCategory(item.category)
+        }));
         
-        console.log(`[GPT Vision] Parsed ${menuItems.length} items, ${validItems.length} valid`);
+        console.log(`[Vision] Parsed ${menuItems.length} items, ${validItems.length} valid`);
         
         // Cache the result
         setCachedResult(imageHash, validItems);
         
-        // Check if we got enough items, if not, try aggressive parsing
-        if (validItems.length < 15) {
-          console.log(`[GPT Vision] Only ${validItems.length} items found, trying aggressive parsing...`);
-          const aggressiveItems = await processImageWithGPTVisionAggressive(optimizedBuffer, mimeType);
-          if (aggressiveItems.length > validItems.length) {
-            console.log(`[GPT Vision] Aggressive parsing found ${aggressiveItems.length} items vs ${validItems.length} from normal parsing`);
-            setCachedResult(imageHash, aggressiveItems);
-            return aggressiveItems;
-          }
-        }
-        
         return validItems;
       } catch (parseError) {
-        console.error('[GPT Vision] JSON parse error:', parseError);
+        console.error(`[Vision] JSON parse error:`, parseError);
+        console.error(`[Vision] Failed to parse this JSON:`, jsonMatch[0]);
         
-        // Use faster model for JSON fixing
-        const fixedItems = await fixJSONWithFastModel(content);
+        // Try to fix JSON with a faster model
+        const fixedItems = await fixJSONWithFastModel(jsonMatch[0]);
         if (fixedItems.length > 0) {
-          console.log(`[GPT Vision] Fixed JSON with fast model: ${fixedItems.length} items`);
+          console.log(`[Vision] Fixed JSON with fast model, found ${fixedItems.length} items`);
           setCachedResult(imageHash, fixedItems);
           return fixedItems;
         }
@@ -2265,12 +2300,13 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
         throw new Error('Failed to parse GPT Vision response as JSON');
       }
     } else {
-      console.error('[GPT Vision] No JSON array found in response');
+      console.error(`[Vision] No JSON array found in response`);
+      console.error(`[Vision] Full response content:`, content);
       
-      // Use faster model for text extraction
+      // Try to extract items with fast model
       const extractedItems = await extractItemsWithFastModel(content);
       if (extractedItems.length > 0) {
-        console.log(`[GPT Vision] Extracted items with fast model: ${extractedItems.length} items`);
+        console.log(`[Vision] Extracted items with fast model, found ${extractedItems.length} items`);
         setCachedResult(imageHash, extractedItems);
         return extractedItems;
       }
@@ -2278,79 +2314,134 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
       throw new Error('No valid JSON array found in GPT Vision response');
     }
   } catch (error) {
-    console.error('[GPT Vision] Error:', error);
+    console.error(`[Vision] Error:`, error);
+    
+    // Handle quota errors specifically
+    if (error.code === 'insufficient_quota' || error.message?.includes('quota')) {
+      throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
+    }
+    
     throw error;
   }
 }
 
-async function processImageWithGPTVisionAggressive(imageBuffer, mimeType) {
+async function processAllImagesWithGPTVision(imageBuffers, mimeTypes) {
   try {
-    console.log('[GPT Vision Aggressive] Processing image with aggressive approach');
+    console.log(`[Vision Batch] Processing ${imageBuffers.length} images in single GPT Vision call`);
     
-    // Convert buffer to base64
-    const base64Image = imageBuffer.toString('base64');
-    const dataUrl = `data:${mimeType};base64,${base64Image}`;
-    
-    const aggressiveVisionPrompt = `
-You missed some items. Re-read this image carefully and extract **every visible** menu item with a price.
-
-Extract ALL menu items from this image, being very aggressive. Include every item with a £ symbol or price.
-
-⚠️ If you see any item with a £ symbol or price, include it as a menu item.
-⚠️ If the name is unclear, use the text before the price as the name.
-⚠️ Include add-ons, modifiers, and side items as separate menu items.
-⚠️ Do not skip anything that looks like a menu item.
-
-Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }].`;
+    // Prepare all images for the batch call
+    const imageMessages = imageBuffers.map((buffer, index) => {
+      const mimeType = mimeTypes[index] || 'image/png';
+      const base64Image = buffer.toString('base64');
+      
+      return {
+        type: "image_url",
+        image_url: {
+          url: `data:image/${mimeType === 'image/jpeg' ? 'jpeg' : 'png'};base64,${base64Image}`,
+          detail: "high"
+        }
+      };
+    });
     
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       messages: [
         {
+          role: "system",
+          content: "You are a menu parsing expert. Extract ALL menu items from ALL images with name, price, description, and category. Return ONLY a valid JSON array in this exact format: [{\"name\": \"\", \"price\": 0, \"description\": \"\", \"category\": \"\"}]. Do not include any explanations or additional text."
+        },
+        {
           role: "user",
           content: [
+            ...imageMessages,
             {
               type: "text",
-              text: aggressiveVisionPrompt
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: dataUrl
-              }
+              text: `Extract EVERY menu item from ALL ${imageBuffers.length} images. Return a valid JSON array ONLY in this format:
+
+[
+  { "name": "", "price": 0, "description": "", "category": "" },
+  ...
+]
+
+⚠️ Do not nest JSON inside any field.
+⚠️ For each item, extract the nearest visible category above it (e.g., "Mains", "Brunch", "Add-ons").
+⚠️ If no category is found, use "Uncategorized".
+⚠️ Extract every add-on (e.g. 'Add Egg £1.50') as its own item.
+⚠️ Do NOT use 'menuItem:' or any other keys outside of this format.
+⚠️ Items with same name but different prices must both be included.
+⚠️ Process ALL images and combine ALL items into one array.`
             }
           ]
         }
       ],
-      max_tokens: 4000,
+      max_tokens: 4096, // Increased for multiple images
     });
     
     const content = response.choices[0].message.content;
-    console.log('[GPT Vision Aggressive] Raw response:', content);
+    console.log(`[Vision Batch] Raw response:`, content);
     
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        console.log(`[GPT Vision Aggressive] Parsed ${menuItems.length} menu items`);
-        return menuItems;
+        
+        // Normalize categories and validate items
+        const validItems = menuItems.filter(item => {
+          return item && 
+                 typeof item.name === 'string' && 
+                 item.name.trim().length > 0 &&
+                 typeof item.price === 'number' && 
+                 item.price > 0;
+        }).map(item => ({
+          ...item,
+          category: normalizeCategory(item.category)
+        }));
+        
+        console.log(`[Vision Batch] Parsed ${menuItems.length} items, ${validItems.length} valid from all images`);
+        
+        return validItems;
       } catch (parseError) {
-        console.error('[GPT Vision Aggressive] JSON parse error:', parseError);
-        return [];
+        console.error(`[Vision Batch] JSON parse error:`, parseError);
+        console.error(`[Vision Batch] Failed to parse this JSON:`, jsonMatch[0]);
+        
+        // Try to fix JSON with a faster model
+        const fixedItems = await fixJSONWithFastModel(jsonMatch[0]);
+        if (fixedItems.length > 0) {
+          console.log(`[Vision Batch] Fixed JSON with fast model, found ${fixedItems.length} items`);
+          return fixedItems;
+        }
+        
+        throw new Error('Failed to parse GPT Vision batch response as JSON');
       }
     } else {
-      console.error('[GPT Vision Aggressive] No JSON array found in response');
-      return [];
+      console.error(`[Vision Batch] No JSON array found in response`);
+      console.error(`[Vision Batch] Full response content:`, content);
+      
+      // Try to extract items with fast model
+      const extractedItems = await extractItemsWithFastModel(content);
+      if (extractedItems.length > 0) {
+        console.log(`[Vision Batch] Extracted items with fast model, found ${extractedItems.length} items`);
+        return extractedItems;
+      }
+      
+      throw new Error('No valid JSON array found in GPT Vision batch response');
     }
   } catch (error) {
-    console.error('[GPT Vision Aggressive] Error:', error);
-    return [];
+    console.error(`[Vision Batch] Error:`, error);
+    
+    // Handle quota errors specifically
+    if (error.code === 'insufficient_quota' || error.message?.includes('quota')) {
+      throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
+    }
+    
+    throw error;
   }
 }
 
-// PDF-to-image conversion removed - now using text extraction + GPT parsing
+// ... existing code ...
 
+// PDF-to-image conversion using pdf-lib and canvas
 async function convertPDFToImages(pdfBuffer) {
   try {
     console.log('[PDF Convert] Converting PDF to images using pdf-lib');
@@ -2374,8 +2465,7 @@ async function convertPDFToImages(pdfBuffer) {
         // Convert to PNG using canvas
         const pdfBytes = await singlePagePdf.save();
         
-        // For now, we'll use a different approach since pdf-lib doesn't directly render to images
-        // We'll use the text extraction approach but with better GPT processing
+        // For now, we'll use text extraction approach but with better GPT processing
         const pageText = await extractTextFromPDFPage(pdfBuffer, i);
         
         if (pageText && pageText.trim().length > 0) {
@@ -2583,3 +2673,5 @@ Return only valid JSON:`
     return [];
   }
 }
+
+// ... existing code ...
