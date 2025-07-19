@@ -25,10 +25,24 @@ export const config = {
 };
 
 // Azure Form Recognizer client
-const client = new DocumentAnalysisClient(
-  process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
-  new AzureKeyCredential(process.env.AZURE_FORM_RECOGNIZER_KEY)
-);
+let client = null;
+
+try {
+  const endpoint = process.env.AZURE_FORM_RECOGNIZER_ENDPOINT;
+  const apiKey = process.env.AZURE_FORM_RECOGNIZER_KEY;
+  
+  if (endpoint && apiKey) {
+    client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(apiKey));
+    console.log('[Azure] Form Recognizer client initialized successfully');
+  } else {
+    console.warn('[Azure] Missing environment variables - Azure Form Recognizer will not be available');
+    console.warn('[Azure] AZURE_FORM_RECOGNIZER_ENDPOINT:', !!endpoint);
+    console.warn('[Azure] AZURE_FORM_RECOGNIZER_KEY:', !!apiKey);
+  }
+} catch (error) {
+  console.error('[Azure] Failed to initialize Form Recognizer client:', error);
+  client = null;
+}
 
 // Supabase client
 const supabase = createClient(
@@ -84,31 +98,41 @@ async function processImageFile(filePath, mimeType) {
 }
 
 async function analyzeMenuWithAzure(filePath) {
-  const file = fs.readFileSync(filePath);
-
-  const poller = await client.beginAnalyzeDocument("prebuilt-layout", file, {
-    contentType: "application/pdf", // or "image/png" etc.
-  });
-
-  const result = await poller.pollUntilDone();
-
-  // Extract menu items from layout analysis
-  const menuItems = extractFromLayout(result);
-  
-  if (menuItems.length > 0) {
-    console.log(`[Layout] Found ${menuItems.length} items via layout extraction`);
-    return menuItems;
+  if (!client) {
+    console.warn('[Azure] Form Recognizer client not available, falling back to local OCR');
+    throw new Error('Azure Form Recognizer not configured');
   }
 
-  // Fallback to line-by-line extraction
-  let output = [];
-  for (const page of result.pages || []) {
-    for (const line of page.lines || []) {
-      output.push(line.content);
+  try {
+    const file = fs.readFileSync(filePath);
+
+    const poller = await client.beginAnalyzeDocument("prebuilt-layout", file, {
+      contentType: "application/pdf", // or "image/png" etc.
+    });
+
+    const result = await poller.pollUntilDone();
+
+    // Extract menu items from layout analysis
+    const menuItems = extractFromLayout(result);
+    
+    if (menuItems.length > 0) {
+      console.log(`[Layout] Found ${menuItems.length} items via layout extraction`);
+      return menuItems;
     }
-  }
 
-  return output.join('\n');
+    // Fallback to line-by-line extraction
+    let output = [];
+    for (const page of result.pages || []) {
+      for (const line of page.lines || []) {
+        output.push(line.content);
+      }
+    }
+
+    return output.join('\n');
+  } catch (error) {
+    console.error('[Azure] Form Recognizer analysis failed:', error);
+    throw error;
+  }
 }
 
 function extractFromLayout(result) {
@@ -1016,7 +1040,7 @@ function formatItemName(name) {
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })
     .join(' ');
-} 
+}
 
 function parsePrice(priceText) {
   if (!priceText) return null;
@@ -1102,4 +1126,4 @@ function filterValidMenuItems(items) {
   
   console.log(`[Filter] Filtered ${items.length} items down to ${validItems.length} valid items`);
   return validItems;
-} 
+}
