@@ -1140,8 +1140,8 @@ function parseMenuFromSeparatedLines(lines) {
       continue;
     }
 
-    // Check if line looks like a menu item name
-    if (looksLikeMenuItemName(line)) {
+    // Check if line looks like a proper menu item name
+    if (isProperMenuItem(line)) {
       // Save previous pending item if it has a price
       if (pendingItem && pendingItem.price) {
         items.push({ ...pendingItem, category: currentCategory });
@@ -1157,6 +1157,12 @@ function parseMenuFromSeparatedLines(lines) {
         description: ""
       };
       console.log(`[Parser] Started new pending item: ${line}`);
+      continue;
+    }
+
+    // Check if line is a weak fragment (skip it)
+    if (isWeakFragment(line)) {
+      console.log(`[Parser] Skipped weak fragment: "${line}"`);
       continue;
     }
 
@@ -1181,6 +1187,23 @@ function parseMenuFromSeparatedLines(lines) {
   const processedMenu = postProcessMenu(items);
   console.log(`[Parser] Final processed menu: ${processedMenu.length} items`);
   return processedMenu;
+}
+
+function isLikelyOption(text) {
+  return /^(\(?w\/|\(?with|add|served|topped|includes|substitute|replace|instead\s+of)/i.test(text.trim());
+}
+
+function isWeakFragment(text) {
+  return /^[a-z\s,]+$/.test(text) && text.length < 20 && !text.includes(' ') && !isLikelyOption(text);
+}
+
+function isProperMenuItem(text) {
+  return !looksLikePrice(text) && 
+         !isLikelyOption(text) && 
+         !isWeakFragment(text) &&
+         !isCategoryHeader(text) &&
+         text.length > 3 &&
+         !/^[A-Z\s]+$/.test(text);
 }
 
 function looksLikePrice(text) {
