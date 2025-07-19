@@ -11,7 +11,7 @@ WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copy the rest of your app
 COPY . .
@@ -19,7 +19,8 @@ COPY . .
 # Build your Next.js app
 RUN npm run build
 
-# Expose the port Railway will use
+# Set the port for Railway
+ENV PORT 8080
 EXPOSE 8080
 
 # Start the app using Next.js standalone output
