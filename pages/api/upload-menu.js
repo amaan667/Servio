@@ -29,16 +29,18 @@ const client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(apiKe
 export async function analyzeMenuWithAzure(filePath) {
   const file = fs.readFileSync(filePath);
 
-  const poller = await client.beginAnalyzeDocument("prebuilt-document", file, {
+  const poller = await client.beginAnalyzeDocument("prebuilt-layout", file, {
     contentType: "application/pdf", // or "image/png" etc.
   });
 
   const result = await poller.pollUntilDone();
 
-  // Try to extract key-value pairs first (for table-like layouts)
-  if (result.keyValuePairs && result.keyValuePairs.length > 0) {
-    console.log("Found key-value pairs, using structured extraction");
-    return extractFromKeyValuePairs(result.keyValuePairs);
+  // Extract menu items from layout analysis
+  const menuItems = extractFromLayout(result);
+  
+  if (menuItems.length > 0) {
+    console.log(`[Layout] Found ${menuItems.length} items via layout extraction`);
+    return menuItems;
   }
 
   // Fallback to line-by-line extraction
@@ -52,43 +54,147 @@ export async function analyzeMenuWithAzure(filePath) {
   return output.join('\n');
 }
 
-function extractFromKeyValuePairs(keyValuePairs) {
+function extractFromLayout(result) {
   const menuItems = [];
   let currentCategory = 'Uncategorized';
+
+  for (const page of result.pages || []) {
+    console.log(`[Layout] Processing page ${page.pageNumber}`);
+    
+    // Process tables first (most structured)
+    if (page.tables && page.tables.length > 0) {
+      console.log(`[Layout] Found ${page.tables.length} tables`);
+      for (const table of page.tables) {
+        const tableItems = extractFromTable(table, currentCategory);
+        menuItems.push(...tableItems);
+      }
+    }
+
+    // Process lines for non-table content
+    if (page.lines && page.lines.length > 0) {
+      console.log(`[Layout] Processing ${page.lines.length} lines`);
+      const lineItems = extractFromLines(page.lines, currentCategory);
+      menuItems.push(...lineItems);
+    }
+  }
+
+  return menuItems;
+}
+
+function extractFromTable(table, currentCategory) {
+  const items = [];
   
-  for (const { key, value } of keyValuePairs) {
-    const keyText = key?.content?.trim();
-    const valueText = value?.content?.trim();
+  for (const row of table.rows || []) {
+    const cells = row.cells || [];
+    if (cells.length < 2) continue; // Need at least name and price
     
-    if (!keyText || !valueText) continue;
+    let itemName = '';
+    let itemPrice = null;
+    let itemDescription = '';
     
-    // Check if this looks like a category header
-    if (isCategoryHeader(keyText)) {
-      currentCategory = detectCategory(keyText);
-      console.log(`[Key-Value] Detected category: ${keyText} → ${currentCategory}`);
+    // Analyze cell content and position
+    for (const cell of cells) {
+      const content = cell.content?.trim() || '';
+      if (!content) continue;
+      
+      // Check if cell contains price
+      const priceMatch = content.match(/£\s?(\d+(?:\.\d{1,2})?)/);
+      if (priceMatch) {
+        itemPrice = parseFloat(priceMatch[1]);
+        // Remove price from content for name
+        itemName = content.replace(/£\s?\d+(?:\.\d{1,2})?/, '').trim();
+      } else {
+        // If no price found, this might be the name or description
+        if (!itemName) {
+          itemName = content;
+        } else {
+          itemDescription += (itemDescription ? ' ' : '') + content;
+        }
+      }
+    }
+    
+    // Validate and add item
+    if (itemName && itemPrice) {
+      items.push({
+        name: itemName,
+        price: itemPrice,
+        category: currentCategory,
+        description: itemDescription || undefined
+      });
+      console.log(`[Table] Extracted: ${itemName} - £${itemPrice} (${currentCategory})`);
+    }
+  }
+  
+  return items;
+}
+
+function extractFromLines(lines, currentCategory) {
+  const items = [];
+  let currentItem = null;
+  
+  for (const line of lines) {
+    const content = line.content?.trim() || '';
+    if (!content) continue;
+    
+    // Check if line is a category header
+    if (isCategoryHeader(content)) {
+      currentCategory = detectCategory(content);
+      console.log(`[Layout] Detected category: ${content} → ${currentCategory}`);
       continue;
     }
     
-    // Check if this looks like a menu item (key = name, value = price)
-    const priceMatch = valueText.match(/£\s?(\d+(?:\.\d{1,2})?)/);
-    if (priceMatch && keyText.length > 2) {
-      menuItems.push({
-        name: keyText,
-        price: parseFloat(priceMatch[1]),
-        category: currentCategory,
-        confidence: key.confidence || 0
-      });
-      console.log(`[Key-Value] Extracted: ${keyText} - £${priceMatch[1]} (${currentCategory})`);
+    // Check if line contains both name and price
+    const inlineMatch = content.match(/^(.*?)[.\-–—]*\s*£\s?(\d+(?:\.\d{1,2})?)/);
+    if (inlineMatch) {
+      const name = inlineMatch[1].trim();
+      const price = parseFloat(inlineMatch[2]);
+      
+      if (isLikelyItemName(name)) {
+        items.push({
+          name: name,
+          price: price,
+          category: currentCategory
+        });
+        console.log(`[Layout] Inline item: ${name} - £${price} (${currentCategory})`);
+      }
+      continue;
+    }
+    
+    // Check if line is just a price (might be paired with previous item)
+    const priceMatch = content.match(/£\s?(\d+(?:\.\d{1,2})?)/);
+    if (priceMatch && currentItem) {
+      currentItem.price = parseFloat(priceMatch[1]);
+      items.push(currentItem);
+      console.log(`[Layout] Completed item: ${currentItem.name} - £${currentItem.price} (${currentCategory})`);
+      currentItem = null;
+      continue;
+    }
+    
+    // Check if line is a likely item name
+    if (isLikelyItemName(content)) {
+      if (currentItem) {
+        // Save previous incomplete item
+        items.push(currentItem);
+        console.log(`[Layout] Saved incomplete item: ${currentItem.name}`);
+      }
+      currentItem = { name: content, category: currentCategory };
+      continue;
+    }
+    
+    // Check if line is a description
+    if (isDescription(content) && currentItem) {
+      currentItem.description = content;
+      continue;
     }
   }
   
-  if (menuItems.length > 0) {
-    console.log(`[Key-Value] Found ${menuItems.length} items via structured extraction`);
-    return menuItems;
+  // Handle any remaining incomplete item
+  if (currentItem) {
+    items.push(currentItem);
+    console.log(`[Layout] Final incomplete item: ${currentItem.name}`);
   }
   
-  // If no key-value pairs found, return null to fall back to line parsing
-  return null;
+  return items;
 }
 
 function cleanOCRLines(rawText) {
@@ -115,11 +221,11 @@ export default function handler(req, res) {
         const azureResult = await analyzeMenuWithAzure(filePath);
         console.log("Azure Form Recognizer extraction successful");
         
-        // Check if we got structured key-value pairs
+        // Check if we got structured menu items from layout analysis
         if (Array.isArray(azureResult)) {
-          console.log("Using structured key-value extraction");
+          console.log("Using layout-based extraction");
           const structuredMenu = azureResult;
-          console.log('Structured menu from key-value pairs:', structuredMenu);
+          console.log('Structured menu from layout analysis:', structuredMenu);
           
           if (venueId && structuredMenu.length > 0) {
             await supabase.from('menu_items').delete().eq('venue_id', venueId);
