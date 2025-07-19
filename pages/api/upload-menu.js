@@ -7,7 +7,16 @@ import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
 
-const upload = multer({ dest: '/tmp/uploads' });
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: '/tmp',
+    filename: (req, file, cb) => {
+      cb(null, `${Date.now()}-${file.originalname}`);
+    }
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 export const config = {
   api: {
@@ -15,18 +24,66 @@ export const config = {
   },
 };
 
+// Azure Form Recognizer client
+const client = new DocumentAnalysisClient(
+  process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
+  new AzureKeyCredential(process.env.AZURE_FORM_RECOGNIZER_KEY)
+);
+
+// Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Azure Form Recognizer configuration
-const endpoint = "https://servio.cognitiveservices.azure.com/";
-const apiKey = "EM4f9JXv8vKUfZZN08RRr64FAXme9bcuLcFvTgnJcJNOH85FpM5GJQQJ99BGACmepeSXJ3w3AAALACOGA1DC";
+async function downloadImageFromUrl(imageUrl) {
+  try {
+    console.log(`[Download] Downloading image from URL: ${imageUrl}`);
+    
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
+    }
+    
+    const buffer = await response.buffer();
+    const tempPath = `/tmp/${Date.now()}-url-image.jpg`;
+    
+    fs.writeFileSync(tempPath, buffer);
+    console.log(`[Download] Image saved to: ${tempPath}`);
+    
+    return tempPath;
+  } catch (error) {
+    console.error(`[Download] Error downloading image:`, error);
+    throw error;
+  }
+}
 
-const client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(apiKey));
+async function processImageFile(filePath, mimeType) {
+  console.log(`[Process] Processing image file: ${filePath}, type: ${mimeType}`);
+  
+  // Use Azure Form Recognizer for better OCR
+  try {
+    const azureResult = await analyzeMenuWithAzure(filePath);
+    console.log("Azure Form Recognizer extraction successful");
+    
+    // Check if we got structured menu items from layout analysis
+    if (Array.isArray(azureResult)) {
+      console.log("Using layout-based extraction");
+      return { type: 'structured', data: azureResult };
+    } else {
+      // Fallback to line-by-line parsing
+      return { type: 'text', data: azureResult };
+    }
+  } catch (azureError) {
+    console.error("Azure Form Recognizer failed, falling back to local OCR:", azureError);
+    
+    // Fallback to local OCR
+    const text = await extractTextFromImage(filePath);
+    return { type: 'text', data: text };
+  }
+}
 
-export async function analyzeMenuWithAzure(filePath) {
+async function analyzeMenuWithAzure(filePath) {
   const file = fs.readFileSync(filePath);
 
   const poller = await client.beginAnalyzeDocument("prebuilt-layout", file, {
@@ -284,7 +341,52 @@ function cleanOCRLines(rawText) {
 }
 
 export default function handler(req, res) {
-  console.log("🔥 OCR handler loaded: build 2025-07-18@14:02");
+  console.log("🔥 OCR handler loaded: build 2025-07-18@15:30");
+  
+  // Handle both file uploads and URL processing
+  if (req.method === 'POST') {
+    const { imageUrl, venueId } = req.body;
+    
+    // If imageUrl is provided, process URL
+    if (imageUrl) {
+      return processImageUrl(req, res, imageUrl, venueId);
+    }
+    
+    // Otherwise, process file upload
+    return processFileUpload(req, res);
+  }
+  
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
+async function processImageUrl(req, res, imageUrl, venueId) {
+  let tempFilePath = null;
+  
+  try {
+    console.log(`[URL] Processing image URL: ${imageUrl}`);
+    
+    // Download image from URL
+    tempFilePath = await downloadImageFromUrl(imageUrl);
+    
+    // Process the downloaded image
+    const result = await processImageFile(tempFilePath, 'image/jpeg');
+    
+    // Process the extracted data
+    await processExtractedData(result, venueId, res);
+    
+  } catch (error) {
+    console.error('URL processing error:', error);
+    res.status(500).json({ error: 'Failed to process image URL', detail: error.message });
+  } finally {
+    // Clean up temporary file
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+      console.log(`[Cleanup] Removed temporary file: ${tempFilePath}`);
+    }
+  }
+}
+
+async function processFileUpload(req, res) {
   upload.single('menu')(req, res, async (err) => {
     if (err) return res.status(500).json({ error: 'Upload failed' });
 
@@ -293,70 +395,71 @@ export default function handler(req, res) {
     const venueId = req.body.venueId || req.query.venueId;
 
     try {
-      let text = '';
-
-      // Use Azure Form Recognizer for better OCR
-      try {
-        const azureResult = await analyzeMenuWithAzure(filePath);
-        console.log("Azure Form Recognizer extraction successful");
-        
-        // Check if we got structured menu items from layout analysis
-        if (Array.isArray(azureResult)) {
-          console.log("Using layout-based extraction");
-          const structuredMenu = azureResult;
-          console.log('Structured menu from layout analysis:', structuredMenu);
-          
-          if (venueId && structuredMenu.length > 0) {
-            // Filter valid menu items before inserting
-            const validItems = filterValidMenuItems(structuredMenu);
-            
-            if (validItems.length > 0) {
-              await supabase.from('menu_items').delete().eq('venue_id', venueId);
-              
-              const { error } = await supabase
-                .from('menu_items')
-                .insert(validItems.map(item => ({
-                  name: item.name,
-                  price: item.price,
-                  category: item.category || 'Uncategorized',
-                  venue_id: venueId,
-                  available: true,
-                  created_at: new Date().toISOString(),
-                })));
-                
-              if (error) {
-                console.error('Supabase insert error:', error);
-                return res.status(500).json({ error: 'Failed to save menu items', detail: error.message });
-              }
-              
-              console.log(`[Success] Inserted ${validItems.length} valid menu items`);
-              return res.status(200).json({ message: 'Menu uploaded successfully' });
-            } else {
-              return res.status(400).json({ error: 'No valid menu items found after filtering' });
-            }
-          } else {
-            return res.status(400).json({ error: 'No menu items found or venueId missing' });
-          }
-        } else {
-          // Fallback to line-by-line parsing
-          text = azureResult;
-        }
-      } catch (azureError) {
-        console.error("Azure Form Recognizer failed, falling back to local OCR:", azureError);
-        
-        // Fallback to local OCR
-        if (mime === 'application/pdf') {
-          text = await extractTextFromPDF(filePath);
-        } else if (mime.startsWith('image/')) {
-          text = await extractTextFromImage(filePath);
-        } else {
-          throw new Error('Unsupported file type');
-        }
+      console.log(`[File] Processing uploaded file: ${filePath}, type: ${mime}`);
+      
+      // Process the uploaded file
+      const result = await processImageFile(filePath, mime);
+      
+      // Process the extracted data
+      await processExtractedData(result, venueId, res);
+      
+    } catch (e) {
+      console.error('File processing error:', e);
+      res.status(500).json({ error: 'OCR failed', detail: e.message });
+    } finally {
+      // Clean up uploaded file
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`[Cleanup] Removed uploaded file: ${filePath}`);
       }
+    }
+  });
+}
 
-      // Log the raw OCR text
+async function processExtractedData(result, venueId, res) {
+  try {
+    if (result.type === 'structured') {
+      // Process structured menu items from layout analysis
+      const structuredMenu = result.data;
+      console.log('Structured menu from layout analysis:', structuredMenu);
+      
+      if (venueId && structuredMenu.length > 0) {
+        // Filter valid menu items before inserting
+        const validItems = filterValidMenuItems(structuredMenu);
+        
+        if (validItems.length > 0) {
+          await supabase.from('menu_items').delete().eq('venue_id', venueId);
+          
+          const { error } = await supabase
+            .from('menu_items')
+            .insert(validItems.map(item => ({
+              name: item.name,
+              price: item.price,
+              category: item.category || 'Uncategorized',
+              venue_id: venueId,
+              available: true,
+              created_at: new Date().toISOString(),
+            })));
+            
+          if (error) {
+            console.error('Supabase insert error:', error);
+            return res.status(500).json({ error: 'Failed to save menu items', detail: error.message });
+          }
+          
+          console.log(`[Success] Inserted ${validItems.length} valid menu items`);
+          return res.status(200).json({ message: 'Menu uploaded successfully' });
+        } else {
+          return res.status(400).json({ error: 'No valid menu items found after filtering' });
+        }
+      } else {
+        return res.status(400).json({ error: 'No menu items found or venueId missing' });
+      }
+    } else {
+      // Process text-based extraction
+      const text = result.data;
       console.log("OCR RAW TEXT >>>", text.slice(0, 100));
       console.log("FULL OCR TEXT >>>", text);
+      
       const lines = cleanOCRLines(text);
       const structuredMenu = parseMenuFromSeparatedLines(lines);
       console.log('Structured menu from line parsing:', structuredMenu);
@@ -392,13 +495,11 @@ export default function handler(req, res) {
       } else {
         return res.status(400).json({ error: 'No menu items found or venueId missing' });
       }
-    } catch (e) {
-      console.error('OCR error:', e);
-      res.status(500).json({ error: 'OCR failed', detail: e.message });
-    } finally {
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
-  });
+  } catch (error) {
+    console.error('Data processing error:', error);
+    res.status(500).json({ error: 'Failed to process extracted data', detail: error.message });
+  }
 }
 
 async function extractTextFromPDF(pdfPath) {
