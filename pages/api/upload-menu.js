@@ -976,24 +976,94 @@ function isCategoryHeader(line) {
     'ICED COFFEE', 'SPECIALITY COFFEE', 'NOT COFFEE', 'LOOSE LEAVES TEA',
     'JUICES', 'SMOOTHIES', 'MILKSHAKES', 'MATCHA', 'SPECIALS',
     'SLIDERS', 'TACOS', 'MEXICAN RICE', 'NUR MUSHROOM CHICKEN',
-    'HOUMOUS JAM', 'GRILLED HALLOUMI', 'KIBBEH', 'MUTBAL'
+    'HOUMOUS JAM', 'GRILLED HALLOUMI', 'KIBBEH', 'MUTBAL',
+    'MAINS', 'ENTREES', 'APPETIZERS', 'SIDES', 'DRINKS', 'BEVERAGES',
+    'BREAKFAST', 'BRUNCH', 'LUNCH', 'DINNER', 'SNACKS', 'SHARES',
+    'BURGERS', 'SANDWICHES', 'WRAPS', 'SALADS', 'SOUPS', 'PASTAS',
+    'SEAFOOD', 'MEAT', 'VEGETARIAN', 'VEGAN', 'GLUTEN FREE'
   ];
   
-  return (
-    knownCategories.some(cat => line.toUpperCase().includes(cat)) ||
-    (line.length > 2 && line.length < 40 && line === line.toUpperCase() && !/^£/.test(line) && !/[ء-ي]/.test(line))
-  );
+  // Check if line matches known categories exactly
+  if (knownCategories.includes(line.toUpperCase())) {
+    return true;
+  }
+  
+  // Check if line is all caps and looks like a category (not a menu item)
+  const isAllCaps = line === line.toUpperCase();
+  const hasReasonableLength = line.length > 2 && line.length < 50;
+  const noPrice = !/£\s?\d/.test(line);
+  const noFoodKeywords = !/(burger|chicken|beef|fish|pasta|rice|salad|soup|coffee|tea|juice)/i.test(line);
+  const noArabicFoodWords = !/(labneh|hummus|baba|halloumi|kibbeh|mutbal|shakshuka)/i.test(line);
+  
+  // If it's all caps, reasonable length, no price, and no food keywords, likely a category
+  if (isAllCaps && hasReasonableLength && noPrice && noFoodKeywords && noArabicFoodWords) {
+    return true;
+  }
+  
+  return false;
 }
 
 function isDescription(line) {
+  const trimmed = line.trim();
+  
+  // Lines that start with description indicators
+  const descriptionStarters = [
+    /^served with/i,
+    /^includes/i,
+    /^comes with/i,
+    /^add/i,
+    /^with/i,
+    /^topped with/i,
+    /^garnished with/i,
+    /^accompanied by/i,
+    /^side of/i,
+    /^choice of/i,
+    /^selection of/i,
+    /^freshly made/i,
+    /^house made/i,
+    /^homemade/i,
+    /^our special/i,
+    /^signature/i
+  ];
+  
+  // Check if line starts with description indicators
+  for (const pattern of descriptionStarters) {
+    if (pattern.test(trimmed)) {
+      return true;
+    }
+  }
+  
+  // Lines that are clearly descriptions
+  const descriptionPatterns = [
+    /^[a-z]/, // Starts with lowercase
+    /[.!?]$/, // Ends with punctuation
+    /^cheese,/, // Starts with comma-separated list
+    /^sauce,/, // Sauce descriptions
+    /^fries,/, // Side descriptions
+    /^mash or rice/, // Choice descriptions
+    /^rocket/, // Ingredient descriptions
+    /^served/, // Service descriptions
+    /^special/, // Special descriptions
+    /^nur sauce/, // Specific sauce names
+  ];
+  
+  // Check if line matches description patterns
+  for (const pattern of descriptionPatterns) {
+    if (pattern.test(trimmed)) {
+      return true;
+    }
+  }
+  
   // More lenient description detection
   return (
-    (/^[a-z]/.test(line) && line.length > 20) ||
-    line.length > 100 ||
-    /[.!?]$/.test(line) ||
-    (line.toLowerCase().includes('served with') && line.length > 30) ||
-    (line.toLowerCase().includes('freshly made') && line.length > 30) ||
-    (line.toLowerCase().includes('grilled') && line.length > 50)
+    (/^[a-z]/.test(trimmed) && trimmed.length > 20) ||
+    trimmed.length > 100 ||
+    /[.!?]$/.test(trimmed) ||
+    (trimmed.toLowerCase().includes('served with') && trimmed.length > 30) ||
+    (trimmed.toLowerCase().includes('freshly made') && trimmed.length > 30) ||
+    (trimmed.toLowerCase().includes('grilled') && trimmed.length > 50) ||
+    (trimmed.toLowerCase().includes('special') && trimmed.length > 20) ||
+    (trimmed.toLowerCase().includes('sauce') && trimmed.length > 10)
   );
 }
 
@@ -1011,10 +1081,30 @@ function parseMenuFromSeparatedLines(lines) {
     
     console.log(`[Parser] Line ${i}: "${line}"`);
 
-    // Is it a new category?
+    // Check if line is a category header (improved detection)
     if (isCategoryHeader(line)) {
       currentCategory = detectCategory(line);
       console.log(`[Parser] Detected category: ${currentCategory}`);
+      
+      // Save previous item if valid
+      if (currentItem?.name && currentItem?.price) {
+        items.push({ ...currentItem, category: currentCategory });
+        console.log(`[Parser] Saved item before category: ${currentItem.name} - £${currentItem.price}`);
+        currentItem = null;
+      }
+      continue;
+    }
+
+    // Check if line is all uppercase and might be a category (not followed by price)
+    const isAllCaps = line === line.toUpperCase() && line.length > 2 && line.length < 50;
+    const hasPrice = priceRegex.test(line);
+    const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+    const nextLineHasPrice = priceRegex.test(nextLine);
+    
+    if (isAllCaps && !hasPrice && !nextLineHasPrice) {
+      // Treat as category
+      currentCategory = line;
+      console.log(`[Parser] Detected category (all caps): ${currentCategory}`);
       
       // Save previous item if valid
       if (currentItem?.name && currentItem?.price) {
@@ -1070,7 +1160,7 @@ function parseMenuFromSeparatedLines(lines) {
       continue;
     }
 
-    // New item detected (with capitalized keywords or starter word)
+    // New item detected (with improved detection)
     if (isLikelyNewItem(line)) {
       // Save previous item if valid
       if (currentItem?.name && currentItem?.price) {
@@ -1089,16 +1179,37 @@ function parseMenuFromSeparatedLines(lines) {
       continue;
     }
 
-    // If it's part of current item's description or name continuation
+    // Smart line combining logic
     if (currentItem) {
-      if (!currentItem.price) {
-        // Continue building the name
-        currentItem.name += " " + line;
-        console.log(`[Parser] Extended item name: ${currentItem.name}`);
+      const lineEndsWithComma = line.endsWith(',');
+      const lineStartsWithLowercase = /^[a-z]/.test(line);
+      const lineContainsFoodKeywords = /(cheese|sauce|fries|mash|rice|rocket|served|with|special)/i.test(line);
+      
+      // Check if this line should be merged with the current item
+      const shouldMerge = (
+        lineEndsWithComma || 
+        (lineStartsWithLowercase && lineContainsFoodKeywords) ||
+        (lineStartsWithLowercase && !hasPrice && !isAllCaps)
+      );
+      
+      if (shouldMerge) {
+        if (!currentItem.price) {
+          // Continue building the name
+          currentItem.name += " " + line;
+          console.log(`[Parser] Extended item name: ${currentItem.name}`);
+        } else {
+          // Add to description
+          currentItem.description += (currentItem.description ? " " : "") + line;
+          console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
+        }
       } else {
-        // Add to description
-        currentItem.description += (currentItem.description ? " " : "") + line;
-        console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
+        // Check if line is a description
+        if (isDescription(line)) {
+          currentItem.description += (currentItem.description ? " " : "") + line;
+          console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
+        } else {
+          console.log(`[Parser] Skipped line (no merge): "${line}"`);
+        }
       }
     } else {
       console.log(`[Parser] Skipped line (no current item): "${line}"`);
