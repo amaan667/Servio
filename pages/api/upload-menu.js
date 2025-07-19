@@ -106,7 +106,13 @@ async function processImageFile(filePath, mimeType) {
       
       if (allMenuItems.length > 0) {
         console.log(`[Process] Total menu items found: ${allMenuItems.length}`);
-        return { type: 'structured', data: allMenuItems };
+        
+        // Clean and deduplicate the results
+        const cleanedItems = cleanMenuItems(allMenuItems);
+        const finalItems = deduplicateMenuItems(cleanedItems);
+        
+        console.log(`[Process] Final result: ${finalItems.length} unique, valid menu items`);
+        return { type: 'structured', data: finalItems };
       } else {
         throw new Error('No menu items found in PDF');
       }
@@ -358,26 +364,35 @@ async function parseMenuTextWithGPT(text, pageNumber = 1) {
   try {
     console.log(`[GPT Text] Parsing menu text from page ${pageNumber}`);
     
+    const prompt = `
+Extract every menu item with name, price, description (optional), and category (if present). Return all items in this format:
+
+[
+  { "name": "", "price": number, "description": "", "category": "" },
+  ...
+]
+
+⚠️ Extract all items even if price or description is not perfectly aligned.
+⚠️ Include modifiers/add-ons (e.g., 'Add Egg £1.50') as standalone items.
+⚠️ If the category is unclear, use "Uncategorized".
+⚠️ Do not skip similar duplicates. Return all.
+
+Text to parse (Page ${pageNumber}):
+${text}`;
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "You are a menu parsing expert. Extract menu items from the provided text and return them as a JSON array. Focus on items with clear names and prices."
+          content: "You are a menu parsing expert. Be thorough and extract ALL menu items with prices, even if the formatting is imperfect."
         },
         {
           role: "user",
-          content: `Extract all menu items from this text. Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }]. 
-
-Include drinks, desserts, breakfast items, and any add-ons if they have a price. Ensure each item with a visible price is extracted, even if name or category is on a separate line.
-
-Only include actual menu items with names and prices. Ignore headers, footers, and non-menu content.
-
-Text to parse (Page ${pageNumber}):
-${text}`
+          content: prompt
         }
       ],
-      max_tokens: 3000,
+      max_tokens: 4000,
     });
     
     const content = response.choices[0].message.content;
@@ -389,6 +404,17 @@ ${text}`
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
         console.log(`[GPT Text] Parsed ${menuItems.length} menu items from page ${pageNumber}`);
+        
+        // Check if we got enough items, if not, try aggressive parsing
+        if (menuItems.length < 15) {
+          console.log(`[GPT Text] Only ${menuItems.length} items found on page ${pageNumber}, trying aggressive parsing...`);
+          const aggressiveItems = await parseMenuTextWithGPTAggressive(text, pageNumber);
+          if (aggressiveItems.length > menuItems.length) {
+            console.log(`[GPT Text] Aggressive parsing found ${aggressiveItems.length} items vs ${menuItems.length} from normal parsing`);
+            return aggressiveItems;
+          }
+        }
+        
         return menuItems;
       } catch (parseError) {
         console.error(`[GPT Text] JSON parse error for page ${pageNumber}:`, parseError);
@@ -408,6 +434,21 @@ async function parseMenuTextWithGPTAggressive(text, pageNumber = 1) {
   try {
     console.log(`[GPT Text Aggressive] Parsing menu text from page ${pageNumber} with aggressive approach`);
     
+    const aggressivePrompt = `
+You missed some items. Re-read this page carefully and extract **every visible** menu item with a price.
+
+Extract ALL menu items from this text, being very aggressive. Include every line with a £ symbol or price.
+
+Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }].
+
+⚠️ If you see any line with a £ symbol or price, include it as a menu item.
+⚠️ If the name is unclear, use the text before the price as the name.
+⚠️ Include add-ons, modifiers, and side items as separate menu items.
+⚠️ Do not skip anything that looks like a menu item.
+
+Text to parse (Page ${pageNumber}):
+${text}`;
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -417,17 +458,10 @@ async function parseMenuTextWithGPTAggressive(text, pageNumber = 1) {
         },
         {
           role: "user",
-          content: `Extract ALL menu items from this text, being very aggressive. Include every line with a £ symbol or price.
-
-Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }].
-
-If you see any line with a £ symbol or price, include it as a menu item. If the name is unclear, use the text before the price as the name.
-
-Text to parse (Page ${pageNumber}):
-${text}`
+          content: aggressivePrompt
         }
       ],
-      max_tokens: 3000,
+      max_tokens: 4000,
     });
     
     const content = response.choices[0].message.content;
@@ -1721,6 +1755,21 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
     const base64Image = imageBuffer.toString('base64');
     const dataUrl = `data:${mimeType};base64,${base64Image}`;
     
+    const visionPrompt = `
+Extract every menu item with name, price, description (optional), and category (if present). Return all items in this format:
+
+[
+  { "name": "", "price": number, "description": "", "category": "" },
+  ...
+]
+
+⚠️ Extract all items even if price or description is not perfectly aligned.
+⚠️ Include modifiers/add-ons (e.g., 'Add Egg £1.50') as standalone items.
+⚠️ If the category is unclear, use "Uncategorized".
+⚠️ Do not skip similar duplicates. Return all.
+⚠️ Include drinks, desserts, breakfast items, and any add-ons if they have a price.
+⚠️ Ensure each item with a visible price is extracted, even if name or category is on a separate line.`;
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       messages: [
@@ -1729,7 +1778,7 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
           content: [
             {
               type: "text",
-              text: "Extract all menu items from this image with the following format:\n\n[\n  {\n    \"name\": \"<name of the item>\",\n    \"price\": <price as number>,\n    \"description\": \"<optional description if present>\",\n    \"category\": \"<detected category or section if any>\"\n  },\n  ...\n]\n\nInclude drinks, desserts, breakfast items, and any add-ons if they have a price. Ensure each item with a visible price is extracted, even if name or category is on a separate line."
+              text: visionPrompt
             },
             {
               type: "image_url",
@@ -1740,7 +1789,7 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
           ]
         }
       ],
-      max_tokens: 3000,
+      max_tokens: 4000,
     });
     
     const content = response.choices[0].message.content;
@@ -1751,7 +1800,18 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        console.log('[GPT Vision] Parsed menu items:', menuItems);
+        console.log(`[GPT Vision] Parsed ${menuItems.length} menu items`);
+        
+        // Check if we got enough items, if not, try aggressive parsing
+        if (menuItems.length < 15) {
+          console.log(`[GPT Vision] Only ${menuItems.length} items found, trying aggressive parsing...`);
+          const aggressiveItems = await processImageWithGPTVisionAggressive(imageBuffer, mimeType);
+          if (aggressiveItems.length > menuItems.length) {
+            console.log(`[GPT Vision] Aggressive parsing found ${aggressiveItems.length} items vs ${menuItems.length} from normal parsing`);
+            return aggressiveItems;
+          }
+        }
+        
         return menuItems;
       } catch (parseError) {
         console.error('[GPT Vision] JSON parse error:', parseError);
@@ -1764,6 +1824,72 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
   } catch (error) {
     console.error('[GPT Vision] Error:', error);
     throw error;
+  }
+}
+
+async function processImageWithGPTVisionAggressive(imageBuffer, mimeType) {
+  try {
+    console.log('[GPT Vision Aggressive] Processing image with aggressive approach');
+    
+    // Convert buffer to base64
+    const base64Image = imageBuffer.toString('base64');
+    const dataUrl = `data:${mimeType};base64,${base64Image}`;
+    
+    const aggressiveVisionPrompt = `
+You missed some items. Re-read this image carefully and extract **every visible** menu item with a price.
+
+Extract ALL menu items from this image, being very aggressive. Include every item with a £ symbol or price.
+
+⚠️ If you see any item with a £ symbol or price, include it as a menu item.
+⚠️ If the name is unclear, use the text before the price as the name.
+⚠️ Include add-ons, modifiers, and side items as separate menu items.
+⚠️ Do not skip anything that looks like a menu item.
+
+Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }].`;
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: aggressiveVisionPrompt
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: dataUrl
+              }
+            }
+          ]
+        }
+      ],
+      max_tokens: 4000,
+    });
+    
+    const content = response.choices[0].message.content;
+    console.log('[GPT Vision Aggressive] Raw response:', content);
+    
+    // Try to extract JSON from the response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (jsonMatch) {
+      try {
+        const menuItems = JSON.parse(jsonMatch[0]);
+        console.log(`[GPT Vision Aggressive] Parsed ${menuItems.length} menu items`);
+        return menuItems;
+      } catch (parseError) {
+        console.error('[GPT Vision Aggressive] JSON parse error:', parseError);
+        return [];
+      }
+    } else {
+      console.error('[GPT Vision Aggressive] No JSON array found in response');
+      return [];
+    }
+  } catch (error) {
+    console.error('[GPT Vision Aggressive] Error:', error);
+    return [];
   }
 }
 
@@ -1834,5 +1960,66 @@ async function extractTextFromPDFPage(pdfBuffer, pageIndex) {
   } catch (error) {
     console.error(`[PDF Page] Error extracting text from page ${pageIndex + 1}:`, error);
     return '';
+  }
+}
+
+function deduplicateMenuItems(menuItems) {
+  try {
+    console.log(`[Deduplicate] Processing ${menuItems.length} items for deduplication`);
+    
+    const seen = new Set();
+    const uniqueItems = [];
+    
+    for (const item of menuItems) {
+      // Create a key based on name and price
+      const key = `${item.name?.toLowerCase().trim()}-${item.price}`;
+      
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueItems.push(item);
+      } else {
+        console.log(`[Deduplicate] Skipped duplicate: ${item.name} - £${item.price}`);
+      }
+    }
+    
+    console.log(`[Deduplicate] Reduced from ${menuItems.length} to ${uniqueItems.length} unique items`);
+    return uniqueItems;
+  } catch (error) {
+    console.error('[Deduplicate] Error:', error);
+    return menuItems; // Return original if deduplication fails
+  }
+}
+
+function cleanMenuItems(menuItems) {
+  try {
+    console.log(`[Clean] Processing ${menuItems.length} items for cleaning`);
+    
+    const cleanedItems = menuItems.filter(item => {
+      // Must have a name and price
+      if (!item.name || !item.price) {
+        console.log(`[Clean] Skipped item without name or price:`, item);
+        return false;
+      }
+      
+      // Name must be at least 2 characters
+      if (item.name.trim().length < 2) {
+        console.log(`[Clean] Skipped item with short name:`, item);
+        return false;
+      }
+      
+      // Price must be a positive number
+      if (typeof item.price !== 'number' || item.price <= 0) {
+        console.log(`[Clean] Skipped item with invalid price:`, item);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`[Clean] Reduced from ${menuItems.length} to ${cleanedItems.length} valid items`);
+    return cleanedItems;
+  } catch (error) {
+    console.error('[Clean] Error:', error);
+    return menuItems; // Return original if cleaning fails
   }
 }
