@@ -84,47 +84,95 @@ function extractFromLayout(result) {
 function extractFromTable(table, currentCategory) {
   const items = [];
   
+  console.log(`[Table] Processing table with ${table.rows?.length || 0} rows`);
+  
   for (const row of table.rows || []) {
     const cells = row.cells || [];
-    if (cells.length < 2) continue; // Need at least name and price
+    console.log(`[Table] Row has ${cells.length} cells:`, cells.map(c => c.content?.trim()));
     
+    if (cells.length < 2) {
+      console.log(`[Table] Skipping row with insufficient cells`);
+      continue;
+    }
+    
+    // Try to extract name and price from adjacent cells
     let itemName = '';
     let itemPrice = null;
-    let itemDescription = '';
     
-    // Analyze cell content and position
-    for (const cell of cells) {
-      const content = cell.content?.trim() || '';
-      if (!content) continue;
+    // Method 1: Look for name in first cell, price in second cell
+    if (cells.length >= 2) {
+      const firstCell = cells[0].content?.trim() || '';
+      const secondCell = cells[1].content?.trim() || '';
       
-      // Check if cell contains price
-      const priceMatch = content.match(/£\s?(\d+(?:\.\d{1,2})?)/);
-      if (priceMatch) {
-        itemPrice = parseFloat(priceMatch[1]);
-        // Remove price from content for name
-        itemName = content.replace(/£\s?\d+(?:\.\d{1,2})?/, '').trim();
-      } else {
-        // If no price found, this might be the name or description
-        if (!itemName) {
-          itemName = content;
-        } else {
-          itemDescription += (itemDescription ? ' ' : '') + content;
+      // Check if second cell contains a price
+      const price = parsePrice(secondCell);
+      if (price && firstCell) {
+        itemName = firstCell;
+        itemPrice = price;
+        console.log(`[Table] Method 1: ${itemName} - £${itemPrice}`);
+      }
+    }
+    
+    // Method 2: If Method 1 failed, try to extract price from any cell
+    if (!itemPrice) {
+      for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i].content?.trim() || '';
+        const price = parsePrice(cell);
+        
+        if (price) {
+          // Extract name from other cells
+          const nameCells = cells
+            .map((c, idx) => idx !== i ? c.content?.trim() : '')
+            .filter(content => content && !parsePrice(content))
+            .join(' ');
+          
+          if (nameCells) {
+            itemName = nameCells;
+            itemPrice = price;
+            console.log(`[Table] Method 2: ${itemName} - £${itemPrice}`);
+            break;
+          }
         }
       }
     }
     
+    // Method 3: If still no price, try to extract from inline content
+    if (!itemPrice) {
+      const allContent = cells.map(c => c.content?.trim() || '').join(' ');
+      const inlineMatch = allContent.match(/^(.*?)[.\-–—]*\s*£\s?(\d+(?:\.\d{1,2})?)/);
+      
+      if (inlineMatch) {
+        itemName = inlineMatch[1].trim();
+        itemPrice = parseFloat(inlineMatch[2]);
+        console.log(`[Table] Method 3: ${itemName} - £${itemPrice}`);
+      }
+    }
+    
     // Validate and add item
-    if (itemName && itemPrice) {
-      items.push({
-        name: itemName,
-        price: itemPrice,
-        category: currentCategory,
-        description: itemDescription || undefined
-      });
-      console.log(`[Table] Extracted: ${itemName} - £${itemPrice} (${currentCategory})`);
+    if (itemName && itemPrice && !isNaN(itemPrice) && itemPrice > 0) {
+      // Clean up the item name
+      const cleanName = itemName
+        .replace(/^\d+\.\s*/, '') // Remove leading numbers
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+      
+      if (cleanName && isLikelyItemName(cleanName)) {
+        items.push({
+          name: cleanName,
+          price: itemPrice,
+          category: currentCategory,
+          confidence: 1
+        });
+        console.log(`[Table] ✅ Extracted: ${cleanName} - £${itemPrice} (${currentCategory})`);
+      } else {
+        console.log(`[Table] ❌ Skipped invalid item: ${cleanName} - £${itemPrice}`);
+      }
+    } else {
+      console.log(`[Table] ❌ Skipped row with invalid data: name="${itemName}", price=${itemPrice}`);
     }
   }
   
+  console.log(`[Table] Extracted ${items.length} items from table`);
   return items;
 }
 
@@ -132,68 +180,99 @@ function extractFromLines(lines, currentCategory) {
   const items = [];
   let currentItem = null;
   
+  console.log(`[Lines] Processing ${lines.length} lines`);
+  
   for (const line of lines) {
     const content = line.content?.trim() || '';
     if (!content) continue;
     
+    console.log(`[Lines] Processing line: "${content}"`);
+    
     // Check if line is a category header
     if (isCategoryHeader(content)) {
       currentCategory = detectCategory(content);
-      console.log(`[Layout] Detected category: ${content} → ${currentCategory}`);
+      console.log(`[Lines] Detected category: ${content} → ${currentCategory}`);
       continue;
     }
     
-    // Check if line contains both name and price
+    // Method 1: Check if line contains both name and price inline
     const inlineMatch = content.match(/^(.*?)[.\-–—]*\s*£\s?(\d+(?:\.\d{1,2})?)/);
     if (inlineMatch) {
       const name = inlineMatch[1].trim();
       const price = parseFloat(inlineMatch[2]);
       
-      if (isLikelyItemName(name)) {
+      if (name && price && !isNaN(price) && price > 0 && isLikelyItemName(name)) {
         items.push({
           name: name,
           price: price,
-          category: currentCategory
+          category: currentCategory,
+          confidence: 1
         });
-        console.log(`[Layout] Inline item: ${name} - £${price} (${currentCategory})`);
+        console.log(`[Lines] ✅ Inline item: ${name} - £${price} (${currentCategory})`);
+      } else {
+        console.log(`[Lines] ❌ Skipped inline item: ${name} - £${price}`);
       }
       continue;
     }
     
-    // Check if line is just a price (might be paired with previous item)
-    const priceMatch = content.match(/£\s?(\d+(?:\.\d{1,2})?)/);
-    if (priceMatch && currentItem) {
-      currentItem.price = parseFloat(priceMatch[1]);
+    // Method 2: Check if line is just a price (might be paired with previous item)
+    const price = parsePrice(content);
+    if (price && currentItem && !currentItem.price) {
+      currentItem.price = price;
       items.push(currentItem);
-      console.log(`[Layout] Completed item: ${currentItem.name} - £${currentItem.price} (${currentCategory})`);
+      console.log(`[Lines] ✅ Completed item: ${currentItem.name} - £${currentItem.price} (${currentCategory})`);
       currentItem = null;
       continue;
     }
     
-    // Check if line is a likely item name
+    // Method 3: Check if line is a likely item name
     if (isLikelyItemName(content)) {
       if (currentItem) {
         // Save previous incomplete item
-        items.push(currentItem);
-        console.log(`[Layout] Saved incomplete item: ${currentItem.name}`);
+        if (currentItem.name) {
+          items.push(currentItem);
+          console.log(`[Lines] Saved incomplete item: ${currentItem.name}`);
+        }
       }
       currentItem = { name: content, category: currentCategory };
+      console.log(`[Lines] Started new item: ${content}`);
       continue;
     }
     
-    // Check if line is a description
+    // Method 4: Check if line is a description or continuation
     if (isDescription(content) && currentItem) {
       currentItem.description = content;
+      console.log(`[Lines] Added description to item: ${content}`);
       continue;
     }
+    
+    // Method 5: Check if line might be a continuation of the current item
+    if (currentItem && !currentItem.price && content.length < 50) {
+      // Try to extract price from this line
+      const continuationPrice = parsePrice(content);
+      if (continuationPrice) {
+        currentItem.price = continuationPrice;
+        items.push(currentItem);
+        console.log(`[Lines] ✅ Completed item with continuation: ${currentItem.name} - £${currentItem.price} (${currentCategory})`);
+        currentItem = null;
+      } else {
+        // Might be a continuation of the name
+        currentItem.name += ' ' + content;
+        console.log(`[Lines] Extended item name: ${currentItem.name}`);
+      }
+      continue;
+    }
+    
+    console.log(`[Lines] Skipped line: "${content}"`);
   }
   
   // Handle any remaining incomplete item
-  if (currentItem) {
+  if (currentItem && currentItem.name) {
     items.push(currentItem);
-    console.log(`[Layout] Final incomplete item: ${currentItem.name}`);
+    console.log(`[Lines] Final incomplete item: ${currentItem.name}`);
   }
   
+  console.log(`[Lines] Extracted ${items.length} items from lines`);
   return items;
 }
 
@@ -837,6 +916,22 @@ function formatItemName(name) {
     })
     .join(' ');
 } 
+
+function parsePrice(priceText) {
+  if (!priceText) return null;
+  
+  // Remove currency symbols and extra spaces
+  const cleanPrice = priceText.replace(/[£$€¥]/g, '').trim();
+  
+  // Try to extract numeric value
+  const priceMatch = cleanPrice.match(/(\d+(?:\.\d{1,2})?)/);
+  if (priceMatch) {
+    const price = parseFloat(priceMatch[1]);
+    return !isNaN(price) && price > 0 ? price : null;
+  }
+  
+  return null;
+}
 
 function isValidMenuItem(line) {
   const trimmed = line.trim();
