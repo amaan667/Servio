@@ -1332,21 +1332,7 @@ function formatItemName(name) {
     .join(' ');
 }
 
-function parsePrice(priceText) {
-  if (!priceText) return null;
-  
-  // Remove currency symbols and extra spaces
-  const cleanPrice = priceText.replace(/[£$€¥]/g, '').trim();
-  
-  // Try to extract numeric value
-  const priceMatch = cleanPrice.match(/(\d+(?:\.\d{1,2})?)/);
-  if (priceMatch) {
-    const price = parseFloat(priceMatch[1]);
-    return !isNaN(price) && price > 0 ? price : null;
-  }
-  
-  return null;
-}
+
 
 function isValidMenuItem(line) {
   const trimmed = line.trim();
