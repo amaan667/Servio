@@ -202,6 +202,8 @@ async function processImageFile(filePath, mimeType) {
       const allMenuItems = [];
       let lastKnownCategory = null;
       let quotaErrorDetected = false;
+      let totalPagesProcessed = 0;
+      let pagesWithQuotaErrors = 0;
       
       for (let i = 0; i < textPages.length; i += batchSize) {
         const batch = textPages.slice(i, i + batchSize);
@@ -213,6 +215,7 @@ async function processImageFile(filePath, mimeType) {
             console.log(`[Process] Using last known category: ${lastKnownCategory || 'None'}`);
             
             const pageResult = await parseMenuTextWithGPT(page.content, page.pageNumber, lastKnownCategory);
+            totalPagesProcessed++;
             
             if (pageResult && pageResult.items && Array.isArray(pageResult.items) && pageResult.items.length > 0) {
               console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${pageResult.items.length} items`);
@@ -245,10 +248,12 @@ async function processImageFile(filePath, mimeType) {
             return [];
           } catch (pageError) {
             console.error(`[Process] Error processing page ${page.pageNumber}:`, pageError);
+            totalPagesProcessed++;
             
             // Check if this is a quota error
             if (pageError.message?.includes('quota') || pageError.code === 'insufficient_quota' || pageError.status === 429) {
               quotaErrorDetected = true;
+              pagesWithQuotaErrors++;
               console.error(`[Process] Quota error detected on page ${page.pageNumber}`);
             }
             
@@ -260,6 +265,8 @@ async function processImageFile(filePath, mimeType) {
         const batchResults = await Promise.all(batchPromises);
         allMenuItems.push(...batchResults.flat());
       }
+      
+      console.log(`[Process] Processing complete: ${totalPagesProcessed} pages processed, ${pagesWithQuotaErrors} pages had quota errors`);
       
       if (allMenuItems.length > 0) {
         console.log(`[Process] Total menu items found: ${allMenuItems.length}`);
@@ -275,24 +282,35 @@ async function processImageFile(filePath, mimeType) {
         return { type: 'structured', data: sortedItems };
       } else {
         // Check if we had quota errors during processing
-        if (quotaErrorDetected) {
-          console.log(`[Process] Quota exceeded, trying fallback text processing...`);
+        if (quotaErrorDetected || pagesWithQuotaErrors > 0) {
+          console.log(`[Process] Quota exceeded (${pagesWithQuotaErrors}/${totalPagesProcessed} pages affected), trying fallback text processing...`);
           
           // Try fallback text processing without GPT
           try {
             const fallbackText = textPages.map(page => page.content).join('\n\n');
-            const fallbackItems = parseMenuFromOCR(fallbackText);
+            console.log(`[Process] Fallback text length: ${fallbackText.length} characters`);
+            console.log(`[Process] Fallback text preview: ${fallbackText.substring(0, 500)}...`);
             
-            if (fallbackItems && fallbackItems.length > 0) {
+            const fallbackItems = parseMenuFromOCR(fallbackText);
+            console.log(`[Process] parseMenuFromOCR returned:`, fallbackItems);
+            
+            if (fallbackItems && Array.isArray(fallbackItems) && fallbackItems.length > 0) {
               console.log(`[Process] Fallback processing found ${fallbackItems.length} items`);
               
               // Clean and sort the fallback items
               const cleanedItems = cleanMenuItems(fallbackItems);
-              const deduplicatedItems = deduplicateMenuItems(cleanedItems);
-              const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
+              console.log(`[Process] After cleaning: ${cleanedItems.length} items`);
               
+              const deduplicatedItems = deduplicateMenuItems(cleanedItems);
+              console.log(`[Process] After deduplication: ${deduplicatedItems.length} items`);
+              
+              const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
+              console.log(`[Process] After sorting: ${sortedItems.length} items`);
+              
+              console.log(`[Process] Fallback final result: ${sortedItems.length} unique, valid menu items`);
               return { type: 'structured', data: sortedItems };
             } else {
+              console.log(`[Process] Fallback processing found no items or invalid result:`, fallbackItems);
               throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
             }
           } catch (fallbackError) {
@@ -300,6 +318,7 @@ async function processImageFile(filePath, mimeType) {
             throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
           }
         } else {
+          console.log(`[Process] No quota errors detected, but no items found`);
           throw new Error('No menu items found in PDF');
         }
       }
@@ -1457,7 +1476,7 @@ function parseMenuFromOCR(ocrText) {
     // Check if this is a category
     if (categoryKeywords.some(cat => line.toUpperCase().includes(cat))) {
       // Save previous item if exists
-      if (currentItem) {
+      if (currentItem && currentItem.name && currentItem.price) {
         menuItems.push(currentItem);
         console.log(`[Parser] Saved item before category: ${currentItem.name} - £${currentItem.price}`);
         currentItem = null;
@@ -1479,12 +1498,13 @@ function parseMenuFromOCR(ocrText) {
     
     if (priceMatch) {
       // This line has a price - could be item name + price or just price
-      const price = priceMatch[priceMatch.length - 1]; // Get last price if multiple
+      const priceStr = priceMatch[priceMatch.length - 1]; // Get last price if multiple
+      const price = parseFloat(priceStr);
       const nameWithoutPrice = line.replace(priceRegex, '').trim();
       
       if (nameWithoutPrice && nameWithoutPrice.length > 2) {
         // Line has both name and price
-        if (currentItem) {
+        if (currentItem && currentItem.name && currentItem.price) {
           menuItems.push(currentItem);
           console.log(`[Parser] Saved item: ${currentItem.name} - £${currentItem.price}`);
         }
@@ -1496,7 +1516,7 @@ function parseMenuFromOCR(ocrText) {
           description: ''
         };
         console.log(`[Parser] Created item with inline price: ${currentItem.name} - £${currentItem.price}`);
-      } else if (currentItem) {
+      } else if (currentItem && currentItem.name) {
         // Just a price line - attach to current item
         currentItem.price = price;
         console.log(`[Parser] Attached price to current item: ${currentItem.name} - £${currentItem.price}`);
@@ -1506,8 +1526,8 @@ function parseMenuFromOCR(ocrText) {
     } else {
       // No price in this line
       if (isItemName(line)) {
-        // Save previous item
-        if (currentItem) {
+        // Save previous item if it has both name and price
+        if (currentItem && currentItem.name && currentItem.price) {
           menuItems.push(currentItem);
           console.log(`[Parser] Saved item: ${currentItem.name} - £${currentItem.price}`);
         }
@@ -1515,12 +1535,12 @@ function parseMenuFromOCR(ocrText) {
         // Start new item
         currentItem = {
           name: cleanItemName(line),
-          price: '',
+          price: 0, // Will be set later
           category: currentCategory,
           description: ''
         };
         console.log(`[Parser] Started new item: ${currentItem.name}`);
-      } else if (currentItem && isDescription(line)) {
+      } else if (currentItem && currentItem.name && isDescription(line)) {
         // Add to description
         currentItem.description += (currentItem.description ? ' ' : '') + line;
         console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
@@ -1530,14 +1550,22 @@ function parseMenuFromOCR(ocrText) {
     }
   }
   
-  // Don't forget the last item
-  if (currentItem) {
+  // Don't forget the last item if it has both name and price
+  if (currentItem && currentItem.name && currentItem.price && currentItem.price > 0) {
     menuItems.push(currentItem);
     console.log(`[Parser] Saved final item: ${currentItem.name} - £${currentItem.price}`);
   }
   
-  console.log(`[Parser] Total items extracted: ${menuItems.length}`);
-  return menuItems;
+  // Filter out items without proper prices
+  const validItems = menuItems.filter(item => 
+    item.name && 
+    item.name.trim().length > 0 && 
+    typeof item.price === 'number' && 
+    item.price > 0
+  );
+  
+  console.log(`[Parser] Total items extracted: ${menuItems.length}, valid items: ${validItems.length}`);
+  return validItems;
 }
 
 // Helper functions
