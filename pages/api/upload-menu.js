@@ -228,19 +228,33 @@ export default function handler(req, res) {
           console.log('Structured menu from layout analysis:', structuredMenu);
           
           if (venueId && structuredMenu.length > 0) {
-            await supabase.from('menu_items').delete().eq('venue_id', venueId);
-            for (const item of structuredMenu) {
-              const { error } = await supabase.from('menu_items').insert({
-                name: item.name,
-                price: item.price,
-                category: item.category || 'Uncategorized',
-                venue_id: venueId,
-                available: true,
-                created_at: new Date().toISOString(),
-              });
-              if (error) console.error('Supabase insert error:', error);
+            // Filter valid menu items before inserting
+            const validItems = filterValidMenuItems(structuredMenu);
+            
+            if (validItems.length > 0) {
+              await supabase.from('menu_items').delete().eq('venue_id', venueId);
+              
+              const { error } = await supabase
+                .from('menu_items')
+                .insert(validItems.map(item => ({
+                  name: item.name,
+                  price: item.price,
+                  category: item.category || 'Uncategorized',
+                  venue_id: venueId,
+                  available: true,
+                  created_at: new Date().toISOString(),
+                })));
+                
+              if (error) {
+                console.error('Supabase insert error:', error);
+                return res.status(500).json({ error: 'Failed to save menu items', detail: error.message });
+              }
+              
+              console.log(`[Success] Inserted ${validItems.length} valid menu items`);
+              return res.status(200).json({ message: 'Menu uploaded successfully' });
+            } else {
+              return res.status(400).json({ error: 'No valid menu items found after filtering' });
             }
-            return res.status(200).json({ message: 'Menu uploaded successfully' });
           } else {
             return res.status(400).json({ error: 'No menu items found or venueId missing' });
           }
@@ -269,19 +283,33 @@ export default function handler(req, res) {
       console.log('Structured menu from line parsing:', structuredMenu);
 
       if (venueId && structuredMenu.length > 0) {
-        await supabase.from('menu_items').delete().eq('venue_id', venueId);
-        for (const item of structuredMenu) {
-          const { error } = await supabase.from('menu_items').insert({
-            name: item.name,
-            price: item.price,
-            category: item.category || 'Uncategorized',
-            venue_id: venueId,
-            available: true,
-            created_at: new Date().toISOString(),
-          });
-          if (error) console.error('Supabase insert error:', error);
-      }
-        return res.status(200).json({ message: 'Menu uploaded successfully' });
+        // Filter valid menu items before inserting
+        const validItems = filterValidMenuItems(structuredMenu);
+        
+        if (validItems.length > 0) {
+          await supabase.from('menu_items').delete().eq('venue_id', venueId);
+          
+          const { error } = await supabase
+            .from('menu_items')
+            .insert(validItems.map(item => ({
+              name: item.name,
+              price: item.price,
+              category: item.category || 'Uncategorized',
+              venue_id: venueId,
+              available: true,
+              created_at: new Date().toISOString(),
+            })));
+            
+          if (error) {
+            console.error('Supabase insert error:', error);
+            return res.status(500).json({ error: 'Failed to save menu items', detail: error.message });
+          }
+          
+          console.log(`[Success] Inserted ${validItems.length} valid menu items`);
+          return res.status(200).json({ message: 'Menu uploaded successfully' });
+        } else {
+          return res.status(400).json({ error: 'No valid menu items found after filtering' });
+        }
       } else {
         return res.status(400).json({ error: 'No menu items found or venueId missing' });
       }
@@ -452,21 +480,49 @@ function extractMenuItemsWithRegex(text) {
 // NOTE: Using the GPT API for menu extraction could work better, as it can understand context, group multi-line items, and ignore descriptions/options. However, it is slower, more expensive, and may require prompt engineering for best results. The current parser is rule-based and fast, but less flexible for complex or noisy OCR outputs.
 
 function isLikelyItemName(line) {
+  const trimmed = line.trim();
+  
+  // Exclude common non-menu items first
+  const excludePatterns = [
+    /^w\/|^with\s/i,
+    /^add\s/i,
+    /^includes\s/i,
+    /^served\s+with\s/i,
+    /^or\s/i,
+    /^and\s/i,
+    /^extra\s/i,
+    /^topping\s/i,
+    /^side\s/i,
+    /^option\s/i,
+    /^choice\s/i,
+    /^selection\s/i,
+    /^substitute\s/i,
+    /^replace\s/i,
+    /^instead\s+of\s/i
+  ];
+  
+  // Check if line matches any exclusion pattern
+  for (const pattern of excludePatterns) {
+    if (pattern.test(trimmed)) {
+      return false;
+    }
+  }
+  
   // More lenient item detection - allow Arabic text and special characters
   return (
-    line.length > 2 &&
-    line.length < 80 &&
-    !/^£/.test(line) &&
-    !isCategoryHeader(line) &&
-    !isDescription(line) &&
+    trimmed.length > 2 &&
+    trimmed.length < 80 &&
+    !/^£/.test(trimmed) &&
+    !isCategoryHeader(trimmed) &&
+    !isDescription(trimmed) &&
     // Allow Arabic text and special characters
-    !/^[0-9\s]+$/.test(line) && // Not just numbers and spaces
+    !/^[0-9\s]+$/.test(trimmed) && // Not just numbers and spaces
     // Don't block common food words or Arabic text
     !['served with', 'add ', 'with ', 'and ', 'or ', 'freshly made', 'grilled'].some(word => 
-      line.toLowerCase().startsWith(word)
+      trimmed.toLowerCase().startsWith(word)
     ) &&
     // Allow lines that contain Arabic characters or food-related words
-    (line.length > 3 || /[ء-ي]/.test(line) || /[A-Z]/.test(line))
+    (trimmed.length > 3 || /[ء-ي]/.test(trimmed) || /[A-Z]/.test(trimmed))
   );
 }
 
@@ -780,4 +836,74 @@ function formatItemName(name) {
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })
     .join(' ');
+} 
+
+function isValidMenuItem(line) {
+  const trimmed = line.trim();
+  
+  // Exclude common non-menu items
+  const excludePatterns = [
+    /^w\/|^with\s/i,
+    /^add\s/i,
+    /^includes\s/i,
+    /^served\s+with\s/i,
+    /^or\s/i,
+    /^and\s/i,
+    /^extra\s/i,
+    /^topping\s/i,
+    /^side\s/i,
+    /^option\s/i,
+    /^choice\s/i,
+    /^selection\s/i
+  ];
+  
+  // Check if line matches any exclusion pattern
+  for (const pattern of excludePatterns) {
+    if (pattern.test(trimmed)) {
+      console.log(`[Filter] Excluded non-menu item: "${trimmed}" (pattern: ${pattern})`);
+      return false;
+    }
+  }
+  
+  // Must contain a price (number with optional decimal)
+  const hasPrice = /\d+(\.\d{1,2})?/.test(trimmed);
+  if (!hasPrice) {
+    console.log(`[Filter] Excluded item without price: "${trimmed}"`);
+    return false;
+  }
+  
+  return true;
+}
+
+function filterValidMenuItems(items) {
+  const validItems = items.filter(item => {
+    // Check if item has valid price
+    const hasValidPrice = typeof item.price === 'number' && !isNaN(item.price) && item.price > 0;
+    
+    // Check if item name is valid
+    const isValidName = item.name && item.name.trim().length > 0;
+    
+    // Check if item passes menu item validation
+    const passesValidation = isValidMenuItem(item.name);
+    
+    if (!hasValidPrice) {
+      console.log(`[Filter] Excluded item with invalid price: "${item.name}" (price: ${item.price})`);
+      return false;
+    }
+    
+    if (!isValidName) {
+      console.log(`[Filter] Excluded item with invalid name: "${item.name}"`);
+      return false;
+    }
+    
+    if (!passesValidation) {
+      console.log(`[Filter] Excluded non-menu item: "${item.name}"`);
+      return false;
+    }
+    
+    return true;
+  });
+  
+  console.log(`[Filter] Filtered ${items.length} items down to ${validItems.length} valid items`);
+  return validItems;
 } 
