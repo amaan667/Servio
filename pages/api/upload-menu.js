@@ -27,22 +27,70 @@ export const config = {
 // Azure Form Recognizer client
 let client = null;
 
-try {
-  const endpoint = process.env.AZURE_FORM_RECOGNIZER_ENDPOINT;
-  const apiKey = process.env.AZURE_FORM_RECOGNIZER_KEY;
-  
-  if (endpoint && apiKey) {
-    client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(apiKey));
-    console.log('[Azure] Form Recognizer client initialized successfully');
-  } else {
-    console.warn('[Azure] Missing environment variables - Azure Form Recognizer will not be available');
-    console.warn('[Azure] AZURE_FORM_RECOGNIZER_ENDPOINT:', !!endpoint);
-    console.warn('[Azure] AZURE_FORM_RECOGNIZER_KEY:', !!apiKey);
+async function initializeAzureClient() {
+  try {
+    console.log('[Azure] Starting initialization...');
+    
+    const endpoint = process.env.AZURE_FORM_RECOGNIZER_ENDPOINT;
+    const apiKey = process.env.AZURE_FORM_RECOGNIZER_KEY;
+    
+    console.log('[Azure] Environment check:');
+    console.log('[Azure] Endpoint exists:', !!endpoint);
+    console.log('[Azure] Endpoint length:', endpoint?.length || 0);
+    console.log('[Azure] API key exists:', !!apiKey);
+    console.log('[Azure] API key length:', apiKey?.length || 0);
+    
+    if (!endpoint || !apiKey) {
+      console.warn('[Azure] Missing environment variables - Azure Form Recognizer will not be available');
+      console.warn('[Azure] AZURE_FORM_RECOGNIZER_ENDPOINT:', !!endpoint);
+      console.warn('[Azure] AZURE_FORM_RECOGNIZER_KEY:', !!apiKey);
+      return false;
+    }
+    
+    // Validate endpoint format
+    if (!endpoint.startsWith('https://')) {
+      console.error('[Azure] Invalid endpoint format - must start with https://');
+      return false;
+    }
+    
+    // Validate API key format (should be a non-empty string)
+    if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
+      console.error('[Azure] Invalid API key format - must be a non-empty string');
+      return false;
+    }
+    
+    console.log('[Azure] Both variables present, initializing client...');
+    
+    // Add a small delay to ensure environment is fully loaded
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Create the client with explicit error handling
+    try {
+      client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(apiKey));
+      console.log('[Azure] Form Recognizer client initialized successfully');
+      return true;
+    } catch (clientError) {
+      console.error('[Azure] Failed to create DocumentAnalysisClient:', clientError);
+      console.error('[Azure] Client error details:', clientError.message);
+      return false;
+    }
+  } catch (error) {
+    console.error('[Azure] Failed to initialize Form Recognizer client:', error);
+    console.error('[Azure] Error details:', error.message);
+    console.error('[Azure] Error stack:', error.stack);
+    client = null;
+    return false;
   }
-} catch (error) {
-  console.error('[Azure] Failed to initialize Form Recognizer client:', error);
-  client = null;
 }
+
+// Initialize Azure client on module load with error handling
+(async () => {
+  try {
+    await initializeAzureClient();
+  } catch (error) {
+    console.error('[Azure] Module initialization failed:', error);
+  }
+})();
 
 // Supabase client
 const supabase = createClient(
@@ -98,9 +146,14 @@ async function processImageFile(filePath, mimeType) {
 }
 
 async function analyzeMenuWithAzure(filePath) {
+  // Ensure client is initialized
   if (!client) {
-    console.warn('[Azure] Form Recognizer client not available, falling back to local OCR');
-    throw new Error('Azure Form Recognizer not configured');
+    console.warn('[Azure] Client not initialized, attempting to initialize...');
+    const initialized = await initializeAzureClient();
+    if (!initialized) {
+      console.warn('[Azure] Form Recognizer client not available, falling back to local OCR');
+      throw new Error('Azure Form Recognizer not configured');
+    }
   }
 
   try {
