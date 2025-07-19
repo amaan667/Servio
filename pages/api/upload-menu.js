@@ -1110,12 +1110,15 @@ function isLikelyFragment(line) {
 }
 
 function parseMenuFromSeparatedLines(rawLines) {
-  // Step 1: Merge multi-line items
-  const lines = mergeMultilineItems(rawLines);
+  // Step 1: Merge multi-line items with better logic
+  const lines = mergeMultilineItemsImproved(rawLines);
   let items = [];
   let pendingItem = null;
+  let lastSeenPrice = null;
   let currentCategory = 'Uncategorized';
   let lastCategory = 'Uncategorized';
+  let nameBuffer = [];
+  let descriptionBuffer = [];
 
   console.log(`[Parser] Processing ${lines.length} merged lines`);
 
@@ -1130,47 +1133,63 @@ function parseMenuFromSeparatedLines(rawLines) {
       currentCategory = detectCategory(line);
       lastCategory = currentCategory;
       console.log(`[Parser] Detected category: ${currentCategory}`);
+      
       // Save pending item if it has a price
       if (pendingItem && pendingItem.price) {
         items.push({ ...pendingItem, category: currentCategory });
         console.log(`[Parser] Saved pending item before category: ${pendingItem.name} - £${pendingItem.price}`);
         pendingItem = null;
+        nameBuffer = [];
+        descriptionBuffer = [];
       }
       continue;
     }
 
-    // Flexible price matcher
-    const priceRegex = /£?\s?\d{1,3}(?:\.\d{1,2})?/g;
-    const priceMatch = line.match(priceRegex);
-    if (priceMatch && line.replace(priceRegex, '').trim() === '') {
-      // This is a price-only line
-      const price = parseFloat(priceMatch[0].replace('£', '').trim());
+    // Check if line contains a price (improved detection)
+    const price = parsePriceImproved(line);
+    if (price !== null) {
+      lastSeenPrice = price;
+      console.log(`[Parser] Found price: £${price}`);
+      
+      // If we have a pending item without price, attach it
       if (pendingItem && !pendingItem.price) {
         pendingItem.price = price;
         items.push({ ...pendingItem, category: lastCategory });
-        console.log(`[Parser] Backtracked price to pending item: ${pendingItem.name} - £${pendingItem.price}`);
+        console.log(`[Parser] Attached price to pending item: ${pendingItem.name} - £${pendingItem.price}`);
         pendingItem = null;
-      } else {
-        // Try to backtrack to last item without price
-        if (items.length > 0 && !items[items.length - 1].price) {
-          items[items.length - 1].price = price;
-          console.log(`[Parser] Backtracked price to previous item: ${items[items.length - 1].name} - £${price}`);
-        } else {
-          console.log(`[Parser] Orphaned price: ${line}`);
+        nameBuffer = [];
+        descriptionBuffer = [];
+      } else if (nameBuffer.length > 0) {
+        // We have a name buffer but no pending item, create one
+        const fullName = nameBuffer.join(" ").trim();
+        if (fullName && isLikelyMenuItem(fullName)) {
+          const newItem = {
+            name: fullName,
+            price: price,
+            description: descriptionBuffer.join(" ").trim() || ""
+          };
+          items.push({ ...newItem, category: lastCategory });
+          console.log(`[Parser] Created item from buffer: ${fullName} - £${price}`);
+          nameBuffer = [];
+          descriptionBuffer = [];
         }
       }
       continue;
     }
 
-    // Inline price
+    // Check if line contains both name and price inline
     const inlineMatch = line.match(/^(.*?)[.\-–—]*\s*£\s?(\d{1,3}(?:\.\d{1,2})?)/);
     if (inlineMatch) {
       const name = inlineMatch[1].trim();
       const price = parseFloat(inlineMatch[2]);
+      
       if (name && price && !isNaN(price) && price > 0) {
+        // Save pending item if it exists and has a price
         if (pendingItem && pendingItem.price) {
           items.push({ ...pendingItem, category: lastCategory });
         }
+        
+        // Create new item
         const newItem = {
           name: name,
           price: price,
@@ -1179,41 +1198,67 @@ function parseMenuFromSeparatedLines(rawLines) {
         items.push({ ...newItem, category: lastCategory });
         console.log(`[Parser] Saved inline item: ${newItem.name} - £${newItem.price}`);
         pendingItem = null;
+        nameBuffer = [];
+        descriptionBuffer = [];
       }
       continue;
     }
 
-    // Menu item detection
+    // Check if line looks like a menu item name
     if (isLikelyMenuItem(line)) {
+      // Save previous pending item if it has a price
       if (pendingItem && pendingItem.price) {
         items.push({ ...pendingItem, category: lastCategory });
+        console.log(`[Parser] Saved pending item: ${pendingItem.name} - £${pendingItem.price}`);
       } else if (pendingItem) {
         console.log(`[Parser] Discarded incomplete pending item: ${pendingItem.name} (no price)`);
       }
+
+      // Start new pending item
       pendingItem = {
         name: line,
         price: null,
         description: ""
       };
+      nameBuffer = [line];
+      descriptionBuffer = [];
       console.log(`[Parser] Started new pending item: ${line}`);
       continue;
     }
 
-    // Description or add-on
+    // Check if line is likely a description or continuation
     if (isLikelyDescription(line) || isLikelyAddon(line)) {
       if (pendingItem) {
         pendingItem.description = (pendingItem.description || "") + " " + line;
-        console.log(`[Parser] Added description/addon to ${pendingItem.name}: ${line}`);
+        descriptionBuffer.push(line);
+        console.log(`[Parser] Added description to ${pendingItem.name}: ${line}`);
+      } else if (nameBuffer.length > 0) {
+        // Add to name buffer if we're building a multi-line name
+        nameBuffer.push(line);
+        console.log(`[Parser] Added to name buffer: ${line}`);
       } else {
-        console.log(`[Parser] Found description/addon without pending item: ${line}`);
+        console.log(`[Parser] Found description without pending item: ${line}`);
       }
       continue;
     }
 
-    // Fallback: treat as description if pending item exists
+    // Check if line is a continuation of the current item name
+    if (pendingItem && isLikelyContinuation(line)) {
+      pendingItem.name += " " + line;
+      nameBuffer.push(line);
+      console.log(`[Parser] Extended item name: ${pendingItem.name}`);
+      continue;
+    }
+
+    // If we have a pending item, add this line as description (fallback)
     if (pendingItem) {
       pendingItem.description = (pendingItem.description || "") + " " + line;
+      descriptionBuffer.push(line);
       console.log(`[Parser] Added fallback description to ${pendingItem.name}: ${line}`);
+    } else if (nameBuffer.length > 0) {
+      // Add to name buffer if we're building a multi-line name
+      nameBuffer.push(line);
+      console.log(`[Parser] Added to name buffer: ${line}`);
     } else {
       console.log(`[Parser] Skipped line (no pending item): "${line}"`);
     }
@@ -1227,10 +1272,72 @@ function parseMenuFromSeparatedLines(rawLines) {
     console.log(`[Parser] Discarded final incomplete pending item: ${pendingItem.name} (no price)`);
   }
 
+  // Process any remaining name buffer with last seen price
+  if (nameBuffer.length > 0 && lastSeenPrice) {
+    const fullName = nameBuffer.join(" ").trim();
+    if (fullName && isLikelyMenuItem(fullName)) {
+      const newItem = {
+        name: fullName,
+        price: lastSeenPrice,
+        description: descriptionBuffer.join(" ").trim() || ""
+      };
+      items.push({ ...newItem, category: lastCategory });
+      console.log(`[Parser] Created final item from buffer: ${fullName} - £${lastSeenPrice}`);
+    }
+  }
+
   // Post-processing
   const processedMenu = postProcessMenuWithLogging(items);
   console.log(`[Parser] Final processed menu: ${processedMenu.length} items`);
   return processedMenu;
+}
+
+function mergeMultilineItemsImproved(lines) {
+  const merged = [];
+  let buffer = '';
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const next = lines[i + 1] ? lines[i + 1].trim() : '';
+    if (!line) continue;
+
+    // If line is a likely fragment or continuation, buffer it
+    if (isLikelyFragment(line)) {
+      buffer += (buffer ? ' ' : '') + line;
+      continue;
+    }
+
+    // If next line is a price or lowercase/fragment, merge
+    if (next && (looksLikePrice(next) || isLikelyFragment(next))) {
+      buffer += (buffer ? ' ' : '') + line;
+      continue;
+    }
+
+    // If buffer exists, merge it with current line
+    if (buffer) {
+      merged.push((buffer + ' ' + line).trim());
+      buffer = '';
+    } else {
+      merged.push(line);
+    }
+  }
+  
+  // Push any remaining buffer
+  if (buffer) merged.push(buffer.trim());
+  return merged;
+}
+
+function parsePriceImproved(text) {
+  if (!text) return null;
+  
+  // More flexible price matching
+  const priceMatch = text.match(/£?\s?(\d{1,3}(?:\.\d{1,2})?)/);
+  if (priceMatch) {
+    const price = parseFloat(priceMatch[1]);
+    return !isNaN(price) && price > 0 ? price : null;
+  }
+  
+  return null;
 }
 
 function postProcessMenuWithLogging(menu) {
