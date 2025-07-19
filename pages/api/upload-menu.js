@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
+import { PDFDocument } from 'pdf-lib';
+import { createCanvas, loadImage } from 'canvas';
 import OpenAI from 'openai';
 
 // Configure multer for file uploads
@@ -62,24 +64,49 @@ async function processImageFile(filePath, mimeType) {
     const fileBuffer = fs.readFileSync(filePath);
     
     if (mimeType === 'application/pdf') {
-      console.log('[Process] Processing PDF with text extraction + GPT parsing');
+      console.log('[Process] Processing PDF with per-page text extraction + GPT parsing');
       
-      // For PDFs, we'll extract text and use GPT to parse it
-      // since we can't convert to images on Railway without native binaries
-      const text = await extractTextFromPDF(fileBuffer);
+      // Convert PDF to text pages
+      const textPages = await convertPDFToImages(fileBuffer);
       
-      if (!text || text.trim().length === 0) {
+      if (textPages.length === 0) {
         throw new Error('No text extracted from PDF');
       }
       
-      console.log('[Process] Extracted text from PDF, using GPT to parse menu items');
+      console.log(`[Process] Extracted text from ${textPages.length} pages, processing with GPT`);
       
-      // Use GPT to parse the extracted text into menu items
-      const menuItems = await parseMenuTextWithGPT(text);
+      // Process each page with GPT
+      const allMenuItems = [];
       
-      if (Array.isArray(menuItems) && menuItems.length > 0) {
-        console.log(`[Process] Found ${menuItems.length} menu items from PDF text`);
-        return { type: 'structured', data: menuItems };
+      for (const page of textPages) {
+        try {
+          console.log(`[Process] Processing page ${page.pageNumber} with ${page.content.length} characters`);
+          
+          const pageMenuItems = await parseMenuTextWithGPT(page.content, page.pageNumber);
+          
+          if (Array.isArray(pageMenuItems) && pageMenuItems.length > 0) {
+            allMenuItems.push(...pageMenuItems);
+            console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${pageMenuItems.length} items`);
+          } else {
+            console.warn(`[Process] ⚠️ Page ${page.pageNumber}: No items found`);
+            
+            // Try with more aggressive prompt if no items found
+            const aggressiveItems = await parseMenuTextWithGPTAggressive(page.content, page.pageNumber);
+            if (Array.isArray(aggressiveItems) && aggressiveItems.length > 0) {
+              allMenuItems.push(...aggressiveItems);
+              console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${aggressiveItems.length} items with aggressive parsing`);
+            }
+          }
+          
+        } catch (pageError) {
+          console.error(`[Process] Error processing page ${page.pageNumber}:`, pageError);
+          // Continue with other pages
+        }
+      }
+      
+      if (allMenuItems.length > 0) {
+        console.log(`[Process] Total menu items found: ${allMenuItems.length}`);
+        return { type: 'structured', data: allMenuItems };
       } else {
         throw new Error('No menu items found in PDF');
       }
@@ -327,22 +354,26 @@ async function extractTextFromPDF(pdfBuffer) {
   }
 }
 
-async function parseMenuTextWithGPT(text) {
+async function parseMenuTextWithGPT(text, pageNumber = 1) {
   try {
-    console.log('[GPT Text] Parsing menu text with GPT');
+    console.log(`[GPT Text] Parsing menu text from page ${pageNumber}`);
     
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "You are a menu parsing expert. Extract menu items from the provided text and return them as a JSON array."
+          content: "You are a menu parsing expert. Extract menu items from the provided text and return them as a JSON array. Focus on items with clear names and prices."
         },
         {
           role: "user",
-          content: `Extract all menu items from this text. Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }]. Only include actual menu items with names and prices. Ignore headers, footers, and non-menu content.
+          content: `Extract all menu items from this text. Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }]. 
 
-Text to parse:
+Include drinks, desserts, breakfast items, and any add-ons if they have a price. Ensure each item with a visible price is extracted, even if name or category is on a separate line.
+
+Only include actual menu items with names and prices. Ignore headers, footers, and non-menu content.
+
+Text to parse (Page ${pageNumber}):
 ${text}`
         }
       ],
@@ -350,26 +381,76 @@ ${text}`
     });
     
     const content = response.choices[0].message.content;
-    console.log('[GPT Text] Raw response:', content);
+    console.log(`[GPT Text] Raw response from page ${pageNumber}:`, content);
     
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        console.log('[GPT Text] Parsed menu items:', menuItems);
+        console.log(`[GPT Text] Parsed ${menuItems.length} menu items from page ${pageNumber}`);
         return menuItems;
       } catch (parseError) {
-        console.error('[GPT Text] JSON parse error:', parseError);
+        console.error(`[GPT Text] JSON parse error for page ${pageNumber}:`, parseError);
         throw new Error('Failed to parse GPT response as JSON');
       }
     } else {
-      console.error('[GPT Text] No JSON array found in response');
+      console.error(`[GPT Text] No JSON array found in response for page ${pageNumber}`);
       throw new Error('No valid JSON array found in GPT response');
     }
   } catch (error) {
-    console.error('[GPT Text] Error:', error);
+    console.error(`[GPT Text] Error parsing page ${pageNumber}:`, error);
     throw error;
+  }
+}
+
+async function parseMenuTextWithGPTAggressive(text, pageNumber = 1) {
+  try {
+    console.log(`[GPT Text Aggressive] Parsing menu text from page ${pageNumber} with aggressive approach`);
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are a menu parsing expert. Be very aggressive in finding menu items. Include every line with a £ symbol or price, even if the name is unclear."
+        },
+        {
+          role: "user",
+          content: `Extract ALL menu items from this text, being very aggressive. Include every line with a £ symbol or price.
+
+Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }].
+
+If you see any line with a £ symbol or price, include it as a menu item. If the name is unclear, use the text before the price as the name.
+
+Text to parse (Page ${pageNumber}):
+${text}`
+        }
+      ],
+      max_tokens: 3000,
+    });
+    
+    const content = response.choices[0].message.content;
+    console.log(`[GPT Text Aggressive] Raw response from page ${pageNumber}:`, content);
+    
+    // Try to extract JSON from the response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (jsonMatch) {
+      try {
+        const menuItems = JSON.parse(jsonMatch[0]);
+        console.log(`[GPT Text Aggressive] Parsed ${menuItems.length} menu items from page ${pageNumber}`);
+        return menuItems;
+      } catch (parseError) {
+        console.error(`[GPT Text Aggressive] JSON parse error for page ${pageNumber}:`, parseError);
+        return [];
+      }
+    } else {
+      console.error(`[GPT Text Aggressive] No JSON array found in response for page ${pageNumber}`);
+      return [];
+    }
+  } catch (error) {
+    console.error(`[GPT Text Aggressive] Error parsing page ${pageNumber}:`, error);
+    return [];
   }
 }
 
@@ -1648,7 +1729,7 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
           content: [
             {
               type: "text",
-              text: "Extract all menu items from this image. Return a JSON array with this exact format: [{ \"name\": \"item name\", \"price\": number, \"description\": \"optional description\", \"category\": \"category name\" }]. Only include actual menu items with names and prices. Ignore headers, footers, and non-menu content."
+              text: "Extract all menu items from this image with the following format:\n\n[\n  {\n    \"name\": \"<name of the item>\",\n    \"price\": <price as number>,\n    \"description\": \"<optional description if present>\",\n    \"category\": \"<detected category or section if any>\"\n  },\n  ...\n]\n\nInclude drinks, desserts, breakfast items, and any add-ons if they have a price. Ensure each item with a visible price is extracted, even if name or category is on a separate line."
             },
             {
               type: "image_url",
@@ -1687,3 +1768,71 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
 }
 
 // PDF-to-image conversion removed - now using text extraction + GPT parsing
+
+async function convertPDFToImages(pdfBuffer) {
+  try {
+    console.log('[PDF Convert] Converting PDF to images using pdf-lib');
+    
+    // Load the PDF document
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const pageCount = pdfDoc.getPageCount();
+    console.log(`[PDF Convert] PDF has ${pageCount} pages`);
+    
+    const images = [];
+    
+    for (let i = 0; i < pageCount; i++) {
+      try {
+        console.log(`[PDF Convert] Processing page ${i + 1}/${pageCount}`);
+        
+        // Create a new PDF with just this page
+        const singlePagePdf = await PDFDocument.create();
+        const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [i]);
+        singlePagePdf.addPage(copiedPage);
+        
+        // Convert to PNG using canvas
+        const pdfBytes = await singlePagePdf.save();
+        
+        // For now, we'll use a different approach since pdf-lib doesn't directly render to images
+        // We'll use the text extraction approach but with better GPT processing
+        const pageText = await extractTextFromPDFPage(pdfBuffer, i);
+        
+        if (pageText && pageText.trim().length > 0) {
+          images.push({
+            pageNumber: i + 1,
+            content: pageText,
+            type: 'text'
+          });
+          console.log(`[PDF Convert] Extracted text from page ${i + 1}: ${pageText.length} characters`);
+        } else {
+          console.warn(`[PDF Convert] No text extracted from page ${i + 1}`);
+        }
+        
+      } catch (pageError) {
+        console.error(`[PDF Convert] Error processing page ${i + 1}:`, pageError);
+        // Continue with other pages
+      }
+    }
+    
+    console.log(`[PDF Convert] Successfully processed ${images.length} pages`);
+    return images;
+    
+  } catch (error) {
+    console.error('[PDF Convert] Error converting PDF:', error);
+    throw error;
+  }
+}
+
+async function extractTextFromPDFPage(pdfBuffer, pageIndex) {
+  try {
+    const pdfParse = require('pdf-parse');
+    const data = await pdfParse(pdfBuffer, {
+      firstPage: pageIndex + 1,
+      lastPage: pageIndex + 1
+    });
+    
+    return data.text || '';
+  } catch (error) {
+    console.error(`[PDF Page] Error extracting text from page ${pageIndex + 1}:`, error);
+    return '';
+  }
+}
