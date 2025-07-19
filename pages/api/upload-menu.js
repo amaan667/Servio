@@ -43,8 +43,12 @@ async function initializeAzureClient() {
       }
     });
     
-    const endpoint = process.env.AZURE_FORM_RECOGNIZER_ENDPOINT;
-    const apiKey = process.env.AZURE_FORM_RECOGNIZER_KEY;
+    // Try multiple possible environment variable names
+    const endpoint = process.env.AZURE_FORM_RECOGNIZER_ENDPOINT || 
+                    process.env.AZURE_ENDPOINT;
+    const apiKey = process.env.AZURE_FORM_RECOGNIZER_API_KEY || 
+                   process.env.AZURE_FORM_RECOGNIZER_KEY || 
+                   process.env.AZURE_API_KEY;
     
     console.log('[Azure] Environment check:');
     console.log('[Azure] Endpoint exists:', !!endpoint);
@@ -54,22 +58,11 @@ async function initializeAzureClient() {
     
     if (!endpoint || !apiKey) {
       console.warn('[Azure] Missing environment variables - Azure Form Recognizer will not be available');
-      console.warn('[Azure] AZURE_FORM_RECOGNIZER_ENDPOINT:', !!endpoint);
-      console.warn('[Azure] AZURE_FORM_RECOGNIZER_KEY:', !!apiKey);
-      
-      // Try alternative environment variable names
-      const altEndpoint = process.env.AZURE_ENDPOINT || process.env.AZURE_FORM_RECOGNIZER_ENDPOINT;
-      const altApiKey = process.env.AZURE_API_KEY || process.env.AZURE_FORM_RECOGNIZER_KEY;
-      
-      console.log('[Azure] Trying alternative variable names:');
-      console.log('[Azure] AZURE_ENDPOINT:', !!altEndpoint);
-      console.log('[Azure] AZURE_API_KEY:', !!altApiKey);
-      
-      if (altEndpoint && altApiKey) {
-        console.log('[Azure] Found alternative environment variables, using those...');
-        return await createAzureClient(altEndpoint, altApiKey);
-      }
-      
+      console.warn('[Azure] AZURE_FORM_RECOGNIZER_ENDPOINT:', !!process.env.AZURE_FORM_RECOGNIZER_ENDPOINT);
+      console.warn('[Azure] AZURE_FORM_RECOGNIZER_API_KEY:', !!process.env.AZURE_FORM_RECOGNIZER_API_KEY);
+      console.warn('[Azure] AZURE_FORM_RECOGNIZER_KEY:', !!process.env.AZURE_FORM_RECOGNIZER_KEY);
+      console.warn('[Azure] AZURE_ENDPOINT:', !!process.env.AZURE_ENDPOINT);
+      console.warn('[Azure] AZURE_API_KEY:', !!process.env.AZURE_API_KEY);
       return false;
     }
     
@@ -158,7 +151,7 @@ async function downloadImageFromUrl(imageUrl) {
 }
 
 async function processImageFile(filePath, mimeType) {
-  console.log(`[Process] Processing image file: ${filePath}, type: ${mimeType}`);
+  console.log(`[Process] Processing file: ${filePath}, type: ${mimeType}`);
   
   // Use Azure Form Recognizer for better OCR
   try {
@@ -176,9 +169,33 @@ async function processImageFile(filePath, mimeType) {
   } catch (azureError) {
     console.error("Azure Form Recognizer failed, falling back to local OCR:", azureError);
     
-    // Fallback to local OCR
-    const text = await extractTextFromImage(filePath);
-    return { type: 'text', data: text };
+    // Fallback to local OCR based on file type
+    try {
+      let text = '';
+      
+      if (mimeType === 'application/pdf') {
+        console.log('[Fallback] Processing PDF with pdf-parse');
+        text = await extractTextFromPDF(filePath);
+      } else if (mimeType.startsWith('image/')) {
+        console.log('[Fallback] Processing image with Tesseract');
+        text = await extractTextFromImage(filePath);
+      } else {
+        // Try to determine file type from extension
+        const fileExtension = filePath.split('.').pop()?.toLowerCase();
+        if (fileExtension === 'pdf') {
+          console.log('[Fallback] Processing PDF by extension');
+          text = await extractTextFromPDF(filePath);
+        } else {
+          console.log('[Fallback] Processing as image by extension');
+          text = await extractTextFromImage(filePath);
+        }
+      }
+      
+      return { type: 'text', data: text };
+    } catch (fallbackError) {
+      console.error('[Fallback] Local OCR also failed:', fallbackError);
+      throw new Error(`Failed to process file: ${fallbackError.message}`);
+    }
   }
 }
 
@@ -630,16 +647,58 @@ async function processExtractedData(result, venueId, res) {
 }
 
 async function extractTextFromPDF(pdfPath) {
-  const buffer = fs.readFileSync(pdfPath);
-  const data = await pdfParse(buffer);
-  return data.text;
+  try {
+    console.log(`[PDF] Reading PDF file: ${pdfPath}`);
+    const buffer = fs.readFileSync(pdfPath);
+    console.log(`[PDF] File size: ${buffer.length} bytes`);
+    
+    const data = await pdfParse(buffer);
+    console.log(`[PDF] Extracted text length: ${data.text.length} characters`);
+    
+    if (!data.text || data.text.trim().length === 0) {
+      throw new Error('No text extracted from PDF');
+    }
+    
+    return data.text;
+  } catch (error) {
+    console.error(`[PDF] Error extracting text from PDF:`, error);
+    throw new Error(`PDF processing failed: ${error.message}`);
+  }
 }
 
 async function extractTextFromImage(imagePath) {
-  const worker = await createWorker('eng');
-  const { data: { text } } = await worker.recognize(imagePath);
-  await worker.terminate();
-  return text;
+  try {
+    console.log(`[Image] Processing image file: ${imagePath}`);
+    
+    // Check if file exists and is readable
+    if (!fs.existsSync(imagePath)) {
+      throw new Error(`Image file does not exist: ${imagePath}`);
+    }
+    
+    const stats = fs.statSync(imagePath);
+    console.log(`[Image] File size: ${stats.size} bytes`);
+    
+    if (stats.size === 0) {
+      throw new Error('Image file is empty');
+    }
+    
+    const worker = await createWorker('eng');
+    console.log(`[Image] Tesseract worker created, processing image...`);
+    
+    const { data: { text } } = await worker.recognize(imagePath);
+    await worker.terminate();
+    
+    console.log(`[Image] Extracted text length: ${text.length} characters`);
+    
+    if (!text || text.trim().length === 0) {
+      throw new Error('No text extracted from image');
+    }
+    
+    return text;
+  } catch (error) {
+    console.error(`[Image] Error extracting text from image:`, error);
+    throw new Error(`Image processing failed: ${error.message}`);
+  }
 }
 
 function splitMenuSections(text) {
