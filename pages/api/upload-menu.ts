@@ -1,24 +1,18 @@
 import { extractMenuFromImage } from "@/lib/gptVisionMenuParser";
-import multer from "multer";
-const nextConnect = require("next-connect");
-import { NextApiRequest, NextApiResponse } from "next";
-import type { Request, Response } from "express";
 import { supabase } from "@/lib/supabase";
 import { OpenAI } from "openai";
 import fs from "fs";
+import formidable, { Fields, Files, File } from "formidable";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-const upload = multer({ dest: "/tmp/uploads" });
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const apiRoute = nextConnect({
-  onError(error: any, req: NextApiRequest, res: NextApiResponse) {
-    res.status(501).json({ error: `Something went wrong! ${error.message}` });
-  },
-});
-
-apiRoute.use(upload.single("file"));
-
-// Helper: Vision extraction from image URL
 async function extractMenuFromImageUrl(imageUrl: string) {
   const prompt = `Extract ALL menu items from this menu. Include every single item with its price and category.\n\nReturn JSON format:\n{\n  "items": [\n    {\n      "name": "Item name",\n      "price": "£X.XX", \n      "category": "Category",\n      "description": "Description if available"\n    }\n  ]\n}\n\nMake sure to capture EVERY item - starters, mains, drinks, desserts, etc.`;
   const response = await openai.chat.completions.create({
@@ -45,67 +39,97 @@ async function extractMenuFromImageUrl(imageUrl: string) {
   }
 }
 
-apiRoute.post(async (req: Request, res: Response) => {
-  // Accept venueId from form-data, query, or JSON
-  const venueId = (req as any).body?.venueId || (req as any).query?.venueId || (req as any).body?.venue_id;
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   let items: any[] = [];
+  let venueId: string | null = null;
 
   try {
     if (!supabase) throw new Error("Supabase client not initialized");
 
-    // Handle file upload
-    if ((req as any).file) {
-      const filePath = (req as any).file.path;
-      items = await extractMenuFromImage(filePath);
-      fs.unlinkSync(filePath); // Clean up temp file
-    } else if ((req as any).body?.imageUrl) {
-      // Handle image URL
-      items = await extractMenuFromImageUrl((req as any).body.imageUrl);
-    } else {
-      return res.status(400).json({ success: false, error: "No file or imageUrl provided." });
+    // Handle multipart form (file upload)
+    if (req.headers["content-type"]?.includes("multipart/form-data")) {
+      const form = new formidable.IncomingForm({ multiples: false });
+      form.parse(req, async (err: any, fields: Fields, files: Files) => {
+        if (err) {
+          return res.status(400).json({ success: false, error: "Failed to parse form data" });
+        }
+        let v1 = fields.venueId;
+        let v2 = fields.venue_id ?? "";
+        venueId = Array.isArray(v1) ? v1[0] : v1 || Array.isArray(v2) ? v2[0] : v2 || null;
+        let fileField = files.file;
+        const file: File | undefined = Array.isArray(fileField) ? fileField[0] : fileField;
+        if (!file) {
+          return res.status(400).json({ success: false, error: "No file uploaded." });
+        }
+        try {
+          items = await extractMenuFromImage(file.filepath);
+          fs.unlinkSync(file.filepath); // Clean up temp file
+          await insertMenuItems(items, venueId, res);
+        } catch (err: any) {
+          return res.status(500).json({ success: false, error: err.message });
+        }
+      });
+      return;
     }
 
-    // Validate and filter items
-    const validItems = (items || []).filter(
-      (item: any) => item.name && item.price && item.category
-    );
-
-    if (validItems.length === 0) {
-      return res.status(400).json({ success: false, error: "No valid menu items extracted." });
-    }
-
-    // Optionally: clear previous items for this venue
-    if (venueId) {
-      await supabase.from("menu_items").delete().eq("venue_id", venueId);
-    }
-
-    // Insert into Supabase
-    const { error } = await supabase.from("menu_items").insert(
-      validItems.map((item: any) => ({
-        name: item.name,
-        price: item.price,
-        category: item.category,
-        description: item.description || "",
-        venue_id: venueId || null,
-        available: true,
-        created_at: new Date().toISOString(),
-      }))
-    );
-
-    if (error) {
-      return res.status(500).json({ success: false, error: error.message });
-    }
-
-    res.status(200).json({ success: true, items: validItems });
+    // Handle JSON body (imageUrl)
+    let body = "";
+    req.on("data", chunk => { body += chunk.toString(); });
+    req.on("end", async () => {
+      try {
+        const parsed = JSON.parse(body || "{}");
+        venueId = parsed.venueId || parsed.venue_id || null;
+        if (parsed.imageUrl) {
+          items = await extractMenuFromImageUrl(parsed.imageUrl);
+        } else {
+          return res.status(400).json({ success: false, error: "No file or imageUrl provided." });
+        }
+        await insertMenuItems(items, venueId, res);
+      } catch (err: any) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message });
   }
-});
+}
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+async function insertMenuItems(items: any[], venueId: string | null, res: NextApiResponse) {
+  if (!supabase) throw new Error("Supabase client not initialized");
+  // Validate and filter items
+  const validItems = (items || []).filter(
+    (item: any) => item.name && item.price && item.category
+  );
 
-export default apiRoute; 
+  if (validItems.length === 0) {
+    return res.status(400).json({ success: false, error: "No valid menu items extracted." });
+  }
+
+  // Optionally: clear previous items for this venue
+  if (venueId) {
+    await supabase.from("menu_items").delete().eq("venue_id", venueId);
+  }
+
+  // Insert into Supabase
+  const { error } = await supabase.from("menu_items").insert(
+    validItems.map((item: any) => ({
+      name: item.name,
+      price: item.price,
+      category: item.category,
+      description: item.description || "",
+      venue_id: venueId || null,
+      available: true,
+      created_at: new Date().toISOString(),
+    }))
+  );
+
+  if (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+
+  return res.status(200).json({ success: true, items: validItems });
+} 
