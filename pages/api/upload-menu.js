@@ -54,6 +54,7 @@ export async function analyzeMenuWithAzure(filePath) {
 
 function extractFromKeyValuePairs(keyValuePairs) {
   const menuItems = [];
+  let currentCategory = 'Uncategorized';
   
   for (const { key, value } of keyValuePairs) {
     const keyText = key?.content?.trim();
@@ -61,16 +62,23 @@ function extractFromKeyValuePairs(keyValuePairs) {
     
     if (!keyText || !valueText) continue;
     
+    // Check if this looks like a category header
+    if (isCategoryHeader(keyText)) {
+      currentCategory = detectCategory(keyText);
+      console.log(`[Key-Value] Detected category: ${keyText} → ${currentCategory}`);
+      continue;
+    }
+    
     // Check if this looks like a menu item (key = name, value = price)
     const priceMatch = valueText.match(/£\s?(\d+(?:\.\d{1,2})?)/);
     if (priceMatch && keyText.length > 2) {
       menuItems.push({
         name: keyText,
         price: parseFloat(priceMatch[1]),
-        category: 'Uncategorized',
+        category: currentCategory,
         confidence: key.confidence || 0
       });
-      console.log(`[Key-Value] Extracted: ${keyText} - £${priceMatch[1]}`);
+      console.log(`[Key-Value] Extracted: ${keyText} - £${priceMatch[1]} (${currentCategory})`);
     }
   }
   
@@ -540,26 +548,49 @@ function parseMenuFromSeparatedLines(lines) {
 function detectCategory(line) {
   const upperLine = line.toUpperCase();
   
-  // Check semantic patterns
+  // Check semantic patterns first
+  const categoryPatterns = {
+    starters: /^(starters?|appetizers?|entrees?|small plates?|beginners?)/i,
+    mains: /^(main|mains|entrees?|dishes?|plates?|main course)/i,
+    desserts: /^(desserts?|sweets?|puddings?|cakes?)/i,
+    drinks: /^(drinks?|beverages?|coffee|tea|juices?|smoothies?|cocktails?)/i,
+    sides: /^(sides?|accompaniments?|extras?|add-ons?)/i,
+    burgers: /^(burgers?|sandwiches?|wraps?)/i,
+    salads: /^(salads?|greens?)/i,
+    breakfast: /^(breakfast|brunch|morning)/i,
+    lunch: /^(lunch|midday)/i,
+    dinner: /^(dinner|evening|night)/i
+  };
+  
   for (const [category, pattern] of Object.entries(categoryPatterns)) {
     if (pattern.test(upperLine)) {
+      console.log(`[Category] Semantic match: ${line} → ${category}`);
       return category.charAt(0).toUpperCase() + category.slice(1);
     }
   }
   
   // Check known categories
   const knownCategories = [
-    'STARTERS', 'MAINS', 'DESSERTS', 'DRINKS', 'SIDES',
-    'SLIDERS', 'TACOS', 'MEXICAN RICE', 'HOUMOUS JAM', 'GRILLED HALLOUMI'
+    'STARTERS', 'MAINS', 'DESSERTS', 'DRINKS', 'SIDES', 'BURGERS', 'SALADS',
+    'SLIDERS', 'TACOS', 'MEXICAN RICE', 'HOUMOUS JAM', 'GRILLED HALLOUMI',
+    'BREAKFAST', 'BRUNCH', 'LUNCH', 'DINNER', 'APPETIZERS', 'ENTREES'
   ];
   
   for (const category of knownCategories) {
     if (upperLine.includes(category)) {
+      console.log(`[Category] Known category match: ${line} → ${category}`);
       return category;
     }
   }
   
-  return line;
+  // If it's all caps and looks like a category, use it
+  if (line === line.toUpperCase() && line.length > 2 && line.length < 40 && !/^£/.test(line)) {
+    console.log(`[Category] All caps category: ${line}`);
+    return line;
+  }
+  
+  console.log(`[Category] No category detected for: ${line}, using Uncategorized`);
+  return 'Uncategorized';
 }
 
 function isItemNameContinuation(line) {
@@ -586,6 +617,12 @@ function postProcessMenu(menu) {
     // Remove trailing punctuation
     item.name = item.name.replace(/[.,;]+$/, '').trim();
     
+    // Improve category assignment if it's still Uncategorized
+    if (item.category === 'Uncategorized') {
+      item.category = inferCategoryFromItemName(item.name);
+      console.log(`[Category] Inferred category for "${item.name}": ${item.category}`);
+    }
+    
     // Create unique key for deduplication
     const key = `${item.name.toLowerCase()}-${item.price}-${item.category}`;
     
@@ -599,6 +636,30 @@ function postProcessMenu(menu) {
   }
 
   return processed;
+}
+
+function inferCategoryFromItemName(itemName) {
+  const name = itemName.toLowerCase();
+  
+  // Food type patterns
+  const patterns = {
+    starters: /(dip|hummus|baba|labneh|halloumi|kibbeh|mutbal|mezze|tapas|bruschetta|spring roll|samosa|pakora)/,
+    mains: /(burger|steak|chicken|beef|lamb|fish|salmon|pasta|rice|noodles|curry|stew|roast)/,
+    desserts: /(cake|ice cream|pudding|cheesecake|brownie|chocolate|sweet|dessert)/,
+    drinks: /(coffee|tea|juice|smoothie|milkshake|cocktail|beer|wine|soda|water)/,
+    sides: /(fries|chips|salad|bread|potato|vegetable|side)/,
+    breakfast: /(eggs|bacon|toast|pancake|waffle|cereal|breakfast)/,
+    sandwiches: /(sandwich|wrap|panini|sub|roll|bun)/,
+    salads: /(salad|greens|lettuce|spinach|kale)/
+  };
+  
+  for (const [category, pattern] of Object.entries(patterns)) {
+    if (pattern.test(name)) {
+      return category.charAt(0).toUpperCase() + category.slice(1);
+    }
+  }
+  
+  return 'Uncategorized';
 }
 
 function formatItemName(name) {
