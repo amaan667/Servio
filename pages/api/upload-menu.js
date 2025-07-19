@@ -31,6 +31,18 @@ async function initializeAzureClient() {
   try {
     console.log('[Azure] Starting initialization...');
     
+    // Log all environment variables that start with AZURE
+    console.log('[Azure] All Azure-related environment variables:');
+    Object.keys(process.env).forEach(key => {
+      if (key.includes('AZURE')) {
+        const value = process.env[key];
+        console.log(`[Azure] ${key}: ${value ? 'EXISTS' : 'MISSING'} (length: ${value?.length || 0})`);
+        if (value) {
+          console.log(`[Azure] ${key} value starts with: ${value.substring(0, 10)}...`);
+        }
+      }
+    });
+    
     const endpoint = process.env.AZURE_FORM_RECOGNIZER_ENDPOINT;
     const apiKey = process.env.AZURE_FORM_RECOGNIZER_KEY;
     
@@ -44,9 +56,35 @@ async function initializeAzureClient() {
       console.warn('[Azure] Missing environment variables - Azure Form Recognizer will not be available');
       console.warn('[Azure] AZURE_FORM_RECOGNIZER_ENDPOINT:', !!endpoint);
       console.warn('[Azure] AZURE_FORM_RECOGNIZER_KEY:', !!apiKey);
+      
+      // Try alternative environment variable names
+      const altEndpoint = process.env.AZURE_ENDPOINT || process.env.AZURE_FORM_RECOGNIZER_ENDPOINT;
+      const altApiKey = process.env.AZURE_API_KEY || process.env.AZURE_FORM_RECOGNIZER_KEY;
+      
+      console.log('[Azure] Trying alternative variable names:');
+      console.log('[Azure] AZURE_ENDPOINT:', !!altEndpoint);
+      console.log('[Azure] AZURE_API_KEY:', !!altApiKey);
+      
+      if (altEndpoint && altApiKey) {
+        console.log('[Azure] Found alternative environment variables, using those...');
+        return await createAzureClient(altEndpoint, altApiKey);
+      }
+      
       return false;
     }
     
+    return await createAzureClient(endpoint, apiKey);
+  } catch (error) {
+    console.error('[Azure] Failed to initialize Form Recognizer client:', error);
+    console.error('[Azure] Error details:', error.message);
+    console.error('[Azure] Error stack:', error.stack);
+    client = null;
+    return false;
+  }
+}
+
+async function createAzureClient(endpoint, apiKey) {
+  try {
     // Validate endpoint format
     if (!endpoint.startsWith('https://')) {
       console.error('[Azure] Invalid endpoint format - must start with https://');
@@ -60,6 +98,8 @@ async function initializeAzureClient() {
     }
     
     console.log('[Azure] Both variables present, initializing client...');
+    console.log('[Azure] Endpoint:', endpoint);
+    console.log('[Azure] API key starts with:', apiKey.substring(0, 10) + '...');
     
     // Add a small delay to ensure environment is fully loaded
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -75,10 +115,7 @@ async function initializeAzureClient() {
       return false;
     }
   } catch (error) {
-    console.error('[Azure] Failed to initialize Form Recognizer client:', error);
-    console.error('[Azure] Error details:', error.message);
-    console.error('[Azure] Error stack:', error.stack);
-    client = null;
+    console.error('[Azure] Error in createAzureClient:', error);
     return false;
   }
 }
@@ -422,15 +459,28 @@ export default function handler(req, res) {
   
   // Handle both file uploads and URL processing
   if (req.method === 'POST') {
-    const { imageUrl, venueId } = req.body;
+    // Check if this is a JSON request (for imageUrl) or multipart (for file upload)
+    const contentType = req.headers['content-type'] || '';
     
-    // If imageUrl is provided, process URL
-    if (imageUrl) {
-      return processImageUrl(req, res, imageUrl, venueId);
+    if (contentType.includes('application/json')) {
+      // Handle JSON request (imageUrl)
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      req.on('end', () => {
+        try {
+          const { imageUrl, venueId } = JSON.parse(body);
+          return processImageUrl(req, res, imageUrl, venueId);
+        } catch (error) {
+          console.error('Error parsing JSON body:', error);
+          return res.status(400).json({ error: 'Invalid JSON body' });
+        }
+      });
+    } else {
+      // Handle multipart request (file upload)
+      return processFileUpload(req, res);
     }
-    
-    // Otherwise, process file upload
-    return processFileUpload(req, res);
   }
   
   return res.status(405).json({ error: 'Method not allowed' });
