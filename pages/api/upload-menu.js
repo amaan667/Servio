@@ -282,10 +282,12 @@ function isLikelyItemName(line) {
     !isDescription(line) &&
     // Allow Arabic text and special characters
     !/^[0-9\s]+$/.test(line) && // Not just numbers and spaces
-    // Don't block common food words
-    !['served with', 'add ', 'with ', 'and ', 'or '].some(word => 
+    // Don't block common food words or Arabic text
+    !['served with', 'add ', 'with ', 'and ', 'or ', 'freshly made', 'grilled'].some(word => 
       line.toLowerCase().startsWith(word)
-    )
+    ) &&
+    // Allow lines that contain Arabic characters or food-related words
+    (line.length > 3 || /[ء-ي]/.test(line) || /[A-Z]/.test(line))
   );
 }
 
@@ -302,19 +304,19 @@ function isCategoryHeader(line) {
   
   return (
     knownCategories.some(cat => line.toUpperCase().includes(cat)) ||
-    (line.length > 2 && line.length < 40 && line === line.toUpperCase() && !/^£/.test(line))
+    (line.length > 2 && line.length < 40 && line === line.toUpperCase() && !/^£/.test(line) && !/[ء-ي]/.test(line))
   );
 }
 
 function isDescription(line) {
   // More lenient description detection
   return (
-    /^[a-z]/.test(line) ||
-    line.length > 80 ||
+    (/^[a-z]/.test(line) && line.length > 20) ||
+    line.length > 100 ||
     /[.!?]$/.test(line) ||
-    line.toLowerCase().includes('served with') ||
-    line.toLowerCase().includes('freshly made') ||
-    line.toLowerCase().includes('grilled') && line.length > 40
+    (line.toLowerCase().includes('served with') && line.length > 30) ||
+    (line.toLowerCase().includes('freshly made') && line.length > 30) ||
+    (line.toLowerCase().includes('grilled') && line.length > 50)
   );
 }
 
