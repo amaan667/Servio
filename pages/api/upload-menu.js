@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
-import { convert } from 'pdf-to-png-converter';
 import OpenAI from 'openai';
 
 // Configure multer for file uploads
@@ -63,33 +62,24 @@ async function processImageFile(filePath, mimeType) {
     const fileBuffer = fs.readFileSync(filePath);
     
     if (mimeType === 'application/pdf') {
-      console.log('[Process] Processing PDF with pdf-to-png-converter + GPT Vision');
+      console.log('[Process] Processing PDF with text extraction + GPT parsing');
       
-      // Convert PDF to images
-      const convertedPages = await convertPDFToImages(fileBuffer);
+      // For PDFs, we'll extract text and use GPT to parse it
+      // since we can't convert to images on Railway without native binaries
+      const text = await extractTextFromPDF(fileBuffer);
       
-      // Process each page with GPT Vision
-      const allMenuItems = [];
-      
-      for (let i = 0; i < convertedPages.length; i++) {
-        const page = convertedPages[i];
-        console.log(`[Process] Processing page ${i + 1}/${convertedPages.length}`);
-        
-        try {
-          const pageMenuItems = await processImageWithGPTVision(page.content, 'image/png');
-          if (Array.isArray(pageMenuItems) && pageMenuItems.length > 0) {
-            allMenuItems.push(...pageMenuItems);
-            console.log(`[Process] Found ${pageMenuItems.length} items on page ${i + 1}`);
-          }
-        } catch (pageError) {
-          console.error(`[Process] Error processing page ${i + 1}:`, pageError);
-          // Continue with other pages
-        }
+      if (!text || text.trim().length === 0) {
+        throw new Error('No text extracted from PDF');
       }
       
-      if (allMenuItems.length > 0) {
-        console.log(`[Process] Total menu items found: ${allMenuItems.length}`);
-        return { type: 'structured', data: allMenuItems };
+      console.log('[Process] Extracted text from PDF, using GPT to parse menu items');
+      
+      // Use GPT to parse the extracted text into menu items
+      const menuItems = await parseMenuTextWithGPT(text);
+      
+      if (Array.isArray(menuItems) && menuItems.length > 0) {
+        console.log(`[Process] Found ${menuItems.length} menu items from PDF text`);
+        return { type: 'structured', data: menuItems };
       } else {
         throw new Error('No menu items found in PDF');
       }
@@ -315,6 +305,73 @@ async function processExtractedData(result, venueId, res) {
 }
 
 // Old OCR functions removed - now using GPT Vision exclusively
+
+async function extractTextFromPDF(pdfBuffer) {
+  try {
+    console.log('[PDF] Extracting text from PDF buffer');
+    
+    // Use pdf-parse for text extraction (pure JavaScript)
+    const pdfParse = require('pdf-parse');
+    const data = await pdfParse(pdfBuffer);
+    
+    console.log(`[PDF] Extracted text length: ${data.text.length} characters`);
+    
+    if (!data.text || data.text.trim().length === 0) {
+      throw new Error('No text extracted from PDF');
+    }
+    
+    return data.text;
+  } catch (error) {
+    console.error('[PDF] Error extracting text from PDF:', error);
+    throw new Error(`PDF text extraction failed: ${error.message}`);
+  }
+}
+
+async function parseMenuTextWithGPT(text) {
+  try {
+    console.log('[GPT Text] Parsing menu text with GPT');
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are a menu parsing expert. Extract menu items from the provided text and return them as a JSON array."
+        },
+        {
+          role: "user",
+          content: `Extract all menu items from this text. Return a JSON array with this exact format: [{ "name": "item name", "price": number, "description": "optional description", "category": "category name" }]. Only include actual menu items with names and prices. Ignore headers, footers, and non-menu content.
+
+Text to parse:
+${text}`
+        }
+      ],
+      max_tokens: 3000,
+    });
+    
+    const content = response.choices[0].message.content;
+    console.log('[GPT Text] Raw response:', content);
+    
+    // Try to extract JSON from the response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (jsonMatch) {
+      try {
+        const menuItems = JSON.parse(jsonMatch[0]);
+        console.log('[GPT Text] Parsed menu items:', menuItems);
+        return menuItems;
+      } catch (parseError) {
+        console.error('[GPT Text] JSON parse error:', parseError);
+        throw new Error('Failed to parse GPT response as JSON');
+      }
+    } else {
+      console.error('[GPT Text] No JSON array found in response');
+      throw new Error('No valid JSON array found in GPT response');
+    }
+  } catch (error) {
+    console.error('[GPT Text] Error:', error);
+    throw error;
+  }
+}
 
 function splitMenuSections(text) {
   // Split on likely section/category headers (all caps, possibly with numbers, or lines with only a few words)
@@ -1629,23 +1686,4 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
   }
 }
 
-async function convertPDFToImages(pdfBuffer) {
-  try {
-    console.log('[PDF Convert] Converting PDF to images');
-    
-    const convertedPages = await convert(pdfBuffer, {
-      quality: 100,
-      density: 300,
-      width: 1200,
-      height: 1600,
-      outputType: "buffer",
-      pagesToProcess: "1-", // All pages
-    });
-    
-    console.log(`[PDF Convert] Converted ${convertedPages.length} pages`);
-    return convertedPages;
-  } catch (error) {
-    console.error('[PDF Convert] Error converting PDF:', error);
-    throw error;
-  }
-}
+// PDF-to-image conversion removed - now using text extraction + GPT parsing
