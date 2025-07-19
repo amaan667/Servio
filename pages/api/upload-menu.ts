@@ -1,6 +1,6 @@
 import { extractMenuFromImage } from "@/lib/gptVisionMenuParser";
 import multer from "multer";
-const nextConnect = require("next-connect");
+import * as nextConnect from "next-connect";
 import { NextApiRequest, NextApiResponse } from "next";
 import type { Request, Response } from "express";
 import { supabase } from "@/lib/supabase";
@@ -10,7 +10,9 @@ import fs from "fs";
 const upload = multer({ dest: "/tmp/uploads" });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const apiRoute = nextConnect({
+const getNextConnect = () => ((nextConnect as any).default ? (nextConnect as any).default : (nextConnect as any));
+
+const apiRoute = getNextConnect()({
   onError(error: any, req: NextApiRequest, res: NextApiResponse) {
     res.status(501).json({ error: `Something went wrong! ${error.message}` });
   },
