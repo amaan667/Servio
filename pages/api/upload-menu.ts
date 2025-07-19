@@ -2,7 +2,10 @@ import { extractMenuFromImage } from "@/lib/gptVisionMenuParser";
 import { supabase } from "@/lib/supabase";
 import { OpenAI } from "openai";
 import fs from "fs";
-import formidable, { Fields, Files, File } from "formidable";
+const formidable = require("formidable");
+type Fields = import("formidable").Fields;
+type Files = import("formidable").Files;
+type File = import("formidable").File;
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export const config = {
