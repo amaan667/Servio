@@ -1069,9 +1069,8 @@ function isDescription(line) {
 
 function parseMenuFromSeparatedLines(lines) {
   let items = [];
-  let currentItem = null;
+  let pendingItem = null;
   let currentCategory = 'Uncategorized';
-  const priceRegex = /£?\s?(\d+(\.\d{1,2})?)/;
 
   console.log(`[Parser] Processing ${lines.length} lines`);
 
@@ -1081,52 +1080,33 @@ function parseMenuFromSeparatedLines(lines) {
     
     console.log(`[Parser] Line ${i}: "${line}"`);
 
-    // Check if line is a category header (improved detection)
+    // Check if line is a category header
     if (isCategoryHeader(line)) {
       currentCategory = detectCategory(line);
       console.log(`[Parser] Detected category: ${currentCategory}`);
       
-      // Save previous item if valid
-      if (currentItem?.name && currentItem?.price) {
-        items.push({ ...currentItem, category: currentCategory });
-        console.log(`[Parser] Saved item before category: ${currentItem.name} - £${currentItem.price}`);
-        currentItem = null;
+      // Save pending item if it has a price
+      if (pendingItem && pendingItem.price) {
+        items.push({ ...pendingItem, category: currentCategory });
+        console.log(`[Parser] Saved pending item before category: ${pendingItem.name} - £${pendingItem.price}`);
+        pendingItem = null;
       }
       continue;
     }
 
-    // Check if line is all uppercase and might be a category (not followed by price)
-    const isAllCaps = line === line.toUpperCase() && line.length > 2 && line.length < 50;
-    const hasPrice = priceRegex.test(line);
-    const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
-    const nextLineHasPrice = priceRegex.test(nextLine);
-    
-    if (isAllCaps && !hasPrice && !nextLineHasPrice) {
-      // Treat as category
-      currentCategory = line;
-      console.log(`[Parser] Detected category (all caps): ${currentCategory}`);
-      
-      // Save previous item if valid
-      if (currentItem?.name && currentItem?.price) {
-        items.push({ ...currentItem, category: currentCategory });
-        console.log(`[Parser] Saved item before category: ${currentItem.name} - £${currentItem.price}`);
-        currentItem = null;
-      }
-      continue;
-    }
-
-    // Is it a price-only line?
-    const priceMatch = line.match(priceRegex);
-    if (priceMatch && currentItem && !currentItem.price) {
-      const price = parseFloat(priceMatch[1]);
-      if (!isNaN(price) && price > 0) {
-        currentItem.price = price;
-        console.log(`[Parser] Added price to current item: ${currentItem.name} - £${currentItem.price}`);
+    // Check if line looks like a price
+    if (looksLikePrice(line)) {
+      const price = parsePrice(line);
+      if (pendingItem && price !== null) {
+        pendingItem.price = price;
+        console.log(`[Parser] Added price to pending item: ${pendingItem.name} - £${pendingItem.price}`);
         
         // Save the completed item
-        items.push({ ...currentItem, category: currentCategory });
-        console.log(`[Parser] Saved completed item: ${currentItem.name} - £${currentItem.price}`);
-        currentItem = null;
+        items.push({ ...pendingItem, category: currentCategory });
+        console.log(`[Parser] Saved completed item: ${pendingItem.name} - £${pendingItem.price}`);
+        pendingItem = null;
+      } else {
+        console.log(`[Parser] Found price without pending item: ${line}`);
       }
       continue;
     }
@@ -1138,14 +1118,14 @@ function parseMenuFromSeparatedLines(lines) {
       const price = parseFloat(inlineMatch[2]);
       
       if (name && price && !isNaN(price) && price > 0) {
-        // Save current item if it exists and is complete
-        if (currentItem?.name && currentItem?.price) {
-          items.push({ ...currentItem, category: currentCategory });
-          console.log(`[Parser] Saved previous item: ${currentItem.name} - £${currentItem.price}`);
+        // Save pending item if it exists and has a price
+        if (pendingItem && pendingItem.price) {
+          items.push({ ...pendingItem, category: currentCategory });
+          console.log(`[Parser] Saved pending item: ${pendingItem.name} - £${pendingItem.price}`);
         }
         
         // Create new item
-        currentItem = {
+        const newItem = {
           name: name,
           price: price,
           description: ""
@@ -1153,81 +1133,72 @@ function parseMenuFromSeparatedLines(lines) {
         console.log(`[Parser] Created inline item: ${name} - £${price}`);
         
         // Save the completed item immediately
-        items.push({ ...currentItem, category: currentCategory });
-        console.log(`[Parser] Saved inline item: ${currentItem.name} - £${currentItem.price}`);
-        currentItem = null;
+        items.push({ ...newItem, category: currentCategory });
+        console.log(`[Parser] Saved inline item: ${newItem.name} - £${newItem.price}`);
+        pendingItem = null;
       }
       continue;
     }
 
-    // New item detected (with improved detection)
-    if (isLikelyNewItem(line)) {
-      // Save previous item if valid
-      if (currentItem?.name && currentItem?.price) {
-        items.push({ ...currentItem, category: currentCategory });
-        console.log(`[Parser] Saved previous item: ${currentItem.name} - £${currentItem.price}`);
-      } else if (currentItem?.name) {
-        console.log(`[Parser] Discarded incomplete item: ${currentItem.name} (no price)`);
+    // Check if line looks like a menu item name
+    if (looksLikeMenuItemName(line)) {
+      // Save previous pending item if it has a price
+      if (pendingItem && pendingItem.price) {
+        items.push({ ...pendingItem, category: currentCategory });
+        console.log(`[Parser] Saved pending item: ${pendingItem.name} - £${pendingItem.price}`);
+      } else if (pendingItem) {
+        console.log(`[Parser] Discarded incomplete pending item: ${pendingItem.name} (no price)`);
       }
 
-      currentItem = {
+      // Start new pending item
+      pendingItem = {
         name: line,
         price: null,
         description: ""
       };
-      console.log(`[Parser] Started new item: ${line}`);
+      console.log(`[Parser] Started new pending item: ${line}`);
       continue;
     }
 
-    // Smart line combining logic
-    if (currentItem) {
-      const lineEndsWithComma = line.endsWith(',');
-      const lineStartsWithLowercase = /^[a-z]/.test(line);
-      const lineContainsFoodKeywords = /(cheese|sauce|fries|mash|rice|rocket|served|with|special)/i.test(line);
-      
-      // Check if this line should be merged with the current item
-      const shouldMerge = (
-        lineEndsWithComma || 
-        (lineStartsWithLowercase && lineContainsFoodKeywords) ||
-        (lineStartsWithLowercase && !hasPrice && !isAllCaps)
-      );
-      
-      if (shouldMerge) {
-        if (!currentItem.price) {
-          // Continue building the name
-          currentItem.name += " " + line;
-          console.log(`[Parser] Extended item name: ${currentItem.name}`);
-        } else {
-          // Add to description
-          currentItem.description += (currentItem.description ? " " : "") + line;
-          console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
-        }
-      } else {
-        // Check if line is a description
-        if (isDescription(line)) {
-          currentItem.description += (currentItem.description ? " " : "") + line;
-          console.log(`[Parser] Added description to ${currentItem.name}: ${line}`);
-        } else {
-          console.log(`[Parser] Skipped line (no merge): "${line}"`);
-        }
-      }
+    // If we have a pending item, add this line as description
+    if (pendingItem) {
+      pendingItem.description = (pendingItem.description || "") + " " + line;
+      console.log(`[Parser] Added description to ${pendingItem.name}: ${line}`);
     } else {
-      console.log(`[Parser] Skipped line (no current item): "${line}"`);
+      console.log(`[Parser] Skipped line (no pending item): "${line}"`);
     }
   }
 
-  // Final push
-  if (currentItem?.name && currentItem?.price) {
-    items.push({ ...currentItem, category: currentCategory });
-    console.log(`[Parser] Saved final item: ${currentItem.name} - £${currentItem.price}`);
-  } else if (currentItem?.name) {
-    console.log(`[Parser] Discarded final incomplete item: ${currentItem.name} (no price)`);
+  // Push any final leftover pending item with price
+  if (pendingItem && pendingItem.price) {
+    items.push({ ...pendingItem, category: currentCategory });
+    console.log(`[Parser] Saved final pending item: ${pendingItem.name} - £${pendingItem.price}`);
+  } else if (pendingItem) {
+    console.log(`[Parser] Discarded final incomplete pending item: ${pendingItem.name} (no price)`);
   }
 
   // Post-processing
   const processedMenu = postProcessMenu(items);
   console.log(`[Parser] Final processed menu: ${processedMenu.length} items`);
   return processedMenu;
+}
+
+function looksLikePrice(text) {
+  return /^£?\d+(\.\d{1,2})?$/.test(text.trim());
+}
+
+function parsePrice(text) {
+  const match = text.match(/£?(\d+(\.\d{1,2})?)/);
+  return match ? parseFloat(match[1]) : null;
+}
+
+function looksLikeMenuItemName(text) {
+  // Basic heuristic: not all caps, not empty, not price, not category
+  return !!text && 
+         !looksLikePrice(text) && 
+         !isCategoryHeader(text) &&
+         !/^[A-Z\s]+$/.test(text) &&
+         text.length > 0;
 }
 
 function detectCategory(line) {
