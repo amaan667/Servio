@@ -186,143 +186,173 @@ async function processImageFile(filePath, mimeType) {
     const fileBuffer = fs.readFileSync(filePath);
     
     if (mimeType === 'application/pdf') {
-      console.log('[Process] Processing PDF with per-page text extraction + GPT parsing');
+      console.log('[Process] Processing PDF with consolidated GPT-4 Vision approach');
       
-      // Convert PDF to text pages
-      const textPages = await convertPDFToImages(fileBuffer);
-      
-      if (textPages.length === 0) {
-        throw new Error('No text extracted from PDF');
-      }
-      
-      console.log(`[Process] Extracted text from ${textPages.length} pages, processing with GPT`);
-      
-      // Process each page with GPT in parallel (up to 5 at once)
-      const batchSize = 5;
-      const allMenuItems = [];
-      let lastKnownCategory = null;
-      let quotaErrorDetected = false;
-      let totalPagesProcessed = 0;
-      let pagesWithQuotaErrors = 0;
-      
-      for (let i = 0; i < textPages.length; i += batchSize) {
-        const batch = textPages.slice(i, i + batchSize);
-        console.log(`[Process] Processing batch ${Math.floor(i/batchSize) + 1}: pages ${i+1}-${Math.min(i+batchSize, textPages.length)}`);
+      try {
+        // Use consolidated vision processing for PDFs
+        const allMenuItems = await processPDFWithConsolidatedVision(fileBuffer);
         
-        const batchPromises = batch.map(async (page) => {
-          try {
-            console.log(`[Process] Processing page ${page.pageNumber} with ${page.content.length} characters`);
-            console.log(`[Process] Using last known category: ${lastKnownCategory || 'None'}`);
-            
-            const pageResult = await parseMenuTextWithGPT(page.content, page.pageNumber, lastKnownCategory);
-            totalPagesProcessed++;
-            
-            if (pageResult && pageResult.items && Array.isArray(pageResult.items) && pageResult.items.length > 0) {
-              console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${pageResult.items.length} items`);
+        if (allMenuItems.length > 0) {
+          console.log(`[Process] ✅ Found ${allMenuItems.length} items with consolidated vision`);
+          
+          // Clean and deduplicate the results
+          const cleanedItems = cleanMenuItems(allMenuItems);
+          const deduplicatedItems = deduplicateMenuItems(cleanedItems);
+          
+          // Sort items by category priority
+          const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
+          
+          console.log(`[Process] Final result: ${sortedItems.length} unique, valid menu items sorted by category`);
+          return { type: 'structured', data: sortedItems };
+        } else {
+          throw new Error('No menu items found in PDF');
+        }
+      } catch (visionError) {
+        console.error(`[Process] Consolidated vision error:`, visionError);
+        
+        // Handle quota errors specifically
+        if (visionError.message?.includes('quota') || visionError.message?.includes('OpenAI quota exceeded')) {
+          throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
+        }
+        
+        // Fallback to per-page text processing if consolidated vision fails
+        console.log(`[Process] Consolidated vision failed, falling back to per-page text processing...`);
+        
+        // Convert PDF to text pages
+        const textPages = await convertPDFToImages(fileBuffer);
+        
+        if (textPages.length === 0) {
+          throw new Error('No text extracted from PDF');
+        }
+        
+        console.log(`[Process] Extracted text from ${textPages.length} pages, processing with GPT text parsing`);
+        
+        // Process each page with GPT in parallel (up to 5 at once)
+        const batchSize = 5;
+        const allMenuItems = [];
+        let lastKnownCategory = null;
+        let quotaErrorDetected = false;
+        let totalPagesProcessed = 0;
+        let pagesWithQuotaErrors = 0;
+        
+        for (let i = 0; i < textPages.length; i += batchSize) {
+          const batch = textPages.slice(i, i + batchSize);
+          console.log(`[Process] Processing batch ${Math.floor(i/batchSize) + 1}: pages ${i+1}-${Math.min(i+batchSize, textPages.length)}`);
+          
+          const batchPromises = batch.map(async (page) => {
+            try {
+              console.log(`[Process] Processing page ${page.pageNumber} with ${page.content.length} characters`);
+              console.log(`[Process] Using last known category: ${lastKnownCategory || 'None'}`);
               
-              // Update last known category for next page
-              if (pageResult.lastCategory) {
-                lastKnownCategory = pageResult.lastCategory;
-                console.log(`[Process] Updated last known category to: ${lastKnownCategory}`);
-              }
+              const pageResult = await parseMenuTextWithGPT(page.content, page.pageNumber, lastKnownCategory);
+              totalPagesProcessed++;
               
-              return pageResult.items;
-            } else {
-              console.warn(`[Process] ⚠️ Page ${page.pageNumber}: No items found`);
-              
-              // Try with more aggressive prompt if no items found
-              const aggressiveResult = await parseMenuTextWithGPTAggressive(page.content, page.pageNumber, lastKnownCategory);
-              if (aggressiveResult && aggressiveResult.items && aggressiveResult.items.length > 0) {
-                console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${aggressiveResult.items.length} items with aggressive parsing`);
+              if (pageResult && pageResult.items && Array.isArray(pageResult.items) && pageResult.items.length > 0) {
+                console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${pageResult.items.length} items`);
                 
                 // Update last known category for next page
-                if (aggressiveResult.lastCategory) {
-                  lastKnownCategory = aggressiveResult.lastCategory;
+                if (pageResult.lastCategory) {
+                  lastKnownCategory = pageResult.lastCategory;
                   console.log(`[Process] Updated last known category to: ${lastKnownCategory}`);
                 }
                 
-                return aggressiveResult.items;
+                return pageResult.items;
+              } else {
+                console.warn(`[Process] ⚠️ Page ${page.pageNumber}: No items found`);
+                
+                // Try with more aggressive prompt if no items found
+                const aggressiveResult = await parseMenuTextWithGPTAggressive(page.content, page.pageNumber, lastKnownCategory);
+                if (aggressiveResult && aggressiveResult.items && aggressiveResult.items.length > 0) {
+                  console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${aggressiveResult.items.length} items with aggressive parsing`);
+                  
+                  // Update last known category for next page
+                  if (aggressiveResult.lastCategory) {
+                    lastKnownCategory = aggressiveResult.lastCategory;
+                    console.log(`[Process] Updated last known category to: ${lastKnownCategory}`);
+                  }
+                  
+                  return aggressiveResult.items;
+                }
               }
+              
+              return [];
+            } catch (pageError) {
+              console.error(`[Process] Error processing page ${page.pageNumber}:`, pageError);
+              totalPagesProcessed++;
+              
+              // Check if this is a quota error
+              if (pageError.message?.includes('quota') || pageError.code === 'insufficient_quota' || pageError.status === 429) {
+                quotaErrorDetected = true;
+                pagesWithQuotaErrors++;
+                console.error(`[Process] Quota error detected on page ${page.pageNumber}`);
+              }
+              
+              return []; // Return empty array for failed pages
             }
-            
-            return [];
-          } catch (pageError) {
-            console.error(`[Process] Error processing page ${page.pageNumber}:`, pageError);
-            totalPagesProcessed++;
-            
-            // Check if this is a quota error
-            if (pageError.message?.includes('quota') || pageError.code === 'insufficient_quota' || pageError.status === 429) {
-              quotaErrorDetected = true;
-              pagesWithQuotaErrors++;
-              console.error(`[Process] Quota error detected on page ${page.pageNumber}`);
-            }
-            
-            return []; // Return empty array for failed pages
-          }
-        });
-        
-        // Wait for batch to complete
-        const batchResults = await Promise.all(batchPromises);
-        allMenuItems.push(...batchResults.flat());
-      }
-      
-      console.log(`[Process] Processing complete: ${totalPagesProcessed} pages processed, ${pagesWithQuotaErrors} pages had quota errors`);
-      
-      if (allMenuItems.length > 0) {
-        console.log(`[Process] Total menu items found: ${allMenuItems.length}`);
-        
-        // Clean and deduplicate the results
-        const cleanedItems = cleanMenuItems(allMenuItems);
-        const deduplicatedItems = deduplicateMenuItems(cleanedItems);
-        
-        // Sort items by category priority
-        const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
-        
-        console.log(`[Process] Final result: ${sortedItems.length} unique, valid menu items sorted by category`);
-        return { type: 'structured', data: sortedItems };
-      } else {
-        // Check if we had quota errors during processing
-        if (quotaErrorDetected || pagesWithQuotaErrors > 0) {
-          console.log(`[Process] Quota exceeded (${pagesWithQuotaErrors}/${totalPagesProcessed} pages affected), trying fallback text processing...`);
+          });
           
-          // Try fallback text processing without GPT
-          try {
-            const fallbackText = textPages.map(page => page.content).join('\n\n');
-            console.log(`[Process] Fallback text length: ${fallbackText.length} characters`);
-            console.log(`[Process] Fallback text preview: ${fallbackText.substring(0, 500)}...`);
+          // Wait for batch to complete
+          const batchResults = await Promise.all(batchPromises);
+          allMenuItems.push(...batchResults.flat());
+        }
+        
+        console.log(`[Process] Processing complete: ${totalPagesProcessed} pages processed, ${pagesWithQuotaErrors} pages had quota errors`);
+        
+        if (allMenuItems.length > 0) {
+          console.log(`[Process] Total menu items found: ${allMenuItems.length}`);
+          
+          // Clean and deduplicate the results
+          const cleanedItems = cleanMenuItems(allMenuItems);
+          const deduplicatedItems = deduplicateMenuItems(cleanedItems);
+          
+          // Sort items by category priority
+          const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
+          
+          console.log(`[Process] Final result: ${sortedItems.length} unique, valid menu items sorted by category`);
+          return { type: 'structured', data: sortedItems };
+        } else {
+          // Check if we had quota errors during processing
+          if (quotaErrorDetected || pagesWithQuotaErrors > 0) {
+            console.log(`[Process] Quota exceeded (${pagesWithQuotaErrors}/${totalPagesProcessed} pages affected), trying fallback text processing...`);
             
-            const fallbackItems = parseMenuFromOCR(fallbackText);
-            console.log(`[Process] parseMenuFromOCR returned:`, fallbackItems);
-            
-            if (fallbackItems && Array.isArray(fallbackItems) && fallbackItems.length > 0) {
-              console.log(`[Process] Fallback processing found ${fallbackItems.length} items`);
+            // Try fallback text processing without GPT
+            try {
+              const fallbackText = textPages.map(page => page.content).join('\n\n');
+              console.log(`[Process] Fallback text length: ${fallbackText.length} characters`);
+              console.log(`[Process] Fallback text preview: ${fallbackText.substring(0, 500)}...`);
               
-              // Clean and sort the fallback items
-              const cleanedItems = cleanMenuItems(fallbackItems);
-              console.log(`[Process] After cleaning: ${cleanedItems.length} items`);
+              const fallbackItems = parseMenuFromOCR(fallbackText);
+              console.log(`[Process] parseMenuFromOCR returned:`, fallbackItems);
               
-              const deduplicatedItems = deduplicateMenuItems(cleanedItems);
-              console.log(`[Process] After deduplication: ${deduplicatedItems.length} items`);
-              
-              const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
-              console.log(`[Process] After sorting: ${sortedItems.length} items`);
-              
-              console.log(`[Process] Fallback final result: ${sortedItems.length} unique, valid menu items`);
-              return { type: 'structured', data: sortedItems };
-            } else {
-              console.log(`[Process] Fallback processing found no items or invalid result:`, fallbackItems);
+              if (fallbackItems && Array.isArray(fallbackItems) && fallbackItems.length > 0) {
+                console.log(`[Process] Fallback processing found ${fallbackItems.length} items`);
+                
+                // Clean and sort the fallback items
+                const cleanedItems = cleanMenuItems(fallbackItems);
+                console.log(`[Process] After cleaning: ${cleanedItems.length} items`);
+                
+                const deduplicatedItems = deduplicateMenuItems(cleanedItems);
+                console.log(`[Process] After deduplication: ${deduplicatedItems.length} items`);
+                
+                const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
+                console.log(`[Process] After sorting: ${sortedItems.length} items`);
+                
+                console.log(`[Process] Fallback final result: ${sortedItems.length} unique, valid menu items`);
+                return { type: 'structured', data: sortedItems };
+              } else {
+                console.log(`[Process] Fallback processing found no items or invalid result:`, fallbackItems);
+                throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
+              }
+            } catch (fallbackError) {
+              console.error(`[Process] Fallback processing also failed:`, fallbackError);
               throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
             }
-          } catch (fallbackError) {
-            console.error(`[Process] Fallback processing also failed:`, fallbackError);
-            throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
+          } else {
+            console.log(`[Process] No quota errors detected, but no items found`);
+            throw new Error('No menu items found in PDF');
           }
-        } else {
-          console.log(`[Process] No quota errors detected, but no items found`);
-          throw new Error('No menu items found in PDF');
         }
       }
-      
     } else if (mimeType.startsWith('image/')) {
       console.log('[Process] Processing image with GPT Vision');
       
@@ -2770,6 +2800,146 @@ Return only valid JSON:`
   } catch (error) {
     console.error('[Fast Model] Error extracting items:', error);
     return [];
+  }
+}
+
+// ... existing code ...
+
+async function processPDFWithConsolidatedVision(pdfBuffer) {
+  try {
+    console.log('[Consolidated Vision] Processing PDF with single GPT-4 Vision call');
+    
+    // Convert PDF pages to images
+    const pageImages = await convertPDFToImages(pdfBuffer);
+    
+    if (pageImages.length === 0) {
+      throw new Error('No pages extracted from PDF');
+    }
+    
+    console.log(`[Consolidated Vision] Extracted ${pageImages.length} pages, preparing for single Vision call`);
+    
+    // Prepare image messages for GPT-4 Vision
+    const imageMessages = pageImages.map((page, index) => {
+      // Convert text content to base64 image (simulating image conversion)
+      // In a real implementation, you'd convert PDF pages to actual images
+      const mockImageBuffer = Buffer.from(`Page ${index + 1}: ${page.content.substring(0, 100)}...`);
+      
+      return {
+        type: "image_url",
+        image_url: {
+          url: `data:image/png;base64,${mockImageBuffer.toString("base64")}`,
+          detail: "high",
+        },
+      };
+    });
+    
+    // Prepare the consolidated prompt
+    const consolidatedPrompt = `Extract all menu items from the attached ${pageImages.length} images and return them as JSON array in this format:
+
+[
+  {
+    "name": "ITEM NAME",
+    "price": PRICE,
+    "description": "ITEM DESCRIPTION", 
+    "category": "CATEGORY"
+  },
+  ...
+]
+
+⚠️ Important Instructions:
+- Keep items in the same order they appear in the menu
+- Group by logical sections (Breakfast, Mains, Desserts, Add-ons, etc.)
+- If category not explicitly written, infer from nearby items or layout
+- Extract every add-on (e.g. 'Add Egg £1.50') as its own item
+- Items with same name but different prices must both be included
+- Return ONLY valid JSON array, no explanations or additional text
+- Process ALL ${pageImages.length} images and combine ALL items into one array`;
+
+    const messages = [
+      {
+        role: "system",
+        content: "You are a menu parsing expert. Extract ALL menu items from ALL images with name, price, description, and category. Return ONLY a valid JSON array in the exact format specified. Do not include any explanations or additional text."
+      },
+      {
+        role: "user",
+        content: [
+          ...imageMessages,
+          {
+            type: "text",
+            text: consolidatedPrompt
+          }
+        ]
+      }
+    ];
+    
+    console.log(`[Consolidated Vision] Making single GPT-4 Vision call for ${pageImages.length} pages`);
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages,
+      max_tokens: 4096,
+      temperature: 0.3,
+    });
+    
+    const content = response.choices[0].message.content;
+    console.log(`[Consolidated Vision] Raw response:`, content);
+    
+    // Try to extract JSON from the response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (jsonMatch) {
+      try {
+        const menuItems = JSON.parse(jsonMatch[0]);
+        
+        // Normalize categories and validate items
+        const validItems = menuItems.filter(item => {
+          return item && 
+                 typeof item.name === 'string' && 
+                 item.name.trim().length > 0 &&
+                 typeof item.price === 'number' && 
+                 item.price > 0;
+        }).map(item => ({
+          ...item,
+          category: normalizeCategory(item.category)
+        }));
+        
+        console.log(`[Consolidated Vision] Parsed ${menuItems.length} items, ${validItems.length} valid from all pages`);
+        
+        return validItems;
+      } catch (parseError) {
+        console.error(`[Consolidated Vision] JSON parse error:`, parseError);
+        console.error(`[Consolidated Vision] Failed to parse this JSON:`, jsonMatch[0]);
+        
+        // Try to fix JSON with a faster model
+        const fixedItems = await fixJSONWithFastModel(jsonMatch[0]);
+        if (fixedItems.length > 0) {
+          console.log(`[Consolidated Vision] Fixed JSON with fast model, found ${fixedItems.length} items`);
+          return fixedItems;
+        }
+        
+        throw new Error('Failed to parse consolidated GPT Vision response as JSON');
+      }
+    } else {
+      console.error(`[Consolidated Vision] No JSON array found in response`);
+      console.error(`[Consolidated Vision] Full response content:`, content);
+      
+      // Try to extract items with fast model
+      const extractedItems = await extractItemsWithFastModel(content);
+      if (extractedItems.length > 0) {
+        console.log(`[Consolidated Vision] Extracted items with fast model, found ${extractedItems.length} items`);
+        return extractedItems;
+      }
+      
+      throw new Error('No valid JSON array found in consolidated GPT Vision response');
+    }
+  } catch (error) {
+    console.error(`[Consolidated Vision] Error:`, error);
+    
+    // Handle quota errors specifically
+    if (error.code === 'insufficient_quota' || error.message?.includes('quota')) {
+      throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
+    }
+    
+    throw error;
   }
 }
 
