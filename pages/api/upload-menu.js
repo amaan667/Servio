@@ -201,6 +201,7 @@ async function processImageFile(filePath, mimeType) {
       const batchSize = 5;
       const allMenuItems = [];
       let lastKnownCategory = null;
+      let quotaErrorDetected = false;
       
       for (let i = 0; i < textPages.length; i += batchSize) {
         const batch = textPages.slice(i, i + batchSize);
@@ -244,6 +245,13 @@ async function processImageFile(filePath, mimeType) {
             return [];
           } catch (pageError) {
             console.error(`[Process] Error processing page ${page.pageNumber}:`, pageError);
+            
+            // Check if this is a quota error
+            if (pageError.message?.includes('quota') || pageError.code === 'insufficient_quota' || pageError.status === 429) {
+              quotaErrorDetected = true;
+              console.error(`[Process] Quota error detected on page ${page.pageNumber}`);
+            }
+            
             return []; // Return empty array for failed pages
           }
         });
@@ -266,7 +274,34 @@ async function processImageFile(filePath, mimeType) {
         console.log(`[Process] Final result: ${sortedItems.length} unique, valid menu items sorted by category`);
         return { type: 'structured', data: sortedItems };
       } else {
-        throw new Error('No menu items found in PDF');
+        // Check if we had quota errors during processing
+        if (quotaErrorDetected) {
+          console.log(`[Process] Quota exceeded, trying fallback text processing...`);
+          
+          // Try fallback text processing without GPT
+          try {
+            const fallbackText = textPages.map(page => page.content).join('\n\n');
+            const fallbackItems = parseMenuFromOCR(fallbackText);
+            
+            if (fallbackItems && fallbackItems.length > 0) {
+              console.log(`[Process] Fallback processing found ${fallbackItems.length} items`);
+              
+              // Clean and sort the fallback items
+              const cleanedItems = cleanMenuItems(fallbackItems);
+              const deduplicatedItems = deduplicateMenuItems(cleanedItems);
+              const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
+              
+              return { type: 'structured', data: sortedItems };
+            } else {
+              throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
+            }
+          } catch (fallbackError) {
+            console.error(`[Process] Fallback processing also failed:`, fallbackError);
+            throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
+          }
+        } else {
+          throw new Error('No menu items found in PDF');
+        }
       }
       
     } else if (mimeType.startsWith('image/')) {
@@ -647,7 +682,16 @@ ${text}`;
     }
   } catch (error) {
     console.error(`[GPT Text] Error parsing page ${pageNumber}:`, error);
-    throw error;
+    
+    // Handle quota errors specifically - return empty result instead of throwing
+    if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
+      console.error(`[GPT Text] Quota exceeded for page ${pageNumber}, returning empty result`);
+      return { items: [], lastCategory: lastKnownCategory };
+    }
+    
+    // For other errors, also return empty result to prevent propagation
+    console.error(`[GPT Text] Non-quota error for page ${pageNumber}, returning empty result`);
+    return { items: [], lastCategory: lastKnownCategory };
   }
 }
 
@@ -817,6 +861,15 @@ ${text}`;
     }
   } catch (error) {
     console.error(`[GPT Text Aggressive] Error parsing page ${pageNumber}:`, error);
+    
+    // Handle quota errors specifically - return empty result instead of throwing
+    if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
+      console.error(`[GPT Text Aggressive] Quota exceeded for page ${pageNumber}, returning empty result`);
+      return { items: [], lastCategory: lastKnownCategory };
+    }
+    
+    // For other errors, also return empty result to prevent propagation
+    console.error(`[GPT Text Aggressive] Non-quota error for page ${pageNumber}, returning empty result`);
     return { items: [], lastCategory: lastKnownCategory };
   }
 }
@@ -884,6 +937,15 @@ ${markdownText}`;
         return { items: validItems, lastCategory: lastCategoryInPage };
       } catch (parseError) {
         console.error(`[Markdown] JSON parse error:`, parseError);
+        
+        // Handle quota errors specifically - return empty result instead of throwing
+        if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
+          console.error(`[Markdown] Quota exceeded, returning empty result`);
+          return { items: [], lastCategory: lastKnownCategory };
+        }
+        
+        // For other errors, also return empty result to prevent propagation
+        console.error(`[Markdown] Non-quota error, returning empty result`);
         return { items: [], lastCategory: lastKnownCategory };
       }
     } else {
@@ -892,6 +954,15 @@ ${markdownText}`;
     }
   } catch (error) {
     console.error(`[Markdown] Error:`, error);
+    
+    // Handle quota errors specifically - return empty result instead of throwing
+    if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
+      console.error(`[Markdown] Quota exceeded, returning empty result`);
+      return { items: [], lastCategory: lastKnownCategory };
+    }
+    
+    // For other errors, also return empty result to prevent propagation
+    console.error(`[Markdown] Non-quota error, returning empty result`);
     return { items: [], lastCategory: lastKnownCategory };
   }
 }
