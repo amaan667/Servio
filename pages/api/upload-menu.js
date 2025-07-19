@@ -1071,6 +1071,7 @@ function parseMenuFromSeparatedLines(lines) {
   let items = [];
   let pendingItem = null;
   let currentCategory = 'Uncategorized';
+  let lineBuffer = []; // Buffer for multi-line items
 
   console.log(`[Parser] Processing ${lines.length} lines`);
 
@@ -1090,6 +1091,7 @@ function parseMenuFromSeparatedLines(lines) {
         items.push({ ...pendingItem, category: currentCategory });
         console.log(`[Parser] Saved pending item before category: ${pendingItem.name} - £${pendingItem.price}`);
         pendingItem = null;
+        lineBuffer = [];
       }
       continue;
     }
@@ -1097,7 +1099,7 @@ function parseMenuFromSeparatedLines(lines) {
     // Check if line looks like a price
     if (looksLikePrice(line)) {
       const price = parsePrice(line);
-      if (pendingItem && price !== null) {
+      if (pendingItem && price !== null && !pendingItem.price) {
         pendingItem.price = price;
         console.log(`[Parser] Added price to pending item: ${pendingItem.name} - £${pendingItem.price}`);
         
@@ -1105,8 +1107,11 @@ function parseMenuFromSeparatedLines(lines) {
         items.push({ ...pendingItem, category: currentCategory });
         console.log(`[Parser] Saved completed item: ${pendingItem.name} - £${pendingItem.price}`);
         pendingItem = null;
+        lineBuffer = [];
+      } else if (pendingItem && pendingItem.price) {
+        console.log(`[Parser] Found additional price for item that already has one: ${line}`);
       } else {
-        console.log(`[Parser] Found price without pending item: ${line}`);
+        console.log(`[Parser] Found orphaned price: ${line}`);
       }
       continue;
     }
@@ -1136,12 +1141,13 @@ function parseMenuFromSeparatedLines(lines) {
         items.push({ ...newItem, category: currentCategory });
         console.log(`[Parser] Saved inline item: ${newItem.name} - £${newItem.price}`);
         pendingItem = null;
+        lineBuffer = [];
       }
       continue;
     }
 
     // Check if line looks like a proper menu item name
-    if (isProperMenuItem(line)) {
+    if (isLikelyMenuItem(line)) {
       // Save previous pending item if it has a price
       if (pendingItem && pendingItem.price) {
         items.push({ ...pendingItem, category: currentCategory });
@@ -1156,20 +1162,46 @@ function parseMenuFromSeparatedLines(lines) {
         price: null,
         description: ""
       };
+      lineBuffer = [line]; // Start new buffer
       console.log(`[Parser] Started new pending item: ${line}`);
       continue;
     }
 
-    // Check if line is a weak fragment (skip it)
-    if (isWeakFragment(line)) {
-      console.log(`[Parser] Skipped weak fragment: "${line}"`);
+    // Check if line is likely a description or continuation
+    if (isLikelyDescription(line)) {
+      if (pendingItem) {
+        pendingItem.description = (pendingItem.description || "") + " " + line;
+        lineBuffer.push(line);
+        console.log(`[Parser] Added description to ${pendingItem.name}: ${line}`);
+      } else {
+        console.log(`[Parser] Found description without pending item: ${line}`);
+      }
       continue;
     }
 
-    // If we have a pending item, add this line as description
+    // Check if line is a continuation of the current item name
+    if (pendingItem && isLikelyContinuation(line)) {
+      pendingItem.name += " " + line;
+      lineBuffer.push(line);
+      console.log(`[Parser] Extended item name: ${pendingItem.name}`);
+      continue;
+    }
+
+    // Check if line is an add-on or extra
+    if (isLikelyAddon(line)) {
+      if (pendingItem) {
+        pendingItem.description = (pendingItem.description || "") + " " + line;
+        console.log(`[Parser] Added addon to ${pendingItem.name}: ${line}`);
+      } else {
+        console.log(`[Parser] Found addon without pending item: ${line}`);
+      }
+      continue;
+    }
+
+    // If we have a pending item, add this line as description (fallback)
     if (pendingItem) {
       pendingItem.description = (pendingItem.description || "") + " " + line;
-      console.log(`[Parser] Added description to ${pendingItem.name}: ${line}`);
+      console.log(`[Parser] Added fallback description to ${pendingItem.name}: ${line}`);
     } else {
       console.log(`[Parser] Skipped line (no pending item): "${line}"`);
     }
@@ -1189,12 +1221,57 @@ function parseMenuFromSeparatedLines(lines) {
   return processedMenu;
 }
 
-function isLikelyOption(text) {
-  return /^(\(?w\/|\(?with|add|served|topped|includes|substitute|replace|instead\s+of)/i.test(text.trim());
+function isLikelyMenuItem(text) {
+  // Must start with capital letter and not be a description starter
+  const descriptionStarters = [
+    'cheese,', 'served with', 'add', 'with', 'w/', 'topped with',
+    'includes', 'comes with', 'accompanied by', 'garnished with'
+  ];
+  
+  const startsWithDescription = descriptionStarters.some(starter => 
+    text.toLowerCase().startsWith(starter.toLowerCase())
+  );
+  
+  return !looksLikePrice(text) && 
+         !isCategoryHeader(text) &&
+         !startsWithDescription &&
+         text.length > 2 &&
+         /^[A-Z]/.test(text) && // Must start with capital
+         !/^[A-Z\s]+$/.test(text); // Not all caps
 }
 
-function isWeakFragment(text) {
-  return /^[a-z\s,]+$/.test(text) && text.length < 20 && !text.includes(' ') && !isLikelyOption(text);
+function isLikelyDescription(text) {
+  const descriptionPatterns = [
+    /^cheese,/i,
+    /^served with/i,
+    /^topped with/i,
+    /^includes/i,
+    /^comes with/i,
+    /^accompanied by/i,
+    /^garnished with/i,
+    /^freshly made/i,
+    /^grilled/i,
+    /^marinated/i,
+    /^with choice of/i,
+    /^and/i,
+    /^or/i
+  ];
+  
+  return descriptionPatterns.some(pattern => pattern.test(text)) ||
+         (text.length < 30 && /^[a-z]/.test(text)); // Short lowercase lines
+}
+
+function isLikelyContinuation(text) {
+  // Lines that continue the item name (not descriptions)
+  return text.length < 40 && 
+         !looksLikePrice(text) &&
+         !isLikelyDescription(text) &&
+         !isLikelyAddon(text) &&
+         !/^[A-Z]/.test(text); // Doesn't start with capital (continuation)
+}
+
+function isLikelyAddon(text) {
+  return /^(add|add-on|extra|additional|\+|plus)/i.test(text.trim());
 }
 
 function isProperMenuItem(text) {
