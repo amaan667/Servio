@@ -35,8 +35,14 @@ export async function analyzeMenuWithAzure(filePath) {
 
   const result = await poller.pollUntilDone();
 
-  let output = [];
+  // Try to extract key-value pairs first (for table-like layouts)
+  if (result.keyValuePairs && result.keyValuePairs.length > 0) {
+    console.log("Found key-value pairs, using structured extraction");
+    return extractFromKeyValuePairs(result.keyValuePairs);
+  }
 
+  // Fallback to line-by-line extraction
+  let output = [];
   for (const page of result.pages || []) {
     for (const line of page.lines || []) {
       output.push(line.content);
@@ -44,6 +50,37 @@ export async function analyzeMenuWithAzure(filePath) {
   }
 
   return output.join('\n');
+}
+
+function extractFromKeyValuePairs(keyValuePairs) {
+  const menuItems = [];
+  
+  for (const { key, value } of keyValuePairs) {
+    const keyText = key?.content?.trim();
+    const valueText = value?.content?.trim();
+    
+    if (!keyText || !valueText) continue;
+    
+    // Check if this looks like a menu item (key = name, value = price)
+    const priceMatch = valueText.match(/£\s?(\d+(?:\.\d{1,2})?)/);
+    if (priceMatch && keyText.length > 2) {
+      menuItems.push({
+        name: keyText,
+        price: parseFloat(priceMatch[1]),
+        category: 'Uncategorized',
+        confidence: key.confidence || 0
+      });
+      console.log(`[Key-Value] Extracted: ${keyText} - £${priceMatch[1]}`);
+    }
+  }
+  
+  if (menuItems.length > 0) {
+    console.log(`[Key-Value] Found ${menuItems.length} items via structured extraction`);
+    return menuItems;
+  }
+  
+  // If no key-value pairs found, return null to fall back to line parsing
+  return null;
 }
 
 function cleanOCRLines(rawText) {
@@ -67,8 +104,36 @@ export default function handler(req, res) {
 
       // Use Azure Form Recognizer for better OCR
       try {
-        text = await analyzeMenuWithAzure(filePath);
+        const azureResult = await analyzeMenuWithAzure(filePath);
         console.log("Azure Form Recognizer extraction successful");
+        
+        // Check if we got structured key-value pairs
+        if (Array.isArray(azureResult)) {
+          console.log("Using structured key-value extraction");
+          const structuredMenu = azureResult;
+          console.log('Structured menu from key-value pairs:', structuredMenu);
+          
+          if (venueId && structuredMenu.length > 0) {
+            await supabase.from('menu_items').delete().eq('venue_id', venueId);
+            for (const item of structuredMenu) {
+              const { error } = await supabase.from('menu_items').insert({
+                name: item.name,
+                price: item.price,
+                category: item.category || 'Uncategorized',
+                venue_id: venueId,
+                available: true,
+                created_at: new Date().toISOString(),
+              });
+              if (error) console.error('Supabase insert error:', error);
+            }
+            return res.status(200).json({ message: 'Menu uploaded successfully' });
+          } else {
+            return res.status(400).json({ error: 'No menu items found or venueId missing' });
+          }
+        } else {
+          // Fallback to line-by-line parsing
+          text = azureResult;
+        }
       } catch (azureError) {
         console.error("Azure Form Recognizer failed, falling back to local OCR:", azureError);
         
@@ -87,7 +152,7 @@ export default function handler(req, res) {
       console.log("FULL OCR TEXT >>>", text);
       const lines = cleanOCRLines(text);
       const structuredMenu = parseMenuFromSeparatedLines(lines);
-      console.log('Structured menu:', structuredMenu);
+      console.log('Structured menu from line parsing:', structuredMenu);
 
       if (venueId && structuredMenu.length > 0) {
         await supabase.from('menu_items').delete().eq('venue_id', venueId);
@@ -321,140 +386,231 @@ function isDescription(line) {
 }
 
 function parseMenuFromSeparatedLines(lines) {
-  const priceRegex = /£\s?(\d+(?:\.\d{1,2})?)/;
   const menu = [];
   let currentCategory = 'Uncategorized';
-  let lastItem = null;
-  let incompleteItem = null;
-  let pendingPrice = null;
+  let currentItem = null;
+  let state = 'scanning'; // scanning, item_name, item_description, price
+
+  // Semantic category matching
+  const categoryPatterns = {
+    starters: /^(starters?|appetizers?|entrees?|small plates?)/i,
+    mains: /^(main|mains|entrees?|dishes?|plates?)/i,
+    desserts: /^(desserts?|sweets?|puddings?)/i,
+    drinks: /^(drinks?|beverages?|coffee|tea|juices?|smoothies?)/i,
+    sides: /^(sides?|accompaniments?|extras?)/i
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    console.log(`[Line ${i}] Processing:`, JSON.stringify(line));
+    
+    console.log(`[Line ${i}] State: ${state}, Processing:`, JSON.stringify(line));
 
-    if (isCategoryHeader(line)) {
-      currentCategory = line;
-      lastItem = null;
-      incompleteItem = null;
-      pendingPrice = null;
-      console.log(`[Line ${i}] Detected category:`, currentCategory);
-      continue;
+    // State machine logic
+    switch (state) {
+      case 'scanning':
+        // Look for category headers
+        if (isCategoryHeader(line)) {
+          currentCategory = detectCategory(line);
+          console.log(`[Line ${i}] Detected category: ${currentCategory}`);
+          state = 'scanning';
+          continue;
+        }
+        
+        // Look for item names
+        if (isLikelyItemName(line)) {
+          currentItem = { name: line, category: currentCategory };
+          state = 'item_name';
+          console.log(`[Line ${i}] Started item: ${line}`);
+          continue;
+        }
+        
+        // Look for standalone prices
+        const priceMatch = line.match(/£\s?(\d+(?:\.\d{1,2})?)/);
+        if (priceMatch && currentItem) {
+          currentItem.price = parseFloat(priceMatch[1]);
+          menu.push(currentItem);
+          console.log(`[Line ${i}] Completed item with price: ${currentItem.name} - £${currentItem.price}`);
+          currentItem = null;
+          state = 'scanning';
+          continue;
+        }
+        break;
+
+      case 'item_name':
+        // Check if line contains price
+        const inlinePriceMatch = line.match(/^(.*?)[.\-–—]*\s*£\s?(\d+(?:\.\d{1,2})?)/);
+        if (inlinePriceMatch) {
+          const name = inlinePriceMatch[1].trim();
+          const price = parseFloat(inlinePriceMatch[2]);
+          currentItem.name = name || currentItem.name;
+          currentItem.price = price;
+          menu.push(currentItem);
+          console.log(`[Line ${i}] Completed inline item: ${currentItem.name} - £${currentItem.price}`);
+          currentItem = null;
+          state = 'scanning';
+          continue;
+        }
+        
+        // Check if line is just a price
+        const standalonePriceMatch = line.match(/£\s?(\d+(?:\.\d{1,2})?)/);
+        if (standalonePriceMatch) {
+          currentItem.price = parseFloat(standalonePriceMatch[1]);
+          menu.push(currentItem);
+          console.log(`[Line ${i}] Completed item with standalone price: ${currentItem.name} - £${currentItem.price}`);
+          currentItem = null;
+          state = 'scanning';
+          continue;
+        }
+        
+        // Check if line continues the item name
+        if (isItemNameContinuation(line)) {
+          currentItem.name += ' ' + line;
+          console.log(`[Line ${i}] Extended item name: ${currentItem.name}`);
+          continue;
+        }
+        
+        // Check if line is a description
+        if (isDescription(line)) {
+          currentItem.description = line;
+          state = 'item_description';
+          console.log(`[Line ${i}] Added description: ${line}`);
+          continue;
+        }
+        
+        // If none of the above, assume it's a new item
+        if (isLikelyItemName(line)) {
+          // Save current item without price
+          if (currentItem) {
+            menu.push(currentItem);
+            console.log(`[Line ${i}] Saved incomplete item: ${currentItem.name}`);
+          }
+          currentItem = { name: line, category: currentCategory };
+          console.log(`[Line ${i}] Started new item: ${line}`);
+          continue;
+        }
+        break;
+
+      case 'item_description':
+        // Look for price after description
+        const descPriceMatch = line.match(/£\s?(\d+(?:\.\d{1,2})?)/);
+        if (descPriceMatch) {
+          currentItem.price = parseFloat(descPriceMatch[1]);
+          menu.push(currentItem);
+          console.log(`[Line ${i}] Completed item after description: ${currentItem.name} - £${currentItem.price}`);
+          currentItem = null;
+          state = 'scanning';
+          continue;
+        }
+        
+        // Continue description or start new item
+        if (isLikelyItemName(line)) {
+          if (currentItem) {
+            menu.push(currentItem);
+            console.log(`[Line ${i}] Saved incomplete item: ${currentItem.name}`);
+          }
+          currentItem = { name: line, category: currentCategory };
+          state = 'item_name';
+          console.log(`[Line ${i}] Started new item after description: ${line}`);
+          continue;
+        }
+        
+        // Continue description
+        if (isDescription(line)) {
+          currentItem.description += ' ' + line;
+          console.log(`[Line ${i}] Extended description: ${currentItem.description}`);
+          continue;
+        }
+        break;
     }
-
-    // If line contains both name and price
-    const match = line.match(/^(.*?)[.\-–—]*\s*£\s?(\d+(?:\.\d{1,2})?)/);
-    if (match) {
-      const name = match[1].trim();
-      if (isLikelyItemName(name)) {
-        menu.push({
-          name,
-          price: parseFloat(match[2]),
-          category: currentCategory,
-        });
-        console.log(`[Line ${i}] Paired inline item:`, name, 'with price:', match[2], 'in category:', currentCategory);
-      } else {
-        console.log(`[Line ${i}] Inline item rejected:`, name);
-      }
-      lastItem = null;
-      incompleteItem = null;
-      pendingPrice = null;
-      continue;
-    }
-
-    // If line is just a price
-    const priceMatch = line.match(priceRegex);
-    if (priceMatch) {
-      pendingPrice = parseFloat(priceMatch[1]);
-      console.log(`[Line ${i}] Found price:`, pendingPrice);
-      
-      // Try to pair with incomplete item first
-      if (incompleteItem) {
-        menu.push({
-          name: incompleteItem.trim(),
-          price: pendingPrice,
-          category: currentCategory,
-        });
-        console.log(`[Line ${i}] Paired with incomplete item:`, incompleteItem.trim(), 'price:', pendingPrice);
-        incompleteItem = null;
-        pendingPrice = null;
-        continue;
-      }
-      
-      // Then try with last item
-      if (lastItem && isLikelyItemName(lastItem)) {
-        menu.push({
-          name: lastItem.trim(),
-          price: pendingPrice,
-          category: currentCategory,
-        });
-        console.log(`[Line ${i}] Paired with last item:`, lastItem.trim(), 'price:', pendingPrice);
-        lastItem = null;
-        pendingPrice = null;
-        continue;
-      }
-      
-      // If no item found, keep the price pending
-      console.log(`[Line ${i}] Price pending, no item to pair with`);
-      continue;
-    }
-
-    // If line is a likely item name
-    if (isLikelyItemName(line)) {
-      console.log(`[Line ${i}] Detected item name:`, line);
-      // If we have a pending price, pair it with this item
-      if (pendingPrice) {
-        menu.push({
-          name: line.trim(),
-          price: pendingPrice,
-          category: currentCategory,
-        });
-        console.log(`[Line ${i}] Paired pending price with new item:`, line.trim(), 'price:', pendingPrice);
-        pendingPrice = null;
-      } else {
-        lastItem = line;
-        incompleteItem = line;
-        console.log(`[Line ${i}] Buffered item name:`, line);
-      }
-      continue;
-    } else {
-      console.log(`[Line ${i}] Not an item name:`, line);
-    }
-
-    // If line continues the previous item name (more lenient)
-    if (incompleteItem && !isDescription(line) && line.length < 50) {
-      // Check if this line looks like it continues the item name
-      const isContinuation = (
-        /^[a-z]/.test(line) || // starts with lowercase
-        /^[A-Z]/.test(line) && line.length < 30 || // starts with uppercase but short
-        /^[ء-ي]/.test(line) || // starts with Arabic character
-        line.length < 20 // very short line
-      );
-      
-      if (isContinuation) {
-        incompleteItem += ' ' + line;
-        console.log(`[Line ${i}] Extended incomplete item:`, incompleteItem);
-        continue;
   }
-    }
 
-    // Skip descriptions
-    if (isDescription(line)) {
-      console.log(`[Line ${i}] Skipped description:`, line);
-      continue;
+  // Handle any remaining incomplete item
+  if (currentItem) {
+    menu.push(currentItem);
+    console.log(`Final incomplete item: ${currentItem.name}`);
+  }
+
+  // Post-processing
+  const processedMenu = postProcessMenu(menu);
+  console.log('Final processed menu items:', processedMenu);
+  return processedMenu;
+}
+
+function detectCategory(line) {
+  const upperLine = line.toUpperCase();
+  
+  // Check semantic patterns
+  for (const [category, pattern] of Object.entries(categoryPatterns)) {
+    if (pattern.test(upperLine)) {
+      return category.charAt(0).toUpperCase() + category.slice(1);
     }
   }
   
-  // Handle any remaining incomplete items
-  if (incompleteItem && pendingPrice) {
-    menu.push({
-      name: incompleteItem.trim(),
-      price: pendingPrice,
-      category: currentCategory,
-    });
-    console.log(`Final pairing:`, incompleteItem.trim(), 'with price:', pendingPrice);
+  // Check known categories
+  const knownCategories = [
+    'STARTERS', 'MAINS', 'DESSERTS', 'DRINKS', 'SIDES',
+    'SLIDERS', 'TACOS', 'MEXICAN RICE', 'HOUMOUS JAM', 'GRILLED HALLOUMI'
+  ];
+  
+  for (const category of knownCategories) {
+    if (upperLine.includes(category)) {
+      return category;
+    }
   }
   
-  console.log('Final menu items:', menu);
-  return menu;
+  return line;
+}
+
+function isItemNameContinuation(line) {
+  return (
+    line.length < 30 &&
+    (/^[a-z]/.test(line) || /^[ء-ي]/.test(line) || line.length < 15)
+  );
+}
+
+function postProcessMenu(menu) {
+  const processed = [];
+  const seen = new Set();
+
+  for (const item of menu) {
+    // Validate required fields
+    if (!item.name || !item.price) {
+      console.log(`[Validation] Skipping invalid item:`, item);
+      continue;
+    }
+
+    // Auto-format names
+    item.name = formatItemName(item.name);
+    
+    // Remove trailing punctuation
+    item.name = item.name.replace(/[.,;]+$/, '').trim();
+    
+    // Create unique key for deduplication
+    const key = `${item.name.toLowerCase()}-${item.price}-${item.category}`;
+    
+    if (seen.has(key)) {
+      console.log(`[Deduplication] Skipping duplicate: ${item.name}`);
+      continue;
+    }
+    
+    seen.add(key);
+    processed.push(item);
+  }
+
+  return processed;
+}
+
+function formatItemName(name) {
+  // Capitalize first letter of each word, but preserve special formatting
+  return name
+    .split(' ')
+    .map(word => {
+      // Preserve Arabic text and special characters
+      if (/[ء-ي]/.test(word) || /[A-Z]{2,}/.test(word)) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
 } 
