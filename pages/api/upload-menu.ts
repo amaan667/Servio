@@ -7,6 +7,8 @@ type Fields = import("formidable").Fields;
 type Files = import("formidable").Files;
 type File = import("formidable").File;
 import type { NextApiRequest, NextApiResponse } from "next";
+import { fromPath } from "pdf2pic";
+import path from "path";
 
 export const config = {
   api: {
@@ -42,6 +44,51 @@ async function extractMenuFromImageUrl(imageUrl: string) {
   }
 }
 
+async function extractMenuFromPdf(pdfPath: string): Promise<any[]> {
+  // Convert all pages of the PDF to PNGs
+  const outputDir = "/tmp/pdf2pic-" + Date.now();
+  fs.mkdirSync(outputDir, { recursive: true });
+  const options = {
+    density: 200,
+    saveFilename: "menu_page",
+    savePath: outputDir,
+    format: "png",
+    width: 1200,
+    height: 1600,
+  };
+  const storeAsImage = fromPath(pdfPath, options);
+  // Get number of pages
+  const numPages = await getPdfPageCount(pdfPath);
+  let allItems: any[] = [];
+  for (let page = 1; page <= numPages; page++) {
+    const result = await storeAsImage(page);
+    const imagePath = result.path;
+    if (imagePath) {
+      try {
+        const items = await extractMenuFromImage(imagePath);
+        if (Array.isArray(items)) {
+          allItems = allItems.concat(items);
+        }
+      } finally {
+        if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+      }
+    }
+  }
+  fs.rmdirSync(outputDir, { recursive: true });
+  return allItems;
+}
+
+async function getPdfPageCount(pdfPath: string): Promise<number> {
+  // Use pdf2pic's internal logic (or fallback to pdf-parse if needed)
+  // pdf2pic uses pdfinfo under the hood, but we can use a simple regex
+  const buffer = fs.readFileSync(pdfPath);
+  const text = buffer.toString();
+  const match = text.match(/\/Count\s+(\d+)/);
+  if (match) return parseInt(match[1], 10);
+  // fallback: assume 1 page
+  return 1;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -70,7 +117,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(400).json({ success: false, error: "No file uploaded." });
         }
         try {
-          items = await extractMenuFromImage(file.filepath);
+          if (file.mimetype && file.mimetype.startsWith("application/pdf")) {
+            items = await extractMenuFromPdf(file.filepath);
+          } else {
+            items = await extractMenuFromImage(file.filepath);
+          }
           fs.unlinkSync(file.filepath); // Clean up temp file
           await insertMenuItems(items, venueId, res);
         } catch (err: any) {
