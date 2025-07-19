@@ -11,6 +11,68 @@ import crypto from 'crypto';
 // Simple in-memory cache (in production, use Redis or Supabase)
 const visionCache = new Map();
 
+// Category priority order for sorting
+const categoryPriorityOrder = ['Breakfast', 'Mains', 'Brunch', 'Drinks', 'Smoothies', 'Desserts', 'Add-ons', 'Uncategorized'];
+
+// Category normalization mapping
+const categoryNormalizationMap = {
+  'SHAKSHUKA ROYALE': 'Brunch',
+  'EGGS': 'Brunch',
+  'DRINKS': 'Drinks',
+  'ADD ONS': 'Add-ons',
+  'ADD-ONS': 'Add-ons',
+  'ADDONS': 'Add-ons',
+  'BREAKFAST': 'Breakfast',
+  'MAINS': 'Mains',
+  'MAIN COURSES': 'Mains',
+  'SMOOTHIES': 'Smoothies',
+  'DESSERTS': 'Desserts',
+  'DESSERT': 'Desserts',
+  'BEVERAGES': 'Drinks',
+  'COFFEE': 'Drinks',
+  'TEA': 'Drinks',
+  'JUICES': 'Drinks',
+  'EXTRAS': 'Add-ons',
+  'SIDES': 'Add-ons',
+  'SIDE DISHES': 'Add-ons',
+  'TOPPINGS': 'Add-ons',
+  'MODIFIERS': 'Add-ons'
+};
+
+function normalizeCategory(category) {
+  if (!category || category.trim().length === 0) return 'Uncategorized';
+  
+  const normalized = category.trim();
+  const upperCase = normalized.toUpperCase();
+  
+  // Check exact matches first
+  if (categoryNormalizationMap[upperCase]) {
+    return categoryNormalizationMap[upperCase];
+  }
+  
+  // Check partial matches
+  for (const [key, value] of Object.entries(categoryNormalizationMap)) {
+    if (upperCase.includes(key) || key.includes(upperCase)) {
+      return value;
+    }
+  }
+  
+  // If it looks like a category but not in our map, return as-is
+  if (upperCase.length > 2 && upperCase.length < 50) {
+    return normalized;
+  }
+  
+  return 'Uncategorized';
+}
+
+function sortMenuItemsByCategory(menuItems) {
+  return menuItems.sort((a, b) => {
+    const aIndex = categoryPriorityOrder.indexOf(a.category) !== -1 ? categoryPriorityOrder.indexOf(a.category) : 999;
+    const bIndex = categoryPriorityOrder.indexOf(b.category) !== -1 ? categoryPriorityOrder.indexOf(b.category) : 999;
+    return aIndex - bIndex;
+  });
+}
+
 function generateImageHash(imageBuffer) {
   return crypto.createHash('sha256').update(imageBuffer).digest('hex');
 }
@@ -138,6 +200,7 @@ async function processImageFile(filePath, mimeType) {
       // Process each page with GPT in parallel (up to 5 at once)
       const batchSize = 5;
       const allMenuItems = [];
+      let lastKnownCategory = null;
       
       for (let i = 0; i < textPages.length; i += batchSize) {
         const batch = textPages.slice(i, i + batchSize);
@@ -146,20 +209,35 @@ async function processImageFile(filePath, mimeType) {
         const batchPromises = batch.map(async (page) => {
           try {
             console.log(`[Process] Processing page ${page.pageNumber} with ${page.content.length} characters`);
+            console.log(`[Process] Using last known category: ${lastKnownCategory || 'None'}`);
             
-            const pageMenuItems = await parseMenuTextWithGPT(page.content, page.pageNumber);
+            const pageResult = await parseMenuTextWithGPT(page.content, page.pageNumber, lastKnownCategory);
             
-            if (Array.isArray(pageMenuItems) && pageMenuItems.length > 0) {
-              console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${pageMenuItems.length} items`);
-              return pageMenuItems;
+            if (pageResult && pageResult.items && Array.isArray(pageResult.items) && pageResult.items.length > 0) {
+              console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${pageResult.items.length} items`);
+              
+              // Update last known category for next page
+              if (pageResult.lastCategory) {
+                lastKnownCategory = pageResult.lastCategory;
+                console.log(`[Process] Updated last known category to: ${lastKnownCategory}`);
+              }
+              
+              return pageResult.items;
             } else {
               console.warn(`[Process] ⚠️ Page ${page.pageNumber}: No items found`);
               
               // Try with more aggressive prompt if no items found
-              const aggressiveItems = await parseMenuTextWithGPTAggressive(page.content, page.pageNumber);
-              if (Array.isArray(aggressiveItems) && aggressiveItems.length > 0) {
-                console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${aggressiveItems.length} items with aggressive parsing`);
-                return aggressiveItems;
+              const aggressiveResult = await parseMenuTextWithGPTAggressive(page.content, page.pageNumber, lastKnownCategory);
+              if (aggressiveResult && aggressiveResult.items && aggressiveResult.items.length > 0) {
+                console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${aggressiveResult.items.length} items with aggressive parsing`);
+                
+                // Update last known category for next page
+                if (aggressiveResult.lastCategory) {
+                  lastKnownCategory = aggressiveResult.lastCategory;
+                  console.log(`[Process] Updated last known category to: ${lastKnownCategory}`);
+                }
+                
+                return aggressiveResult.items;
               }
             }
             
@@ -180,10 +258,13 @@ async function processImageFile(filePath, mimeType) {
         
         // Clean and deduplicate the results
         const cleanedItems = cleanMenuItems(allMenuItems);
-        const finalItems = deduplicateMenuItems(cleanedItems);
+        const deduplicatedItems = deduplicateMenuItems(cleanedItems);
         
-        console.log(`[Process] Final result: ${finalItems.length} unique, valid menu items`);
-        return { type: 'structured', data: finalItems };
+        // Sort items by category priority
+        const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
+        
+        console.log(`[Process] Final result: ${sortedItems.length} unique, valid menu items sorted by category`);
+        return { type: 'structured', data: sortedItems };
       } else {
         throw new Error('No menu items found in PDF');
       }
@@ -431,11 +512,12 @@ async function extractTextFromPDF(pdfBuffer) {
   }
 }
 
-async function parseMenuTextWithGPT(text, pageNumber = 1) {
+async function parseMenuTextWithGPT(text, pageNumber = 1, lastKnownCategory = null) {
   try {
     console.log(`[GPT Text] Parsing menu text from page ${pageNumber}`);
     console.log(`[GPT Text] Input text length: ${text.length} characters`);
     console.log(`[GPT Text] Input text preview: ${text.substring(0, 200)}...`);
+    console.log(`[GPT Text] Last known category: ${lastKnownCategory || 'None'}`);
     
     const prompt = `You are an expert at menu parsing. Extract EVERY menu item from this text. Return a valid JSON array ONLY in this format:
 
@@ -445,7 +527,9 @@ async function parseMenuTextWithGPT(text, pageNumber = 1) {
 ]
 
 ⚠️ Do not nest JSON inside any field.
-⚠️ If a category isn't clear, set it to 'Uncategorized'.
+⚠️ For each item, extract the nearest visible category above it (e.g., "Mains", "Brunch", "Add-ons").
+⚠️ If no category is found, use: "${lastKnownCategory || 'Uncategorized'}"
+⚠️ If the category is part of a section header, apply it to all items below until the next header.
 ⚠️ Extract every add-on (e.g. 'Add Egg £1.50') as its own item.
 ⚠️ Do NOT use 'menuItem:' or any other keys outside of this format.
 ⚠️ Items with same name but different prices must both be included.
@@ -478,34 +562,40 @@ ${text}`;
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
         
-        // Validate and filter items
+        // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
           return item && 
                  typeof item.name === 'string' && 
                  item.name.trim().length > 0 &&
                  typeof item.price === 'number' && 
                  item.price > 0;
-        });
+        }).map(item => ({
+          ...item,
+          category: normalizeCategory(item.category)
+        }));
         
         console.log(`[GPT Text] Parsed ${menuItems.length} items, ${validItems.length} valid from page ${pageNumber}`);
+        
+        // Find the last category used in this page
+        const lastCategoryInPage = validItems.length > 0 ? validItems[validItems.length - 1].category : lastKnownCategory;
         
         // Check if we got enough items, if not, try aggressive parsing
         if (validItems.length < 15) {
           console.log(`[GPT Text] Only ${validItems.length} valid items found on page ${pageNumber}, trying aggressive parsing...`);
-          const aggressiveItems = await parseMenuTextWithGPTAggressive(text, pageNumber);
+          const aggressiveItems = await parseMenuTextWithGPTAggressive(text, pageNumber, lastKnownCategory);
           if (aggressiveItems.length > validItems.length) {
             console.log(`[GPT Text] Aggressive parsing found ${aggressiveItems.length} items vs ${validItems.length} from normal parsing`);
             return aggressiveItems;
           }
         }
         
-        return validItems;
+        return { items: validItems, lastCategory: lastCategoryInPage };
       } catch (parseError) {
         console.error(`[GPT Text] JSON parse error for page ${pageNumber}:`, parseError);
         console.error(`[GPT Text] Failed to parse this JSON:`, jsonMatch[0]);
         
         // Try markdown fallback
-        const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber);
+        const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
         if (markdownItems.length > 0) {
           console.log(`[GPT Text] Markdown fallback found ${markdownItems.length} items`);
           return markdownItems;
@@ -518,7 +608,7 @@ ${text}`;
       console.error(`[GPT Text] Full response content:`, content);
       
       // Try markdown fallback
-      const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber);
+      const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
       if (markdownItems.length > 0) {
         console.log(`[GPT Text] Markdown fallback found ${markdownItems.length} items`);
         return markdownItems;
@@ -606,7 +696,7 @@ JSON:`;
   }
 }
 
-async function parseMenuTextWithGPTAggressive(text, pageNumber = 1) {
+async function parseMenuTextWithGPTAggressive(text, pageNumber = 1, lastKnownCategory = null) {
   try {
     console.log(`[GPT Text Aggressive] Parsing menu text from page ${pageNumber} with aggressive approach`);
     
@@ -652,50 +742,57 @@ ${text}`;
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
         
-        // Validate and filter items
+        // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
           return item && 
                  typeof item.name === 'string' && 
                  item.name.trim().length > 0 &&
                  typeof item.price === 'number' && 
                  item.price > 0;
-        });
+        }).map(item => ({
+          ...item,
+          category: normalizeCategory(item.category)
+        }));
         
         console.log(`[GPT Text Aggressive] Parsed ${menuItems.length} items, ${validItems.length} valid from page ${pageNumber}`);
-        return validItems;
+        
+        // Find the last category used in this page
+        const lastCategoryInPage = validItems.length > 0 ? validItems[validItems.length - 1].category : lastKnownCategory;
+        
+        return { items: validItems, lastCategory: lastCategoryInPage };
       } catch (parseError) {
         console.error(`[GPT Text Aggressive] JSON parse error for page ${pageNumber}:`, parseError);
         console.error(`[GPT Text Aggressive] Failed to parse this JSON:`, jsonMatch[0]);
         
         // Try markdown fallback
-        const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber);
+        const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
         if (markdownItems.length > 0) {
           console.log(`[GPT Text Aggressive] Markdown fallback found ${markdownItems.length} items`);
-          return markdownItems;
+          return { items: markdownItems, lastCategory: lastKnownCategory };
         }
         
-        return [];
+        return { items: [], lastCategory: lastKnownCategory };
       }
     } else {
       console.error(`[GPT Text Aggressive] No JSON array found in response for page ${pageNumber}`);
       console.error(`[GPT Text Aggressive] Full response content:`, content);
       
       // Try markdown fallback
-      const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber);
+      const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
       if (markdownItems.length > 0) {
         console.log(`[GPT Text Aggressive] Markdown fallback found ${markdownItems.length} items`);
-        return markdownItems;
+        return { items: markdownItems, lastCategory: lastKnownCategory };
       }
       
-      return [];
+      return { items: [], lastCategory: lastKnownCategory };
     }
   } catch (error) {
     console.error(`[GPT Text Aggressive] Error parsing page ${pageNumber}:`, error);
-    return [];
+    return { items: [], lastCategory: lastKnownCategory };
   }
 }
 
-async function parseMenuTextAsMarkdown(text, pageNumber) {
+async function parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory = null) {
   try {
     console.log(`[Markdown] Converting text to markdown format for page ${pageNumber}`);
     
@@ -738,28 +835,35 @@ ${markdownText}`;
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
         
-        // Validate and filter items
+        // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
           return item && 
                  typeof item.name === 'string' && 
                  item.name.trim().length > 0 &&
                  typeof item.price === 'number' && 
                  item.price > 0;
-        });
+        }).map(item => ({
+          ...item,
+          category: normalizeCategory(item.category)
+        }));
         
         console.log(`[Markdown] Parsed ${menuItems.length} items, ${validItems.length} valid`);
-        return validItems;
+        
+        // Find the last category used in this page
+        const lastCategoryInPage = validItems.length > 0 ? validItems[validItems.length - 1].category : lastKnownCategory;
+        
+        return { items: validItems, lastCategory: lastCategoryInPage };
       } catch (parseError) {
         console.error(`[Markdown] JSON parse error:`, parseError);
-        return [];
+        return { items: [], lastCategory: lastKnownCategory };
       }
     } else {
       console.error(`[Markdown] No JSON array found in response`);
-      return [];
+      return { items: [], lastCategory: lastKnownCategory };
     }
   } catch (error) {
     console.error(`[Markdown] Error:`, error);
-    return [];
+    return { items: [], lastCategory: lastKnownCategory };
   }
 }
 
