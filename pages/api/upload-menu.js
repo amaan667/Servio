@@ -6,6 +6,66 @@ import fetch from 'node-fetch';
 import { PDFDocument } from 'pdf-lib';
 import { createCanvas, loadImage } from 'canvas';
 import OpenAI from 'openai';
+import crypto from 'crypto';
+
+// Simple in-memory cache (in production, use Redis or Supabase)
+const visionCache = new Map();
+
+function generateImageHash(imageBuffer) {
+  return crypto.createHash('sha256').update(imageBuffer).digest('hex');
+}
+
+function getCachedResult(imageHash) {
+  const cached = visionCache.get(imageHash);
+  if (cached && Date.now() - cached.timestamp < 3600000) { // 1 hour cache
+    console.log(`[Cache] Hit for image hash: ${imageHash.substring(0, 8)}...`);
+    return cached.result;
+  }
+  return null;
+}
+
+function setCachedResult(imageHash, result) {
+  visionCache.set(imageHash, {
+    result,
+    timestamp: Date.now()
+  });
+  console.log(`[Cache] Stored result for image hash: ${imageHash.substring(0, 8)}...`);
+}
+
+async function optimizeImageForVision(imageBuffer, mimeType) {
+  try {
+    console.log(`[Optimize] Optimizing image for GPT Vision`);
+    
+    // Load image
+    const image = await loadImage(imageBuffer);
+    
+    // Calculate optimal dimensions (max 1000x1400)
+    const maxWidth = 1000;
+    const maxHeight = 1400;
+    const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+    
+    const newWidth = Math.round(image.width * scale);
+    const newHeight = Math.round(image.height * scale);
+    
+    console.log(`[Optimize] Resizing from ${image.width}x${image.height} to ${newWidth}x${newHeight}`);
+    
+    // Create canvas with optimized dimensions
+    const canvas = createCanvas(newWidth, newHeight);
+    const ctx = canvas.getContext('2d');
+    
+    // Draw resized image
+    ctx.drawImage(image, 0, 0, newWidth, newHeight);
+    
+    // Convert to buffer with reduced quality
+    const optimizedBuffer = canvas.toBuffer('image/jpeg', { quality: 0.8 });
+    
+    console.log(`[Optimize] Reduced size from ${imageBuffer.length} to ${optimizedBuffer.length} bytes`);
+    return optimizedBuffer;
+  } catch (error) {
+    console.error(`[Optimize] Error optimizing image:`, error);
+    return imageBuffer; // Return original if optimization fails
+  }
+}
 
 // Configure multer for file uploads
 const upload = multer({
@@ -75,33 +135,44 @@ async function processImageFile(filePath, mimeType) {
       
       console.log(`[Process] Extracted text from ${textPages.length} pages, processing with GPT`);
       
-      // Process each page with GPT
+      // Process each page with GPT in parallel (up to 5 at once)
+      const batchSize = 5;
       const allMenuItems = [];
       
-      for (const page of textPages) {
-        try {
-          console.log(`[Process] Processing page ${page.pageNumber} with ${page.content.length} characters`);
-          
-          const pageMenuItems = await parseMenuTextWithGPT(page.content, page.pageNumber);
-          
-          if (Array.isArray(pageMenuItems) && pageMenuItems.length > 0) {
-            allMenuItems.push(...pageMenuItems);
-            console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${pageMenuItems.length} items`);
-          } else {
-            console.warn(`[Process] ⚠️ Page ${page.pageNumber}: No items found`);
+      for (let i = 0; i < textPages.length; i += batchSize) {
+        const batch = textPages.slice(i, i + batchSize);
+        console.log(`[Process] Processing batch ${Math.floor(i/batchSize) + 1}: pages ${i+1}-${Math.min(i+batchSize, textPages.length)}`);
+        
+        const batchPromises = batch.map(async (page) => {
+          try {
+            console.log(`[Process] Processing page ${page.pageNumber} with ${page.content.length} characters`);
             
-            // Try with more aggressive prompt if no items found
-            const aggressiveItems = await parseMenuTextWithGPTAggressive(page.content, page.pageNumber);
-            if (Array.isArray(aggressiveItems) && aggressiveItems.length > 0) {
-              allMenuItems.push(...aggressiveItems);
-              console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${aggressiveItems.length} items with aggressive parsing`);
+            const pageMenuItems = await parseMenuTextWithGPT(page.content, page.pageNumber);
+            
+            if (Array.isArray(pageMenuItems) && pageMenuItems.length > 0) {
+              console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${pageMenuItems.length} items`);
+              return pageMenuItems;
+            } else {
+              console.warn(`[Process] ⚠️ Page ${page.pageNumber}: No items found`);
+              
+              // Try with more aggressive prompt if no items found
+              const aggressiveItems = await parseMenuTextWithGPTAggressive(page.content, page.pageNumber);
+              if (Array.isArray(aggressiveItems) && aggressiveItems.length > 0) {
+                console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${aggressiveItems.length} items with aggressive parsing`);
+                return aggressiveItems;
+              }
             }
+            
+            return [];
+          } catch (pageError) {
+            console.error(`[Process] Error processing page ${page.pageNumber}:`, pageError);
+            return []; // Return empty array for failed pages
           }
-          
-        } catch (pageError) {
-          console.error(`[Process] Error processing page ${page.pageNumber}:`, pageError);
-          // Continue with other pages
-        }
+        });
+        
+        // Wait for batch to complete
+        const batchResults = await Promise.all(batchPromises);
+        allMenuItems.push(...batchResults.flat());
       }
       
       if (allMenuItems.length > 0) {
@@ -2001,24 +2072,23 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
   try {
     console.log('[GPT Vision] Processing image with GPT-4 Vision');
     
+    // Generate hash for caching
+    const imageHash = generateImageHash(imageBuffer);
+    const cachedResult = getCachedResult(imageHash);
+    if (cachedResult) {
+      console.log('[GPT Vision] Using cached result');
+      return cachedResult;
+    }
+    
+    // Optimize image for Vision API
+    const optimizedBuffer = await optimizeImageForVision(imageBuffer, mimeType);
+    
     // Convert buffer to base64
-    const base64Image = imageBuffer.toString('base64');
+    const base64Image = optimizedBuffer.toString('base64');
     const dataUrl = `data:${mimeType};base64,${base64Image}`;
     
-    const visionPrompt = `
-Extract every menu item with name, price, description (optional), and category (if present). Return all items in this format:
-
-[
-  { "name": "", "price": number, "description": "", "category": "" },
-  ...
-]
-
-⚠️ Extract all items even if price or description is not perfectly aligned.
-⚠️ Include modifiers/add-ons (e.g., 'Add Egg £1.50') as standalone items.
-⚠️ If the category is unclear, use "Uncategorized".
-⚠️ Do not skip similar duplicates. Return all.
-⚠️ Include drinks, desserts, breakfast items, and any add-ons if they have a price.
-⚠️ Ensure each item with a visible price is extracted, even if name or category is on a separate line.`;
+    // Streamlined prompt for faster processing
+    const visionPrompt = `Extract all food items with name, price, description, and category from this image. Return in JSON format.`;
     
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
@@ -2039,7 +2109,7 @@ Extract every menu item with name, price, description (optional), and category (
           ]
         }
       ],
-      max_tokens: 4000,
+      max_tokens: 2000, // Reduced for faster response
     });
     
     const content = response.choices[0].message.content;
@@ -2050,25 +2120,57 @@ Extract every menu item with name, price, description (optional), and category (
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        console.log(`[GPT Vision] Parsed ${menuItems.length} menu items`);
+        
+        // Validate and filter items
+        const validItems = menuItems.filter(item => {
+          return item && 
+                 typeof item.name === 'string' && 
+                 item.name.trim().length > 0 &&
+                 typeof item.price === 'number' && 
+                 item.price > 0;
+        });
+        
+        console.log(`[GPT Vision] Parsed ${menuItems.length} items, ${validItems.length} valid`);
+        
+        // Cache the result
+        setCachedResult(imageHash, validItems);
         
         // Check if we got enough items, if not, try aggressive parsing
-        if (menuItems.length < 15) {
-          console.log(`[GPT Vision] Only ${menuItems.length} items found, trying aggressive parsing...`);
-          const aggressiveItems = await processImageWithGPTVisionAggressive(imageBuffer, mimeType);
-          if (aggressiveItems.length > menuItems.length) {
-            console.log(`[GPT Vision] Aggressive parsing found ${aggressiveItems.length} items vs ${menuItems.length} from normal parsing`);
+        if (validItems.length < 15) {
+          console.log(`[GPT Vision] Only ${validItems.length} items found, trying aggressive parsing...`);
+          const aggressiveItems = await processImageWithGPTVisionAggressive(optimizedBuffer, mimeType);
+          if (aggressiveItems.length > validItems.length) {
+            console.log(`[GPT Vision] Aggressive parsing found ${aggressiveItems.length} items vs ${validItems.length} from normal parsing`);
+            setCachedResult(imageHash, aggressiveItems);
             return aggressiveItems;
           }
         }
         
-        return menuItems;
+        return validItems;
       } catch (parseError) {
         console.error('[GPT Vision] JSON parse error:', parseError);
+        
+        // Use faster model for JSON fixing
+        const fixedItems = await fixJSONWithFastModel(content);
+        if (fixedItems.length > 0) {
+          console.log(`[GPT Vision] Fixed JSON with fast model: ${fixedItems.length} items`);
+          setCachedResult(imageHash, fixedItems);
+          return fixedItems;
+        }
+        
         throw new Error('Failed to parse GPT Vision response as JSON');
       }
     } else {
       console.error('[GPT Vision] No JSON array found in response');
+      
+      // Use faster model for text extraction
+      const extractedItems = await extractItemsWithFastModel(content);
+      if (extractedItems.length > 0) {
+        console.log(`[GPT Vision] Extracted items with fast model: ${extractedItems.length} items`);
+        setCachedResult(imageHash, extractedItems);
+        return extractedItems;
+      }
+      
       throw new Error('No valid JSON array found in GPT Vision response');
     }
   } catch (error) {
@@ -2271,5 +2373,109 @@ function cleanMenuItems(menuItems) {
   } catch (error) {
     console.error('[Clean] Error:', error);
     return menuItems; // Return original if cleaning fails
+  }
+}
+
+async function fixJSONWithFastModel(brokenJSON) {
+  try {
+    console.log('[Fast Model] Attempting to fix broken JSON with gpt-3.5-turbo');
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a JSON fixer. Fix malformed JSON and return only valid JSON arrays."
+        },
+        {
+          role: "user",
+          content: `Fix this broken JSON and return a valid array of menu items:
+
+${brokenJSON}
+
+Return only the fixed JSON array:`
+        }
+      ],
+      max_tokens: 1000,
+    });
+    
+    const content = response.choices[0].message.content;
+    console.log('[Fast Model] Fixed JSON response:', content);
+    
+    // Try to extract JSON
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (jsonMatch) {
+      try {
+        const menuItems = JSON.parse(jsonMatch[0]);
+        const validItems = menuItems.filter(item => {
+          return item && 
+                 typeof item.name === 'string' && 
+                 item.name.trim().length > 0 &&
+                 typeof item.price === 'number' && 
+                 item.price > 0;
+        });
+        console.log(`[Fast Model] Fixed JSON: ${validItems.length} valid items`);
+        return validItems;
+      } catch (parseError) {
+        console.error('[Fast Model] Failed to parse fixed JSON:', parseError);
+        return [];
+      }
+    }
+    return [];
+  } catch (error) {
+    console.error('[Fast Model] Error fixing JSON:', error);
+    return [];
+  }
+}
+
+async function extractItemsWithFastModel(text) {
+  try {
+    console.log('[Fast Model] Extracting items from text with gpt-3.5-turbo');
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "Extract menu items from text and return as JSON array."
+        },
+        {
+          role: "user",
+          content: `Extract all menu items from this text and return as JSON array:
+
+${text}
+
+Return only valid JSON:`
+        }
+      ],
+      max_tokens: 1000,
+    });
+    
+    const content = response.choices[0].message.content;
+    console.log('[Fast Model] Text extraction response:', content);
+    
+    // Try to extract JSON
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (jsonMatch) {
+      try {
+        const menuItems = JSON.parse(jsonMatch[0]);
+        const validItems = menuItems.filter(item => {
+          return item && 
+                 typeof item.name === 'string' && 
+                 item.name.trim().length > 0 &&
+                 typeof item.price === 'number' && 
+                 item.price > 0;
+        });
+        console.log(`[Fast Model] Extracted items: ${validItems.length} valid items`);
+        return validItems;
+      } catch (parseError) {
+        console.error('[Fast Model] Failed to parse extracted JSON:', parseError);
+        return [];
+      }
+    }
+    return [];
+  } catch (error) {
+    console.error('[Fast Model] Error extracting items:', error);
+    return [];
   }
 }
