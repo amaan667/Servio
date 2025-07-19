@@ -1,11 +1,10 @@
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import pdfParse from 'pdf-parse';
-import { createWorker } from 'tesseract.js';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
-import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
+import { convert } from 'pdf-to-png-converter';
+import OpenAI from 'openai';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -24,109 +23,16 @@ export const config = {
   },
 };
 
-// Azure Form Recognizer client
-let client = null;
-
-async function initializeAzureClient() {
-  try {
-    console.log('[Azure] Starting initialization...');
-    
-    // Log all environment variables that start with AZURE
-    console.log('[Azure] All Azure-related environment variables:');
-    Object.keys(process.env).forEach(key => {
-      if (key.includes('AZURE')) {
-        const value = process.env[key];
-        console.log(`[Azure] ${key}: ${value ? 'EXISTS' : 'MISSING'} (length: ${value?.length || 0})`);
-        if (value) {
-          console.log(`[Azure] ${key} value starts with: ${value.substring(0, 10)}...`);
-        }
-      }
-    });
-    
-    // Try multiple possible environment variable names
-    const endpoint = process.env.AZURE_FORM_RECOGNIZER_ENDPOINT || 
-                    process.env.AZURE_ENDPOINT;
-    const apiKey = process.env.AZURE_FORM_RECOGNIZER_API_KEY || 
-                   process.env.AZURE_FORM_RECOGNIZER_KEY || 
-                   process.env.AZURE_API_KEY;
-    
-    console.log('[Azure] Environment check:');
-    console.log('[Azure] Endpoint exists:', !!endpoint);
-    console.log('[Azure] Endpoint length:', endpoint?.length || 0);
-    console.log('[Azure] API key exists:', !!apiKey);
-    console.log('[Azure] API key length:', apiKey?.length || 0);
-    
-    if (!endpoint || !apiKey) {
-      console.warn('[Azure] Missing environment variables - Azure Form Recognizer will not be available');
-      console.warn('[Azure] AZURE_FORM_RECOGNIZER_ENDPOINT:', !!process.env.AZURE_FORM_RECOGNIZER_ENDPOINT);
-      console.warn('[Azure] AZURE_FORM_RECOGNIZER_API_KEY:', !!process.env.AZURE_FORM_RECOGNIZER_API_KEY);
-      console.warn('[Azure] AZURE_FORM_RECOGNIZER_KEY:', !!process.env.AZURE_FORM_RECOGNIZER_KEY);
-      console.warn('[Azure] AZURE_ENDPOINT:', !!process.env.AZURE_ENDPOINT);
-      console.warn('[Azure] AZURE_API_KEY:', !!process.env.AZURE_API_KEY);
-      return false;
-    }
-    
-    return await createAzureClient(endpoint, apiKey);
-  } catch (error) {
-    console.error('[Azure] Failed to initialize Form Recognizer client:', error);
-    console.error('[Azure] Error details:', error.message);
-    console.error('[Azure] Error stack:', error.stack);
-    client = null;
-    return false;
-  }
-}
-
-async function createAzureClient(endpoint, apiKey) {
-  try {
-    // Validate endpoint format
-    if (!endpoint.startsWith('https://')) {
-      console.error('[Azure] Invalid endpoint format - must start with https://');
-      return false;
-    }
-    
-    // Validate API key format (should be a non-empty string)
-    if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
-      console.error('[Azure] Invalid API key format - must be a non-empty string');
-      return false;
-    }
-    
-    console.log('[Azure] Both variables present, initializing client...');
-    console.log('[Azure] Endpoint:', endpoint);
-    console.log('[Azure] API key starts with:', apiKey.substring(0, 10) + '...');
-    
-    // Add a small delay to ensure environment is fully loaded
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Create the client with explicit error handling
-    try {
-      client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(apiKey));
-      console.log('[Azure] Form Recognizer client initialized successfully');
-      return true;
-    } catch (clientError) {
-      console.error('[Azure] Failed to create DocumentAnalysisClient:', clientError);
-      console.error('[Azure] Client error details:', clientError.message);
-      return false;
-    }
-  } catch (error) {
-    console.error('[Azure] Error in createAzureClient:', error);
-    return false;
-  }
-}
-
-// Initialize Azure client on module load with error handling
-(async () => {
-  try {
-    await initializeAzureClient();
-  } catch (error) {
-    console.error('[Azure] Module initialization failed:', error);
-  }
-})();
-
 // Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+// OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 async function downloadImageFromUrl(imageUrl) {
   try {
@@ -153,316 +59,78 @@ async function downloadImageFromUrl(imageUrl) {
 async function processImageFile(filePath, mimeType) {
   console.log(`[Process] Processing file: ${filePath}, type: ${mimeType}`);
   
-  // Use Azure Form Recognizer for better OCR
   try {
-    const azureResult = await analyzeMenuWithAzure(filePath);
-    console.log("Azure Form Recognizer extraction successful");
+    const fileBuffer = fs.readFileSync(filePath);
     
-    // Check if we got structured menu items from layout analysis
-    if (Array.isArray(azureResult)) {
-      console.log("Using layout-based extraction");
-      return { type: 'structured', data: azureResult };
-    } else {
-      // Fallback to line-by-line parsing
-      return { type: 'text', data: azureResult };
-    }
-  } catch (azureError) {
-    console.error("Azure Form Recognizer failed, falling back to local OCR:", azureError);
-    
-    // Fallback to local OCR based on file type
-    try {
-      let text = '';
+    if (mimeType === 'application/pdf') {
+      console.log('[Process] Processing PDF with pdf-to-png-converter + GPT Vision');
       
-      if (mimeType === 'application/pdf') {
-        console.log('[Fallback] Processing PDF with pdf-parse');
-        text = await extractTextFromPDF(filePath);
-      } else if (mimeType.startsWith('image/')) {
-        console.log('[Fallback] Processing image with Tesseract');
-        text = await extractTextFromImage(filePath);
-      } else {
-        // Try to determine file type from extension
-        const fileExtension = filePath.split('.').pop()?.toLowerCase();
-        if (fileExtension === 'pdf') {
-          console.log('[Fallback] Processing PDF by extension');
-          text = await extractTextFromPDF(filePath);
-        } else {
-          console.log('[Fallback] Processing as image by extension');
-          text = await extractTextFromImage(filePath);
-        }
-      }
+      // Convert PDF to images
+      const convertedPages = await convertPDFToImages(fileBuffer);
       
-      return { type: 'text', data: text };
-    } catch (fallbackError) {
-      console.error('[Fallback] Local OCR also failed:', fallbackError);
-      throw new Error(`Failed to process file: ${fallbackError.message}`);
-    }
-  }
-}
-
-async function analyzeMenuWithAzure(filePath) {
-  // Ensure client is initialized
-  if (!client) {
-    console.warn('[Azure] Client not initialized, attempting to initialize...');
-    const initialized = await initializeAzureClient();
-    if (!initialized) {
-      console.warn('[Azure] Form Recognizer client not available, falling back to local OCR');
-      throw new Error('Azure Form Recognizer not configured');
-    }
-  }
-
-  try {
-    const file = fs.readFileSync(filePath);
-
-    const poller = await client.beginAnalyzeDocument("prebuilt-layout", file, {
-      contentType: "application/pdf", // or "image/png" etc.
-    });
-
-    const result = await poller.pollUntilDone();
-
-    // Extract menu items from layout analysis
-    const menuItems = extractFromLayout(result);
-    
-    if (menuItems.length > 0) {
-      console.log(`[Layout] Found ${menuItems.length} items via layout extraction`);
-      return menuItems;
-    }
-
-    // Fallback to line-by-line extraction
-    let output = [];
-    for (const page of result.pages || []) {
-      for (const line of page.lines || []) {
-        output.push(line.content);
-      }
-    }
-
-    return output.join('\n');
-  } catch (error) {
-    console.error('[Azure] Form Recognizer analysis failed:', error);
-    throw error;
-  }
-}
-
-function extractFromLayout(result) {
-  const menuItems = [];
-  let currentCategory = 'Uncategorized';
-
-  for (const page of result.pages || []) {
-    console.log(`[Layout] Processing page ${page.pageNumber}`);
-    
-    // Process tables first (most structured)
-    if (page.tables && page.tables.length > 0) {
-      console.log(`[Layout] Found ${page.tables.length} tables`);
-      for (const table of page.tables) {
-        const tableItems = extractFromTable(table, currentCategory);
-        menuItems.push(...tableItems);
-      }
-    }
-
-    // Process lines for non-table content
-    if (page.lines && page.lines.length > 0) {
-      console.log(`[Layout] Processing ${page.lines.length} lines`);
-      const lineItems = extractFromLines(page.lines, currentCategory);
-      menuItems.push(...lineItems);
-    }
-  }
-
-  return menuItems;
-}
-
-function extractFromTable(table, currentCategory) {
-  const items = [];
-  
-  console.log(`[Table] Processing table with ${table.rows?.length || 0} rows`);
-  
-  for (const row of table.rows || []) {
-    const cells = row.cells || [];
-    console.log(`[Table] Row has ${cells.length} cells:`, cells.map(c => c.content?.trim()));
-    
-    if (cells.length < 2) {
-      console.log(`[Table] Skipping row with insufficient cells`);
-      continue;
-    }
-    
-    // Try to extract name and price from adjacent cells
-    let itemName = '';
-    let itemPrice = null;
-    
-    // Method 1: Look for name in first cell, price in second cell
-    if (cells.length >= 2) {
-      const firstCell = cells[0].content?.trim() || '';
-      const secondCell = cells[1].content?.trim() || '';
+      // Process each page with GPT Vision
+      const allMenuItems = [];
       
-      // Check if second cell contains a price
-      const price = parsePrice(secondCell);
-      if (price && firstCell) {
-        itemName = firstCell;
-        itemPrice = price;
-        console.log(`[Table] Method 1: ${itemName} - £${itemPrice}`);
-      }
-    }
-    
-    // Method 2: If Method 1 failed, try to extract price from any cell
-    if (!itemPrice) {
-      for (let i = 0; i < cells.length; i++) {
-        const cell = cells[i].content?.trim() || '';
-        const price = parsePrice(cell);
+      for (let i = 0; i < convertedPages.length; i++) {
+        const page = convertedPages[i];
+        console.log(`[Process] Processing page ${i + 1}/${convertedPages.length}`);
         
-        if (price) {
-          // Extract name from other cells
-          const nameCells = cells
-            .map((c, idx) => idx !== i ? c.content?.trim() : '')
-            .filter(content => content && !parsePrice(content))
-            .join(' ');
-          
-          if (nameCells) {
-            itemName = nameCells;
-            itemPrice = price;
-            console.log(`[Table] Method 2: ${itemName} - £${itemPrice}`);
-            break;
+        try {
+          const pageMenuItems = await processImageWithGPTVision(page.content, 'image/png');
+          if (Array.isArray(pageMenuItems) && pageMenuItems.length > 0) {
+            allMenuItems.push(...pageMenuItems);
+            console.log(`[Process] Found ${pageMenuItems.length} items on page ${i + 1}`);
           }
+        } catch (pageError) {
+          console.error(`[Process] Error processing page ${i + 1}:`, pageError);
+          // Continue with other pages
         }
       }
-    }
-    
-    // Method 3: If still no price, try to extract from inline content
-    if (!itemPrice) {
-      const allContent = cells.map(c => c.content?.trim() || '').join(' ');
-      const inlineMatch = allContent.match(/^(.*?)[.\-–—]*\s*£\s?(\d+(?:\.\d{1,2})?)/);
       
-      if (inlineMatch) {
-        itemName = inlineMatch[1].trim();
-        itemPrice = parseFloat(inlineMatch[2]);
-        console.log(`[Table] Method 3: ${itemName} - £${itemPrice}`);
-      }
-    }
-    
-    // Validate and add item
-    if (itemName && itemPrice && !isNaN(itemPrice) && itemPrice > 0) {
-      // Clean up the item name
-      const cleanName = itemName
-        .replace(/^\d+\.\s*/, '') // Remove leading numbers
-        .replace(/\s+/g, ' ') // Normalize whitespace
-        .trim();
-      
-      if (cleanName && isLikelyItemName(cleanName)) {
-        items.push({
-          name: cleanName,
-          price: itemPrice,
-          category: currentCategory,
-          confidence: 1
-        });
-        console.log(`[Table] ✅ Extracted: ${cleanName} - £${itemPrice} (${currentCategory})`);
+      if (allMenuItems.length > 0) {
+        console.log(`[Process] Total menu items found: ${allMenuItems.length}`);
+        return { type: 'structured', data: allMenuItems };
       } else {
-        console.log(`[Table] ❌ Skipped invalid item: ${cleanName} - £${itemPrice}`);
+        throw new Error('No menu items found in PDF');
       }
+      
+    } else if (mimeType.startsWith('image/')) {
+      console.log('[Process] Processing image with GPT Vision');
+      
+      const menuItems = await processImageWithGPTVision(fileBuffer, mimeType);
+      
+      if (Array.isArray(menuItems) && menuItems.length > 0) {
+        console.log(`[Process] Found ${menuItems.length} menu items`);
+        return { type: 'structured', data: menuItems };
+      } else {
+        throw new Error('No menu items found in image');
+      }
+      
     } else {
-      console.log(`[Table] ❌ Skipped row with invalid data: name="${itemName}", price=${itemPrice}`);
+      // Try to determine file type from extension
+      const fileExtension = filePath.split('.').pop()?.toLowerCase();
+      
+      if (fileExtension === 'pdf') {
+        console.log('[Process] Processing PDF by extension');
+        return await processImageFile(filePath, 'application/pdf');
+      } else {
+        console.log('[Process] Processing as image by extension');
+        return await processImageFile(filePath, 'image/jpeg');
+      }
     }
+  } catch (error) {
+    console.error('[Process] Error processing file:', error);
+    throw new Error(`Failed to process file: ${error.message}`);
   }
-  
-  console.log(`[Table] Extracted ${items.length} items from table`);
-  return items;
 }
 
-function extractFromLines(lines, currentCategory) {
-  const items = [];
-  let currentItem = null;
-  
-  console.log(`[Lines] Processing ${lines.length} lines`);
-  
-  for (const line of lines) {
-    const content = line.content?.trim() || '';
-    if (!content) continue;
-    
-    console.log(`[Lines] Processing line: "${content}"`);
-    
-    // Check if line is a category header
-    if (isCategoryHeader(content)) {
-      currentCategory = detectCategory(content);
-      console.log(`[Lines] Detected category: ${content} → ${currentCategory}`);
-      continue;
-    }
-    
-    // Method 1: Check if line contains both name and price inline
-    const inlineMatch = content.match(/^(.*?)[.\-–—]*\s*£\s?(\d{1,3}(?:\.\d{1,2})?)/);
-    if (inlineMatch) {
-      const name = inlineMatch[1].trim();
-      const price = parseFloat(inlineMatch[2]);
-      
-      if (name && price && !isNaN(price) && price > 0 && isLikelyItemName(name)) {
-        items.push({
-          name: name,
-          price: price,
-          category: currentCategory,
-          confidence: 1
-        });
-        console.log(`[Lines] ✅ Inline item: ${name} - £${price} (${currentCategory})`);
-      } else {
-        console.log(`[Lines] ❌ Skipped inline item: ${name} - £${price}`);
-      }
-      continue;
-    }
-    
-    // Method 2: Check if line is just a price (might be paired with previous item)
-    const price = parsePrice(content);
-    if (price && currentItem && !currentItem.price) {
-      currentItem.price = price;
-      items.push(currentItem);
-      console.log(`[Lines] ✅ Completed item: ${currentItem.name} - £${currentItem.price} (${currentCategory})`);
-      currentItem = null;
-      continue;
-    }
-    
-    // Method 3: Check if line is a likely item name
-    if (isLikelyItemName(content)) {
-      if (currentItem) {
-        // Save previous incomplete item
-        if (currentItem.name) {
-          items.push(currentItem);
-          console.log(`[Lines] Saved incomplete item: ${currentItem.name}`);
-        }
-      }
-      currentItem = { name: content, category: currentCategory };
-      console.log(`[Lines] Started new item: ${content}`);
-      continue;
-    }
-    
-    // Method 4: Check if line is a description or continuation
-    if (isDescription(content) && currentItem) {
-      currentItem.description = content;
-      console.log(`[Lines] Added description to item: ${content}`);
-      continue;
-    }
-    
-    // Method 5: Check if line might be a continuation of the current item
-    if (currentItem && !currentItem.price && content.length < 50) {
-      // Try to extract price from this line
-      const continuationPrice = parsePrice(content);
-      if (continuationPrice) {
-        currentItem.price = continuationPrice;
-        items.push(currentItem);
-        console.log(`[Lines] ✅ Completed item with continuation: ${currentItem.name} - £${currentItem.price} (${currentCategory})`);
-        currentItem = null;
-      } else {
-        // Might be a continuation of the name
-        currentItem.name += ' ' + content;
-        console.log(`[Lines] Extended item name: ${currentItem.name}`);
-      }
-      continue;
-    }
-    
-    console.log(`[Lines] Skipped line: "${content}"`);
-  }
-  
-  // Handle any remaining incomplete item
-  if (currentItem && currentItem.name) {
-    items.push(currentItem);
-    console.log(`[Lines] Final incomplete item: ${currentItem.name}`);
-  }
-  
-  console.log(`[Lines] Extracted ${items.length} items from lines`);
-  return items;
-}
+// Azure function removed - now using GPT Vision exclusively
+
+// Azure layout function removed - now using GPT Vision exclusively
+
+// Azure table function removed - now using GPT Vision exclusively
+
+// Azure lines function removed - now using GPT Vision exclusively
 
 function cleanOCRLines(rawText) {
   return rawText
@@ -646,60 +314,7 @@ async function processExtractedData(result, venueId, res) {
   }
 }
 
-async function extractTextFromPDF(pdfPath) {
-  try {
-    console.log(`[PDF] Reading PDF file: ${pdfPath}`);
-    const buffer = fs.readFileSync(pdfPath);
-    console.log(`[PDF] File size: ${buffer.length} bytes`);
-    
-    const data = await pdfParse(buffer);
-    console.log(`[PDF] Extracted text length: ${data.text.length} characters`);
-    
-    if (!data.text || data.text.trim().length === 0) {
-      throw new Error('No text extracted from PDF');
-    }
-    
-    return data.text;
-  } catch (error) {
-    console.error(`[PDF] Error extracting text from PDF:`, error);
-    throw new Error(`PDF processing failed: ${error.message}`);
-  }
-}
-
-async function extractTextFromImage(imagePath) {
-  try {
-    console.log(`[Image] Processing image file: ${imagePath}`);
-    
-    // Check if file exists and is readable
-    if (!fs.existsSync(imagePath)) {
-      throw new Error(`Image file does not exist: ${imagePath}`);
-    }
-    
-    const stats = fs.statSync(imagePath);
-    console.log(`[Image] File size: ${stats.size} bytes`);
-    
-    if (stats.size === 0) {
-      throw new Error('Image file is empty');
-    }
-    
-    const worker = await createWorker('eng');
-    console.log(`[Image] Tesseract worker created, processing image...`);
-    
-    const { data: { text } } = await worker.recognize(imagePath);
-    await worker.terminate();
-    
-    console.log(`[Image] Extracted text length: ${text.length} characters`);
-    
-    if (!text || text.trim().length === 0) {
-      throw new Error('No text extracted from image');
-    }
-    
-    return text;
-  } catch (error) {
-    console.error(`[Image] Error extracting text from image:`, error);
-    throw new Error(`Image processing failed: ${error.message}`);
-  }
-}
+// Old OCR functions removed - now using GPT Vision exclusively
 
 function splitMenuSections(text) {
   // Split on likely section/category headers (all caps, possibly with numbers, or lines with only a few words)
@@ -1958,4 +1573,79 @@ function isLikelyNewItem(line) {
     // Allow lines that contain food-related content
     (trimmed.length > 0 || /[ء-ي]/.test(trimmed) || /[A-Z]/.test(trimmed))
   );
+}
+
+async function processImageWithGPTVision(imageBuffer, mimeType) {
+  try {
+    console.log('[GPT Vision] Processing image with GPT-4 Vision');
+    
+    // Convert buffer to base64
+    const base64Image = imageBuffer.toString('base64');
+    const dataUrl = `data:${mimeType};base64,${base64Image}`;
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract all menu items from this image. Return a JSON array with this exact format: [{ \"name\": \"item name\", \"price\": number, \"description\": \"optional description\", \"category\": \"category name\" }]. Only include actual menu items with names and prices. Ignore headers, footers, and non-menu content."
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: dataUrl
+              }
+            }
+          ]
+        }
+      ],
+      max_tokens: 3000,
+    });
+    
+    const content = response.choices[0].message.content;
+    console.log('[GPT Vision] Raw response:', content);
+    
+    // Try to extract JSON from the response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (jsonMatch) {
+      try {
+        const menuItems = JSON.parse(jsonMatch[0]);
+        console.log('[GPT Vision] Parsed menu items:', menuItems);
+        return menuItems;
+      } catch (parseError) {
+        console.error('[GPT Vision] JSON parse error:', parseError);
+        throw new Error('Failed to parse GPT Vision response as JSON');
+      }
+    } else {
+      console.error('[GPT Vision] No JSON array found in response');
+      throw new Error('No valid JSON array found in GPT Vision response');
+    }
+  } catch (error) {
+    console.error('[GPT Vision] Error:', error);
+    throw error;
+  }
+}
+
+async function convertPDFToImages(pdfBuffer) {
+  try {
+    console.log('[PDF Convert] Converting PDF to images');
+    
+    const convertedPages = await convert(pdfBuffer, {
+      quality: 100,
+      density: 300,
+      width: 1200,
+      height: 1600,
+      outputType: "buffer",
+      pagesToProcess: "1-", // All pages
+    });
+    
+    console.log(`[PDF Convert] Converted ${convertedPages.length} pages`);
+    return convertedPages;
+  } catch (error) {
+    console.error('[PDF Convert] Error converting PDF:', error);
+    throw error;
+  }
 }
