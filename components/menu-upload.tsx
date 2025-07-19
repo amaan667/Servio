@@ -167,9 +167,41 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
   }
 
   const extractMenuFromWebsite = async (url: string): Promise<MenuItem[]> => {
-    // Website extraction is not supported in the new local OCR system
-    // Users should upload files directly instead
-    throw new Error("Website extraction is not supported. Please upload a menu file directly.");
+    // Check if URL is an image
+    const isImageUrl = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url) || 
+                      url.includes('image') || 
+                      url.includes('photo');
+    
+    if (isImageUrl) {
+      // Process image URL
+      const response = await fetch("/api/upload-menu", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageUrl: url,
+          venueId: venueId,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok || result.error) {
+        throw new Error(result.error || "Failed to process image URL");
+      }
+
+      return (result.items || []).map((item: any) => ({
+        ...item,
+        id: `extracted-${Date.now()}-${Math.random()}`,
+        venue_id: venueId,
+        available: true,
+        created_at: new Date().toISOString(),
+      }));
+    } else {
+      // Website extraction is not supported - guide user to upload files
+      throw new Error("Website extraction is not supported. Please upload a menu file directly or use a direct image URL.");
+    }
   };
 
   const extractMenuFromPDF = async (file: File): Promise<MenuItem[]> => {
@@ -212,45 +244,14 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
     const progressInterval = simulateProgress(3000)
 
     try {
-      // Check if URL is an image
-      const isImageUrl = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(menuUrl) || 
-                        menuUrl.includes('image') || 
-                        menuUrl.includes('photo');
+      const items = await extractMenuFromWebsite(menuUrl.trim())
+      setUploadProgress(100)
+      setExtractedItems(items)
+      setUploadStatus("success")
+      setStatusMessage(`Successfully extracted ${items.length} menu items from image!`)
       
-      if (isImageUrl) {
-        // Process image URL
-        const response = await fetch("/api/upload-menu", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            imageUrl: menuUrl.trim(),
-            venueId: venueId,
-          }),
-        });
-
-        const result = await response.json();
-        
-        if (!response.ok || result.error) {
-          throw new Error(result.error || "Failed to process image URL");
-        }
-
-        setUploadProgress(100);
-        setExtractedItems(result.items || []);
-        setUploadStatus("success");
-        setStatusMessage(`Successfully extracted ${result.items?.length || 0} menu items from image!`);
-        
-        // Optionally trigger a menu refresh in parent
-        if (onMenuUpdate) onMenuUpdate(result.items || []);
-      } else {
-        // Try website extraction (legacy support)
-        const items = await extractMenuFromWebsite(menuUrl.trim());
-        setUploadProgress(100);
-        setExtractedItems(items);
-        setUploadStatus("success");
-        setStatusMessage(`Successfully extracted ${items.length} menu items from website!`);
-      }
+      // Optionally trigger a menu refresh in parent
+      if (onMenuUpdate) onMenuUpdate(items);
     } catch (error) {
       setUploadStatus("error");
       const errorMessage = error instanceof Error ? error.message : "Failed to extract menu from URL. Please try a different URL or upload manually.";
@@ -425,6 +426,7 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
                   <p>• Supported formats: JPG, JPEG, PNG, GIF, WebP, BMP</p>
                   <p>• Make sure the image is clear and well-lit for best results</p>
                   <p>• Maximum file size: 10MB</p>
+                  <p>• Note: Only direct image URLs are supported, not website pages</p>
                 </div>
               </div>
             </TabsContent>
