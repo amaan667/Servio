@@ -44,7 +44,11 @@ export default function CustomerOrderPage() {
   const [loadingMenu, setLoadingMenu] = useState(true)
   const [menuError, setMenuError] = useState<string | null>(null)
 
-  const categories = ["all", "appetizers", "mains", "desserts", "beverages", "salads", "pizzas"]
+  // Dynamically generate categories from menuItems
+  const uniqueCategories = Array.from(
+    new Set(menuItems.map(item => item.category.trim().toLowerCase()))
+  );
+  const categories = ["all", ...uniqueCategories];
 
   const searchParams = useSearchParams()
   // Use the correct venue_id from the database schema
@@ -284,8 +288,15 @@ export default function CustomerOrderPage() {
     }
   }
 
+  // Case-insensitive, trimmed category filter
   const filteredItems =
-    selectedCategory === "all" ? menuItems : menuItems.filter((item) => item.category === selectedCategory)
+    selectedCategory === "all"
+      ? menuItems
+      : menuItems.filter(
+          (item) =>
+            item.category &&
+            item.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
+        );
 
   if (orderSubmitted) {
     return (
