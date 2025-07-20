@@ -9,7 +9,9 @@ import OpenAI from 'openai';
 import crypto from 'crypto';
 import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.js';
-const Tesseract = require('tesseract.js');
+// Remove all Tesseract/OCR and Vision-related imports, functions, and references
+// Only keep PDF text extraction + GPT-3.5 pipeline
+// Update error messages to 'Menu extraction failed' where needed
 
 // Category priority order for sorting
 const categoryPriorityOrder = ['Breakfast', 'Mains', 'Brunch', 'Drinks', 'Smoothies', 'Desserts', 'Add-ons', 'Uncategorized'];
@@ -576,15 +578,6 @@ async function convertPDFToImageBuffers(pdfBuffer) {
   }
   return imageBuffers;
 }
-async function ocrImagesWithTesseract(imageBuffers) {
-  const Tesseract = require('tesseract.js');
-  const results = [];
-  for (let i = 0; i < imageBuffers.length; i++) {
-    const { data: { text } } = await Tesseract.recognize(imageBuffers[i], 'eng');
-    results.push(text);
-  }
-  return results.join('\n\n');
-}
 
 // --- Robust Vision Prompt and Extraction ---
 async function extractMenuWithVision(imageBuffers) {
@@ -674,7 +667,7 @@ async function handler(req, res) {
           const result = await processImageFile(filePath, mime);
           await processExtractedData(result, venueId, res);
         } catch (e) {
-          res.status(500).json({ error: 'OCR failed', detail: e.message });
+          res.status(500).json({ error: 'Menu extraction failed', detail: e.message });
         } finally {
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }
