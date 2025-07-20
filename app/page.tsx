@@ -422,13 +422,6 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <Image
-                src="/assets/servio-logo-updated.png"
-                alt="Servio"
-                width={14400}
-                height={4800}
-                className="h-20 w-auto mb-6"
-              />
               <p className="text-gray-400 mb-6 max-w-md">
                 Servio makes QR code ordering simple and effective for businesses of all sizes. Transform your customer
                 experience today.

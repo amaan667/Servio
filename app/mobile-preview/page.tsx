@@ -26,9 +26,9 @@ export default function MobilePreview() {
                 <Image
                   src="/assets/servio-logo-updated.png"
                   alt="Servio Logo"
-                  width={768}
-                  height={288}
-                  className="h-48 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-md"
+                  width={3072}
+                  height={1152}
+                  className="h-[192px] w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-md"
                   priority
                 />
               </a>

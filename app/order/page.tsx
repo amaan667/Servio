@@ -341,12 +341,12 @@ export default function CustomerOrderPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Image src="/assets/servio-logo-updated.png" alt="Servio Logo" width={120} height={48} style={{ height: 64, width: 120 }} priority />
-              <h1 className="text-2xl font-bold text-gray-900">Order Menu</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Menu{customerInfo.table_number ? ` (Table ${customerInfo.table_number})` : ""}</h1>
             </div>
             <div className="flex items-center space-x-2">
               <ShoppingCart className="w-5 h-5" />
               <span className="font-medium">{getTotalItems()} items</span>
-              <span className="text-green-600 font-bold">${getTotalPrice().toFixed(2)}</span>
+              <span className="text-green-600 font-bold">£{getTotalPrice().toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -408,7 +408,7 @@ export default function CustomerOrderPage() {
                       </div>
                       <p className="text-gray-600 text-sm mb-3">{item.description}</p>
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xl font-bold text-green-600">${item.price.toFixed(2)}</span>
+                        <span className="text-xl font-bold text-green-600">£{item.price.toFixed(2)}</span>
                         {item.prep_time && (
                           <div className="flex items-center text-gray-500 text-sm">
                             <Clock className="w-4 h-4 mr-1" />
@@ -460,7 +460,7 @@ export default function CustomerOrderPage() {
                           <div key={item.id} className="border-b pb-3">
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="font-medium">{item.name}</h4>
-                              <span className="font-bold">${(item.price * item.quantity).toFixed(2)}</span>
+                              <span className="font-bold">£{(item.price * item.quantity).toFixed(2)}</span>
                             </div>
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center space-x-2">
@@ -472,7 +472,7 @@ export default function CustomerOrderPage() {
                                   <Plus className="w-3 h-3" />
                                 </Button>
                               </div>
-                              <span className="text-sm text-gray-600">${item.price.toFixed(2)} each</span>
+                              <span className="text-sm text-gray-600">£{item.price.toFixed(2)} each</span>
                             </div>
                             <Textarea
                               placeholder="Special instructions..."
@@ -488,7 +488,7 @@ export default function CustomerOrderPage() {
                       <div className="border-t pt-3">
                         <div className="flex justify-between items-center text-lg font-bold">
                           <span>Total:</span>
-                          <span className="text-green-600">${getTotalPrice().toFixed(2)}</span>
+                          <span className="text-green-600">£{getTotalPrice().toFixed(2)}</span>
                         </div>
                       </div>
                       {/* Customer Info */}
