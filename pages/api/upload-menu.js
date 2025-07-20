@@ -44,27 +44,27 @@ const categoryNormalizationMap = {
 
 function normalizeCategory(category) {
   if (!category || category.trim().length === 0) return 'Uncategorized';
-  
+
   const normalized = category.trim();
   const upperCase = normalized.toUpperCase();
-  
+
   // Check exact matches first
   if (categoryNormalizationMap[upperCase]) {
     return categoryNormalizationMap[upperCase];
   }
-  
+
   // Check partial matches
   for (const [key, value] of Object.entries(categoryNormalizationMap)) {
     if (upperCase.includes(key) || key.includes(upperCase)) {
       return value;
     }
   }
-  
+
   // If it looks like a category but not in our map, return as-is
   if (upperCase.length > 2 && upperCase.length < 50) {
     return normalized;
   }
-  
+
   return 'Uncategorized';
 }
 
@@ -100,30 +100,30 @@ function setCachedResult(imageHash, result) {
 async function optimizeImageForVision(imageBuffer, mimeType) {
   try {
     console.log(`[Optimize] Optimizing image for GPT Vision`);
-    
+
     // Load image
     const image = await loadImage(imageBuffer);
-    
+
     // Calculate optimal dimensions (max 1000x1400)
     const maxWidth = 1000;
     const maxHeight = 1400;
     const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
-    
+
     const newWidth = Math.round(image.width * scale);
     const newHeight = Math.round(image.height * scale);
-    
+
     console.log(`[Optimize] Resizing from ${image.width}x${image.height} to ${newWidth}x${newHeight}`);
-    
+
     // Create canvas with optimized dimensions
     const canvas = createCanvas(newWidth, newHeight);
     const ctx = canvas.getContext('2d');
-    
+
     // Draw resized image
     ctx.drawImage(image, 0, 0, newWidth, newHeight);
-    
+
     // Convert to buffer with reduced quality
     const optimizedBuffer = canvas.toBuffer('image/jpeg', { quality: 0.8 });
-    
+
     console.log(`[Optimize] Reduced size from ${imageBuffer.length} to ${optimizedBuffer.length} bytes`);
     return optimizedBuffer;
   } catch (error) {
@@ -163,18 +163,18 @@ const openai = new OpenAI({
 async function downloadImageFromUrl(imageUrl) {
   try {
     console.log(`[Download] Downloading image from URL: ${imageUrl}`);
-    
+
     const response = await fetch(imageUrl);
     if (!response.ok) {
       throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
     }
-    
+
     const buffer = await response.buffer();
     const tempPath = `/tmp/${Date.now()}-url-image.jpg`;
-    
+
     fs.writeFileSync(tempPath, buffer);
     console.log(`[Download] Image saved to: ${tempPath}`);
-    
+
     return tempPath;
   } catch (error) {
     console.error(`[Download] Error downloading image:`, error);
@@ -184,27 +184,27 @@ async function downloadImageFromUrl(imageUrl) {
 
 async function processImageFile(filePath, mimeType) {
   console.log(`[Process] Processing file: ${filePath}, type: ${mimeType}`);
-  
+
   try {
     const fileBuffer = fs.readFileSync(filePath);
-    
+
     if (mimeType === 'application/pdf') {
       console.log('[Process] Processing PDF with consolidated GPT-4 Vision approach');
-      
+
       try {
         // Use consolidated vision processing for PDFs
         const allMenuItems = await processPDFWithConsolidatedVision(fileBuffer);
-        
+
         if (allMenuItems.length > 0) {
           console.log(`[Process] ✅ Found ${allMenuItems.length} items with consolidated vision`);
-          
+
           // Clean and deduplicate the results
           const cleanedItems = cleanMenuItems(allMenuItems);
           const deduplicatedItems = deduplicateMenuItems(cleanedItems);
-          
+
           // Sort items by category priority
           const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
-          
+
           console.log(`[Process] Final result: ${sortedItems.length} unique, valid menu items sorted by category`);
           return { type: 'structured', data: sortedItems };
         } else {
@@ -212,24 +212,24 @@ async function processImageFile(filePath, mimeType) {
         }
       } catch (visionError) {
         console.error(`[Process] Consolidated vision error:`, visionError);
-        
+
         // Handle quota errors specifically
         if (visionError.message?.includes('quota') || visionError.message?.includes('OpenAI quota exceeded')) {
           throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
         }
-        
+
         // Fallback to per-page text processing if consolidated vision fails
         console.log(`[Process] Consolidated vision failed, falling back to per-page text processing...`);
-        
+
         // Convert PDF to text pages
         const textPages = await convertPDFToImages(fileBuffer);
-        
+
         if (textPages.length === 0) {
           throw new Error('No text extracted from PDF');
         }
-        
+
         console.log(`[Process] Extracted text from ${textPages.length} pages, processing with GPT text parsing`);
-        
+
         // Process each page with GPT in parallel (up to 5 at once)
         const batchSize = 5;
         const allMenuItems = [];
@@ -237,109 +237,109 @@ async function processImageFile(filePath, mimeType) {
         let quotaErrorDetected = false;
         let totalPagesProcessed = 0;
         let pagesWithQuotaErrors = 0;
-        
+
         for (let i = 0; i < textPages.length; i += batchSize) {
           const batch = textPages.slice(i, i + batchSize);
-          console.log(`[Process] Processing batch ${Math.floor(i/batchSize) + 1}: pages ${i+1}-${Math.min(i+batchSize, textPages.length)}`);
-          
+          console.log(`[Process] Processing batch ${Math.floor(i / batchSize) + 1}: pages ${i + 1}-${Math.min(i + batchSize, textPages.length)}`);
+
           const batchPromises = batch.map(async (page) => {
             try {
               console.log(`[Process] Processing page ${page.pageNumber} with ${page.content.length} characters`);
               console.log(`[Process] Using last known category: ${lastKnownCategory || 'None'}`);
-              
+
               const pageResult = await parseMenuTextWithGPT(page.content, page.pageNumber, lastKnownCategory);
               totalPagesProcessed++;
-              
+
               if (pageResult && pageResult.items && Array.isArray(pageResult.items) && pageResult.items.length > 0) {
                 console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${pageResult.items.length} items`);
-                
+
                 // Update last known category for next page
                 if (pageResult.lastCategory) {
                   lastKnownCategory = pageResult.lastCategory;
                   console.log(`[Process] Updated last known category to: ${lastKnownCategory}`);
                 }
-                
+
                 return pageResult.items;
               } else {
                 console.warn(`[Process] ⚠️ Page ${page.pageNumber}: No items found`);
-                
+
                 // Try with more aggressive prompt if no items found
                 const aggressiveResult = await parseMenuTextWithGPTAggressive(page.content, page.pageNumber, lastKnownCategory);
                 if (aggressiveResult && aggressiveResult.items && aggressiveResult.items.length > 0) {
                   console.log(`[Process] ✅ Page ${page.pageNumber}: Found ${aggressiveResult.items.length} items with aggressive parsing`);
-                  
+
                   // Update last known category for next page
                   if (aggressiveResult.lastCategory) {
                     lastKnownCategory = aggressiveResult.lastCategory;
                     console.log(`[Process] Updated last known category to: ${lastKnownCategory}`);
                   }
-                  
+
                   return aggressiveResult.items;
                 }
               }
-              
+
               return [];
             } catch (pageError) {
               console.error(`[Process] Error processing page ${page.pageNumber}:`, pageError);
               totalPagesProcessed++;
-              
+
               // Check if this is a quota error
               if (pageError.message?.includes('quota') || pageError.code === 'insufficient_quota' || pageError.status === 429) {
                 quotaErrorDetected = true;
                 pagesWithQuotaErrors++;
                 console.error(`[Process] Quota error detected on page ${page.pageNumber}`);
               }
-              
+
               return []; // Return empty array for failed pages
             }
           });
-          
+
           // Wait for batch to complete
           const batchResults = await Promise.all(batchPromises);
           allMenuItems.push(...batchResults.flat());
         }
-        
+
         console.log(`[Process] Processing complete: ${totalPagesProcessed} pages processed, ${pagesWithQuotaErrors} pages had quota errors`);
-        
+
         if (allMenuItems.length > 0) {
           console.log(`[Process] Total menu items found: ${allMenuItems.length}`);
-          
+
           // Clean and deduplicate the results
           const cleanedItems = cleanMenuItems(allMenuItems);
           const deduplicatedItems = deduplicateMenuItems(cleanedItems);
-          
+
           // Sort items by category priority
           const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
-          
+
           console.log(`[Process] Final result: ${sortedItems.length} unique, valid menu items sorted by category`);
           return { type: 'structured', data: sortedItems };
         } else {
           // Check if we had quota errors during processing
           if (quotaErrorDetected || pagesWithQuotaErrors > 0) {
             console.log(`[Process] Quota exceeded (${pagesWithQuotaErrors}/${totalPagesProcessed} pages affected), trying fallback text processing...`);
-            
+
             // Try fallback text processing without GPT
             try {
               const fallbackText = textPages.map(page => page.content).join('\n\n');
               console.log(`[Process] Fallback text length: ${fallbackText.length} characters`);
               console.log(`[Process] Fallback text preview: ${fallbackText.substring(0, 500)}...`);
-              
+
               const fallbackItems = parseMenuFromOCR(fallbackText);
               console.log(`[Process] parseMenuFromOCR returned:`, fallbackItems);
-              
+
               if (fallbackItems && Array.isArray(fallbackItems) && fallbackItems.length > 0) {
                 console.log(`[Process] Fallback processing found ${fallbackItems.length} items`);
-                
+
                 // Clean and sort the fallback items
                 const cleanedItems = cleanMenuItems(fallbackItems);
                 console.log(`[Process] After cleaning: ${cleanedItems.length} items`);
-                
+
                 const deduplicatedItems = deduplicateMenuItems(cleanedItems);
                 console.log(`[Process] After deduplication: ${deduplicatedItems.length} items`);
-                
+
                 const sortedItems = sortMenuItemsByCategory(deduplicatedItems);
                 console.log(`[Process] After sorting: ${sortedItems.length} items`);
-                
+
                 console.log(`[Process] Fallback final result: ${sortedItems.length} unique, valid menu items`);
                 return { type: 'structured', data: sortedItems };
               } else {
@@ -358,10 +358,10 @@ async function processImageFile(filePath, mimeType) {
       }
     } else if (mimeType.startsWith('image/')) {
       console.log('[Process] Processing image with GPT Vision');
-      
+
       try {
         const menuItems = await processImageWithGPTVision(fileBuffer, mimeType);
-        
+
         if (Array.isArray(menuItems) && menuItems.length > 0) {
           console.log(`[Process] Found ${menuItems.length} menu items`);
           return { type: 'structured', data: menuItems };
@@ -370,19 +370,19 @@ async function processImageFile(filePath, mimeType) {
         }
       } catch (visionError) {
         console.error(`[Process] GPT Vision error:`, visionError);
-        
+
         // Handle quota errors specifically
         if (visionError.message?.includes('quota') || visionError.message?.includes('OpenAI quota exceeded')) {
           throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
         }
-        
+
         throw visionError;
       }
-      
+
     } else {
       // Try to determine file type from extension
       const fileExtension = filePath.split('.').pop()?.toLowerCase();
-      
+
       if (fileExtension === 'pdf') {
         console.log('[Process] Processing PDF by extension');
         return await processImageFile(filePath, 'application/pdf');
@@ -414,12 +414,12 @@ function cleanOCRLines(rawText) {
 
 export default function handler(req, res) {
   console.log("🔥 OCR handler loaded: build 2025-07-18@15:30");
-  
+
   // Handle both file uploads and URL processing
   if (req.method === 'POST') {
     // Check if this is a JSON request (for imageUrl) or multipart (for file upload)
     const contentType = req.headers['content-type'] || '';
-    
+
     if (contentType.includes('application/json')) {
       // Handle JSON request (imageUrl)
       let body = '';
@@ -440,36 +440,36 @@ export default function handler(req, res) {
       return processFileUpload(req, res);
     }
   }
-  
+
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
 async function processImageUrl(req, res, imageUrl, venueId) {
   let tempFilePath = null;
-  
+
   try {
     console.log(`[URL] Processing image URL: ${imageUrl}`);
-    
+
     // Download image from URL
     tempFilePath = await downloadImageFromUrl(imageUrl);
-    
+
     // Process the downloaded image
     const result = await processImageFile(tempFilePath, 'image/jpeg');
-    
+
     // Process the extracted data
     await processExtractedData(result, venueId, res);
-    
+
   } catch (error) {
     console.error('URL processing error:', error);
-    
+
     // Handle quota errors specifically
     if (error.message?.includes('quota') || error.message?.includes('OpenAI quota exceeded')) {
-      return res.status(429).json({ 
+      return res.status(429).json({
         error: 'OpenAI quota exceeded. Please upgrade your plan or try again later.',
-        details: error.message 
+        details: error.message
       });
     }
-    
+
     res.status(500).json({ error: 'Failed to process image URL', detail: error.message });
   } finally {
     // Clean up temporary file
@@ -490,24 +490,24 @@ async function processFileUpload(req, res) {
 
     try {
       console.log(`[File] Processing uploaded file: ${filePath}, type: ${mime}`);
-      
+
       // Process the uploaded file
       const result = await processImageFile(filePath, mime);
-      
+
       // Process the extracted data
       await processExtractedData(result, venueId, res);
-      
+
     } catch (e) {
       console.error('File processing error:', e);
-      
+
       // Handle quota errors specifically
       if (e.message?.includes('quota') || e.message?.includes('OpenAI quota exceeded')) {
-        return res.status(429).json({ 
+        return res.status(429).json({
           error: 'OpenAI quota exceeded. Please upgrade your plan or try again later.',
-          details: e.message 
+          details: e.message
         });
       }
-      
+
       res.status(500).json({ error: 'OCR failed', detail: e.message });
     } finally {
       // Clean up uploaded file
@@ -525,14 +525,14 @@ async function processExtractedData(result, venueId, res) {
       // Process structured menu items from layout analysis
       const structuredMenu = result.data;
       console.log('Structured menu from layout analysis:', structuredMenu);
-      
+
       if (venueId && structuredMenu.length > 0) {
         // Filter valid menu items before inserting
         const validItems = filterValidMenuItems(structuredMenu);
-        
+
         if (validItems.length > 0) {
           await supabase.from('menu_items').delete().eq('venue_id', venueId);
-          
+
           const { error } = await supabase
             .from('menu_items')
             .insert(validItems.map(item => ({
@@ -543,12 +543,12 @@ async function processExtractedData(result, venueId, res) {
               available: true,
               created_at: new Date().toISOString(),
             })));
-            
+
           if (error) {
             console.error('Supabase insert error:', error);
             return res.status(500).json({ error: 'Failed to save menu items', detail: error.message });
           }
-          
+
           console.log(`[Success] Inserted ${validItems.length} valid menu items`);
           return res.status(200).json({ message: 'Menu uploaded successfully' });
         } else {
@@ -562,7 +562,7 @@ async function processExtractedData(result, venueId, res) {
       const text = result.data;
       console.log("OCR RAW TEXT >>>", text.slice(0, 100));
       console.log("FULL OCR TEXT >>>", text);
-      
+
       // Use the new cleaner parsing approach
       const structuredMenu = parseMenuFromOCR(text);
       console.log('Structured menu from new OCR parser:', structuredMenu);
@@ -570,10 +570,10 @@ async function processExtractedData(result, venueId, res) {
       if (venueId && structuredMenu.length > 0) {
         // Filter valid menu items before inserting
         const validItems = filterValidMenuItems(structuredMenu);
-        
+
         if (validItems.length > 0) {
           await supabase.from('menu_items').delete().eq('venue_id', venueId);
-          
+
           const { error } = await supabase
             .from('menu_items')
             .insert(validItems.map(item => ({
@@ -584,12 +584,12 @@ async function processExtractedData(result, venueId, res) {
               available: true,
               created_at: new Date().toISOString(),
             })));
-            
+
           if (error) {
             console.error('Supabase insert error:', error);
             return res.status(500).json({ error: 'Failed to save menu items', detail: error.message });
           }
-          
+
           console.log(`[Success] Inserted ${validItems.length} valid menu items`);
           return res.status(200).json({ message: 'Menu uploaded successfully' });
         } else {
@@ -610,17 +610,17 @@ async function processExtractedData(result, venueId, res) {
 async function extractTextFromPDF(pdfBuffer) {
   try {
     console.log('[PDF] Extracting text from PDF buffer');
-    
+
     // Use pdf-parse for text extraction (pure JavaScript)
     const pdfParse = require('pdf-parse');
     const data = await pdfParse(pdfBuffer);
-    
+
     console.log(`[PDF] Extracted text length: ${data.text.length} characters`);
-    
+
     if (!data.text || data.text.trim().length === 0) {
       throw new Error('No text extracted from PDF');
     }
-    
+
     return data.text;
   } catch (error) {
     console.error('[PDF] Error extracting text from PDF:', error);
@@ -634,7 +634,7 @@ async function parseMenuTextWithGPT(text, pageNumber = 1, lastKnownCategory = nu
     console.log(`[GPT Text] Input text length: ${text.length} characters`);
     console.log(`[GPT Text] Input text preview: ${text.substring(0, 200)}...`);
     console.log(`[GPT Text] Last known category: ${lastKnownCategory || 'None'}`);
-    
+
     const prompt = `You are an expert at menu parsing. Extract EVERY menu item from this text. Return a valid JSON array ONLY in this format:
 
 [
@@ -652,7 +652,7 @@ async function parseMenuTextWithGPT(text, pageNumber = 1, lastKnownCategory = nu
 
 Text to parse (Page ${pageNumber}):
 ${text}`;
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -667,34 +667,34 @@ ${text}`;
       ],
       max_tokens: 4000,
     });
-    
+
     const content = response.choices[0].message.content;
     console.log(`[GPT Text] Raw response from page ${pageNumber}:`, content);
     console.log(`[GPT Text] Response length: ${content.length} characters`);
-    
+
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        
+
         // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
-          return item && 
-                 typeof item.name === 'string' && 
-                 item.name.trim().length > 0 &&
-                 typeof item.price === 'number' && 
-                 item.price > 0;
+          return item &&
+            typeof item.name === 'string' &&
+            item.name.trim().length > 0 &&
+            typeof item.price === 'number' &&
+            item.price > 0;
         }).map(item => ({
           ...item,
           category: normalizeCategory(item.category)
         }));
-        
+
         console.log(`[GPT Text] Parsed ${menuItems.length} items, ${validItems.length} valid from page ${pageNumber}`);
-        
+
         // Find the last category used in this page
         const lastCategoryInPage = validItems.length > 0 ? validItems[validItems.length - 1].category : lastKnownCategory;
-        
+
         // Check if we got enough items, if not, try aggressive parsing
         if (validItems.length < 15) {
           console.log(`[GPT Text] Only ${validItems.length} valid items found on page ${pageNumber}, trying aggressive parsing...`);
@@ -704,43 +704,43 @@ ${text}`;
             return aggressiveItems;
           }
         }
-        
+
         return { items: validItems, lastCategory: lastCategoryInPage };
       } catch (parseError) {
         console.error(`[GPT Text] JSON parse error for page ${pageNumber}:`, parseError);
         console.error(`[GPT Text] Failed to parse this JSON:`, jsonMatch[0]);
-        
+
         // Try markdown fallback
         const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
         if (markdownItems.length > 0) {
           console.log(`[GPT Text] Markdown fallback found ${markdownItems.length} items`);
           return markdownItems;
         }
-        
+
         throw new Error('Failed to parse GPT response as JSON');
       }
     } else {
       console.error(`[GPT Text] No JSON array found in response for page ${pageNumber}`);
       console.error(`[GPT Text] Full response content:`, content);
-      
+
       // Try markdown fallback
       const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
       if (markdownItems.length > 0) {
         console.log(`[GPT Text] Markdown fallback found ${markdownItems.length} items`);
         return markdownItems;
       }
-      
+
       throw new Error('No valid JSON array found in GPT response');
     }
   } catch (error) {
     console.error(`[GPT Text] Error parsing page ${pageNumber}:`, error);
-    
+
     // Handle quota errors specifically - return empty result instead of throwing
     if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
       console.error(`[GPT Text] Quota exceeded for page ${pageNumber}, returning empty result`);
       return { items: [], lastCategory: lastKnownCategory };
     }
-    
+
     // For other errors, also return empty result to prevent propagation
     console.error(`[GPT Text] Non-quota error for page ${pageNumber}, returning empty result`);
     return { items: [], lastCategory: lastKnownCategory };
@@ -750,16 +750,16 @@ ${text}`;
 async function extractItemsFromTextResponse(text, pageNumber) {
   try {
     console.log(`[Fallback] Attempting to extract items from text response for page ${pageNumber}`);
-    
+
     // Try to find price patterns in the text
     const pricePattern = /([^£\n]+?)\s*£\s*(\d+(?:\.\d{1,2})?)/g;
     const items = [];
     let match;
-    
+
     while ((match = pricePattern.exec(text)) !== null) {
       const name = match[1].trim();
       const price = parseFloat(match[2]);
-      
+
       if (name && name.length > 2 && price > 0) {
         items.push({
           name: name,
@@ -769,7 +769,7 @@ async function extractItemsFromTextResponse(text, pageNumber) {
         });
       }
     }
-    
+
     console.log(`[Fallback] Extracted ${items.length} items using regex pattern`);
     return items;
   } catch (error) {
@@ -781,13 +781,13 @@ async function extractItemsFromTextResponse(text, pageNumber) {
 async function forceGPTToReturnJSON(text, pageNumber) {
   try {
     console.log(`[Force JSON] Attempting to force GPT to return JSON for page ${pageNumber}`);
-    
+
     const forcePrompt = `Convert the following text into a JSON array of menu items. Return ONLY the JSON array, nothing else:
 
 Text: ${text}
 
 JSON:`;
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -802,10 +802,10 @@ JSON:`;
       ],
       max_tokens: 2000,
     });
-    
+
     const content = response.choices[0].message.content.trim();
     console.log(`[Force JSON] Response:`, content);
-    
+
     // Try to parse as JSON
     try {
       const menuItems = JSON.parse(content);
@@ -824,7 +824,7 @@ JSON:`;
 async function parseMenuTextWithGPTAggressive(text, pageNumber = 1, lastKnownCategory = null) {
   try {
     console.log(`[GPT Text Aggressive] Parsing menu text from page ${pageNumber} with aggressive approach`);
-    
+
     const aggressivePrompt = `You are an expert at menu parsing. Extract EVERY menu item from this text, being very aggressive. Return a valid JSON array ONLY in this format:
 
 [
@@ -842,7 +842,7 @@ async function parseMenuTextWithGPTAggressive(text, pageNumber = 1, lastKnownCat
 
 Text to parse (Page ${pageNumber}):
 ${text}`;
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -857,69 +857,69 @@ ${text}`;
       ],
       max_tokens: 4000,
     });
-    
+
     const content = response.choices[0].message.content;
     console.log(`[GPT Text Aggressive] Raw response from page ${pageNumber}:`, content);
-    
+
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        
+
         // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
-          return item && 
-                 typeof item.name === 'string' && 
-                 item.name.trim().length > 0 &&
-                 typeof item.price === 'number' && 
-                 item.price > 0;
+          return item &&
+            typeof item.name === 'string' &&
+            item.name.trim().length > 0 &&
+            typeof item.price === 'number' &&
+            item.price > 0;
         }).map(item => ({
           ...item,
           category: normalizeCategory(item.category)
         }));
-        
+
         console.log(`[GPT Text Aggressive] Parsed ${menuItems.length} items, ${validItems.length} valid from page ${pageNumber}`);
-        
+
         // Find the last category used in this page
         const lastCategoryInPage = validItems.length > 0 ? validItems[validItems.length - 1].category : lastKnownCategory;
-        
+
         return { items: validItems, lastCategory: lastCategoryInPage };
       } catch (parseError) {
         console.error(`[GPT Text Aggressive] JSON parse error for page ${pageNumber}:`, parseError);
         console.error(`[GPT Text Aggressive] Failed to parse this JSON:`, jsonMatch[0]);
-        
+
         // Try markdown fallback
         const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
         if (markdownItems.length > 0) {
           console.log(`[GPT Text Aggressive] Markdown fallback found ${markdownItems.length} items`);
           return { items: markdownItems, lastCategory: lastKnownCategory };
         }
-        
+
         return { items: [], lastCategory: lastKnownCategory };
       }
     } else {
       console.error(`[GPT Text Aggressive] No JSON array found in response for page ${pageNumber}`);
       console.error(`[GPT Text Aggressive] Full response content:`, content);
-      
+
       // Try markdown fallback
       const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
       if (markdownItems.length > 0) {
         console.log(`[GPT Text Aggressive] Markdown fallback found ${markdownItems.length} items`);
         return { items: markdownItems, lastCategory: lastKnownCategory };
       }
-      
+
       return { items: [], lastCategory: lastKnownCategory };
     }
   } catch (error) {
     console.error(`[GPT Text Aggressive] Error parsing page ${pageNumber}:`, error);
-    
+
     // Handle quota errors specifically - return empty result instead of throwing
     if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
       console.error(`[GPT Text Aggressive] Quota exceeded for page ${pageNumber}, returning empty result`);
       return { items: [], lastCategory: lastKnownCategory };
     }
-    
+
     // For other errors, also return empty result to prevent propagation
     console.error(`[GPT Text Aggressive] Non-quota error for page ${pageNumber}, returning empty result`);
     return { items: [], lastCategory: lastKnownCategory };
@@ -929,11 +929,11 @@ ${text}`;
 async function parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory = null) {
   try {
     console.log(`[Markdown] Converting text to markdown format for page ${pageNumber}`);
-    
+
     // Convert text to markdown format
     const markdownText = convertTextToMarkdown(text);
     console.log(`[Markdown] Converted text to markdown:`, markdownText.substring(0, 300) + '...');
-    
+
     const markdownPrompt = `Convert this markdown menu into a JSON array of objects with fields: name, price, description, category.
 
 Return ONLY a valid JSON array in this format:
@@ -944,7 +944,7 @@ Return ONLY a valid JSON array in this format:
 
 Markdown menu:
 ${markdownText}`;
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -959,43 +959,43 @@ ${markdownText}`;
       ],
       max_tokens: 3000,
     });
-    
+
     const content = response.choices[0].message.content;
     console.log(`[Markdown] Raw response:`, content);
-    
+
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        
+
         // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
-          return item && 
-                 typeof item.name === 'string' && 
-                 item.name.trim().length > 0 &&
-                 typeof item.price === 'number' && 
-                 item.price > 0;
+          return item &&
+            typeof item.name === 'string' &&
+            item.name.trim().length > 0 &&
+            typeof item.price === 'number' &&
+            item.price > 0;
         }).map(item => ({
           ...item,
           category: normalizeCategory(item.category)
         }));
-        
+
         console.log(`[Markdown] Parsed ${menuItems.length} items, ${validItems.length} valid`);
-        
+
         // Find the last category used in this page
         const lastCategoryInPage = validItems.length > 0 ? validItems[validItems.length - 1].category : lastKnownCategory;
-        
+
         return { items: validItems, lastCategory: lastCategoryInPage };
       } catch (parseError) {
         console.error(`[Markdown] JSON parse error:`, parseError);
-        
+
         // Handle quota errors specifically - return empty result instead of throwing
         if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
           console.error(`[Markdown] Quota exceeded, returning empty result`);
           return { items: [], lastCategory: lastKnownCategory };
         }
-        
+
         // For other errors, also return empty result to prevent propagation
         console.error(`[Markdown] Non-quota error, returning empty result`);
         return { items: [], lastCategory: lastKnownCategory };
@@ -1006,13 +1006,13 @@ ${markdownText}`;
     }
   } catch (error) {
     console.error(`[Markdown] Error:`, error);
-    
+
     // Handle quota errors specifically - return empty result instead of throwing
     if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
       console.error(`[Markdown] Quota exceeded, returning empty result`);
       return { items: [], lastCategory: lastKnownCategory };
     }
-    
+
     // For other errors, also return empty result to prevent propagation
     console.error(`[Markdown] Non-quota error, returning empty result`);
     return { items: [], lastCategory: lastKnownCategory };
@@ -1022,11 +1022,11 @@ ${markdownText}`;
 function convertTextToMarkdown(text) {
   try {
     console.log(`[Markdown] Converting text to markdown format`);
-    
+
     const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     let markdown = '';
     let currentCategory = 'Uncategorized';
-    
+
     for (const line of lines) {
       // Check if line is a category header (all caps, short)
       if (/^[A-Z\s&()]+$/.test(line) && line.length > 2 && line.length < 50) {
@@ -1034,16 +1034,16 @@ function convertTextToMarkdown(text) {
         markdown += `\n### ${line}\n\n`;
         continue;
       }
-      
+
       // Check if line contains a price
       const priceMatch = line.match(/^(.*?)[.\-–—]*\s*£\s*(\d+(?:\.\d{1,2})?)/);
       if (priceMatch) {
         const name = priceMatch[1].trim();
         const price = priceMatch[2];
-        
+
         if (name && name.length > 2) {
           markdown += `- ${name} – £${price}\n`;
-          
+
           // Look for description on next line
           const nextLineIndex = lines.indexOf(line) + 1;
           if (nextLineIndex < lines.length) {
@@ -1056,7 +1056,7 @@ function convertTextToMarkdown(text) {
         }
       }
     }
-    
+
     console.log(`[Markdown] Generated markdown with ${markdown.split('-').length - 1} items`);
     return markdown;
   } catch (error) {
@@ -1211,7 +1211,7 @@ function extractMenuItemsWithRegex(text) {
 
 function isLikelyItemName(line) {
   const trimmed = line.trim();
-  
+
   // Exclude common non-menu items first
   const excludePatterns = [
     /^w\/|^with\s/i,
@@ -1230,14 +1230,14 @@ function isLikelyItemName(line) {
     /^replace\s/i,
     /^instead\s+of\s/i
   ];
-  
+
   // Check if line matches any exclusion pattern
   for (const pattern of excludePatterns) {
     if (pattern.test(trimmed)) {
       return false;
     }
   }
-  
+
   // Known menu item patterns (both English and Arabic)
   const menuPatterns = [
     /burger/i,
@@ -1290,30 +1290,30 @@ function isLikelyItemName(line) {
     /pancake/i,
     /waffle/i
   ];
-  
+
   // Check if line matches any known menu pattern
   for (const pattern of menuPatterns) {
     if (pattern.test(trimmed)) {
       return true;
     }
   }
-  
+
   // Check for capitalized words (common in menu items)
   const words = trimmed.split(' ');
-  const capitalizedWords = words.filter(word => 
+  const capitalizedWords = words.filter(word =>
     word.length > 0 && word[0] === word[0].toUpperCase()
   );
-  
+
   // If more than 50% of words are capitalized, likely a menu item
   if (capitalizedWords.length > 0 && capitalizedWords.length >= words.length * 0.5) {
     return true;
   }
-  
+
   // Check for Arabic text
   if (/[ء-ي]/.test(trimmed)) {
     return true;
   }
-  
+
   // More lenient item detection - allow Arabic text and special characters
   return (
     trimmed.length > 2 &&
@@ -1324,7 +1324,7 @@ function isLikelyItemName(line) {
     // Allow Arabic text and special characters
     !/^[0-9\s]+$/.test(trimmed) && // Not just numbers and spaces
     // Don't block common food words or Arabic text
-    !['served with', 'add ', 'with ', 'and ', 'or ', 'freshly made', 'grilled'].some(word => 
+    !['served with', 'add ', 'with ', 'and ', 'or ', 'freshly made', 'grilled'].some(word =>
       trimmed.toLowerCase().startsWith(word)
     ) &&
     // Allow lines that contain Arabic characters or food-related words
@@ -1335,8 +1335,8 @@ function isLikelyItemName(line) {
 function isCategoryHeader(line) {
   // Expanded list of known categories
   const knownCategories = [
-    'STARTERS', 'ALL DAY BRUNCH', 'SALAD', 'WRAPS & SANDWICHES', 
-    'ON SOURDOUGH', 'DESSERTS', 'EXTRAS', 'DIPS', 'HOT COFFEE', 
+    'STARTERS', 'ALL DAY BRUNCH', 'SALAD', 'WRAPS & SANDWICHES',
+    'ON SOURDOUGH', 'DESSERTS', 'EXTRAS', 'DIPS', 'HOT COFFEE',
     'ICED COFFEE', 'SPECIALITY COFFEE', 'NOT COFFEE', 'LOOSE LEAVES TEA',
     'JUICES', 'SMOOTHIES', 'MILKSHAKES', 'MATCHA', 'SPECIALS',
     'SLIDERS', 'TACOS', 'MEXICAN RICE', 'NUR MUSHROOM CHICKEN',
@@ -1346,30 +1346,30 @@ function isCategoryHeader(line) {
     'BURGERS', 'SANDWICHES', 'WRAPS', 'SALADS', 'SOUPS', 'PASTAS',
     'SEAFOOD', 'MEAT', 'VEGETARIAN', 'VEGAN', 'GLUTEN FREE'
   ];
-  
+
   // Check if line matches known categories exactly
   if (knownCategories.includes(line.toUpperCase())) {
     return true;
   }
-  
+
   // Check if line is all caps and looks like a category (not a menu item)
   const isAllCaps = line === line.toUpperCase();
   const hasReasonableLength = line.length > 2 && line.length < 50;
   const noPrice = !/£\s?\d/.test(line);
   const noFoodKeywords = !/(burger|chicken|beef|fish|pasta|rice|salad|soup|coffee|tea|juice)/i.test(line);
   const noArabicFoodWords = !/(labneh|hummus|baba|halloumi|kibbeh|mutbal|shakshuka)/i.test(line);
-  
+
   // If it's all caps, reasonable length, no price, and no food keywords, likely a category
   if (isAllCaps && hasReasonableLength && noPrice && noFoodKeywords && noArabicFoodWords) {
     return true;
   }
-  
+
   return false;
 }
 
 function isDescription(line) {
   const trimmed = line.trim();
-  
+
   // Lines that start with description indicators
   const descriptionStarters = [
     /^served with/i,
@@ -1389,14 +1389,14 @@ function isDescription(line) {
     /^our special/i,
     /^signature/i
   ];
-  
+
   // Check if line starts with description indicators
   for (const pattern of descriptionStarters) {
     if (pattern.test(trimmed)) {
       return true;
     }
   }
-  
+
   // Lines that are clearly descriptions
   const descriptionPatterns = [
     /^[a-z]/, // Starts with lowercase
@@ -1410,14 +1410,14 @@ function isDescription(line) {
     /^special/, // Special descriptions
     /^nur sauce/, // Specific sauce names
   ];
-  
+
   // Check if line matches description patterns
   for (const pattern of descriptionPatterns) {
     if (pattern.test(trimmed)) {
       return true;
     }
   }
-  
+
   // More lenient description detection
   return (
     (/^[a-z]/.test(trimmed) && trimmed.length > 20) ||
@@ -1478,34 +1478,34 @@ function parseMenuFromOCR(ocrText) {
   const menuItems = [];
   let currentCategory = null;
   let currentItem = null;
-  
+
   // Define proper category keywords
   const categoryKeywords = [
-    'STARTERS', 'ALL DAY BRUNCH', 'KIDS', 'MAINS', 'SALAD', 
-    'WRAPS & SANDWICHES', 'ON SOURDOUGH', 'DESSERTS', 
-    'HOT COFFEE', 'ICED COFFEE', 'SPECIALITY COFFEE', 
-    'NOT COFFEE', 'LOOSE LEAVES TEA', 'JUICES', 'SMOOTHIES', 
+    'STARTERS', 'ALL DAY BRUNCH', 'KIDS', 'MAINS', 'SALAD',
+    'WRAPS & SANDWICHES', 'ON SOURDOUGH', 'DESSERTS',
+    'HOT COFFEE', 'ICED COFFEE', 'SPECIALITY COFFEE',
+    'NOT COFFEE', 'LOOSE LEAVES TEA', 'JUICES', 'SMOOTHIES',
     'MILKSHAKES', 'EXTRAS', 'SPECIALS'
   ];
-  
+
   // Price regex - more flexible
   const priceRegex = /£(\d+(?:\.\d{2})?)/g;
-  
+
   console.log(`[Parser] Processing ${lines.length} lines from OCR`);
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const nextLine = lines[i + 1] || '';
-    
+
     console.log(`[Parser] Line ${i}: "${line}"`);
-    
+
     // Skip header lines
-    if (line.includes('NUR CAFE') || line.includes('MENU') || 
-        line.match(/^J[OĄ].*J$/)) {
+    if (line.includes('NUR CAFE') || line.includes('MENU') ||
+      line.match(/^J[OĄ].*J$/)) {
       console.log(`[Parser] Skipped header line: "${line}"`);
       continue;
     }
-    
+
     // Check if this is a category
     if (categoryKeywords.some(cat => line.toUpperCase().includes(cat))) {
       // Save previous item if exists
@@ -1514,34 +1514,34 @@ function parseMenuFromOCR(ocrText) {
         console.log(`[Parser] Saved item before category: ${currentItem.name} - £${currentItem.price}`);
         currentItem = null;
       }
-      
+
       currentCategory = line.toUpperCase().replace(/[^\w\s&]/g, '').trim();
       console.log(`[Category] Found: ${currentCategory}`);
       continue;
     }
-    
+
     // Skip if no category set yet
     if (!currentCategory) {
       console.log(`[Parser] Skipped line (no category): "${line}"`);
       continue;
     }
-    
+
     // Check if line contains a price
     const priceMatch = line.match(priceRegex);
-    
+
     if (priceMatch) {
       // This line has a price - could be item name + price or just price
       const priceStr = priceMatch[priceMatch.length - 1]; // Get last price if multiple
       const price = parseFloat(priceStr);
       const nameWithoutPrice = line.replace(priceRegex, '').trim();
-      
+
       if (nameWithoutPrice && nameWithoutPrice.length > 2) {
         // Line has both name and price
         if (currentItem && currentItem.name && currentItem.price) {
           menuItems.push(currentItem);
           console.log(`[Parser] Saved item: ${currentItem.name} - £${currentItem.price}`);
         }
-        
+
         currentItem = {
           name: cleanItemName(nameWithoutPrice),
           price: price,
@@ -1564,7 +1564,7 @@ function parseMenuFromOCR(ocrText) {
           menuItems.push(currentItem);
           console.log(`[Parser] Saved item: ${currentItem.name} - £${currentItem.price}`);
         }
-        
+
         // Start new item
         currentItem = {
           name: cleanItemName(line),
@@ -1582,21 +1582,21 @@ function parseMenuFromOCR(ocrText) {
       }
     }
   }
-  
+
   // Don't forget the last item if it has both name and price
   if (currentItem && currentItem.name && currentItem.price && currentItem.price > 0) {
     menuItems.push(currentItem);
     console.log(`[Parser] Saved final item: ${currentItem.name} - £${currentItem.price}`);
   }
-  
+
   // Filter out items without proper prices
-  const validItems = menuItems.filter(item => 
-    item.name && 
-    item.name.trim().length > 0 && 
-    typeof item.price === 'number' && 
+  const validItems = menuItems.filter(item =>
+    item.name &&
+    item.name.trim().length > 0 &&
+    typeof item.price === 'number' &&
     item.price > 0
   );
-  
+
   console.log(`[Parser] Total items extracted: ${menuItems.length}, valid items: ${validItems.length}`);
   return validItems;
 }
@@ -1612,16 +1612,16 @@ function cleanItemName(name) {
 function isItemName(line) {
   // Check if line looks like an item name
   const upperLine = line.toUpperCase();
-  
+
   // Skip common non-item patterns
   if (line.length < 3) return false;
   if (line.startsWith('+') || line.startsWith('-')) return false;
   if (line.match(/^\d+\s*(pcs?|pieces?|people?)/i)) return false;
   if (line.match(/^(add|with|served|ask)/i)) return false;
-  
+
   // Likely an item if it has food-related words or is in caps
-  return upperLine === line || 
-         line.match(/\b(served|with|chicken|beef|egg|cheese|bread)\b/i);
+  return upperLine === line ||
+    line.match(/\b(served|with|chicken|beef|egg|cheese|bread)\b/i);
 }
 
 
@@ -1630,10 +1630,10 @@ function isItemName(line) {
 async function processMenuFile(fileBuffer, mimetype) {
   try {
     console.log('[Process] Starting menu processing...');
-    
+
     // 1. Upload to storage
     const fileUrl = await uploadToStorage(fileBuffer, mimetype);
-    
+
     // 2. Extract text using OCR
     let extractedText = '';
     if (mimetype === 'application/pdf') {
@@ -1641,23 +1641,23 @@ async function processMenuFile(fileBuffer, mimetype) {
     } else {
       extractedText = await extractTextFromImage(fileUrl);
     }
-    
+
     console.log('[OCR] Extracted text length:', extractedText.length);
-    
+
     // 3. Parse with improved logic
     const menuItems = parseMenuFromOCR(extractedText);
-    
+
     console.log('[Parse] Extracted items:', menuItems.length);
-    
+
     // 4. Post-process with GPT for cleanup
     const cleanedItems = await cleanupWithGPT(menuItems);
-    
+
     return {
       success: true,
       items: cleanedItems,
       totalItems: cleanedItems.length
     };
-    
+
   } catch (error) {
     console.error('[Process] Error:', error);
     throw error;
@@ -1725,7 +1725,7 @@ function parseMenuFromSeparatedLines(rawLines) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    
+
     console.log(`[Parser] Line ${i}: "${line}"`);
 
     // Check if line is a category header
@@ -1733,7 +1733,7 @@ function parseMenuFromSeparatedLines(rawLines) {
       currentCategory = detectCategory(line);
       lastCategory = currentCategory;
       console.log(`[Parser] Detected category: ${currentCategory}`);
-      
+
       // Save pending item if it has a price
       if (pendingItem && pendingItem.price) {
         items.push({ ...pendingItem, category: currentCategory });
@@ -1750,7 +1750,7 @@ function parseMenuFromSeparatedLines(rawLines) {
     if (price !== null) {
       lastSeenPrice = price;
       console.log(`[Parser] Found price: £${price}`);
-      
+
       // If we have a pending item without price, attach it
       if (pendingItem && !pendingItem.price) {
         pendingItem.price = price;
@@ -1782,13 +1782,13 @@ function parseMenuFromSeparatedLines(rawLines) {
     if (inlineMatch) {
       const name = inlineMatch[1].trim();
       const price = parseFloat(inlineMatch[2]);
-      
+
       if (name && price && !isNaN(price) && price > 0) {
         // Save pending item if it exists and has a price
         if (pendingItem && pendingItem.price) {
           items.push({ ...pendingItem, category: lastCategory });
         }
-        
+
         // Create new item
         const newItem = {
           name: name,
@@ -1895,7 +1895,7 @@ function parseMenuFromSeparatedLines(rawLines) {
 function mergeMultilineItemsImproved(lines) {
   const merged = [];
   let buffer = '';
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     const next = lines[i + 1] ? lines[i + 1].trim() : '';
@@ -1921,7 +1921,7 @@ function mergeMultilineItemsImproved(lines) {
       merged.push(line);
     }
   }
-  
+
   // Push any remaining buffer
   if (buffer) merged.push(buffer.trim());
   return merged;
@@ -1929,14 +1929,14 @@ function mergeMultilineItemsImproved(lines) {
 
 function parsePriceImproved(text) {
   if (!text) return null;
-  
+
   // More flexible price matching
   const priceMatch = text.match(/£?\s?(\d{1,3}(?:\.\d{1,2})?)/);
   if (priceMatch) {
     const price = parseFloat(priceMatch[1]);
     return !isNaN(price) && price > 0 ? price : null;
   }
-  
+
   return null;
 }
 
@@ -1971,17 +1971,17 @@ function isLikelyMenuItem(text) {
     'cheese,', 'served with', 'add', 'with', 'w/', 'topped with',
     'includes', 'comes with', 'accompanied by', 'garnished with'
   ];
-  
-  const startsWithDescription = descriptionStarters.some(starter => 
+
+  const startsWithDescription = descriptionStarters.some(starter =>
     text.toLowerCase().startsWith(starter.toLowerCase())
   );
-  
-  return !looksLikePrice(text) && 
-         !isCategoryHeader(text) &&
-         !startsWithDescription &&
-         text.length > 2 &&
-         /^[A-Z]/.test(text) && // Must start with capital
-         !/^[A-Z\s]+$/.test(text); // Not all caps
+
+  return !looksLikePrice(text) &&
+    !isCategoryHeader(text) &&
+    !startsWithDescription &&
+    text.length > 2 &&
+    /^[A-Z]/.test(text) && // Must start with capital
+    !/^[A-Z\s]+$/.test(text); // Not all caps
 }
 
 function isLikelyDescription(text) {
@@ -2000,18 +2000,18 @@ function isLikelyDescription(text) {
     /^and/i,
     /^or/i
   ];
-  
+
   return descriptionPatterns.some(pattern => pattern.test(text)) ||
-         (text.length < 30 && /^[a-z]/.test(text)); // Short lowercase lines
+    (text.length < 30 && /^[a-z]/.test(text)); // Short lowercase lines
 }
 
 function isLikelyContinuation(text) {
   // Lines that continue the item name (not descriptions)
-  return text.length < 40 && 
-         !looksLikePrice(text) &&
-         !isLikelyDescription(text) &&
-         !isLikelyAddon(text) &&
-         !/^[A-Z]/.test(text); // Doesn't start with capital (continuation)
+  return text.length < 40 &&
+    !looksLikePrice(text) &&
+    !isLikelyDescription(text) &&
+    !isLikelyAddon(text) &&
+    !/^[A-Z]/.test(text); // Doesn't start with capital (continuation)
 }
 
 function isLikelyAddon(text) {
@@ -2019,12 +2019,12 @@ function isLikelyAddon(text) {
 }
 
 function isProperMenuItem(text) {
-  return !looksLikePrice(text) && 
-         !isLikelyOption(text) && 
-         !isWeakFragment(text) &&
-         !isCategoryHeader(text) &&
-         text.length > 3 &&
-         !/^[A-Z\s]+$/.test(text);
+  return !looksLikePrice(text) &&
+    !isLikelyOption(text) &&
+    !isWeakFragment(text) &&
+    !isCategoryHeader(text) &&
+    text.length > 3 &&
+    !/^[A-Z\s]+$/.test(text);
 }
 
 function looksLikePrice(text) {
@@ -2038,16 +2038,16 @@ function parsePrice(text) {
 
 function looksLikeMenuItemName(text) {
   // Basic heuristic: not all caps, not empty, not price, not category
-  return !!text && 
-         !looksLikePrice(text) && 
-         !isCategoryHeader(text) &&
-         !/^[A-Z\s]+$/.test(text) &&
-         text.length > 0;
+  return !!text &&
+    !looksLikePrice(text) &&
+    !isCategoryHeader(text) &&
+    !/^[A-Z\s]+$/.test(text) &&
+    text.length > 0;
 }
 
 function detectCategory(line) {
   const upperLine = line.toUpperCase();
-  
+
   // Check semantic patterns first
   const categoryPatterns = {
     starters: /^(starters?|appetizers?|entrees?|small plates?|beginners?)/i,
@@ -2061,34 +2061,34 @@ function detectCategory(line) {
     lunch: /^(lunch|midday)/i,
     dinner: /^(dinner|evening|night)/i
   };
-  
+
   for (const [category, pattern] of Object.entries(categoryPatterns)) {
     if (pattern.test(upperLine)) {
       console.log(`[Category] Semantic match: ${line} → ${category}`);
       return category.charAt(0).toUpperCase() + category.slice(1);
     }
   }
-  
+
   // Check known categories
   const knownCategories = [
     'STARTERS', 'MAINS', 'DESSERTS', 'DRINKS', 'SIDES', 'BURGERS', 'SALADS',
     'SLIDERS', 'TACOS', 'MEXICAN RICE', 'HOUMOUS JAM', 'GRILLED HALLOUMI',
     'BREAKFAST', 'BRUNCH', 'LUNCH', 'DINNER', 'APPETIZERS', 'ENTREES'
   ];
-  
+
   for (const category of knownCategories) {
     if (upperLine.includes(category)) {
       console.log(`[Category] Known category match: ${line} → ${category}`);
       return category;
     }
   }
-  
+
   // If it's all caps and looks like a category, use it
   if (line === line.toUpperCase() && line.length > 2 && line.length < 40 && !/^£/.test(line)) {
     console.log(`[Category] All caps category: ${line}`);
     return line;
   }
-  
+
   console.log(`[Category] No category detected for: ${line}, using Uncategorized`);
   return 'Uncategorized';
 }
@@ -2113,24 +2113,24 @@ function postProcessMenu(menu) {
 
     // Auto-format names
     item.name = formatItemName(item.name);
-    
+
     // Remove trailing punctuation
     item.name = item.name.replace(/[.,;]+$/, '').trim();
-    
+
     // Improve category assignment if it's still Uncategorized
     if (item.category === 'Uncategorized') {
       item.category = inferCategoryFromItemName(item.name);
       console.log(`[Category] Inferred category for "${item.name}": ${item.category}`);
     }
-    
+
     // Create unique key for deduplication
     const key = `${item.name.toLowerCase()}-${item.price}-${item.category}`;
-    
+
     if (seen.has(key)) {
       console.log(`[Deduplication] Skipping duplicate: ${item.name}`);
       continue;
     }
-    
+
     seen.add(key);
     processed.push(item);
   }
@@ -2140,7 +2140,7 @@ function postProcessMenu(menu) {
 
 function inferCategoryFromItemName(itemName) {
   const name = itemName.toLowerCase();
-  
+
   // Food type patterns
   const patterns = {
     starters: /(dip|hummus|baba|labneh|halloumi|kibbeh|mutbal|mezze|tapas|bruschetta|spring roll|samosa|pakora)/,
@@ -2152,13 +2152,13 @@ function inferCategoryFromItemName(itemName) {
     sandwiches: /(sandwich|wrap|panini|sub|roll|bun)/,
     salads: /(salad|greens|lettuce|spinach|kale)/
   };
-  
+
   for (const [category, pattern] of Object.entries(patterns)) {
     if (pattern.test(name)) {
       return category.charAt(0).toUpperCase() + category.slice(1);
     }
   }
-  
+
   return 'Uncategorized';
 }
 
@@ -2180,7 +2180,7 @@ function formatItemName(name) {
 
 function isValidMenuItem(line) {
   const trimmed = line.trim();
-  
+
   // Exclude common non-menu items
   const excludePatterns = [
     /^w\/|^with\s/i,
@@ -2196,7 +2196,7 @@ function isValidMenuItem(line) {
     /^choice\s/i,
     /^selection\s/i
   ];
-  
+
   // Check if line matches any exclusion pattern
   for (const pattern of excludePatterns) {
     if (pattern.test(trimmed)) {
@@ -2204,14 +2204,14 @@ function isValidMenuItem(line) {
       return false;
     }
   }
-  
+
   // Must contain a price (number with optional decimal)
   const hasPrice = /\d+(\.\d{1,2})?/.test(trimmed);
   if (!hasPrice) {
     console.log(`[Filter] Excluded item without price: "${trimmed}"`);
     return false;
   }
-  
+
   return true;
 }
 
@@ -2219,38 +2219,38 @@ function filterValidMenuItems(items) {
   const validItems = items.filter(item => {
     // Check if item has valid price
     const hasValidPrice = typeof item.price === 'number' && !isNaN(item.price) && item.price > 0;
-    
+
     // Check if item name is valid (relaxed - allow short names)
     const hasValidName = item.name && item.name.trim().length > 0;
-    
+
     // Check if item passes basic validation (relaxed)
     const passesBasicValidation = hasValidName && hasValidPrice;
-    
+
     if (!hasValidPrice) {
       console.log(`[Filter] Excluded item with invalid price: "${item.name}" (price: ${item.price})`);
       return false;
     }
-    
+
     if (!hasValidName) {
       console.log(`[Filter] Excluded item with invalid name: "${item.name}"`);
       return false;
     }
-    
+
     if (!passesBasicValidation) {
       console.log(`[Filter] Excluded item failing basic validation: "${item.name}" (price: ${item.price})`);
       return false;
     }
-    
+
     return true;
   });
-  
+
   console.log(`[Filter] Filtered ${items.length} items down to ${validItems.length} valid items`);
   return validItems;
 }
 
 function isLikelyNewItem(line) {
   const trimmed = line.trim();
-  
+
   // Exclude common non-menu items
   const excludePatterns = [
     /^w\/|^with\s/i,
@@ -2269,14 +2269,14 @@ function isLikelyNewItem(line) {
     /^replace\s/i,
     /^instead\s+of\s/i
   ];
-  
+
   // Check if line matches any exclusion pattern
   for (const pattern of excludePatterns) {
     if (pattern.test(trimmed)) {
       return false;
     }
   }
-  
+
   // Known menu item patterns (both English and Arabic) - more comprehensive
   const menuPatterns = [
     /burger/i, /shakshuka/i, /labneh/i, /hummus/i, /baba/i,
@@ -2291,30 +2291,30 @@ function isLikelyNewItem(line) {
     /toast/i, /pancake/i, /waffle/i, /nuts/i, /fries/i,
     /chips/i, /mash/i, /rocket/i, /cheese/i, /sauce/i
   ];
-  
+
   // Check if line matches any known menu pattern
   for (const pattern of menuPatterns) {
     if (pattern.test(trimmed)) {
       return true;
     }
   }
-  
+
   // Check for Arabic text
   if (/[ء-ي]/.test(trimmed)) {
     return true;
   }
-  
+
   // Check for capitalized words (common in menu items)
   const words = trimmed.split(' ');
-  const capitalizedWords = words.filter(word => 
+  const capitalizedWords = words.filter(word =>
     word.length > 0 && word[0] === word[0].toUpperCase()
   );
-  
+
   // If more than 50% of words are capitalized, likely a menu item
   if (capitalizedWords.length > 0 && capitalizedWords.length >= words.length * 0.5) {
     return true;
   }
-  
+
   // More relaxed detection - allow short names and common food words
   return (
     trimmed.length > 0 &&
@@ -2325,7 +2325,7 @@ function isLikelyNewItem(line) {
     // Allow short names like "Nuts", "Fries", etc.
     (trimmed.length >= 1) &&
     // Don't block common food words
-    !['served with', 'add ', 'with ', 'and ', 'or ', 'freshly made', 'grilled'].some(word => 
+    !['served with', 'add ', 'with ', 'and ', 'or ', 'freshly made', 'grilled'].some(word =>
       trimmed.toLowerCase().startsWith(word)
     ) &&
     // Allow lines that contain food-related content
@@ -2337,20 +2337,20 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
   try {
     // Generate hash for caching
     const imageHash = generateImageHash(imageBuffer);
-    
+
     // Check cache first
     const cachedResult = getCachedResult(imageHash);
     if (cachedResult) {
       console.log(`[Vision] Using cached result for image hash: ${imageHash.substring(0, 8)}...`);
       return cachedResult;
     }
-    
+
     // Optimize image for vision API
     const optimizedBuffer = await optimizeImageForVision(imageBuffer, mimeType);
     console.log(`[Vision] Optimized image: ${imageBuffer.length} → ${optimizedBuffer.length} bytes`);
-    
+
     const base64Image = optimizedBuffer.toString('base64');
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       messages: [
@@ -2389,38 +2389,38 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
       ],
       max_tokens: 2048,
     });
-    
+
     const content = response.choices[0].message.content;
     console.log(`[Vision] Raw response:`, content);
-    
+
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        
+
         // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
-          return item && 
-                 typeof item.name === 'string' && 
-                 item.name.trim().length > 0 &&
-                 typeof item.price === 'number' && 
-                 item.price > 0;
+          return item &&
+            typeof item.name === 'string' &&
+            item.name.trim().length > 0 &&
+            typeof item.price === 'number' &&
+            item.price > 0;
         }).map(item => ({
           ...item,
           category: normalizeCategory(item.category)
         }));
-        
+
         console.log(`[Vision] Parsed ${menuItems.length} items, ${validItems.length} valid`);
-        
+
         // Cache the result
         setCachedResult(imageHash, validItems);
-        
+
         return validItems;
       } catch (parseError) {
         console.error(`[Vision] JSON parse error:`, parseError);
         console.error(`[Vision] Failed to parse this JSON:`, jsonMatch[0]);
-        
+
         // Try to fix JSON with a faster model
         const fixedItems = await fixJSONWithFastModel(jsonMatch[0]);
         if (fixedItems.length > 0) {
@@ -2428,13 +2428,13 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
           setCachedResult(imageHash, fixedItems);
           return fixedItems;
         }
-        
+
         throw new Error('Failed to parse GPT Vision response as JSON');
       }
     } else {
       console.error(`[Vision] No JSON array found in response`);
       console.error(`[Vision] Full response content:`, content);
-      
+
       // Try to extract items with fast model
       const extractedItems = await extractItemsWithFastModel(content);
       if (extractedItems.length > 0) {
@@ -2442,17 +2442,17 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
         setCachedResult(imageHash, extractedItems);
         return extractedItems;
       }
-      
+
       throw new Error('No valid JSON array found in GPT Vision response');
     }
   } catch (error) {
     console.error(`[Vision] Error:`, error);
-    
+
     // Handle quota errors specifically
     if (error.code === 'insufficient_quota' || error.message?.includes('quota')) {
       throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
     }
-    
+
     throw error;
   }
 }
@@ -2460,12 +2460,12 @@ async function processImageWithGPTVision(imageBuffer, mimeType) {
 async function processAllImagesWithGPTVision(imageBuffers, mimeTypes) {
   try {
     console.log(`[Vision Batch] Processing ${imageBuffers.length} images in single GPT Vision call`);
-    
+
     // Prepare all images for the batch call
     const imageMessages = imageBuffers.map((buffer, index) => {
       const mimeType = mimeTypes[index] || 'image/png';
       const base64Image = buffer.toString('base64');
-      
+
       return {
         type: "image_url",
         image_url: {
@@ -2474,7 +2474,7 @@ async function processAllImagesWithGPTVision(imageBuffers, mimeTypes) {
         }
       };
     });
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       messages: [
@@ -2508,65 +2508,65 @@ async function processAllImagesWithGPTVision(imageBuffers, mimeTypes) {
       ],
       max_tokens: 4096, // Increased for multiple images
     });
-    
+
     const content = response.choices[0].message.content;
     console.log(`[Vision Batch] Raw response:`, content);
-    
+
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        
+
         // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
-          return item && 
-                 typeof item.name === 'string' && 
-                 item.name.trim().length > 0 &&
-                 typeof item.price === 'number' && 
-                 item.price > 0;
+          return item &&
+            typeof item.name === 'string' &&
+            item.name.trim().length > 0 &&
+            typeof item.price === 'number' &&
+            item.price > 0;
         }).map(item => ({
           ...item,
           category: normalizeCategory(item.category)
         }));
-        
+
         console.log(`[Vision Batch] Parsed ${menuItems.length} items, ${validItems.length} valid from all images`);
-        
+
         return validItems;
       } catch (parseError) {
         console.error(`[Vision Batch] JSON parse error:`, parseError);
         console.error(`[Vision Batch] Failed to parse this JSON:`, jsonMatch[0]);
-        
+
         // Try to fix JSON with a faster model
         const fixedItems = await fixJSONWithFastModel(jsonMatch[0]);
         if (fixedItems.length > 0) {
           console.log(`[Vision Batch] Fixed JSON with fast model, found ${fixedItems.length} items`);
           return fixedItems;
         }
-        
+
         throw new Error('Failed to parse GPT Vision batch response as JSON');
       }
     } else {
       console.error(`[Vision Batch] No JSON array found in response`);
       console.error(`[Vision Batch] Full response content:`, content);
-      
+
       // Try to extract items with fast model
       const extractedItems = await extractItemsWithFastModel(content);
       if (extractedItems.length > 0) {
         console.log(`[Vision Batch] Extracted items with fast model, found ${extractedItems.length} items`);
         return extractedItems;
       }
-      
+
       throw new Error('No valid JSON array found in GPT Vision batch response');
     }
   } catch (error) {
     console.error(`[Vision Batch] Error:`, error);
-    
+
     // Handle quota errors specifically
     if (error.code === 'insufficient_quota' || error.message?.includes('quota')) {
       throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
     }
-    
+
     throw error;
   }
 }
@@ -2577,29 +2577,29 @@ async function processAllImagesWithGPTVision(imageBuffers, mimeTypes) {
 async function convertPDFToImages(pdfBuffer) {
   try {
     console.log('[PDF Convert] Converting PDF to images using pdf-lib');
-    
+
     // Load the PDF document
     const pdfDoc = await PDFDocument.load(pdfBuffer);
     const pageCount = pdfDoc.getPageCount();
     console.log(`[PDF Convert] PDF has ${pageCount} pages`);
-    
+
     const images = [];
-    
+
     for (let i = 0; i < pageCount; i++) {
       try {
         console.log(`[PDF Convert] Processing page ${i + 1}/${pageCount}`);
-        
+
         // Create a new PDF with just this page
         const singlePagePdf = await PDFDocument.create();
         const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [i]);
         singlePagePdf.addPage(copiedPage);
-        
+
         // Convert to PNG using canvas
         const pdfBytes = await singlePagePdf.save();
-        
+
         // For now, we'll use text extraction approach but with better GPT processing
         const pageText = await extractTextFromPDFPage(pdfBuffer, i);
-        
+
         if (pageText && pageText.trim().length > 0) {
           images.push({
             pageNumber: i + 1,
@@ -2610,16 +2610,16 @@ async function convertPDFToImages(pdfBuffer) {
         } else {
           console.warn(`[PDF Convert] No text extracted from page ${i + 1}`);
         }
-        
+
       } catch (pageError) {
         console.error(`[PDF Convert] Error processing page ${i + 1}:`, pageError);
         // Continue with other pages
       }
     }
-    
+
     console.log(`[PDF Convert] Successfully processed ${images.length} pages`);
     return images;
-    
+
   } catch (error) {
     console.error('[PDF Convert] Error converting PDF:', error);
     throw error;
@@ -2633,7 +2633,7 @@ async function extractTextFromPDFPage(pdfBuffer, pageIndex) {
       firstPage: pageIndex + 1,
       lastPage: pageIndex + 1
     });
-    
+
     return data.text || '';
   } catch (error) {
     console.error(`[PDF Page] Error extracting text from page ${pageIndex + 1}:`, error);
@@ -2644,14 +2644,14 @@ async function extractTextFromPDFPage(pdfBuffer, pageIndex) {
 function deduplicateMenuItems(menuItems) {
   try {
     console.log(`[Deduplicate] Processing ${menuItems.length} items for deduplication`);
-    
+
     const seen = new Set();
     const uniqueItems = [];
-    
+
     for (const item of menuItems) {
       // Create a key based on name and price
       const key = `${item.name?.toLowerCase().trim()}-${item.price}`;
-      
+
       if (!seen.has(key)) {
         seen.add(key);
         uniqueItems.push(item);
@@ -2659,7 +2659,7 @@ function deduplicateMenuItems(menuItems) {
         console.log(`[Deduplicate] Skipped duplicate: ${item.name} - £${item.price}`);
       }
     }
-    
+
     console.log(`[Deduplicate] Reduced from ${menuItems.length} to ${uniqueItems.length} unique items`);
     return uniqueItems;
   } catch (error) {
@@ -2671,29 +2671,29 @@ function deduplicateMenuItems(menuItems) {
 function cleanMenuItems(menuItems) {
   try {
     console.log(`[Clean] Processing ${menuItems.length} items for cleaning`);
-    
+
     const cleanedItems = menuItems.filter(item => {
       // Must have a name and price
       if (!item.name || !item.price) {
         console.log(`[Clean] Skipped item without name or price:`, item);
         return false;
       }
-      
+
       // Name must be at least 2 characters
       if (item.name.trim().length < 2) {
         console.log(`[Clean] Skipped item with short name:`, item);
         return false;
       }
-      
+
       // Price must be a positive number
       if (typeof item.price !== 'number' || item.price <= 0) {
         console.log(`[Clean] Skipped item with invalid price:`, item);
         return false;
       }
-      
+
       return true;
     });
-    
+
     console.log(`[Clean] Reduced from ${menuItems.length} to ${cleanedItems.length} valid items`);
     return cleanedItems;
   } catch (error) {
@@ -2705,7 +2705,7 @@ function cleanMenuItems(menuItems) {
 async function fixJSONWithFastModel(brokenJSON) {
   try {
     console.log('[Fast Model] Attempting to fix broken JSON with gpt-3.5-turbo');
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -2724,21 +2724,21 @@ Return only the fixed JSON array:`
       ],
       max_tokens: 1000,
     });
-    
+
     const content = response.choices[0].message.content;
     console.log('[Fast Model] Fixed JSON response:', content);
-    
+
     // Try to extract JSON
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
         const validItems = menuItems.filter(item => {
-          return item && 
-                 typeof item.name === 'string' && 
-                 item.name.trim().length > 0 &&
-                 typeof item.price === 'number' && 
-                 item.price > 0;
+          return item &&
+            typeof item.name === 'string' &&
+            item.name.trim().length > 0 &&
+            typeof item.price === 'number' &&
+            item.price > 0;
         });
         console.log(`[Fast Model] Fixed JSON: ${validItems.length} valid items`);
         return validItems;
@@ -2757,7 +2757,7 @@ Return only the fixed JSON array:`
 async function extractItemsWithFastModel(text) {
   try {
     console.log('[Fast Model] Extracting items from text with gpt-3.5-turbo');
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -2776,21 +2776,21 @@ Return only valid JSON:`
       ],
       max_tokens: 1000,
     });
-    
+
     const content = response.choices[0].message.content;
     console.log('[Fast Model] Text extraction response:', content);
-    
+
     // Try to extract JSON
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
         const validItems = menuItems.filter(item => {
-          return item && 
-                 typeof item.name === 'string' && 
-                 item.name.trim().length > 0 &&
-                 typeof item.price === 'number' && 
-                 item.price > 0;
+          return item &&
+            typeof item.name === 'string' &&
+            item.name.trim().length > 0 &&
+            typeof item.price === 'number' &&
+            item.price > 0;
         });
         console.log(`[Fast Model] Extracted items: ${validItems.length} valid items`);
         return validItems;
@@ -2811,14 +2811,14 @@ Return only valid JSON:`
 async function processPDFWithConsolidatedVision(pdfBuffer) {
   try {
     console.log('[Consolidated Vision] Processing PDF with single GPT-4 Vision call');
-    
+
     // Convert PDF pages to images (should return array of PNG buffers)
     const imageBuffers = await convertPDFToImageBuffers(pdfBuffer); // <-- implement this if not present
-    
+
     if (!imageBuffers || imageBuffers.length === 0) {
       throw new Error('No images extracted from PDF');
     }
-    
+
     // Prepare the Vision prompt and messages
     const messages = [
       {
@@ -2842,82 +2842,82 @@ async function processPDFWithConsolidatedVision(pdfBuffer) {
         ],
       },
     ];
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       messages,
       temperature: 0.2,
       max_tokens: 4096,
     });
-    
+
     const content = response.choices[0].message.content;
     console.log(`[Consolidated Vision] Raw response:`, content);
-    
+
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
     if (jsonMatch) {
       try {
         const menuItems = JSON.parse(jsonMatch[0]);
-        
+
         // Normalize categories and validate items
         const validItems = menuItems.filter(item => {
-          return item && 
-                 typeof item.name === 'string' && 
-                 item.name.trim().length > 0 &&
-                 typeof item.price === 'number' && 
-                 item.price > 0 &&
-                 item.category && item.category !== 'Uncategorized';
+          return item &&
+            typeof item.name === 'string' &&
+            item.name.trim().length > 0 &&
+            typeof item.price === 'number' &&
+            item.price > 0 &&
+            item.category && item.category !== 'Uncategorized';
         }).map(item => ({
           ...item,
           category: normalizeCategory(item.category)
         }));
-        
+
         console.log(`[Consolidated Vision] Parsed ${menuItems.length} items, ${validItems.length} valid from all pages`);
-        
+
         return validItems;
       } catch (parseError) {
         console.error(`[Consolidated Vision] JSON parse error:`, parseError);
         console.error(`[Consolidated Vision] Failed to parse this JSON:`, jsonMatch[0]);
-        
+
         // Try to fix JSON with a faster model
         const fixedItems = await fixJSONWithFastModel(jsonMatch[0]);
         if (fixedItems.length > 0) {
           console.log(`[Consolidated Vision] Fixed JSON with fast model, found ${fixedItems.length} items`);
           return fixedItems;
         }
-        
+
         throw new Error('Failed to parse consolidated GPT Vision response as JSON');
       }
     } else {
       console.error(`[Consolidated Vision] No JSON array found in response`);
       console.error(`[Consolidated Vision] Full response content:`, content);
-      
+
       // Try to extract items with fast model
       const extractedItems = await extractItemsWithFastModel(content);
       if (extractedItems.length > 0) {
         console.log(`[Consolidated Vision] Extracted items with fast model, found ${extractedItems.length} items`);
         return extractedItems;
       }
-      
+
       throw new Error('No valid JSON array found in consolidated GPT Vision response');
     }
   } catch (error) {
     console.error(`[Consolidated Vision] Error:`, error);
-    
+
     // Handle quota errors specifically
     if (error.code === 'insufficient_quota' || error.message?.includes('quota')) {
       throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
     }
-    
+
     throw error;
   }
 }
 
 
-    await page.render(renderContext).promise;
-    // PNG for Vision, JPEG for OCR fallback
-    imageBuffers.push(canvas.toBuffer('image/png'));
-
+await page.render(renderContext).promise;
+// PNG for Vision, JPEG for OCR fallback
+async function convertPDFToImageBuffers(pdfBuffer) {
+imageBuffers.push(canvas.toBuffer('image/png'));
 }
 async function ocrImagesWithTesseract(imageBuffers) {
   const Tesseract = require('tesseract.js');
@@ -2928,6 +2928,7 @@ async function ocrImagesWithTesseract(imageBuffers) {
   }
   return results.join('\n\n');
 }
+
 // --- Robust Vision Prompt and Extraction ---
 async function extractMenuWithVision(imageBuffers) {
   const messages = [
