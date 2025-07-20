@@ -32,6 +32,7 @@ log('Environment variables check:', {
   hasOpenAIKey: !!process.env.OPENAI_API_KEY,
   hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
   hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
   nodeEnv: process.env.NODE_ENV
 });
 
@@ -121,8 +122,13 @@ export const config = {
 // Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
+
+log('Supabase client initialized with:', {
+  usingServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  fallbackToAnon: !process.env.SUPABASE_SERVICE_ROLE_KEY
+});
 
 // OpenAI client with error handling
 let openai;
