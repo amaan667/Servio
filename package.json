@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "node .next/standalone/server.js"
   },
   "dependencies": {
     "@azure/ai-form-recognizer": "^5.1.0",
