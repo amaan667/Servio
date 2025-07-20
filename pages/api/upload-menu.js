@@ -13,6 +13,26 @@ import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.js';
 // Only keep PDF text extraction + GPT-3.5 pipeline
 // Update error messages to 'Menu extraction failed' where needed
 
+// Enhanced logging function
+function log(message, data = null) {
+  const timestamp = new Date().toISOString();
+  const logEntry = {
+    timestamp,
+    message,
+    data: data ? JSON.stringify(data, null, 2) : null
+  };
+  console.log(`[MENU_EXTRACTION] ${timestamp}: ${message}`, data ? data : '');
+}
+
+// Check environment variables at startup
+log('Starting menu extraction API with environment check');
+log('Environment variables check:', {
+  hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+  hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  nodeEnv: process.env.NODE_ENV
+});
+
 // Category priority order for sorting
 const categoryPriorityOrder = ['Breakfast', 'Mains', 'Brunch', 'Drinks', 'Smoothies', 'Desserts', 'Add-ons', 'Uncategorized'];
 
@@ -99,13 +119,24 @@ export const config = {
 // Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-// OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// OpenAI client with error handling
+let openai;
+try {
+  if (!process.env.OPENAI_API_KEY) {
+    log('ERROR: OPENAI_API_KEY is missing');
+    throw new Error('OpenAI API key is not configured');
+  }
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  log('OpenAI client initialized successfully');
+} catch (error) {
+  log('ERROR: Failed to initialize OpenAI client:', error.message);
+  throw error;
+}
 
 async function downloadImageFromUrl(imageUrl) {
   try {
@@ -152,49 +183,49 @@ async function logOpenAICall(model, promptTokens, completionTokens, totalTokens,
 import pdfParse from 'pdf-parse';
 
 async function processImageFile(filePath, mimeType) {
-  if (mimeType !== 'application/pdf') {
-    throw new Error('Only PDF uploads are supported in this streamlined pipeline.');
-  }
-  const fileBuffer = fs.readFileSync(filePath);
-  const hash = generateImageHash(fileBuffer);
-  // 1. Check persistent cache
-  const cached = await getPersistentCache(hash);
-  if (cached) {
-    console.log(`[Cache] Persistent hit for hash: ${hash.substring(0,8)}...`);
-    return { type: 'structured', data: cached };
-  }
-  // 2. Extract text from PDF
-  const data = await pdfParse(fileBuffer);
-  const text = data.text;
-  if (!text || text.trim().length < 20) {
-    throw new Error('No text extracted from PDF');
-  }
-  // 3. Send cleaned text to GPT-3.5 with a clear JSON prompt
-  const prompt = `Extract all menu items from the following text. Return ONLY a JSON array of objects with fields: name, price, description, category. Do not include any explanations or extra text.\n\nText:\n${text}`;
-  const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
-    messages: [
-      { role: 'system', content: 'You are a menu extraction expert. Return ONLY a valid JSON array as described.' },
-      { role: 'user', content: prompt }
-    ],
-    max_tokens: 2048,
-  });
-  const content = response.choices[0].message.content;
-  // 4. Validate & parse GPT output
-  const jsonMatch = content.match(/\[.*\]/s);
-  let menuItems = [];
-  if (jsonMatch) {
-    try {
-      menuItems = JSON.parse(jsonMatch[0]);
-    } catch (e) {
-      throw new Error('Failed to parse GPT output as JSON');
+  log('Starting processImageFile:', { filePath, mimeType });
+  
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    log('File read successfully, size:', fileBuffer.length);
+    
+    const imageHash = generateImageHash(fileBuffer);
+    log('Generated image hash:', imageHash);
+    
+    // Check cache first
+    const cachedResult = await getPersistentCache(imageHash);
+    if (cachedResult) {
+      log('Cache hit, returning cached result');
+      return cachedResult;
     }
-  } else {
-    throw new Error('No valid JSON array found in GPT output');
+    log('Cache miss, proceeding with extraction');
+    
+    let extractedItems = [];
+    
+    if (mimeType === 'application/pdf') {
+      log('Processing PDF file');
+      extractedItems = await processPDFWithConsolidatedVision(fileBuffer);
+    } else if (mimeType.startsWith('image/')) {
+      log('Processing image file');
+      const imageBuffers = [fileBuffer];
+      const visionResult = await extractMenuWithVision(imageBuffers);
+      extractedItems = postProcessMenuItems(visionResult);
+    } else {
+      log('ERROR: Unsupported file type:', mimeType);
+      throw new Error(`Unsupported file type: ${mimeType}`);
+    }
+    
+    log('Extraction completed, items found:', extractedItems.length);
+    
+    // Cache the result
+    await setPersistentCache(imageHash, extractedItems);
+    log('Result cached successfully');
+    
+    return extractedItems;
+  } catch (error) {
+    log('ERROR in processImageFile:', error.message);
+    throw error;
   }
-  // 5. Insert structured data into the database (and cache)
-  await setPersistentCache(hash, menuItems);
-  return { type: 'structured', data: menuItems };
 }
 
 // 5. Remove all per-page Vision calls, aggressive Vision fallback, and redundant fallback logic
@@ -581,35 +612,53 @@ async function convertPDFToImageBuffers(pdfBuffer) {
 
 // --- Robust Vision Prompt and Extraction ---
 async function extractMenuWithVision(imageBuffers) {
-  const messages = [
-    {
-      role: "system",
-      content: "You are an expert at reading restaurant menus from images and returning structured JSON.",
-    },
-    {
-      role: "user",
-      content: [
-        ...imageBuffers.map((buf) => ({
-          type: "image_url",
-          image_url: {
-            url: `data:image/png;base64,${buf.toString("base64")}`,
-            detail: "high",
+  log('Starting extractMenuWithVision with', imageBuffers.length, 'images');
+  
+  try {
+    const messages = [
+      {
+        role: "system",
+        content: "You are an expert at reading restaurant menus from images and returning structured JSON.",
+      },
+      {
+        role: "user",
+        content: [
+          ...imageBuffers.map((buf) => ({
+            type: "image_url",
+            image_url: {
+              url: `data:image/png;base64,${buf.toString("base64")}`,
+              detail: "high",
+            },
+          })),
+          {
+            type: "text",
+            text: `\nRead all menu images and return an array of menu items formatted like this:\n[\n  {\n    \"name\": \"TURKISH EGGS\",\n    \"price\": 11.0,\n    \"description\": \"Greek yoghurt, chilli oil, tahini, dill, poached egg & seeded sourdough.\",\n    \"category\": \"Breakfast\"\n  },\n  ...\n]\n\nGroup items under logical categories (like Breakfast, Drinks, Add-ons). If a category isn't explicitly written, infer it from layout or item similarity. Avoid marking any item as \"Uncategorized\".\n\nOnly include valid items (those with a name and a price).\nDo NOT return markdown or explanations — just a clean JSON array.`.trim(),
           },
-        })),
-        {
-          type: "text",
-          text: `\nRead all menu images and return an array of menu items formatted like this:\n[\n  {\n    \"name\": \"TURKISH EGGS\",\n    \"price\": 11.0,\n    \"description\": \"Greek yoghurt, chilli oil, tahini, dill, poached egg & seeded sourdough.\",\n    \"category\": \"Breakfast\"\n  },\n  ...\n]\n\nGroup items under logical categories (like Breakfast, Drinks, Add-ons). If a category isn't explicitly written, infer it from layout or item similarity. Avoid marking any item as \"Uncategorized\".\n\nOnly include valid items (those with a name and a price).\nDo NOT return markdown or explanations — just a clean JSON array.`.trim(),
-        },
-      ],
-    },
-  ];
-  const response = await openai.chat.completions.create({
-    model: "gpt-4-vision-preview",
-    messages,
-    temperature: 0.2,
-    max_tokens: 4096,
-  });
-  return response.choices[0].message.content;
+        ],
+      },
+    ];
+    
+    log('Sending request to OpenAI Vision API');
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages,
+      temperature: 0.2,
+      max_tokens: 4096,
+    });
+    
+    log('OpenAI Vision API response received');
+    const content = response.choices[0].message.content;
+    log('Vision API content length:', content?.length || 0);
+    
+    return content;
+  } catch (error) {
+    log('ERROR in extractMenuWithVision:', error.message);
+    if (error.code === 'insufficient_quota') {
+      log('OpenAI quota exceeded');
+      throw new Error('OpenAI quota exceeded. Please try again later.');
+    }
+    throw error;
+  }
 }
 
 // --- Robust Post-Processing ---
@@ -636,45 +685,135 @@ function postProcessMenuItems(rawContent) {
   }));
 }
 
+async function processExtractedData(extractedItems, venueId, res) {
+  log('Starting processExtractedData:', { 
+    itemsCount: extractedItems?.length || 0, 
+    venueId: venueId || 'missing' 
+  });
+  
+  try {
+    if (!extractedItems || extractedItems.length === 0) {
+      log('ERROR: No items extracted');
+      return res.status(400).json({ error: 'No menu items found' });
+    }
+    
+    if (!venueId) {
+      log('ERROR: No venue ID provided');
+      return res.status(400).json({ error: 'Venue ID is required' });
+    }
+    
+    log('Inserting items into database');
+    const { data, error } = await supabase
+      .from('menu_items')
+      .insert(
+        extractedItems.map(item => ({
+          ...item,
+          venue_id: venueId,
+          available: true,
+          created_at: new Date().toISOString()
+        }))
+      );
+    
+    if (error) {
+      log('ERROR inserting into database:', error.message);
+      return res.status(500).json({ error: 'Failed to save menu items', detail: error.message });
+    }
+    
+    log('Successfully inserted items into database:', data?.length || 0);
+    res.status(200).json({ 
+      success: true, 
+      items: extractedItems,
+      message: `Successfully extracted ${extractedItems.length} menu items`
+    });
+  } catch (error) {
+    log('ERROR in processExtractedData:', error.message);
+    res.status(500).json({ error: 'Menu extraction failed', detail: error.message });
+  }
+}
+
 // Main Next.js API handler
 async function handler(req, res) {
-  // Reconstruct the previous API route logic here
-  // (This is a simplified version; you may need to copy in the full logic from your previous handler)
+  log('API request received:', {
+    method: req.method,
+    contentType: req.headers['content-type'],
+    hasFile: !!req.file,
+    bodyKeys: Object.keys(req.body || {})
+  });
+
   if (req.method === 'POST') {
     const contentType = req.headers['content-type'] || '';
+    
     if (contentType.includes('application/json')) {
+      log('Processing JSON request');
       let body = '';
       req.on('data', chunk => { body += chunk.toString(); });
       req.on('end', async () => {
         try {
+          log('Parsing JSON body');
           const { imageUrl, venueId } = JSON.parse(body);
+          log('JSON request data:', { imageUrl: imageUrl ? 'present' : 'missing', venueId });
+          
+          log('Downloading image from URL');
           const tempFilePath = await downloadImageFromUrl(imageUrl);
+          log('Image downloaded to:', tempFilePath);
+          
+          log('Processing image file');
           const result = await processImageFile(tempFilePath, 'image/jpeg');
+          log('Image processing completed, result items:', result?.length || 0);
+          
+          log('Processing extracted data');
           await processExtractedData(result, venueId, res);
+          
+          log('Cleaning up temp file');
           fs.unlinkSync(tempFilePath);
+          log('JSON request completed successfully');
         } catch (error) {
+          log('ERROR in JSON request processing:', error.message);
           res.status(500).json({ error: 'Failed to process image URL', detail: error.message });
         }
       });
       return;
     } else {
+      log('Processing file upload request');
       upload.single('menu')(req, res, async (err) => {
-        if (err) return res.status(500).json({ error: 'Upload failed' });
-        const filePath = req.file.path;
-        const mime = req.file.mimetype;
+        if (err) {
+          log('ERROR in file upload:', err.message);
+          return res.status(500).json({ error: 'Upload failed', detail: err.message });
+        }
+        
+        const filePath = req.file?.path;
+        const mime = req.file?.mimetype;
         const venueId = req.body.venueId || req.query.venueId;
+        
+        log('File upload details:', {
+          filePath: filePath ? 'present' : 'missing',
+          mimeType: mime,
+          venueId: venueId || 'missing'
+        });
+        
         try {
+          log('Processing uploaded file');
           const result = await processImageFile(filePath, mime);
+          log('File processing completed, result items:', result?.length || 0);
+          
+          log('Processing extracted data');
           await processExtractedData(result, venueId, res);
+          log('File upload request completed successfully');
         } catch (e) {
+          log('ERROR in file upload processing:', e.message);
           res.status(500).json({ error: 'Menu extraction failed', detail: e.message });
         } finally {
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+          if (filePath && fs.existsSync(filePath)) {
+            log('Cleaning up uploaded file');
+            fs.unlinkSync(filePath);
+          }
         }
       });
       return;
     }
   }
+  
+  log('Method not allowed:', req.method);
   res.status(405).json({ error: 'Method not allowed' });
 }
 
