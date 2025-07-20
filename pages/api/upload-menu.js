@@ -7,8 +7,10 @@ import { PDFDocument } from 'pdf-lib';
 import { createCanvas, loadImage } from 'canvas';
 import OpenAI from 'openai';
 import crypto from 'crypto';
-import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
-import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.js';
+import pdf from 'pdf-parse';
+// Remove problematic pdfjs-dist imports
+// import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
+// import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.js';
 // Remove all Tesseract/OCR and Vision-related imports, functions, and references
 // Only keep PDF text extraction + GPT-3.5 pipeline
 // Update error messages to 'Menu extraction failed' where needed
@@ -229,10 +231,11 @@ async function processImageFile(filePath, mimeType) {
     let extractedItems = [];
     
     if (mimeType === 'application/pdf') {
-      log('Processing PDF file');
-      extractedItems = await processPDFWithConsolidatedVision(fileBuffer);
+      log('Processing PDF file with pdf-parse');
+      const text = await extractTextFromPDF(fileBuffer);
+      extractedItems = await extractMenuItemsFromText(text);
     } else if (mimeType.startsWith('image/')) {
-      log('Processing image file');
+      log('Processing image file with Vision API');
       const imageBuffers = [fileBuffer];
       const visionResult = await extractMenuWithVision(imageBuffers);
       extractedItems = postProcessMenuItems(visionResult);
@@ -254,76 +257,99 @@ async function processImageFile(filePath, mimeType) {
   }
 }
 
-// 5. Remove all per-page Vision calls, aggressive Vision fallback, and redundant fallback logic
-// (delete all per-page Vision, aggressive fallback, and redundant fallback code)
-
-// PDF-to-image conversion using pdf-lib and canvas
-async function convertPDFToImages(pdfBuffer) {
+// Simple PDF text extraction using pdf-parse
+async function extractTextFromPDF(buffer) {
+  log('Extracting text from PDF using pdf-parse');
   try {
-    console.log('[PDF Convert] Converting PDF to images using pdf-lib');
-
-    // Load the PDF document
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
-    const pageCount = pdfDoc.getPageCount();
-    console.log(`[PDF Convert] PDF has ${pageCount} pages`);
-
-    const images = [];
-
-    for (let i = 0; i < pageCount; i++) {
-      try {
-        console.log(`[PDF Convert] Processing page ${i + 1}/${pageCount}`);
-
-        // Create a new PDF with just this page
-        const singlePagePdf = await PDFDocument.create();
-        const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [i]);
-        singlePagePdf.addPage(copiedPage);
-
-        // Convert to PNG using canvas
-        const pdfBytes = await singlePagePdf.save();
-
-        // For now, we'll use text extraction approach but with better GPT processing
-        const pageText = await extractTextFromPDFPage(pdfBuffer, i);
-
-        if (pageText && pageText.trim().length > 0) {
-          images.push({
-            pageNumber: i + 1,
-            content: pageText,
-            type: 'text'
-          });
-          console.log(`[PDF Convert] Extracted text from page ${i + 1}: ${pageText.length} characters`);
-        } else {
-          console.warn(`[PDF Convert] No text extracted from page ${i + 1}`);
-        }
-
-      } catch (pageError) {
-        console.error(`[PDF Convert] Error processing page ${i + 1}:`, pageError);
-        // Continue with other pages
-      }
+    const data = await pdf(buffer);
+    const text = data.text;
+    log('PDF text extraction completed, text length:', text?.length || 0);
+    
+    if (!text || text.trim().length < 20) {
+      throw new Error('No readable text extracted from PDF');
     }
-
-    console.log(`[PDF Convert] Successfully processed ${images.length} pages`);
-    return images;
-
+    
+    return text;
   } catch (error) {
-    console.error('[PDF Convert] Error converting PDF:', error);
+    log('ERROR in PDF text extraction:', error.message);
     throw error;
   }
 }
 
-async function extractTextFromPDFPage(pdfBuffer, pageIndex) {
+// Extract menu items from text using GPT-3.5
+async function extractMenuItemsFromText(text) {
+  log('Extracting menu items from text using GPT-3.5');
+  
   try {
-    const pdfParse = require('pdf-parse');
-    const data = await pdfParse(pdfBuffer, {
-      firstPage: pageIndex + 1,
-      lastPage: pageIndex + 1
-    });
+    const prompt = `You are a restaurant menu extraction assistant. Extract structured menu items from the following raw text.
 
-    return data.text || '';
+Return ONLY a JSON array of objects with this exact format:
+[
+  {
+    "name": "Item Name",
+    "price": 12.50,
+    "description": "Item description if available",
+    "category": "Category Name"
+  }
+]
+
+Rules:
+- Only include items with both name and price
+- Group items under logical categories (Breakfast, Drinks, Add-ons, etc.)
+- Prices should be numbers, not strings
+- If no description is available, use empty string
+- Do not include any explanations or markdown formatting
+
+Here is the menu text:
+---
+${text}
+---`;
+
+    log('Sending text to GPT-3.5 for menu extraction');
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'You are a menu extraction expert. Return ONLY valid JSON arrays.' },
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 2048,
+      temperature: 0.1,
+    });
+    
+    const content = response.choices[0].message.content;
+    log('GPT-3.5 response received, content length:', content?.length || 0);
+    
+    // Parse the JSON response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (!jsonMatch) {
+      log('ERROR: No JSON array found in GPT response');
+      throw new Error('No valid JSON array found in GPT response');
+    }
+    
+    let menuItems;
+    try {
+      menuItems = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      log('ERROR: Failed to parse GPT response as JSON:', e.message);
+      throw new Error('Failed to parse GPT response as JSON');
+    }
+    
+    log('Successfully parsed menu items:', menuItems.length);
+    return menuItems;
   } catch (error) {
-    console.error(`[PDF Page] Error extracting text from page ${pageIndex + 1}:`, error);
-    return '';
+    log('ERROR in extractMenuItemsFromText:', error.message);
+    throw error;
   }
 }
+
+// 5. Remove all per-page Vision calls, aggressive Vision fallback, and redundant fallback logic
+// (delete all per-page Vision, aggressive fallback, and redundant fallback code)
+
+// Remove old complex PDF processing functions - no longer needed with pdf-parse
+// async function convertPDFToImages(pdfBuffer) { ... }
+// async function extractTextFromPDFPage(pdfBuffer, pageIndex) { ... }
+// async function processPDFWithConsolidatedVision(pdfBuffer) { ... }
+// async function convertPDFToImageBuffers(pdfBuffer) { ... }
 
 function deduplicateMenuItems(menuItems) {
   try {
@@ -488,152 +514,6 @@ Return only valid JSON:`
     console.error('[Fast Model] Error extracting items:', error);
     return [];
   }
-}
-
-// ... existing code ...
-
-async function processPDFWithConsolidatedVision(pdfBuffer) {
-  try {
-    console.log('[Consolidated Vision] Processing PDF with single GPT-4 Vision call');
-
-    // Convert PDF pages to images (should return array of PNG buffers)
-    const imageBuffers = await convertPDFToImageBuffers(pdfBuffer); // <-- implement this if not present
-
-    if (!imageBuffers || imageBuffers.length === 0) {
-      throw new Error('No images extracted from PDF');
-    }
-
-    // Prepare the Vision prompt and messages
-    const messages = [
-      {
-        role: "system",
-        content: "You are an expert at reading restaurant menus from images and returning structured JSON.",
-      },
-      {
-        role: "user",
-        content: [
-          ...imageBuffers.map((buf) => ({
-            type: "image_url",
-            image_url: {
-              url: `data:image/png;base64,${buf.toString("base64")}`,
-              detail: "high",
-            },
-          })),
-          {
-            type: "text",
-            text: `\nRead all menu images and return an array of menu items formatted like this:\n[\n  {\n    \"name\": \"TURKISH EGGS\",\n    \"price\": 11.0,\n    \"description\": \"Greek yoghurt, chilli oil, tahini, dill, poached egg & seeded sourdough.\",\n    \"category\": \"Breakfast\"\n  },\n  ...\n]\n\nGroup items under logical categories (like Breakfast, Drinks, Add-ons). If a category isn't explicitly written, infer it from layout or item similarity. Avoid marking any item as \"Uncategorized\".\n\nOnly include valid items (those with a name and a price).\nDo NOT return markdown or explanations — just a clean JSON array.`.trim(),
-          },
-        ],
-      },
-    ];
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
-      messages,
-      temperature: 0.2,
-      max_tokens: 4096,
-    });
-
-    const content = response.choices[0].message.content;
-    console.log(`[Consolidated Vision] Raw response:`, content);
-
-    // Try to extract JSON from the response
-    const jsonMatch = content.match(/\[.*\]/s);
-    if (jsonMatch) {
-      try {
-        const menuItems = JSON.parse(jsonMatch[0]);
-
-        // Normalize categories and validate items
-        const validItems = menuItems.filter(item => {
-          return item &&
-            typeof item.name === 'string' &&
-            item.name.trim().length > 0 &&
-            typeof item.price === 'number' &&
-            item.price > 0 &&
-            item.category && item.category !== 'Uncategorized';
-        }).map(item => ({
-          ...item,
-          category: normalizeCategory(item.category)
-        }));
-
-        console.log(`[Consolidated Vision] Parsed ${menuItems.length} items, ${validItems.length} valid from all pages`);
-
-        return validItems;
-      } catch (parseError) {
-        console.error(`[Consolidated Vision] JSON parse error:`, parseError);
-        console.error(`[Consolidated Vision] Failed to parse this JSON:`, jsonMatch[0]);
-
-        // Try to fix JSON with a faster model
-        const fixedItems = await fixJSONWithFastModel(jsonMatch[0]);
-        if (fixedItems.length > 0) {
-          console.log(`[Consolidated Vision] Fixed JSON with fast model, found ${fixedItems.length} items`);
-          return fixedItems;
-        }
-
-        throw new Error('Failed to parse consolidated GPT Vision response as JSON');
-      }
-    } else {
-      console.error(`[Consolidated Vision] No JSON array found in response`);
-      console.error(`[Consolidated Vision] Full response content:`, content);
-
-      // Try to extract items with fast model
-      const extractedItems = await extractItemsWithFastModel(content);
-      if (extractedItems.length > 0) {
-        console.log(`[Consolidated Vision] Extracted items with fast model, found ${extractedItems.length} items`);
-        return extractedItems;
-      }
-
-      throw new Error('No valid JSON array found in consolidated GPT Vision response');
-    }
-  } catch (error) {
-    console.error(`[Consolidated Vision] Error:`, error);
-
-    // Handle quota errors specifically
-    if (error.code === 'insufficient_quota' || error.message?.includes('quota')) {
-      throw new Error('OpenAI quota exceeded. Please upgrade your plan or try again later.');
-    }
-
-    throw error;
-  }
-}
-
-// PNG for Vision, JPEG for OCR fallback
-async function convertPDFToImageBuffers(pdfBuffer) {
-  const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
-  const pdfjsWorker = require('pdfjs-dist/legacy/build/pdf.worker.js');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
-  // Fix: disable worker for Node.js
-  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer, disableWorker: true });
-  const pdf = await loadingTask.promise;
-  const numPages = pdf.numPages;
-  const imageBuffers = [];
-
-  for (let i = 1; i <= numPages; i++) {
-    const page = await pdf.getPage(i);
-    // Render at 2.5x scale for clarity, but cap max dimensions
-    const scale = 2.5;
-    const viewport = page.getViewport({ scale });
-    const maxWidth = 1200, maxHeight = 1800;
-    let width = viewport.width, height = viewport.height;
-    if (width > maxWidth || height > maxHeight) {
-      const scaleDown = Math.min(maxWidth / width, maxHeight / height);
-      width = Math.round(width * scaleDown);
-      height = Math.round(height * scaleDown);
-    }
-    const { createCanvas } = require('canvas');
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, width, height);
-    const renderContext = {
-      canvasContext: ctx,
-      viewport: page.getViewport({ scale: width / viewport.width }),
-    };
-    await page.render(renderContext).promise;
-    imageBuffers.push(canvas.toBuffer('image/png'));
-  }
-  return imageBuffers;
 }
 
 // --- Robust Vision Prompt and Extraction ---
