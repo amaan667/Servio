@@ -62,7 +62,7 @@
     "openai": "^5.10.1",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
-    "pdfjs-dist": "^5.3.93",
+    "pdfjs-dist": "^2.16.105",
     "qrcode": "latest",
     "react": "^18.2.0",
     "react-day-picker": "8.10.1",
