@@ -7,6 +7,8 @@ import { PDFDocument } from 'pdf-lib';
 import { createCanvas, loadImage } from 'canvas';
 import OpenAI from 'openai';
 import crypto from 'crypto';
+import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
+import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.js';
 
 // Simple in-memory cache (in production, use Redis or Supabase)
 const visionCache = new Map();
@@ -2809,76 +2811,42 @@ async function processPDFWithConsolidatedVision(pdfBuffer) {
   try {
     console.log('[Consolidated Vision] Processing PDF with single GPT-4 Vision call');
     
-    // Convert PDF pages to images
-    const pageImages = await convertPDFToImages(pdfBuffer);
+    // Convert PDF pages to images (should return array of PNG buffers)
+    const imageBuffers = await convertPDFToImageBuffers(pdfBuffer); // <-- implement this if not present
     
-    if (pageImages.length === 0) {
-      throw new Error('No pages extracted from PDF');
+    if (!imageBuffers || imageBuffers.length === 0) {
+      throw new Error('No images extracted from PDF');
     }
     
-    console.log(`[Consolidated Vision] Extracted ${pageImages.length} pages, preparing for single Vision call`);
-    
-    // Prepare image messages for GPT-4 Vision
-    const imageMessages = pageImages.map((page, index) => {
-      // Convert text content to base64 image (simulating image conversion)
-      // In a real implementation, you'd convert PDF pages to actual images
-      const mockImageBuffer = Buffer.from(`Page ${index + 1}: ${page.content.substring(0, 100)}...`);
-      
-      return {
-        type: "image_url",
-        image_url: {
-          url: `data:image/png;base64,${mockImageBuffer.toString("base64")}`,
-          detail: "high",
-        },
-      };
-    });
-    
-    // Prepare the consolidated prompt
-    const consolidatedPrompt = `Extract all menu items from the attached ${pageImages.length} images and return them as JSON array in this format:
-
-[
-  {
-    "name": "ITEM NAME",
-    "price": PRICE,
-    "description": "ITEM DESCRIPTION", 
-    "category": "CATEGORY"
-  },
-  ...
-]
-
-⚠️ Important Instructions:
-- Keep items in the same order they appear in the menu
-- Group by logical sections (Breakfast, Mains, Desserts, Add-ons, etc.)
-- If category not explicitly written, infer from nearby items or layout
-- Extract every add-on (e.g. 'Add Egg £1.50') as its own item
-- Items with same name but different prices must both be included
-- Return ONLY valid JSON array, no explanations or additional text
-- Process ALL ${pageImages.length} images and combine ALL items into one array`;
-
+    // Prepare the Vision prompt and messages
     const messages = [
       {
         role: "system",
-        content: "You are a menu parsing expert. Extract ALL menu items from ALL images with name, price, description, and category. Return ONLY a valid JSON array in the exact format specified. Do not include any explanations or additional text."
+        content: "You are an expert at reading restaurant menus from images and returning structured JSON.",
       },
       {
         role: "user",
         content: [
-          ...imageMessages,
+          ...imageBuffers.map((buf) => ({
+            type: "image_url",
+            image_url: {
+              url: `data:image/png;base64,${buf.toString("base64")}`,
+              detail: "high",
+            },
+          })),
           {
             type: "text",
-            text: consolidatedPrompt
-          }
-        ]
-      }
+            text: `\nRead all menu images and return an array of menu items formatted like this:\n[\n  {\n    \"name\": \"TURKISH EGGS\",\n    \"price\": 11.0,\n    \"description\": \"Greek yoghurt, chilli oil, tahini, dill, poached egg & seeded sourdough.\",\n    \"category\": \"Breakfast\"\n  },\n  ...\n]\n\nGroup items under logical categories (like Breakfast, Drinks, Add-ons). If a category isn't explicitly written, infer it from layout or item similarity. Avoid marking any item as \"Uncategorized\".\n\nOnly include valid items (those with a name and a price).\nDo NOT return markdown or explanations — just a clean JSON array.`.trim(),
+          },
+        ],
+      },
     ];
-    
-    console.log(`[Consolidated Vision] Making single GPT-4 Vision call for ${pageImages.length} pages`);
     
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       messages,
+      temperature: 0.2,
       max_tokens: 4096,
-      temperature: 0.3,
     });
     
     const content = response.choices[0].message.content;
@@ -2896,7 +2864,8 @@ async function processPDFWithConsolidatedVision(pdfBuffer) {
                  typeof item.name === 'string' && 
                  item.name.trim().length > 0 &&
                  typeof item.price === 'number' && 
-                 item.price > 0;
+                 item.price > 0 &&
+                 item.category && item.category !== 'Uncategorized';
         }).map(item => ({
           ...item,
           category: normalizeCategory(item.category)
@@ -2943,4 +2912,227 @@ async function processPDFWithConsolidatedVision(pdfBuffer) {
   }
 }
 
-// ... existing code ...
+// Helper: Convert PDF to PNG buffers (pure JS, no native binaries)
+async function convertPDFToImageBuffers(pdfBuffer) {
+  // Use pdfjs-dist to render each page to a PNG buffer
+  const { createCanvas } = require('canvas');
+  const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+  const pdfjsWorker = require('pdfjs-dist/legacy/build/pdf.worker.js');
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+  // Load the PDF
+  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+  const pdf = await loadingTask.promise;
+  const numPages = pdf.numPages;
+  const imageBuffers = [];
+
+  for (let i = 1; i <= numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 }); // 2x for better quality
+    const canvas = createCanvas(viewport.width, viewport.height);
+    const ctx = canvas.getContext('2d');
+
+    // Create a render context for pdfjs
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: viewport,
+    };
+    await page.render(renderContext).promise;
+    const pngBuffer = canvas.toBuffer('image/png');
+    imageBuffers.push(pngBuffer);
+  }
+  return imageBuffers;
+}
+
+// --- Advanced PDF to Image Conversion ---
+async function convertPDFToImageBuffers(pdfBuffer) {
+  const { createCanvas } = require('canvas');
+  const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+  const pdfjsWorker = require('pdfjs-dist/legacy/build/pdf.worker.js');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+  const pdf = await loadingTask.promise;
+  const numPages = pdf.numPages;
+  const imageBuffers = [];
+
+  for (let i = 1; i <= numPages; i++) {
+    const page = await pdf.getPage(i);
+    // Render at 2.5x scale for clarity, but cap max dimensions
+    const scale = 2.5;
+    const viewport = page.getViewport({ scale });
+    const maxWidth = 1200, maxHeight = 1800;
+    let width = viewport.width, height = viewport.height;
+    if (width > maxWidth || height > maxHeight) {
+      const scaleDown = Math.min(maxWidth / width, maxHeight / height);
+      width = Math.round(width * scaleDown);
+      height = Math.round(height * scaleDown);
+    }
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, width, height);
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: page.getViewport({ scale: width / viewport.width }),
+    };
+    await page.render(renderContext).promise;
+    // PNG for Vision, JPEG for OCR fallback
+    imageBuffers.push(canvas.toBuffer('image/png'));
+  }
+  return imageBuffers;
+}
+
+// --- OCR Fallback using Tesseract.js ---
+async function ocrImagesWithTesseract(imageBuffers) {
+  const Tesseract = require('tesseract.js');
+  const results = [];
+  for (let i = 0; i < imageBuffers.length; i++) {
+    const { data: { text } } = await Tesseract.recognize(imageBuffers[i], 'eng');
+    results.push(text);
+  }
+  return results.join('\n\n');
+}
+
+// --- Robust Vision Prompt and Extraction ---
+async function extractMenuWithVision(imageBuffers) {
+  const messages = [
+    {
+      role: "system",
+      content: "You are an expert at reading restaurant menus from images and returning structured JSON.",
+    },
+    {
+      role: "user",
+      content: [
+        ...imageBuffers.map((buf) => ({
+          type: "image_url",
+          image_url: {
+            url: `data:image/png;base64,${buf.toString("base64")}`,
+            detail: "high",
+          },
+        })),
+        {
+          type: "text",
+          text: `\nRead all menu images and return an array of menu items formatted like this:\n[\n  {\n    \"name\": \"TURKISH EGGS\",\n    \"price\": 11.0,\n    \"description\": \"Greek yoghurt, chilli oil, tahini, dill, poached egg & seeded sourdough.\",\n    \"category\": \"Breakfast\"\n  },\n  ...\n]\n\nGroup items under logical categories (like Breakfast, Drinks, Add-ons). If a category isn't explicitly written, infer it from layout or item similarity. Avoid marking any item as \"Uncategorized\".\n\nOnly include valid items (those with a name and a price).\nDo NOT return markdown or explanations — just a clean JSON array.`.trim(),
+        },
+      ],
+    },
+  ];
+  const response = await openai.chat.completions.create({
+    model: "gpt-4-vision-preview",
+    messages,
+    temperature: 0.2,
+    max_tokens: 4096,
+  });
+  return response.choices[0].message.content;
+}
+
+// --- Robust Post-Processing ---
+function postProcessMenuItems(rawContent) {
+  // Extract JSON array
+  const jsonMatch = rawContent.match(/\[.*\]/s);
+  if (!jsonMatch) return [];
+  let menuItems;
+  try {
+    menuItems = JSON.parse(jsonMatch[0]);
+  } catch (e) {
+    return [];
+  }
+  // Filter and normalize
+  return menuItems.filter(item =>
+    item &&
+    typeof item.name === 'string' && item.name.trim().length > 0 &&
+    typeof item.price === 'number' && item.price > 0 &&
+    item.category && item.category !== 'Uncategorized'
+  ).map(item => ({
+    ...item,
+    category: normalizeCategory(item.category),
+    description: item.description || ''
+  }));
+}
+
+// --- Fallback: Fix JSON with GPT-3.5 ---
+async function fixJSONWithFastModel(rawContent) {
+  const response = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages: [
+      { role: "system", content: "You are a JSON fixer. Fix malformed JSON and return only valid JSON arrays." },
+      { role: "user", content: `Fix this broken JSON and return a valid array of menu items:\n\n${rawContent}\n\nReturn only the fixed JSON array:` },
+    ],
+    max_tokens: 1000,
+  });
+  const content = response.choices[0].message.content;
+  try {
+    return JSON.parse(content.match(/\[.*\]/s)[0]);
+  } catch {
+    return [];
+  }
+}
+
+// --- Fallback: Regex Extraction ---
+function extractMenuItemsWithRegex(text) {
+  const pricePattern = /([^£\n]+?)\s*£\s*(\d+(?:\.\d{1,2})?)/g;
+  const items = [];
+  let match;
+  while ((match = pricePattern.exec(text)) !== null) {
+    const name = match[1].trim();
+    const price = parseFloat(match[2]);
+    if (name && name.length > 2 && price > 0) {
+      items.push({
+        name,
+        price,
+        description: "",
+        category: "Uncategorized"
+      });
+    }
+  }
+  return items;
+}
+
+// --- Main Robust PDF Extraction Pipeline ---
+async function processPDFWithBestPractice(pdfBuffer) {
+  // 1. PDF to images
+  let imageBuffers;
+  try {
+    imageBuffers = await convertPDFToImageBuffers(pdfBuffer);
+    if (!imageBuffers || imageBuffers.length === 0) throw new Error('No images extracted');
+  } catch (e) {
+    console.error('[PDF2IMG] Error:', e);
+    throw new Error('Failed to convert PDF to images');
+  }
+
+  // 2. Vision extraction
+  let visionContent = null;
+  try {
+    visionContent = await extractMenuWithVision(imageBuffers);
+    let items = postProcessMenuItems(visionContent);
+    if (items.length > 0) return items;
+    // Fallback 1: Try to fix JSON with GPT-3.5
+    const fixed = await fixJSONWithFastModel(visionContent);
+    if (fixed.length > 0) return fixed;
+  } catch (e) {
+    console.error('[Vision] Error:', e);
+  }
+
+  // 3. OCR fallback
+  let ocrText = '';
+  try {
+    ocrText = await ocrImagesWithTesseract(imageBuffers);
+    // Fallback 2: Try GPT-3.5 on OCR text
+    const gptOcr = await fixJSONWithFastModel(ocrText);
+    if (gptOcr.length > 0) return gptOcr;
+  } catch (e) {
+    console.error('[OCR] Error:', e);
+  }
+
+  // 4. Regex fallback
+  try {
+    const regexItems = extractMenuItemsWithRegex(ocrText);
+    if (regexItems.length > 0) return regexItems;
+  } catch (e) {
+    console.error('[Regex] Error:', e);
+  }
+
+  throw new Error('Failed to extract menu items from PDF');
+}
