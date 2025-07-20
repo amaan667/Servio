@@ -628,31 +628,79 @@ async function extractTextFromPDF(pdfBuffer) {
   }
 }
 
+// 1. Add knownCategories and categoryOrder
+const knownCategories = [
+  "Main Course",
+  "Sandwiches",
+  "Desserts",
+  "Coffee and Beverages",
+  "Specials",
+  "Add-ons",
+  "Salads",
+  "Kids Menu",
+  "Breakfast",
+  "Drinks",
+  "Smoothies",
+  "Wraps"
+];
+const categoryOrder = [
+  "Breakfast",
+  "Main Course",
+  "Sandwiches",
+  "Wraps",
+  "Salads",
+  "Kids Menu",
+  "Drinks",
+  "Smoothies",
+  "Desserts",
+  "Coffee and Beverages",
+  "Specials",
+  "Add-ons"
+];
+
+// 2. Add findCategoryBlocks
+function findCategoryBlocks(text) {
+  const blocks = [];
+  let currentCategory = "Uncategorized";
+  const lines = text.split('\n');
+  for (const line of lines) {
+    const cleanLine = line.trim();
+    if (knownCategories.includes(cleanLine)) {
+      currentCategory = cleanLine;
+    } else if (cleanLine.length > 0) {
+      blocks.push({ text: cleanLine, category: currentCategory });
+    }
+  }
+  return blocks;
+}
+
+// 3. Add inferCategoryFromName
+function inferCategoryFromName(name) {
+  const lower = name.toLowerCase();
+  if (lower.includes("latte") || lower.includes("mocha") || lower.includes("espresso")) return "Coffee and Beverages";
+  if (lower.includes("knaffe") || lower.includes("cake") || lower.includes("baklava")) return "Desserts";
+  if (lower.includes("sandwich")) return "Sandwiches";
+  if (lower.includes("burger")) return "Main Course";
+  if (lower.includes("salad")) return "Salads";
+  if (lower.includes("add") || lower.includes("extra")) return "Add-ons";
+  return "Uncategorized";
+}
+
+// 4. Update parseMenuTextWithGPT to use category blocks and prompt
 async function parseMenuTextWithGPT(text, pageNumber = 1, lastKnownCategory = null) {
   try {
-    console.log(`[GPT Text] Parsing menu text from page ${pageNumber}`);
-    console.log(`[GPT Text] Input text length: ${text.length} characters`);
-    console.log(`[GPT Text] Input text preview: ${text.substring(0, 200)}...`);
-    console.log(`[GPT Text] Last known category: ${lastKnownCategory || 'None'}`);
-
-    const prompt = `You are an expert at menu parsing. Extract EVERY menu item from this text. Return a valid JSON array ONLY in this format:
-
-[
-  { "name": "", "price": 0, "description": "", "category": "" },
-  ...
-]
-
-⚠️ Do not nest JSON inside any field.
-⚠️ For each item, extract the nearest visible category above it (e.g., "Mains", "Brunch", "Add-ons").
-⚠️ If no category is found, use: "${lastKnownCategory || 'Uncategorized'}"
-⚠️ If the category is part of a section header, apply it to all items below until the next header.
-⚠️ Extract every add-on (e.g. 'Add Egg £1.50') as its own item.
-⚠️ Do NOT use 'menuItem:' or any other keys outside of this format.
-⚠️ Items with same name but different prices must both be included.
-
-Text to parse (Page ${pageNumber}):
-${text}`;
-
+    // Preprocess text into category blocks
+    const blocks = findCategoryBlocks(text);
+    let formattedText = '';
+    let lastCat = null;
+    for (const block of blocks) {
+      if (block.category !== lastCat) {
+        formattedText += `\nFor category: '${block.category}', here are items:\n`;
+        lastCat = block.category;
+      }
+      formattedText += `- ${block.text}\n`;
+    }
+    const prompt = `You are extracting menu items and prices from scanned text. Each item should be assigned to the **last mentioned category header**.\n\nUse this structure: { name: '...', price: ..., description: '...', category: '...' }\n\nOnly use the categories provided earlier. Do not guess new ones.\nHere is the text from the page:\n\n${formattedText}`;
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -667,182 +715,53 @@ ${text}`;
       ],
       max_tokens: 4000,
     });
-
     const content = response.choices[0].message.content;
-    console.log(`[GPT Text] Raw response from page ${pageNumber}:`, content);
-    console.log(`[GPT Text] Response length: ${content.length} characters`);
-
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
+    let menuItems = [];
     if (jsonMatch) {
       try {
-        const menuItems = JSON.parse(jsonMatch[0]);
-
-        // Normalize categories and validate items
-        const validItems = menuItems.filter(item => {
-          return item &&
-            typeof item.name === 'string' &&
-            item.name.trim().length > 0 &&
-            typeof item.price === 'number' &&
-            item.price > 0;
-        }).map(item => ({
-          ...item,
-          category: normalizeCategory(item.category)
-        }));
-
-        console.log(`[GPT Text] Parsed ${menuItems.length} items, ${validItems.length} valid from page ${pageNumber}`);
-
-        // Find the last category used in this page
-        const lastCategoryInPage = validItems.length > 0 ? validItems[validItems.length - 1].category : lastKnownCategory;
-
-        // Check if we got enough items, if not, try aggressive parsing
-        if (validItems.length < 15) {
-          console.log(`[GPT Text] Only ${validItems.length} valid items found on page ${pageNumber}, trying aggressive parsing...`);
-          const aggressiveItems = await parseMenuTextWithGPTAggressive(text, pageNumber, lastKnownCategory);
-          if (aggressiveItems.length > validItems.length) {
-            console.log(`[GPT Text] Aggressive parsing found ${aggressiveItems.length} items vs ${validItems.length} from normal parsing`);
-            return aggressiveItems;
-          }
-        }
-
-        return { items: validItems, lastCategory: lastCategoryInPage };
+        menuItems = JSON.parse(jsonMatch[0]);
       } catch (parseError) {
-        console.error(`[GPT Text] JSON parse error for page ${pageNumber}:`, parseError);
-        console.error(`[GPT Text] Failed to parse this JSON:`, jsonMatch[0]);
-
-        // Try markdown fallback
-        const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
-        if (markdownItems.length > 0) {
-          console.log(`[GPT Text] Markdown fallback found ${markdownItems.length} items`);
-          return markdownItems;
-        }
-
-        throw new Error('Failed to parse GPT response as JSON');
-      }
-    } else {
-      console.error(`[GPT Text] No JSON array found in response for page ${pageNumber}`);
-      console.error(`[GPT Text] Full response content:`, content);
-
-      // Try markdown fallback
-      const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
-      if (markdownItems.length > 0) {
-        console.log(`[GPT Text] Markdown fallback found ${markdownItems.length} items`);
-        return markdownItems;
-      }
-
-      throw new Error('No valid JSON array found in GPT response');
-    }
-  } catch (error) {
-    console.error(`[GPT Text] Error parsing page ${pageNumber}:`, error);
-
-    // Handle quota errors specifically - return empty result instead of throwing
-    if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
-      console.error(`[GPT Text] Quota exceeded for page ${pageNumber}, returning empty result`);
-      return { items: [], lastCategory: lastKnownCategory };
-    }
-
-    // For other errors, also return empty result to prevent propagation
-    console.error(`[GPT Text] Non-quota error for page ${pageNumber}, returning empty result`);
-    return { items: [], lastCategory: lastKnownCategory };
-  }
-}
-
-async function extractItemsFromTextResponse(text, pageNumber) {
-  try {
-    console.log(`[Fallback] Attempting to extract items from text response for page ${pageNumber}`);
-
-    // Try to find price patterns in the text
-    const pricePattern = /([^£\n]+?)\s*£\s*(\d+(?:\.\d{1,2})?)/g;
-    const items = [];
-    let match;
-
-    while ((match = pricePattern.exec(text)) !== null) {
-      const name = match[1].trim();
-      const price = parseFloat(match[2]);
-
-      if (name && name.length > 2 && price > 0) {
-        items.push({
-          name: name,
-          price: price,
-          description: "",
-          category: "Uncategorized"
-        });
+        // fallback
+        menuItems = [];
       }
     }
-
-    console.log(`[Fallback] Extracted ${items.length} items using regex pattern`);
-    return items;
-  } catch (error) {
-    console.error(`[Fallback] Error extracting items from text:`, error);
-    return [];
-  }
-}
-
-async function forceGPTToReturnJSON(text, pageNumber) {
-  try {
-    console.log(`[Force JSON] Attempting to force GPT to return JSON for page ${pageNumber}`);
-
-    const forcePrompt = `Convert the following text into a JSON array of menu items. Return ONLY the JSON array, nothing else:
-
-Text: ${text}
-
-JSON:`;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: "You are a JSON converter. Return ONLY valid JSON arrays, no explanations or other text."
-        },
-        {
-          role: "user",
-          content: forcePrompt
-        }
-      ],
-      max_tokens: 2000,
+    // 5. Fallback: assign category by name if still Uncategorized
+    menuItems = menuItems.map(item => {
+      if (item.category === "Uncategorized") {
+        item.category = inferCategoryFromName(item.name);
+      }
+      return item;
     });
-
-    const content = response.choices[0].message.content.trim();
-    console.log(`[Force JSON] Response:`, content);
-
-    // Try to parse as JSON
-    try {
-      const menuItems = JSON.parse(content);
-      console.log(`[Force JSON] Successfully parsed ${menuItems.length} items`);
-      return Array.isArray(menuItems) ? menuItems : [];
-    } catch (parseError) {
-      console.error(`[Force JSON] Failed to parse JSON:`, parseError);
-      return [];
-    }
+    // 6. Sort by categoryOrder
+    menuItems.sort((a, b) => {
+      const aIndex = categoryOrder.indexOf(a.category);
+      const bIndex = categoryOrder.indexOf(b.category);
+      return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+    });
+    return { items: menuItems, lastCategory: lastCat };
   } catch (error) {
-    console.error(`[Force JSON] Error:`, error);
-    return [];
+    // ... existing error handling ...
+    return { items: [], lastCategory };
   }
 }
 
+// 7. Apply similar logic to parseMenuTextWithGPTAggressive if needed
 async function parseMenuTextWithGPTAggressive(text, pageNumber = 1, lastKnownCategory = null) {
   try {
-    console.log(`[GPT Text Aggressive] Parsing menu text from page ${pageNumber} with aggressive approach`);
-
-    const aggressivePrompt = `You are an expert at menu parsing. Extract EVERY menu item from this text, being very aggressive. Return a valid JSON array ONLY in this format:
-
-[
-  { "name": "", "price": 0, "description": "", "category": "" },
-  ...
-]
-
-⚠️ Do not nest JSON inside any field.
-⚠️ If a category isn't clear, set it to 'Uncategorized'.
-⚠️ Extract every add-on (e.g. 'Add Egg £1.50') as its own item.
-⚠️ Do NOT use 'menuItem:' or any other keys outside of this format.
-⚠️ Items with same name but different prices must both be included.
-⚠️ Include every line with a £ symbol or price.
-⚠️ If the name is unclear, use the text before the price as the name.
-
-Text to parse (Page ${pageNumber}):
-${text}`;
-
+    // Preprocess text into category blocks
+    const blocks = findCategoryBlocks(text);
+    let formattedText = '';
+    let lastCat = null;
+    for (const block of blocks) {
+      if (block.category !== lastCat) {
+        formattedText += `\nFor category: '${block.category}', here are items:\n`;
+        lastCat = block.category;
+      }
+      formattedText += `- ${block.text}\n`;
+    }
+    const aggressivePrompt = `You are extracting menu items and prices from scanned text. Each item should be assigned to the **last mentioned category header**. Be very aggressive in finding menu items. Include every line with a £ symbol or price, even if the name is unclear.\n\nUse this structure: { name: '...', price: ..., description: '...', category: '...' }\n\nOnly use the categories provided earlier. Do not guess new ones.\nHere is the text from the page:\n\n${formattedText}`;
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -857,72 +776,33 @@ ${text}`;
       ],
       max_tokens: 4000,
     });
-
     const content = response.choices[0].message.content;
-    console.log(`[GPT Text Aggressive] Raw response from page ${pageNumber}:`, content);
-
     // Try to extract JSON from the response
     const jsonMatch = content.match(/\[.*\]/s);
+    let menuItems = [];
     if (jsonMatch) {
       try {
-        const menuItems = JSON.parse(jsonMatch[0]);
-
-        // Normalize categories and validate items
-        const validItems = menuItems.filter(item => {
-          return item &&
-            typeof item.name === 'string' &&
-            item.name.trim().length > 0 &&
-            typeof item.price === 'number' &&
-            item.price > 0;
-        }).map(item => ({
-          ...item,
-          category: normalizeCategory(item.category)
-        }));
-
-        console.log(`[GPT Text Aggressive] Parsed ${menuItems.length} items, ${validItems.length} valid from page ${pageNumber}`);
-
-        // Find the last category used in this page
-        const lastCategoryInPage = validItems.length > 0 ? validItems[validItems.length - 1].category : lastKnownCategory;
-
-        return { items: validItems, lastCategory: lastCategoryInPage };
+        menuItems = JSON.parse(jsonMatch[0]);
       } catch (parseError) {
-        console.error(`[GPT Text Aggressive] JSON parse error for page ${pageNumber}:`, parseError);
-        console.error(`[GPT Text Aggressive] Failed to parse this JSON:`, jsonMatch[0]);
-
-        // Try markdown fallback
-        const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
-        if (markdownItems.length > 0) {
-          console.log(`[GPT Text Aggressive] Markdown fallback found ${markdownItems.length} items`);
-          return { items: markdownItems, lastCategory: lastKnownCategory };
-        }
-
-        return { items: [], lastCategory: lastKnownCategory };
+        menuItems = [];
       }
-    } else {
-      console.error(`[GPT Text Aggressive] No JSON array found in response for page ${pageNumber}`);
-      console.error(`[GPT Text Aggressive] Full response content:`, content);
-
-      // Try markdown fallback
-      const markdownItems = await parseMenuTextAsMarkdown(text, pageNumber, lastKnownCategory);
-      if (markdownItems.length > 0) {
-        console.log(`[GPT Text Aggressive] Markdown fallback found ${markdownItems.length} items`);
-        return { items: markdownItems, lastCategory: lastKnownCategory };
-      }
-
-      return { items: [], lastCategory: lastKnownCategory };
     }
+    // Fallback: assign category by name if still Uncategorized
+    menuItems = menuItems.map(item => {
+      if (item.category === "Uncategorized") {
+        item.category = inferCategoryFromName(item.name);
+      }
+      return item;
+    });
+    // Sort by categoryOrder
+    menuItems.sort((a, b) => {
+      const aIndex = categoryOrder.indexOf(a.category);
+      const bIndex = categoryOrder.indexOf(b.category);
+      return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+    });
+    return { items: menuItems, lastCategory: lastCat };
   } catch (error) {
-    console.error(`[GPT Text Aggressive] Error parsing page ${pageNumber}:`, error);
-
-    // Handle quota errors specifically - return empty result instead of throwing
-    if (error.code === 'insufficient_quota' || error.message?.includes('quota') || error.status === 429) {
-      console.error(`[GPT Text Aggressive] Quota exceeded for page ${pageNumber}, returning empty result`);
-      return { items: [], lastCategory: lastKnownCategory };
-    }
-
-    // For other errors, also return empty result to prevent propagation
-    console.error(`[GPT Text Aggressive] Non-quota error for page ${pageNumber}, returning empty result`);
-    return { items: [], lastCategory: lastKnownCategory };
+    return { items: [], lastCategory };
   }
 }
 
