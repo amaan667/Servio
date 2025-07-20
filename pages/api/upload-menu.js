@@ -9,6 +9,7 @@ import OpenAI from 'openai';
 import crypto from 'crypto';
 import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.js';
+const Tesseract = require('tesseract.js');
 
 // Simple in-memory cache (in production, use Redis or Supabase)
 const visionCache = new Map();
@@ -2916,10 +2917,8 @@ async function processPDFWithConsolidatedVision(pdfBuffer) {
     await page.render(renderContext).promise;
     // PNG for Vision, JPEG for OCR fallback
     imageBuffers.push(canvas.toBuffer('image/png'));
-  
-  return imageBuffers;
 
-// --- OCR Fallback using Tesseract.js ---
+}
 async function ocrImagesWithTesseract(imageBuffers) {
   const Tesseract = require('tesseract.js');
   const results = [];
@@ -2929,7 +2928,6 @@ async function ocrImagesWithTesseract(imageBuffers) {
   }
   return results.join('\n\n');
 }
-
 // --- Robust Vision Prompt and Extraction ---
 async function extractMenuWithVision(imageBuffers) {
   const messages = [
@@ -3070,4 +3068,57 @@ async function processPDFWithBestPractice(pdfBuffer) {
   }
 
   throw new Error('Failed to extract menu items from PDF');
+}
+
+// --- Advanced PDF to Image Conversion ---
+async function convertPDFToImageBuffers(pdfBuffer) {
+  const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+  const pdfjsWorker = require('pdfjs-dist/legacy/build/pdf.worker.js');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+  const pdf = await loadingTask.promise;
+  const numPages = pdf.numPages;
+  const imageBuffers = [];
+
+  for (let i = 1; i <= numPages; i++) {
+    const page = await pdf.getPage(i);
+    // Render at 2.5x scale for clarity, but cap max dimensions
+    const scale = 2.5;
+    const viewport = page.getViewport({ scale });
+    const maxWidth = 1200, maxHeight = 1800;
+    let width = viewport.width, height = viewport.height;
+    if (width > maxWidth || height > maxHeight) {
+      const scaleDown = Math.min(maxWidth / width, maxHeight / height);
+      width = Math.round(width * scaleDown);
+      height = Math.round(height * scaleDown);
+    }
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, width, height);
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: page.getViewport({ scale: width / viewport.width }),
+    };
+    await page.render(renderContext).promise;
+    imageBuffers.push(canvas.toBuffer('image/png'));
+  }
+  return imageBuffers;
+}
+
+// --- OCR Fallback using Tesseract.js ---
+// WARNING: canvas and tesseract.js require native Node.js, not serverless (e.g. Vercel API routes)
+async function ocrImagesWithTesseract(imageBuffers) {
+  const results = [];
+  for (let i = 0; i < imageBuffers.length; i++) {
+    try {
+      const { data: { text } } = await Tesseract.recognize(imageBuffers[i], 'eng');
+      results.push(text);
+    } catch (err) {
+      console.error(`Tesseract failed on image ${i}:`, err);
+      results.push('');
+    }
+  }
+  return results.join('\n\n');
 }
