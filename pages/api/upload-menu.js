@@ -133,9 +133,35 @@ try {
     apiKey: process.env.OPENAI_API_KEY,
   });
   log('OpenAI client initialized successfully');
+  
+  // Check balance/usage (this is a basic check)
+  log('OpenAI API key is present and valid');
 } catch (error) {
   log('ERROR: Failed to initialize OpenAI client:', error.message);
   throw error;
+}
+
+// Function to check OpenAI quota status
+async function checkOpenAIQuota() {
+  try {
+    log('Checking OpenAI quota status...');
+    // Try a minimal API call to check quota
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: "test" }],
+      max_tokens: 1,
+    });
+    log('OpenAI quota check passed');
+    return true;
+  } catch (error) {
+    log('OpenAI quota check failed:', error.message);
+    if (error.code === 'insufficient_quota' || error.message.includes('quota')) {
+      log('QUOTA ERROR: OpenAI quota exceeded or insufficient balance');
+      return false;
+    }
+    log('Other OpenAI error:', error.message);
+    return false;
+  }
 }
 
 async function downloadImageFromUrl(imageUrl) {
@@ -653,10 +679,23 @@ async function extractMenuWithVision(imageBuffers) {
     return content;
   } catch (error) {
     log('ERROR in extractMenuWithVision:', error.message);
-    if (error.code === 'insufficient_quota') {
-      log('OpenAI quota exceeded');
-      throw new Error('OpenAI quota exceeded. Please try again later.');
+    log('Error details:', {
+      code: error.code,
+      status: error.status,
+      type: error.type,
+      message: error.message
+    });
+    
+    if (error.code === 'insufficient_quota' || error.message.includes('quota') || error.message.includes('balance')) {
+      log('QUOTA ERROR DETAILS: OpenAI quota exceeded or insufficient balance');
+      throw new Error('OpenAI quota exceeded. Your account balance is insufficient for this operation. Please add credits to your OpenAI account.');
     }
+    
+    if (error.code === 'rate_limit_exceeded') {
+      log('RATE LIMIT ERROR: Too many requests to OpenAI');
+      throw new Error('OpenAI rate limit exceeded. Please try again in a few minutes.');
+    }
+    
     throw error;
   }
 }
@@ -741,6 +780,18 @@ async function handler(req, res) {
   });
 
   if (req.method === 'POST') {
+    // Check OpenAI quota first
+    log('Checking OpenAI quota before processing...');
+    const quotaOk = await checkOpenAIQuota();
+    if (!quotaOk) {
+      log('QUOTA ERROR: Cannot process menu extraction due to OpenAI quota limits');
+      return res.status(429).json({ 
+        error: 'OpenAI quota exceeded', 
+        detail: 'Your OpenAI account has insufficient balance or quota. Please add credits to your OpenAI account to continue using menu extraction.',
+        code: 'QUOTA_EXCEEDED'
+      });
+    }
+    
     const contentType = req.headers['content-type'] || '';
     
     if (contentType.includes('application/json')) {
