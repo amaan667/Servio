@@ -571,7 +571,8 @@ async function convertPDFToImageBuffers(pdfBuffer) {
   const pdfjsWorker = require('pdfjs-dist/legacy/build/pdf.worker.js');
   pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+  // Fix: disable worker for Node.js
+  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer, disableWorker: true });
   const pdf = await loadingTask.promise;
   const numPages = pdf.numPages;
   const imageBuffers = [];
