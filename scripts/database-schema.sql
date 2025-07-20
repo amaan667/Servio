@@ -69,6 +69,15 @@ CREATE TABLE order_items (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create menu_cache table for persistent caching
+CREATE TABLE menu_cache (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    hash VARCHAR(255) UNIQUE NOT NULL,
+    items JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_venues_venue_id ON venues(venue_id);
 CREATE INDEX idx_venues_owner_id ON venues(owner_id);
