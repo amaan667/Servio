@@ -670,3 +670,6 @@ function postProcessMenuItems(rawContent) {
     description: item.description || ''
   }));
 }
+
+// Ensure the main API handler is exported as default
+export default handler;
