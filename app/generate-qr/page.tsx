@@ -103,9 +103,9 @@ export default function GenerateQrPage() {
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
-                width={1280}
-                height={400}
-                className="h-[80px] w-auto"
+                width={2560}
+                height={800}
+                className="h-[160px] w-auto"
               />
               <div className="border-l border-gray-300 pl-6">
                 <h1 className="text-2xl font-bold text-gray-900">QR Code Generator</h1>
