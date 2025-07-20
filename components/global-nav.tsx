@@ -43,9 +43,9 @@ export default function GlobalNav() {
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio Logo"
-            width={isHome ? 2400 : 880}
-            height={isHome ? 720 : 240}
-            className={isHome ? "h-[160px] w-auto md:h-[180px] transition-all duration-200" : "h-[56px] w-auto md:h-[64px] transition-all duration-200"}
+            width={isHome ? 4000 : 1600}
+            height={isHome ? 1200 : 480}
+            className={isHome ? "h-[320px] w-auto md:h-[360px] transition-all duration-200" : "h-[112px] w-auto md:h-[128px] transition-all duration-200"}
             priority
           />
         </Link>
