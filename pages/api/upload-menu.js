@@ -2913,8 +2913,6 @@ async function processPDFWithConsolidatedVision(pdfBuffer) {
   }
 }
 
-
-await page.render(renderContext).promise;
 // PNG for Vision, JPEG for OCR fallback
 async function convertPDFToImageBuffers(pdfBuffer) {
 imageBuffers.push(canvas.toBuffer('image/png'));
