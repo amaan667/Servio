@@ -47,7 +47,7 @@ export default function CustomerOrderPage() {
   const categories = ["all", "appetizers", "mains", "desserts", "beverages"]
 
   const searchParams = useSearchParams()
-  const venueId = searchParams?.get("venue") || "amaantanveer667-venue"
+  const venueId = "c9413421-af4a-43d8-b783-3e3232b7e7e7";
 
   useEffect(() => {
     loadMenuItems()
