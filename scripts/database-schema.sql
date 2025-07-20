@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS menu_items CASCADE;
 DROP TABLE IF EXISTS venues CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS menu_cache CASCADE;
 
 -- Create users table
 CREATE TABLE users (
@@ -77,6 +78,7 @@ CREATE INDEX idx_orders_venue_id ON orders(venue_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_created_at ON orders(created_at);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX idx_menu_cache_hash ON menu_cache(hash);
 
 -- Enable RLS
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -84,6 +86,7 @@ ALTER TABLE venues ENABLE ROW LEVEL SECURITY;
 ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_cache ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for users
 CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (auth.uid() = id);
@@ -117,6 +120,10 @@ CREATE POLICY "Venue owners can view order items" ON order_items FOR SELECT USIN
     )
 );
 CREATE POLICY "Anyone can create order items" ON order_items FOR INSERT WITH CHECK (true);
+
+-- RLS Policies for menu_cache
+CREATE POLICY "Anyone can view menu cache" ON menu_cache FOR SELECT USING (true);
+CREATE POLICY "Anyone can insert into menu cache" ON menu_cache FOR INSERT WITH CHECK (true);
 
 -- Insert demo data
 INSERT INTO users (id, email, password_hash, full_name) VALUES 
@@ -153,3 +160,4 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECU
 CREATE TRIGGER update_venues_updated_at BEFORE UPDATE ON venues FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_menu_items_updated_at BEFORE UPDATE ON menu_items FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_menu_cache_updated_at BEFORE UPDATE ON menu_cache FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
