@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Minus, ShoppingCart, Clock, Star } from "lucide-react"
+import { Plus, Minus, ShoppingCart, Clock, Star, CreditCard, Apple, Smartphone } from "lucide-react"
 import { createClient } from "@/lib/supabase"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
@@ -39,6 +39,8 @@ export default function CustomerOrderPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [orderSubmitted, setOrderSubmitted] = useState(false)
+  const [showCheckout, setShowCheckout] = useState(false)
+  const [selectedPayment, setSelectedPayment] = useState<string | null>(null)
 
   const categories = ["all", "appetizers", "mains", "desserts", "beverages"]
 
@@ -157,8 +159,23 @@ export default function CustomerOrderPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Submitted!</h2>
-            <p className="text-gray-600 mb-6">Your order has been received and is being prepared.</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Confirmed!</h2>
+            <p className="text-gray-600 mb-4">Your order is on its way to the kitchen.</p>
+            <div className="text-left mb-4">
+              <h3 className="font-semibold mb-2">Order Summary:</h3>
+              <ul className="mb-2">
+                {cart.map((item) => (
+                  <li key={item.id} className="flex justify-between text-sm mb-1">
+                    <span>{item.quantity}x {item.name}</span>
+                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="font-bold flex justify-between">
+                <span>Total:</span>
+                <span>${getTotalPrice().toFixed(2)}</span>
+              </div>
+            </div>
             <Button onClick={() => setOrderSubmitted(false)} className="w-full">
               Place Another Order
             </Button>
@@ -334,10 +351,10 @@ export default function CustomerOrderPage() {
                           />
                         </div>
 
-                    {/* Submit Button */}
-                    <Button onClick={submitOrder} disabled={isSubmitting || cart.length === 0} className="w-full">
-                      {isSubmitting ? "Submitting..." : "Place Order"}
-                        </Button>
+                    {/* Checkout Button */}
+                    <Button onClick={() => setShowCheckout(true)} disabled={isSubmitting || cart.length === 0} className="w-full">
+                      Checkout
+                    </Button>
                   </>
                   )}
                 </CardContent>
@@ -345,6 +362,41 @@ export default function CustomerOrderPage() {
           </div>
         </div>
       </div>
+      {/* Checkout Modal */}
+      {showCheckout && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4">Choose Payment Method</h2>
+            <div className="flex flex-col space-y-3 mb-6">
+              <Button variant={selectedPayment === 'apple' ? 'default' : 'outline'} onClick={() => setSelectedPayment('apple')} className="flex items-center space-x-2">
+                <Apple className="w-5 h-5 mr-2" /> Apple Pay
+              </Button>
+              <Button variant={selectedPayment === 'google' ? 'default' : 'outline'} onClick={() => setSelectedPayment('google')} className="flex items-center space-x-2">
+                <Smartphone className="w-5 h-5 mr-2" /> Google Pay
+              </Button>
+              <Button variant={selectedPayment === 'card' ? 'default' : 'outline'} onClick={() => setSelectedPayment('card')} className="flex items-center space-x-2">
+                <CreditCard className="w-5 h-5 mr-2" /> Card / Stripe
+              </Button>
+            </div>
+            <Button
+              className="w-full mb-2"
+              disabled={!selectedPayment}
+              onClick={async () => {
+                setShowCheckout(false)
+                setIsSubmitting(true)
+                await submitOrder()
+                setIsSubmitting(false)
+                setOrderSubmitted(true)
+              }}
+            >
+              Pay & Place Order
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => setShowCheckout(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
