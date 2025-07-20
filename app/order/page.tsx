@@ -41,6 +41,8 @@ export default function CustomerOrderPage() {
   const [orderSubmitted, setOrderSubmitted] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null)
+  const [loadingMenu, setLoadingMenu] = useState(true)
+  const [menuError, setMenuError] = useState<string | null>(null)
 
   const categories = ["all", "appetizers", "mains", "desserts", "beverages"]
 
@@ -52,6 +54,8 @@ export default function CustomerOrderPage() {
   }, [])
 
   const loadMenuItems = async () => {
+    setLoadingMenu(true)
+    setMenuError(null)
     const supabase = createClient()
     const { data, error } = await supabase
         .from("menu_items")
@@ -59,10 +63,17 @@ export default function CustomerOrderPage() {
       .eq("available", true)
         .eq("venue_id", venueId)
         .order("category", { ascending: true })
-
-    if (data && !error) {
+    console.log('Fetched menu:', data, 'Error:', error)
+    if (error) {
+      setMenuError("Failed to load menu. Please try again later.")
+      setMenuItems([])
+    } else if (data && data.length > 0) {
       setMenuItems(data)
+    } else {
+      setMenuError("No menu items found for this venue.")
+      setMenuItems([])
     }
+    setLoadingMenu(false)
   }
 
   const addToCart = (item: MenuItem) => {
@@ -192,25 +203,29 @@ export default function CustomerOrderPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Image src="/assets/servio-logo-updated.png" alt="Servio Logo" width={0} height={48} style={{ height: 48, width: "auto" }} priority />
+              <Image src="/assets/servio-logo-updated.png" alt="Servio Logo" width={120} height={48} style={{ height: 64, width: 120 }} priority />
               <h1 className="text-2xl font-bold text-gray-900">Order Menu</h1>
             </div>
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <ShoppingCart className="w-5 h-5" />
               <span className="font-medium">{getTotalItems()} items</span>
               <span className="text-green-600 font-bold">${getTotalPrice().toFixed(2)}</span>
-              </div>
+            </div>
           </div>
         </div>
       </div>
-
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Menu Items */}
-          <div className="lg:col-span-2">
-            {/* Category Filter */}
-            <div className="flex space-x-2 mb-6 overflow-x-auto">
-              {categories.map((category) => (
+        {loadingMenu ? (
+          <div className="text-center text-gray-500 py-12">Loading menu...</div>
+        ) : menuError ? (
+          <div className="text-center text-red-500 py-12">{menuError}</div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Menu Items */}
+            <div className="lg:col-span-2">
+              {/* Category Filter */}
+              <div className="flex space-x-2 mb-6 overflow-x-auto">
+                {categories.map((category) => (
                                     <Button
                   key={category}
                   variant={selectedCategory === category ? "default" : "outline"}
@@ -220,58 +235,58 @@ export default function CustomerOrderPage() {
                   {category}
                                     </Button>
               ))}
-            </div>
+              </div>
 
-            {/* Menu Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredItems.map((item) => (
-                <Card key={item.id} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-lg">{item.name}</h3>
-                      <div className="flex items-center space-x-1">
-                        {item.rating && (
-                          <>
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm text-gray-600">{item.rating}</span>
-                          </>
+              {/* Menu Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredItems.map((item) => (
+                  <Card key={item.id} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold text-lg">{item.name}</h3>
+                        <div className="flex items-center space-x-1">
+                          {item.rating && (
+                            <>
+                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                              <span className="text-sm text-gray-600">{item.rating}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-gray-600 text-sm mb-3">{item.description}</p>
+
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xl font-bold text-green-600">${item.price.toFixed(2)}</span>
+                        {item.prep_time && (
+                          <div className="flex items-center text-gray-500 text-sm">
+                            <Clock className="w-4 h-4 mr-1" />
+                            {item.prep_time} min
+                          </div>
                         )}
                       </div>
-                    </div>
 
-                    <p className="text-gray-600 text-sm mb-3">{item.description}</p>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary" className="capitalize">
+                          {item.category}
+                        </Badge>
 
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xl font-bold text-green-600">${item.price.toFixed(2)}</span>
-                      {item.prep_time && (
-                        <div className="flex items-center text-gray-500 text-sm">
-                          <Clock className="w-4 h-4 mr-1" />
-                          {item.prep_time} min
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="capitalize">
-                        {item.category}
-                      </Badge>
-
-                      <div className="flex items-center space-x-2">
-                        {cart.find((cartItem) => cartItem.id === item.id) ? (
-                          <div className="flex items-center space-x-2">
-                            <Button size="sm" variant="outline" onClick={() => removeFromCart(item.id)}>
-                              <Minus className="w-4 h-4" />
-                            </Button>
-                            <span className="font-medium">
-                              {cart.find((cartItem) => cartItem.id === item.id)?.quantity}
+                        <div className="flex items-center space-x-2">
+                          {cart.find((cartItem) => cartItem.id === item.id) ? (
+                            <div className="flex items-center space-x-2">
+                              <Button size="sm" variant="outline" onClick={() => removeFromCart(item.id)}>
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <span className="font-medium">
+                                {cart.find((cartItem) => cartItem.id === item.id)?.quantity}
                                     </span>
-                            <Button size="sm" onClick={() => addToCart(item)}>
-                              <Plus className="w-4 h-4" />
+                              <Button size="sm" onClick={() => addToCart(item)}>
+                                <Plus className="w-4 h-4" />
                                   </Button>
-                          </div>
-                        ) : (
-                          <Button onClick={() => addToCart(item)}>Add to Cart</Button>
-                        )}
+                            </div>
+                          ) : (
+                            <Button onClick={() => addToCart(item)}>Add to Cart</Button>
+                          )}
                                 </div>
                               </div>
                             </CardContent>
@@ -361,7 +376,7 @@ export default function CustomerOrderPage() {
               </Card>
           </div>
         </div>
-      </div>
+      )}
       {/* Checkout Modal */}
       {showCheckout && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
