@@ -225,8 +225,6 @@ async function processImageFile(filePath, mimeType) {
 // 5. Remove all per-page Vision calls, aggressive Vision fallback, and redundant fallback logic
 // (delete all per-page Vision, aggressive fallback, and redundant fallback code)
 
-// ... existing code ...
-
 // PDF-to-image conversion using pdf-lib and canvas
 async function convertPDFToImages(pdfBuffer) {
   try {
@@ -671,5 +669,46 @@ function postProcessMenuItems(rawContent) {
   }));
 }
 
-// Ensure the main API handler is exported as default
+// Main Next.js API handler
+async function handler(req, res) {
+  // Reconstruct the previous API route logic here
+  // (This is a simplified version; you may need to copy in the full logic from your previous handler)
+  if (req.method === 'POST') {
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('application/json')) {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', async () => {
+        try {
+          const { imageUrl, venueId } = JSON.parse(body);
+          const tempFilePath = await downloadImageFromUrl(imageUrl);
+          const result = await processImageFile(tempFilePath, 'image/jpeg');
+          await processExtractedData(result, venueId, res);
+          fs.unlinkSync(tempFilePath);
+        } catch (error) {
+          res.status(500).json({ error: 'Failed to process image URL', detail: error.message });
+        }
+      });
+      return;
+    } else {
+      upload.single('menu')(req, res, async (err) => {
+        if (err) return res.status(500).json({ error: 'Upload failed' });
+        const filePath = req.file.path;
+        const mime = req.file.mimetype;
+        const venueId = req.body.venueId || req.query.venueId;
+        try {
+          const result = await processImageFile(filePath, mime);
+          await processExtractedData(result, venueId, res);
+        } catch (e) {
+          res.status(500).json({ error: 'OCR failed', detail: e.message });
+        } finally {
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+      });
+      return;
+    }
+  }
+  res.status(405).json({ error: 'Method not allowed' });
+}
+
 export default handler;
