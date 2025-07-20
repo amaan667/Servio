@@ -146,8 +146,13 @@ async function logOpenAICall(model, promptTokens, completionTokens, totalTokens,
   console.log(`[OpenAI] Model: ${model}, Prompt: ${promptTokens}, Completion: ${completionTokens}, Total: ${totalTokens}, Cost: $${estimatedCost.toFixed(4)}`);
 }
 
-// 4. Refactor processImageFile to use persistent cache and efficient pipeline
+// --- Streamlined PDF Menu Extraction Pipeline ---
+import pdfParse from 'pdf-parse';
+
 async function processImageFile(filePath, mimeType) {
+  if (mimeType !== 'application/pdf') {
+    throw new Error('Only PDF uploads are supported in this streamlined pipeline.');
+  }
   const fileBuffer = fs.readFileSync(filePath);
   const hash = generateImageHash(fileBuffer);
   // 1. Check persistent cache
@@ -156,70 +161,38 @@ async function processImageFile(filePath, mimeType) {
     console.log(`[Cache] Persistent hit for hash: ${hash.substring(0,8)}...`);
     return { type: 'structured', data: cached };
   }
-  // 2. If PDF, try text extraction first
-  if (mimeType === 'application/pdf') {
-    try {
-      const text = await extractTextFromPDF(fileBuffer);
-      if (text && text.trim().length > 100) { // Only use if text is substantial
-        const gptResult = await parseMenuTextWithGPT(text, 1, null, 'gpt-3.5-turbo');
-        if (gptResult.items && gptResult.items.length > 0) {
-          await setPersistentCache(hash, gptResult.items);
-          return { type: 'structured', data: gptResult.items };
-        }
-      }
-    } catch (e) {
-      console.warn('[Text Extraction] Failed or insufficient, will try Vision.');
-    }
-    // 3. If text model fails, use Vision (batch all pages)
-    try {
-      const imageBuffers = await convertPDFToImageBuffers(fileBuffer);
-      const menuItems = await processAllImagesWithGPTVision(imageBuffers, imageBuffers.map(()=>'image/png'));
-      if (menuItems && menuItems.length > 0) {
-        await setPersistentCache(hash, menuItems);
-        return { type: 'structured', data: menuItems };
-      }
-    } catch (e) {
-      console.error('[Vision] PDF Vision extraction failed:', e);
-    }
-    // 4. Fallback: OCR or regex only if all else fails
-    try {
-      const imageBuffers = await convertPDFToImageBuffers(fileBuffer);
-      const ocrText = await ocrImagesWithTesseract(imageBuffers);
-      const fallbackItems = extractMenuItemsWithRegex(ocrText);
-      if (fallbackItems && fallbackItems.length > 0) {
-        await setPersistentCache(hash, fallbackItems);
-        return { type: 'structured', data: fallbackItems };
-      }
-    } catch (e) {
-      console.error('[OCR Fallback] Failed:', e);
-    }
-    throw new Error('Failed to extract menu items from PDF');
-  } else if (mimeType.startsWith('image/')) {
-    // For images, use Vision directly
-    try {
-      const menuItems = await processImageWithGPTVision(fileBuffer, mimeType);
-      if (menuItems && menuItems.length > 0) {
-        await setPersistentCache(hash, menuItems);
-        return { type: 'structured', data: menuItems };
-      }
-    } catch (e) {
-      console.error('[Vision] Image Vision extraction failed:', e);
-    }
-    // Fallback: OCR or regex
-    try {
-      const ocrText = await ocrImagesWithTesseract([fileBuffer]);
-      const fallbackItems = extractMenuItemsWithRegex(ocrText);
-      if (fallbackItems && fallbackItems.length > 0) {
-        await setPersistentCache(hash, fallbackItems);
-        return { type: 'structured', data: fallbackItems };
-      }
-    } catch (e) {
-      console.error('[OCR Fallback] Failed:', e);
-    }
-    throw new Error('Failed to extract menu items from image');
-  } else {
-    throw new Error('Unsupported file type');
+  // 2. Extract text from PDF
+  const data = await pdfParse(fileBuffer);
+  const text = data.text;
+  if (!text || text.trim().length < 20) {
+    throw new Error('No text extracted from PDF');
   }
+  // 3. Send cleaned text to GPT-3.5 with a clear JSON prompt
+  const prompt = `Extract all menu items from the following text. Return ONLY a JSON array of objects with fields: name, price, description, category. Do not include any explanations or extra text.\n\nText:\n${text}`;
+  const response = await openai.chat.completions.create({
+    model: 'gpt-3.5-turbo',
+    messages: [
+      { role: 'system', content: 'You are a menu extraction expert. Return ONLY a valid JSON array as described.' },
+      { role: 'user', content: prompt }
+    ],
+    max_tokens: 2048,
+  });
+  const content = response.choices[0].message.content;
+  // 4. Validate & parse GPT output
+  const jsonMatch = content.match(/\[.*\]/s);
+  let menuItems = [];
+  if (jsonMatch) {
+    try {
+      menuItems = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      throw new Error('Failed to parse GPT output as JSON');
+    }
+  } else {
+    throw new Error('No valid JSON array found in GPT output');
+  }
+  // 5. Insert structured data into the database (and cache)
+  await setPersistentCache(hash, menuItems);
+  return { type: 'structured', data: menuItems };
 }
 
 // 5. Remove all per-page Vision calls, aggressive Vision fallback, and redundant fallback logic
