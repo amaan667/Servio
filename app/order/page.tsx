@@ -44,35 +44,164 @@ export default function CustomerOrderPage() {
   const [loadingMenu, setLoadingMenu] = useState(true)
   const [menuError, setMenuError] = useState<string | null>(null)
 
-  const categories = ["all", "appetizers", "mains", "desserts", "beverages"]
+  const categories = ["all", "appetizers", "mains", "desserts", "beverages", "salads", "pizzas"]
 
   const searchParams = useSearchParams()
-  const venueId = "c9413421-af4a-43d8-b783-3e3232b7e7e7";
+  // Use the correct venue_id from the database schema
+  const venueId = "demo-cafe";
+
+  // Check if environment variables are set
+  const hasSupabaseConfig = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
   useEffect(() => {
+    if (!hasSupabaseConfig) {
+      setMenuError("Database configuration is missing. Please check your environment variables.")
+      setLoadingMenu(false)
+      return
+    }
     loadMenuItems()
-  }, [])
+  }, [hasSupabaseConfig])
 
   const loadMenuItems = async () => {
     setLoadingMenu(true)
     setMenuError(null)
     const supabase = createClient()
-    const { data, error } = await supabase
-      .from("menu_items")
-      .select("*")
-      .eq("available", true)
-      .eq("venue_id", venueId)
-      .order("category", { ascending: true })
-    if (error) {
-      setMenuError("Failed to load menu. Please try again later.")
-      setMenuItems([])
-    } else if (data && data.length > 0) {
-      setMenuItems(data)
-    } else {
-      setMenuError("No menu items found for this venue.")
-      setMenuItems([])
+    
+    // Try different venue IDs in order of preference
+    const venueIds = ["demo-cafe", "pizza-palace", "c9413421-af4a-43d8-b783-3e3232b7e7e7"]
+    
+    for (const currentVenueId of venueIds) {
+      try {
+        console.log(`Trying venue_id: ${currentVenueId}`)
+        
+        // First, let's check if the venue exists
+        const { data: venueData, error: venueError } = await supabase
+          .from("venues")
+          .select("venue_id, name")
+          .eq("venue_id", currentVenueId)
+          .single()
+        
+        console.log('Venue check:', { venueData, venueError })
+        
+        // Now fetch menu items
+        const { data, error } = await supabase
+          .from("menu_items")
+          .select("*")
+          .eq("venue_id", currentVenueId)
+          .order("category", { ascending: true })
+        
+        console.log('Menu items query:', { 
+          venueId: currentVenueId, 
+          data: data?.length || 0, 
+          error,
+          availableItems: data?.filter(item => item.available)?.length || 0
+        })
+        
+        if (error) {
+          console.error('Supabase error:', error)
+          continue // Try next venue_id
+        } else if (data && data.length > 0) {
+          // Filter for available items
+          const availableItems = data.filter(item => item.available)
+          console.log('Available items:', availableItems.length)
+          
+          if (availableItems.length > 0) {
+            setMenuItems(availableItems)
+            setLoadingMenu(false)
+            return // Success, exit the function
+          }
+        }
+        
+        // If we get here, try without venue_id filter to see if RLS is the issue
+        const { data: allData, error: allError } = await supabase
+          .from("menu_items")
+          .select("*")
+          .order("category", { ascending: true })
+        
+        console.log('All menu items (no venue filter):', { 
+          data: allData?.length || 0, 
+          error: allError,
+          availableItems: allData?.filter(item => item.available)?.length || 0
+        })
+        
+        if (!allError && allData && allData.length > 0) {
+          const availableItems = allData.filter(item => item.available)
+          if (availableItems.length > 0) {
+            setMenuItems(availableItems)
+            setLoadingMenu(false)
+            return // Success, exit the function
+          }
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err)
+        continue // Try next venue_id
+      }
     }
+    
+    // If we get here, no venue worked
+    setMenuError("No menu items found for any venue. Please check the database connection.")
+    setMenuItems([])
     setLoadingMenu(false)
+  }
+
+  const debugMenu = async () => {
+    console.log('=== DEBUG MENU ===')
+    
+    // Check environment variables first
+    console.log('Environment check:', {
+      hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
+    })
+    
+    // Test if we can create a client
+    try {
+      const supabase = createClient()
+      console.log('✅ Supabase client created successfully')
+      
+      // Check all venues
+      const { data: venues, error: venuesError } = await supabase
+        .from("venues")
+        .select("*")
+      
+      console.log('All venues:', venues, venuesError)
+      
+      // Check all menu items
+      const { data: allMenuItems, error: menuError } = await supabase
+        .from("menu_items")
+        .select("*")
+      
+      console.log('All menu items:', allMenuItems?.length || 0, menuError)
+      
+      // Check specific venue
+      const { data: specificVenue, error: specificError } = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("venue_id", "demo-cafe")
+      
+      console.log('Demo cafe items:', specificVenue?.length || 0, specificError)
+      
+      // Test RLS by trying to insert a test record (should fail but tell us about permissions)
+      try {
+        const { data: testInsert, error: testError } = await supabase
+          .from("menu_items")
+          .insert({
+            venue_id: "test-venue",
+            name: "Test Item",
+            price: 9.99,
+            category: "test",
+            available: true
+          })
+          .select()
+        
+        console.log('RLS test (insert):', testInsert, testError)
+      } catch (e) {
+        console.log('RLS test error:', e)
+      }
+    } catch (error) {
+      console.error('❌ Failed to create Supabase client:', error)
+      console.log('This means the environment variables are not set correctly.')
+    }
   }
 
   const addToCart = (item: MenuItem) => {
@@ -215,7 +344,24 @@ export default function CustomerOrderPage() {
         {loadingMenu ? (
           <div className="text-center text-gray-500 py-12">Loading menu...</div>
         ) : menuError ? (
-          <div className="text-center text-red-500 py-12">{menuError}</div>
+          <div className="text-center text-red-500 py-12">
+            <div>{menuError}</div>
+            {!hasSupabaseConfig && (
+              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h3 className="font-semibold text-yellow-800 mb-2">Missing Environment Variables</h3>
+                <p className="text-yellow-700 text-sm mb-2">
+                  You need to set up your Supabase environment variables:
+                </p>
+                <code className="text-xs bg-yellow-100 p-2 rounded block">
+                  NEXT_PUBLIC_SUPABASE_URL=your_supabase_url<br/>
+                  NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+                </code>
+              </div>
+            )}
+            <Button onClick={debugMenu} className="mt-4" variant="outline">
+              Debug Database Connection
+            </Button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Menu Items */}
