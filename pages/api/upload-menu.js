@@ -2986,23 +2986,6 @@ function postProcessMenuItems(rawContent) {
   }));
 }
 
-// --- Fallback: Fix JSON with GPT-3.5 ---
-async function fixJSONWithFastModel(rawContent) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
-    messages: [
-      { role: "system", content: "You are a JSON fixer. Fix malformed JSON and return only valid JSON arrays." },
-      { role: "user", content: `Fix this broken JSON and return a valid array of menu items:\n\n${rawContent}\n\nReturn only the fixed JSON array:` },
-    ],
-    max_tokens: 1000,
-  });
-  const content = response.choices[0].message.content;
-  try {
-    return JSON.parse(content.match(/\[.*\]/s)[0]);
-  } catch {
-    return [];
-  }
-}
 
 // --- Fallback: Regex Extraction ---
 function extractMenuItemsWithRegex(text) {
