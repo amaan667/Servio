@@ -2912,77 +2912,12 @@ async function processPDFWithConsolidatedVision(pdfBuffer) {
   }
 }
 
-// Helper: Convert PDF to PNG buffers (pure JS, no native binaries)
-async function convertPDFToImageBuffers(pdfBuffer) {
-  // Use pdfjs-dist to render each page to a PNG buffer
-  const { createCanvas } = require('canvas');
-  const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
-  const pdfjsWorker = require('pdfjs-dist/legacy/build/pdf.worker.js');
 
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
-  // Load the PDF
-  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
-  const pdf = await loadingTask.promise;
-  const numPages = pdf.numPages;
-  const imageBuffers = [];
-
-  for (let i = 1; i <= numPages; i++) {
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 2.0 }); // 2x for better quality
-    const canvas = createCanvas(viewport.width, viewport.height);
-    const ctx = canvas.getContext('2d');
-
-    // Create a render context for pdfjs
-    const renderContext = {
-      canvasContext: ctx,
-      viewport: viewport,
-    };
-    await page.render(renderContext).promise;
-    const pngBuffer = canvas.toBuffer('image/png');
-    imageBuffers.push(pngBuffer);
-  }
-  return imageBuffers;
-}
-
-// --- Advanced PDF to Image Conversion ---
-async function convertPDFToImageBuffers(pdfBuffer) {
-  const { createCanvas } = require('canvas');
-  const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
-  const pdfjsWorker = require('pdfjs-dist/legacy/build/pdf.worker.js');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
-  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
-  const pdf = await loadingTask.promise;
-  const numPages = pdf.numPages;
-  const imageBuffers = [];
-
-  for (let i = 1; i <= numPages; i++) {
-    const page = await pdf.getPage(i);
-    // Render at 2.5x scale for clarity, but cap max dimensions
-    const scale = 2.5;
-    const viewport = page.getViewport({ scale });
-    const maxWidth = 1200, maxHeight = 1800;
-    let width = viewport.width, height = viewport.height;
-    if (width > maxWidth || height > maxHeight) {
-      const scaleDown = Math.min(maxWidth / width, maxHeight / height);
-      width = Math.round(width * scaleDown);
-      height = Math.round(height * scaleDown);
-    }
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, width, height);
-    const renderContext = {
-      canvasContext: ctx,
-      viewport: page.getViewport({ scale: width / viewport.width }),
-    };
     await page.render(renderContext).promise;
     // PNG for Vision, JPEG for OCR fallback
     imageBuffers.push(canvas.toBuffer('image/png'));
-  }
+  
   return imageBuffers;
-}
 
 // --- OCR Fallback using Tesseract.js ---
 async function ocrImagesWithTesseract(imageBuffers) {
