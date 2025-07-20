@@ -340,7 +340,6 @@ export default function CustomerOrderPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Image src="/assets/servio-logo-updated.png" alt="Servio Logo" width={120} height={48} style={{ height: 64, width: 120 }} priority />
               <h1 className="text-2xl font-bold text-gray-900">Menu{customerInfo.table_number ? ` (Table ${customerInfo.table_number})` : ""}</h1>
             </div>
             <div className="flex items-center space-x-2">
