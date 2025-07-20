@@ -61,7 +61,34 @@ const categoryNormalizationMap = {
   'SIDES': 'Add-ons',
   'SIDE DISHES': 'Add-ons',
   'TOPPINGS': 'Add-ons',
-  'MODIFIERS': 'Add-ons'
+  'MODIFIERS': 'Add-ons',
+  'HOT DRINKS': 'Drinks',
+  'COLD DRINKS': 'Drinks',
+  'HOT BEVERAGES': 'Drinks',
+  'COLD BEVERAGES': 'Drinks',
+  'APPETIZERS': 'Starters',
+  'STARTERS': 'Starters',
+  'ENTREES': 'Mains',
+  'MAIN DISHES': 'Mains',
+  'SALADS': 'Salads',
+  'SOUPS': 'Starters',
+  'SANDWICHES': 'Mains',
+  'BURGERS': 'Mains',
+  'PASTA': 'Mains',
+  'PIZZA': 'Mains',
+  'SEAFOOD': 'Mains',
+  'MEAT': 'Mains',
+  'VEGETARIAN': 'Mains',
+  'VEGAN': 'Mains',
+  'GLUTEN FREE': 'Mains',
+  'KIDS': 'Kids Menu',
+  'CHILDREN': 'Kids Menu',
+  'KIDS MENU': 'Kids Menu',
+  'SPECIALS': 'Specials',
+  'DAILY SPECIALS': 'Specials',
+  'CHEF SPECIALS': 'Specials',
+  'SEASONAL': 'Specials',
+  'LIMITED TIME': 'Specials'
 };
 
 function normalizeCategory(category) {
@@ -287,24 +314,34 @@ async function extractMenuItemsFromText(text) {
   log('Extracting menu items from text using GPT-3.5');
   
   try {
-    const prompt = `You are a restaurant menu extraction assistant. Extract structured menu items from the following raw text.
+    const systemPrompt = `You are a menu extraction assistant. Extract all items from the provided menu text.
+Each item must have:
+- name
+- price (as a number, no currency symbols)
+- description (optional but preferred)
+- category (must match the original section heading or use "Add-ons" / "Desserts" / "Hot Drinks" etc.)
 
-Return ONLY a JSON array of objects with this exact format:
+Never use 'Uncategorized'. If unsure, try to infer based on surrounding items or skip it.
+Output in this JSON format:
 [
   {
-    "name": "Item Name",
-    "price": 12.50,
-    "description": "Item description if available",
-    "category": "Category Name"
+    "name": "",
+    "price": 0,
+    "description": "",
+    "category": ""
   }
 ]
+Always prefer clean and accurate categories over skipping.`;
+
+    const userPrompt = `Extract all menu items from the following text. Group items under logical categories based on section headers or item types.
 
 Rules:
 - Only include items with both name and price
-- Group items under logical categories (Breakfast, Drinks, Add-ons, etc.)
 - Prices should be numbers, not strings
 - If no description is available, use empty string
 - Do not include any explanations or markdown formatting
+- Never use 'Uncategorized' as a category
+- Infer categories from context if not explicitly stated
 
 Here is the menu text:
 ---
@@ -315,8 +352,8 @@ ${text}
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
-        { role: 'system', content: 'You are a menu extraction expert. Return ONLY valid JSON arrays.' },
-        { role: 'user', content: prompt }
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
       ],
       max_tokens: 2048,
       temperature: 0.1,
@@ -627,11 +664,48 @@ async function processExtractedData(extractedItems, venueId, res) {
       return res.status(400).json({ error: 'Venue ID is required' });
     }
     
+    // Smart deduplication based on name (case-insensitive)
+    log('Deduplicating items...');
+    const deduplicatedItems = Array.from(
+      new Map(
+        extractedItems.map((item) => [item.name.trim().toLowerCase(), item])
+      ).values()
+    );
+    log('Deduplication result:', { 
+      original: extractedItems.length, 
+      deduplicated: deduplicatedItems.length 
+    });
+    
+    // Sort items with Add-ons last
+    log('Sorting items...');
+    const sortedItems = deduplicatedItems.sort((a, b) => {
+      if (a.category === 'Add-ons') return 1;
+      if (b.category === 'Add-ons') return -1;
+      return 0;
+    });
+    
+    // Filter out items with 'Uncategorized' category
+    const filteredItems = sortedItems.filter(item => 
+      item.category && 
+      item.category.trim() !== '' && 
+      item.category.toLowerCase() !== 'uncategorized'
+    );
+    log('Filtering result:', { 
+      before: sortedItems.length, 
+      after: filteredItems.length,
+      uncategorizedRemoved: sortedItems.length - filteredItems.length
+    });
+    
+    if (filteredItems.length === 0) {
+      log('ERROR: No valid items after filtering');
+      return res.status(400).json({ error: 'No valid menu items found after processing' });
+    }
+    
     log('Inserting items into database');
     const { data, error } = await supabase
       .from('menu_items')
       .insert(
-        extractedItems.map(item => ({
+        filteredItems.map(item => ({
           ...item,
           venue_id: venueId,
           available: true,
@@ -647,8 +721,8 @@ async function processExtractedData(extractedItems, venueId, res) {
     log('Successfully inserted items into database:', data?.length || 0);
     res.status(200).json({ 
       success: true, 
-      items: extractedItems,
-      message: `Successfully extracted ${extractedItems.length} menu items`
+      items: filteredItems,
+      message: `Successfully extracted ${filteredItems.length} menu items (${extractedItems.length - filteredItems.length} duplicates/uncategorized removed)`
     });
   } catch (error) {
     log('ERROR in processExtractedData:', error.message);
