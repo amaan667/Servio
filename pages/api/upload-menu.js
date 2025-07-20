@@ -2795,7 +2795,40 @@ async function processPDFWithConsolidatedVision(pdfBuffer) {
 
 // PNG for Vision, JPEG for OCR fallback
 async function convertPDFToImageBuffers(pdfBuffer) {
-imageBuffers.push(canvas.toBuffer('image/png'));
+  const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+  const pdfjsWorker = require('pdfjs-dist/legacy/build/pdf.worker.js');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+  const pdf = await loadingTask.promise;
+  const numPages = pdf.numPages;
+  const imageBuffers = [];
+
+  for (let i = 1; i <= numPages; i++) {
+    const page = await pdf.getPage(i);
+    // Render at 2.5x scale for clarity, but cap max dimensions
+    const scale = 2.5;
+    const viewport = page.getViewport({ scale });
+    const maxWidth = 1200, maxHeight = 1800;
+    let width = viewport.width, height = viewport.height;
+    if (width > maxWidth || height > maxHeight) {
+      const scaleDown = Math.min(maxWidth / width, maxHeight / height);
+      width = Math.round(width * scaleDown);
+      height = Math.round(height * scaleDown);
+    }
+    const { createCanvas } = require('canvas');
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, width, height);
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: page.getViewport({ scale: width / viewport.width }),
+    };
+    await page.render(renderContext).promise;
+    imageBuffers.push(canvas.toBuffer('image/png'));
+  }
+  return imageBuffers;
 }
 async function ocrImagesWithTesseract(imageBuffers) {
   const Tesseract = require('tesseract.js');
