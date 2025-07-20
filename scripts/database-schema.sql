@@ -95,12 +95,14 @@ CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth.uid
 -- RLS Policies for venues
 CREATE POLICY "Venue owners can manage their venues" ON venues FOR ALL USING (auth.uid() = owner_id);
 CREATE POLICY "Anyone can view venues" ON venues FOR SELECT USING (true);
+CREATE POLICY "Service role can manage venues" ON venues FOR ALL USING (auth.role() = 'service_role');
 
 -- RLS Policies for menu_items
 CREATE POLICY "Venue owners can manage menu items" ON menu_items FOR ALL USING (
     EXISTS (SELECT 1 FROM venues WHERE venues.venue_id = menu_items.venue_id AND venues.owner_id = auth.uid())
 );
 CREATE POLICY "Anyone can view available menu items" ON menu_items FOR SELECT USING (available = true);
+CREATE POLICY "Service role can manage menu items" ON menu_items FOR ALL USING (auth.role() = 'service_role');
 
 -- RLS Policies for orders
 CREATE POLICY "Venue owners can view their orders" ON orders FOR SELECT USING (
@@ -110,6 +112,7 @@ CREATE POLICY "Anyone can create orders" ON orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Venue owners can update their orders" ON orders FOR UPDATE USING (
     EXISTS (SELECT 1 FROM venues WHERE venues.venue_id = orders.venue_id AND venues.owner_id = auth.uid())
 );
+CREATE POLICY "Service role can manage orders" ON orders FOR ALL USING (auth.role() = 'service_role');
 
 -- RLS Policies for order_items
 CREATE POLICY "Venue owners can view order items" ON order_items FOR SELECT USING (
@@ -120,10 +123,12 @@ CREATE POLICY "Venue owners can view order items" ON order_items FOR SELECT USIN
     )
 );
 CREATE POLICY "Anyone can create order items" ON order_items FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can manage order items" ON order_items FOR ALL USING (auth.role() = 'service_role');
 
 -- RLS Policies for menu_cache
 CREATE POLICY "Anyone can view menu cache" ON menu_cache FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert into menu cache" ON menu_cache FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can manage menu cache" ON menu_cache FOR ALL USING (auth.role() = 'service_role');
 
 -- Insert demo data
 INSERT INTO users (id, email, password_hash, full_name) VALUES 
