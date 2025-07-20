@@ -158,9 +158,247 @@ export default function CustomerOrderPage() {
   const filteredItems =
     selectedCategory === "all" ? menuItems : menuItems.filter((item) => item.category === selectedCategory)
 
+  if (orderSubmitted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="p-8">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Confirmed!</h2>
+            <p className="text-gray-600 mb-4">Your order is on its way to the kitchen.</p>
+            <div className="text-left mb-4">
+              <h3 className="font-semibold mb-2">Order Summary:</h3>
+              <ul className="mb-2">
+                {cart.map((item) => (
+                  <li key={item.id} className="flex justify-between text-sm mb-1">
+                    <span>{item.quantity}x {item.name}</span>
+                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="font-bold flex justify-between">
+                <span>Total:</span>
+                <span>${getTotalPrice().toFixed(2)}</span>
+              </div>
+            </div>
+            <Button onClick={() => setOrderSubmitted(false)} className="w-full">
+              Place Another Order
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* UI content here */}
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Image src="/assets/servio-logo-updated.png" alt="Servio Logo" width={120} height={48} style={{ height: 64, width: 120 }} priority />
+              <h1 className="text-2xl font-bold text-gray-900">Order Menu</h1>
+            </div>
+            <div className="flex items-center space-x-2">
+              <ShoppingCart className="w-5 h-5" />
+              <span className="font-medium">{getTotalItems()} items</span>
+              <span className="text-green-600 font-bold">${getTotalPrice().toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {loadingMenu ? (
+          <div className="text-center text-gray-500 py-12">Loading menu...</div>
+        ) : menuError ? (
+          <div className="text-center text-red-500 py-12">{menuError}</div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Menu Items */}
+            <div className="lg:col-span-2">
+              {/* Category Filter */}
+              <div className="flex space-x-2 mb-6 overflow-x-auto">
+                {categories.map((category) => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    onClick={() => setSelectedCategory(category)}
+                    className="whitespace-nowrap capitalize"
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
+              {/* Menu Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredItems.map((item) => (
+                  <Card key={item.id} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold text-lg">{item.name}</h3>
+                        <div className="flex items-center space-x-1">
+                          {item.rating && (
+                            <>
+                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                              <span className="text-sm text-gray-600">{item.rating}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-gray-600 text-sm mb-3">{item.description}</p>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xl font-bold text-green-600">${item.price.toFixed(2)}</span>
+                        {item.prep_time && (
+                          <div className="flex items-center text-gray-500 text-sm">
+                            <Clock className="w-4 h-4 mr-1" />
+                            {item.prep_time} min
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary" className="capitalize">
+                          {item.category}
+                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          {cart.find((cartItem) => cartItem.id === item.id) ? (
+                            <div className="flex items-center space-x-2">
+                              <Button size="sm" variant="outline" onClick={() => removeFromCart(item.id)}>
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <span className="font-medium">
+                                {cart.find((cartItem) => cartItem.id === item.id)?.quantity}
+                              </span>
+                              <Button size="sm" onClick={() => addToCart(item)}>
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button onClick={() => addToCart(item)}>Add to Cart</Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+            {/* Cart & Checkout */}
+            <div className="lg:col-span-1">
+              <Card className="sticky top-24">
+                <CardHeader>
+                  <CardTitle>Your Order</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {cart.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">Your cart is empty</p>
+                  ) : (
+                    <>
+                      {/* Cart Items */}
+                      <div className="space-y-3 max-h-64 overflow-y-auto">
+                        {cart.map((item) => (
+                          <div key={item.id} className="border-b pb-3">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-medium">{item.name}</h4>
+                              <span className="font-bold">${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <Button size="sm" variant="outline" onClick={() => removeFromCart(item.id)}>
+                                  <Minus className="w-3 h-3" />
+                                </Button>
+                                <span>{item.quantity}</span>
+                                <Button size="sm" onClick={() => addToCart(item)}>
+                                  <Plus className="w-3 h-3" />
+                                </Button>
+                              </div>
+                              <span className="text-sm text-gray-600">${item.price.toFixed(2)} each</span>
+                            </div>
+                            <Textarea
+                              placeholder="Special instructions..."
+                              value={item.special_instructions || ""}
+                              onChange={(e) => updateSpecialInstructions(item.id, e.target.value)}
+                              className="text-sm"
+                              rows={2}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      {/* Total */}
+                      <div className="border-t pt-3">
+                        <div className="flex justify-between items-center text-lg font-bold">
+                          <span>Total:</span>
+                          <span className="text-green-600">${getTotalPrice().toFixed(2)}</span>
+                        </div>
+                      </div>
+                      {/* Customer Info */}
+                      <div className="space-y-3 border-t pt-3">
+                        <Input
+                          placeholder="Your name *"
+                          value={customerInfo.name}
+                          onChange={(e) => setCustomerInfo((prev) => ({ ...prev, name: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Phone number *"
+                          value={customerInfo.phone}
+                          onChange={(e) => setCustomerInfo((prev) => ({ ...prev, phone: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Table number (optional)"
+                          value={customerInfo.table_number}
+                          onChange={(e) => setCustomerInfo((prev) => ({ ...prev, table_number: e.target.value }))}
+                        />
+                      </div>
+                      {/* Checkout Button */}
+                      <Button onClick={() => setShowCheckout(true)} disabled={isSubmitting || cart.length === 0} className="w-full">
+                        Checkout
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Checkout Modal */}
+      {showCheckout && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4">Choose Payment Method</h2>
+            <div className="flex flex-col space-y-3 mb-6">
+              <Button variant={selectedPayment === 'apple' ? 'default' : 'outline'} onClick={() => setSelectedPayment('apple')} className="flex items-center space-x-2">
+                <Apple className="w-5 h-5 mr-2" /> Apple Pay
+              </Button>
+              <Button variant={selectedPayment === 'google' ? 'default' : 'outline'} onClick={() => setSelectedPayment('google')} className="flex items-center space-x-2">
+                <Smartphone className="w-5 h-5 mr-2" /> Google Pay
+              </Button>
+              <Button variant={selectedPayment === 'card' ? 'default' : 'outline'} onClick={() => setSelectedPayment('card')} className="flex items-center space-x-2">
+                <CreditCard className="w-5 h-5 mr-2" /> Card / Stripe
+              </Button>
+            </div>
+            <Button
+              className="w-full mb-2"
+              disabled={!selectedPayment}
+              onClick={async () => {
+                setShowCheckout(false)
+                setIsSubmitting(true)
+                await submitOrder()
+                setIsSubmitting(false)
+                setOrderSubmitted(true)
+              }}
+            >
+              Pay & Place Order
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => setShowCheckout(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
