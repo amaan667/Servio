@@ -98,6 +98,14 @@ export default function HomePage() {
     }
   };
 
+  const handleDemo = () => {
+    if (session) {
+      router.push("/order?venue=demo-cafe&table=1");
+    } else {
+      router.push("/order?demo=1");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -132,7 +140,7 @@ export default function HomePage() {
                   size="lg"
                   variant="outline"
                   className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
-                  onClick={() => router.push("/order?venue=demo-cafe&table=1")}
+                  onClick={handleDemo}
                 >
                   <QrCode className="mr-2 h-5 w-5" />
                   View Demo
@@ -412,7 +420,7 @@ export default function HomePage() {
               size="lg"
               variant="outline"
               className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
-              onClick={() => router.push("/order?venue=demo-cafe&table=1")}
+              onClick={handleDemo}
             >
               Try the Demo
             </Button>
