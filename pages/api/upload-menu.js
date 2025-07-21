@@ -31,21 +31,273 @@ const supabase = createClient(
 // --- OPENAI CLIENT --- //
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// --- CATEGORY MAPPING (for normalization if needed downstream) --- //
-// Allowed categories for strict matching
-const allowedCategories = [
-  "Starters",
-  "Breakfast-Mains",
-  "Salads",
-  "Sandwiches-Wraps",
-  "Burgers",
-  "Kids",
-  "Desserts",
-  "Beverages-Hot",
-  "Beverages-Cold",
-  "Specials",
-  "Sides-AddOns"
-];
+// --- DYNAMIC MENU ANALYZER --- //
+
+// Analyze the uploaded menu to understand its structure and cuisine
+async function analyzeMenuStructure(text) {
+  log('Analyzing menu structure and cuisine type');
+  
+  const analysis = {
+    cuisine: 'unknown',
+    restaurantType: 'casual',
+    sections: [],
+    priceRange: { min: 0, max: 0, avg: 0 },
+    language: 'english',
+    categories: []
+  };
+
+  // Extract all prices to understand price range
+  const priceMatches = text.match(/£[\d.,]+|\$[\d.,]+|€[\d.,]+/g) || [];
+  const prices = priceMatches.map(p => parseFloat(p.replace(/[£$€,]/g, ''))).filter(p => p > 0);
+  
+  if (prices.length > 0) {
+    analysis.priceRange = {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+      avg: prices.reduce((a, b) => a + b, 0) / prices.length
+    };
+  }
+
+  // Detect cuisine type based on dish names and keywords
+  const cuisineIndicators = {
+    'middle-eastern': ['labneh', 'kibbeh', 'shakshuka', 'houmous', 'hummus', 'tahini', 'za\'atar', 'shawarma', 'falafel', 'mutbal', 'baba ghanoush', 'kofta', 'kebab'],
+    'italian': ['pasta', 'pizza', 'risotto', 'gnocchi', 'bruschetta', 'antipasti', 'tiramisu', 'gelato', 'carbonara', 'bolognese', 'margherita', 'parmigiana'],
+    'mexican': ['tacos', 'burritos', 'quesadillas', 'enchiladas', 'guacamole', 'nachos', 'churros', 'salsa', 'jalapeño', 'tortilla', 'chipotle'],
+    'asian': ['sushi', 'ramen', 'pad thai', 'dim sum', 'tempura', 'yakitori', 'pho', 'bibimbap', 'teriyaki', 'miso', 'wasabi', 'edamame'],
+    'indian': ['curry', 'tandoori', 'biryani', 'naan', 'samosa', 'dosa', 'masala', 'dal', 'paneer', 'chapati', 'vindaloo', 'korma'],
+    'american': ['burger', 'wings', 'bbq', 'ribs', 'mac and cheese', 'coleslaw', 'cornbread', 'pancakes', 'waffles', 'club sandwich'],
+    'french': ['croissant', 'baguette', 'coq au vin', 'ratatouille', 'crème brûlée', 'escargot', 'bouillabaisse', 'quiche', 'crepe'],
+    'greek': ['gyros', 'souvlaki', 'moussaka', 'tzatziki', 'dolmades', 'spanakopita', 'baklava', 'feta', 'olives'],
+    'chinese': ['chow mein', 'kung pao', 'sweet and sour', 'spring rolls', 'dumpling', 'fried rice', 'dim sum', 'szechuan'],
+    'thai': ['pad thai', 'tom yum', 'green curry', 'red curry', 'massaman', 'som tam', 'mango sticky rice'],
+    'japanese': ['sushi', 'sashimi', 'tempura', 'ramen', 'udon', 'yakitori', 'miso', 'teriyaki', 'bento']
+  };
+
+  let maxMatches = 0;
+  const textLower = text.toLowerCase();
+  
+  for (const [cuisine, indicators] of Object.entries(cuisineIndicators)) {
+    const matches = indicators.filter(indicator => textLower.includes(indicator)).length;
+    if (matches > maxMatches) {
+      maxMatches = matches;
+      analysis.cuisine = cuisine;
+    }
+  }
+
+  // Detect restaurant type based on price range and vocabulary
+  if (analysis.priceRange.avg > 25) {
+    analysis.restaurantType = 'fine-dining';
+  } else if (analysis.priceRange.avg < 8) {
+    analysis.restaurantType = 'fast-food';
+  } else if (textLower.includes('café') || textLower.includes('coffee') || textLower.includes('breakfast')) {
+    analysis.restaurantType = 'cafe';
+  } else if (textLower.includes('bar') || textLower.includes('pub')) {
+    analysis.restaurantType = 'bar';
+  }
+
+  // Extract section headers dynamically
+  const lines = text.split('\n');
+  const sectionPatterns = [
+    /^[A-Z\s&]{4,}$/,  // ALL CAPS sections
+    /^[A-Z][a-z\s&]+:?\s*$/,  // Title Case sections
+    /^\*{2,}[^*]+\*{2,}$/,  // **SECTION**
+    /^={3,}[^=]+={3,}$/,  // ===SECTION===
+    /^-{3,}[^-]+-{3,}$/,  // ---SECTION---
+  ];
+
+  const commonSections = ['menu', 'starters', 'mains', 'desserts', 'beverages', 'appetizers', 'salads', 'sandwiches', 'breakfast', 'lunch', 'dinner', 'specials'];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length > 3 && trimmed.length < 30) {
+      // Check if it matches section patterns
+      let isSection = false;
+      for (const pattern of sectionPatterns) {
+        if (pattern.test(trimmed) && !priceMatches.some(p => trimmed.includes(p))) {
+          isSection = true;
+          break;
+        }
+      }
+      
+      // Or if it's a common section word
+      const lowerTrimmed = trimmed.toLowerCase();
+      if (commonSections.some(section => lowerTrimmed.includes(section))) {
+        isSection = true;
+      }
+      
+      if (isSection) {
+        const cleanSection = trimmed.replace(/[*=:-]/g, '').trim();
+        if (!analysis.sections.includes(cleanSection) && cleanSection.length > 2) {
+          analysis.sections.push(cleanSection);
+        }
+      }
+    }
+  }
+
+  // Generate dynamic categories based on analysis
+  analysis.categories = generateDynamicCategories(analysis);
+  
+  log('Menu analysis complete:', {
+    cuisine: analysis.cuisine,
+    type: analysis.restaurantType,
+    priceRange: analysis.priceRange,
+    sections: analysis.sections.length,
+    categories: analysis.categories.length
+  });
+  
+  return analysis;
+}
+
+// Generate categories dynamically based on menu analysis
+function generateDynamicCategories(analysis) {
+  const baseCategories = ['Mains', 'Beverages', 'Desserts', 'Sides'];
+  const additionalCategories = [];
+
+  // Add cuisine-specific categories
+  switch (analysis.cuisine) {
+    case 'middle-eastern':
+      additionalCategories.push('Mezze', 'Grills', 'Wraps', 'Hot-Dishes');
+      break;
+    case 'italian':
+      additionalCategories.push('Antipasti', 'Pasta', 'Pizza', 'Risotto');
+      break;
+    case 'mexican':
+      additionalCategories.push('Appetizers', 'Tacos', 'Burritos', 'Quesadillas');
+      break;
+    case 'asian':
+    case 'chinese':
+    case 'japanese':
+    case 'thai':
+      additionalCategories.push('Appetizers', 'Sushi', 'Noodles', 'Rice', 'Curry');
+      break;
+    case 'indian':
+      additionalCategories.push('Appetizers', 'Curry', 'Tandoor', 'Breads', 'Rice');
+      break;
+    case 'french':
+      additionalCategories.push('Starters', 'Entrees', 'Cheese', 'Wine');
+      break;
+    case 'greek':
+      additionalCategories.push('Mezze', 'Grills', 'Salads');
+      break;
+    default:
+      additionalCategories.push('Appetizers', 'Salads', 'Sandwiches', 'Burgers');
+  }
+
+  // Add restaurant-type specific categories
+  switch (analysis.restaurantType) {
+    case 'cafe':
+      additionalCategories.push('Breakfast', 'Light-Bites', 'Coffee', 'Pastries');
+      break;
+    case 'fast-food':
+      additionalCategories.push('Burgers', 'Kids', 'Combo-Meals', 'Snacks');
+      break;
+    case 'fine-dining':
+      additionalCategories.push('Starters', 'Wine', 'Tasting-Menu', 'Cheese');
+      break;
+    case 'bar':
+      additionalCategories.push('Bar-Snacks', 'Cocktails', 'Beer', 'Wine');
+      break;
+  }
+
+  // Add detected sections as categories if they make sense
+  for (const section of analysis.sections) {
+    const normalized = section
+      .replace(/[^a-zA-Z\s]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/^(the|our|daily|fresh|house|signature|chef|special)/i, '');
+    
+    if (normalized.length > 2 && normalized.length < 20 && !normalized.match(/^(menu|page|section)$/i)) {
+      additionalCategories.push(normalized.charAt(0).toUpperCase() + normalized.slice(1));
+    }
+  }
+
+  // Remove duplicates and return
+  const allCategories = [...new Set([...baseCategories, ...additionalCategories])];
+  
+  // Ensure we don't have too many categories (max 15)
+  return allCategories.slice(0, 15);
+}
+
+// Dynamic categorization based on menu analysis
+function categorizeDynamic(itemName, price, menuAnalysis) {
+  const name = itemName.toLowerCase();
+  const numPrice = parseFloat(price) || 0;
+  
+  // Use detected sections first if item matches
+  for (const section of menuAnalysis.sections) {
+    const sectionLower = section.toLowerCase();
+    const sectionWords = sectionLower.split(/\s+/);
+    
+    // Check if item name contains any words from the section
+    if (sectionWords.some(word => word.length > 3 && name.includes(word))) {
+      const categoryName = section.replace(/\s+/g, '-').replace(/[^a-zA-Z-]/g, '');
+      if (menuAnalysis.categories.includes(categoryName)) {
+        return categoryName;
+      }
+    }
+  }
+
+  // Cuisine-specific logic
+  switch (menuAnalysis.cuisine) {
+    case 'middle-eastern':
+      if (name.match(/(labneh|kibbeh|houmous|hummus|mutbal|bourak|mezze)/)) return 'Mezze';
+      if (name.match(/(shawarma|wrap)/)) return 'Wraps';
+      if (name.match(/(grilled|kebab|kofta)/)) return 'Grills';
+      break;
+      
+    case 'italian':
+      if (name.match(/(bruschetta|antipasti|caprese|prosciutto)/)) return 'Antipasti';
+      if (name.match(/(spaghetti|penne|ravioli|linguine|carbonara|bolognese)/)) return 'Pasta';
+      if (name.match(/(margherita|pepperoni|quattro|pizza)/)) return 'Pizza';
+      if (name.match(/(risotto)/)) return 'Risotto';
+      break;
+      
+    case 'mexican':
+      if (name.match(/(nachos|guacamole|salsa)/)) return 'Appetizers';
+      if (name.match(/(taco|soft shell|hard shell)/)) return 'Tacos';
+      if (name.match(/(burrito)/)) return 'Burritos';
+      if (name.match(/(quesadilla)/)) return 'Quesadillas';
+      break;
+      
+    case 'asian':
+    case 'japanese':
+      if (name.match(/(sushi|sashimi|maki|roll)/)) return 'Sushi';
+      if (name.match(/(ramen|udon|noodle)/)) return 'Noodles';
+      if (name.match(/(rice|fried rice|teriyaki)/)) return 'Rice';
+      break;
+      
+    case 'indian':
+      if (name.match(/(samosa|pakora|chaat)/)) return 'Appetizers';
+      if (name.match(/(curry|masala|vindaloo|korma)/)) return 'Curry';
+      if (name.match(/(tandoori|tikka)/)) return 'Tandoor';
+      if (name.match(/(naan|roti|chapati|bread)/)) return 'Breads';
+      if (name.match(/(biryani|rice)/)) return 'Rice';
+      break;
+  }
+
+  // Universal patterns
+  if (name.match(/(coffee|espresso|latte|cappuccino|mocha|americano|macchiato|cortado)/)) return 'Beverages';
+  if (name.match(/(tea|chai|matcha|herbal|green tea|black tea)/)) return 'Beverages';
+  if (name.match(/(juice|smoothie|soda|water|beer|wine|cocktail|mocktail)/)) return 'Beverages';
+  if (name.match(/(kids?|children|mini|junior)/)) return 'Kids';
+  if (name.match(/(cake|ice cream|dessert|sweet|chocolate|pie|tart|pudding|brownie)/)) return 'Desserts';
+  if (name.match(/(salad|greens|caesar|greek|garden)/)) return 'Salads';
+  if (name.match(/(sandwich|burger|wrap|panini|club|melt)/)) return 'Sandwiches';
+  
+  // Price-based categorization adjusted to menu's price range
+  const avgPrice = menuAnalysis.priceRange.avg;
+  if (avgPrice > 0) {
+    if (numPrice < avgPrice * 0.4) return 'Sides';
+    if (numPrice > avgPrice * 1.8) return 'Specials';
+  } else {
+    // Fallback price thresholds
+    if (numPrice < 5) return 'Sides';
+    if (numPrice > 20) return 'Specials';
+  }
+  
+  return 'Mains';
+}
 
 // --- UTILS --- //
 function generateHash(buffer) {
@@ -53,11 +305,24 @@ function generateHash(buffer) {
 }
 
 async function getCache(hash) {
-  const { data } = await supabase.from('menu_cache').select('result').eq('hash', hash).single();
-  return data ? data.result : null;
+  try {
+    const { data } = await supabase.from('menu_cache').select('result').eq('hash', hash).single();
+    return data ? data.result : null;
+  } catch {
+    return null;
+  }
 }
+
 async function setCache(hash, result) {
-  await supabase.from('menu_cache').upsert({ hash, result, created_at: new Date().toISOString() });
+  try {
+    await supabase.from('menu_cache').upsert({ 
+      hash, 
+      result, 
+      created_at: new Date().toISOString() 
+    });
+  } catch (error) {
+    log('Cache save failed:', error.message);
+  }
 }
 
 async function checkOpenAIQuota() {
@@ -76,65 +341,129 @@ async function checkOpenAIQuota() {
 
 // --- MAIN EXTRACTOR LOGIC --- //
 async function extractTextFromPDF(buffer) {
-  const { text } = await pdf(buffer);
-  if (!text || text.length < 20) throw new Error('No readable text extracted from PDF');
-  return text;
+  try {
+    const { text } = await pdf(buffer);
+    if (!text || text.length < 20) {
+      throw new Error('No readable text extracted from PDF');
+    }
+    return text;
+  } catch (error) {
+    log('PDF extraction error:', error.message);
+    throw new Error('Failed to extract text from PDF: ' + error.message);
+  }
 }
 
-// Extract menu items from text using GPT-4o
+// Updated extraction function with dynamic analysis
 async function extractMenuItemsFromText(text) {
-  log('Extracting menu items from text using GPT-4o');
+  log('Starting dynamic menu extraction');
   try {
-    const systemPrompt = `You are a menu-data curator.\n\nYou will be given raw extracted text from a restaurant menu.\n\nYour job is to return ONLY a valid JSON array, no explanations or extra text.\n\nRules:\n- You MUST use only the following categories as the \"category\" field for each item:\n    [${allowedCategories.map(c => `\"${c}\"`).join(", ")}]\n- If you are unsure, choose the *closest* matching category based on the dish, but never use \"Uncategorized\".\n- Each menu item object must look like this:\n    {\n      \"name\": \"Dish Name (no ALL CAPS, no trailing prices)\",\n      \"price\": <number>, // GBP value, as a number (e.g. 7.5)\n      \"description\": \"Short, clean, under 20 words.\",\n      \"available\": true,\n      \"category\": \"EXACT_CATEGORY\"\n    }\n- Ignore anything that does not match a real menu item (skip headings, random text, etc).\n- Do not output explanations, markdown, or any formatting except valid JSON.\n\nExamples:\n[\n  {\n    \"name\": \"Eggs Benedict\",\n    \"price\": 6.5,\n    \"description\": \"Poached eggs, muffin, hollandaise.\",\n    \"available\": true,\n    \"category\": \"Breakfast-Mains\"\n  },\n  {\n    \"name\": \"Baba Ghanoush\",\n    \"price\": 7.0,\n    \"description\": \"Aubergine, tahini, garlic, bread.\",\n    \"available\": true,\n    \"category\": \"Starters\"\n  },\n  {\n    \"name\": \"Chai Latte\",\n    \"price\": 3.9,\n    \"description\": \"\",\n    \"available\": true,\n    \"category\": \"Beverages-Hot\"\n  }\n]\n\nOnly output a JSON array in this format.`;
+    // Step 1: Analyze the menu structure
+    const menuAnalysis = await analyzeMenuStructure(text);
+    
+    // Step 2: Create dynamic system prompt
+    const systemPrompt = `You are extracting menu items from a ${menuAnalysis.cuisine} ${menuAnalysis.restaurantType} restaurant.
 
-    const userPrompt = `Extract all menu items from the following text. Group items under logical categories based on section headers or item types.\n\nRules:\n- Only include items with both name and price\n- Prices should be numbers, not strings\n- If no description is available, use empty string\n- Do not include any explanations or markdown formatting\n- Never use 'Uncategorized' as a category\n- Infer categories from context if not explicitly stated\n- Only use these categories: ${allowedCategories.join(", ")}\n\nHere is the menu text:\n---\n${text}\n---`;
+DETECTED MENU STRUCTURE:
+- Cuisine: ${menuAnalysis.cuisine}
+- Type: ${menuAnalysis.restaurantType}  
+- Price Range: £${menuAnalysis.priceRange.min}-£${menuAnalysis.priceRange.max} (avg: £${menuAnalysis.priceRange.avg.toFixed(2)})
+- Detected Sections: ${menuAnalysis.sections.join(', ')}
 
-    log('Sending text to GPT-4o for menu extraction');
+USE THESE CATEGORIES ONLY (choose the most appropriate):
+${menuAnalysis.categories.map(cat => `- "${cat}"`).join('\n')}
+
+STRICT RULES:
+1. Extract ONLY items with clear names and prices
+2. Use the detected sections above as context for categorization
+3. Match the cuisine style and restaurant type
+4. If uncertain about category, use "Mains" as default
+5. Never use "Uncategorized" or create new categories
+6. Return ONLY a valid JSON array
+7. Ensure every item has: name, price (as number), description, available (true), category
+
+FORMAT REQUIRED:
+[{"name": "Item Name", "price": 12.50, "description": "Brief description", "available": true, "category": "Exact-Category-Name"}]`;
+
+    const userPrompt = `Extract ALL menu items from this ${menuAnalysis.cuisine} restaurant menu. Focus on items with clear prices and names:\n\n${text}`;
+
+    log('Sending dynamic prompt to GPT-4o');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      max_tokens: 2048,
+      max_tokens: 4000,
       temperature: 0.1,
     });
     
     const content = response.choices[0].message.content;
-    log('GPT-4o response received, content length:', content?.length || 0);
+    log('GPT-4o response received, length:', content?.length || 0);
     
-    // Parse the JSON response
+    // Extract JSON from response
     const jsonMatch = content.match(/\[.*\]/s);
     if (!jsonMatch) {
       log('ERROR: No JSON array found in GPT response');
-      throw new Error('No valid JSON array found in GPT response');
+      throw new Error('No valid JSON found in response');
     }
     
     let menuItems;
     try {
       menuItems = JSON.parse(jsonMatch[0]);
-    } catch (e) {
-      log('ERROR: Failed to parse GPT response as JSON:', e.message);
-      throw new Error('Failed to parse GPT response as JSON');
+    } catch (parseError) {
+      log('ERROR: JSON parse failed:', parseError.message);
+      throw new Error('Invalid JSON in GPT response');
     }
     
-    // Post-processing: filter only allowed categories
-    const filteredMenuItems = menuItems.filter(item =>
-      item.category &&
-      allowedCategories.map(c => c.toLowerCase()).includes(item.category.trim().toLowerCase())
-    );
-    const flaggedItems = menuItems.filter(item =>
-      !item.category ||
-      !allowedCategories.map(c => c.toLowerCase()).includes(item.category.trim().toLowerCase())
-    );
-    if (flaggedItems.length > 0) {
-      log('Flagged items with invalid categories for manual review:', flaggedItems);
+    if (!Array.isArray(menuItems)) {
+      throw new Error('Response is not an array');
     }
-    log('Filtered menu items to allowed categories:', filteredMenuItems.length);
     
-    return filteredMenuItems;
+    // Step 3: Apply dynamic fallback categorization and validation
+    const processedItems = menuItems
+      .filter(item => {
+        // Basic validation
+        if (!item.name || typeof item.name !== 'string') return false;
+        if (item.price === undefined || item.price === null || isNaN(parseFloat(item.price))) return false;
+        return true;
+      })
+      .map(item => {
+        // Ensure price is a number
+        item.price = parseFloat(item.price);
+        
+        // Clean up the name
+        item.name = item.name.replace(/[£$€]\d+\.?\d*/g, '').trim();
+        
+        // Fix category if needed
+        if (!item.category || !menuAnalysis.categories.includes(item.category)) {
+          log(`Applying dynamic categorization for: ${item.name} (was: ${item.category})`);
+          item.category = categorizeDynamic(item.name, item.price, menuAnalysis);
+        }
+        
+        // Ensure category exists in our dynamic list
+        if (!menuAnalysis.categories.includes(item.category)) {
+          log(`Final fallback to Mains for: ${item.name}`);
+          item.category = 'Mains';
+        }
+        
+        // Ensure other required fields
+        item.available = item.available !== false;
+        item.description = item.description || '';
+        
+        return item;
+      });
+    
+    // Log results
+    const categoryCount = {};
+    processedItems.forEach(item => {
+      categoryCount[item.category] = (categoryCount[item.category] || 0) + 1;
+    });
+    
+    log(`Successfully extracted ${processedItems.length} items:`, categoryCount);
+    
+    return processedItems;
   } catch (error) {
-    log('ERROR in extractMenuItemsFromText:', error.message);
+    log('ERROR in dynamic extraction:', error.message);
     throw error;
   }
 }
@@ -143,55 +472,73 @@ async function extractMenuItemsFromText(text) {
 function deduplicateMenuItems(items) {
   const seen = new Set();
   const unique = [];
+  
   for (const item of items) {
-    const key = `${item.name?.toLowerCase().trim()}-${item.price}`;
+    // Create a more sophisticated key for deduplication
+    const key = `${item.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}-${item.price}`;
+    
     if (!seen.has(key)) {
       seen.add(key);
       unique.push(item);
+    } else {
+      log(`Duplicate removed: ${item.name} - £${item.price}`);
     }
   }
+  
   return unique;
 }
 
 // --- MAIN API HANDLER --- //
 async function handler(req, res) {
-  log('API request', {
+  log('API request received', {
     method: req.method,
     contentType: req.headers['content-type'],
-    hasFile: !!req.file,
-    bodyKeys: Object.keys(req.body || {})
+    hasFile: !!req.file
   });
 
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Check OpenAI quota
   if (!(await checkOpenAIQuota())) {
-    res.status(429).json({ error: 'OpenAI quota exceeded. Please top up your account.' });
-    return;
+    return res.status(429).json({ 
+      error: 'OpenAI quota exceeded. Please top up your account.',
+      code: 'QUOTA_EXCEEDED'
+    });
   }
 
   const processFile = async (filePath, mimeType, venueId) => {
     const fileBuffer = fs.readFileSync(filePath);
     const hash = generateHash(fileBuffer);
+    
+    // Check cache first
     const cached = await getCache(hash);
-    if (cached) return cached;
+    if (cached) {
+      log('Using cached result');
+      return cached;
+    }
 
     if (mimeType === 'application/pdf') {
       const text = await extractTextFromPDF(fileBuffer);
       const extracted = await extractMenuItemsFromText(text);
+      
+      // Cache the result
       await setCache(hash, extracted);
       return extracted;
+    } else {
+      throw new Error('Unsupported file type. Please upload a PDF file.');
     }
-    throw new Error('Unsupported file type');
   };
 
-  // Support for multipart upload only
+  // Handle multipart upload
   upload.single('menu')(req, res, async (err) => {
     if (err) {
-      res.status(500).json({ error: 'Upload failed', detail: err.message });
-      return;
+      log('Upload error:', err.message);
+      return res.status(500).json({ 
+        error: 'File upload failed', 
+        detail: err.message 
+      });
     }
 
     const filePath = req.file?.path;
@@ -199,34 +546,74 @@ async function handler(req, res) {
     const venueId = req.body.venueId || req.query.venueId;
 
     if (!filePath || !mimeType || !venueId) {
-      res.status(400).json({ error: 'Missing file, MIME type, or venueId.' });
-      return;
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        required: ['file', 'mimeType', 'venueId'],
+        received: { filePath: !!filePath, mimeType: !!mimeType, venueId: !!venueId }
+      });
     }
 
     try {
+      log('Processing file:', { mimeType, venueId });
+      
       const items = await processFile(filePath, mimeType, venueId);
       const deduped = deduplicateMenuItems(items);
-      if (!deduped.length) throw new Error('No valid menu items found');
-      // Insert to DB
-      log('Inserting items into database');
+      
+      if (!deduped.length) {
+        throw new Error('No valid menu items found in the uploaded file');
+      }
+      
+      // Insert to database
+      log(`Inserting ${deduped.length} items into database`);
       const { data, error } = await supabase
         .from('menu_items')
         .upsert(
           deduped.map(item => ({
             ...item,
             venue_id: venueId,
-            available: true,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           })),
           { onConflict: ['venue_id', 'name'] }
         );
-      if (error) throw error;
-      res.status(200).json({ success: true, count: deduped.length, items: deduped });
-    } catch (e) {
-      log('Extraction error', e.message);
-      res.status(500).json({ error: 'Menu extraction failed', detail: e.message });
+      
+      if (error) {
+        log('Database error:', error);
+        throw new Error('Failed to save menu items to database: ' + error.message);
+      }
+      
+      // Success response
+      const categoryBreakdown = {};
+      deduped.forEach(item => {
+        categoryBreakdown[item.category] = (categoryBreakdown[item.category] || 0) + 1;
+      });
+      
+      log('Extraction completed successfully');
+      res.status(200).json({ 
+        success: true, 
+        count: deduped.length, 
+        categories: Object.keys(categoryBreakdown).length,
+        categoryBreakdown,
+        items: deduped
+      });
+      
+    } catch (error) {
+      log('Processing error:', error.message);
+      res.status(500).json({ 
+        error: 'Menu extraction failed', 
+        detail: error.message,
+        code: 'EXTRACTION_FAILED'
+      });
     } finally {
-      if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      // Cleanup uploaded file
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+          log('Temporary file cleaned up');
+        } catch (cleanupError) {
+          log('File cleanup failed:', cleanupError.message);
+        }
+      }
     }
   });
 }
