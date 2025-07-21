@@ -170,8 +170,26 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     }
     setExtracting(true);
     setError(null);
-    setError("Website extraction is not supported in the new local OCR system. Please upload a menu file directly.");
-    setExtracting(false);
+    try {
+      // Call backend for unified URL extraction (PDF or HTML)
+      const response = await fetch("/api/upload-menu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menuUrl: menuUrl.trim(), venueId }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        setError(result.error || "Failed to extract menu from URL.");
+      } else {
+        // You may want to update the menu items state here, e.g. setMenuItems(result.items)
+        setError(null);
+        // Optionally show a success message or update UI
+      }
+    } catch (error: any) {
+      setError(error.message || "Failed to extract menu from URL.");
+    } finally {
+      setExtracting(false);
+    }
   }
 
   const handleAddItem = async () => {
