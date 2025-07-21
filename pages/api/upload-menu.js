@@ -92,7 +92,7 @@ async function extractMenuItemsFromText(text) {
 
     log('Sending text to GPT-3.5 for menu extraction');
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
