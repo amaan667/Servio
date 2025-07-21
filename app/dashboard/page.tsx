@@ -71,15 +71,24 @@ export default function Dashboard() {
       return;
     }
 
-    logger.info("DASHBOARD: Session validated successfully", {
-      userId: validatedSession.user.id,
-      venueId: validatedSession.venue.venue_id,
-    });
-    setSession(validatedSession);
-    setLoading(false);
-
-    // Fetch dashboard data
-    fetchDashboardData(validatedSession.venue.id);
+    // Check if user owns a venue (business profile)
+    async function checkProfile() {
+      if (!supabase || !validatedSession) return;
+      const { data, error } = await supabase
+        .from("venues")
+        .select("*")
+        .eq("owner_id", validatedSession.user.id)
+        .maybeSingle();
+      if (!data || error) {
+        router.replace("/complete-profile");
+        return;
+      }
+      setSession(validatedSession);
+      setLoading(false);
+      // Fetch dashboard data
+      fetchDashboardData(validatedSession.venue.id);
+    }
+    checkProfile();
   }, [router]);
 
   const fetchDashboardData = async (venueId: string) => {
