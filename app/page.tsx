@@ -21,98 +21,7 @@ import {
   X,
 } from "lucide-react"
 import { getValidatedSession, type AuthSession } from "@/lib/supabase"
-
-const plans = [
-  {
-    name: "Starter",
-    price: "£99",
-    period: "/month",
-    features: [
-      "Up to 10 tables",
-      "Max 90 orders/month",
-      "Up to 5 active QR codes",
-      "Basic menu & order management",
-      "Order notifications",
-      "Email support",
-    ],
-    button: "Start Free Trial",
-  },
-  {
-    name: "Standard",
-    price: "£199",
-    period: "/month",
-    badge: "Most Popular",
-    features: [
-      "Up to 20 tables",
-      "Max 500 orders/month",
-      "Up to 20 QR codes",
-      "Advanced menu management",
-      "Real-time analytics",
-      "Payment integration",
-      "Priority email & chat support",
-    ],
-    button: "Start Free Trial",
-  },
-  {
-    name: "Premium",
-    price: "£449",
-    period: "/month",
-    features: [
-      "Unlimited tables & orders",
-      "Unlimited QR codes",
-      "Multi-location support",
-      "Custom branding & integrations",
-      "Advanced reporting & insights",
-      "24/7 phone & chat support",
-      "Hardware integration (coming soon)",
-    ],
-    button: "Contact Sales",
-  },
-]
-
-function Pricing() {
-  return (
-    <section className="bg-gray-50 py-12 px-2 sm:px-4 text-center">
-      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Simple, Transparent Pricing</h2>
-      <p className="mt-2 text-gray-600 text-base sm:text-lg">Choose the plan that works best for your restaurant</p>
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
-        {plans.map((plan, i) => (
-          <div
-            key={i}
-            className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200 w-full max-w-md mx-auto flex flex-col"
-          >
-            {plan.badge && (
-              <span className="inline-block mb-3 px-3 py-1 text-xs sm:text-sm font-semibold text-white bg-purple-600 rounded-full">
-                {plan.badge}
-              </span>
-            )}
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{plan.name}</h3>
-            <p className="mt-2 text-2xl sm:text-3xl font-bold text-gray-900">
-              {plan.price} <span className="text-base font-medium text-gray-500">{plan.period}</span>
-            </p>
-            <ul className="mt-4 sm:mt-6 space-y-2 sm:space-y-3 text-left">
-              {plan.features.map((feature, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                  <CheckCircle className="text-green-500 w-5 h-5 min-w-5 min-h-5" />
-                  <span className="break-words">{feature}</span>
-                </li>
-              ))}
-            </ul>
-            <button
-              className={`mt-6 w-full py-2 rounded-md text-white font-medium text-base sm:text-lg ${
-                plan.button === "Contact Sales"
-                  ? "bg-gray-800"
-                  : "bg-purple-600 hover:bg-purple-700"
-              }`}
-            >
-              {plan.button}
-            </button>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
+import PricingQuickCompare from "@/components/PricingQuickCompare"
 
 export default function HomePage() {
   const [session, setSession] = useState<AuthSession | null>(null)
@@ -386,7 +295,7 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <Pricing />
+      <PricingQuickCompare />
 
       {/* CTA Section */}
       <section className="py-24 bg-gradient-to-r from-purple-600 to-purple-700 text-white">
