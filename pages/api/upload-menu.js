@@ -1,18 +1,13 @@
 import multer from 'multer';
 import fs from 'fs';
+import fetch from 'node-fetch';
+import pdf from 'pdf-parse';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
-import pdf from 'pdf-parse';
-import axios from 'axios';
+import crypto from 'crypto';
 import cheerio from 'cheerio';
 
-const ALLOWED_CATEGORIES = [
-  "Starters", "Breakfast-Mains", "Salads", "Sandwiches-Wraps",
-  "Burgers", "Kids", "Desserts", "Beverages-Hot", "Beverages-Cold",
-  "Specials", "Sides-AddOns"
-];
-
-// -- File upload config (10MB limit, /tmp dir)
+// Multer config for file uploads
 const upload = multer({
   storage: multer.diskStorage({
     destination: '/tmp',
@@ -22,233 +17,247 @@ const upload = multer({
 });
 export const config = { api: { bodyParser: false } };
 
+// Supabase init
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
+
+// OpenAI
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// --- UTILS --- //
 function log(msg, data) {
-  const time = new Date().toISOString();
-  console.log(`[MENU_EXTRACTION] ${time}: ${msg}`, data ?? '');
+  const t = new Date().toISOString();
+  console.log(`[MENU_EXTRACTION] ${t}: ${msg}`, data ?? '');
 }
-
-// --- Strict AI Extraction Function ---
-async function extractMenuItemsFromText(text) {
-  log('Extracting menu items from text using GPT-4o');
+function generateHash(buffer) {
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+async function getCache(hash) {
   try {
-    log('Raw extracted text:', text?.slice(0, 1000) + (text.length > 1000 ? '... [truncated]' : ''));
-    const systemPrompt = `You are a menu extraction bot.\nReturn ONLY a single valid JSON array of menu items as described.\nDo NOT include markdown, explanation, or any text before or after the JSON array.\nIf the menu is too long for one array, split your output into multiple JSON arrays, each on its own line (no explanations).\nEach item must have: name (string), price (number), description (string), available (true/false), category (string, from this list: [${ALLOWED_CATEGORIES.map(c => `\"${c}\"`).join(", ")}]).`;
-
-    const userPrompt = `Extract all menu items from the following text. Group items under logical categories based on section headers or item types.\n\nRules:\n- Only include items with both name and price\n- Prices should be numbers, not strings\n- If no description is available, use empty string\n- Do not include any explanations or markdown formatting\n- Never use 'Uncategorized' as a category\n- Infer categories from context if not explicitly stated\n- Only use these categories: ${ALLOWED_CATEGORIES.join(", ")}\n\nHere is the menu text:\n---\n${text}\n---`;
-
-    log('System prompt sent to GPT-4o:', systemPrompt);
-    log('User prompt sent to GPT-4o:', userPrompt);
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      max_tokens: 4096,
-      temperature: 0.1,
+    const { data } = await supabase.from('menu_cache').select('result').eq('hash', hash).single();
+    return data ? data.result : null;
+  } catch { return null; }
+}
+async function setCache(hash, result) {
+  try {
+    await supabase.from('menu_cache').upsert({
+      hash, result, created_at: new Date().toISOString()
     });
-    
-    const content = response.choices[0].message.content;
-    log('[GPT RAW RESPONSE]', content);
-    
-    // Try to extract the *largest* valid JSON array from response, even if extra text appears.
-    const jsonMatches = content.match(/\[[\s\S]*?\]/g);
-    if (!jsonMatches || !jsonMatches[0]) {
-      log('ERROR: No JSON array found in GPT response');
-      throw new Error('No valid JSON array found in GPT response');
-    }
-    
-    let menuItems;
-    try {
-      menuItems = JSON.parse(jsonMatches[0]);
-      log('Parsed JSON menu items:', menuItems.length, menuItems.slice(0, 3));
-    } catch (e) {
-      log('ERROR: Failed to parse JSON, attempting to repair...');
-      // Optionally, you could send jsonMatches[0] to GPT-3.5 with a "fix this broken JSON array" prompt or use a repair library here.
-      throw new Error('Failed to parse GPT response as JSON');
-    }
-    
-    // Post-processing: filter only allowed categories
-    const filteredMenuItems = menuItems.filter(item =>
-      item.category &&
-      ALLOWED_CATEGORIES.map(c => c.toLowerCase()).includes(item.category.trim().toLowerCase())
-    );
-    const flaggedItems = menuItems.filter(item =>
-      !item.category ||
-      !ALLOWED_CATEGORIES.map(c => c.toLowerCase()).includes(item.category.trim().toLowerCase())
-    );
-    if (flaggedItems.length > 0) {
-      log('Flagged items with invalid categories for manual review:', flaggedItems);
-    }
-    log('Filtered menu items to allowed categories:', filteredMenuItems.length, filteredMenuItems.slice(0, 3));
-    
-    return filteredMenuItems;
-  } catch (error) {
-    log('ERROR in extractMenuItemsFromText:', error.message, error.stack);
-    throw error;
-  }
+  } catch (error) { log('Cache save failed:', error.message); }
 }
-
-// --- Main PDF Extraction Pipeline ---
-async function extractTextFromPDF(buffer) {
+async function checkOpenAIQuota() {
   try {
-    const { text } = await pdf(buffer);
-    if (!text || text.length < 20) throw new Error('No readable text extracted from PDF');
-    return text;
-  } catch (error) {
-    throw new Error('Failed to extract text from PDF: ' + error.message);
+    await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: "test" }],
+      max_tokens: 1,
+    });
+    return true;
+  } catch (err) {
+    log('OpenAI quota error', err.message);
+    return false;
   }
 }
+async function extractTextFromPDF(buffer) {
+  const { text } = await pdf(buffer);
+  if (!text || text.length < 20) throw new Error('No readable text extracted from PDF');
+  return text;
+}
 
+// --- EXTRACT TEXT FROM URL --- //
+async function extractTextFromUrl(url) {
+  log('Downloading page: ' + url);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch the provided URL.');
+  const contentType = res.headers.get('content-type');
+  // If it's a PDF
+  if (contentType.includes('pdf')) {
+    const buffer = await res.buffer();
+    return await extractTextFromPDF(buffer);
+  }
+  // Otherwise, try HTML
+  const html = await res.text();
+  const $ = cheerio.load(html);
+  // Try to find <main>, <section>, or "menu" in id/class/text
+  let menuText = '';
+  $('section,main,div').each((_, el) => {
+    const $el = $(el);
+    const txt = $el.text();
+    const idClass = ($el.attr('id') || '') + ' ' + ($el.attr('class') || '');
+    if (
+      idClass.toLowerCase().includes('menu') ||
+      txt.toLowerCase().includes('starters') ||
+      txt.toLowerCase().includes('mains') ||
+      txt.toLowerCase().includes('breakfast') ||
+      txt.length > 300
+    ) {
+      menuText += txt.trim() + '\n';
+    }
+  });
+  // If nothing smart, fallback to all text
+  if (!menuText || menuText.length < 100) menuText = $('body').text();
+  if (!menuText || menuText.length < 50) throw new Error('No menu-like content found in page.');
+  return menuText;
+}
+
+// --- GPT MENU EXTRACTION (text-in) --- //
+async function extractMenuItemsFromText(text) {
+  // Use your best system prompt from earlier
+  const systemPrompt = `You are an expert menu extraction assistant. 
+Extract ALL menu items with prices from this text. 
+Return only a JSON array: 
+[{"name":"", "price":0, "description":"", "available":true, "category":""}]
+Only use these categories: Starters, Breakfast-Mains, Salads, Sandwiches-Wraps, Burgers, Kids, Desserts, Beverages-Hot, Beverages-Cold, Specials, Sides-AddOns.
+Never use "Uncategorized".
+Prices must be numbers. Do not include markdown or explanations.
+`;
+  const userPrompt = `Extract all menu items from this menu:\n\n${text}\n\nRemember: ONLY valid JSON array, no markdown.`;
+  log('Prompting GPT-4o...');
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    max_tokens: 4096,
+    temperature: 0.1,
+  });
+  const content = response.choices[0].message.content;
+  // Extract JSON array
+  const jsonMatch = content.match(/\[.*\]/s);
+  if (!jsonMatch) throw new Error('No valid JSON array found in GPT response');
+  let items;
+  try { items = JSON.parse(jsonMatch[0]); } catch { throw new Error('Invalid JSON from GPT'); }
+  return items;
+}
+
+// --- DEDUPLICATION --- //
 function deduplicateMenuItems(items) {
-  const seen = new Set();
-  const unique = [];
+  const seen = new Set(), unique = [];
   for (const item of items) {
     const key = `${item.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}-${item.price}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(item);
-    }
+    if (!seen.has(key)) { seen.add(key); unique.push(item); }
   }
   return unique;
 }
 
-// Download PDF from URL
-async function downloadPdfBuffer(url) {
-  log('Downloading PDF from URL:', url);
-  const response = await axios.get(url, { responseType: 'arraybuffer' });
-  return response.data;
+// --- MAIN API HANDLER --- //
+async function processMenuExtraction({ filePath, mimeType, url, venueId }) {
+  let text, buffer, hash;
+  // PDF Upload
+  if (filePath) {
+    buffer = fs.readFileSync(filePath);
+    hash = generateHash(buffer);
+    const cached = await getCache(hash);
+    if (cached) return cached;
+    text = await extractTextFromPDF(buffer);
+    const items = await extractMenuItemsFromText(text);
+    await setCache(hash, items);
+    return items;
+  }
+  // URL Input
+  if (url) {
+    // Use url as cache hash base
+    hash = crypto.createHash('sha256').update(url).digest('hex');
+    const cached = await getCache(hash);
+    if (cached) return cached;
+    text = await extractTextFromUrl(url);
+    const items = await extractMenuItemsFromText(text);
+    await setCache(hash, items);
+    return items;
+  }
+  throw new Error('No menu file or URL provided');
 }
 
-// Extract text from downloaded PDF
-async function extractMenuFromPdfUrl(url) {
-  const pdfBuffer = await downloadPdfBuffer(url);
-  const data = await pdf(pdfBuffer);
-  log('Extracted text from PDF URL, length:', data.text.length);
-  return data.text;
-}
-
-// Download and extract menu text from HTML page
-async function extractMenuFromHtmlUrl(url) {
-  log('Downloading HTML from URL:', url);
-  const response = await axios.get(url);
-  const $ = cheerio.load(response.data);
-  let menuText = '';
-  const menuSelectors = ['.menu', '#menu', '.menu-section', '.menu-list'];
-  for (const sel of menuSelectors) {
-    if ($(sel).length > 0) {
-      menuText = $(sel).text();
-      log('Found menu section with selector:', sel);
-      break;
-    }
-  }
-  if (!menuText) {
-    menuText = $('body').text();
-    log('Falling back to full body text, length:', menuText.length);
-  }
-  return menuText;
-}
-
-// Unified extraction from URL
-async function extractMenuFromUrl(url) {
-  log('Starting unified menu extraction from URL:', url);
-  if (url.endsWith('.pdf')) {
-    return await extractMenuFromPdfUrl(url);
-  }
-  try {
-    const headRes = await axios.head(url);
-    if (headRes.headers['content-type'] && headRes.headers['content-type'].includes('pdf')) {
-      return await extractMenuFromPdfUrl(url);
-    }
-  } catch (e) {
-    log('HEAD request failed, proceeding as HTML:', e.message);
-  }
-  return await extractMenuFromHtmlUrl(url);
-}
-
-// --- Main Handler ---
+// --- API ROUTE EXPORT --- //
 async function handler(req, res) {
-  log('API request', {
+  log('API request received', {
     method: req.method,
     contentType: req.headers['content-type'],
-    hasFile: !!req.file,
-    bodyKeys: Object.keys(req.body || {})
+    hasFile: !!req.file
   });
 
-  if (req.method === 'POST') {
-    // Check for URL extraction
-    if (req.body && req.body.menuUrl) {
-      const url = req.body.menuUrl;
-      try {
-        log('Extracting menu from URL:', url);
-        const menuText = await extractMenuFromUrl(url);
-        log('Menu text extracted from URL, length:', menuText.length);
-        const extractedItems = await extractMenuItemsFromText(menuText);
-        // The original code had a processExtractedData function here, but it's not defined.
-        // Assuming it's meant to be part of the existing pipeline or will be added later.
-        // For now, we'll just return the extracted items.
-        res.status(200).json({
-          success: true,
-          count: extractedItems.length,
-          items: extractedItems
-        });
-        return;
-      } catch (error) {
-        log('ERROR extracting menu from URL:', error.message);
-        return res.status(500).json({ error: 'Failed to extract menu from URL', detail: error.message });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  if (!(await checkOpenAIQuota())) {
+    return res.status(429).json({ error: 'OpenAI quota exceeded. Please top up your account.', code: 'QUOTA_EXCEEDED' });
+  }
+
+  // Manual JSON body parsing for application/json requests
+  if (req.headers['content-type'] === 'application/json') {
+    try {
+      const body = req.body;
+      const venueId = body.venueId || body.venueId; // Use req.body.venueId
+      const url = body.url || body.url; // Use req.body.url
+
+      if (!venueId) {
+        return res.status(400).json({ error: 'Missing venue ID in JSON body' });
       }
+      if (!url) {
+        return res.status(400).json({ error: 'Missing menu URL in JSON body' });
+      }
+
+      const items = await processMenuExtraction({ venueId, url });
+      const deduped = deduplicateMenuItems(items);
+      if (!deduped.length) throw new Error('No valid menu items found');
+      // Insert into db (optional - remove if not needed)
+      await supabase.from('menu_items').upsert(
+        deduped.map(item => ({
+          ...item,
+          venue_id: venueId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })), { onConflict: ['venue_id', 'name'] }
+      );
+      res.status(200).json({ success: true, count: deduped.length, items: deduped });
+    } catch (error) {
+      log('Processing error:', error.message);
+      res.status(500).json({ error: 'Menu extraction failed', detail: error.message, code: 'EXTRACTION_FAILED' });
     }
-
+  } else {
+    // Multer for file uploads
     upload.single('menu')(req, res, async (err) => {
-      if (err) return res.status(500).json({ error: 'File upload failed', detail: err.message });
-
+      if (err) {
+        log('Upload error:', err.message);
+        return res.status(500).json({ error: 'File upload failed', detail: err.message });
+      }
       const filePath = req.file?.path;
       const mimeType = req.file?.mimetype;
       const venueId = req.body.venueId || req.query.venueId;
-      if (!filePath || !mimeType || !venueId) {
-        return res.status(400).json({ error: 'Missing required fields' });
+      const url = req.body.url || req.query.url;
+
+      if (!filePath && !url) {
+        return res.status(400).json({ error: 'Please provide a menu file or a menu URL.' });
       }
-
+      if (!venueId) {
+        return res.status(400).json({ error: 'Missing venue ID' });
+      }
       try {
-        // 1. Extract text from PDF
-        const buffer = fs.readFileSync(filePath);
-        const text = await extractTextFromPDF(buffer);
-
-        // 2. Extract menu items from text
-        const items = await extractMenuItemsFromText(text);
-        if (!items.length) throw new Error('No valid menu items found in file');
+        const items = await processMenuExtraction({ filePath, mimeType, url, venueId });
         const deduped = deduplicateMenuItems(items);
-
-        // 3. Save to DB
+        if (!deduped.length) throw new Error('No valid menu items found');
+        // Insert into db (optional - remove if not needed)
         await supabase.from('menu_items').upsert(
           deduped.map(item => ({
             ...item,
             venue_id: venueId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          })),
-          { onConflict: ['venue_id', 'name'] }
+          })), { onConflict: ['venue_id', 'name'] }
         );
-
-        res.status(200).json({
-          success: true,
-          count: deduped.length,
-          items: deduped
-        });
+        res.status(200).json({ success: true, count: deduped.length, items: deduped });
       } catch (error) {
-        res.status(500).json({ error: 'Menu extraction failed', detail: error.message });
+        log('Processing error:', error.message);
+        res.status(500).json({ error: 'Menu extraction failed', detail: error.message, code: 'EXTRACTION_FAILED' });
       } finally {
-        if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        if (filePath && fs.existsSync(filePath)) {
+          try { fs.unlinkSync(filePath); log('Temp file cleaned up'); } catch {}
+        }
       }
     });
-  } else {
-    res.status(405).json({ error: 'Method not allowed' });
   }
 }
 
