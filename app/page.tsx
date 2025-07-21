@@ -393,6 +393,11 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* PricingQuickCompare Section */}
+      <section id="pricing" className="py-24 bg-white">
+        <PricingQuickCompare />
+      </section>
+
       {/* Pricing Section */}
       <section className="py-24 bg-gradient-to-r from-purple-600 to-purple-700 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
