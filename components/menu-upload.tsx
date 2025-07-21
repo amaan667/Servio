@@ -396,40 +396,12 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="url" className="w-full">
+          <Tabs defaultValue="file" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="url">Image URL</TabsTrigger>
               <TabsTrigger value="file">File Upload</TabsTrigger>
+              <TabsTrigger value="url">Image URL</TabsTrigger>
               <TabsTrigger value="text">Text Input</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="url" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="menu-url">Menu Image URL</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="menu-url"
-                    placeholder="https://example.com/menu-image.jpg"
-                    value={menuUrl}
-                    onChange={(e) => setMenuUrl(e.target.value)}
-                    disabled={isLoading}
-                  />
-                  <Button onClick={handleUrlUpload} disabled={isLoading || !menuUrl.trim()}>
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
-                    Extract
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-500">
-                  Paste a direct link to a menu image (JPG, PNG, etc.) and we'll extract the menu items automatically.
-                </p>
-                <div className="text-xs text-gray-400">
-                  <p>• Supported formats: JPG, JPEG, PNG, GIF, WebP, BMP</p>
-                  <p>• Make sure the image is clear and well-lit for best results</p>
-                  <p>• Maximum file size: 10MB</p>
-                  <p>• Note: Only direct image URLs are supported, not website pages</p>
-                </div>
-              </div>
-            </TabsContent>
 
             <TabsContent value="file" className="space-y-4">
               <div className="space-y-2">
@@ -464,6 +436,34 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
                 <p className="text-sm text-gray-500">
                   Upload a PDF menu or image. We'll use OCR to extract items automatically.
                 </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="url" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="menu-url">Menu Image URL</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="menu-url"
+                    placeholder="https://example.com/menu-image.jpg"
+                    value={menuUrl}
+                    onChange={(e) => setMenuUrl(e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <Button onClick={handleUrlUpload} disabled={isLoading || !menuUrl.trim()}>
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
+                    Extract
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-500">
+                  Paste a direct link to a menu image (JPG, PNG, etc.) and we'll extract the menu items automatically.
+                </p>
+                <div className="text-xs text-gray-400">
+                  <p>• Supported formats: JPG, JPEG, PNG, GIF, WebP, BMP</p>
+                  <p>• Make sure the image is clear and well-lit for best results</p>
+                  <p>• Maximum file size: 10MB</p>
+                  <p>• Note: Only direct image URLs are supported, not website pages</p>
+                </div>
               </div>
             </TabsContent>
 
