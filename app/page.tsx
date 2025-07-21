@@ -27,17 +27,13 @@ function PricingQuickCompare() {
     <div className="w-full flex flex-col items-center gap-8 py-10">
       <h2 className="text-3xl font-bold mb-4">Choose the plan that works best for your restaurant</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
-        {/* Starter */}
+        {/* Basic */}
         <Card className="flex flex-col items-center p-6 gap-4">
-          <div className="text-2xl font-semibold">Starter</div>
-          <div className="text-3xl font-bold mb-1">£99<span className="text-lg font-normal">/month</span></div>
+          <div className="text-2xl font-semibold">Basic</div>
           <ul className="mb-4 space-y-1 text-left">
             <li>✔ Up to 10 tables</li>
-            <li>✔ Max 90 orders/month</li>
-            <li>✔ Up to 5 active QR codes</li>
-            <li>✔ Basic menu & order management</li>
-            <li>✔ Order notifications</li>
-            <li>✔ Email support</li>
+            <li>✔ QR ordering</li>
+            <li>✔ 14-day free trial</li>
           </ul>
           <Button className="w-full bg-purple-600 text-white">Start Free Trial</Button>
         </Card>
@@ -47,30 +43,22 @@ function PricingQuickCompare() {
           <div className="w-full flex justify-center">
             <span className="bg-purple-500 text-white text-xs px-3 py-1 rounded-full mb-2">Most Popular</span>
           </div>
-          <div className="text-3xl font-bold mb-1">£199<span className="text-lg font-normal">/month</span></div>
           <ul className="mb-4 space-y-1 text-left">
+            <li>✔ Everything in Basic, plus:</li>
             <li>✔ Up to 20 tables</li>
-            <li>✔ Max 500 orders/month</li>
-            <li>✔ Up to 20 QR codes</li>
-            <li>✔ Advanced menu management</li>
-            <li>✔ Real-time analytics</li>
-            <li>✔ Payment integration</li>
-            <li>✔ Priority email & chat support</li>
+            <li>✔ Full analytics dashboard</li>
+            <li>✔ Email support</li>
           </ul>
           <Button className="w-full bg-purple-600 text-white">Start Free Trial</Button>
         </Card>
         {/* Premium */}
         <Card className="flex flex-col items-center p-6 gap-4">
           <div className="text-2xl font-semibold">Premium</div>
-          <div className="text-3xl font-bold mb-1">£449<span className="text-lg font-normal">/month</span></div>
           <ul className="mb-4 space-y-1 text-left">
-            <li>✔ Unlimited tables & orders</li>
-            <li>✔ Unlimited QR codes</li>
-            <li>✔ Multi-location support</li>
-            <li>✔ Custom branding & integrations</li>
-            <li>✔ Advanced reporting & insights</li>
-            <li>✔ 24/7 phone & chat support</li>
-            <li>✔ Hardware integration (coming soon)</li>
+            <li>✔ Everything in Standard, plus:</li>
+            <li>✔ Unlimited tables & venues</li>
+            <li>✔ Priority support</li>
+            <li>✔ Custom onboarding & integrations</li>
           </ul>
           <Button className="w-full bg-gray-900 text-white">Contact Sales</Button>
         </Card>
