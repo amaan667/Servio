@@ -36,7 +36,7 @@ async function extractMenuItemsFromText(text) {
   log('Extracting menu items from text using GPT-4o');
   try {
     log('Raw extracted text:', text?.slice(0, 1000) + (text.length > 1000 ? '... [truncated]' : ''));
-    const systemPrompt = `You are a menu-data curator.\n\nYou will be given raw extracted text from a restaurant menu.\n\nYour job is to return ONLY a valid JSON array, no explanations or extra text.\n\nRules:\n- You MUST use only the following categories as the \"category\" field for each item:\n    [${ALLOWED_CATEGORIES.map(c => `\"${c}\"`).join(", ")}]\n- If you are unsure, choose the *closest* matching category based on the dish, but never use \"Uncategorized\".\n- Each menu item object must look like this:\n    {\n      \"name\": \"Dish Name (no ALL CAPS, no trailing prices)\",\n      \"price\": <number>, // GBP value, as a number (e.g. 7.5)\n      \"description\": \"Short, clean, under 20 words.\",\n      \"available\": true,\n      \"category\": \"EXACT_CATEGORY\"\n    }\n- Ignore anything that does not match a real menu item (skip headings, random text, etc).\n- Do not output explanations, markdown, or any formatting except valid JSON.\n\nExamples:\n[\n  {\n    \"name\": \"Eggs Benedict\",\n    \"price\": 6.5,\n    \"description\": \"Poached eggs, muffin, hollandaise.\",\n    \"available\": true,\n    \"category\": \"Breakfast-Mains\"\n  },\n  {\n    \"name\": \"Baba Ghanoush\",\n    \"price\": 7.0,\n    \"description\": \"Aubergine, tahini, garlic, bread.\",\n    \"available\": true,\n    \"category\": \"Starters\"\n  },\n  {\n    \"name\": \"Chai Latte\",\n    \"price\": 3.9,\n    \"description\": \"\",\n    \"available\": true,\n    \"category\": \"Beverages-Hot\"\n  }\n]\n\nOnly output a JSON array in this format.`;
+    const systemPrompt = `You are a menu extraction bot.\nReturn ONLY a single valid JSON array of menu items as described.\nDo NOT include markdown, explanation, or any text before or after the JSON array.\nIf the menu is too long for one array, split your output into multiple JSON arrays, each on its own line (no explanations).\nEach item must have: name (string), price (number), description (string), available (true/false), category (string, from this list: [${ALLOWED_CATEGORIES.map(c => `\"${c}\"`).join(", ")}]).`;
 
     const userPrompt = `Extract all menu items from the following text. Group items under logical categories based on section headers or item types.\n\nRules:\n- Only include items with both name and price\n- Prices should be numbers, not strings\n- If no description is available, use empty string\n- Do not include any explanations or markdown formatting\n- Never use 'Uncategorized' as a category\n- Infer categories from context if not explicitly stated\n- Only use these categories: ${ALLOWED_CATEGORIES.join(", ")}\n\nHere is the menu text:\n---\n${text}\n---`;
 
@@ -48,26 +48,27 @@ async function extractMenuItemsFromText(text) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      max_tokens: 2048,
+      max_tokens: 4096,
       temperature: 0.1,
     });
     
     const content = response.choices[0].message.content;
-    log('Raw GPT-4o response:', content?.slice(0, 2000) + (content.length > 2000 ? '... [truncated]' : ''));
+    log('[GPT RAW RESPONSE]', content);
     
-    // Parse the JSON response
-    const jsonMatch = content.match(/\[.*\]/s);
-    if (!jsonMatch) {
+    // Try to extract the *largest* valid JSON array from response, even if extra text appears.
+    const jsonMatches = content.match(/\[[\s\S]*?\]/g);
+    if (!jsonMatches || !jsonMatches[0]) {
       log('ERROR: No JSON array found in GPT response');
       throw new Error('No valid JSON array found in GPT response');
     }
     
     let menuItems;
     try {
-      menuItems = JSON.parse(jsonMatch[0]);
+      menuItems = JSON.parse(jsonMatches[0]);
       log('Parsed JSON menu items:', menuItems.length, menuItems.slice(0, 3));
     } catch (e) {
-      log('ERROR: Failed to parse GPT response as JSON:', e.message);
+      log('ERROR: Failed to parse JSON, attempting to repair...');
+      // Optionally, you could send jsonMatches[0] to GPT-3.5 with a "fix this broken JSON array" prompt or use a repair library here.
       throw new Error('Failed to parse GPT response as JSON');
     }
     
