@@ -201,14 +201,18 @@ async function handler(req, res) {
       const deduped = deduplicateMenuItems(items);
       if (!deduped.length) throw new Error('No valid menu items found');
       // Insert to DB
-      const { error } = await supabase.from('menu_items').insert(
-        deduped.map(item => ({
-          ...item,
-          venue_id: venueId,
-          available: true,
-          created_at: new Date().toISOString()
-        }))
-      );
+      log('Inserting items into database');
+      const { data, error } = await supabase
+        .from('menu_items')
+        .upsert(
+          deduped.map(item => ({
+            ...item,
+            venue_id: venueId,
+            available: true,
+            created_at: new Date().toISOString()
+          })),
+          { onConflict: ['venue_id', 'name'] }
+        );
       if (error) throw error;
       res.status(200).json({ success: true, count: deduped.length, items: deduped });
     } catch (e) {
