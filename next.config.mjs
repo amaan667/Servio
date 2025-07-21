@@ -9,7 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  serverExternalPackages: ['tesseract.js', 'pdf-poppler']
-}
+  serverExternalPackages: ["tesseract.js", "pdf-poppler"],
+};
 
-export default nextConfig
+export default nextConfig;

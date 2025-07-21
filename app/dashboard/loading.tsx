@@ -6,5 +6,5 @@ export default function DashboardLoading() {
         <p className="text-gray-600">Loading dashboard...</p>
       </div>
     </div>
-  )
+  );
 }

@@ -1,25 +1,41 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ExternalLink, QrCode, AlertTriangle, RefreshCw } from "lucide-react"
-import { MenuManagement } from "@/components/menu-management"
-import { LiveOrders } from "@/components/live-orders"
-import { getValidatedSession, signOutUser, type AuthSession } from "@/lib/supabase"
-import { logger } from "@/lib/logger"
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  ExternalLink,
+  QrCode,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react";
+import { MenuManagement } from "@/components/menu-management";
+import { LiveOrders } from "@/components/live-orders";
+import {
+  getValidatedSession,
+  signOutUser,
+  type AuthSession,
+} from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export default function VenueDashboard() {
   const params = useParams() || {};
   const router = useRouter();
   const venueId = (params as Record<string, any>).venueId as string;
 
-  const [session, setSession] = useState<AuthSession | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     logger.info("Initializing venue dashboard", { venueId });
@@ -54,8 +70,14 @@ export default function VenueDashboard() {
     router.push("/");
   };
 
-  const orderPageUrl = typeof window !== 'undefined' ? `${window.location.origin}/order?venue=${venueId}&table=1` : '';
-  const qrCodeUrl = typeof window !== 'undefined' ? `${window.location.origin}/generate-qr?venue=${venueId}` : '';
+  const orderPageUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/order?venue=${venueId}&table=1`
+      : "";
+  const qrCodeUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/generate-qr?venue=${venueId}`
+      : "";
 
   if (loading) {
     return (
@@ -73,7 +95,9 @@ export default function VenueDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>Session expired. Please sign in again.</AlertDescription>
+          <AlertDescription>
+            Session expired. Please sign in again.
+          </AlertDescription>
         </Alert>
       </div>
     );
@@ -90,14 +114,20 @@ export default function VenueDashboard() {
                 <ExternalLink className="mr-2 h-5 w-5" />
                 Customer Order Page
               </CardTitle>
-              <CardDescription>Direct link for customers to place orders</CardDescription>
+              <CardDescription>
+                Direct link for customers to place orders
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <code className="text-sm break-all">{orderPageUrl}</code>
                 </div>
-                <Button onClick={() => window.open(orderPageUrl, "_blank")} className="w-full" variant="outline">
+                <Button
+                  onClick={() => window.open(orderPageUrl, "_blank")}
+                  className="w-full"
+                  variant="outline"
+                >
                   <ExternalLink className="mr-2 h-4 w-4" />
                   Open Order Page
                 </Button>
@@ -111,10 +141,15 @@ export default function VenueDashboard() {
                 <QrCode className="mr-2 h-5 w-5" />
                 QR Code Generator
               </CardTitle>
-              <CardDescription>Generate QR codes for table ordering</CardDescription>
+              <CardDescription>
+                Generate QR codes for table ordering
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => window.open(qrCodeUrl, "_blank")} className="w-full">
+              <Button
+                onClick={() => window.open(qrCodeUrl, "_blank")}
+                className="w-full"
+              >
                 <QrCode className="mr-2 h-4 w-4" />
                 Generate QR Codes
               </Button>

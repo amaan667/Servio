@@ -1,109 +1,113 @@
-import { createClient as SupabaseCreateClient } from "@supabase/supabase-js"
-import { logger } from "./logger"
+import { createClient as SupabaseCreateClient } from "@supabase/supabase-js";
+import { logger } from "./logger";
 
 // Environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const hasSupabaseConfig = !!(supabaseUrl && supabaseAnonKey)
+export const hasSupabaseConfig = !!(supabaseUrl && supabaseAnonKey);
 
-export const supabase = hasSupabaseConfig ? SupabaseCreateClient(supabaseUrl!, supabaseAnonKey!) : null
+export const supabase = hasSupabaseConfig
+  ? SupabaseCreateClient(supabaseUrl!, supabaseAnonKey!)
+  : null;
 
 // Types
 export interface User {
-  id: string
-  email: string
-  full_name: string
-  created_at: string
+  id: string;
+  email: string;
+  full_name: string;
+  created_at: string;
 }
 
 export interface Venue {
-  id: string
-  venue_id: string
-  name: string
-  business_type: string
-  address?: string
-  phone?: string
-  email?: string
-  owner_id: string
-  created_at: string
+  id: string;
+  venue_id: string;
+  name: string;
+  business_type: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  owner_id: string;
+  created_at: string;
 }
 
 export interface MenuItem {
-  id: string
-  venue_id: string
-  name: string
-  description?: string
-  price: number
-  category: string
-  available: boolean
-  created_at: string
+  id: string;
+  venue_id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category: string;
+  available: boolean;
+  created_at: string;
 }
 
 export interface Order {
-  id: string
-  order_number: number
-  venue_id: string
-  table_number: number
-  customer_name: string
-  customer_phone?: string
-  status: string
-  total_amount: number
-  notes?: string
-  created_at: string
+  id: string;
+  order_number: number;
+  venue_id: string;
+  table_number: number;
+  customer_name: string;
+  customer_phone?: string;
+  status: string;
+  total_amount: number;
+  notes?: string;
+  created_at: string;
 }
 
 export interface AuthSession {
-  user: User
-  venue: Venue
+  user: User;
+  venue: Venue;
 }
 
 // Session management
-let currentSession: AuthSession | null = null
+let currentSession: AuthSession | null = null;
 
 export function setSession(session: AuthSession | null) {
-  currentSession = session
+  currentSession = session;
   if (typeof window !== "undefined") {
     if (session) {
-      localStorage.setItem("servio_session", JSON.stringify(session))
+      localStorage.setItem("servio_session", JSON.stringify(session));
     } else {
-      localStorage.removeItem("servio_session")
+      localStorage.removeItem("servio_session");
     }
   }
 }
 
 export function getValidatedSession(): AuthSession | null {
-  if (currentSession) return currentSession
+  if (currentSession) return currentSession;
 
   if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("servio_session")
+    const stored = localStorage.getItem("servio_session");
     if (stored) {
       try {
-        const session = safeJsonParse(stored)
+        const session = safeJsonParse(stored);
         if (session) {
-        currentSession = session
-        return session
+          currentSession = session;
+          return session;
         } else {
-          logger.error("Failed to parse stored session: not valid JSON", { stored })
-          localStorage.removeItem("servio_session")
+          logger.error("Failed to parse stored session: not valid JSON", {
+            stored,
+          });
+          localStorage.removeItem("servio_session");
         }
       } catch (error) {
-        logger.error("Failed to parse stored session", { error })
-        localStorage.removeItem("servio_session")
+        logger.error("Failed to parse stored session", { error });
+        localStorage.removeItem("servio_session");
       }
     }
   }
 
-  return null
+  return null;
 }
 
 function safeJsonParse(str: string) {
-  const trimmed = (str || '').trim();
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+  const trimmed = (str || "").trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     try {
       return JSON.parse(trimmed);
     } catch (e) {
-      console.log('safeJsonParse error:', e, 'input:', trimmed);
+      console.log("safeJsonParse error:", e, "input:", trimmed);
       return null;
     }
   }
@@ -111,46 +115,62 @@ function safeJsonParse(str: string) {
 }
 
 export function clearSession() {
-  currentSession = null
+  currentSession = null;
   if (typeof window !== "undefined") {
-    localStorage.removeItem("servio_session")
+    localStorage.removeItem("servio_session");
   }
 }
 
 // Auth functions
-export async function signUpUser(email: string, password: string, fullName: string, venueName: string, venueType: string) {
+export async function signUpUser(
+  email: string,
+  password: string,
+  fullName: string,
+  venueName: string,
+  venueType: string,
+) {
   if (!supabase) {
-    return { success: false, message: "Database connection not available" }
+    return { success: false, message: "Database connection not available" };
   }
 
   try {
-    logger.info("Attempting sign up", { email, fullName })
+    logger.info("Attempting sign up", { email, fullName });
 
     // Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin + '/dashboard' : undefined,
+        emailRedirectTo:
+          typeof window !== "undefined"
+            ? window.location.origin + "/dashboard"
+            : undefined,
         data: { full_name: fullName },
       },
-    })
+    });
 
     if (error || !data.user) {
-      logger.error("Failed to sign up user", { error })
-      return { success: false, message: error?.message || "Failed to create account" }
+      logger.error("Failed to sign up user", { error });
+      return {
+        success: false,
+        message: error?.message || "Failed to create account",
+      };
     }
 
     // Check for session (user is authenticated if session exists)
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {
       // No session means email confirmation is required
-      return { success: true, message: "Check your email to confirm your account. You'll be able to set up your business after confirming." }
+      return {
+        success: true,
+        message:
+          "Check your email to confirm your account. You'll be able to set up your business after confirming.",
+      };
     }
 
     // Create default venue for the user (as authenticated user)
-    const userId = data.user.id
-    const venueId = `venue-${userId.slice(0, 8)}`
+    const userId = data.user.id;
+    const venueId = `venue-${userId.slice(0, 8)}`;
     let { data: venueData, error: venueError } = await supabase
       .from("venues")
       .select("*")
@@ -167,7 +187,8 @@ export async function signUpUser(email: string, password: string, fullName: stri
         })
         .select()
         .single();
-      if (createVenueError && createVenueError.code === '23505') { // Unique violation
+      if (createVenueError && createVenueError.code === "23505") {
+        // Unique violation
         // Venue already exists, fetch it
         const { data: existingVenue, error: fetchError } = await supabase
           .from("venues")
@@ -175,13 +196,19 @@ export async function signUpUser(email: string, password: string, fullName: stri
           .eq("owner_id", userId)
           .single();
         if (fetchError || !existingVenue) {
-          logger.error("Failed to fetch existing venue after unique violation", { error: fetchError })
-          return { success: false, message: "Failed to fetch existing venue for this user" }
+          logger.error(
+            "Failed to fetch existing venue after unique violation",
+            { error: fetchError },
+          );
+          return {
+            success: false,
+            message: "Failed to fetch existing venue for this user",
+          };
         }
         venueData = existingVenue;
       } else if (createVenueError || !newVenue) {
-        logger.error("Failed to create venue", { error: createVenueError })
-        return { success: false, message: "Failed to set up your business" }
+        logger.error("Failed to create venue", { error: createVenueError });
+        return { success: false, message: "Failed to set up your business" };
       } else {
         venueData = newVenue;
       }
@@ -195,39 +222,49 @@ export async function signUpUser(email: string, password: string, fullName: stri
         created_at: data.user.created_at!,
       },
       venue: venueData,
-    }
-    setSession(session)
-    logger.info("Sign up successful", { userId, venueId })
-    return { success: true, session }
+    };
+    setSession(session);
+    logger.info("Sign up successful", { userId, venueId });
+    return { success: true, session };
   } catch (error) {
-    logger.error("Sign up error", { error })
-    return { success: false, message: "An unexpected error occurred" }
+    logger.error("Sign up error", { error });
+    return { success: false, message: "An unexpected error occurred" };
   }
 }
 
 export async function signInUser(email: string, password: string) {
   if (!supabase) {
-    return { success: false, message: "Database connection not available" }
+    return { success: false, message: "Database connection not available" };
   }
 
   try {
-    logger.info("Attempting sign in", { email })
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    logger.info("Attempting sign in", { email });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error || !data.user) {
-      logger.error("Sign in failed", { error })
-      return { success: false, message: error?.message || "Invalid email or password" }
+      logger.error("Sign in failed", { error });
+      return {
+        success: false,
+        message: error?.message || "Invalid email or password",
+      };
     }
     // Fetch venue for user
-    const userId = data.user.id
+    const userId = data.user.id;
     let { data: venueData, error: venueError } = await supabase
       .from("venues")
       .select("*")
       .eq("owner_id", userId)
-      .single()
+      .single();
     if (venueError || !venueData) {
       // Try to create a venue for this user
-      const venueId = `venue-${userId.slice(0, 8)}`
-      const defaultVenueName = data.user.user_metadata?.venueName || (data.user.user_metadata?.full_name ? `${data.user.user_metadata.full_name.split(' ')[0]}'s Venue` : "My Venue");
+      const venueId = `venue-${userId.slice(0, 8)}`;
+      const defaultVenueName =
+        data.user.user_metadata?.venueName ||
+        (data.user.user_metadata?.full_name
+          ? `${data.user.user_metadata.full_name.split(" ")[0]}'s Venue`
+          : "My Venue");
       const { data: newVenue, error: createVenueError } = await supabase
         .from("venues")
         .insert({
@@ -238,7 +275,8 @@ export async function signInUser(email: string, password: string) {
         })
         .select()
         .single();
-      if (createVenueError && createVenueError.code === '23505') { // Unique violation
+      if (createVenueError && createVenueError.code === "23505") {
+        // Unique violation
         // Venue already exists, fetch it
         const { data: existingVenue, error: fetchError } = await supabase
           .from("venues")
@@ -246,13 +284,24 @@ export async function signInUser(email: string, password: string) {
           .eq("owner_id", userId)
           .single();
         if (fetchError || !existingVenue) {
-          logger.error("Failed to fetch existing venue after unique violation", { error: fetchError })
-          return { success: false, message: "Failed to fetch existing venue for this user" }
+          logger.error(
+            "Failed to fetch existing venue after unique violation",
+            { error: fetchError },
+          );
+          return {
+            success: false,
+            message: "Failed to fetch existing venue for this user",
+          };
         }
         venueData = existingVenue;
       } else if (createVenueError || !newVenue) {
-        logger.error("Failed to create venue on sign-in", { error: createVenueError })
-        return { success: false, message: "Failed to create venue for this user" }
+        logger.error("Failed to create venue on sign-in", {
+          error: createVenueError,
+        });
+        return {
+          success: false,
+          message: "Failed to create venue for this user",
+        };
       } else {
         venueData = newVenue;
       }
@@ -266,31 +315,34 @@ export async function signInUser(email: string, password: string) {
         created_at: data.user.created_at!,
       },
       venue: venueData,
-    }
-    setSession(session)
-    return { success: true, session }
+    };
+    setSession(session);
+    return { success: true, session };
   } catch (error) {
-    logger.error("Sign in error", { error })
-    return { success: false, message: "An unexpected error occurred" }
+    logger.error("Sign in error", { error });
+    return { success: false, message: "An unexpected error occurred" };
   }
 }
 
 // Sign out function
 export async function signOutUser() {
-  if (!supabase) return
+  if (!supabase) return;
   try {
-    await supabase.auth.signOut()
-    clearSession()
-    logger.info("User signed out")
+    await supabase.auth.signOut();
+    clearSession();
+    logger.info("User signed out");
   } catch (error) {
-    logger.error("Sign out error", { error })
+    logger.error("Sign out error", { error });
   }
 }
 
 // Menu functions
-export async function createMenuItem(venueId: string, item: Omit<MenuItem, "id" | "venue_id" | "created_at">) {
+export async function createMenuItem(
+  venueId: string,
+  item: Omit<MenuItem, "id" | "venue_id" | "created_at">,
+) {
   if (!supabase) {
-    return { success: false, message: "Database connection not available" }
+    return { success: false, message: "Database connection not available" };
   }
 
   try {
@@ -301,84 +353,101 @@ export async function createMenuItem(venueId: string, item: Omit<MenuItem, "id" 
         ...item,
       })
       .select()
-      .single()
+      .single();
 
     if (error) {
-      logger.error("Failed to create menu item", { error, venueId })
-      return { success: false, message: "Failed to create menu item" }
+      logger.error("Failed to create menu item", { error, venueId });
+      return { success: false, message: "Failed to create menu item" };
     }
 
-    logger.info("Menu item created", { itemId: data.id, venueId })
-    return { success: true, data }
+    logger.info("Menu item created", { itemId: data.id, venueId });
+    return { success: true, data };
   } catch (error) {
-    logger.error("Create menu item error", { error })
-    return { success: false, message: "An unexpected error occurred" }
+    logger.error("Create menu item error", { error });
+    return { success: false, message: "An unexpected error occurred" };
   }
 }
 
-export async function updateMenuItem(itemId: string, updates: Partial<MenuItem>) {
+export async function updateMenuItem(
+  itemId: string,
+  updates: Partial<MenuItem>,
+) {
   if (!supabase) {
-    return { success: false, message: "Database connection not available" }
+    return { success: false, message: "Database connection not available" };
   }
 
   try {
-    const { data, error } = await supabase.from("menu_items").update(updates).eq("id", itemId).select().single()
+    const { data, error } = await supabase
+      .from("menu_items")
+      .update(updates)
+      .eq("id", itemId)
+      .select()
+      .single();
 
     if (error) {
-      logger.error("Failed to update menu item", { error, itemId })
-      return { success: false, message: "Failed to update menu item" }
+      logger.error("Failed to update menu item", { error, itemId });
+      return { success: false, message: "Failed to update menu item" };
     }
 
-    logger.info("Menu item updated", { itemId })
-    return { success: true, data }
+    logger.info("Menu item updated", { itemId });
+    return { success: true, data };
   } catch (error) {
-    logger.error("Update menu item error", { error })
-    return { success: false, message: "An unexpected error occurred" }
+    logger.error("Update menu item error", { error });
+    return { success: false, message: "An unexpected error occurred" };
   }
 }
 
 export async function deleteMenuItem(itemId: string) {
   if (!supabase) {
-    return { success: false, message: "Database connection not available" }
+    return { success: false, message: "Database connection not available" };
   }
 
   try {
-    const { error } = await supabase.from("menu_items").delete().eq("id", itemId)
+    const { error } = await supabase
+      .from("menu_items")
+      .delete()
+      .eq("id", itemId);
 
     if (error) {
-      logger.error("Failed to delete menu item", { error, itemId })
-      return { success: false, message: "Failed to delete menu item" }
+      logger.error("Failed to delete menu item", { error, itemId });
+      return { success: false, message: "Failed to delete menu item" };
     }
 
-    logger.info("Menu item deleted", { itemId })
-    return { success: true }
+    logger.info("Menu item deleted", { itemId });
+    return { success: true };
   } catch (error) {
-    logger.error("Delete menu item error", { error })
-    return { success: false, message: "An unexpected error occurred" }
+    logger.error("Delete menu item error", { error });
+    return { success: false, message: "An unexpected error occurred" };
   }
 }
 
 // Order functions
 export async function createOrder(orderData: {
-  venue_id: string
-  table_number: number
-  customer_name: string
-  customer_phone?: string
+  venue_id: string;
+  table_number: number;
+  customer_name: string;
+  customer_phone?: string;
   items: Array<{
-    menu_item_id: string
-    quantity: number
-    price: number
-    item_name: string
-  }>
-  total_amount: number
-  notes?: string
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+  }>;
+  total_amount: number;
+  notes?: string;
 }) {
   if (!supabase) {
-    return { success: false, message: "Database connection not available" }
+    return { success: false, message: "Database connection not available" };
   }
 
   try {
-    logger.info("Creating order", { venueId: orderData.venue_id, tableNumber: orderData.table_number, customerName: orderData.customer_name, itemCount: orderData.items.length, totalAmount: orderData.total_amount })
+    logger.info("Creating order", {
+      venueId: orderData.venue_id,
+      tableNumber: orderData.table_number,
+      customerName: orderData.customer_name,
+      itemCount: orderData.items.length,
+      totalAmount: orderData.total_amount,
+    });
 
     // Create the order
     const { data: order, error: orderError } = await supabase
@@ -393,11 +462,11 @@ export async function createOrder(orderData: {
         notes: orderData.notes,
       })
       .select()
-      .single()
+      .single();
 
     if (orderError || !order) {
-      logger.error("Failed to create order", { error: orderError })
-      return { success: false, message: "Failed to create order" }
+      logger.error("Failed to create order", { error: orderError });
+      return { success: false, message: "Failed to create order" };
     }
 
     // Create order items
@@ -407,28 +476,33 @@ export async function createOrder(orderData: {
       quantity: item.quantity,
       unit_price: item.price,
       total_price: item.price * item.quantity,
-    }))
+    }));
 
-    const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .insert(orderItems);
 
     if (itemsError) {
-      logger.error("Failed to create order items", { error: itemsError })
-      return { success: false, message: "Failed to create order items" }
+      logger.error("Failed to create order items", { error: itemsError });
+      return { success: false, message: "Failed to create order items" };
     }
 
-    logger.info("Order created successfully", { orderId: order.id, orderNumber: order.order_number })
+    logger.info("Order created successfully", {
+      orderId: order.id,
+      orderNumber: order.order_number,
+    });
 
-    return { success: true, data: order }
+    return { success: true, data: order };
   } catch (error) {
-    logger.error("Create order error", { error })
-    return { success: false, message: "An unexpected error occurred" }
+    logger.error("Create order error", { error });
+    return { success: false, message: "An unexpected error occurred" };
   }
 }
 
 // Venue functions
 export async function createVenueIfNotExists(venueId: string) {
   if (!supabase) {
-    throw new Error("Database connection not available")
+    throw new Error("Database connection not available");
   }
 
   // Try to find existing venue
@@ -436,10 +510,10 @@ export async function createVenueIfNotExists(venueId: string) {
     .from("venues")
     .select("*")
     .eq("venue_id", venueId)
-    .single()
+    .single();
 
   if (existingVenue && !findError) {
-    return existingVenue
+    return existingVenue;
   }
 
   // Create venue if it doesn't exist
@@ -451,19 +525,20 @@ export async function createVenueIfNotExists(venueId: string) {
       business_type: "Restaurant",
     })
     .select()
-    .single()
+    .single();
 
   if (createError || !newVenue) {
-    throw new Error(`Failed to create venue: ${createError?.message}`)
+    throw new Error(`Failed to create venue: ${createError?.message}`);
   }
 
-  return newVenue
+  return newVenue;
 }
 
 // Export validation function
-export const validateSession = getValidatedSession
+export const validateSession = getValidatedSession;
 
 export function createClient() {
-  if (!supabaseUrl || !supabaseAnonKey) throw new Error("Supabase config missing")
-  return SupabaseCreateClient(supabaseUrl, supabaseAnonKey)
+  if (!supabaseUrl || !supabaseAnonKey)
+    throw new Error("Supabase config missing");
+  return SupabaseCreateClient(supabaseUrl, supabaseAnonKey);
 }
