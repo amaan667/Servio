@@ -81,16 +81,15 @@ async function extractTextFromPDF(buffer) {
   return text;
 }
 
-// Extract menu items from text using GPT-3.5
+// Extract menu items from text using GPT-4o
 async function extractMenuItemsFromText(text) {
-  log('Extracting menu items from text using GPT-3.5');
-  
+  log('Extracting menu items from text using GPT-4o');
   try {
-    const systemPrompt = `You are a menu extraction assistant. Extract all items from the provided menu text.\nOnly use one of these exact categories for each item: ${allowedCategories.map(c => `\"${c}\"`).join(", ")}.\nNever use 'Uncategorized'. If an item does not clearly belong to any category, skip it.\nEach item must have:\n- \"name\" (clean, properly capitalized, no ALL CAPS)\n- \"price\" (number, no £ or symbols)\n- \"description\" (concise, if possible)\n- \"category\" (must be one of the above)\n- \"available\": true\nReturn ONLY a single, valid JSON array. Do not include any explanations or extra text.`;
+    const systemPrompt = `You are a menu-data curator.\n\nYou will be given raw extracted text from a restaurant menu.\n\nYour job is to return ONLY a valid JSON array, no explanations or extra text.\n\nRules:\n- You MUST use only the following categories as the \"category\" field for each item:\n    [${allowedCategories.map(c => `\"${c}\"`).join(", ")}]\n- If you are unsure, choose the *closest* matching category based on the dish, but never use \"Uncategorized\".\n- Each menu item object must look like this:\n    {\n      \"name\": \"Dish Name (no ALL CAPS, no trailing prices)\",\n      \"price\": <number>, // GBP value, as a number (e.g. 7.5)\n      \"description\": \"Short, clean, under 20 words.\",\n      \"available\": true,\n      \"category\": \"EXACT_CATEGORY\"\n    }\n- Ignore anything that does not match a real menu item (skip headings, random text, etc).\n- Do not output explanations, markdown, or any formatting except valid JSON.\n\nExamples:\n[\n  {\n    \"name\": \"Eggs Benedict\",\n    \"price\": 6.5,\n    \"description\": \"Poached eggs, muffin, hollandaise.\",\n    \"available\": true,\n    \"category\": \"Breakfast-Mains\"\n  },\n  {\n    \"name\": \"Baba Ghanoush\",\n    \"price\": 7.0,\n    \"description\": \"Aubergine, tahini, garlic, bread.\",\n    \"available\": true,\n    \"category\": \"Starters\"\n  },\n  {\n    \"name\": \"Chai Latte\",\n    \"price\": 3.9,\n    \"description\": \"\",\n    \"available\": true,\n    \"category\": \"Beverages-Hot\"\n  }\n]\n\nOnly output a JSON array in this format.`;
 
     const userPrompt = `Extract all menu items from the following text. Group items under logical categories based on section headers or item types.\n\nRules:\n- Only include items with both name and price\n- Prices should be numbers, not strings\n- If no description is available, use empty string\n- Do not include any explanations or markdown formatting\n- Never use 'Uncategorized' as a category\n- Infer categories from context if not explicitly stated\n- Only use these categories: ${allowedCategories.join(", ")}\n\nHere is the menu text:\n---\n${text}\n---`;
 
-    log('Sending text to GPT-3.5 for menu extraction');
+    log('Sending text to GPT-4o for menu extraction');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -102,7 +101,7 @@ async function extractMenuItemsFromText(text) {
     });
     
     const content = response.choices[0].message.content;
-    log('GPT-3.5 response received, content length:', content?.length || 0);
+    log('GPT-4o response received, content length:', content?.length || 0);
     
     // Parse the JSON response
     const jsonMatch = content.match(/\[.*\]/s);
@@ -124,6 +123,13 @@ async function extractMenuItemsFromText(text) {
       item.category &&
       allowedCategories.map(c => c.toLowerCase()).includes(item.category.trim().toLowerCase())
     );
+    const flaggedItems = menuItems.filter(item =>
+      !item.category ||
+      !allowedCategories.map(c => c.toLowerCase()).includes(item.category.trim().toLowerCase())
+    );
+    if (flaggedItems.length > 0) {
+      log('Flagged items with invalid categories for manual review:', flaggedItems);
+    }
     log('Filtered menu items to allowed categories:', filteredMenuItems.length);
     
     return filteredMenuItems;
