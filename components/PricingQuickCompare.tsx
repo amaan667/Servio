@@ -25,7 +25,7 @@ export default function PricingQuickCompare() {
           <div className="text-3xl font-bold mb-1 text-blue-700">£169<span className="text-lg font-normal">/mo</span></div>
           <div className="text-gray-500 mb-3">Best for most restaurants</div>
           <ul className="mb-4 space-y-1 text-center">
-            <li>Up to <b>40 tables</b></li>
+            <li>Up to <b>20 tables</b></li>
             <li>Menu uploads (PDF/URL)</li>
             <li>Full analytics & support</li>
             <li>14-day free trial</li>
