@@ -32,10 +32,19 @@ const supabase = createClient(
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // --- CATEGORY MAPPING (for normalization if needed downstream) --- //
+// Allowed categories for strict matching
 const allowedCategories = [
-  "Starters", "Breakfast-Mains", "Salads", "Sandwiches-Wraps",
-  "Burgers", "Kids", "Desserts", "Beverages-Hot", "Beverages-Cold",
-  "Specials", "Sides-AddOns"
+  "Starters",
+  "Breakfast-Mains",
+  "Salads",
+  "Sandwiches-Wraps",
+  "Burgers",
+  "Kids",
+  "Desserts",
+  "Beverages-Hot",
+  "Beverages-Cold",
+  "Specials",
+  "Sides-AddOns"
 ];
 
 // --- UTILS --- //
@@ -72,64 +81,56 @@ async function extractTextFromPDF(buffer) {
   return text;
 }
 
+// Extract menu items from text using GPT-3.5
 async function extractMenuItemsFromText(text) {
-  const systemPrompt = `
-You are a restaurant menu extraction assistant.
+  log('Extracting menu items from text using GPT-3.5');
+  
+  try {
+    const systemPrompt = `You are a menu extraction assistant. Extract all items from the provided menu text.\nOnly use one of these exact categories for each item: ${allowedCategories.map(c => `\"${c}\"`).join(", ")}.\nNever use 'Uncategorized'. If an item does not clearly belong to any category, skip it.\nEach item must have:\n- \"name\" (clean, properly capitalized, no ALL CAPS)\n- \"price\" (number, no £ or symbols)\n- \"description\" (concise, if possible)\n- \"category\" (must be one of the above)\n- \"available\": true\nReturn ONLY a single, valid JSON array. Do not include any explanations or extra text.`;
 
-- Extract every menu item from the following OCR or plain-text menu dump.
-- Use these categories ONLY (exact spelling): "Starters", "Breakfast-Mains", "Salads", "Sandwiches-Wraps", "Burgers", "Kids", "Desserts", "Beverages-Hot", "Beverages-Cold", "Specials", "Sides-AddOns"
-- Each item: 
-  {
-    "name": "proper dish name, never all caps",
-    "price": <number>, // GBP, no symbols, one value
-    "description": "5–15 word summary",
-    "available": true
-  }
-- Never use "Uncategorized". If unsure, use the closest logical category.
-- If price is missing or suspicious, set "price": null and add "priceToVerify": true.
-- Only output valid JSON, as a single object with keys as category names, values as arrays of items.
-`;
+    const userPrompt = `Extract all menu items from the following text. Group items under logical categories based on section headers or item types.\n\nRules:\n- Only include items with both name and price\n- Prices should be numbers, not strings\n- If no description is available, use empty string\n- Do not include any explanations or markdown formatting\n- Never use 'Uncategorized' as a category\n- Infer categories from context if not explicitly stated\n- Only use these categories: ${allowedCategories.join(", ")}\n\nHere is the menu text:\n---\n${text}\n---`;
 
-  const userPrompt = `
-Extract every menu item, correctly categorized, from the following menu text.
-If an item lacks a price or is suspicious, set price to null and add "priceToVerify": true.
-
-Menu text:
----
-${text}
----
-Return ONLY the JSON object as described.
-`;
-
-  const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ],
-    max_tokens: 3000,
-    temperature: 0.0,
-  });
-
-  const content = response.choices[0].message.content;
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('No valid JSON object found in GPT response');
-  const grouped = JSON.parse(jsonMatch[0]);
-
-  // Flatten grouped into array, each with category field
-  let menuItems = [];
-  for (const [category, items] of Object.entries(grouped)) {
-    if (allowedCategories.includes(category) && Array.isArray(items)) {
-      items.forEach(item => {
-        if (item && typeof item === 'object') {
-          item.category = category;
-          menuItems.push(item);
-        }
-      });
+    log('Sending text to GPT-3.5 for menu extraction');
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      max_tokens: 2048,
+      temperature: 0.1,
+    });
+    
+    const content = response.choices[0].message.content;
+    log('GPT-3.5 response received, content length:', content?.length || 0);
+    
+    // Parse the JSON response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (!jsonMatch) {
+      log('ERROR: No JSON array found in GPT response');
+      throw new Error('No valid JSON array found in GPT response');
     }
+    
+    let menuItems;
+    try {
+      menuItems = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      log('ERROR: Failed to parse GPT response as JSON:', e.message);
+      throw new Error('Failed to parse GPT response as JSON');
+    }
+    
+    // Post-processing: filter only allowed categories
+    const filteredMenuItems = menuItems.filter(item =>
+      item.category &&
+      allowedCategories.map(c => c.toLowerCase()).includes(item.category.trim().toLowerCase())
+    );
+    log('Filtered menu items to allowed categories:', filteredMenuItems.length);
+    
+    return filteredMenuItems;
+  } catch (error) {
+    log('ERROR in extractMenuItemsFromText:', error.message);
+    throw error;
   }
-  log('Extracted and flattened menu items', menuItems.length);
-  return menuItems;
 }
 
 // --- DEDUPLICATION --- //
