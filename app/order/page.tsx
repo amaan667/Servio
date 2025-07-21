@@ -80,6 +80,52 @@ export default function CustomerOrderPage() {
     loadMenuItems();
   }, [hasSupabaseConfig]);
 
+  useEffect(() => {
+    // Demo mode: if demo=1 in URL, pre-populate cart with sample items
+    const demo = searchParams?.get("demo");
+    if (demo === "1") {
+      const demoItems: CartItem[] = [
+        {
+          id: "1",
+          name: "Margherita Pizza",
+          description: "Classic pizza with tomato, mozzarella, and basil.",
+          price: 10.99,
+          category: "Restaurant",
+          available: true,
+          quantity: 2,
+        },
+        {
+          id: "2",
+          name: "Flat White",
+          description: "Rich espresso with steamed milk.",
+          price: 3.5,
+          category: "Coffee Shop",
+          available: true,
+          quantity: 1,
+        },
+        {
+          id: "3",
+          name: "Chicken Shawarma Wrap",
+          description: "Grilled chicken, salad, and garlic sauce in a wrap.",
+          price: 7.0,
+          category: "Food Truck",
+          available: true,
+          quantity: 1,
+        },
+        {
+          id: "4",
+          name: "Avocado Toast",
+          description: "Sourdough toast with smashed avocado and chili flakes.",
+          price: 5.5,
+          category: "Cafe",
+          available: true,
+          quantity: 1,
+        },
+      ];
+      setCart(demoItems);
+    }
+  }, [searchParams]);
+
   const loadMenuItems = async () => {
     setLoadingMenu(true);
     setMenuError(null);
@@ -282,6 +328,16 @@ export default function CustomerOrderPage() {
   };
 
   const submitOrder = async () => {
+    // Prevent order submission in demo mode
+    const demo = searchParams?.get("demo");
+    if (demo === "1") {
+      alert("This is a demo. Orders are not submitted.");
+      setOrderSubmitted(true);
+      setCart([]);
+      setCustomerInfo({ name: "", phone: "", table_number: "" });
+      return;
+    }
+
     if (!customerInfo.name || !customerInfo.phone) {
       alert("Please fill in your name and phone number");
       return;
