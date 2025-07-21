@@ -30,6 +30,7 @@ function PricingQuickCompare() {
         {/* Basic */}
         <Card className="flex flex-col items-center p-6 gap-4">
           <div className="text-2xl font-semibold">Basic</div>
+          <div className="text-3xl font-bold mb-1">£99<span className="text-lg font-normal">/month</span></div>
           <ul className="mb-4 space-y-1 text-left">
             <li>✔ Up to 10 tables</li>
             <li>✔ QR ordering</li>
@@ -43,6 +44,7 @@ function PricingQuickCompare() {
           <div className="w-full flex justify-center">
             <span className="bg-purple-500 text-white text-xs px-3 py-1 rounded-full mb-2">Most Popular</span>
           </div>
+          <div className="text-3xl font-bold mb-1">£249<span className="text-lg font-normal">/month</span></div>
           <ul className="mb-4 space-y-1 text-left">
             <li>✔ Everything in Basic, plus:</li>
             <li>✔ Up to 20 tables</li>
@@ -54,6 +56,7 @@ function PricingQuickCompare() {
         {/* Premium */}
         <Card className="flex flex-col items-center p-6 gap-4">
           <div className="text-2xl font-semibold">Premium</div>
+          <div className="text-3xl font-bold mb-1">£449+<span className="text-lg font-normal">/month</span></div>
           <ul className="mb-4 space-y-1 text-left">
             <li>✔ Everything in Standard, plus:</li>
             <li>✔ Unlimited tables & venues</li>
