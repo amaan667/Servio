@@ -1,26 +1,27 @@
-import multer from 'multer';
-import fs from 'fs';
-import fetch from 'node-fetch';
-import pdf from 'pdf-parse';
-import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
-import crypto from 'crypto';
-import cheerio from 'cheerio';
+import multer from "multer";
+import fs from "fs";
+import fetch from "node-fetch";
+import pdf from "pdf-parse";
+import { createClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
+import crypto from "crypto";
+import cheerio from "cheerio";
 
 // Multer config for file uploads
 const upload = multer({
   storage: multer.diskStorage({
-    destination: '/tmp',
-    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+    destination: "/tmp",
+    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
   }),
-  limits: { fileSize: 10 * 1024 * 1024 }
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 export const config = { api: { bodyParser: false } };
 
 // Supabase init
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 );
 
 // OpenAI
@@ -29,23 +30,33 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // --- UTILS --- //
 function log(msg, data) {
   const t = new Date().toISOString();
-  console.log(`[MENU_EXTRACTION] ${t}: ${msg}`, data ?? '');
+  console.log(`[MENU_EXTRACTION] ${t}: ${msg}`, data ?? "");
 }
 function generateHash(buffer) {
-  return crypto.createHash('sha256').update(buffer).digest('hex');
+  return crypto.createHash("sha256").update(buffer).digest("hex");
 }
 async function getCache(hash) {
   try {
-    const { data } = await supabase.from('menu_cache').select('result').eq('hash', hash).single();
+    const { data } = await supabase
+      .from("menu_cache")
+      .select("result")
+      .eq("hash", hash)
+      .single();
     return data ? data.result : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 async function setCache(hash, result) {
   try {
-    await supabase.from('menu_cache').upsert({
-      hash, result, created_at: new Date().toISOString()
+    await supabase.from("menu_cache").upsert({
+      hash,
+      result,
+      created_at: new Date().toISOString(),
     });
-  } catch (error) { log('Cache save failed:', error.message); }
+  } catch (error) {
+    log("Cache save failed:", error.message);
+  }
 }
 async function checkOpenAIQuota() {
   try {
@@ -56,24 +67,25 @@ async function checkOpenAIQuota() {
     });
     return true;
   } catch (err) {
-    log('OpenAI quota error', err.message);
+    log("OpenAI quota error", err.message);
     return false;
   }
 }
 async function extractTextFromPDF(buffer) {
   const { text } = await pdf(buffer);
-  if (!text || text.length < 20) throw new Error('No readable text extracted from PDF');
+  if (!text || text.length < 20)
+    throw new Error("No readable text extracted from PDF");
   return text;
 }
 
 // --- EXTRACT TEXT FROM URL --- //
 async function extractTextFromUrl(url) {
-  log('Downloading page: ' + url);
+  log("Downloading page: " + url);
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch the provided URL.');
-  const contentType = res.headers.get('content-type');
+  if (!res.ok) throw new Error("Failed to fetch the provided URL.");
+  const contentType = res.headers.get("content-type");
   // If it's a PDF
-  if (contentType.includes('pdf')) {
+  if (contentType.includes("pdf")) {
     const buffer = await res.buffer();
     return await extractTextFromPDF(buffer);
   }
@@ -81,24 +93,25 @@ async function extractTextFromUrl(url) {
   const html = await res.text();
   const $ = cheerio.load(html);
   // Try to find <main>, <section>, or "menu" in id/class/text
-  let menuText = '';
-  $('section,main,div').each((_, el) => {
+  let menuText = "";
+  $("section,main,div").each((_, el) => {
     const $el = $(el);
     const txt = $el.text();
-    const idClass = ($el.attr('id') || '') + ' ' + ($el.attr('class') || '');
+    const idClass = ($el.attr("id") || "") + " " + ($el.attr("class") || "");
     if (
-      idClass.toLowerCase().includes('menu') ||
-      txt.toLowerCase().includes('starters') ||
-      txt.toLowerCase().includes('mains') ||
-      txt.toLowerCase().includes('breakfast') ||
+      idClass.toLowerCase().includes("menu") ||
+      txt.toLowerCase().includes("starters") ||
+      txt.toLowerCase().includes("mains") ||
+      txt.toLowerCase().includes("breakfast") ||
       txt.length > 300
     ) {
-      menuText += txt.trim() + '\n';
+      menuText += txt.trim() + "\n";
     }
   });
   // If nothing smart, fallback to all text
-  if (!menuText || menuText.length < 100) menuText = $('body').text();
-  if (!menuText || menuText.length < 50) throw new Error('No menu-like content found in page.');
+  if (!menuText || menuText.length < 100) menuText = $("body").text();
+  if (!menuText || menuText.length < 50)
+    throw new Error("No menu-like content found in page.");
   return menuText;
 }
 
@@ -114,12 +127,12 @@ Never use "Uncategorized".
 Prices must be numbers. Do not include markdown or explanations.
 `;
   const userPrompt = `Extract all menu items from this menu:\n\n${text}\n\nRemember: ONLY valid JSON array, no markdown.`;
-  log('Prompting GPT-4o...');
+  log("Prompting GPT-4o...");
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: "gpt-4o",
     messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
     ],
     max_tokens: 4096,
     temperature: 0.1,
@@ -127,18 +140,26 @@ Prices must be numbers. Do not include markdown or explanations.
   const content = response.choices[0].message.content;
   // Extract JSON array
   const jsonMatch = content.match(/\[.*\]/s);
-  if (!jsonMatch) throw new Error('No valid JSON array found in GPT response');
+  if (!jsonMatch) throw new Error("No valid JSON array found in GPT response");
   let items;
-  try { items = JSON.parse(jsonMatch[0]); } catch { throw new Error('Invalid JSON from GPT'); }
+  try {
+    items = JSON.parse(jsonMatch[0]);
+  } catch {
+    throw new Error("Invalid JSON from GPT");
+  }
   return items;
 }
 
 // --- DEDUPLICATION --- //
 function deduplicateMenuItems(items) {
-  const seen = new Set(), unique = [];
+  const seen = new Set(),
+    unique = [];
   for (const item of items) {
-    const key = `${item.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}-${item.price}`;
-    if (!seen.has(key)) { seen.add(key); unique.push(item); }
+    const key = `${item.name?.toLowerCase().replace(/[^a-z0-9]/g, "")}-${item.price}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(item);
+    }
   }
   return unique;
 }
@@ -160,7 +181,7 @@ async function processMenuExtraction({ filePath, mimeType, url, venueId }) {
   // URL Input
   if (url) {
     // Use url as cache hash base
-    hash = crypto.createHash('sha256').update(url).digest('hex');
+    hash = crypto.createHash("sha256").update(url).digest("hex");
     const cached = await getCache(hash);
     if (cached) return cached;
     text = await extractTextFromUrl(url);
@@ -168,61 +189,77 @@ async function processMenuExtraction({ filePath, mimeType, url, venueId }) {
     await setCache(hash, items);
     return items;
   }
-  throw new Error('No menu file or URL provided');
+  throw new Error("No menu file or URL provided");
 }
 
 // --- API ROUTE EXPORT --- //
 async function handler(req, res) {
-  log('API request received', {
+  log("API request received", {
     method: req.method,
-    contentType: req.headers['content-type'],
-    hasFile: !!req.file
+    contentType: req.headers["content-type"],
+    hasFile: !!req.file,
   });
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
   if (!(await checkOpenAIQuota())) {
-    return res.status(429).json({ error: 'OpenAI quota exceeded. Please top up your account.', code: 'QUOTA_EXCEEDED' });
+    return res
+      .status(429)
+      .json({
+        error: "OpenAI quota exceeded. Please top up your account.",
+        code: "QUOTA_EXCEEDED",
+      });
   }
 
   // Manual JSON body parsing for application/json requests
-  if (req.headers['content-type'] === 'application/json') {
+  if (req.headers["content-type"] === "application/json") {
     try {
       const body = req.body;
       const venueId = body.venueId || body.venueId; // Use req.body.venueId
       const url = body.url || body.url; // Use req.body.url
 
       if (!venueId) {
-        return res.status(400).json({ error: 'Missing venue ID in JSON body' });
+        return res.status(400).json({ error: "Missing venue ID in JSON body" });
       }
       if (!url) {
-        return res.status(400).json({ error: 'Missing menu URL in JSON body' });
+        return res.status(400).json({ error: "Missing menu URL in JSON body" });
       }
 
       const items = await processMenuExtraction({ venueId, url });
       const deduped = deduplicateMenuItems(items);
-      if (!deduped.length) throw new Error('No valid menu items found');
+      if (!deduped.length) throw new Error("No valid menu items found");
       // Insert into db (optional - remove if not needed)
-      await supabase.from('menu_items').upsert(
-        deduped.map(item => ({
+      await supabase.from("menu_items").upsert(
+        deduped.map((item) => ({
           ...item,
           venue_id: venueId,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })), { onConflict: ['venue_id', 'name'] }
+          updated_at: new Date().toISOString(),
+        })),
+        { onConflict: ["venue_id", "name"] },
       );
-      res.status(200).json({ success: true, count: deduped.length, items: deduped });
+      res
+        .status(200)
+        .json({ success: true, count: deduped.length, items: deduped });
     } catch (error) {
-      log('Processing error:', error.message);
-      res.status(500).json({ error: 'Menu extraction failed', detail: error.message, code: 'EXTRACTION_FAILED' });
+      log("Processing error:", error.message);
+      res
+        .status(500)
+        .json({
+          error: "Menu extraction failed",
+          detail: error.message,
+          code: "EXTRACTION_FAILED",
+        });
     }
   } else {
     // Multer for file uploads
-    upload.single('menu')(req, res, async (err) => {
+    upload.single("menu")(req, res, async (err) => {
       if (err) {
-        log('Upload error:', err.message);
-        return res.status(500).json({ error: 'File upload failed', detail: err.message });
+        log("Upload error:", err.message);
+        return res
+          .status(500)
+          .json({ error: "File upload failed", detail: err.message });
       }
       const filePath = req.file?.path;
       const mimeType = req.file?.mimetype;
@@ -230,31 +267,50 @@ async function handler(req, res) {
       const url = req.body.url || req.query.url;
 
       if (!filePath && !url) {
-        return res.status(400).json({ error: 'Please provide a menu file or a menu URL.' });
+        return res
+          .status(400)
+          .json({ error: "Please provide a menu file or a menu URL." });
       }
       if (!venueId) {
-        return res.status(400).json({ error: 'Missing venue ID' });
+        return res.status(400).json({ error: "Missing venue ID" });
       }
       try {
-        const items = await processMenuExtraction({ filePath, mimeType, url, venueId });
+        const items = await processMenuExtraction({
+          filePath,
+          mimeType,
+          url,
+          venueId,
+        });
         const deduped = deduplicateMenuItems(items);
-        if (!deduped.length) throw new Error('No valid menu items found');
+        if (!deduped.length) throw new Error("No valid menu items found");
         // Insert into db (optional - remove if not needed)
-        await supabase.from('menu_items').upsert(
-          deduped.map(item => ({
+        await supabase.from("menu_items").upsert(
+          deduped.map((item) => ({
             ...item,
             venue_id: venueId,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })), { onConflict: ['venue_id', 'name'] }
+            updated_at: new Date().toISOString(),
+          })),
+          { onConflict: ["venue_id", "name"] },
         );
-        res.status(200).json({ success: true, count: deduped.length, items: deduped });
+        res
+          .status(200)
+          .json({ success: true, count: deduped.length, items: deduped });
       } catch (error) {
-        log('Processing error:', error.message);
-        res.status(500).json({ error: 'Menu extraction failed', detail: error.message, code: 'EXTRACTION_FAILED' });
+        log("Processing error:", error.message);
+        res
+          .status(500)
+          .json({
+            error: "Menu extraction failed",
+            detail: error.message,
+            code: "EXTRACTION_FAILED",
+          });
       } finally {
         if (filePath && fs.existsSync(filePath)) {
-          try { fs.unlinkSync(filePath); log('Temp file cleaned up'); } catch {}
+          try {
+            fs.unlinkSync(filePath);
+            log("Temp file cleaned up");
+          } catch {}
         }
       }
     });

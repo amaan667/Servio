@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { Smartphone, Scan, ShoppingCart, Clock, Menu, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Smartphone, Scan, ShoppingCart, Clock, Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function MobilePreview() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -36,7 +36,10 @@ export default function MobilePreview() {
 
             <div className="hidden lg:flex items-center space-x-12">
               <nav className="flex items-center space-x-8">
-                <Link href="/" className="text-lg font-medium text-gray-700 hover:text-servio-purple transition-colors">
+                <Link
+                  href="/"
+                  className="text-lg font-medium text-gray-700 hover:text-servio-purple transition-colors"
+                >
                   Home
                 </Link>
                 <Link
@@ -59,7 +62,11 @@ export default function MobilePreview() {
                 </Link>
               </nav>
               <div className="flex items-center space-x-4">
-                <a href="https://servio.uk/sign-in" target="_blank" rel="noopener noreferrer">
+                <a
+                  href="https://servio.uk/sign-in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <Button
                     size="lg"
                     variant="outline"
@@ -68,7 +75,11 @@ export default function MobilePreview() {
                     Sign In
                   </Button>
                 </a>
-                <a href="https://servio.uk/get-started" target="_blank" rel="noopener noreferrer">
+                <a
+                  href="https://servio.uk/get-started"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <Button
                     size="lg"
                     className="bg-servio-purple hover:bg-servio-purple-dark text-white text-base px-6 py-2"
@@ -87,7 +98,11 @@ export default function MobilePreview() {
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="relative z-50"
               >
-                {isMobileMenuOpen ? <X className="h-8 w-8" /> : <Menu className="h-8 w-8" />}
+                {isMobileMenuOpen ? (
+                  <X className="h-8 w-8" />
+                ) : (
+                  <Menu className="h-8 w-8" />
+                )}
               </Button>
             </div>
           </div>
@@ -132,7 +147,12 @@ export default function MobilePreview() {
                   </Link>
                 </nav>
                 <div className="space-y-4 pt-4">
-                  <a href="https://servio.uk/sign-in" target="_blank" rel="noopener noreferrer" className="block">
+                  <a
+                    href="https://servio.uk/sign-in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
                     <Button
                       variant="outline"
                       className="w-full border-servio-purple text-servio-purple hover:bg-servio-purple hover:text-white bg-transparent text-lg py-3"
@@ -140,7 +160,12 @@ export default function MobilePreview() {
                       Sign In
                     </Button>
                   </a>
-                  <a href="https://servio.uk/get-started" target="_blank" rel="noopener noreferrer" className="block">
+                  <a
+                    href="https://servio.uk/get-started"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
                     <Button className="w-full bg-servio-purple hover:bg-servio-purple-dark text-white text-lg py-3">
                       Get Started
                     </Button>
@@ -158,8 +183,13 @@ export default function MobilePreview() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-servio-purple-dark">Customer Experience</CardTitle>
-                <p className="text-gray-600">See how customers interact with your menu on their mobile devices.</p>
+                <CardTitle className="text-servio-purple-dark">
+                  Customer Experience
+                </CardTitle>
+                <p className="text-gray-600">
+                  See how customers interact with your menu on their mobile
+                  devices.
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="mx-auto w-80 h-[600px] bg-gray-900 rounded-3xl p-2 shadow-2xl">
@@ -171,7 +201,9 @@ export default function MobilePreview() {
                           <h3 className="font-semibold">Café Central</h3>
                           <p className="text-sm opacity-90">Table 5</p>
                         </div>
-                        <div className="bg-white/20 px-2 py-1 rounded-full text-xs">3 items</div>
+                        <div className="bg-white/20 px-2 py-1 rounded-full text-xs">
+                          3 items
+                        </div>
                       </div>
                     </div>
 
@@ -180,19 +212,32 @@ export default function MobilePreview() {
                         <div className="bg-servio-purple text-white px-3 py-1 rounded-full text-sm whitespace-nowrap">
                           All
                         </div>
-                        <div className="bg-gray-100 px-3 py-1 rounded-full text-sm whitespace-nowrap">Coffee</div>
-                        <div className="bg-gray-100 px-3 py-1 rounded-full text-sm whitespace-nowrap">Food</div>
+                        <div className="bg-gray-100 px-3 py-1 rounded-full text-sm whitespace-nowrap">
+                          Coffee
+                        </div>
+                        <div className="bg-gray-100 px-3 py-1 rounded-full text-sm whitespace-nowrap">
+                          Food
+                        </div>
                       </div>
 
                       <div className="space-y-3">
                         <div className="bg-white border rounded-lg p-3">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <h4 className="font-medium text-sm">Cappuccino</h4>
-                              <p className="text-xs text-gray-600">Espresso with steamed milk</p>
-                              <p className="text-green-600 font-bold text-sm">£3.25</p>
+                              <h4 className="font-medium text-sm">
+                                Cappuccino
+                              </h4>
+                              <p className="text-xs text-gray-600">
+                                Espresso with steamed milk
+                              </p>
+                              <p className="text-green-600 font-bold text-sm">
+                                £3.25
+                              </p>
                             </div>
-                            <Button size="sm" className="bg-servio-purple text-xs h-6 px-2">
+                            <Button
+                              size="sm"
+                              className="bg-servio-purple text-xs h-6 px-2"
+                            >
                               +
                             </Button>
                           </div>
@@ -201,16 +246,29 @@ export default function MobilePreview() {
                         <div className="bg-white border rounded-lg p-3">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <h4 className="font-medium text-sm">Avocado Toast</h4>
-                              <p className="text-xs text-gray-600">Smashed avocado on sourdough</p>
-                              <p className="text-green-600 font-bold text-sm">£6.50</p>
+                              <h4 className="font-medium text-sm">
+                                Avocado Toast
+                              </h4>
+                              <p className="text-xs text-gray-600">
+                                Smashed avocado on sourdough
+                              </p>
+                              <p className="text-green-600 font-bold text-sm">
+                                £6.50
+                              </p>
                             </div>
                             <div className="flex items-center space-x-1">
-                              <Button size="sm" variant="outline" className="h-6 w-6 p-0 text-xs bg-transparent">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0 text-xs bg-transparent"
+                              >
                                 -
                               </Button>
                               <span className="text-xs">2</span>
-                              <Button size="sm" className="bg-servio-purple h-6 w-6 p-0 text-xs">
+                              <Button
+                                size="sm"
+                                className="bg-servio-purple h-6 w-6 p-0 text-xs"
+                              >
                                 +
                               </Button>
                             </div>
@@ -220,7 +278,9 @@ export default function MobilePreview() {
 
                       <div className="bg-servio-purple text-white p-3 rounded-lg">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Total: £16.25</span>
+                          <span className="text-sm font-medium">
+                            Total: £16.25
+                          </span>
                           <ShoppingCart className="h-4 w-4" />
                         </div>
                       </div>
@@ -235,7 +295,9 @@ export default function MobilePreview() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-servio-purple-dark">Mobile Features</CardTitle>
+                <CardTitle className="text-servio-purple-dark">
+                  Mobile Features
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-start space-x-3">
@@ -243,7 +305,8 @@ export default function MobilePreview() {
                   <div>
                     <h4 className="font-medium">QR Code Scanning</h4>
                     <p className="text-sm text-gray-600">
-                      Customers scan table QR codes with their phone camera to instantly access the menu.
+                      Customers scan table QR codes with their phone camera to
+                      instantly access the menu.
                     </p>
                   </div>
                 </div>
@@ -253,7 +316,8 @@ export default function MobilePreview() {
                   <div>
                     <h4 className="font-medium">Touch-Friendly Interface</h4>
                     <p className="text-sm text-gray-600">
-                      Large buttons and intuitive gestures make ordering easy on any screen size.
+                      Large buttons and intuitive gestures make ordering easy on
+                      any screen size.
                     </p>
                   </div>
                 </div>
@@ -263,7 +327,8 @@ export default function MobilePreview() {
                   <div>
                     <h4 className="font-medium">Fast Loading</h4>
                     <p className="text-sm text-gray-600">
-                      Optimized for mobile networks with quick load times and smooth interactions.
+                      Optimized for mobile networks with quick load times and
+                      smooth interactions.
                     </p>
                   </div>
                 </div>
@@ -272,10 +337,14 @@ export default function MobilePreview() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-servio-purple-dark">Try It Yourself</CardTitle>
+                <CardTitle className="text-servio-purple-dark">
+                  Try It Yourself
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-gray-600">Experience the customer ordering flow on your mobile device.</p>
+                <p className="text-gray-600">
+                  Experience the customer ordering flow on your mobile device.
+                </p>
                 <Link href="/order?venue=c9413421-afa4-43d8-b783-3e3235216efa&table=1">
                   <Button className="w-full bg-servio-purple hover:bg-servio-purple-dark">
                     <Smartphone className="h-4 w-4 mr-2" />
@@ -288,5 +357,5 @@ export default function MobilePreview() {
         </div>
       </div>
     </div>
-  )
+  );
 }

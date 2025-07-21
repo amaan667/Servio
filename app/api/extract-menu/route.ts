@@ -4,12 +4,12 @@ import { createClient } from "@supabase/supabase-js";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    
+
     // Save menu items to Supabase using service role key
     if (body.items && Array.isArray(body.items) && body.venue_id) {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
       );
       // Attach venue_id to each item if not present
       const itemsToInsert = body.items.map((item: any) => ({
@@ -23,9 +23,15 @@ export async function POST(req: NextRequest) {
       }
       return NextResponse.json({ success: true });
     }
-    
-    return NextResponse.json({ error: "Missing items or venue_id" }, { status: 400 });
+
+    return NextResponse.json(
+      { error: "Missing items or venue_id" },
+      { status: 400 },
+    );
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Failed to save menu." }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message || "Failed to save menu." },
+      { status: 500 },
+    );
   }
-} 
+}

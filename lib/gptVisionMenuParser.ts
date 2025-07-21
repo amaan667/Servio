@@ -56,4 +56,4 @@ Rules:
     console.error("Failed to parse JSON:", text);
     throw new Error("Invalid JSON response from GPT Vision");
   }
-} 
+}

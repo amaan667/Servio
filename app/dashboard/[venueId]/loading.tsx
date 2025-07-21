@@ -6,5 +6,5 @@ export default function VenueDashboardLoading() {
         <p className="text-gray-600">Loading venue dashboard...</p>
       </div>
     </div>
-  )
+  );
 }

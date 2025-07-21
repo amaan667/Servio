@@ -1,13 +1,25 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { RefreshCw, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
-import { supabase, hasSupabaseConfig, type AuthSession } from "@/lib/supabase"
-import { logger } from "@/lib/logger"
+import { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  RefreshCw,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+} from "lucide-react";
+import { supabase, hasSupabaseConfig, type AuthSession } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 // Add OrderWithItems type locally since it's not exported from supabase
 interface OrderWithItems {
@@ -30,39 +42,40 @@ interface OrderWithItems {
 }
 
 interface LiveOrdersProps {
-  venueId: string // This is the text-based slug
-  session: AuthSession
+  venueId: string; // This is the text-based slug
+  session: AuthSession;
 }
 
 export function LiveOrders({ venueId, session }: LiveOrdersProps) {
-  const [orders, setOrders] = useState<OrderWithItems[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [updating, setUpdating] = useState<string | null>(null)
+  const [orders, setOrders] = useState<OrderWithItems[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null);
 
-  const venueUuid = session.venue.id
+  const venueUuid = session.venue.id;
 
   const fetchOrders = useCallback(async () => {
     logger.info("LIVE_ORDERS: Fetching orders", {
       venueUuid,
       hasSupabase: !!supabase,
       hasConfig: hasSupabaseConfig,
-    })
+    });
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     if (!hasSupabaseConfig || !supabase) {
-      logger.error("LIVE_ORDERS: Supabase not configured")
-      setError("Service is not configured.")
-      setLoading(false)
-      return
+      logger.error("LIVE_ORDERS: Supabase not configured");
+      setError("Service is not configured.");
+      setLoading(false);
+      return;
     }
 
     try {
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
-        .select(`
+        .select(
+          `
           *,
           order_items (
             id,
@@ -70,71 +83,90 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             price,
             item_name
           )
-        `)
+        `,
+        )
         .eq("venue_id", venueUuid)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false });
 
       if (ordersError) {
         logger.error("LIVE_ORDERS: Failed to fetch orders from Supabase", {
           error: ordersError.message,
           code: ordersError.code,
           venueUuid,
-        })
-        setError("Failed to load orders.")
+        });
+        setError("Failed to load orders.");
       } else {
         logger.info("LIVE_ORDERS: Orders fetched successfully", {
           orderCount: ordersData?.length || 0,
           statuses: ordersData?.map((order) => order.status) || [],
-        })
-        setOrders((ordersData || []) as OrderWithItems[])
+        });
+        setOrders((ordersData || []) as OrderWithItems[]);
       }
     } catch (error: any) {
-      logger.error("LIVE_ORDERS: Unexpected error fetching orders", error)
-      setError("An unexpected error occurred.")
+      logger.error("LIVE_ORDERS: Unexpected error fetching orders", error);
+      setError("An unexpected error occurred.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [venueUuid])
+  }, [venueUuid]);
 
   useEffect(() => {
-    fetchOrders()
+    fetchOrders();
 
-    if (!supabase) return
+    if (!supabase) return;
 
-    logger.debug("LIVE_ORDERS: Setting up real-time subscription")
+    logger.debug("LIVE_ORDERS: Setting up real-time subscription");
     const channel = supabase
       .channel(`live-orders-${venueUuid}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "orders", filter: `venue_id=eq.${venueUuid}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `venue_id=eq.${venueUuid}`,
+        },
         (payload: any) => {
-          logger.info("LIVE_ORDERS: Real-time change detected, refetching orders", payload)
-          fetchOrders()
+          logger.info(
+            "LIVE_ORDERS: Real-time change detected, refetching orders",
+            payload,
+          );
+          fetchOrders();
         },
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, (payload: any) => {
-        logger.info("LIVE_ORDERS: Order items change detected, refetching orders", payload)
-        fetchOrders()
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "order_items" },
+        (payload: any) => {
+          logger.info(
+            "LIVE_ORDERS: Order items change detected, refetching orders",
+            payload,
+          );
+          fetchOrders();
+        },
+      )
       .subscribe((status: any) => {
-        logger.debug("LIVE_ORDERS: Real-time subscription status", { status })
-      })
+        logger.debug("LIVE_ORDERS: Real-time subscription status", { status });
+      });
 
     return () => {
-      logger.debug("LIVE_ORDERS: Cleaning up real-time subscription")
-      supabase.removeChannel(channel)
-    }
-  }, [fetchOrders, venueUuid])
+      logger.debug("LIVE_ORDERS: Cleaning up real-time subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [fetchOrders, venueUuid]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    logger.info("LIVE_ORDERS: Updating order status", { orderId, newStatus })
+    logger.info("LIVE_ORDERS: Updating order status", { orderId, newStatus });
 
-    if (!supabase) return
+    if (!supabase) return;
 
-    setUpdating(orderId)
+    setUpdating(orderId);
 
     try {
-      const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId)
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: newStatus })
+        .eq("id", orderId);
 
       if (error) {
         logger.error("LIVE_ORDERS: Failed to update order status", {
@@ -142,60 +174,68 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           newStatus,
           error: error.message,
           code: error.code,
-        })
-        setError(`Failed to update order: ${error.message}`)
+        });
+        setError(`Failed to update order: ${error.message}`);
       } else {
-        logger.info("LIVE_ORDERS: Order status updated successfully", { orderId, newStatus })
+        logger.info("LIVE_ORDERS: Order status updated successfully", {
+          orderId,
+          newStatus,
+        });
         // Real-time subscription will handle the UI update
       }
     } catch (error: any) {
-      logger.error("LIVE_ORDERS: Unexpected error updating order status", error)
-      setError("An unexpected error occurred.")
+      logger.error(
+        "LIVE_ORDERS: Unexpected error updating order status",
+        error,
+      );
+      setError("An unexpected error occurred.");
     } finally {
-      setUpdating(null)
+      setUpdating(null);
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "preparing":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       case "ready":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "completed":
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
       case "cancelled":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
-        return <Clock className="h-4 w-4" />
+        return <Clock className="h-4 w-4" />;
       case "preparing":
-        return <RefreshCw className="h-4 w-4" />
+        return <RefreshCw className="h-4 w-4" />;
       case "ready":
-        return <CheckCircle className="h-4 w-4" />
+        return <CheckCircle className="h-4 w-4" />;
       case "completed":
-        return <CheckCircle className="h-4 w-4" />
+        return <CheckCircle className="h-4 w-4" />;
       case "cancelled":
-        return <XCircle className="h-4 w-4" />
+        return <XCircle className="h-4 w-4" />;
       default:
-        return <Clock className="h-4 w-4" />
+        return <Clock className="h-4 w-4" />;
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
       {!hasSupabaseConfig && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>Service is not configured. Order management is disabled.</AlertDescription>
+          <AlertDescription>
+            Service is not configured. Order management is disabled.
+          </AlertDescription>
         </Alert>
       )}
 
@@ -203,13 +243,21 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Live Orders ({orders.length})</span>
-            <Button variant="outline" size="sm" onClick={fetchOrders} disabled={loading}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchOrders}
+              disabled={loading}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
           </CardTitle>
           <CardDescription>
-            Manage incoming orders in real-time. Orders will appear here automatically as customers place them.
+            Manage incoming orders in real-time. Orders will appear here
+            automatically as customers place them.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -226,29 +274,45 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             </div>
           ) : orders.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">No orders yet. Orders will appear here when customers place them.</p>
+              <p className="text-gray-600 mb-4">
+                No orders yet. Orders will appear here when customers place
+                them.
+              </p>
             </div>
           ) : (
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {orders.map((order: OrderWithItems) => (
-                <div key={order.id} className="border p-4 rounded-lg hover:bg-gray-50">
+                <div
+                  key={order.id}
+                  className="border p-4 rounded-lg hover:bg-gray-50"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
-                      <h3 className="font-semibold text-lg">Order #{order.order_number}</h3>
+                      <h3 className="font-semibold text-lg">
+                        Order #{order.order_number}
+                      </h3>
                       <Badge className={getStatusColor(order.status)}>
                         {getStatusIcon(order.status)}
                         <span className="ml-1 capitalize">{order.status}</span>
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-600">Table {order.table_number}</p>
-                      <p className="text-lg font-bold text-green-600">£{order.total_amount.toFixed(2)}</p>
+                      <p className="text-sm text-gray-600">
+                        Table {order.table_number}
+                      </p>
+                      <p className="text-lg font-bold text-green-600">
+                        £{order.total_amount.toFixed(2)}
+                      </p>
                     </div>
                   </div>
 
                   <div className="mb-3">
-                    <p className="text-sm text-gray-600">Customer: {order.customer_name}</p>
-                    <p className="text-sm text-gray-600">Placed: {new Date(order.created_at).toLocaleString()}</p>
+                    <p className="text-sm text-gray-600">
+                      Customer: {order.customer_name}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Placed: {new Date(order.created_at).toLocaleString()}
+                    </p>
                   </div>
 
                   {order.order_items && order.order_items.length > 0 && (
@@ -256,11 +320,16 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                       <h4 className="font-medium mb-2">Items:</h4>
                       <div className="space-y-1">
                         {order.order_items.map((item) => (
-                          <div key={item.id} className="flex justify-between text-sm">
+                          <div
+                            key={item.id}
+                            className="flex justify-between text-sm"
+                          >
                             <span>
                               {item.quantity}x {item.item_name}
                             </span>
-                            <span>£{(item.price * item.quantity).toFixed(2)}</span>
+                            <span>
+                              £{(item.price * item.quantity).toFixed(2)}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -274,7 +343,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                         onClick={() => updateOrderStatus(order.id, "preparing")}
                         disabled={updating === order.id}
                       >
-                        {updating === order.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Start Preparing"}
+                        {updating === order.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Start Preparing"
+                        )}
                       </Button>
                     )}
                     {order.status === "preparing" && (
@@ -283,7 +356,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                         onClick={() => updateOrderStatus(order.id, "ready")}
                         disabled={updating === order.id}
                       >
-                        {updating === order.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Mark Ready"}
+                        {updating === order.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Mark Ready"
+                        )}
                       </Button>
                     )}
                     {order.status === "ready" && (
@@ -292,17 +369,26 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                         onClick={() => updateOrderStatus(order.id, "completed")}
                         disabled={updating === order.id}
                       >
-                        {updating === order.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Complete"}
+                        {updating === order.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Complete"
+                        )}
                       </Button>
                     )}
-                    {(order.status === "pending" || order.status === "preparing") && (
+                    {(order.status === "pending" ||
+                      order.status === "preparing") && (
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => updateOrderStatus(order.id, "cancelled")}
                         disabled={updating === order.id}
                       >
-                        {updating === order.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Cancel"}
+                        {updating === order.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Cancel"
+                        )}
                       </Button>
                     )}
                   </div>
@@ -313,5 +399,5 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

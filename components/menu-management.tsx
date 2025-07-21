@@ -1,55 +1,74 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PlusCircle, Trash2, RefreshCw, AlertTriangle, Upload, Link, FileText } from "lucide-react"
-import { supabase, hasSupabaseConfig, type MenuItem, type AuthSession } from "@/lib/supabase"
-import { logger } from "@/lib/logger"
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  PlusCircle,
+  Trash2,
+  RefreshCw,
+  AlertTriangle,
+  Upload,
+  Link,
+  FileText,
+} from "lucide-react";
+import {
+  supabase,
+  hasSupabaseConfig,
+  type MenuItem,
+  type AuthSession,
+} from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface MenuManagementProps {
-  venueId: string
-  session: AuthSession
+  venueId: string;
+  session: AuthSession;
 }
 
 export function MenuManagement({ venueId, session }: MenuManagementProps) {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [extracting, setExtracting] = useState(false)
-  const [menuUrl, setMenuUrl] = useState("")
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [menuUrl, setMenuUrl] = useState("");
   const [newItem, setNewItem] = useState({
     name: "",
     description: "",
     price: 0,
     category: "",
     available: true,
-  })
+  });
   const dropRef = useRef<HTMLDivElement>(null);
   const [dragActive, setDragActive] = useState<boolean>(false);
 
-  const venueUuid = session.venue.id
+  const venueUuid = session.venue.id;
 
   const fetchMenu = useCallback(async () => {
-    logger.info("Fetching menu items", { venueUuid })
+    logger.info("Fetching menu items", { venueUuid });
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     if (!hasSupabaseConfig || !supabase) {
-      logger.error("Supabase not configured")
-      setError("Service is not configured.")
-      setLoading(false)
-      return
+      logger.error("Supabase not configured");
+      setError("Service is not configured.");
+      setLoading(false);
+      return;
     }
 
     try {
@@ -58,88 +77,95 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         .select("*")
         .eq("venue_id", venueUuid)
         .order("category", { ascending: true })
-        .order("name", { ascending: true })
+        .order("name", { ascending: true });
 
       if (error) {
         logger.error("Failed to fetch menu from Supabase", {
           error: error.message,
           code: error.code,
           venueUuid,
-        })
-        setError("Failed to load menu items.")
+        });
+        setError("Failed to load menu items.");
       } else {
         logger.info("Menu fetched successfully", {
           itemCount: data?.length || 0,
           categories: [...new Set(data?.map((item) => item.category) || [])],
-        })
-        setMenuItems(data || [])
+        });
+        setMenuItems(data || []);
       }
     } catch (error: any) {
-      logger.error("Unexpected error fetching menu", { error })
-      setError("An unexpected error occurred.")
+      logger.error("Unexpected error fetching menu", { error });
+      setError("An unexpected error occurred.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [venueUuid])
+  }, [venueUuid]);
 
   useEffect(() => {
-    fetchMenu()
+    fetchMenu();
 
-    if (!supabase) return
+    if (!supabase) return;
 
-    logger.debug("Setting up real-time subscription")
+    logger.debug("Setting up real-time subscription");
     const channel = supabase
       .channel(`menu-management-${venueUuid}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "menu_items", filter: `venue_id=eq.${venueUuid}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "menu_items",
+          filter: `venue_id=eq.${venueUuid}`,
+        },
         (payload) => {
-          logger.info("Real-time change detected, refetching menu", { payload })
-          fetchMenu()
+          logger.info("Real-time change detected, refetching menu", {
+            payload,
+          });
+          fetchMenu();
         },
       )
       .subscribe((status) => {
-        logger.debug("Real-time subscription status", { status })
-      })
+        logger.debug("Real-time subscription status", { status });
+      });
 
     return () => {
       logger.debug("Cleaning up real-time subscription");
       if (supabase) {
         supabase.removeChannel(channel);
-    }
+      }
     };
-  }, [fetchMenu, venueUuid])
+  }, [fetchMenu, venueUuid]);
 
   // Enhanced file upload handler for both input and drag-and-drop
   const handleFile = (file: File) => {
     setUploading(true);
     setError(null);
-    
+
     const formData = new FormData();
-    formData.append('menu', file);
-    formData.append('venueId', venueUuid);
-    
+    formData.append("menu", file);
+    formData.append("venueId", venueUuid);
+
     fetch("/api/upload-menu", {
       method: "POST",
       body: formData,
     })
-    .then(res => res.json())
-    .then(result => {
-      if (result.error) {
-        setError(result.error || "Failed to process menu file.");
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.error) {
+          setError(result.error || "Failed to process menu file.");
+          setUploading(false);
+          return;
+        }
+        // Success - the upload-menu API handles both upload and database insertion
+        setError(null);
         setUploading(false);
-        return;
-      }
-      // Success - the upload-menu API handles both upload and database insertion
-      setError(null);
-      setUploading(false);
-      // Refresh the menu to show new items
-      fetchMenu();
-    })
-    .catch(error => {
-      setError("Failed to process menu file.");
-      setUploading(false);
-    });
+        // Refresh the menu to show new items
+        fetchMenu();
+      })
+      .catch((error) => {
+        setError("Failed to process menu file.");
+        setUploading(false);
+      });
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +216,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     } finally {
       setExtracting(false);
     }
-  }
+  };
 
   const handleAddItem = async () => {
     logger.info("Starting add item process", {
@@ -199,111 +225,139 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       price: newItem.price,
       venueUuid,
       userId: session.user.id,
-    })
-    if (!newItem.name.trim() || !newItem.category.trim() || newItem.price <= 0) {
-      setError("Please fill out all required fields with valid values.")
-      return
+    });
+    if (
+      !newItem.name.trim() ||
+      !newItem.category.trim() ||
+      newItem.price <= 0
+    ) {
+      setError("Please fill out all required fields with valid values.");
+      return;
     }
-    setSaving("add")
-    setError(null)
+    setSaving("add");
+    setError(null);
     try {
       // Use API route to insert
       const res = await fetch("/api/extract-menu", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: [{
+        body: JSON.stringify({
+          items: [
+            {
+              venue_id: venueUuid,
+              name: newItem.name.trim(),
+              description: newItem.description.trim(),
+              price: newItem.price,
+              category: newItem.category.trim(),
+              available: newItem.available,
+            },
+          ],
           venue_id: venueUuid,
-          name: newItem.name.trim(),
-          description: newItem.description.trim(),
-          price: newItem.price,
-          category: newItem.category.trim(),
-          available: newItem.available,
-        }], venue_id: venueUuid }),
-      })
-      const result = await res.json()
+        }),
+      });
+      const result = await res.json();
       if (!res.ok || result.error) {
         logger.error("Failed to add item to Supabase", {
           error: result.error,
           venueUuid,
           userId: session.user.id,
-        })
-        setError(result.error || "Failed to add item.")
+        });
+        setError(result.error || "Failed to add item.");
       } else {
-        logger.info("Item added successfully")
-        setNewItem({ name: "", description: "", price: 0, category: "", available: true })
+        logger.info("Item added successfully");
+        setNewItem({
+          name: "",
+          description: "",
+          price: 0,
+          category: "",
+          available: true,
+        });
       }
     } catch (error: any) {
-      logger.error("Unexpected error adding item", { error })
-      setError("An unexpected error occurred.")
+      logger.error("Unexpected error adding item", { error });
+      setError("An unexpected error occurred.");
     } finally {
-      setSaving(null)
+      setSaving(null);
     }
-  }
+  };
 
-  const handleUpdateItem = async (itemId: string, updates: Partial<MenuItem>) => {
-    logger.info("Updating item", { itemId, updates })
+  const handleUpdateItem = async (
+    itemId: string,
+    updates: Partial<MenuItem>,
+  ) => {
+    logger.info("Updating item", { itemId, updates });
 
-    if (!supabase) return
+    if (!supabase) return;
 
-    setSaving(itemId)
+    setSaving(itemId);
 
     try {
-      const { error } = await supabase.from("menu_items").update(updates).eq("id", itemId)
+      const { error } = await supabase
+        .from("menu_items")
+        .update(updates)
+        .eq("id", itemId);
 
       if (error) {
         logger.error("Failed to update item", {
           itemId,
           error: error.message,
           code: error.code,
-        })
-        setError(`Failed to update item: ${error.message}`)
+        });
+        setError(`Failed to update item: ${error.message}`);
       } else {
-        logger.info("Item updated successfully", { itemId })
+        logger.info("Item updated successfully", { itemId });
       }
     } catch (error: any) {
-      logger.error("Unexpected error updating item", { error })
-      setError("An unexpected error occurred.")
+      logger.error("Unexpected error updating item", { error });
+      setError("An unexpected error occurred.");
     } finally {
-      setSaving(null)
+      setSaving(null);
     }
-  }
+  };
 
   const handleDeleteItem = async (itemId: string) => {
-    logger.info("Deleting item", { itemId })
+    logger.info("Deleting item", { itemId });
 
-    if (!supabase) return
+    if (!supabase) return;
 
-    setSaving(itemId)
+    setSaving(itemId);
 
     try {
-      const { error } = await supabase.from("menu_items").delete().eq("id", itemId)
+      const { error } = await supabase
+        .from("menu_items")
+        .delete()
+        .eq("id", itemId);
 
       if (error) {
         logger.error("Failed to delete item", {
           itemId,
           error: error.message,
           code: error.code,
-        })
-        setError(`Failed to delete item: ${error.message}`)
+        });
+        setError(`Failed to delete item: ${error.message}`);
       } else {
-        logger.info("Item deleted successfully", { itemId })
+        logger.info("Item deleted successfully", { itemId });
       }
     } catch (error: any) {
-      logger.error("Unexpected error deleting item", { error })
-      setError("An unexpected error occurred.")
+      logger.error("Unexpected error deleting item", { error });
+      setError("An unexpected error occurred.");
     } finally {
-      setSaving(null)
+      setSaving(null);
     }
-  }
+  };
 
-  const categories = [...new Set(menuItems.map((item) => item.category))].sort()
+  const categories = [
+    ...new Set(menuItems.map((item) => item.category)),
+  ].sort();
 
   return (
     <div className="space-y-6">
       {!hasSupabaseConfig && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>Service is not configured. Menu management is disabled.</AlertDescription>
+          <AlertDescription>
+            Service is not configured. Menu management is disabled.
+          </AlertDescription>
         </Alert>
       )}
 
@@ -324,7 +378,9 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           <Card>
             <CardHeader>
               <CardTitle>Add Menu Items Manually</CardTitle>
-              <CardDescription>Add individual menu items to your restaurant.</CardDescription>
+              <CardDescription>
+                Add individual menu items to your restaurant.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -333,7 +389,9 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                   <Input
                     id="name"
                     value={newItem.name}
-                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, name: e.target.value })
+                    }
                     placeholder="e.g., Cappuccino"
                     disabled={saving === "add"}
                   />
@@ -343,7 +401,9 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                   <Input
                     id="category"
                     value={newItem.category}
-                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, category: e.target.value })
+                    }
                     placeholder="e.g., Coffee"
                     disabled={saving === "add"}
                     list="categories"
@@ -365,7 +425,12 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                     step="0.01"
                     min="0"
                     value={newItem.price}
-                    onChange={(e) => setNewItem({ ...newItem, price: Number.parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setNewItem({
+                        ...newItem,
+                        price: Number.parseFloat(e.target.value) || 0,
+                      })
+                    }
                     placeholder="0.00"
                     disabled={saving === "add"}
                   />
@@ -376,7 +441,9 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                     <Switch
                       id="available"
                       checked={newItem.available}
-                      onCheckedChange={(checked) => setNewItem({ ...newItem, available: checked })}
+                      onCheckedChange={(checked) =>
+                        setNewItem({ ...newItem, available: checked })
+                      }
                       disabled={saving === "add"}
                     />
                     <Label htmlFor="available">Available for ordering</Label>
@@ -389,13 +456,19 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                 <Input
                   id="description"
                   value={newItem.description}
-                  onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, description: e.target.value })
+                  }
                   placeholder="Optional description of the item"
                   disabled={saving === "add"}
                 />
               </div>
 
-              <Button onClick={handleAddItem} disabled={saving === "add" || loading} className="w-full">
+              <Button
+                onClick={handleAddItem}
+                disabled={saving === "add" || loading}
+                className="w-full"
+              >
                 {saving === "add" ? (
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -411,7 +484,10 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           <Card>
             <CardHeader>
               <CardTitle>Upload Menu File</CardTitle>
-              <CardDescription>Upload a photo or PDF of your menu and we'll extract the items automatically.</CardDescription>
+              <CardDescription>
+                Upload a photo or PDF of your menu and we'll extract the items
+                automatically.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div
@@ -420,8 +496,8 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                 onDragOver={handleDrag}
                 onDragLeave={handleDrag}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive ? 'border-servio-purple bg-purple-50' : 'border-gray-300'}`}
-                style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive ? "border-servio-purple bg-purple-50" : "border-gray-300"}`}
+                style={{ cursor: uploading ? "not-allowed" : "pointer" }}
               >
                 <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <div className="space-y-2">
@@ -429,7 +505,10 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                     <span className="text-sm font-medium text-servio-purple hover:text-servio-purple-dark">
                       Click to upload
                     </span>
-                    <span className="text-sm text-gray-500"> or drag and drop</span>
+                    <span className="text-sm text-gray-500">
+                      {" "}
+                      or drag and drop
+                    </span>
                   </Label>
                   <Input
                     id="menu-file"
@@ -439,18 +518,24 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                     disabled={uploading}
                     className="hidden"
                   />
-                  <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                  <p className="text-xs text-gray-500">
+                    PNG, JPG, PDF up to 10MB
+                  </p>
                 </div>
                 {dragActive && (
                   <div className="absolute inset-0 bg-servio-purple/10 border-4 border-servio-purple rounded-lg pointer-events-none flex items-center justify-center">
-                    <span className="text-servio-purple font-semibold text-lg">Drop your file here</span>
+                    <span className="text-servio-purple font-semibold text-lg">
+                      Drop your file here
+                    </span>
                   </div>
                 )}
               </div>
               {uploading && (
                 <div className="text-center">
                   <RefreshCw className="h-6 w-6 mx-auto animate-spin text-servio-purple mb-2" />
-                  <p className="text-sm text-gray-600">Processing your menu...</p>
+                  <p className="text-sm text-gray-600">
+                    Processing your menu...
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -461,7 +546,10 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           <Card>
             <CardHeader>
               <CardTitle>Extract from URL</CardTitle>
-              <CardDescription>Provide a URL to your online menu and we'll extract the items automatically.</CardDescription>
+              <CardDescription>
+                Provide a URL to your online menu and we'll extract the items
+                automatically.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -475,9 +563,9 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                   disabled={extracting}
                 />
               </div>
-              <Button 
-                onClick={handleUrlExtraction} 
-                disabled={extracting || !menuUrl.trim()} 
+              <Button
+                onClick={handleUrlExtraction}
+                disabled={extracting || !menuUrl.trim()}
                 className="w-full"
               >
                 {extracting ? (
@@ -489,7 +577,9 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
               </Button>
               {extracting && (
                 <div className="text-center">
-                  <p className="text-sm text-gray-600">Extracting menu items from URL...</p>
+                  <p className="text-sm text-gray-600">
+                    Extracting menu items from URL...
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -502,13 +592,21 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Current Menu ({menuItems.length} items)</span>
-            <Button variant="outline" size="sm" onClick={fetchMenu} disabled={loading}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchMenu}
+              disabled={loading}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
           </CardTitle>
           <CardDescription>
-            Edit or remove existing menu items. Changes are saved automatically and will be live for customers instantly.
+            Edit or remove existing menu items. Changes are saved automatically
+            and will be live for customers instantly.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -520,13 +618,17 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           ) : menuItems.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 mb-4">No menu items found. Add some items above to get started.</p>
+              <p className="text-gray-600 mb-4">
+                No menu items found. Add some items above to get started.
+              </p>
             </div>
           ) : (
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {categories.map((category) => (
                 <div key={category} className="space-y-2">
-                  <h3 className="font-semibold text-lg text-servio-purple border-b pb-1">{category}</h3>
+                  <h3 className="font-semibold text-lg text-servio-purple border-b pb-1">
+                    {category}
+                  </h3>
                   {menuItems
                     .filter((item) => item.category === category)
                     .map((item) => (
@@ -536,19 +638,33 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                       >
                         <div className="flex-1">
                           <div className="flex items-center space-x-3">
-                            <h4 className="font-semibold text-lg">{item.name}</h4>
-                            <span className="text-lg font-bold text-green-600">£{item.price.toFixed(2)}</span>
+                            <h4 className="font-semibold text-lg">
+                              {item.name}
+                            </h4>
+                            <span className="text-lg font-bold text-green-600">
+                              £{item.price.toFixed(2)}
+                            </span>
                           </div>
-                          {item.description && <p className="text-sm text-gray-600 mt-1">{item.description}</p>}
+                          {item.description && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              {item.description}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center space-x-2">
                             <Switch
                               checked={item.available}
-                              onCheckedChange={(checked) => handleUpdateItem(item.id, { available: checked })}
+                              onCheckedChange={(checked) =>
+                                handleUpdateItem(item.id, {
+                                  available: checked,
+                                })
+                              }
                               disabled={saving === item.id}
                             />
-                            <Label className="text-sm">{item.available ? "Available" : "Unavailable"}</Label>
+                            <Label className="text-sm">
+                              {item.available ? "Available" : "Unavailable"}
+                            </Label>
                           </div>
                           <Button
                             variant="ghost"
