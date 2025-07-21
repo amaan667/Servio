@@ -166,42 +166,32 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
     return items
   }
 
+  // Replace extractMenuFromWebsite to always send the URL to the backend for PDF/HTML extraction
   const extractMenuFromWebsite = async (url: string): Promise<MenuItem[]> => {
-    // Check if URL is an image
-    const isImageUrl = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url) || 
-                      url.includes('image') || 
-                      url.includes('photo');
-    
-    if (isImageUrl) {
-      // Process image URL
-      const response = await fetch("/api/upload-menu", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          imageUrl: url,
-          venueId: venueId,
-        }),
-      });
+    const response = await fetch("/api/upload-menu", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        menuUrl: url,
+        venueId: venueId,
+      }),
+    });
 
-      const result = await response.json();
-      
-      if (!response.ok || result.error) {
-        throw new Error(result.error || "Failed to process image URL");
-      }
+    const result = await response.json();
 
-      return (result.items || []).map((item: any) => ({
-        ...item,
-        id: `extracted-${Date.now()}-${Math.random()}`,
-        venue_id: venueId,
-        available: true,
-        created_at: new Date().toISOString(),
-      }));
-    } else {
-      // Website extraction is not supported - guide user to upload files
-      throw new Error("Website extraction is not supported. Please upload a menu file directly or use a direct image URL.");
+    if (!response.ok || result.error) {
+      throw new Error(result.error || "Failed to process menu URL");
     }
+
+    return (result.items || []).map((item: any) => ({
+      ...item,
+      id: `extracted-${Date.now()}-${Math.random()}`,
+      venue_id: venueId,
+      available: true,
+      created_at: new Date().toISOString(),
+    }));
   };
 
   const extractMenuFromPDF = async (file: File): Promise<MenuItem[]> => {
@@ -234,12 +224,13 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
     });
   };
 
+  // Update handleUrlUpload to use new messaging
   const handleUrlUpload = async () => {
     if (!menuUrl.trim()) return
 
     setIsLoading(true)
     setUploadStatus("idle")
-    setStatusMessage("Processing image URL...")
+    setStatusMessage("Processing menu URL...")
 
     const progressInterval = simulateProgress(3000)
 
@@ -248,9 +239,7 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
       setUploadProgress(100)
       setExtractedItems(items)
       setUploadStatus("success")
-      setStatusMessage(`Successfully extracted ${items.length} menu items from image!`)
-      
-      // Optionally trigger a menu refresh in parent
+      setStatusMessage(`Successfully extracted ${items.length} menu items from URL!`)
       if (onMenuUpdate) onMenuUpdate(items);
     } catch (error) {
       setUploadStatus("error");
@@ -456,13 +445,12 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
                   </Button>
                 </div>
                 <p className="text-sm text-gray-500">
-                  Paste a direct link to a menu image (JPG, PNG, etc.) and we'll extract the menu items automatically.
+                  Paste a direct link to a PDF or menu web page. We'll extract the menu items automatically.
                 </p>
                 <div className="text-xs text-gray-400">
-                  <p>• Supported formats: JPG, JPEG, PNG, GIF, WebP, BMP</p>
-                  <p>• Make sure the image is clear and well-lit for best results</p>
-                  <p>• Maximum file size: 10MB</p>
-                  <p>• Note: Only direct image URLs are supported, not website pages</p>
+                  <p>• Supported: PDF files and most restaurant menu web pages</p>
+                  <p>• For best results, use a direct PDF link</p>
+                  <p>• Images and photos are not supported in this mode</p>
                 </div>
               </div>
             </TabsContent>
