@@ -33,72 +33,63 @@ function log(msg, data) {
 
 // --- Strict AI Extraction Function ---
 async function extractMenuItemsFromText(text) {
-  const systemPrompt = `
-You are a menu extraction assistant.
-
-Given a block of menu text from a restaurant PDF, return ONLY a single valid JSON array of objects.
-
-RULES:
-- Each object MUST have: name (string), price (number), description (string), available (true), category (one of: ${ALLOWED_CATEGORIES.map(c=>`"${c}"`).join(', ')})
-- If you are unsure about category, choose the closest allowed.
-- Ignore any section headings.
-- Do NOT output markdown, explanations, or anything except the JSON array.
-
-EXAMPLE:
-[
-  {
-    "name": "Eggs Benedict",
-    "price": 6.5,
-    "description": "Poached eggs, muffin, hollandaise.",
-    "available": true,
-    "category": "Breakfast-Mains"
-  },
-  {
-    "name": "Chai Latte",
-    "price": 3.9,
-    "description": "",
-    "available": true,
-    "category": "Beverages-Hot"
-  }
-]
-`;
-
-  const userPrompt = `Here is the menu text (from a restaurant menu PDF). Extract ALL menu items as per instructions above.
-
-${text}`;
-
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o', // or 'gpt-3.5-turbo' if cost-sensitive
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ],
-    max_tokens: 3500,
-    temperature: 0.0,
-  });
-
-  const content = response.choices[0].message.content;
-  log('AI extraction response:', content);
-
-  // Try to extract the JSON array
-  const jsonMatch = content.match(/\[.*\]/s);
-  if (!jsonMatch) throw new Error('Model did not return a valid JSON array');
-
-  let menuItems;
+  log('Extracting menu items from text using GPT-4o');
   try {
-    menuItems = JSON.parse(jsonMatch[0]);
-  } catch (err) {
-    throw new Error('Could not parse JSON array from AI response');
+    log('Raw extracted text:', text?.slice(0, 1000) + (text.length > 1000 ? '... [truncated]' : ''));
+    const systemPrompt = `You are a menu-data curator.\n\nYou will be given raw extracted text from a restaurant menu.\n\nYour job is to return ONLY a valid JSON array, no explanations or extra text.\n\nRules:\n- You MUST use only the following categories as the \"category\" field for each item:\n    [${ALLOWED_CATEGORIES.map(c => `\"${c}\"`).join(", ")}]\n- If you are unsure, choose the *closest* matching category based on the dish, but never use \"Uncategorized\".\n- Each menu item object must look like this:\n    {\n      \"name\": \"Dish Name (no ALL CAPS, no trailing prices)\",\n      \"price\": <number>, // GBP value, as a number (e.g. 7.5)\n      \"description\": \"Short, clean, under 20 words.\",\n      \"available\": true,\n      \"category\": \"EXACT_CATEGORY\"\n    }\n- Ignore anything that does not match a real menu item (skip headings, random text, etc).\n- Do not output explanations, markdown, or any formatting except valid JSON.\n\nExamples:\n[\n  {\n    \"name\": \"Eggs Benedict\",\n    \"price\": 6.5,\n    \"description\": \"Poached eggs, muffin, hollandaise.\",\n    \"available\": true,\n    \"category\": \"Breakfast-Mains\"\n  },\n  {\n    \"name\": \"Baba Ghanoush\",\n    \"price\": 7.0,\n    \"description\": \"Aubergine, tahini, garlic, bread.\",\n    \"available\": true,\n    \"category\": \"Starters\"\n  },\n  {\n    \"name\": \"Chai Latte\",\n    \"price\": 3.9,\n    \"description\": \"\",\n    \"available\": true,\n    \"category\": \"Beverages-Hot\"\n  }\n]\n\nOnly output a JSON array in this format.`;
+
+    const userPrompt = `Extract all menu items from the following text. Group items under logical categories based on section headers or item types.\n\nRules:\n- Only include items with both name and price\n- Prices should be numbers, not strings\n- If no description is available, use empty string\n- Do not include any explanations or markdown formatting\n- Never use 'Uncategorized' as a category\n- Infer categories from context if not explicitly stated\n- Only use these categories: ${ALLOWED_CATEGORIES.join(", ")}\n\nHere is the menu text:\n---\n${text}\n---`;
+
+    log('System prompt sent to GPT-4o:', systemPrompt);
+    log('User prompt sent to GPT-4o:', userPrompt);
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      max_tokens: 2048,
+      temperature: 0.1,
+    });
+    
+    const content = response.choices[0].message.content;
+    log('Raw GPT-4o response:', content?.slice(0, 2000) + (content.length > 2000 ? '... [truncated]' : ''));
+    
+    // Parse the JSON response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (!jsonMatch) {
+      log('ERROR: No JSON array found in GPT response');
+      throw new Error('No valid JSON array found in GPT response');
+    }
+    
+    let menuItems;
+    try {
+      menuItems = JSON.parse(jsonMatch[0]);
+      log('Parsed JSON menu items:', menuItems.length, menuItems.slice(0, 3));
+    } catch (e) {
+      log('ERROR: Failed to parse GPT response as JSON:', e.message);
+      throw new Error('Failed to parse GPT response as JSON');
+    }
+    
+    // Post-processing: filter only allowed categories
+    const filteredMenuItems = menuItems.filter(item =>
+      item.category &&
+      ALLOWED_CATEGORIES.map(c => c.toLowerCase()).includes(item.category.trim().toLowerCase())
+    );
+    const flaggedItems = menuItems.filter(item =>
+      !item.category ||
+      !ALLOWED_CATEGORIES.map(c => c.toLowerCase()).includes(item.category.trim().toLowerCase())
+    );
+    if (flaggedItems.length > 0) {
+      log('Flagged items with invalid categories for manual review:', flaggedItems);
+    }
+    log('Filtered menu items to allowed categories:', filteredMenuItems.length, filteredMenuItems.slice(0, 3));
+    
+    return filteredMenuItems;
+  } catch (error) {
+    log('ERROR in extractMenuItemsFromText:', error.message, error.stack);
+    throw error;
   }
-
-  // Validate & filter
-  menuItems = menuItems.filter(item =>
-    item.name && typeof item.name === 'string' &&
-    typeof item.price === 'number' &&
-    item.category && ALLOWED_CATEGORIES.includes(item.category)
-  );
-
-  return menuItems;
 }
 
 // --- Main PDF Extraction Pipeline ---
