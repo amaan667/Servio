@@ -201,7 +201,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       const response = await fetch("/api/upload-menu", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ menuUrl: menuUrl.trim(), venueId }),
+        body: JSON.stringify({ url: menuUrl.trim(), venueId }),
       });
       const result = await response.json();
       if (!response.ok || result.error) {

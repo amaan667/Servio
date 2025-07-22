@@ -198,7 +198,7 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        menuUrl: url,
+        url: url, // <-- use 'url' not 'menuUrl'
         venueId: venueId,
       }),
     });
