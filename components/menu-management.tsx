@@ -45,7 +45,9 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   const [saving, setSaving] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
-  const [menuUrl, setMenuUrl] = useState("");
+  const dropRef = useRef<HTMLDivElement>(null);
+  const [dragActive, setDragActive] = useState<boolean>(false);
+  // Remove menuUrl state
   const [newItem, setNewItem] = useState({
     name: "",
     description: "",
@@ -53,8 +55,6 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     category: "",
     available: true,
   });
-  const dropRef = useRef<HTMLDivElement>(null);
-  const [dragActive, setDragActive] = useState<boolean>(false);
 
   const venueUuid = session.venue.id;
 
@@ -186,35 +186,6 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleUrlExtraction = async () => {
-    if (!menuUrl.trim()) {
-      setError("Please enter a valid URL.");
-      return;
-    }
-    setExtracting(true);
-    setError(null);
-    try {
-      // Call backend for unified URL extraction (PDF or HTML)
-      const response = await fetch("/api/upload-menu", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: menuUrl.trim(), venueId }),
-      });
-      const result = await response.json();
-      if (!response.ok || result.error) {
-        setError(result.error || "Failed to extract menu from URL.");
-      } else {
-        // You may want to update the menu items state here, e.g. setMenuItems(result.items)
-        setError(null);
-        // Optionally show a success message or update UI
-      }
-    } catch (error: any) {
-      setError(error.message || "Failed to extract menu from URL.");
-    } finally {
-      setExtracting(false);
     }
   };
 

@@ -129,7 +129,6 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
   >("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("");
-  const [menuUrl, setMenuUrl] = useState("");
   const [menuText, setMenuText] = useState("");
   const [extractedItems, setExtractedItems] = useState<MenuItem[]>([]);
 
@@ -190,34 +189,6 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
     return items;
   };
 
-  // Replace extractMenuFromWebsite to always send the URL to the backend for PDF/HTML extraction
-  const extractMenuFromWebsite = async (url: string): Promise<MenuItem[]> => {
-    const response = await fetch("/api/upload-menu", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: url, // <-- use 'url' not 'menuUrl'
-        venueId: venueId,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || result.error) {
-      throw new Error(result.error || "Failed to process menu URL");
-    }
-
-    return (result.items || []).map((item: any) => ({
-      ...item,
-      id: `extracted-${Date.now()}-${Math.random()}`,
-      venue_id: venueId,
-      available: true,
-      created_at: new Date().toISOString(),
-    }));
-  };
-
   const extractMenuFromPDF = async (file: File): Promise<MenuItem[]> => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
@@ -248,38 +219,6 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
           reject(new Error(error.message || "Failed to process file."));
         });
     });
-  };
-
-  // Update handleUrlUpload to use new messaging
-  const handleUrlUpload = async () => {
-    if (!menuUrl.trim()) return;
-
-    setIsLoading(true);
-    setUploadStatus("idle");
-    setStatusMessage("Processing menu URL...");
-
-    const progressInterval = simulateProgress(3000);
-
-    try {
-      const items = await extractMenuFromWebsite(menuUrl.trim());
-      setUploadProgress(100);
-      setExtractedItems(items);
-      setUploadStatus("success");
-      setStatusMessage(
-        `Successfully extracted ${items.length} menu items from URL!`,
-      );
-      if (onMenuUpdate) onMenuUpdate(items);
-    } catch (error) {
-      setUploadStatus("error");
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to extract menu from URL. Please try a different URL or upload manually.";
-      setStatusMessage(errorMessage);
-    } finally {
-      clearInterval(progressInterval);
-      setIsLoading(false);
-    }
   };
 
   const handleFileUpload = async (
