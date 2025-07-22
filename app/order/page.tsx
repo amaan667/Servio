@@ -786,24 +786,37 @@ export default function CustomerOrderPage() {
 const ApplePayButton = () => (
   <button
     type="button"
-    className="w-full h-12 bg-black rounded-lg flex items-center justify-center mb-2"
-    style={{ minHeight: 48 }}
+    className="w-full h-12 flex items-center justify-center mb-2 rounded-lg"
+    style={{
+      background: "#000",
+      minHeight: 48,
+      padding: 0,
+      border: "none",
+      outline: "none",
+    }}
     aria-label="Apple Pay"
     tabIndex={-1}
     disabled
   >
-    <img src="/assets/apple-pay-mark.svg" alt="Apple Pay" className="h-7" />
+    <img src="/assets/apple-pay-mark.svg" alt="Apple Pay" style={{ height: 32, width: "auto" }} />
   </button>
 );
+
 const GooglePayButton = () => (
   <button
     type="button"
-    className="w-full h-12 bg-white border border-gray-300 rounded-lg flex items-center justify-center mb-2"
-    style={{ minHeight: 48 }}
+    className="w-full h-12 flex items-center justify-center mb-2 rounded-lg border border-gray-300"
+    style={{
+      background: "#fff",
+      minHeight: 48,
+      padding: 0,
+      border: "1px solid #e5e7eb",
+      outline: "none",
+    }}
     aria-label="Google Pay"
     tabIndex={-1}
     disabled
   >
-    <img src="/assets/google-pay-mark.svg" alt="Google Pay" className="h-7" />
+    <img src="/assets/google-pay-mark.svg" alt="Google Pay" style={{ height: 32, width: "auto" }} />
   </button>
 );
