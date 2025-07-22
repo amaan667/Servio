@@ -368,15 +368,15 @@ export default function CustomerOrderPage() {
   };
 
   const submitOrder = async () => {
+    if (!customerInfo.name.trim() || !customerInfo.phone.trim()) {
+      alert("Please enter your name and phone number.");
+      setIsSubmitting(false);
+      return;
+    }
     if (isDemo && !isLoggedIn) {
       setOrderSubmitted(true);
       setCart([]);
       setCustomerInfo({ name: "", phone: "", table_number: "" });
-      return;
-    }
-
-    if (!customerInfo.name || !customerInfo.phone) {
-      alert("Please fill in your name and phone number");
       return;
     }
 
@@ -464,13 +464,13 @@ export default function CustomerOrderPage() {
                     <span>
                       {item.quantity}x {item.name}
                     </span>
-                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span>£{(item.price * item.quantity).toFixed(2)}</span>
                   </li>
                 ))}
               </ul>
               <div className="font-bold flex justify-between">
                 <span>Total:</span>
-                <span>${getTotalPrice().toFixed(2)}</span>
+                <span>£{getTotalPrice().toFixed(2)}</span>
               </div>
             </div>
             <Button onClick={() => setOrderSubmitted(false)} className="w-full">
