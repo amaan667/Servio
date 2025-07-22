@@ -755,11 +755,14 @@ export default function CustomerOrderPage() {
               className="w-full mb-2"
               disabled={!selectedPayment}
               onClick={async () => {
-                setShowCheckout(false);
                 setIsSubmitting(true);
+                const prevOrderSubmitted = orderSubmitted;
                 await submitOrder();
                 setIsSubmitting(false);
-                setOrderSubmitted(true);
+                // Only close modal if orderSubmitted is now true (order was actually submitted)
+                if (!prevOrderSubmitted && orderSubmitted) {
+                  setShowCheckout(false);
+                }
               }}
             >
               Pay & Place Order
@@ -811,6 +814,6 @@ const GooglePayButton = ({ selected, onClick }: { selected: boolean; onClick: ()
     tabIndex={0}
     onClick={onClick}
   >
-    <img src="/assets/google-pay-mark.svg" alt="Google Pay" style={{ height: 32, width: "auto" }} />
+    <img src="/assets/google-pay-mark.svg" alt="Google Pay" style={{ height: 32, minHeight: 32, maxHeight: 32, width: "auto" }} />
   </button>
 );
