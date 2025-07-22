@@ -428,161 +428,35 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
         <CardHeader>
           <CardTitle>Upload Your Menu</CardTitle>
           <CardDescription>
-            Import your menu from various sources. We'll automatically extract
-            and organize your items.
+            Import your menu by uploading a PDF file. Only PDF menus are supported for automatic extraction.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="file" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="file">File Upload</TabsTrigger>
-              <TabsTrigger value="url">Image URL</TabsTrigger>
-              <TabsTrigger value="text">Text Input</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="file" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="menu-file">Upload Menu File</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                  <Input
-                    id="menu-file"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleFileUpload}
-                    disabled={isLoading}
-                    className="hidden"
-                  />
-                  <label htmlFor="menu-file" className="cursor-pointer">
-                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">
-                      Click to upload or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      PDF, JPG, PNG up to 1MB (free OCR limit)
-                    </p>
-                    <p className="text-xs text-orange-600 mt-1">
-                      Large files? Try the Text Input tab instead
-                    </p>
-                  </label>
-                </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-800">
-                    <strong>File Size Limits:</strong>
-                  </p>
-                  <ul className="text-xs text-blue-700 mt-1 space-y-1">
-                    <li>• Free OCR: 1MB max (PDF, images)</li>
-                    <li>• Large files: Use Text Input tab</li>
-                    <li>• Images: Auto-compressed if needed</li>
-                    <li>• PDFs: Consider upgrading OCR plan</li>
-                  </ul>
-                </div>
-                <p className="text-sm text-gray-500">
-                  Upload a PDF menu or image. We'll use OCR to extract items
-                  automatically.
-                </p>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="url" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="menu-url">Menu Image URL</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="menu-url"
-                    placeholder="https://example.com/menu-image.jpg"
-                    value={menuUrl}
-                    onChange={(e) => setMenuUrl(e.target.value)}
-                    disabled={isLoading}
-                  />
-                  <Button
-                    onClick={handleUrlUpload}
-                    disabled={isLoading || !menuUrl.trim()}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <LinkIcon className="h-4 w-4" />
-                    )}
-                    Extract
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-500">
-                  Paste a direct link to a PDF or menu web page. We'll extract
-                  the menu items automatically.
-                </p>
-                <div className="text-xs text-gray-400">
-                  <p>
-                    • Supported: PDF files and most restaurant menu web pages
-                  </p>
-                  <p>• For best results, use a direct PDF link</p>
-                  <p>• Images and photos are not supported in this mode</p>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="text" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="menu-text">Menu Text</Label>
-                <Textarea
-                  id="menu-text"
-                  placeholder={`Paste your menu text here, for example:
-
-STARTERS
-Soup of the Day - £4.95
-Garlic Bread - £3.50
-
-MAIN COURSES  
-Fish & Chips - £12.95
-Chicken Curry - £11.50`}
-                  value={menuText}
-                  onChange={(e) => setMenuText(e.target.value)}
-                  rows={8}
+          {/* Only show PDF upload, remove Tabs for URL/Image/Text */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="menu-file">Upload Menu PDF</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <Input
+                  id="menu-file"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
                   disabled={isLoading}
+                  className="hidden"
                 />
-                <Button
-                  onClick={handleTextUpload}
-                  disabled={isLoading || !menuText.trim()}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <FileText className="h-4 w-4" />
-                  )}
-                  Process Text
-                </Button>
-                <p className="text-sm text-gray-500">
-                  Copy and paste your menu text. Include prices (£X.XX) for
-                  automatic extraction.
-                </p>
+                <label htmlFor="menu-file" className="cursor-pointer">
+                  <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600">
+                    Click to upload or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    PDF only, up to 10MB
+                  </p>
+                </label>
               </div>
-            </TabsContent>
-          </Tabs>
-
-          {isLoading && (
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center space-x-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm text-gray-600">{statusMessage}</span>
-              </div>
-              <Progress value={uploadProgress} className="w-full" />
             </div>
-          )}
-
-          {uploadStatus === "success" && (
-            <Alert className="mt-4 border-green-200 bg-green-50">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                {statusMessage}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {uploadStatus === "error" && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{statusMessage}</AlertDescription>
-            </Alert>
-          )}
+          </div>
         </CardContent>
       </Card>
 
