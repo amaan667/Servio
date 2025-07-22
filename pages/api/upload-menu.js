@@ -5,7 +5,7 @@ import pdf from "pdf-parse";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import crypto from "crypto";
-import cheerio from "cheerio";
+import * as cheerio from "cheerio";
 
 // Multer config for file uploads
 const upload = multer({
