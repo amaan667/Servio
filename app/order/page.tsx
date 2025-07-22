@@ -741,12 +741,8 @@ export default function CustomerOrderPage() {
           <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
             <h2 className="text-xl font-bold mb-4">Choose Payment Method</h2>
             <div className="flex flex-col space-y-3 mb-6">
-              <div onClick={() => setSelectedPayment("apple")}>{/* Apple Pay */}
-                <ApplePayButton />
-              </div>
-              <div onClick={() => setSelectedPayment("google")}>{/* Google Pay */}
-                <GooglePayButton />
-              </div>
+              <ApplePayButton selected={selectedPayment === "apple"} onClick={() => setSelectedPayment("apple")}/>
+              <GooglePayButton selected={selectedPayment === "google"} onClick={() => setSelectedPayment("google")}/>
               <Button
                 variant={selectedPayment === "card" ? "default" : "outline"}
                 onClick={() => setSelectedPayment("card")}
@@ -783,39 +779,37 @@ export default function CustomerOrderPage() {
 }
 
 // Add these SVGs at the top of the file
-const ApplePayButton = () => (
+const ApplePayButton = ({ selected, onClick }: { selected: boolean; onClick: () => void }) => (
   <button
     type="button"
-    className="w-full h-12 flex items-center justify-center mb-2 rounded-lg"
+    className={`w-full h-12 flex items-center justify-center mb-2 rounded-lg transition-all border ${selected ? 'ring-2 ring-servio-purple border-servio-purple' : 'border-gray-300'}`}
     style={{
       background: "#000",
       minHeight: 48,
       padding: 0,
-      border: "none",
       outline: "none",
     }}
     aria-label="Apple Pay"
-    tabIndex={-1}
-    disabled
+    tabIndex={0}
+    onClick={onClick}
   >
     <img src="/assets/apple-pay-mark.svg" alt="Apple Pay" style={{ height: 32, width: "auto" }} />
   </button>
 );
 
-const GooglePayButton = () => (
+const GooglePayButton = ({ selected, onClick }: { selected: boolean; onClick: () => void }) => (
   <button
     type="button"
-    className="w-full h-12 flex items-center justify-center mb-2 rounded-lg border border-gray-300"
+    className={`w-full h-12 flex items-center justify-center mb-2 rounded-lg transition-all border ${selected ? 'ring-2 ring-servio-purple border-servio-purple' : 'border-gray-300'}`}
     style={{
       background: "#fff",
       minHeight: 48,
       padding: 0,
-      border: "1px solid #e5e7eb",
       outline: "none",
     }}
     aria-label="Google Pay"
-    tabIndex={-1}
-    disabled
+    tabIndex={0}
+    onClick={onClick}
   >
     <img src="/assets/google-pay-mark.svg" alt="Google Pay" style={{ height: 32, width: "auto" }} />
   </button>
