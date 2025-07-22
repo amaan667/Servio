@@ -369,7 +369,6 @@ export default function CustomerOrderPage() {
 
   const submitOrder = async () => {
     if (isDemo && !isLoggedIn) {
-      alert("This is a demo. Orders are not submitted.");
       setOrderSubmitted(true);
       setCart([]);
       setCustomerInfo({ name: "", phone: "", table_number: "" });
@@ -742,20 +741,12 @@ export default function CustomerOrderPage() {
           <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
             <h2 className="text-xl font-bold mb-4">Choose Payment Method</h2>
             <div className="flex flex-col space-y-3 mb-6">
-              <Button
-                variant={selectedPayment === "apple" ? "default" : "outline"}
-                onClick={() => setSelectedPayment("apple")}
-                className="flex items-center space-x-2"
-              >
-                <Apple className="w-5 h-5 mr-2" /> Apple Pay
-              </Button>
-              <Button
-                variant={selectedPayment === "google" ? "default" : "outline"}
-                onClick={() => setSelectedPayment("google")}
-                className="flex items-center space-x-2"
-              >
-                <Smartphone className="w-5 h-5 mr-2" /> Google Pay
-              </Button>
+              <div onClick={() => setSelectedPayment("apple")}>{/* Apple Pay */}
+                <ApplePayButton />
+              </div>
+              <div onClick={() => setSelectedPayment("google")}>{/* Google Pay */}
+                <GooglePayButton />
+              </div>
               <Button
                 variant={selectedPayment === "card" ? "default" : "outline"}
                 onClick={() => setSelectedPayment("card")}
@@ -790,3 +781,29 @@ export default function CustomerOrderPage() {
     </div>
   );
 }
+
+// Add these SVGs at the top of the file
+const ApplePayButton = () => (
+  <button
+    type="button"
+    className="w-full h-12 bg-black rounded-lg flex items-center justify-center mb-2"
+    style={{ minHeight: 48 }}
+    aria-label="Apple Pay"
+    tabIndex={-1}
+    disabled
+  >
+    <img src="https://developer.apple.com/design/human-interface-guidelines/apple-pay/images/apple-pay-mark.svg" alt="Apple Pay" className="h-7" />
+  </button>
+);
+const GooglePayButton = () => (
+  <button
+    type="button"
+    className="w-full h-12 bg-white border border-gray-300 rounded-lg flex items-center justify-center mb-2"
+    style={{ minHeight: 48 }}
+    aria-label="Google Pay"
+    tabIndex={-1}
+    disabled
+  >
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Google_Pay_Logo.svg" alt="Google Pay" className="h-7" />
+  </button>
+);
