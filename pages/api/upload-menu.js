@@ -28,9 +28,12 @@ const supabase = createClient(
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // --- UTILS --- //
+let debugLogs = [];
 function log(msg, data) {
   const t = new Date().toISOString();
-  console.log(`[MENU_EXTRACTION] ${t}: ${msg}`, data ?? "");
+  const entry = `[MENU_EXTRACTION] ${t}: ${msg} ${data ? JSON.stringify(data).slice(0, 500) : ''}`;
+  debugLogs.push(entry);
+  console.log(entry);
 }
 function generateHash(buffer) {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -80,19 +83,22 @@ async function extractTextFromPDF(buffer) {
 
 // --- EXTRACT TEXT FROM URL --- //
 async function extractTextFromUrl(url) {
-  log("Downloading page: " + url);
+  log("Downloading page", url);
   const res = await fetch(url);
+  log("Fetch status", { status: res.status, headers: Object.fromEntries(res.headers.entries()) });
   if (!res.ok) throw new Error("Failed to fetch the provided URL.");
   const contentType = res.headers.get("content-type");
+  log("Content-Type", contentType);
   // If it's a PDF
   if (contentType.includes("pdf")) {
     const buffer = await res.buffer();
+    log("PDF buffer length", buffer.length);
     return await extractTextFromPDF(buffer);
   }
   // Otherwise, try HTML
   const html = await res.text();
+  log("HTML length", html.length);
   const $ = cheerio.load(html);
-  // Try to find <main>, <section>, or "menu" in id/class/text
   let menuText = "";
   $("section,main,div").each((_, el) => {
     const $el = $(el);
@@ -108,8 +114,8 @@ async function extractTextFromUrl(url) {
       menuText += txt.trim() + "\n";
     }
   });
-  // If nothing smart, fallback to all text
   if (!menuText || menuText.length < 100) menuText = $("body").text();
+  log("Extracted menuText (first 500 chars)", menuText.slice(0, 500));
   if (!menuText || menuText.length < 50)
     throw new Error("No menu-like content found in page.");
   return menuText;
@@ -117,7 +123,6 @@ async function extractTextFromUrl(url) {
 
 // --- GPT MENU EXTRACTION (text-in) --- //
 async function extractMenuItemsFromText(text) {
-  // Use your best system prompt from earlier
   const systemPrompt = `You are an expert menu extraction assistant. 
 Extract ALL menu items with prices from this text. 
 Return only a JSON array: 
@@ -127,7 +132,7 @@ Never use "Uncategorized".
 Prices must be numbers. Do not include markdown or explanations.
 `;
   const userPrompt = `Extract all menu items from this menu:\n\n${text}\n\nRemember: ONLY valid JSON array, no markdown.`;
-  log("Prompting GPT-4o...");
+  log("Prompting GPT-4o", { systemPrompt: systemPrompt.slice(0, 300), userPrompt: userPrompt.slice(0, 300) });
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
@@ -138,13 +143,14 @@ Prices must be numbers. Do not include markdown or explanations.
     temperature: 0.1,
   });
   const content = response.choices[0].message.content;
-  // Extract JSON array
+  log("GPT-4o raw response (first 500 chars)", content.slice(0, 500));
   const jsonMatch = content.match(/\[.*\]/s);
   if (!jsonMatch) throw new Error("No valid JSON array found in GPT response");
   let items;
   try {
     items = JSON.parse(jsonMatch[0]);
-  } catch {
+  } catch (err) {
+    log("JSON parse error", err.stack || err.message);
     throw new Error("Invalid JSON from GPT");
   }
   return items;
@@ -194,10 +200,13 @@ async function processMenuExtraction({ filePath, mimeType, url, venueId }) {
 
 // --- API ROUTE EXPORT --- //
 async function handler(req, res) {
+  debugLogs = [];
   log("API request received", {
     method: req.method,
     contentType: req.headers["content-type"],
     hasFile: !!req.file,
+    bodyKeys: req.body ? Object.keys(req.body) : undefined,
+    query: req.query,
   });
 
   if (req.method !== "POST") {
@@ -243,13 +252,14 @@ async function handler(req, res) {
         .status(200)
         .json({ success: true, count: deduped.length, items: deduped });
     } catch (error) {
-      log("Processing error:", error.message);
+      log("Processing error:", error.stack || error.message);
       res
         .status(500)
         .json({
           error: "Menu extraction failed",
           detail: error.message,
           code: "EXTRACTION_FAILED",
+          logs: debugLogs,
         });
     }
   } else {
@@ -297,13 +307,14 @@ async function handler(req, res) {
           .status(200)
           .json({ success: true, count: deduped.length, items: deduped });
       } catch (error) {
-        log("Processing error:", error.message);
+        log("Processing error:", error.stack || error.message);
         res
           .status(500)
           .json({
             error: "Menu extraction failed",
             detail: error.message,
             code: "EXTRACTION_FAILED",
+            logs: debugLogs,
           });
       } finally {
         if (filePath && fs.existsSync(filePath)) {
