@@ -38,6 +38,7 @@ interface CartItem extends MenuItem {
 }
 
 const DEMO_MENU_ITEMS = [
+  // Restaurant
   {
     id: "demo-1",
     name: "Margherita Pizza",
@@ -48,20 +49,21 @@ const DEMO_MENU_ITEMS = [
   },
   {
     id: "demo-2",
-    name: "Flat White",
-    description: "Rich espresso with steamed milk.",
-    price: 3.5,
-    category: "Coffee Shop",
+    name: "Spaghetti Carbonara",
+    description: "Pasta with pancetta, egg, and parmesan.",
+    price: 12.5,
+    category: "Restaurant",
     available: true,
   },
   {
     id: "demo-3",
-    name: "Chicken Shawarma Wrap",
-    description: "Grilled chicken, salad, and garlic sauce in a wrap.",
-    price: 7.0,
-    category: "Food Truck",
+    name: "Caesar Salad",
+    description: "Romaine, croutons, parmesan, Caesar dressing.",
+    price: 8.0,
+    category: "Restaurant",
     available: true,
   },
+  // Cafe
   {
     id: "demo-4",
     name: "Avocado Toast",
@@ -70,7 +72,72 @@ const DEMO_MENU_ITEMS = [
     category: "Cafe",
     available: true,
   },
-  // Add more items as needed
+  {
+    id: "demo-5",
+    name: "Blueberry Muffin",
+    description: "Freshly baked muffin with blueberries.",
+    price: 2.8,
+    category: "Cafe",
+    available: true,
+  },
+  {
+    id: "demo-6",
+    name: "Iced Latte",
+    description: "Espresso with cold milk and ice.",
+    price: 3.2,
+    category: "Cafe",
+    available: true,
+  },
+  // Coffee Shop
+  {
+    id: "demo-7",
+    name: "Flat White",
+    description: "Rich espresso with steamed milk.",
+    price: 3.5,
+    category: "Coffee Shop",
+    available: true,
+  },
+  {
+    id: "demo-8",
+    name: "Cappuccino",
+    description: "Espresso, steamed milk, and foam.",
+    price: 3.0,
+    category: "Coffee Shop",
+    available: true,
+  },
+  {
+    id: "demo-9",
+    name: "Chocolate Croissant",
+    description: "Flaky croissant with chocolate filling.",
+    price: 2.5,
+    category: "Coffee Shop",
+    available: true,
+  },
+  // Food Truck
+  {
+    id: "demo-10",
+    name: "Chicken Shawarma Wrap",
+    description: "Grilled chicken, salad, and garlic sauce in a wrap.",
+    price: 7.0,
+    category: "Food Truck",
+    available: true,
+  },
+  {
+    id: "demo-11",
+    name: "Loaded Fries",
+    description: "Fries topped with cheese, jalapenos, and sauce.",
+    price: 5.0,
+    category: "Food Truck",
+    available: true,
+  },
+  {
+    id: "demo-12",
+    name: "Fish Tacos",
+    description: "Crispy fish, slaw, and spicy mayo in soft tortillas.",
+    price: 6.5,
+    category: "Food Truck",
+    available: true,
+  },
 ];
 
 export default function CustomerOrderPage() {
