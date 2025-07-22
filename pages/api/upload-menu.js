@@ -222,23 +222,30 @@ async function handler(req, res) {
   }
 
   // Manual JSON body parsing for application/json requests
-  if (req.headers["content-type"] === "application/json") {
+  if (req.headers["content-type"] && req.headers["content-type"].includes("application/json")) {
+    let raw = "";
+    await new Promise((resolve) => {
+      req.on("data", (chunk) => { raw += chunk; });
+      req.on("end", resolve);
+    });
+    let body;
     try {
-      const body = req.body;
-      const venueId = body.venueId || body.venueId; // Use req.body.venueId
-      const url = body.url || body.url; // Use req.body.url
-
-      if (!venueId) {
-        return res.status(400).json({ error: "Missing venue ID in JSON body" });
-      }
-      if (!url) {
-        return res.status(400).json({ error: "Missing menu URL in JSON body" });
-      }
-
+      body = JSON.parse(raw);
+    } catch {
+      body = {};
+    }
+    const venueId = body.venueId;
+    const url = body.url;
+    if (!venueId) {
+      return res.status(400).json({ error: "Missing venue ID in JSON body" });
+    }
+    if (!url) {
+      return res.status(400).json({ error: "Missing menu URL in JSON body" });
+    }
+    try {
       const items = await processMenuExtraction({ venueId, url });
       const deduped = deduplicateMenuItems(items);
       if (!deduped.length) throw new Error("No valid menu items found");
-      // Insert into db (optional - remove if not needed)
       await supabase.from("menu_items").upsert(
         deduped.map((item) => ({
           ...item,
@@ -248,20 +255,17 @@ async function handler(req, res) {
         })),
         { onConflict: ["venue_id", "name"] },
       );
-      res
-        .status(200)
-        .json({ success: true, count: deduped.length, items: deduped });
+      res.status(200).json({ success: true, count: deduped.length, items: deduped });
     } catch (error) {
       log("Processing error:", error.stack || error.message);
-      res
-        .status(500)
-        .json({
-          error: "Menu extraction failed",
-          detail: error.message,
-          code: "EXTRACTION_FAILED",
-          logs: debugLogs,
-        });
+      res.status(500).json({
+        error: "Menu extraction failed",
+        detail: error.message,
+        code: "EXTRACTION_FAILED",
+        logs: debugLogs,
+      });
     }
+    return;
   } else {
     // Multer for file uploads
     upload.single("menu")(req, res, async (err) => {
