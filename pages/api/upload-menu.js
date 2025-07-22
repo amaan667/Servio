@@ -123,13 +123,30 @@ async function extractTextFromUrl(url) {
 
 // --- GPT MENU EXTRACTION (text-in) --- //
 async function extractMenuItemsFromText(text) {
-  const systemPrompt = `You are an expert menu extraction assistant. 
-Extract ALL menu items with prices from this text. 
-Return only a JSON array: 
-[{"name":"", "price":0, "description":"", "available":true, "category":""}]
-Only use these categories: Starters, Breakfast-Mains, Salads, Sandwiches-Wraps, Burgers, Kids, Desserts, Beverages-Hot, Beverages-Cold, Specials, Sides-AddOns.
-Never use "Uncategorized".
-Prices must be numbers. Do not include markdown or explanations.
+  const systemPrompt = `You are extracting structured menu data from OCR text.
+
+Your task:
+- Identify and extract all menu items.
+- For each menu item, provide: 
+  - Name
+  - Description (if it exists; combine multi-line descriptions)
+  - Price (if available)
+
+Special instructions for accuracy:
+- **Section descriptions** (for example, text under “Beverages” like “Coca-Cola, Coke Zero, Sprite, Fanta, Irn-Bru”) should be treated as a list of individual menu items, **not as a description for any one item**.
+- Only include actual item descriptions if they are directly underneath and clearly refer to one menu item.
+- For sections listing multiple drinks, juices, or items (separated by commas or listed as options), **split each as a separate menu item** with their shared price.
+- **Do not merge section instructions, allergen notices, or group headers into any item description.**
+
+Example formatting for “Beverages”:
+- Each drink (e.g., “Coca-Cola”, “Coke Zero”, “Sprite”, etc.) should be a separate menu item with the price shown, and without a description unless one is specifically provided under that item.
+
+Use this approach for all similar sections in the menu.
+
+Now extract the menu items as a structured table with columns: Name, Description, Price.
+
+Here is the OCR text:
+[PASTE MENU TEXT HERE]
 `;
   const userPrompt = `Extract all menu items from this menu:\n\n${text}\n\nRemember: ONLY valid JSON array, no markdown.`;
   log("Prompting GPT-4o", { systemPrompt: systemPrompt.slice(0, 300), userPrompt: userPrompt.slice(0, 300) });
