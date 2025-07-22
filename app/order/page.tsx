@@ -37,6 +37,42 @@ interface CartItem extends MenuItem {
   special_instructions?: string;
 }
 
+const DEMO_MENU_ITEMS = [
+  {
+    id: "demo-1",
+    name: "Margherita Pizza",
+    description: "Classic pizza with tomato, mozzarella, and basil.",
+    price: 10.99,
+    category: "Restaurant",
+    available: true,
+  },
+  {
+    id: "demo-2",
+    name: "Flat White",
+    description: "Rich espresso with steamed milk.",
+    price: 3.5,
+    category: "Coffee Shop",
+    available: true,
+  },
+  {
+    id: "demo-3",
+    name: "Chicken Shawarma Wrap",
+    description: "Grilled chicken, salad, and garlic sauce in a wrap.",
+    price: 7.0,
+    category: "Food Truck",
+    available: true,
+  },
+  {
+    id: "demo-4",
+    name: "Avocado Toast",
+    description: "Sourdough toast with smashed avocado and chili flakes.",
+    price: 5.5,
+    category: "Cafe",
+    available: true,
+  },
+  // Add more items as needed
+];
+
 export default function CustomerOrderPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -60,6 +96,10 @@ export default function CustomerOrderPage() {
   const categories = ["all", ...uniqueCategories];
 
   const searchParams = useSearchParams();
+  const isDemo = searchParams?.get("demo") === "1";
+  // Detect if user is signed in (simple check, adjust as needed)
+  const isLoggedIn = typeof window !== "undefined" && localStorage.getItem("servio_session");
+
   // Use the correct venue_id from the database schema
   const venueId = "demo-cafe";
 
@@ -70,6 +110,11 @@ export default function CustomerOrderPage() {
   );
 
   useEffect(() => {
+    if (isDemo && !isLoggedIn) {
+      setMenuItems(DEMO_MENU_ITEMS);
+      setLoadingMenu(false);
+      return;
+    }
     if (!hasSupabaseConfig) {
       setMenuError(
         "Database configuration is missing. Please check your environment variables.",
@@ -78,7 +123,7 @@ export default function CustomerOrderPage() {
       return;
     }
     loadMenuItems();
-  }, [hasSupabaseConfig]);
+  }, [hasSupabaseConfig, isDemo, isLoggedIn]);
 
   useEffect(() => {
     // Demo mode: if demo=1 in URL, pre-populate cart with sample items
@@ -328,9 +373,7 @@ export default function CustomerOrderPage() {
   };
 
   const submitOrder = async () => {
-    // Prevent order submission in demo mode
-    const demo = searchParams?.get("demo");
-    if (demo === "1") {
+    if (isDemo && !isLoggedIn) {
       alert("This is a demo. Orders are not submitted.");
       setOrderSubmitted(true);
       setCart([]);
