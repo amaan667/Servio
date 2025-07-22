@@ -792,7 +792,7 @@ const ApplePayButton = () => (
     tabIndex={-1}
     disabled
   >
-    <img src="https://developer.apple.com/design/human-interface-guidelines/apple-pay/images/apple-pay-mark.svg" alt="Apple Pay" className="h-7" />
+    <img src="/assets/apple-pay-mark.svg" alt="Apple Pay" className="h-7" />
   </button>
 );
 const GooglePayButton = () => (
@@ -804,6 +804,6 @@ const GooglePayButton = () => (
     tabIndex={-1}
     disabled
   >
-    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Google_Pay_Logo.svg" alt="Google Pay" className="h-7" />
+    <img src="/assets/google-pay-mark.svg" alt="Google Pay" className="h-7" />
   </button>
 );
