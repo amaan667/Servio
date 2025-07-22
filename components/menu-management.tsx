@@ -528,15 +528,13 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                 <Input
                   id="menu-url"
                   type="url"
-                  value={menuUrl}
-                  onChange={(e) => setMenuUrl(e.target.value)}
                   placeholder="https://yourrestaurant.com/menu"
                   disabled={extracting}
                 />
               </div>
               <Button
-                onClick={handleUrlExtraction}
-                disabled={extracting || !menuUrl.trim()}
+                onClick={() => {}}
+                disabled={extracting || !newItem.name.trim()}
                 className="w-full"
               >
                 {extracting ? (
