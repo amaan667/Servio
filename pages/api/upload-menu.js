@@ -172,9 +172,25 @@ Here is the OCR text:
   }
   // Assign position based on original order
   items = items.map((item, idx) => ({ ...item, position: idx }));
-  // Assign category_position based on first appearance
+  // Infer category order from raw text
+  const headerRegex = /^([A-Z][A-Z\s&]+):?$/gm;
+  let match;
+  const categoryOrderList = [];
+  const seenHeaders = new Set();
+  while ((match = headerRegex.exec(text)) !== null) {
+    const header = match[1].trim();
+    if (!seenHeaders.has(header)) {
+      categoryOrderList.push(header);
+      seenHeaders.add(header);
+    }
+  }
+  // Assign category_position based on order in raw text
   const categoryOrder = {};
   let catPos = 0;
+  categoryOrderList.forEach((cat) => {
+    categoryOrder[cat] = catPos++;
+  });
+  // Fallback for categories not found in raw text
   items.forEach(item => {
     const cat = item.category || "Uncategorized";
     if (!(cat in categoryOrder)) {
