@@ -1,7 +1,8 @@
 import multer from "multer";
 import fs from "fs";
 import fetch from "node-fetch";
-import pdf from "pdf-parse";
+import pdfPoppler from "pdf-poppler";
+import vision from "@google-cloud/vision";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import crypto from "crypto";
@@ -74,11 +75,32 @@ async function checkOpenAIQuota() {
     return false;
   }
 }
-async function extractTextFromPDF(buffer) {
-  const { text } = await pdf(buffer);
-  if (!text || text.length < 20)
-    throw new Error("No readable text extracted from PDF");
-  return text;
+async function extractTextFromPDFWithVision(pdfPath) {
+  // Convert PDF to images (one per page)
+  const outputBase = `/tmp/pdfimg-${Date.now()}`;
+  await pdfPoppler.convert(pdfPath, {
+    format: "png",
+    out_dir: "/tmp",
+    out_prefix: outputBase,
+    page: null, // all pages
+  });
+  // Find all generated images
+  const fs = require("fs");
+  const imageFiles = fs.readdirSync("/tmp").filter(f => f.startsWith(outputBase) && f.endsWith(".png"));
+  imageFiles.sort(); // Ensure page order
+  // OCR each image with Google Vision
+  const client = new vision.ImageAnnotatorClient();
+  let fullText = "";
+  for (const img of imageFiles) {
+    const [result] = await client.textDetection(`/tmp/${img}`);
+    const text = result.fullTextAnnotation?.text || "";
+    fullText += text + "\n";
+  }
+  // Clean up images
+  for (const img of imageFiles) {
+    try { fs.unlinkSync(`/tmp/${img}`); } catch {}
+  }
+  return fullText;
 }
 
 // --- EXTRACT TEXT FROM URL --- //
@@ -93,7 +115,7 @@ async function extractTextFromUrl(url) {
   if (contentType.includes("pdf")) {
     const buffer = await res.buffer();
     log("PDF buffer length", buffer.length);
-    return await extractTextFromPDF(buffer);
+    return await extractTextFromPDFWithVision(null); // Pass null for filePath
   }
   // Otherwise, try HTML
   const html = await res.text();
@@ -224,7 +246,7 @@ async function processMenuExtraction({ filePath, mimeType, url, venueId }) {
     hash = generateHash(buffer);
     const cached = await getCache(hash);
     if (cached) return cached;
-    text = await extractTextFromPDF(buffer);
+    text = await extractTextFromPDFWithVision(filePath);
     const items = await extractMenuItemsFromText(text);
     await setCache(hash, items);
     return items;
