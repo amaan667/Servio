@@ -51,7 +51,7 @@ const compressImage = (file: File, maxSizeKB: number = 800): Promise<File> => {
       // Calculate new dimensions to reduce file size
       let { width, height } = img;
       const maxDimension = 1200; // Max width/height
-
+      
       if (width > maxDimension || height > maxDimension) {
         if (width > height) {
           height = (height * maxDimension) / width;
@@ -70,23 +70,23 @@ const compressImage = (file: File, maxSizeKB: number = 800): Promise<File> => {
       const tryCompress = (quality: number) => {
         canvas.toBlob(
           (blob) => {
-            if (!blob) {
+          if (!blob) {
               reject(new Error("Failed to compress image"));
-              return;
-            }
+            return;
+          }
 
-            const sizeKB = blob.size / 1024;
-            if (sizeKB <= maxSizeKB || quality <= 0.1) {
-              // Create a new file with the compressed blob
-              const compressedFile = new File([blob], file.name, {
-                type: file.type,
-                lastModified: file.lastModified,
-              });
-              resolve(compressedFile);
-            } else {
-              // Try with lower quality
-              tryCompress(quality - 0.1);
-            }
+          const sizeKB = blob.size / 1024;
+          if (sizeKB <= maxSizeKB || quality <= 0.1) {
+            // Create a new file with the compressed blob
+            const compressedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: file.lastModified,
+            });
+            resolve(compressedFile);
+          } else {
+            // Try with lower quality
+            tryCompress(quality - 0.1);
+          }
           },
           file.type,
           quality,
@@ -104,21 +104,21 @@ const compressImage = (file: File, maxSizeKB: number = 800): Promise<File> => {
 // Helper function to check and warn about file size
 const checkFileSize = (file: File): { isValid: boolean; message: string } => {
   const fileSizeMB = file.size / (1024 * 1024);
-
+  
   if (fileSizeMB > 10) {
-    return {
-      isValid: false,
+    return { 
+      isValid: false, 
       message: "File is too large (over 10MB). Please use a smaller file.",
     };
   }
-
+  
   if (fileSizeMB > 1) {
-    return {
-      isValid: true,
+    return { 
+      isValid: true, 
       message: `File is ${fileSizeMB.toFixed(1)}MB. OCR.space has a 1MB limit for free tier. Consider upgrading to paid plan or using a smaller file.`,
     };
   }
-
+  
   return { isValid: true, message: "" };
 };
 
@@ -194,30 +194,30 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
       const formData = new FormData();
       formData.append("menu", file);
       formData.append("venueId", venueId);
-
+      
       fetch("/api/upload-menu", {
         method: "POST",
         body: formData,
       })
         .then((res) => res.json())
         .then((result) => {
-          if (result.error) {
-            reject(new Error(result.error || "Failed to process file."));
-            return;
-          }
+        if (result.error) {
+          reject(new Error(result.error || "Failed to process file."));
+          return;
+        }
           resolve(
             (result.items || []).map((item: any) => ({
-              ...item,
-              id: `extracted-${Date.now()}-${Math.random()}`,
-              venue_id: venueId,
-              available: true,
-              created_at: new Date().toISOString(),
+          ...item,
+          id: `extracted-${Date.now()}-${Math.random()}`,
+        venue_id: venueId,
+        available: true,
+        created_at: new Date().toISOString(),
             })),
           );
-        })
+      })
         .catch((error) => {
-          reject(new Error(error.message || "Failed to process file."));
-        });
+        reject(new Error(error.message || "Failed to process file."));
+      });
     });
   };
 
@@ -373,19 +373,19 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
         <CardContent>
           {/* Only show PDF upload, remove Tabs for URL/Image/Text */}
           <div className="space-y-4">
-            <div className="space-y-2">
+              <div className="space-y-2">
               <Label htmlFor="menu-file">Upload Menu PDF</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                <Input
-                  id="menu-file"
-                  type="file"
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                  <Input
+                    id="menu-file"
+                    type="file"
                   accept=".pdf"
-                  onChange={handleFileUpload}
-                  disabled={isLoading}
-                  className="hidden"
-                />
-                <label htmlFor="menu-file" className="cursor-pointer">
-                  <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    onChange={handleFileUpload}
+                    disabled={isLoading}
+                    className="hidden"
+                  />
+                  <label htmlFor="menu-file" className="cursor-pointer">
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                   <p className="text-sm text-gray-600">
                     Click to upload or drag and drop
                   </p>
