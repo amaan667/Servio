@@ -144,31 +144,52 @@ async function extractTextFromUrl(url) {
 
 // --- GPT MENU EXTRACTION (text-in) --- //
 async function extractMenuItemsFromText(text) {
-  const systemPrompt = `You are extracting structured menu data from OCR text.
+  const systemPrompt = `You are a restaurant menu data extraction assistant.
 
-Your task:
-- Identify and extract all menu items.
-- For each menu item, provide: 
-  - Name
-  - Description (if it exists; combine multi-line descriptions)
-  - Price (if available)
+Your task is to extract all menu items from the provided OCR menu text and return them in a structured table with the following columns:
 
-Special instructions for accuracy:
-- **Section descriptions** (for example, text under “Beverages” like “Coca-Cola, Coke Zero, Sprite, Fanta, Irn-Bru”) should be treated as a list of individual menu items, **not as a description for any one item**.
-- Only include actual item descriptions if they are directly underneath and clearly refer to one menu item.
-- For sections listing multiple drinks, juices, or items (separated by commas or listed as options), **split each as a separate menu item** with their shared price.
-- **Do not merge section instructions, allergen notices, or group headers into any item description.**
+Name
 
-Example formatting for “Beverages”:
-- Each drink (e.g., “Coca-Cola”, “Coke Zero”, “Sprite”, etc.) should be a separate menu item with the price shown, and without a description unless one is specifically provided under that item.
+Description (only if it clearly refers to a single menu item)
 
-Use this approach for all similar sections in the menu.
+Price (numerical, without symbols)
 
-Now extract the menu items as a structured table with columns: Name, Description, Price.
+Special accuracy instructions:
 
-Here is the OCR text:
-[PASTE MENU TEXT HERE]
-`;
+Section Descriptions: If a section contains a list of items (e.g., “Coca-Cola, Coke Zero, Sprite, Fanta, Irn-Bru”) or multiple options, treat each as a separate menu item with the same price, not as a description for another item.
+
+Descriptions: Only use a description if it is immediately below and clearly specific to a single item—not a section, group, or general notice.
+
+Comma-Separated or List Items: For any row with a list (comma, slash, or bullet separated), split and create an individual entry for each item, assigning the shared price.
+
+Exclude: Do not include section headers, allergen information, group titles, or instructions in any item's description.
+
+Ignore non-menu text: Do not include footers, headers, page numbers, or irrelevant content.
+
+Formatting:
+
+Output as a table with columns: Name | Description | Price
+
+If description does not exist for an item, leave it blank.
+
+Only include items with a name and a price.
+
+Example:
+If a section says:
+Beverages
+Coca-Cola, Coke Zero, Sprite, Fanta, Irn-Bru — £2.50
+
+Extract as:
+
+Name\tDescription\tPrice
+Coca-Cola\t\t2.50
+Coke Zero\t\t2.50
+Sprite\t\t2.50
+Fanta\t\t2.50
+Irn-Bru\t\t2.50
+
+OCR Text:
+{PASTE MENU TEXT HERE}`;
   const userPrompt = `Extract all menu items from this menu:\n\n${text}\n\nRemember: ONLY valid JSON array, no markdown.`;
   log("Prompting GPT-4o", { systemPrompt: systemPrompt.slice(0, 300), userPrompt: userPrompt.slice(0, 300) });
   const response = await openai.chat.completions.create({
