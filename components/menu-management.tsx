@@ -69,6 +69,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [batchAction, setBatchAction] = useState<null | "edit" | "unavailable" | "category" | "price" | "delete">(null);
   const [batchEditValue, setBatchEditValue] = useState<any>(null);
+  const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
 
   const venueUuid = session.venue.id;
 
@@ -686,11 +687,11 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={openBatchEdit}
+                onClick={fetchMenu}
                 disabled={loading}
               >
-                <FileText className="mr-2 h-4 w-4" />
-                Batch Edit
+                <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                Refresh
               </Button>
             </div>
           </CardTitle>
@@ -737,29 +738,75 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                           className="mr-4"
                         />
                         <div className="flex-1">
-                          <div className="flex items-center space-x-3">
-                            {editingItemId === item.id ? (
+                          {editingItemId === item.id ? (
+                            <div className="flex flex-col md:flex-row md:items-center gap-2">
                               <Input
-                                value={item.name}
-                                onChange={e => handleUpdateItem(item.id, { name: e.target.value })}
-                                className="w-48 mr-2"
+                                value={editItemDraft?.name ?? item.name}
+                                onChange={e => setEditItemDraft(draft => ({ ...draft, name: e.target.value }))}
+                                className="w-40"
+                                placeholder="Name"
                               />
-                            ) : (
+                              <Input
+                                value={editItemDraft?.category ?? item.category}
+                                onChange={e => setEditItemDraft(draft => ({ ...draft, category: e.target.value }))}
+                                className="w-32"
+                                placeholder="Category"
+                              />
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={editItemDraft?.price ?? item.price}
+                                onChange={e => setEditItemDraft(draft => ({ ...draft, price: Number(e.target.value) }))}
+                                className="w-24"
+                                placeholder="Price"
+                              />
+                              <Input
+                                value={editItemDraft?.description ?? item.description}
+                                onChange={e => setEditItemDraft(draft => ({ ...draft, description: e.target.value }))}
+                                className="w-48"
+                                placeholder="Description"
+                              />
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={editItemDraft?.available ?? item.available}
+                                  onCheckedChange={checked => setEditItemDraft(draft => ({ ...draft, available: checked }))}
+                                />
+                                <Label className="text-sm">{(editItemDraft?.available ?? item.available) ? "Available" : "Unavailable"}</Label>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={async () => {
+                                  if (!editItemDraft) return;
+                                  setSaving(item.id);
+                                  await handleUpdateItem(item.id, editItemDraft);
+                                  setEditingItemId(null);
+                                  setEditItemDraft(null);
+                                }}
+                                disabled={saving === item.id}
+                                className="ml-2"
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => { setEditingItemId(null); setEditItemDraft(null); }}
+                                className="ml-1"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-3">
                               <h4 className="font-semibold text-lg">{item.name}</h4>
-                            )}
-                            <span className="text-lg font-bold text-green-600">£{item.price.toFixed(2)}</span>
-                          </div>
-                          {item.description && <p className="text-sm text-gray-600 mt-1">{item.description}</p>}
+                              <span className="text-lg font-bold text-green-600">£{item.price.toFixed(2)}</span>
+                              <span className="text-xs text-gray-500">{item.category}</span>
+                              {item.description && <span className="text-xs text-gray-500">{item.description}</span>}
+                              <span className="text-xs text-gray-500">{item.available ? "Available" : "Unavailable"}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={item.available}
-                              onCheckedChange={checked => handleUpdateItem(item.id, { available: checked })}
-                              disabled={saving === item.id}
-                            />
-                            <Label className="text-sm">{item.available ? "Available" : "Unavailable"}</Label>
-                          </div>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -772,7 +819,16 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setEditingItemId(editingItemId === item.id ? null : item.id)}
+                            onClick={() => {
+                              setEditingItemId(item.id);
+                              setEditItemDraft({
+                                name: item.name,
+                                price: item.price,
+                                category: item.category,
+                                description: item.description,
+                                available: item.available,
+                              });
+                            }}
                             className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             Edit
@@ -790,7 +846,6 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       {selectedItems.length > 0 && (
         <div className="fixed bottom-0 left-0 w-full bg-white border-t z-50 shadow-lg flex items-center justify-center gap-4 py-3">
           <span className="font-medium">{selectedItems.length} selected</span>
-          <Button onClick={() => handleBatchAction("edit")}>Batch Edit</Button>
           <Button onClick={() => handleBatchAction("unavailable")}>Mark Unavailable</Button>
           <Button onClick={() => handleBatchAction("category")}>Change Category</Button>
           <Button onClick={() => handleBatchAction("price")}>Bulk Price Edit</Button>
