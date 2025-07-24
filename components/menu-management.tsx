@@ -323,6 +323,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         setError(`Failed to delete item: ${error.message}`);
       } else {
         logger.info("Item deleted successfully", { itemId });
+        fetchMenu(); // Refresh the menu after deletion
       }
     } catch (error: any) {
       logger.error("Unexpected error deleting item", { error });
