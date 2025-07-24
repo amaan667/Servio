@@ -32,6 +32,14 @@ import {
   type AuthSession,
 } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface MenuManagementProps {
   venueId: string;
@@ -55,6 +63,9 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     category: "",
     available: true,
   });
+  const [batchEditOpen, setBatchEditOpen] = useState(false);
+  const [batchEditItems, setBatchEditItems] = useState<MenuItem[]>([]);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   const venueUuid = session.venue.id;
 
@@ -317,6 +328,61 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     }
   };
 
+  // Clear all menu items
+  const handleClearMenu = async () => {
+    if (!window.confirm("Are you sure you want to clear the entire menu? This cannot be undone.")) return;
+    setSaving("clear");
+    setError(null);
+    try {
+      if (!supabase) {
+        setError("Supabase is not configured.");
+        setSaving(null);
+        return;
+      }
+      const { error } = await supabase
+        .from("menu_items")
+        .delete()
+        .eq("venue_id", venueUuid);
+      if (error) {
+        setError("Failed to clear menu: " + error.message);
+      } else {
+        setMenuItems([]);
+      }
+    } catch (error: any) {
+      setError("An unexpected error occurred.");
+    } finally {
+      setSaving(null);
+    }
+  };
+  // Batch edit logic
+  const openBatchEdit = () => {
+    setBatchEditItems(menuItems.map(item => ({ ...item })));
+    setBatchEditOpen(true);
+  };
+  const handleBatchEditChange = (id: string, updates: Partial<MenuItem>) => {
+    setBatchEditItems(items => items.map(item => item.id === id ? { ...item, ...updates } : item));
+  };
+  const saveBatchEdit = async () => {
+    setSaving("batch");
+    setError(null);
+    try {
+      if (!supabase) {
+        setError("Supabase is not configured.");
+        setSaving(null);
+        return;
+      }
+      for (const item of batchEditItems) {
+        await supabase.from("menu_items").update({ category: item.category }).eq("id", item.id);
+      }
+      setBatchEditOpen(false);
+      fetchMenu();
+    } catch (error: any) {
+      setError("Failed to save batch edits.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const categories = [
     ...new Set(menuItems.map((item) => item.category)),
   ].sort();
@@ -561,17 +627,26 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Current Menu ({menuItems.length} items)</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchMenu}
-              disabled={loading}
-            >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
+            <div className="flex flex-col items-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearMenu}
+                disabled={saving === "clear"}
+              >
+                <Trash2 className={`mr-2 h-4 w-4 ${saving === "clear" ? "animate-spin" : ""}`} />
+                Clear
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openBatchEdit}
+                disabled={loading}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Batch Edit
+              </Button>
+            </div>
           </CardTitle>
           <CardDescription>
             Edit or remove existing menu items. Changes are saved automatically
@@ -603,37 +678,31 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                     .map((item) => (
                       <div
                         key={item.id}
-                        className="border p-4 rounded-lg flex items-center justify-between hover:bg-gray-50"
+                        className="border p-4 rounded-lg flex items-center justify-between hover:bg-gray-50 group"
                       >
                         <div className="flex-1">
                           <div className="flex items-center space-x-3">
-                            <h4 className="font-semibold text-lg">
-                              {item.name}
-                            </h4>
-                            <span className="text-lg font-bold text-green-600">
-                              £{item.price.toFixed(2)}
-                            </span>
+                            {editingItemId === item.id ? (
+                              <Input
+                                value={item.name}
+                                onChange={e => handleUpdateItem(item.id, { name: e.target.value })}
+                                className="w-48 mr-2"
+                              />
+                            ) : (
+                              <h4 className="font-semibold text-lg">{item.name}</h4>
+                            )}
+                            <span className="text-lg font-bold text-green-600">£{item.price.toFixed(2)}</span>
                           </div>
-                          {item.description && (
-                            <p className="text-sm text-gray-600 mt-1">
-                              {item.description}
-                            </p>
-                          )}
+                          {item.description && <p className="text-sm text-gray-600 mt-1">{item.description}</p>}
                         </div>
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center space-x-2">
                             <Switch
                               checked={item.available}
-                              onCheckedChange={(checked) =>
-                                handleUpdateItem(item.id, {
-                                  available: checked,
-                                })
-                              }
+                              onCheckedChange={checked => handleUpdateItem(item.id, { available: checked })}
                               disabled={saving === item.id}
                             />
-                            <Label className="text-sm">
-                              {item.available ? "Available" : "Unavailable"}
-                            </Label>
+                            <Label className="text-sm">{item.available ? "Available" : "Unavailable"}</Label>
                           </div>
                           <Button
                             variant="ghost"
@@ -642,11 +711,15 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                             disabled={saving === item.id}
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
-                            {saving === item.id ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
+                            {saving === item.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditingItemId(editingItemId === item.id ? null : item.id)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            Edit
                           </Button>
                         </div>
                       </div>
@@ -657,6 +730,32 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           )}
         </CardContent>
       </Card>
+      {batchEditOpen && (
+        <Dialog open={batchEditOpen} onOpenChange={setBatchEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Batch Edit Categories</DialogTitle>
+              <DialogDescription>Edit categories for multiple menu items at once.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 mt-4">
+              {batchEditItems.map(item => (
+                <div key={item.id} className="flex items-center gap-4">
+                  <span className="w-40 truncate">{item.name}</span>
+                  <Input
+                    value={item.category}
+                    onChange={e => handleBatchEditChange(item.id, { category: e.target.value })}
+                    className="w-48"
+                  />
+                </div>
+              ))}
+            </div>
+            <DialogFooter className="mt-6">
+              <Button variant="outline" onClick={() => setBatchEditOpen(false)}>Cancel</Button>
+              <Button onClick={saveBatchEdit} disabled={saving === "batch"}>{saving === "batch" ? "Saving..." : "Save Changes"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
