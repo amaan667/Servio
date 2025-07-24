@@ -21,4 +21,7 @@ RUN npm run build
 EXPOSE 8080
 
 # Start the app
-CMD ["npm", "start"] 
+COPY write-vision-key.sh /app/write-vision-key.sh
+RUN chmod +x /app/write-vision-key.sh
+
+CMD ["/app/write-vision-key.sh"] 
