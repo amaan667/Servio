@@ -404,8 +404,7 @@ export default function HomePage() {
             Ready to Transform Your Business?
           </h2>
           <p className="text-xl text-purple-100 mb-8">
-            Join thousands of businesses already using Servio to streamline
-            their operations and delight their customers.
+            Join businesses across the UK who use Servio to simplify ordering and improve customer experience.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
