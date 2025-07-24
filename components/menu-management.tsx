@@ -28,7 +28,7 @@ import {
 import {
   supabase,
   hasSupabaseConfig,
-  type MenuItem,
+  type MenuItem as BaseMenuItem,
   type AuthSession,
 } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
@@ -45,6 +45,8 @@ interface MenuManagementProps {
   venueId: string;
   session: AuthSession;
 }
+
+type MenuItem = BaseMenuItem & { category_position?: number };
 
 export function MenuManagement({ venueId, session }: MenuManagementProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -443,9 +445,19 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     }
   };
 
-  const categories = [
-    ...new Set(menuItems.map((item) => item.category)),
-  ].sort();
+  // Group and sort categories by category_position before JSX
+  const categoryGroups: Record<string, MenuItem[]> = {};
+  menuItems.forEach((item: MenuItem) => {
+    const cat = item.category || "Uncategorized";
+    if (!categoryGroups[cat]) categoryGroups[cat] = [];
+    categoryGroups[cat].push(item);
+  });
+  const sortedCategories: { name: string; position: number }[] = Object.keys(categoryGroups)
+    .map((cat) => ({
+      name: cat,
+      position: Math.min(...categoryGroups[cat].map((i) => i.category_position ?? 0)),
+    }))
+    .sort((a, b) => a.position - b.position);
 
   return (
     <div className="space-y-6">
@@ -506,8 +518,8 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                     list="categories"
                   />
                   <datalist id="categories">
-                    {categories.map((category) => (
-                      <option key={category} value={category} />
+                    {sortedCategories.map(({ name }) => (
+                      <option key={name} value={name} />
                     ))}
                   </datalist>
                 </div>
@@ -731,18 +743,17 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
               </p>
             </div>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {categories.map((category) => (
-                <div key={category} className="space-y-2">
-                  <h3 className="font-semibold text-lg text-servio-purple border-b pb-1">
-                    {category}
+            <div className="space-y-8 max-h-96 overflow-y-auto">
+              {sortedCategories.map(({ name }) => (
+                <div key={name} className="space-y-3">
+                  <h3 className="font-semibold text-xl text-servio-purple border-b pb-2 mb-2 bg-gray-50 px-2 rounded-t-lg">
+                    {name}
                   </h3>
-                  {menuItems
-                    .filter((item) => item.category === category)
-                    .map((item) => (
+                  <div className="space-y-3">
+                    {categoryGroups[name].map((item: MenuItem) => (
                       <div
                         key={item.id}
-                        className="border p-4 rounded-lg flex items-center justify-between hover:bg-gray-50 group"
+                        className="bg-white border border-gray-200 p-5 rounded-lg flex items-center justify-between shadow-sm hover:shadow-md group transition-all"
                       >
                         <input
                           type="checkbox"
@@ -850,6 +861,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                         </div>
                       </div>
                     ))}
+                  </div>
                 </div>
               ))}
             </div>

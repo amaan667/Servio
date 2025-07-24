@@ -172,6 +172,16 @@ Here is the OCR text:
   }
   // Assign position based on original order
   items = items.map((item, idx) => ({ ...item, position: idx }));
+  // Assign category_position based on first appearance
+  const categoryOrder = {};
+  let catPos = 0;
+  items.forEach(item => {
+    const cat = item.category || "Uncategorized";
+    if (!(cat in categoryOrder)) {
+      categoryOrder[cat] = catPos++;
+    }
+  });
+  items = items.map(item => ({ ...item, category_position: categoryOrder[item.category || "Uncategorized"] }));
   return items;
 }
 
