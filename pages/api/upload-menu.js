@@ -1,7 +1,7 @@
 import multer from "multer";
 import fs from "fs";
 import fetch from "node-fetch";
-import pdfPoppler from "pdf-poppler";
+import { fromPath } from "pdf2pic";
 import vision from "@google-cloud/vision";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
@@ -76,29 +76,28 @@ async function checkOpenAIQuota() {
   }
 }
 async function extractTextFromPDFWithVision(pdfPath) {
-  // Convert PDF to images (one per page)
-  const outputBase = `/tmp/pdfimg-${Date.now()}`;
-  await pdfPoppler.convert(pdfPath, {
+  // Convert PDF to images (one per page) using pdf2pic
+  const pdf2picOptions = {
+    density: 150,
     format: "png",
-    out_dir: "/tmp",
-    out_prefix: outputBase,
-    page: null, // all pages
-  });
-  // Find all generated images
-  const fs = require("fs");
-  const imageFiles = fs.readdirSync("/tmp").filter(f => f.startsWith(outputBase) && f.endsWith(".png"));
-  imageFiles.sort(); // Ensure page order
-  // OCR each image with Google Vision
-  const client = new vision.ImageAnnotatorClient();
+    width: 1200,
+    height: 1600,
+    savePath: "/tmp",
+  };
+  const storeAsImage = fromPath(pdfPath, pdf2picOptions);
+  // Get number of pages in PDF
+  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.js");
+  const data = new Uint8Array(fs.readFileSync(pdfPath));
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
+  const numPages = pdf.numPages;
   let fullText = "";
-  for (const img of imageFiles) {
-    const [result] = await client.textDetection(`/tmp/${img}`);
+  const client = new vision.ImageAnnotatorClient();
+  for (let i = 1; i <= numPages; i++) {
+    const { path: imagePath } = await storeAsImage(i);
+    const [result] = await client.textDetection(imagePath);
     const text = result.fullTextAnnotation?.text || "";
     fullText += text + "\n";
-  }
-  // Clean up images
-  for (const img of imageFiles) {
-    try { fs.unlinkSync(`/tmp/${img}`); } catch {}
+    try { fs.unlinkSync(imagePath); } catch {}
   }
   return fullText;
 }
