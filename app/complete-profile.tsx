@@ -37,6 +37,31 @@ export default function CompleteProfile() {
       setLoading(false);
       return;
     }
+    // Fetch the venue just created
+    const { data: venue, error: venueError } = await supabase
+      .from("venues")
+      .select("*")
+      .eq("owner_id", user.id)
+      .maybeSingle();
+    if (!venue || venueError) {
+      setError("Failed to fetch venue after creation. Please try again.");
+      setLoading(false);
+      return;
+    }
+    // Set session in localStorage (for AuthWrapper and dashboard)
+    const session = {
+      user: {
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || "",
+        created_at: user.created_at,
+      },
+      venue,
+    };
+    if (typeof window !== "undefined") {
+      localStorage.setItem("servio_session", JSON.stringify(session));
+    }
+    setLoading(false);
     router.push("/dashboard");
   };
 
