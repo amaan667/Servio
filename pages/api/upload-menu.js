@@ -170,6 +170,8 @@ Here is the OCR text:
     log("JSON parse error", err.stack || err.message);
     throw new Error("Invalid JSON from GPT");
   }
+  // Assign position based on original order
+  items = items.map((item, idx) => ({ ...item, position: idx }));
   return items;
 }
 
