@@ -85,7 +85,7 @@ export default function Dashboard() {
       }
       setSession(validatedSession);
       setLoading(false);
-      // Fetch dashboard data
+    // Fetch dashboard data
       fetchDashboardData(validatedSession.venue.id);
     }
     checkProfile();
@@ -396,11 +396,11 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-      {/* Delete Account Button */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 flex justify-end">
-        <Button variant="destructive" onClick={handleDeleteAccount}>
-          Delete Account
-        </Button>
+    {/* Delete Account Button */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 flex justify-end">
+      <Button variant="destructive" onClick={handleDeleteAccount}>
+        Delete Account
+      </Button>
       </div>
     </div>
   );

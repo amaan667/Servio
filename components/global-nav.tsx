@@ -180,4 +180,4 @@ export default function GlobalNav() {
       </div>
     </nav>
   );
-}
+} 

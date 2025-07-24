@@ -56,7 +56,7 @@ async function setCache(hash, result) {
     await supabase.from("menu_cache").upsert({
       hash,
       result,
-      created_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
     });
   } catch (error) {
     log("Cache save failed:", error.message);
@@ -298,7 +298,7 @@ async function handler(req, res) {
     let body;
     try {
       body = JSON.parse(raw);
-    } catch {
+  } catch {
       body = {};
     }
     const venueId = body.venueId;

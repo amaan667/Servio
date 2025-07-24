@@ -39,6 +39,8 @@ CREATE TABLE menu_items (
     price DECIMAL(10,2) NOT NULL,
     category VARCHAR(100) NOT NULL,
     available BOOLEAN DEFAULT true,
+    position INTEGER,
+    category_position INTEGER,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
