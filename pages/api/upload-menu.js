@@ -86,7 +86,7 @@ async function extractTextFromPDFWithVision(pdfPath) {
   };
   const storeAsImage = fromPath(pdfPath, pdf2picOptions);
   // Get number of pages in PDF
-  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.js");
+  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf");
   const data = new Uint8Array(fs.readFileSync(pdfPath));
   const pdf = await pdfjsLib.getDocument({ data }).promise;
   const numPages = pdf.numPages;
