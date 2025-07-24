@@ -302,6 +302,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   };
 
   const handleDeleteItem = async (itemId: string) => {
+    if (!window.confirm("Are you sure you want to delete this menu item?")) return;
     logger.info("Deleting item", { itemId });
 
     if (!supabase) return;
@@ -778,6 +779,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                                 size="sm"
                                 onClick={async () => {
                                   if (!editItemDraft) return;
+                                  if (!window.confirm("Are you sure you want to save these changes?")) return;
                                   setSaving(item.id);
                                   await handleUpdateItem(item.id, editItemDraft);
                                   setEditingItemId(null);
