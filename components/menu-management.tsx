@@ -66,6 +66,9 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   const [batchEditOpen, setBatchEditOpen] = useState(false);
   const [batchEditItems, setBatchEditItems] = useState<MenuItem[]>([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [batchAction, setBatchAction] = useState<null | "edit" | "unavailable" | "category" | "price" | "delete">(null);
+  const [batchEditValue, setBatchEditValue] = useState<any>(null);
 
   const venueUuid = session.venue.id;
 
@@ -383,6 +386,49 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     }
   };
 
+  // Select all logic
+  const allVisibleIds = menuItems.map(item => item.id);
+  const allSelected = selectedItems.length === allVisibleIds.length && allVisibleIds.length > 0;
+  const toggleSelectAll = () => {
+    setSelectedItems(allSelected ? [] : allVisibleIds);
+  };
+  const toggleSelectItem = (id: string) => {
+    setSelectedItems(selectedItems.includes(id)
+      ? selectedItems.filter(i => i !== id)
+      : [...selectedItems, id]);
+  };
+  // Batch actions
+  const handleBatchAction = (action: typeof batchAction) => {
+    setBatchAction(action);
+    setBatchEditValue(null);
+  };
+  const confirmBatchEdit = async () => {
+    if (!supabase) return;
+    setSaving("batch");
+    setError(null);
+    try {
+      if (batchAction === "unavailable") {
+        await supabase.from("menu_items").update({ available: false }).in("id", selectedItems);
+      } else if (batchAction === "category") {
+        await supabase.from("menu_items").update({ category: batchEditValue }).in("id", selectedItems);
+      } else if (batchAction === "price") {
+        await supabase.from("menu_items").update({ price: Number(batchEditValue) }).in("id", selectedItems);
+      } else if (batchAction === "edit") {
+        // For demo: just mark available true
+        await supabase.from("menu_items").update({ available: true }).in("id", selectedItems);
+      } else if (batchAction === "delete") {
+        await supabase.from("menu_items").delete().in("id", selectedItems);
+      }
+      setBatchAction(null);
+      setSelectedItems([]);
+      fetchMenu();
+    } catch (error: any) {
+      setError("Failed to perform batch action.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const categories = [
     ...new Set(menuItems.map((item) => item.category)),
   ].sort();
@@ -649,6 +695,10 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
             </div>
           </CardTitle>
           <CardDescription>
+            <div className="flex items-center gap-2 mt-2">
+              <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
+              <span className="text-xs">Select All</span>
+            </div>
             Edit or remove existing menu items. Changes are saved automatically
             and will be live for customers instantly.
           </CardDescription>
@@ -680,6 +730,12 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                         key={item.id}
                         className="border p-4 rounded-lg flex items-center justify-between hover:bg-gray-50 group"
                       >
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.includes(item.id)}
+                          onChange={() => toggleSelectItem(item.id)}
+                          className="mr-4"
+                        />
                         <div className="flex-1">
                           <div className="flex items-center space-x-3">
                             {editingItemId === item.id ? (
@@ -730,6 +786,37 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           )}
         </CardContent>
       </Card>
+      {/* Sticky batch action bar */}
+      {selectedItems.length > 0 && (
+        <div className="fixed bottom-0 left-0 w-full bg-white border-t z-50 shadow-lg flex items-center justify-center gap-4 py-3">
+          <span className="font-medium">{selectedItems.length} selected</span>
+          <Button onClick={() => handleBatchAction("edit")}>Batch Edit</Button>
+          <Button onClick={() => handleBatchAction("unavailable")}>Mark Unavailable</Button>
+          <Button onClick={() => handleBatchAction("category")}>Change Category</Button>
+          <Button onClick={() => handleBatchAction("price")}>Bulk Price Edit</Button>
+          <Button variant="destructive" onClick={() => handleBatchAction("delete")}>Delete</Button>
+        </div>
+      )}
+      {/* Batch edit modal */}
+      {batchAction && (
+        <Dialog open={!!batchAction} onOpenChange={v => !v && setBatchAction(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Batch {batchAction === "edit" ? "Edit" : batchAction === "unavailable" ? "Mark Unavailable" : batchAction === "category" ? "Change Category" : batchAction === "price" ? "Bulk Price Edit" : "Delete"}</DialogTitle>
+            </DialogHeader>
+            {batchAction === "category" && (
+              <Input placeholder="New category" value={batchEditValue || ""} onChange={e => setBatchEditValue(e.target.value)} />
+            )}
+            {batchAction === "price" && (
+              <Input placeholder="New price" type="number" value={batchEditValue || ""} onChange={e => setBatchEditValue(e.target.value)} />
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBatchAction(null)}>Cancel</Button>
+              <Button onClick={confirmBatchEdit} disabled={saving === "batch"}>{saving === "batch" ? "Saving..." : "Confirm"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
       {batchEditOpen && (
         <Dialog open={batchEditOpen} onOpenChange={setBatchEditOpen}>
           <DialogContent>
