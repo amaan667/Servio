@@ -410,14 +410,24 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     setSaving("batch");
     setError(null);
     try {
-      if (batchAction === "unavailable") {
-        await supabase.from("menu_items").update({ available: false }).in("id", selectedItems);
-      } else if (batchAction === "category") {
+      if (batchAction === "category") {
+        if (!batchEditValue || !batchEditValue.trim()) {
+          alert("Please enter a category.");
+          setSaving(null);
+          return;
+        }
         await supabase.from("menu_items").update({ category: batchEditValue }).in("id", selectedItems);
       } else if (batchAction === "price") {
-        await supabase.from("menu_items").update({ price: Number(batchEditValue) }).in("id", selectedItems);
+        const price = Number(batchEditValue);
+        if (!batchEditValue || isNaN(price) || price <= 0) {
+          alert("Please enter a valid price greater than 0.");
+          setSaving(null);
+          return;
+        }
+        await supabase.from("menu_items").update({ price }).in("id", selectedItems);
+      } else if (batchAction === "unavailable") {
+        await supabase.from("menu_items").update({ available: false }).in("id", selectedItems);
       } else if (batchAction === "edit") {
-        // For demo: just mark available true
         await supabase.from("menu_items").update({ available: true }).in("id", selectedItems);
       } else if (batchAction === "delete") {
         await supabase.from("menu_items").delete().in("id", selectedItems);
