@@ -24,13 +24,19 @@ function runMiddleware(req, res, fn) {
 
 async function pdfToImagesWithConvertAPI(pdfPath, outputDir) {
   const API_SECRET = process.env.CONVERTAPI_SECRET;
-  const formData = new FormData();
-  formData.append('File', fs.createReadStream(pdfPath));
-  const response = await axios.post(
-    `https://v2.convertapi.com/convert/pdf/to/png?Secret=${API_SECRET}`,
-    formData,
-    { headers: formData.getHeaders() }
-  );
+  const form = new FormData();
+  form.append('File', fs.createReadStream(pdfPath)); // Capital F
+
+  // Debug logs
+  console.log('[DEBUG] File exists:', fs.existsSync(pdfPath), 'Size:', fs.statSync(pdfPath).size);
+  console.log('[DEBUG] FormData headers:', form.getHeaders());
+
+  const endpoint = `https://v2.convertapi.com/convert/pdf/to/png?Secret=${API_SECRET}`;
+
+  const response = await axios.post(endpoint, form, {
+    headers: form.getHeaders()
+  });
+
   if (response.data && response.data.Files) {
     fs.mkdirSync(outputDir, { recursive: true });
     const imagePaths = [];
