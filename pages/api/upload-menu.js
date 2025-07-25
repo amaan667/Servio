@@ -4,6 +4,7 @@ import path from 'path';
 import { Storage } from '@google-cloud/storage';
 import vision from '@google-cloud/vision';
 import OpenAI from 'openai';
+import { jsonrepair } from 'jsonrepair';
 
 // --- Railway Google credentials setup ---
 if (process.env.GOOGLE_CREDENTIALS_B64) {
@@ -72,6 +73,7 @@ async function ocrPdfWithVision(pdfPath, bucketName) {
 }
 
 export default async function handler(req, res) {
+  console.log('[MENU_EXTRACTION] Handler start');
   await runMiddleware(req, res, upload.single('menu'));
   try {
     // 1. Read file
@@ -103,10 +105,15 @@ export default async function handler(req, res) {
     } catch (cleanupErr) {
       console.error('[MENU_EXTRACTION] Temp file cleanup error:', cleanupErr);
     }
-    // 4. Send text to GPT-4o for menu extraction
+    // 4. Check for empty/short OCR text
+    if (!ocrText || ocrText.length < 50) {
+      console.error('[MENU_EXTRACTION] OCR text too short or empty.');
+      return res.status(400).json({ error: 'OCR text too short or empty.' });
+    }
+    // 5. Send text to GPT-4o for menu extraction
     try {
       console.log('[MENU_EXTRACTION] Sending OCR text to GPT-4o...');
-      const prompt = `Extract all menu items and prices from the following menu text.\nOutput as JSON array: [{ "name": ..., "description": ..., "price": ..., "category": ... }]\nMenu text:\n${ocrText}`;
+      const prompt = `You are a restaurant menu data extraction assistant.\n\nYour task is to extract all menu items from the provided OCR menu text and return them in a structured JSON array with the following keys: name, description, price.\n\nSpecial accuracy instructions:\n- Section Descriptions: If a section contains a list of items (e.g., “Coca-Cola, Coke Zero, Sprite, Fanta, Irn-Bru”) or multiple options, treat each as a separate menu item with the same price, not as a description for another item.\n- Descriptions: Only use a description if it is immediately below and clearly specific to a single item—not a section, group, or general notice.\n- Comma-Separated or List Items: For any row with a list (comma, slash, or bullet separated), split and create an individual entry for each item, assigning the shared price.\n- Exclude: Do not include section headers, allergen information, group titles, or instructions in any item's description.\n- Ignore non-menu text: Do not include footers, headers, page numbers, or irrelevant content.\n\nFormatting:\n- Only output a valid JSON array.\n- Do not include any explanation or extra text—just output the JSON array.\n- No trailing commas.\n- No comments.\n- If description does not exist for an item, leave it blank.\n- Only include items with a name and a price.\n\nExample:\nIf a section says:\nBeverages\nCoca-Cola, Coke Zero, Sprite, Fanta, Irn-Bru — £2.50\n\nExtract as:\n[\n  {\"name\": \"Coca-Cola\", \"description\": \"\", \"price\": 2.50 },\n  {\"name\": \"Coke Zero\", \"description\": \"\", \"price\": 2.50 },\n  {\"name\": \"Sprite\", \"description\": \"\", \"price\": 2.50 },\n  {\"name\": \"Fanta\", \"description\": \"\", \"price\": 2.50 },\n  {\"name\": \"Irn-Bru\", \"description\": \"\", \"price\": 2.50 }\n]\n\nOCR Text:\n${ocrText}`;
       const gptResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
@@ -127,11 +134,17 @@ export default async function handler(req, res) {
         menuItems = JSON.parse(gptOutput);
         console.log('[MENU_EXTRACTION] Parsed menuItems:', menuItems);
       } catch (err) {
-        console.error('[MENU_EXTRACTION] Failed to parse GPT output:', gptOutput, err);
-        res.status(500).json({ error: 'Failed to parse GPT-4o output', gptOutput, details: err.message });
-        return;
+        // Try to repair the JSON if parsing fails
+        try {
+          menuItems = JSON.parse(jsonrepair(gptOutput));
+          console.log('[MENU_EXTRACTION] Parsed menuItems after repair:', menuItems);
+        } catch (repairErr) {
+          console.error('[MENU_EXTRACTION] Failed to repair/parse GPT output:', gptOutput, repairErr);
+          return res.status(500).json({ error: 'Failed to parse/repair GPT-4o output', gptOutput, details: repairErr.message });
+        }
       }
-      console.log('[MENU_EXTRACTION] GPT-4o output (first 500 chars):', menuItems.slice(0, 500));
+      console.log('[MENU_EXTRACTION] GPT-4o output (first 500 chars):', JSON.stringify(menuItems).slice(0, 500));
+      console.log('[MENU_EXTRACTION] Handler about to return');
       return res.json({ ocrText, menuItems });
     } catch (gptErr) {
       console.error('[MENU_EXTRACTION] GPT-4o error:', gptErr);
