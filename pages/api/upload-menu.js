@@ -5,6 +5,20 @@ import { Storage } from '@google-cloud/storage';
 import vision from '@google-cloud/vision';
 import OpenAI from 'openai';
 
+// --- Railway Google credentials setup ---
+if (process.env.GOOGLE_CREDENTIALS_B64) {
+  const keyPath = '/tmp/key.json';
+  require('fs').writeFileSync(
+    keyPath,
+    Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, 'base64').toString('utf-8')
+  );
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = keyPath;
+  console.log('[DEBUG] Service account written to:', keyPath);
+  console.log('[DEBUG] GOOGLE_APPLICATION_CREDENTIALS:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+  // Optional: log first 200 chars to verify
+  console.log('[DEBUG] Contents:', require('fs').readFileSync(keyPath, 'utf8').slice(0, 200) + '...');
+}
+
 const upload = multer({ dest: '/tmp' });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const visionClient = new vision.ImageAnnotatorClient();
@@ -64,12 +78,18 @@ export default async function handler(req, res) {
     const filePath = req.file.path;
     const bucketName = process.env.GCS_BUCKET_NAME;
     if (!bucketName) {
+      console.error('[MENU_EXTRACTION] GCS_BUCKET_NAME not set');
       throw new Error('GCS_BUCKET_NAME environment variable is not set.');
     }
     console.log('[MENU_EXTRACTION] Uploaded file path:', filePath);
+    console.log('[MENU_EXTRACTION] File exists:', fs.existsSync(filePath), 'Size:', fs.existsSync(filePath) ? fs.statSync(filePath).size : 'N/A');
     // 2. Upload to GCS and run Vision OCR
     let ocrText = '';
     try {
+      console.log('[MENU_EXTRACTION] Uploading to GCS...');
+      const gcsUri = await uploadToGCS(filePath, bucketName, path.basename(filePath));
+      console.log('[MENU_EXTRACTION] Uploaded to GCS URI:', gcsUri);
+      console.log('[MENU_EXTRACTION] Starting Vision OCR...');
       ocrText = await ocrPdfWithVision(filePath, bucketName);
       console.log('[MENU_EXTRACTION] OCR text (first 500 chars):', ocrText.slice(0, 500));
     } catch (visionErr) {
@@ -77,9 +97,15 @@ export default async function handler(req, res) {
       throw new Error('Vision OCR failed: ' + visionErr.message);
     }
     // 3. Cleanup
-    fs.unlinkSync(filePath);
+    try {
+      fs.unlinkSync(filePath);
+      console.log('[MENU_EXTRACTION] Temp file cleaned up:', filePath);
+    } catch (cleanupErr) {
+      console.error('[MENU_EXTRACTION] Temp file cleanup error:', cleanupErr);
+    }
     // 4. Send text to GPT-4o for menu extraction
     try {
+      console.log('[MENU_EXTRACTION] Sending OCR text to GPT-4o...');
       const prompt = `Extract all menu items and prices from the following menu text.\nOutput as JSON array: [{ "name": ..., "description": ..., "price": ..., "category": ... }]\nMenu text:\n${ocrText}`;
       const gptResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
