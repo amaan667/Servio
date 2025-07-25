@@ -128,7 +128,7 @@ export default async function handler(req, res) {
       console.log(`[MENU_EXTRACTION] OCR text will be processed in ${ocrChunks.length} chunk(s).`);
       for (let idx = 0; idx < ocrChunks.length; idx++) {
         const chunk = ocrChunks[idx];
-        const prompt = `Extract all menu items and prices from the following text.\nReturn ONLY a JSON object with a 'menuItems' key whose value is an array of items. Each item should have name, description, price, category.\n\nText:\n${chunk}`;
+        const prompt = `You are a restaurant menu data extraction assistant.\n\nExtract all menu items from the following OCR text.\n\nInstructions:\n- Output null for unknown price or category (never 'N/A', '-', or 'unknown').\n- If a product has multiple prices or sizes, create a separate item for each.\n- Ignore items that are not actual menu items (e.g., section headers, footers, disclaimers).\n- Only include items with a name and a price.\n- Output as a JSON object with a 'menuItems' key whose value is an array of items.\n- Each item should have: name, description, price, category.\n\nExample of good output:\n{\n  "menuItems": [\n    { "name": "Coca-Cola", "description": "", "price": 2.5, "category": "Beverages" },\n    { "name": "Sprite", "description": "", "price": 2.5, "category": "Beverages" }\n  ]\n}\nExample of bad output:\n{\n  "menuItems": [\n    { "name": "Beverages", "description": "", "price": "N/A", "category": "" },\n    { "name": "Coca-Cola", "description": "", "price": "£2.50", "category": "" }\n  ]\n}\n\nOCR Text:\n${chunk}`;
         try {
           const gptResponse = await openai.chat.completions.create({
             model: 'gpt-4o',
@@ -169,6 +169,30 @@ export default async function handler(req, res) {
         seen.add(key);
         return true;
       });
+      // --- Post-process: standardize price and category ---
+      function cleanMenuItems(items) {
+        return items
+          .map(item => {
+            // Clean price
+            let price = item.price;
+            if (typeof price === "string") {
+              price = price.replace(/[^0-9.\/]/g, ""); // Remove currency, keep numbers, dot, slash
+              if (price.includes("/")) {
+                // Handle range, pick first value
+                price = price.split("/")[0].trim();
+              }
+              price = parseFloat(price);
+              if (isNaN(price)) price = null;
+            }
+            // Clean category
+            let category = item.category;
+            if (!category || category === "N/A" || category === "-" || category === "unknown") category = null;
+            return { ...item, price, category };
+          })
+          .filter(item => item.name && item.price !== null); // Only keep valid items
+      }
+      allMenuItems = cleanMenuItems(allMenuItems);
+      // --- End post-process ---
       console.log('[MENU_EXTRACTION] Cleaned & deduped menuItems:', allMenuItems);
       console.log('API RESPONSE JSON:', JSON.stringify({ menuItems: allMenuItems, ocrText, chunkErrors }));
       if (!Array.isArray(allMenuItems) || allMenuItems.length === 0) {
