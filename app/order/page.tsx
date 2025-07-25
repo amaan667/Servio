@@ -73,6 +73,37 @@ export default function CustomerOrderPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
+  const DEMO_MENU_ITEMS = [
+    // Restaurant
+    { id: "demo-1", name: "Margherita Pizza", description: "Classic pizza with tomato, mozzarella, and basil.", price: 10.99, category: "Restaurant", available: true },
+    { id: "demo-2", name: "Spaghetti Carbonara", description: "Pasta with pancetta, egg, and parmesan.", price: 12.5, category: "Restaurant", available: true },
+    { id: "demo-3", name: "Caesar Salad", description: "Romaine, croutons, parmesan, Caesar dressing.", price: 8.0, category: "Restaurant", available: true },
+    { id: "demo-4", name: "Grilled Salmon", description: "Salmon fillet with lemon butter sauce.", price: 15.0, category: "Restaurant", available: true },
+    { id: "demo-5", name: "Chicken Parmesan", description: "Breaded chicken breast, marinara, mozzarella.", price: 13.5, category: "Restaurant", available: true },
+    { id: "demo-6", name: "Tiramisu", description: "Classic Italian dessert with coffee and mascarpone.", price: 6.0, category: "Restaurant", available: true },
+    // Cafe
+    { id: "demo-7", name: "Avocado Toast", description: "Sourdough toast with smashed avocado and chili flakes.", price: 5.5, category: "Cafe", available: true },
+    { id: "demo-8", name: "Blueberry Muffin", description: "Freshly baked muffin with blueberries.", price: 2.8, category: "Cafe", available: true },
+    { id: "demo-9", name: "Iced Latte", description: "Espresso with cold milk and ice.", price: 3.2, category: "Cafe", available: true },
+    { id: "demo-10", name: "Egg & Cress Sandwich", description: "Egg mayo and cress on wholegrain bread.", price: 4.0, category: "Cafe", available: true },
+    { id: "demo-11", name: "Carrot Cake", description: "Moist carrot cake with cream cheese frosting.", price: 3.5, category: "Cafe", available: true },
+    { id: "demo-12", name: "Chai Latte", description: "Spiced tea with steamed milk.", price: 3.0, category: "Cafe", available: true },
+    // Coffee Shop
+    { id: "demo-13", name: "Flat White", description: "Rich espresso with steamed milk.", price: 3.5, category: "Coffee Shop", available: true },
+    { id: "demo-14", name: "Cappuccino", description: "Espresso, steamed milk, and foam.", price: 3.0, category: "Coffee Shop", available: true },
+    { id: "demo-15", name: "Chocolate Croissant", description: "Flaky croissant with chocolate filling.", price: 2.5, category: "Coffee Shop", available: true },
+    { id: "demo-16", name: "Americano", description: "Espresso with hot water.", price: 2.8, category: "Coffee Shop", available: true },
+    { id: "demo-17", name: "Banana Bread", description: "Homemade banana bread slice.", price: 2.7, category: "Coffee Shop", available: true },
+    { id: "demo-18", name: "Matcha Latte", description: "Green tea matcha with steamed milk.", price: 3.6, category: "Coffee Shop", available: true },
+    // Food Truck
+    { id: "demo-19", name: "Chicken Shawarma Wrap", description: "Grilled chicken, salad, and garlic sauce in a wrap.", price: 7.0, category: "Food Truck", available: true },
+    { id: "demo-20", name: "Loaded Fries", description: "Fries topped with cheese, jalapenos, and sauce.", price: 5.0, category: "Food Truck", available: true },
+    { id: "demo-21", name: "Fish Tacos", description: "Crispy fish, slaw, and spicy mayo in soft tortillas.", price: 6.5, category: "Food Truck", available: true },
+    { id: "demo-22", name: "BBQ Pulled Pork Bun", description: "Pulled pork, BBQ sauce, and slaw in a bun.", price: 7.5, category: "Food Truck", available: true },
+    { id: "demo-23", name: "Falafel Wrap", description: "Falafel, hummus, salad, and tahini in a wrap.", price: 6.0, category: "Food Truck", available: true },
+    { id: "demo-24", name: "Street Corn", description: "Grilled corn with cheese, lime, and chili.", price: 3.5, category: "Food Truck", available: true },
+  ];
+
   useEffect(() => {
     if (!hasSupabaseConfig) {
       setMenuError(
@@ -81,6 +112,13 @@ export default function CustomerOrderPage() {
       setLoadingMenu(false);
       return;
     }
+    // Only show demo menu if not signed in and demo=1 in URL
+    if (!isLoggedIn && isDemo) {
+      setMenuItems(DEMO_MENU_ITEMS);
+      setLoadingMenu(false);
+      return;
+    }
+    // Otherwise, show live menu from DB
     loadMenuItems();
   }, [hasSupabaseConfig, isDemo, isLoggedIn]);
 
@@ -349,6 +387,24 @@ export default function CustomerOrderPage() {
 
   // Floating cart modal state for mobile
   const [showMobileCart, setShowMobileCart] = useState(false);
+
+  // If not signed in and not demo mode, show empty state
+  if (!isLoggedIn && !isDemo) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Welcome!
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Please sign in or use demo mode to view the menu and place an order.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (orderSubmitted) {
     return (
