@@ -150,12 +150,26 @@ export default async function handler(req, res) {
           chunkErrors.push({ chunk: idx + 1, error: err.message });
         }
       }
-      // Validate merged array
-      // Remove entries that have missing name or price
-      allMenuItems = allMenuItems.filter(item =>
-        item && typeof item === 'object' && typeof item.name === 'string' && typeof item.price !== 'undefined'
+      // Clean up the array: keep only objects with name AND price, discard empty/fragmented entries
+      allMenuItems = allMenuItems.filter(
+        item =>
+          item &&
+          typeof item === 'object' &&
+          typeof item.name === 'string' &&
+          item.name.length > 0 &&
+          item.price !== undefined &&
+          item.price !== null &&
+          item.price !== ''
       );
-      console.log('[MENU_EXTRACTION] Cleaned menuItems:', allMenuItems);
+      // Remove duplicate menu items (by name+price)
+      const seen = new Set();
+      allMenuItems = allMenuItems.filter(item => {
+        const key = `${item.name}|${item.price}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      console.log('[MENU_EXTRACTION] Cleaned & deduped menuItems:', allMenuItems);
       console.log('API RESPONSE JSON:', JSON.stringify({ menuItems: allMenuItems, ocrText, chunkErrors }));
       if (!Array.isArray(allMenuItems) || allMenuItems.length === 0) {
         console.error('[MENU_EXTRACTION] Menu array is empty or invalid after merging:', allMenuItems);
