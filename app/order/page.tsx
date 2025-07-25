@@ -104,6 +104,7 @@ export default function CustomerOrderPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
+  // Remove demo fallback unless in demo mode
   useEffect(() => {
     if (isDemo && !isLoggedIn) {
       setMenuItems(DEMO_MENU_ITEMS);
@@ -427,6 +428,9 @@ export default function CustomerOrderPage() {
               selectedCategory.trim().toLowerCase(),
         );
 
+  // Floating cart modal state for mobile
+  const [showMobileCart, setShowMobileCart] = useState(false);
+
   if (orderSubmitted) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -530,6 +534,10 @@ export default function CustomerOrderPage() {
               Debug Database Connection
             </Button>
           </div>
+        ) : menuItems.length === 0 ? (
+          <div className="text-center text-gray-500 py-12">
+            <div>No menu items found. Please check back later.</div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Menu Items */}
@@ -620,7 +628,7 @@ export default function CustomerOrderPage() {
             </div>
             {/* Cart & Checkout */}
             <div className="lg:col-span-1">
-              <Card className="sticky top-24">
+              <Card className="sticky top-24 hidden lg:block">
                 <CardHeader>
                   <CardTitle>Your Order</CardTitle>
                 </CardHeader>
@@ -731,6 +739,133 @@ export default function CustomerOrderPage() {
                   )}
                 </CardContent>
               </Card>
+              {/* Floating cart button for mobile */}
+              <div className="fixed bottom-4 right-4 z-50 lg:hidden">
+                {cart.length > 0 && (
+                  <Button
+                    className="rounded-full shadow-lg px-6 py-3 text-lg flex items-center"
+                    style={{ background: "#fff", border: "1px solid #eee" }}
+                    onClick={() => setShowMobileCart(true)}
+                  >
+                    <ShoppingCart className="w-6 h-6 mr-2 text-servio-purple" />
+                    <span>{getTotalItems()} · £{getTotalPrice().toFixed(2)}</span>
+                  </Button>
+                )}
+              </div>
+              {/* Mobile cart modal */}
+              {showMobileCart && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-end justify-center z-50 lg:hidden">
+                  <div className="bg-white rounded-t-2xl shadow-lg w-full max-w-md mx-auto p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold">Your Order</h2>
+                      <Button variant="ghost" onClick={() => setShowMobileCart(false)}>
+                        Close
+                      </Button>
+                    </div>
+                    {cart.length === 0 ? (
+                      <p className="text-gray-500 text-center py-4">Your cart is empty</p>
+                    ) : (
+                      <>
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                          {cart.map((item) => (
+                            <div key={item.id} className="border-b pb-3">
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-medium">{item.name}</h4>
+                                <span className="font-bold">
+                                  £{(item.price * item.quantity).toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => removeFromCart(item.id)}
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </Button>
+                                  <span>{item.quantity}</span>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => addToCart(item)}
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                                <span className="text-sm text-gray-600">
+                                  £{item.price.toFixed(2)} each
+                                </span>
+                              </div>
+                              <Textarea
+                                placeholder="Special instructions..."
+                                value={item.special_instructions || ""}
+                                onChange={(e) =>
+                                  updateSpecialInstructions(
+                                    item.id,
+                                    e.target.value,
+                                  )
+                                }
+                                className="text-sm"
+                                rows={2}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="border-t pt-3">
+                          <div className="flex justify-between items-center text-lg font-bold">
+                            <span>Total:</span>
+                            <span className="text-green-600">
+                              £{getTotalPrice().toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-3 border-t pt-3">
+                          <Input
+                            placeholder="Your name *"
+                            value={customerInfo.name}
+                            onChange={(e) =>
+                              setCustomerInfo((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
+                          />
+                          <Input
+                            placeholder="Phone number *"
+                            value={customerInfo.phone}
+                            onChange={(e) =>
+                              setCustomerInfo((prev) => ({
+                                ...prev,
+                                phone: e.target.value,
+                              }))
+                            }
+                          />
+                          <Input
+                            placeholder="Table number (optional)"
+                            value={customerInfo.table_number}
+                            onChange={(e) =>
+                              setCustomerInfo((prev) => ({
+                                ...prev,
+                                table_number: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                        <Button
+                          onClick={() => {
+                            setShowCheckout(true);
+                            setShowMobileCart(false);
+                          }}
+                          disabled={isSubmitting || cart.length === 0}
+                          className="w-full mt-4"
+                        >
+                          Checkout
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
