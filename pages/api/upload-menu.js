@@ -112,7 +112,25 @@ export default async function handler(req, res) {
         messages: [{ role: 'user', content: prompt }],
         temperature: 0,
       });
-      const menuItems = gptResponse.choices[0].message.content;
+      // After receiving the GPT-4o response
+      const gptOutputRaw = gptResponse.choices[0].message.content.trim();
+      console.log('[MENU_EXTRACTION] Raw GPT-4o output:', gptOutputRaw);
+      // Remove code fences if present
+      let gptOutput = gptOutputRaw;
+      if (gptOutput.startsWith('```json')) {
+        gptOutput = gptOutput.replace(/^```json/, '').replace(/```$/, '').trim();
+      } else if (gptOutput.startsWith('```')) {
+        gptOutput = gptOutput.replace(/^```/, '').replace(/```$/, '').trim();
+      }
+      let menuItems;
+      try {
+        menuItems = JSON.parse(gptOutput);
+        console.log('[MENU_EXTRACTION] Parsed menuItems:', menuItems);
+      } catch (err) {
+        console.error('[MENU_EXTRACTION] Failed to parse GPT output:', gptOutput, err);
+        res.status(500).json({ error: 'Failed to parse GPT-4o output', gptOutput, details: err.message });
+        return;
+      }
       console.log('[MENU_EXTRACTION] GPT-4o output (first 500 chars):', menuItems.slice(0, 500));
       return res.json({ ocrText, menuItems });
     } catch (gptErr) {
