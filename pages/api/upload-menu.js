@@ -151,7 +151,12 @@ export default async function handler(req, res) {
         }
       }
       // Validate merged array
-      console.log('[MENU_EXTRACTION] Final menuItems:', allMenuItems);
+      // Remove entries that have missing name or price
+      allMenuItems = allMenuItems.filter(item =>
+        item && typeof item === 'object' && typeof item.name === 'string' && typeof item.price !== 'undefined'
+      );
+      console.log('[MENU_EXTRACTION] Cleaned menuItems:', allMenuItems);
+      console.log('API RESPONSE JSON:', JSON.stringify({ menuItems: allMenuItems, ocrText, chunkErrors }));
       if (!Array.isArray(allMenuItems) || allMenuItems.length === 0) {
         console.error('[MENU_EXTRACTION] Menu array is empty or invalid after merging:', allMenuItems);
         return res.status(500).json({ error: 'Menu array is empty or invalid after merging', menuItems: allMenuItems, chunkErrors });
