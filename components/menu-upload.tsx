@@ -124,102 +124,9 @@ const checkFileSize = (file: File): { isValid: boolean; message: string } => {
 
 export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<
-    "idle" | "success" | "error"
-  >("idle");
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("");
-  const [menuText, setMenuText] = useState("");
+  const [error, setError] = useState("");
   const [extractedItems, setExtractedItems] = useState<MenuItem[]>([]);
-
-  const simulateProgress = (duration: number) => {
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          return 95;
-        }
-        return prev + Math.random() * 15;
-      });
-    }, duration / 20);
-    return interval;
-  };
-
-  const parseMenuFromText = (text: string): MenuItem[] => {
-    const lines = text.split("\n").filter((line) => line.trim());
-    const items: MenuItem[] = [];
-    let currentCategory = "Main Menu";
-
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-
-      // Check if line is a category (usually in caps or has specific keywords)
-      if (
-        trimmedLine.match(/^[A-Z\s&]+$/) &&
-        trimmedLine.length > 3 &&
-        trimmedLine.length < 30
-      ) {
-        currentCategory = trimmedLine;
-        continue;
-      }
-
-      // Try to extract item with price
-      const priceMatch = trimmedLine.match(/(.+?)[\s.-]+£?(\d+\.?\d*)\s*$/);
-      if (priceMatch) {
-        const [, name, priceStr] = priceMatch;
-        const cleanName = name.replace(/^\d+\.?\s*/, "").trim();
-        const price = Number.parseFloat(priceStr);
-
-        if (cleanName && price > 0) {
-          items.push({
-            id: `extracted-${Date.now()}-${Math.random()}`,
-            venue_id: venueId,
-            name: cleanName,
-            description: "",
-            price: price,
-            category: currentCategory,
-            available: true,
-            created_at: new Date().toISOString(),
-          });
-        }
-      }
-    }
-
-    return items;
-  };
-
-  const extractMenuFromPDF = async (file: File): Promise<MenuItem[]> => {
-    return new Promise((resolve, reject) => {
-      const formData = new FormData();
-      formData.append("menu", file);
-      formData.append("venueId", venueId);
-      
-      fetch("/api/upload-menu", {
-        method: "POST",
-        body: formData,
-      })
-        .then((res) => res.json())
-        .then((result) => {
-        if (result.error) {
-          reject(new Error(result.error || "Failed to process file."));
-          return;
-        }
-          resolve(
-            (result.items || []).map((item: any) => ({
-          ...item,
-          id: `extracted-${Date.now()}-${Math.random()}`,
-        venue_id: venueId,
-        available: true,
-        created_at: new Date().toISOString(),
-            })),
-          );
-      })
-        .catch((error) => {
-        reject(new Error(error.message || "Failed to process file."));
-      });
-    });
-  };
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -227,138 +134,41 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check file size first
-    const sizeCheck = checkFileSize(file);
-    if (!sizeCheck.isValid) {
-      setUploadStatus("error");
-      setStatusMessage(sizeCheck.message);
-      return;
-    }
-
-    // Warn about large files but allow them to proceed
-    if (sizeCheck.message) {
-      setStatusMessage(sizeCheck.message);
-    }
-
     setIsLoading(true);
-    setUploadStatus("idle");
-    setStatusMessage("Processing your menu file...");
+    setExtractedItems([]);
+    setError("");
+    setStatusMessage("");
+
+    const formData = new FormData();
+    formData.append("menu", file);
+    formData.append("venueId", venueId);
 
     try {
-      // Check file size and compress if needed
-      const fileSizeKB = file.size / 1024;
-      let processedFile = file;
-      if (fileSizeKB > 800 && file.type.startsWith("image/")) {
-        setStatusMessage("File is large, compressing for better processing...");
-        processedFile = await compressImage(file, 800);
-      }
-
-      // Prepare FormData for upload
-      const formData = new FormData();
-      formData.append("menu", processedFile);
-      formData.append("venueId", venueId);
-
       const res = await fetch("/api/upload-menu", {
         method: "POST",
         body: formData,
       });
-      const result = await res.json();
-      if (!res.ok || result.error) {
-        setUploadStatus("error");
-        setStatusMessage(result.error || "Failed to process file.");
-        setIsLoading(false);
-        return;
+      const data = await res.json();
+      console.log("API response:", data);
+      if (data.menuItems && Array.isArray(data.menuItems) && data.menuItems.length) {
+        setExtractedItems(data.menuItems);
+        setStatusMessage(`Successfully extracted ${data.menuItems.length} menu items!`);
+        setError("");
+      } else if (data.error) {
+        setError("Menu extraction error: " + data.error);
+        setStatusMessage("");
+        setExtractedItems([]);
+      } else {
+        setError("Unknown server response");
+        setStatusMessage("");
+        setExtractedItems([]);
       }
-      setExtractedItems(result.items || []);
-      setUploadStatus("success");
-      setStatusMessage(
-        `Successfully extracted ${result.items?.length || 0} menu items!`,
-      );
-      setIsLoading(false);
-      // Optionally trigger a menu refresh in parent
-      if (onMenuUpdate) onMenuUpdate(result.items || []);
-    } catch (error) {
-      setUploadStatus("error");
-      setStatusMessage(
-        "Failed to process file. Please try a smaller file or different format.",
-      );
-      setIsLoading(false);
-    }
-  };
-
-  const handleTextUpload = async () => {
-    if (!menuText.trim()) return;
-
-    setIsLoading(true);
-    setUploadStatus("idle");
-    setStatusMessage("Processing menu text...");
-
-    const progressInterval = simulateProgress(2000);
-
-    try {
-      const items = parseMenuFromText(menuText);
-      setUploadProgress(100);
-      setExtractedItems(items);
-      setUploadStatus("success");
-      setStatusMessage(
-        `Successfully extracted ${items.length} menu items from text!`,
-      );
-    } catch (error) {
-      setUploadStatus("error");
-      setStatusMessage(
-        "Failed to process text. Please check the format and try again.",
-      );
-    } finally {
-      clearInterval(progressInterval);
-      setIsLoading(false);
-    }
-  };
-
-  const saveExtractedItems = async () => {
-    if (extractedItems.length === 0) return;
-
-    try {
-      // Save to backend API for server-side insert (bypasses RLS)
-      const res = await fetch("/api/extract-menu", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: extractedItems, venue_id: venueId }),
-      });
-      const result = await res.json();
-      if (!res.ok || result.error) {
-        setUploadStatus("error");
-        setStatusMessage(
-          result.error || "Failed to save menu items. Please try again.",
-        );
-        return;
-      }
-      // Also save to localStorage as backup
-      const storageKey = `servio-menu-${venueId}`;
-      const existingMenu = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      const updatedMenu = [...existingMenu, ...extractedItems];
-      localStorage.setItem(storageKey, JSON.stringify(updatedMenu));
-
-      onMenuUpdate(extractedItems);
-      setExtractedItems([]);
-      setUploadStatus("idle");
+    } catch (err: any) {
+      setError("Upload failed: " + err.message);
       setStatusMessage("");
-    } catch (error) {
-      console.error("Error saving menu items:", error);
-      setUploadStatus("error");
-      setStatusMessage("Failed to save menu items. Please try again.");
+      setExtractedItems([]);
     }
-  };
-
-  const removeExtractedItem = (itemId: string) => {
-    setExtractedItems((items) => items.filter((item) => item.id !== itemId));
-  };
-
-  const updateExtractedItem = (itemId: string, updates: Partial<MenuItem>) => {
-    setExtractedItems((items) =>
-      items.map((item) =>
-        item.id === itemId ? { ...item, ...updates } : item,
-      ),
-    );
+    setIsLoading(false);
   };
 
   return (
@@ -371,21 +181,20 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Only show PDF upload, remove Tabs for URL/Image/Text */}
           <div className="space-y-4">
-              <div className="space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="menu-file">Upload Menu PDF</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                  <Input
-                    id="menu-file"
-                    type="file"
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <Input
+                  id="menu-file"
+                  type="file"
                   accept=".pdf"
-                    onChange={handleFileUpload}
-                    disabled={isLoading}
-                    className="hidden"
-                  />
-                  <label htmlFor="menu-file" className="cursor-pointer">
-                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  onChange={handleFileUpload}
+                  disabled={isLoading}
+                  className="hidden"
+                />
+                <label htmlFor="menu-file" className="cursor-pointer">
+                  <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                   <p className="text-sm text-gray-600">
                     Click to upload or drag and drop
                   </p>
@@ -399,104 +208,46 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
         </CardContent>
       </Card>
 
-      {extractedItems.length > 0 && (
+      {isLoading && <p>Processing menu…</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {!isLoading && !error && extractedItems.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>
-              Review Extracted Items ({extractedItems.length})
+              Extracted Menu Items ({extractedItems.length})
             </CardTitle>
             <CardDescription>
-              Review and edit the extracted menu items before adding them to
-              your menu.
+              Review the extracted menu items below.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {extractedItems.map((item) => (
-                <div key={item.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <Label className="text-xs text-gray-500">Item Name</Label>
-                      <Input
-                        value={item.name}
-                        onChange={(e) =>
-                          updateExtractedItem(item.id, { name: e.target.value })
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500">Category</Label>
-                      <Input
-                        value={item.category}
-                        onChange={(e) =>
-                          updateExtractedItem(item.id, {
-                            category: e.target.value,
-                          })
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500">Price (£)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={item.price}
-                        onChange={(e) =>
-                          updateExtractedItem(item.id, {
-                            price: Number.parseFloat(e.target.value) || 0,
-                          })
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-500">Description</Label>
-                    <Input
-                      value={item.description || ""}
-                      onChange={(e) =>
-                        updateExtractedItem(item.id, {
-                          description: e.target.value,
-                        })
-                      }
-                      placeholder="Add a description..."
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeExtractedItem(item.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between items-center mt-6 pt-4 border-t">
-              <p className="text-sm text-gray-600">
-                {extractedItems.length} items ready to be added to your menu
-              </p>
-              <div className="space-x-2">
-                <Button variant="outline" onClick={() => setExtractedItems([])}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={saveExtractedItems}
-                  className="bg-servio-purple hover:bg-servio-purple-dark"
-                >
-                  Add {extractedItems.length} Items to Menu
-                </Button>
-              </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Category</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {extractedItems.map((item, i) => (
+                    <tr key={i}>
+                      <td>{item.name}</td>
+                      <td>{item.description}</td>
+                      <td>{item.price}</td>
+                      <td>{item.category}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
+      )}
+      {!isLoading && !error && extractedItems.length === 0 && (
+        <p>No menu items found.</p>
       )}
     </div>
   );
