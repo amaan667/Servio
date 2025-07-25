@@ -154,6 +154,7 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
         setExtractedItems(data.menuItems);
         setStatusMessage(`Successfully extracted ${data.menuItems.length} menu items!`);
         setError("");
+        if (onMenuUpdate) onMenuUpdate(data.menuItems);
       } else if (data.error) {
         setError("Menu extraction error: " + data.error);
         setStatusMessage("");
@@ -210,6 +211,11 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
 
       {isLoading && <p>Processing menu…</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
+      {!isLoading && !error && (
+        <pre style={{maxHeight: 200, overflow: 'auto', background: '#eee', fontSize: 12}}>
+          {JSON.stringify(extractedItems, null, 2)}
+        </pre>
+      )}
       {!isLoading && !error && extractedItems.length > 0 && (
         <Card>
           <CardHeader>
@@ -234,10 +240,10 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
                 <tbody>
                   {extractedItems.map((item, i) => (
                     <tr key={i}>
-                      <td>{item.name}</td>
-                      <td>{item.description}</td>
-                      <td>{item.price}</td>
-                      <td>{item.category}</td>
+                      <td>{item.name || ''}</td>
+                      <td>{item.description || ''}</td>
+                      <td>{item.price ?? ''}</td>
+                      <td>{item.category || ''}</td>
                     </tr>
                   ))}
                 </tbody>
