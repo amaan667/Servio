@@ -172,6 +172,19 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
     setIsLoading(false);
   };
 
+  // Filter out items with missing or obviously bad price/category
+  const filteredItems = extractedItems.filter(
+    item =>
+      item.name &&
+      item.price !== null &&
+      item.price !== undefined &&
+      (typeof item.price !== 'string' || item.price !== '') &&
+      !["n/a", "na", "none", "-", "unknown"].includes(
+        String(item.price).toLowerCase()
+      )
+  );
+  const filteredOutCount = extractedItems.length - filteredItems.length;
+
   return (
     <div className="space-y-6">
       <Card>
@@ -212,15 +225,22 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
       {isLoading && <p>Processing menu…</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {!isLoading && !error && (
-        <pre style={{maxHeight: 200, overflow: 'auto', background: '#eee', fontSize: 12}}>
-          {JSON.stringify(extractedItems, null, 2)}
-        </pre>
+        <>
+          {filteredOutCount > 0 && (
+            <div style={{ color: 'orange', fontSize: 13, marginBottom: 8 }}>
+              {filteredOutCount} item(s) were filtered out due to missing or invalid price.
+            </div>
+          )}
+          <pre style={{maxHeight: 200, overflow: 'auto', background: '#eee', fontSize: 12}}>
+            {JSON.stringify(filteredItems, null, 2)}
+          </pre>
+        </>
       )}
-      {!isLoading && !error && extractedItems.length > 0 && (
+      {!isLoading && !error && filteredItems.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>
-              Extracted Menu Items ({extractedItems.length})
+              Extracted Menu Items ({filteredItems.length})
             </CardTitle>
             <CardDescription>
               Review the extracted menu items below.
@@ -238,7 +258,7 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {extractedItems.map((item, i) => (
+                  {filteredItems.map((item, i) => (
                     <tr key={i}>
                       <td>{item.name || ''}</td>
                       <td>{item.description || ''}</td>
@@ -252,7 +272,7 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
           </CardContent>
         </Card>
       )}
-      {!isLoading && !error && extractedItems.length === 0 && (
+      {!isLoading && !error && filteredItems.length === 0 && (
         <p>No menu items found.</p>
       )}
     </div>
