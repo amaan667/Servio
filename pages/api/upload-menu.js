@@ -113,7 +113,7 @@ export default async function handler(req, res) {
     // 5. Send text to GPT-4o for menu extraction
     try {
       console.log('[MENU_EXTRACTION] Sending OCR text to GPT-4o...');
-      const prompt = `Extract all menu items and prices from the following menu text.\nRespond ONLY with a valid JSON array, nothing else. The array must start with "[" and end with "]", no code fences, no explanation, no repeated keys, no extra text, and NO trailing commas.\nExample: [{\"name\":\"Cortado\",\"description\":\"\",\"price\":3.2}]\nMenu text:\n${ocrText}`;
+      const prompt = `Extract all menu items and prices from the following menu text.\nRespond ONLY with a valid JSON array, nothing else. The array must start with "[" and end with "]", no code fences, no explanation, no repeated keys, no extra text, and NO trailing commas. If you can't find items, return an empty array []. If there are more than 40 menu items, only include the first 40 in the array.\nExample: [{\"name\":\"Cortado\",\"description\":\"\",\"price\":3.2}]\nMenu text:\n${ocrText}`;
       const gptResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
@@ -129,23 +129,22 @@ export default async function handler(req, res) {
       } else if (gptOutput.startsWith('```')) {
         gptOutput = gptOutput.replace(/^```/, '').replace(/```$/, '').trim();
       }
-      let menuItems;
+      let menuItems = null;
+      // 1. Try plain JSON.parse
       try {
         menuItems = JSON.parse(gptOutput);
-        console.log('[MENU_EXTRACTION] Parsed menuItems:', menuItems);
       } catch (err) {
-        // Try to repair the JSON if parsing fails
+        // 2. Try jsonrepair
         try {
           menuItems = JSON.parse(jsonrepair(gptOutput));
-          console.log('[MENU_EXTRACTION] Parsed menuItems after repair:', menuItems);
         } catch (repairErr) {
-          // Fallback: extract first valid array using regex
-          const match = gptOutput.match(/\[.*?\]/s);
+          // 3. Try to extract first valid JSON array using regex
+          const match = gptOutput.match(/\[\s*{[\s\S]*?}\s*\]/m); // first [...] block
           if (match) {
             try {
               menuItems = JSON.parse(match[0]);
-              console.log('[MENU_EXTRACTION] Parsed menuItems from regex array:', menuItems);
             } catch (arrayErr) {
+              // 4. Final fallback: return error to frontend for manual inspection
               console.error('[MENU_EXTRACTION] Failed to parse any JSON array from GPT output:', match[0], arrayErr);
               return res.status(500).json({ error: 'Failed to parse any JSON array from GPT output', gptOutput });
             }
@@ -155,13 +154,12 @@ export default async function handler(req, res) {
           }
         }
       }
-      // Validate menuItems is a proper array with required fields
-      if (!Array.isArray(menuItems) || !menuItems.length) {
+      // Validate
+      if (!Array.isArray(menuItems) || menuItems.length === 0) {
         console.error('[MENU_EXTRACTION] Menu array is empty or invalid:', menuItems);
         return res.status(500).json({ error: 'Menu array is empty or invalid', menuItems });
       }
-      console.log('[MENU_EXTRACTION] GPT-4o output (first 500 chars):', JSON.stringify(menuItems).slice(0, 500));
-      console.log('[MENU_EXTRACTION] Handler about to return');
+      console.log('[MENU_EXTRACTION] Parsed menuItems:', menuItems);
       return res.json({ ocrText, menuItems });
     } catch (gptErr) {
       console.error('[MENU_EXTRACTION] GPT-4o error:', gptErr);
