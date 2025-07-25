@@ -46,7 +46,7 @@ export default async function handler(req, res) {
         height: 1754
       };
       const convert = fromPath(filePath, options);
-      await convert(1, -1); // Convert all pages
+      await convert.bulk(-1); // Convert all pages
       console.log('[MENU_EXTRACTION] pdf2pic conversion complete.');
     } catch (picErr) {
       console.error('[MENU_EXTRACTION] pdf2pic error:', picErr);
