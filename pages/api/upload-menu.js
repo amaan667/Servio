@@ -113,32 +113,48 @@ export default async function handler(req, res) {
     // 5. Send text to GPT-4o for menu extraction
     try {
       console.log('[MENU_EXTRACTION] Sending OCR text to GPT-4o...');
-      const prompt = `Extract all menu items and prices from the following text.\nReturn ONLY a JSON object with a 'menuItems' key whose value is an array of items. Each item should have name, description, price, category.\n\nText:\n${ocrText}`;
-      const gptResponse = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0,
-      });
-      // Parse the response
-      let menuItems = [];
-      try {
-        const content = gptResponse.choices[0].message.content;
-        if (content) {
-          const parsed = JSON.parse(content);
-          menuItems = parsed.menuItems || [];
+      // Chunk OCR text if very long
+      function splitMenuByLines(text, maxLines = 40) {
+        const lines = text.split(/\r?\n/);
+        const chunks = [];
+        for (let i = 0; i < lines.length; i += maxLines) {
+          chunks.push(lines.slice(i, i + maxLines).join('\n'));
         }
-      } catch (err) {
-        console.error('[MENU_EXTRACTION] Failed to parse GPT-4o JSON mode output:', err);
-        return res.status(500).json({ error: 'Failed to parse GPT-4o JSON mode output', details: err.message });
+        return chunks;
       }
-      // Validate
-      if (!Array.isArray(menuItems) || menuItems.length === 0) {
-        console.error('[MENU_EXTRACTION] Menu array is empty or invalid:', menuItems);
-        return res.status(500).json({ error: 'Menu array is empty or invalid', menuItems });
+      let allMenuItems = [];
+      const ocrChunks = ocrText.length > 10000 || ocrText.split(/\r?\n/).length > 40 ? splitMenuByLines(ocrText, 40) : [ocrText];
+      console.log(`[MENU_EXTRACTION] OCR text will be processed in ${ocrChunks.length} chunk(s).`);
+      for (let idx = 0; idx < ocrChunks.length; idx++) {
+        const chunk = ocrChunks[idx];
+        const prompt = `Extract all menu items and prices from the following text.\nReturn ONLY a JSON object with a 'menuItems' key whose value is an array of items. Each item should have name, description, price, category.\n\nText:\n${chunk}`;
+        try {
+          const gptResponse = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: prompt }],
+            response_format: { type: 'json_object' },
+            temperature: 0,
+          });
+          let menuItems = [];
+          const content = gptResponse.choices[0].message.content;
+          if (content) {
+            const parsed = JSON.parse(content);
+            menuItems = parsed.menuItems || [];
+          }
+          if (!Array.isArray(menuItems)) menuItems = [];
+          allMenuItems = allMenuItems.concat(menuItems);
+          console.log(`[MENU_EXTRACTION] Chunk ${idx + 1}/${ocrChunks.length}: extracted ${menuItems.length} items.`);
+        } catch (err) {
+          console.error(`[MENU_EXTRACTION] Failed to process chunk ${idx + 1}:`, err);
+        }
       }
-      console.log('[MENU_EXTRACTION] Parsed menuItems:', menuItems);
-      return res.json({ ocrText, menuItems });
+      // Validate merged array
+      if (!Array.isArray(allMenuItems) || allMenuItems.length === 0) {
+        console.error('[MENU_EXTRACTION] Menu array is empty or invalid after merging:', allMenuItems);
+        return res.status(500).json({ error: 'Menu array is empty or invalid after merging', menuItems: allMenuItems });
+      }
+      console.log('[MENU_EXTRACTION] Final merged menuItems:', allMenuItems);
+      return res.json({ ocrText, menuItems: allMenuItems });
     } catch (gptErr) {
       console.error('[MENU_EXTRACTION] GPT-4o error:', gptErr);
       return res.status(500).json({ error: 'GPT-4o extraction failed', detail: gptErr.message, ocrText });
