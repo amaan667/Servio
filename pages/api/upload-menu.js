@@ -123,6 +123,7 @@ export default async function handler(req, res) {
         return chunks;
       }
       let allMenuItems = [];
+      let chunkErrors = [];
       const ocrChunks = ocrText.length > 10000 || ocrText.split(/\r?\n/).length > 40 ? splitMenuByLines(ocrText, 40) : [ocrText];
       console.log(`[MENU_EXTRACTION] OCR text will be processed in ${ocrChunks.length} chunk(s).`);
       for (let idx = 0; idx < ocrChunks.length; idx++) {
@@ -146,21 +147,22 @@ export default async function handler(req, res) {
           console.log(`[MENU_EXTRACTION] Chunk ${idx + 1}/${ocrChunks.length}: extracted ${menuItems.length} items.`);
         } catch (err) {
           console.error(`[MENU_EXTRACTION] Failed to process chunk ${idx + 1}:`, err);
+          chunkErrors.push({ chunk: idx + 1, error: err.message });
         }
       }
       // Validate merged array
+      console.log('[MENU_EXTRACTION] Final menuItems:', allMenuItems);
       if (!Array.isArray(allMenuItems) || allMenuItems.length === 0) {
         console.error('[MENU_EXTRACTION] Menu array is empty or invalid after merging:', allMenuItems);
-        return res.status(500).json({ error: 'Menu array is empty or invalid after merging', menuItems: allMenuItems });
+        return res.status(500).json({ error: 'Menu array is empty or invalid after merging', menuItems: allMenuItems, chunkErrors });
       }
-      console.log('[MENU_EXTRACTION] Final merged menuItems:', allMenuItems);
-      return res.json({ ocrText, menuItems: allMenuItems });
+      return res.json({ ocrText, menuItems: allMenuItems, chunkErrors });
     } catch (gptErr) {
       console.error('[MENU_EXTRACTION] GPT-4o error:', gptErr);
       return res.status(500).json({ error: 'GPT-4o extraction failed', detail: gptErr.message, ocrText });
     }
   } catch (err) {
-    console.error('[MENU_EXTRACTION] General error:', err);
+    console.error('MENU_EXTRACTION FINAL ERROR:', err);
     return res.status(500).json({ error: err.message, stack: err.stack });
   }
 }
