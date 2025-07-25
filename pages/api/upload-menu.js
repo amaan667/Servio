@@ -1,7 +1,9 @@
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import { fromPath } from 'pdf2pic';
+import axios from 'axios';
+import FormData from 'form-data';
+import download from 'download';
 import vision from '@google-cloud/vision';
 import OpenAI from 'openai';
 
@@ -20,10 +22,21 @@ function runMiddleware(req, res, fn) {
   });
 }
 
-function getImagePathsFromDir(dir) {
-  return fs.readdirSync(dir)
-    .filter(f => f.endsWith('.png'))
-    .map(f => path.join(dir, f));
+async function pdfToImagesWithPDFco(pdfPath) {
+  const API_KEY = process.env.PDFCO_API_KEY;
+  const formData = new FormData();
+  formData.append('file', fs.createReadStream(pdfPath));
+  const response = await axios.post('https://api.pdf.co/v1/pdf/convert/to/png', formData, {
+    headers: {
+      ...formData.getHeaders(),
+      'x-api-key': API_KEY
+    }
+  });
+  if (response.data && response.data.urls) {
+    return response.data.urls; // Array of image URLs (one per page)
+  } else {
+    throw new Error('Unexpected response from PDF.co: ' + JSON.stringify(response.data));
+  }
 }
 
 export default async function handler(req, res) {
@@ -34,32 +47,28 @@ export default async function handler(req, res) {
     const outputDir = `/tmp/pdf_images_${Date.now()}`;
     fs.mkdirSync(outputDir, { recursive: true });
     console.log('[MENU_EXTRACTION] Uploaded file path:', filePath);
-    // 2. Use pdf2pic to convert PDF to images
+    // 2. Use PDF.co to convert PDF to images
+    let imageUrls = [];
     try {
-      console.log('[MENU_EXTRACTION] Running pdf2pic...');
-      const options = {
-        density: 300,
-        saveFilename: 'page',
-        savePath: outputDir,
-        format: 'png',
-        width: 1240,
-        height: 1754
-      };
-      const convert = fromPath(filePath, options);
-      await convert.bulk(-1); // Convert all pages
-      console.log('[MENU_EXTRACTION] pdf2pic conversion complete.');
-    } catch (picErr) {
-      console.error('[MENU_EXTRACTION] pdf2pic error:', picErr);
-      throw new Error('PDF-to-image conversion failed: ' + picErr.message);
+      console.log('[MENU_EXTRACTION] Sending PDF to PDF.co...');
+      imageUrls = await pdfToImagesWithPDFco(filePath);
+      console.log('[MENU_EXTRACTION] PDF.co returned image URLs:', imageUrls);
+    } catch (pdfcoErr) {
+      console.error('[MENU_EXTRACTION] PDF.co error:', pdfcoErr);
+      throw new Error('PDF-to-image conversion failed: ' + pdfcoErr.message);
     }
-    // 3. Get image paths
+    // 3. Download images
     let imagePaths = [];
     try {
-      imagePaths = getImagePathsFromDir(outputDir);
-      console.log('[MENU_EXTRACTION] Extracted image paths:', imagePaths);
+      for (const [idx, url] of imageUrls.entries()) {
+        const imgPath = path.join(outputDir, `page_${idx + 1}.png`);
+        await download(url, outputDir, { filename: `page_${idx + 1}.png` });
+        imagePaths.push(imgPath);
+      }
+      console.log('[MENU_EXTRACTION] Downloaded image paths:', imagePaths);
     } catch (imgErr) {
-      console.error('[MENU_EXTRACTION] Image extraction error:', imgErr);
-      throw new Error('Failed to read images from output directory: ' + imgErr.message);
+      console.error('[MENU_EXTRACTION] Image download error:', imgErr);
+      throw new Error('Failed to download images from PDF.co: ' + imgErr.message);
     }
     // 4. Send each image to Google Vision OCR
     let fullText = '';
