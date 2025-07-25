@@ -113,7 +113,7 @@ export default async function handler(req, res) {
     // 5. Send text to GPT-4o for menu extraction
     try {
       console.log('[MENU_EXTRACTION] Sending OCR text to GPT-4o...');
-      const prompt = `You are a restaurant menu data extraction assistant.\n\nYour task is to extract all menu items from the provided OCR menu text and return them in a structured JSON array with the following keys: name, description, price.\n\nSpecial accuracy instructions:\n- Section Descriptions: If a section contains a list of items (e.g., “Coca-Cola, Coke Zero, Sprite, Fanta, Irn-Bru”) or multiple options, treat each as a separate menu item with the same price, not as a description for another item.\n- Descriptions: Only use a description if it is immediately below and clearly specific to a single item—not a section, group, or general notice.\n- Comma-Separated or List Items: For any row with a list (comma, slash, or bullet separated), split and create an individual entry for each item, assigning the shared price.\n- Exclude: Do not include section headers, allergen information, group titles, or instructions in any item's description.\n- Ignore non-menu text: Do not include footers, headers, page numbers, or irrelevant content.\n\nFormatting:\n- Only output a valid JSON array.\n- Do not include any explanation or extra text—just output the JSON array.\n- No trailing commas.\n- No comments.\n- If description does not exist for an item, leave it blank.\n- Only include items with a name and a price.\n\nExample:\nIf a section says:\nBeverages\nCoca-Cola, Coke Zero, Sprite, Fanta, Irn-Bru — £2.50\n\nExtract as:\n[\n  {\"name\": \"Coca-Cola\", \"description\": \"\", \"price\": 2.50 },\n  {\"name\": \"Coke Zero\", \"description\": \"\", \"price\": 2.50 },\n  {\"name\": \"Sprite\", \"description\": \"\", \"price\": 2.50 },\n  {\"name\": \"Fanta\", \"description\": \"\", \"price\": 2.50 },\n  {\"name\": \"Irn-Bru\", \"description\": \"\", \"price\": 2.50 }\n]\n\nOCR Text:\n${ocrText}`;
+      const prompt = `Extract all menu items and prices from the following menu text.\nOutput ONLY a valid JSON array. Do NOT include any explanation or text, only the array. No trailing commas, no comments, no code fences.\nArray example: [{\"name\":\"Example\",\"description\":\"\",\"price\":4.5}]\nMenu text:\n${ocrText}`;
       const gptResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
@@ -142,6 +142,11 @@ export default async function handler(req, res) {
           console.error('[MENU_EXTRACTION] Failed to repair/parse GPT output:', gptOutput, repairErr);
           return res.status(500).json({ error: 'Failed to parse/repair GPT-4o output', gptOutput, details: repairErr.message });
         }
+      }
+      // Validate menuItems is a proper array with required fields
+      if (!Array.isArray(menuItems) || menuItems.length === 0 || !menuItems.every(i => i && typeof i === 'object' && i.name && i.price)) {
+        console.error('[MENU_EXTRACTION] Parsed menuItems is not a valid array:', menuItems);
+        return res.status(500).json({ error: 'Parsed menuItems is not a valid array', menuItems });
       }
       console.log('[MENU_EXTRACTION] GPT-4o output (first 500 chars):', JSON.stringify(menuItems).slice(0, 500));
       console.log('[MENU_EXTRACTION] Handler about to return');
