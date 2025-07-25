@@ -1,7 +1,7 @@
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import { spawnSync } from 'child_process';
+import { fromPath } from 'pdf2pic';
 import vision from '@google-cloud/vision';
 import OpenAI from 'openai';
 
@@ -32,17 +32,25 @@ export default async function handler(req, res) {
     // 1. Read file
     const filePath = req.file.path;
     const outputDir = `/tmp/pdf_images_${Date.now()}`;
+    fs.mkdirSync(outputDir, { recursive: true });
     console.log('[MENU_EXTRACTION] Uploaded file path:', filePath);
-    // 2. Call Python script to convert PDF to images
+    // 2. Use pdf2pic to convert PDF to images
     try {
-      console.log('[MENU_EXTRACTION] Running pdf_to_images.py...');
-      const pyResult = spawnSync('python3', ['scripts/pdf_to_images.py', filePath, outputDir], { encoding: 'utf-8' });
-      if (pyResult.error) throw pyResult.error;
-      if (pyResult.status !== 0) throw new Error(pyResult.stderr || 'Python script failed');
-      console.log('[MENU_EXTRACTION] Python script output:', pyResult.stdout);
-    } catch (pyErr) {
-      console.error('[MENU_EXTRACTION] Python script error:', pyErr);
-      throw new Error('PDF-to-image conversion failed: ' + pyErr.message);
+      console.log('[MENU_EXTRACTION] Running pdf2pic...');
+      const options = {
+        density: 300,
+        saveFilename: 'page',
+        savePath: outputDir,
+        format: 'png',
+        width: 1240,
+        height: 1754
+      };
+      const convert = fromPath(filePath, options);
+      await convert(1, -1); // Convert all pages
+      console.log('[MENU_EXTRACTION] pdf2pic conversion complete.');
+    } catch (picErr) {
+      console.error('[MENU_EXTRACTION] pdf2pic error:', picErr);
+      throw new Error('PDF-to-image conversion failed: ' + picErr.message);
     }
     // 3. Get image paths
     let imagePaths = [];
