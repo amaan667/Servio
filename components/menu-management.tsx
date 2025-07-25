@@ -699,32 +699,36 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Current Menu ({menuItems.length} items)</span>
-            <div className="flex flex-col items-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearMenu}
-                disabled={saving === "clear"}
-              >
-                <Trash2 className={`mr-2 h-4 w-4 ${saving === "clear" ? "animate-spin" : ""}`} />
-                Clear
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchMenu}
-                disabled={loading}
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-            </div>
+            {menuItems.length > 0 && (
+              <div className="flex flex-col items-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearMenu}
+                  disabled={saving === "clear"}
+                >
+                  <Trash2 className={`mr-2 h-4 w-4 ${saving === "clear" ? "animate-spin" : ""}`} />
+                  Clear
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchMenu}
+                  disabled={loading}
+                >
+                  <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
+              </div>
+            )}
           </CardTitle>
           <CardDescription>
-            <div className="flex items-center gap-2 mt-2">
-              <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
-              <span className="text-xs">Select All</span>
-            </div>
+            {menuItems.length > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
+                <span className="text-xs">Select All</span>
+              </div>
+            )}
             Edit or remove existing menu items. Changes are saved automatically
             and will be live for customers instantly.
           </CardDescription>
