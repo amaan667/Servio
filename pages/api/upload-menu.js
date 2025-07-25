@@ -47,6 +47,8 @@ export default async function handler(req, res) {
     const outputDir = `/tmp/pdf_images_${Date.now()}`;
     fs.mkdirSync(outputDir, { recursive: true });
     console.log('[MENU_EXTRACTION] Uploaded file path:', filePath);
+    // Debug: Check if PDFCO_API_KEY is set
+    console.log('[DEBUG] PDFCO_API_KEY is set:', !!process.env.PDFCO_API_KEY);
     // 2. Use PDF.co to convert PDF to images
     let imageUrls = [];
     try {
