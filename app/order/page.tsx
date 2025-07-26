@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useSearchParams } from "next/navigation";
 import { demoMenuItems } from "@/data/demoMenuItems";
+import { getValidatedSession } from "@/lib/supabase";
 
 // Interfaces
 interface MenuItem {
@@ -63,8 +64,9 @@ export default function CustomerOrderPage() {
   const isDemo = searchParams?.get("demo") === "1";
   const venueSlug = searchParams?.get("venue") || "demo-cafe";
 
-  // Demo fallback for signed out or demo mode
-  const isLoggedIn = typeof window !== "undefined" && localStorage.getItem("servio_session");
+  // Get current user session
+  const session = typeof window !== "undefined" ? getValidatedSession() : null;
+  const isLoggedIn = !!session;
 
   // Check Supabase env
   const hasSupabaseConfig = !!(
@@ -96,9 +98,10 @@ export default function CustomerOrderPage() {
       return;
     }
 
-    // Demo mode - prioritize demo mode or fallback to demo when venue not found
-    if (isDemo || !isLoggedIn || venueSlug === "demo-cafe" || venueSlug === "demo") {
-      console.log("Loading demo menu items");
+    // Force demo mode if explicitly requested
+    if (isDemo) {
+      console.log("Loading demo menu items (demo mode requested)");
+      setIsDemoFallback(true);
       setMenuItems(
         demoMenuItems.map((item, idx) => ({
           ...item,
@@ -114,8 +117,45 @@ export default function CustomerOrderPage() {
       return;
     }
 
+    // For signed-in users, use their venue from session
+    if (isLoggedIn && session) {
+      console.log(`Loading menu for logged-in user's venue: ${session.venue.venue_id}`);
+      try {
+        const { data, error } = await supabase
+          .from("menu_items")
+          .select("*")
+          .eq("venue_id", session.venue.venue_id)
+          .eq("available", true)
+          .order("category", { ascending: true });
+
+        if (error) {
+          console.log(`Error loading user's menu: ${error.message}`);
+          setMenuError(`Error loading your menu: ${error.message}`);
+          setLoadingMenu(false);
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          console.log(`No menu items found for user's venue: ${session.venue.venue_id}`);
+          setMenuError(`No menu items found for your venue. Please add some items in your dashboard.`);
+          setLoadingMenu(false);
+          return;
+        }
+
+        setMenuItems(data);
+        setLoadingMenu(false);
+        return;
+      } catch (err: any) {
+        console.log(`Error loading user's menu: ${err.message}`);
+        setMenuError(`Error loading your menu: ${err.message}`);
+        setLoadingMenu(false);
+        return;
+      }
+    }
+
+    // For non-logged-in users, try to find venue by slug, fallback to demo
+    console.log(`Looking up venue by slug: ${venueSlug}`);
     try {
-      // 1. Find the venue UUID by slug
       const { data: venue, error: venueError } = await supabase
         .from("venues")
         .select("venue_id")
@@ -125,7 +165,6 @@ export default function CustomerOrderPage() {
       if (venueError || !venue) {
         console.log(`Venue '${venueSlug}' not found, falling back to demo mode`);
         setIsDemoFallback(true);
-        // Fall back to demo mode instead of showing an error
         setMenuItems(
           demoMenuItems.map((item, idx) => ({
             ...item,
@@ -141,20 +180,16 @@ export default function CustomerOrderPage() {
         return;
       }
 
-      const actualVenueId = venue.venue_id;
-
-      // 2. Fetch menu_items for this UUID
       const { data, error } = await supabase
         .from("menu_items")
         .select("*")
-        .eq("venue_id", actualVenueId)
+        .eq("venue_id", venue.venue_id)
         .eq("available", true)
         .order("category", { ascending: true });
 
-      if (error) {
-        console.log(`Error loading menu: ${error.message}, falling back to demo mode`);
+      if (error || !data || data.length === 0) {
+        console.log(`No menu items found for venue '${venueSlug}', falling back to demo mode`);
         setIsDemoFallback(true);
-        // Fall back to demo mode instead of showing an error
         setMenuItems(
           demoMenuItems.map((item, idx) => ({
             ...item,
@@ -170,27 +205,10 @@ export default function CustomerOrderPage() {
         return;
       }
 
-      setMenuItems(data || []);
-      if (!data || data.length === 0) {
-        console.log(`No menu items found for venue '${venueSlug}', falling back to demo mode`);
-        // Fall back to demo mode if no menu items found
-        setIsDemoFallback(true);
-        setMenuItems(
-          demoMenuItems.map((item, idx) => ({
-            ...item,
-            id: `demo-${idx}`,
-            available: true,
-            price:
-              typeof item.price === "number"
-                ? item.price
-                : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
-          }))
-        );
-      }
+      setMenuItems(data);
       setLoadingMenu(false);
     } catch (err: any) {
-      console.log(`Error loading menu: ${err.message}, falling back to demo mode`);
-      // Fall back to demo mode instead of showing an error
+      console.log(`Error loading venue menu: ${err.message}, falling back to demo mode`);
       setIsDemoFallback(true);
       setMenuItems(
         demoMenuItems.map((item, idx) => ({
@@ -266,10 +284,13 @@ export default function CustomerOrderPage() {
     setIsSubmitting(true);
 
     try {
+      // Use the correct venue_id based on user login status
+      const orderVenueId = isLoggedIn && session ? session.venue.venue_id : venueSlug;
+      
       const { error: orderError } = await supabase
         .from("orders")
         .insert({
-          venue_id: venueSlug, // If your orders table expects UUID, use venue_id from venues table instead!
+          venue_id: orderVenueId,
           customer_name: customerInfo.name,
           customer_phone: customerInfo.phone,
           table_number: customerInfo.table_number,
@@ -369,7 +390,12 @@ export default function CustomerOrderPage() {
             <div className="max-w-7xl mx-auto px-4 py-2">
               <div className="flex items-center justify-center text-sm text-blue-700">
                 <span className="font-medium">Demo Mode:</span>
-                <span className="ml-1">You're viewing a sample menu. This is perfect for testing the ordering experience!</span>
+                <span className="ml-1">
+                  {isLoggedIn 
+                    ? "You're viewing a sample menu. Add your own menu items in the dashboard!"
+                    : "You're viewing a sample menu. This is perfect for testing the ordering experience!"
+                  }
+                </span>
               </div>
             </div>
           </div>
