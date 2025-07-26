@@ -53,7 +53,6 @@ export default function CustomerOrderPage() {
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [menuError, setMenuError] = useState<string | null>(null);
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
   // Dynamically generate categories from menuItems
   const uniqueCategories = Array.from(
@@ -89,20 +88,6 @@ export default function CustomerOrderPage() {
     loadMenuItems();
   }, [hasSupabaseConfig, venueId, isLoggedIn]);
 
-  // Function to refetch menu items (can be called from parent components)
-  const refetchMenuItems = () => {
-    console.log("Refetching menu items...");
-    setLastFetchTime(Date.now());
-    loadMenuItems();
-  };
-
-  // Expose refetch function to parent components
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      (window as any).refetchMenuItems = refetchMenuItems;
-    }
-  }, []);
-
   const loadMenuItems = async () => {
     setLoadingMenu(true);
     setMenuError(null);
@@ -117,7 +102,6 @@ export default function CustomerOrderPage() {
       isLoggedIn,
       isDemoVenue,
       shouldUseDemoData,
-      lastFetchTime
     });
 
     if (shouldUseDemoData) {
@@ -139,23 +123,6 @@ export default function CustomerOrderPage() {
     console.log(`Fetching menu for real venue: ${venueId}`);
     
     try {
-      // First check if the venue exists
-      const { data: venueData, error: venueError } = await supabase
-        .from("venues")
-        .select("venue_id, name")
-        .eq("venue_id", venueId)
-        .single();
-
-      console.log("Venue check:", { venueData, venueError });
-
-      if (venueError || !venueData) {
-        console.log("Venue not found, showing empty menu");
-        setMenuItems([]);
-        setMenuError(`No menu items found for venue '${venueId}'.`);
-        setLoadingMenu(false);
-        return;
-      }
-
       // Fetch menu items for this specific venue
       const { data, error } = await supabase
         .from("menu_items")
@@ -172,9 +139,8 @@ export default function CustomerOrderPage() {
 
       if (error) {
         console.error("Supabase error:", error);
-        // Don't show technical errors to users, just show empty menu
         setMenuItems([]);
-        setMenuError(`No menu items found for venue '${venueId}'.`);
+        setMenuError(`Error loading menu: ${error.message}`);
         setLoadingMenu(false);
         return;
       }
@@ -191,78 +157,11 @@ export default function CustomerOrderPage() {
       
       setLoadingMenu(false);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Unexpected error loading menu:", err);
-      // Don't show technical errors to users, just show empty menu
       setMenuItems([]);
-      setMenuError(`No menu items found for venue '${venueId}'.`);
+      setMenuError(`Error loading menu: ${err.message}`);
       setLoadingMenu(false);
-    }
-  };
-
-  const debugMenu = async () => {
-    console.log("=== DEBUG MENU ===");
-
-    // Check environment variables first
-    console.log("Environment check:", {
-      hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + "...",
-    });
-
-    // Test if we can create a client
-    try {
-      const supabase = createClient();
-      console.log("✅ Supabase client created successfully");
-
-      // Check all venues
-      const { data: venues, error: venuesError } = await supabase
-        .from("venues")
-        .select("*");
-
-      console.log("All venues:", venues, venuesError);
-
-      // Check all menu items
-      const { data: allMenuItems, error: menuError } = await supabase
-        .from("menu_items")
-        .select("*");
-
-      console.log("All menu items:", allMenuItems?.length || 0, menuError);
-
-      // Check specific venue
-      const { data: specificVenue, error: specificError } = await supabase
-        .from("menu_items")
-        .select("*")
-        .eq("venue_id", venueId);
-
-      console.log(
-        `Items for venue ${venueId}:`,
-        specificVenue?.length || 0,
-        specificError,
-      );
-
-      // Test RLS by trying to insert a test record (should fail but tell us about permissions)
-      try {
-        const { data: testInsert, error: testError } = await supabase
-          .from("menu_items")
-          .insert({
-            venue_id: "test-venue",
-            name: "Test Item",
-            price: 9.99,
-            category: "test",
-            available: true,
-          })
-          .select();
-
-        console.log("RLS test (insert):", testInsert, testError);
-      } catch (e) {
-        console.log("RLS test error:", e);
-      }
-    } catch (error) {
-      console.error("❌ Failed to create Supabase client:", error);
-      console.log(
-        "This means the environment variables are not set correctly.",
-      );
     }
   };
 
@@ -493,16 +392,6 @@ export default function CustomerOrderPage() {
                 </code>
               </div>
             )}
-            <Button onClick={debugMenu} className="mt-4" variant="outline">
-              Debug Database Connection
-            </Button>
-            <Button 
-              onClick={refetchMenuItems} 
-              className="mt-2 ml-2" 
-              variant="outline"
-            >
-              Refetch Menu Items
-            </Button>
           </div>
         ) : menuItems.length === 0 ? (
           <div className="text-center text-gray-500 py-12">
