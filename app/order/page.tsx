@@ -129,35 +129,16 @@ export default function CustomerOrderPage() {
     console.log(`Fetching menu for real venue slug: ${venueId}`);
     
     try {
-      // First, get the venue by venue_id (which is the slug)
-      const { data: venueData, error: venueError } = await supabase
-        .from("venues")
-        .select("venue_id")
-        .eq("venue_id", venueId)  // venue_id is the slug field
-        .single();
-
-      if (venueError || !venueData) {
-        console.log(`Venue not found for slug: ${venueId}`);
-        setMenuItems([]);
-        setMenuError(`No menu items found for venue '${venueId}'.`);
-        setLoadingMenu(false);
-        return;
-      }
-
-      const actualVenueId = venueData.venue_id;
-      console.log(`Found venue: ${venueId} -> ${actualVenueId}`);
-
-      // Fetch menu items for this specific venue
+      // Direct query: venue_id is the slug (TEXT field)
       const { data, error } = await supabase
         .from("menu_items")
         .select("*")
-        .eq("venue_id", actualVenueId)
+        .eq("venue_id", venueId)  // venue_id is TEXT, can be the slug directly
         .eq("available", true)
         .order("category", { ascending: true });
 
       console.log("Menu items query:", {
-        venueSlug: venueId,
-        actualVenueId,
+        venueId,
         data: data?.length || 0,
         error,
       });
@@ -172,7 +153,7 @@ export default function CustomerOrderPage() {
 
       // Set menu items (empty array if no items found)
       const availableItems = data?.filter((item) => item.available) || [];
-      console.log(`Found ${availableItems.length} available items for venue ${venueId} (${actualVenueId})`);
+      console.log(`Found ${availableItems.length} available items for venue ${venueId}`);
       
       setMenuItems(availableItems);
       

@@ -197,15 +197,13 @@ async function saveMenuItemsToDatabase(menuItems, venueSlug) {
       return { success: false, savedCount: 0, error: 'Database connection not available' };
     }
 
-    // First, check if venue exists by slug
+    // Check if venue exists, create if it doesn't
     const { data: venueData, error: venueError } = await supabase
       .from("venues")
-      .select("venue_id, id")
+      .select("venue_id")
       .eq("venue_id", venueSlug)
       .single();
 
-    let venueId;
-    
     if (venueError || !venueData) {
       console.log(`[MENU_EXTRACTION] Venue ${venueSlug} not found, creating it...`);
       
@@ -213,7 +211,7 @@ async function saveMenuItemsToDatabase(menuItems, venueSlug) {
       const { data: newVenue, error: createVenueError } = await supabase
         .from("venues")
         .insert({
-          venue_id: venueSlug,
+          venue_id: venueSlug,  // Use slug as venue_id
           name: venueSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
           description: `Auto-created venue for menu upload`
         })
@@ -225,16 +223,14 @@ async function saveMenuItemsToDatabase(menuItems, venueSlug) {
         return { success: false, savedCount: 0, error: 'Failed to create venue' };
       }
       
-      venueId = newVenue.venue_id;
-      console.log(`[MENU_EXTRACTION] Created venue: ${venueSlug} with ID: ${venueId}`);
+      console.log(`[MENU_EXTRACTION] Created venue: ${venueSlug}`);
     } else {
-      venueId = venueData.venue_id;
-      console.log(`[MENU_EXTRACTION] Found existing venue: ${venueSlug} with ID: ${venueId}`);
+      console.log(`[MENU_EXTRACTION] Found existing venue: ${venueSlug}`);
     }
 
-    // Prepare menu items for insertion
+    // Prepare menu items for insertion - use slug as venue_id
     const itemsToInsert = menuItems.map(item => ({
-      venue_id: venueId,
+      venue_id: venueSlug,  // Use slug directly as venue_id
       name: item.name,
       description: item.description || '',
       price: item.price,
@@ -245,7 +241,7 @@ async function saveMenuItemsToDatabase(menuItems, venueSlug) {
       rating: item.rating || null
     }));
 
-    console.log(`[MENU_EXTRACTION] Inserting ${itemsToInsert.length} items for venue: ${venueId}`);
+    console.log(`[MENU_EXTRACTION] Inserting ${itemsToInsert.length} items for venue: ${venueSlug}`);
 
     // Insert menu items
     const { data: insertedItems, error: insertError } = await supabase
@@ -258,13 +254,13 @@ async function saveMenuItemsToDatabase(menuItems, venueSlug) {
       return { success: false, savedCount: 0, error: insertError.message };
     }
 
-    console.log(`[MENU_EXTRACTION] Successfully saved ${insertedItems.length} items to database for venue: ${venueId}`);
+    console.log(`[MENU_EXTRACTION] Successfully saved ${insertedItems.length} items to database for venue: ${venueSlug}`);
     
     return { 
       success: true, 
       savedCount: insertedItems.length,
       insertedItems: insertedItems,
-      venueId: venueId
+      venueId: venueSlug
     };
 
   } catch (error) {
