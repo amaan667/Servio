@@ -62,11 +62,12 @@ export default function CustomerOrderPage() {
 
   const searchParams = useSearchParams();
   const isDemo = searchParams?.get("demo") === "1";
+  
   // Detect if user is signed in (simple check, adjust as needed)
   const isLoggedIn = typeof window !== "undefined" && localStorage.getItem("servio_session");
 
-  // Use the correct venue_id from the database schema
-  const venueId = "demo-cafe";
+  // Determine venue ID - use demo-cafe for demo, or get from URL params
+  const venueId = isDemo ? "demo-cafe" : searchParams?.get("venue") || "demo-cafe";
 
   // Check if environment variables are set
   const hasSupabaseConfig = !!(
@@ -82,8 +83,30 @@ export default function CustomerOrderPage() {
       setLoadingMenu(false);
       return;
     }
-    // Only show demo menu if not signed in
-    if (!isLoggedIn) {
+
+    // Load menu based on venue and login status
+    loadMenuItems();
+  }, [hasSupabaseConfig, venueId, isLoggedIn]);
+
+  const loadMenuItems = async () => {
+    setLoadingMenu(true);
+    setMenuError(null);
+    const supabase = createClient();
+
+    // Determine if this is a demo venue or real venue
+    const isDemoVenue = venueId === "demo-cafe" || venueId === "demo";
+    const shouldUseDemoData = !isLoggedIn || isDemoVenue;
+
+    console.log("Menu loading logic:", {
+      venueId,
+      isLoggedIn,
+      isDemoVenue,
+      shouldUseDemoData
+    });
+
+    if (shouldUseDemoData) {
+      // Use demo data for demo venues or when not logged in
+      console.log("Loading demo menu data");
       setMenuItems(
         demoMenuItems.map((item, idx) => ({
           ...item,
@@ -95,99 +118,68 @@ export default function CustomerOrderPage() {
       setLoadingMenu(false);
       return;
     }
-    // Otherwise, show live menu from DB
-    loadMenuItems();
-  }, [hasSupabaseConfig, isLoggedIn]);
 
-  // Remove demo cart population effect
+    // For real venues, fetch from database
+    console.log(`Fetching menu for real venue: ${venueId}`);
+    
+    try {
+      // First check if the venue exists
+      const { data: venueData, error: venueError } = await supabase
+        .from("venues")
+        .select("venue_id, name")
+        .eq("venue_id", venueId)
+        .single();
 
-  const loadMenuItems = async () => {
-    setLoadingMenu(true);
-    setMenuError(null);
-    const supabase = createClient();
+      console.log("Venue check:", { venueData, venueError });
 
-    // Try different venue IDs in order of preference
-    const venueIds = [
-      "demo-cafe",
-      "pizza-palace",
-      "c9413421-af4a-43d8-b783-3e3232b7e7e7",
-    ];
-
-    for (const currentVenueId of venueIds) {
-      try {
-        console.log(`Trying venue_id: ${currentVenueId}`);
-
-        // First, let's check if the venue exists
-        const { data: venueData, error: venueError } = await supabase
-          .from("venues")
-          .select("venue_id, name")
-          .eq("venue_id", currentVenueId)
-          .single();
-
-        console.log("Venue check:", { venueData, venueError });
-
-        // Now fetch menu items
-        const { data, error } = await supabase
-          .from("menu_items")
-          .select("*")
-          .eq("venue_id", currentVenueId)
-          .order("category", { ascending: true });
-
-        console.log("Menu items query:", {
-          venueId: currentVenueId,
-          data: data?.length || 0,
-          error,
-          availableItems: data?.filter((item) => item.available)?.length || 0,
-        });
-
-        if (error) {
-          console.error("Supabase error:", error);
-          continue; // Try next venue_id
-        } else if (data && data.length > 0) {
-          // Filter for available items
-          const availableItems = data.filter((item) => item.available);
-          console.log("Available items:", availableItems.length);
-
-          if (availableItems.length > 0) {
-            setMenuItems(availableItems);
-            setLoadingMenu(false);
-            return; // Success, exit the function
-          }
-        }
-
-        // If we get here, try without venue_id filter to see if RLS is the issue
-        const { data: allData, error: allError } = await supabase
-          .from("menu_items")
-          .select("*")
-          .order("category", { ascending: true });
-
-        console.log("All menu items (no venue filter):", {
-          data: allData?.length || 0,
-          error: allError,
-          availableItems:
-            allData?.filter((item) => item.available)?.length || 0,
-        });
-
-        if (!allError && allData && allData.length > 0) {
-          const availableItems = allData.filter((item) => item.available);
-          if (availableItems.length > 0) {
-            setMenuItems(availableItems);
-            setLoadingMenu(false);
-            return; // Success, exit the function
-          }
-        }
-      } catch (err) {
-        console.error("Unexpected error:", err);
-        continue; // Try next venue_id
+      if (venueError || !venueData) {
+        console.log("Venue not found, showing empty menu");
+        setMenuItems([]);
+        setMenuError(`Venue '${venueId}' not found.`);
+        setLoadingMenu(false);
+        return;
       }
-    }
 
-    // If we get here, no venue worked
-    setMenuError(
-      "No menu items found for any venue. Please check the database connection.",
-    );
-    setMenuItems([]);
-    setLoadingMenu(false);
+      // Fetch menu items for this specific venue
+      const { data, error } = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("available", true)
+        .order("category", { ascending: true });
+
+      console.log("Menu items query:", {
+        venueId,
+        data: data?.length || 0,
+        error,
+      });
+
+      if (error) {
+        console.error("Supabase error:", error);
+        setMenuError("Failed to load menu items from database.");
+        setMenuItems([]);
+        setLoadingMenu(false);
+        return;
+      }
+
+      // Set menu items (empty array if no items found)
+      const availableItems = data?.filter((item) => item.available) || [];
+      console.log(`Found ${availableItems.length} available items for venue ${venueId}`);
+      
+      setMenuItems(availableItems);
+      
+      if (availableItems.length === 0) {
+        setMenuError(`No menu items found for venue '${venueId}'.`);
+      }
+      
+      setLoadingMenu(false);
+
+    } catch (err) {
+      console.error("Unexpected error loading menu:", err);
+      setMenuError("Failed to load menu items. Please try again.");
+      setMenuItems([]);
+      setLoadingMenu(false);
+    }
   };
 
   const debugMenu = async () => {
@@ -223,10 +215,10 @@ export default function CustomerOrderPage() {
       const { data: specificVenue, error: specificError } = await supabase
         .from("menu_items")
         .select("*")
-        .eq("venue_id", "demo-cafe");
+        .eq("venue_id", venueId);
 
       console.log(
-        "Demo cafe items:",
+        `Items for venue ${venueId}:`,
         specificVenue?.length || 0,
         specificError,
       );
@@ -322,6 +314,7 @@ export default function CustomerOrderPage() {
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
+          venue_id: venueId,
           customer_name: customerInfo.name,
           customer_phone: customerInfo.phone,
           table_number: customerInfo.table_number || null,
