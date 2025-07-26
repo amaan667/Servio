@@ -184,9 +184,9 @@ async function validateAndCleanMenuItems(allMenuItems, chunkErrors) {
 }
 
 // Stage 5: Database Integration
-async function saveMenuItemsToDatabase(menuItems, venueId) {
+async function saveMenuItemsToDatabase(menuItems, venueSlug) {
   console.log('[MENU_EXTRACTION] Stage 5: Database Integration');
-  console.log(`[MENU_EXTRACTION] Saving ${menuItems.length} items to venue: ${venueId}`);
+  console.log(`[MENU_EXTRACTION] Processing venue slug: ${venueSlug}`);
   
   try {
     // Import Supabase client
@@ -196,22 +196,24 @@ async function saveMenuItemsToDatabase(menuItems, venueId) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
-    // First, ensure the venue exists
+    // First, check if venue exists by slug
     const { data: venueData, error: venueError } = await supabase
       .from("venues")
-      .select("venue_id")
-      .eq("venue_id", venueId)
+      .select("venue_id, id")
+      .eq("venue_id", venueSlug)
       .single();
 
+    let venueId;
+    
     if (venueError || !venueData) {
-      console.log(`[MENU_EXTRACTION] Venue ${venueId} not found, creating it...`);
+      console.log(`[MENU_EXTRACTION] Venue ${venueSlug} not found, creating it...`);
       
       // Create the venue if it doesn't exist
       const { data: newVenue, error: createVenueError } = await supabase
         .from("venues")
         .insert({
-          venue_id: venueId,
-          name: venueId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          venue_id: venueSlug,
+          name: venueSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
           description: `Auto-created venue for menu upload`
         })
         .select()
@@ -222,7 +224,11 @@ async function saveMenuItemsToDatabase(menuItems, venueId) {
         return { success: false, savedCount: 0, error: 'Failed to create venue' };
       }
       
-      console.log(`[MENU_EXTRACTION] Created venue: ${venueId}`);
+      venueId = newVenue.venue_id;
+      console.log(`[MENU_EXTRACTION] Created venue: ${venueSlug} with ID: ${venueId}`);
+    } else {
+      venueId = venueData.venue_id;
+      console.log(`[MENU_EXTRACTION] Found existing venue: ${venueSlug} with ID: ${venueId}`);
     }
 
     // Prepare menu items for insertion
@@ -238,7 +244,7 @@ async function saveMenuItemsToDatabase(menuItems, venueId) {
       rating: item.rating || null
     }));
 
-    console.log(`[MENU_EXTRACTION] Inserting ${itemsToInsert.length} items...`);
+    console.log(`[MENU_EXTRACTION] Inserting ${itemsToInsert.length} items for venue: ${venueId}`);
 
     // Insert menu items
     const { data: insertedItems, error: insertError } = await supabase
@@ -251,12 +257,13 @@ async function saveMenuItemsToDatabase(menuItems, venueId) {
       return { success: false, savedCount: 0, error: insertError.message };
     }
 
-    console.log(`[MENU_EXTRACTION] Successfully saved ${insertedItems.length} items to database`);
+    console.log(`[MENU_EXTRACTION] Successfully saved ${insertedItems.length} items to database for venue: ${venueId}`);
     
     return { 
       success: true, 
       savedCount: insertedItems.length,
-      insertedItems: insertedItems
+      insertedItems: insertedItems,
+      venueId: venueId
     };
 
   } catch (error) {
@@ -340,8 +347,8 @@ export default async function handler(req, res) {
     const { menuItems, chunkErrors: finalChunkErrors } = await validateAndCleanMenuItems(allMenuItems, chunkErrors);
     
     // Stage 5: Database Integration (Future Enhancement)
-    const venueId = req.body.venueId || 'demo-cafe';
-    const dbResult = await saveMenuItemsToDatabase(menuItems, venueId);
+    const venueSlug = req.body.venueId || 'demo-cafe';
+    const dbResult = await saveMenuItemsToDatabase(menuItems, venueSlug);
     
     // Stage 6: Response & Cleanup
     const response = await prepareResponseAndCleanup(menuItems, ocrText, finalChunkErrors, filePath);
