@@ -189,12 +189,13 @@ async function saveMenuItemsToDatabase(menuItems, venueSlug) {
   console.log(`[MENU_EXTRACTION] Processing venue slug: ${venueSlug}`);
   
   try {
-    // Import Supabase client
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
+    // Import centralized Supabase client
+    const { supabase } = require('@/lib/supabase');
+    
+    if (!supabase) {
+      console.error('[MENU_EXTRACTION] Supabase client not available');
+      return { success: false, savedCount: 0, error: 'Database connection not available' };
+    }
 
     // First, check if venue exists by slug
     const { data: venueData, error: venueError } = await supabase
