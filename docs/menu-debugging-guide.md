@@ -32,9 +32,9 @@
 **Problem:** Database expects UUID but we're using string venue IDs like "amaantanveer667-venue".
 
 **Solution:** ✅ **FIXED**
-- **Slug-based venue lookup** - uses user-friendly URLs
-- **Proper venue resolution** - looks up venue by slug first
-- **Consistent venue handling** - same slug used for upload and fetch
+- **Simplified approach** - venue_id is TEXT and can be the slug directly
+- **No UUID conversion needed** - use slug as venue_id consistently
+- **Direct queries** - no venue lookup step required
 
 ## How to Test
 
@@ -76,11 +76,10 @@ WHERE table_name = 'venues' AND column_name = 'venue_id';
 Look for these log messages:
 ```
 [MENU_EXTRACTION] Processing venue slug: your-venue-slug
-[MENU_EXTRACTION] Found existing venue: your-venue-slug with ID: your-venue-slug
+[MENU_EXTRACTION] Found existing venue: your-venue-slug
 [MENU_EXTRACTION] Successfully saved X items to database for venue: your-venue-slug
 Fetching menu for real venue slug: your-venue-slug
-Found venue: your-venue-slug -> your-venue-slug
-Found X available items for venue your-venue-slug (your-venue-slug)
+Found X available items for venue your-venue-slug
 ```
 
 ### **Network Tab**
@@ -94,9 +93,9 @@ Found X available items for venue your-venue-slug (your-venue-slug)
 ### **Issue: "invalid input syntax for type uuid"**
 **Problem:** Database venue column is UUID but you're passing string.
 **Solution:** ✅ **FIXED**
-- Use venue slugs (strings) instead of UUIDs
-- System now looks up venue by slug first
+- Use venue slugs (strings) directly as venue_id
 - No UUID conversion needed
+- venue_id is TEXT field, not UUID
 
 ### **Issue: "No menu items found"**
 **Check:**
@@ -184,15 +183,15 @@ console.log('Menu items:', document.querySelectorAll('[data-menu-item]').length)
 2. ✅ **Automatic menu fetching** - No manual action needed
 3. ✅ **Simplified error handling** - Clear error messages
 4. ✅ **Removed unnecessary API endpoints** - Cleaner codebase
-5. ✅ **Fixed venue ID type mismatch** - Uses slugs instead of UUIDs
-6. ✅ **Proper venue lookup** - Resolves slugs to venue IDs
+5. ✅ **Fixed venue ID type mismatch** - Uses slugs directly as venue_id
+6. ✅ **Simplified venue handling** - No UUID conversion needed
 
 ## Database Schema Notes
 
 The system now properly handles:
 - **Venue slugs** (user-friendly URLs like "my-restaurant")
-- **Database lookups** (finds venue by slug first)
-- **Menu item queries** (uses resolved venue ID)
+- **Direct venue_id usage** (slug is the venue_id)
+- **Menu item queries** (uses slug directly)
 - **Consistent venue handling** (same slug for upload and fetch)
 
 The menu system now works automatically without any manual intervention needed! 
