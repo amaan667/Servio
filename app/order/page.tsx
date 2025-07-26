@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   Plus,
   Minus,
@@ -13,6 +14,7 @@ import {
   Clock,
   Star,
   CreditCard,
+  X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSearchParams } from "next/navigation";
@@ -337,6 +339,19 @@ export default function CustomerOrderPage() {
 
   // Mobile cart state
   const [showMobileCart, setShowMobileCart] = useState(false);
+  const [showFloatingCart, setShowFloatingCart] = useState(false);
+
+  // Scroll detection for mobile cart button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      // Show floating cart after scrolling 200px down
+      setShowFloatingCart(scrollTop > 200);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Show sign-in prompt if not logged in and no demo data
   if (!isLoggedIn && (!demoMenuItems || demoMenuItems.length === 0)) {
@@ -384,9 +399,148 @@ export default function CustomerOrderPage() {
               <h1 className="text-2xl font-bold text-gray-900">Menu</h1>
             </div>
             <div className="flex items-center space-x-2">
-              <ShoppingCart className="w-5 h-5" />
-              <span className="font-medium">{getTotalItems()} items</span>
-              <span className="text-green-600 font-bold">£{getTotalPrice().toFixed(2)}</span>
+              <Sheet open={showMobileCart} onOpenChange={setShowMobileCart}>
+                <SheetTrigger asChild>
+                  <button className="flex items-center space-x-2 lg:pointer-events-none">
+                    <ShoppingCart className="w-5 h-5" />
+                    <span className="font-medium">{getTotalItems()} items</span>
+                    <span className="text-green-600 font-bold">£{getTotalPrice().toFixed(2)}</span>
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[90vh] overflow-y-auto lg:hidden">
+                  <SheetHeader>
+                    <SheetTitle className="flex items-center justify-between">
+                      <span>Your Order</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowMobileCart(false)}
+                      >
+                        <X className="w-5 h-5" />
+                      </Button>
+                    </SheetTitle>
+                  </SheetHeader>
+                  
+                  <div className="mt-6 space-y-4">
+                    {cart.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">Your cart is empty</p>
+                    ) : (
+                      <>
+                        {/* Mobile Cart Items */}
+                        <div className="space-y-4 max-h-64 overflow-y-auto">
+                          {cart.map((item) => (
+                            <div key={item.id} className="border-b border-gray-200 pb-4">
+                              <div className="flex justify-between items-start mb-3">
+                                <h4 className="font-medium text-lg">{item.name}</h4>
+                                <span className="font-bold text-lg text-green-600">
+                                  £{(item.price * item.quantity).toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-3">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => removeFromCart(item.id)}
+                                    className="w-8 h-8 p-0"
+                                  >
+                                    <Minus className="w-4 h-4" />
+                                  </Button>
+                                  <span className="font-medium text-lg min-w-[2ch] text-center">
+                                    {item.quantity}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => addToCart(item)}
+                                    className="w-8 h-8 p-0"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                                <span className="text-sm text-gray-600">
+                                  £{item.price.toFixed(2)} each
+                                </span>
+                              </div>
+                              <Textarea
+                                placeholder="Special instructions..."
+                                value={item.special_instructions || ""}
+                                onChange={(e) =>
+                                  updateSpecialInstructions(item.id, e.target.value)
+                                }
+                                className="text-sm"
+                                rows={2}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Mobile Total */}
+                        <div className="border-t border-gray-200 pt-4">
+                          <div className="flex justify-between items-center text-xl font-bold">
+                            <span>Total:</span>
+                            <span className="text-green-600">
+                              £{getTotalPrice().toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Mobile Customer Info */}
+                        <div className="space-y-3 border-t border-gray-200 pt-4">
+                          <h3 className="font-medium text-lg">Your Details</h3>
+                          <Input
+                            placeholder="Your name *"
+                            value={customerInfo.name}
+                            onChange={(e) =>
+                              setCustomerInfo((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
+                            className="text-base"
+                          />
+                          <Input
+                            placeholder="Phone number *"
+                            value={customerInfo.phone}
+                            onChange={(e) =>
+                              setCustomerInfo((prev) => ({
+                                ...prev,
+                                phone: e.target.value,
+                              }))
+                            }
+                            className="text-base"
+                          />
+                          <Input
+                            placeholder="Table number (optional)"
+                            value={customerInfo.table_number}
+                            onChange={(e) =>
+                              setCustomerInfo((prev) => ({
+                                ...prev,
+                                table_number: e.target.value,
+                              }))
+                            }
+                            className="text-base"
+                          />
+                        </div>
+                        
+                        {/* Mobile Checkout Button */}
+                        <div className="pt-4">
+                          <Button
+                            onClick={() => {
+                              setShowCheckout(true);
+                              setShowMobileCart(false);
+                            }}
+                            disabled={isSubmitting || cart.length === 0}
+                            className="w-full py-4 text-lg font-semibold"
+                            size="lg"
+                          >
+                            {isSubmitting ? "Processing..." : "Proceed to Checkout"}
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
@@ -609,6 +763,21 @@ export default function CustomerOrderPage() {
           </div>
         )}
       </div>
+
+      {/* Mobile Floating Cart Button */}
+      {showFloatingCart && cart.length > 0 && (
+        <div className="lg:hidden fixed bottom-4 right-4 z-50">
+          <Button 
+            size="lg"
+            onClick={() => setShowMobileCart(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg rounded-full px-6 py-3"
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            <span className="font-medium">{getTotalItems()} items</span>
+            <span className="ml-2 font-bold">£{getTotalPrice().toFixed(2)}</span>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
