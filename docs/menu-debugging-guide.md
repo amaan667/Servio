@@ -28,57 +28,79 @@
 - Clear logic for demo vs real venues
 - Consistent venue ID usage across upload and fetch
 
+### 4. **Venue ID Type Mismatch (NEW)**
+**Problem:** Database expects UUID but we're using string venue IDs like "amaantanveer667-venue".
+
+**Solution:** ✅ **FIXED**
+- **Slug-based venue lookup** - uses user-friendly URLs
+- **Proper venue resolution** - looks up venue by slug first
+- **Consistent venue handling** - same slug used for upload and fetch
+
 ## How to Test
 
 ### **Step 1: Upload Menu**
-1. Go to dashboard with venue ID (e.g., `?venue=my-restaurant`)
+1. Go to dashboard with venue slug (e.g., `?venue=my-restaurant`)
 2. Upload a PDF menu
 3. Check console logs for database save confirmation
 4. Verify items appear in Supabase table
 
 ### **Step 2: Check Ordering Page**
-1. Go to ordering page with same venue ID (e.g., `/order?venue=my-restaurant`)
+1. Go to ordering page with same venue slug (e.g., `/order?venue=my-restaurant`)
 2. **Menu should load automatically** - no manual action needed
 3. If no items appear, check console for errors
-4. Verify venue ID matches between upload and fetch
+4. Verify venue slug matches between upload and fetch
 
 ### **Step 3: Debug Database**
 1. Go to Supabase → Table Editor
-2. Check `venues` table for your venue
+2. Check `venues` table for your venue slug
 3. Check `menu_items` table for your items
-4. Verify `venue_id` matches
+4. Verify `venue_id` matches the venue slug
 
 ## Debugging Commands
 
 ### **Check Database Directly**
 ```sql
--- Check if venue exists
-SELECT * FROM venues WHERE venue_id = 'your-venue-id';
+-- Check if venue exists by slug
+SELECT * FROM venues WHERE venue_id = 'your-venue-slug';
 
 -- Check menu items for venue
-SELECT * FROM menu_items WHERE venue_id = 'your-venue-id' AND available = true;
+SELECT * FROM menu_items WHERE venue_id = 'your-venue-slug' AND available = true;
+
+-- Check table structure (important!)
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'venues' AND column_name = 'venue_id';
 ```
 
 ### **Check Console Logs**
 Look for these log messages:
 ```
-[MENU_EXTRACTION] Saving X items to venue: your-venue-id
-[MENU_EXTRACTION] Successfully saved X items to database
-Fetching menu for real venue: your-venue-id
-Found X available items for venue your-venue-id
+[MENU_EXTRACTION] Processing venue slug: your-venue-slug
+[MENU_EXTRACTION] Found existing venue: your-venue-slug with ID: your-venue-slug
+[MENU_EXTRACTION] Successfully saved X items to database for venue: your-venue-slug
+Fetching menu for real venue slug: your-venue-slug
+Found venue: your-venue-slug -> your-venue-slug
+Found X available items for venue your-venue-slug (your-venue-slug)
 ```
 
 ### **Network Tab**
 1. Open DevTools → Network
 2. Upload menu and check `/api/upload-menu` request
 3. Check ordering page for menu fetch requests
-4. Verify venue ID in request parameters
+4. Verify venue slug in request parameters
 
 ## Common Issues & Solutions
 
+### **Issue: "invalid input syntax for type uuid"**
+**Problem:** Database venue column is UUID but you're passing string.
+**Solution:** ✅ **FIXED**
+- Use venue slugs (strings) instead of UUIDs
+- System now looks up venue by slug first
+- No UUID conversion needed
+
 ### **Issue: "No menu items found"**
 **Check:**
-1. Venue ID in URL matches database
+1. Venue slug in URL matches database
 2. Menu items were actually saved to database
 3. RLS policies allow reading menu items
 4. Items have `available = true`
@@ -86,7 +108,7 @@ Found X available items for venue your-venue-id
 ### **Issue: Menu items not appearing after upload**
 **Solutions:**
 1. **Reload the ordering page** (Cmd+R)
-2. Check if venue ID is correct
+2. Check if venue slug is correct
 3. Verify database save was successful
 4. Check console for fetch errors
 
@@ -103,9 +125,10 @@ Found X available items for venue your-venue-id
 - `/order?demo=1` → Shows demo data
 - `/order?venue=demo-cafe` → Shows demo data
 
-### **Real Venue:**
+### **Real Venue (using slugs):**
 - `/order?venue=my-restaurant` → Shows DB items for my-restaurant
 - `/order?venue=pizza-palace` → Shows DB items for pizza-palace
+- `/order?venue=amaantanveer667-venue` → Shows DB items for amaantanveer667-venue
 
 ### **Dashboard:**
 - `/dashboard?venue=my-restaurant` → Upload menu for my-restaurant
@@ -130,9 +153,9 @@ OPENAI_API_KEY=sk-your-openai-api-key
 - [ ] Upload PDF menu → Check console for save confirmation
 - [ ] Check Supabase table → Verify items exist
 - [ ] Go to ordering page → **Menu loads automatically**
-- [ ] Check venue ID consistency across upload and fetch
+- [ ] Check venue slug consistency across upload and fetch
 - [ ] Verify RLS policies allow read/write access
-- [ ] Test with different venue IDs
+- [ ] Test with different venue slugs
 - [ ] Test demo vs real venue logic
 
 ## Debug Functions
@@ -161,5 +184,15 @@ console.log('Menu items:', document.querySelectorAll('[data-menu-item]').length)
 2. ✅ **Automatic menu fetching** - No manual action needed
 3. ✅ **Simplified error handling** - Clear error messages
 4. ✅ **Removed unnecessary API endpoints** - Cleaner codebase
+5. ✅ **Fixed venue ID type mismatch** - Uses slugs instead of UUIDs
+6. ✅ **Proper venue lookup** - Resolves slugs to venue IDs
+
+## Database Schema Notes
+
+The system now properly handles:
+- **Venue slugs** (user-friendly URLs like "my-restaurant")
+- **Database lookups** (finds venue by slug first)
+- **Menu item queries** (uses resolved venue ID)
+- **Consistent venue handling** (same slug for upload and fetch)
 
 The menu system now works automatically without any manual intervention needed! 
