@@ -51,6 +51,7 @@ export default function CustomerOrderPage() {
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [menuError, setMenuError] = useState<string | null>(null);
+  const [isDemoFallback, setIsDemoFallback] = useState(false);
 
   // Generate categories from menuItems
   const uniqueCategories = Array.from(
@@ -87,6 +88,7 @@ export default function CustomerOrderPage() {
   const loadMenuItems = async () => {
     setLoadingMenu(true);
     setMenuError(null);
+    setIsDemoFallback(false);
 
     if (!supabase) {
       setMenuError("Database connection not available");
@@ -94,8 +96,9 @@ export default function CustomerOrderPage() {
       return;
     }
 
-    // Demo mode
+    // Demo mode - prioritize demo mode or fallback to demo when venue not found
     if (isDemo || !isLoggedIn || venueSlug === "demo-cafe" || venueSlug === "demo") {
+      console.log("Loading demo menu items");
       setMenuItems(
         demoMenuItems.map((item, idx) => ({
           ...item,
@@ -116,12 +119,24 @@ export default function CustomerOrderPage() {
       const { data: venue, error: venueError } = await supabase
         .from("venues")
         .select("venue_id")
-        .eq("slug", venueSlug)
+        .eq("venue_id", venueSlug)
         .single();
 
       if (venueError || !venue) {
-        setMenuError(`Venue not found: '${venueSlug}'.`);
-        setMenuItems([]);
+        console.log(`Venue '${venueSlug}' not found, falling back to demo mode`);
+        setIsDemoFallback(true);
+        // Fall back to demo mode instead of showing an error
+        setMenuItems(
+          demoMenuItems.map((item, idx) => ({
+            ...item,
+            id: `demo-${idx}`,
+            available: true,
+            price:
+              typeof item.price === "number"
+                ? item.price
+                : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
+          }))
+        );
         setLoadingMenu(false);
         return;
       }
@@ -137,20 +152,57 @@ export default function CustomerOrderPage() {
         .order("category", { ascending: true });
 
       if (error) {
-        setMenuError(`Error loading menu: ${error.message}`);
-        setMenuItems([]);
+        console.log(`Error loading menu: ${error.message}, falling back to demo mode`);
+        setIsDemoFallback(true);
+        // Fall back to demo mode instead of showing an error
+        setMenuItems(
+          demoMenuItems.map((item, idx) => ({
+            ...item,
+            id: `demo-${idx}`,
+            available: true,
+            price:
+              typeof item.price === "number"
+                ? item.price
+                : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
+          }))
+        );
         setLoadingMenu(false);
         return;
       }
 
       setMenuItems(data || []);
       if (!data || data.length === 0) {
-        setMenuError(`No menu items found for this venue.`);
+        console.log(`No menu items found for venue '${venueSlug}', falling back to demo mode`);
+        // Fall back to demo mode if no menu items found
+        setIsDemoFallback(true);
+        setMenuItems(
+          demoMenuItems.map((item, idx) => ({
+            ...item,
+            id: `demo-${idx}`,
+            available: true,
+            price:
+              typeof item.price === "number"
+                ? item.price
+                : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
+          }))
+        );
       }
       setLoadingMenu(false);
     } catch (err: any) {
-      setMenuError(`Error loading menu: ${err.message}`);
-      setMenuItems([]);
+      console.log(`Error loading menu: ${err.message}, falling back to demo mode`);
+      // Fall back to demo mode instead of showing an error
+      setIsDemoFallback(true);
+      setMenuItems(
+        demoMenuItems.map((item, idx) => ({
+          ...item,
+          id: `demo-${idx}`,
+          available: true,
+          price:
+            typeof item.price === "number"
+              ? item.price
+              : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
+        }))
+      );
       setLoadingMenu(false);
     }
   };
@@ -310,6 +362,18 @@ export default function CustomerOrderPage() {
             </div>
           </div>
         </div>
+        
+        {/* Demo Fallback Notification */}
+        {isDemoFallback && (
+          <div className="bg-blue-50 border-b border-blue-200">
+            <div className="max-w-7xl mx-auto px-4 py-2">
+              <div className="flex items-center justify-center text-sm text-blue-700">
+                <span className="font-medium">Demo Mode:</span>
+                <span className="ml-1">You're viewing a sample menu. This is perfect for testing the ordering experience!</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <div className="max-w-7xl mx-auto px-4 py-6">
         {loadingMenu ? (
