@@ -135,7 +135,7 @@ export default function CustomerOrderPage() {
       if (venueError || !venueData) {
         console.log("Venue not found, showing empty menu");
         setMenuItems([]);
-        setMenuError(`Venue '${venueId}' not found.`);
+        setMenuError(`No menu items found for venue '${venueId}'.`);
         setLoadingMenu(false);
         return;
       }
@@ -156,8 +156,9 @@ export default function CustomerOrderPage() {
 
       if (error) {
         console.error("Supabase error:", error);
-        setMenuError("Failed to load menu items from database.");
+        // Don't show technical errors to users, just show empty menu
         setMenuItems([]);
+        setMenuError(`No menu items found for venue '${venueId}'.`);
         setLoadingMenu(false);
         return;
       }
@@ -176,8 +177,9 @@ export default function CustomerOrderPage() {
 
     } catch (err) {
       console.error("Unexpected error loading menu:", err);
-      setMenuError("Failed to load menu items. Please try again.");
+      // Don't show technical errors to users, just show empty menu
       setMenuItems([]);
+      setMenuError(`No menu items found for venue '${venueId}'.`);
       setLoadingMenu(false);
     }
   };
