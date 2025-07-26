@@ -19,23 +19,6 @@ import { useSearchParams } from "next/navigation";
 import { demoMenuItems } from "@/data/demoMenuItems";
 import { getValidatedSession } from "@/lib/supabase";
 
-// Utility function to check if a string is a valid UUID
-const isValidUUID = (str: string) => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
-};
-
-// Utility function to handle venue ID format conversion if needed
-const formatVenueId = (venueId: string) => {
-  // If it's already a valid UUID, return as is
-  if (isValidUUID(venueId)) {
-    return venueId;
-  }
-  
-  // If it's a text format, return as is (the database should handle TEXT format)
-  return venueId;
-};
-
 // Interfaces
 interface MenuItem {
   id: string;
@@ -136,10 +119,10 @@ export default function CustomerOrderPage() {
 
     // For signed-in users, use their venue from session
     if (isLoggedIn && session) {
-      const userVenueId = formatVenueId(session.venue.venue_id);
+      const userVenueId = session.venue.id; // Use the UUID format, not venue_id
       console.log(`Loading menu for logged-in user's venue: ${userVenueId}`);
       console.log('User session venue object:', session.venue);
-      console.log('Formatted venue ID:', userVenueId);
+      console.log('Using venue.id (UUID format):', userVenueId);
       
       try {
         const { data, error } = await supabase
@@ -152,29 +135,6 @@ export default function CustomerOrderPage() {
         if (error) {
           console.log(`Error loading user's menu: ${error.message}`);
           console.log('Full error object:', error);
-          
-          // Check if it's a UUID format error
-          if (error.message.includes("invalid input syntax for type uuid")) {
-            console.log("Database schema mismatch detected - trying alternative approaches");
-            
-            // Fallback 1: Try to find venue by name or other identifier
-            console.log("Falling back to demo mode due to database schema mismatch");
-            setIsDemoFallback(true);
-            setMenuItems(
-              demoMenuItems.map((item, idx) => ({
-                ...item,
-                id: `demo-${idx}`,
-                available: true,
-                price:
-                  typeof item.price === "number"
-                    ? item.price
-                    : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
-              }))
-            );
-            setLoadingMenu(false);
-            return;
-          }
-          
           setMenuError(`Error loading your menu: ${error.message}. Please check that your venue is properly set up.`);
           setLoadingMenu(false);
           return;
@@ -194,21 +154,7 @@ export default function CustomerOrderPage() {
       } catch (err: any) {
         console.log(`Error loading user's menu: ${err.message}`);
         console.log('Full error object:', err);
-        
-        // If there's a database connection or schema issue, fall back to demo mode
-        console.log("Falling back to demo mode due to database error");
-        setIsDemoFallback(true);
-        setMenuItems(
-          demoMenuItems.map((item, idx) => ({
-            ...item,
-            id: `demo-${idx}`,
-            available: true,
-            price:
-              typeof item.price === "number"
-                ? item.price
-                : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
-          }))
-        );
+        setMenuError(`Error loading your menu: ${err.message}. Please try refreshing the page.`);
         setLoadingMenu(false);
         return;
       }
@@ -346,7 +292,7 @@ export default function CustomerOrderPage() {
 
     try {
       // Use the correct venue_id based on user login status
-      const orderVenueId = isLoggedIn && session ? session.venue.venue_id : venueSlug;
+      const orderVenueId = isLoggedIn && session ? session.venue.id : venueSlug;
       
       const { error: orderError } = await supabase
         .from("orders")
@@ -453,7 +399,7 @@ export default function CustomerOrderPage() {
                 <span className="font-medium">Demo Mode:</span>
                 <span className="ml-1">
                   {isLoggedIn 
-                    ? "We're having trouble loading your menu items. You're viewing demo content. Please contact support if this persists."
+                    ? "You're viewing a sample menu. Add your own menu items in the dashboard!"
                     : "You're viewing a sample menu. This is perfect for testing the ordering experience!"
                   }
                 </span>
