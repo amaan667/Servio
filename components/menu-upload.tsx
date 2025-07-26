@@ -197,7 +197,7 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
           progress: 80
         });
 
-        // Stage 4: Database Integration (Future Enhancement)
+        // Stage 4: Database Integration
         setCurrentStage('saving');
         setUploadProgress({
           stage: 'complete',
@@ -205,16 +205,27 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
           progress: 100
         });
 
+        // Check database result
         const dbResult: DatabaseResult = {
-          success: true,
-          savedCount: data.menuItems.length
+          success: data.dbResult?.success || false,
+          savedCount: data.dbResult?.savedCount || 0,
+          error: data.dbResult?.error
         };
         setDatabaseResult(dbResult);
 
         setCurrentStage('complete');
         
+        // Call onMenuUpdate with the extracted items
         if (onMenuUpdate) {
+          console.log("Calling onMenuUpdate with extracted items");
           onMenuUpdate(data.menuItems);
+        }
+
+        // Show success message
+        if (dbResult.success) {
+          console.log(`Successfully saved ${dbResult.savedCount} items to database for venue: ${venueId}`);
+        } else {
+          console.error("Database save failed:", dbResult.error);
         }
 
       } else if (data.error) {
