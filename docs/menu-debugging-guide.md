@@ -15,10 +15,10 @@
 **Problem:** Menu items were extracted but not showing in ordering page.
 
 **Solution:** ✅ **FIXED**
-- Added `refetchMenuItems()` function
-- Exposed refetch function globally for testing
-- Added debug button to manually trigger refetch
+- **Automatic menu fetching** on page load
+- **No manual refetch needed** - removed debug buttons
 - Proper venue ID handling
+- Clean, simple UI without clutter
 
 ### 3. **Wrong Venue ID Queries**
 **Problem:** Ordering page was querying wrong venue or not using venue ID properly.
@@ -38,9 +38,9 @@
 
 ### **Step 2: Check Ordering Page**
 1. Go to ordering page with same venue ID (e.g., `/order?venue=my-restaurant`)
-2. Check if menu items appear
-3. If not, click "Refetch Menu Items" button
-4. Check console for fetch logs
+2. **Menu should load automatically** - no manual action needed
+3. If no items appear, check console for errors
+4. Verify venue ID matches between upload and fetch
 
 ### **Step 3: Debug Database**
 1. Go to Supabase → Table Editor
@@ -64,7 +64,7 @@ Look for these log messages:
 ```
 [MENU_EXTRACTION] Saving X items to venue: your-venue-id
 [MENU_EXTRACTION] Successfully saved X items to database
-Refetching menu items...
+Fetching menu for real venue: your-venue-id
 Found X available items for venue your-venue-id
 ```
 
@@ -85,10 +85,10 @@ Found X available items for venue your-venue-id
 
 ### **Issue: Menu items not appearing after upload**
 **Solutions:**
-1. Click "Refetch Menu Items" button
-2. Hard refresh the page (Cmd+Shift+R)
-3. Check if venue ID is correct
-4. Verify database save was successful
+1. **Reload the ordering page** (Cmd+R)
+2. Check if venue ID is correct
+3. Verify database save was successful
+4. Check console for fetch errors
 
 ### **Issue: Database save failed**
 **Check:**
@@ -129,20 +129,13 @@ OPENAI_API_KEY=sk-your-openai-api-key
 
 - [ ] Upload PDF menu → Check console for save confirmation
 - [ ] Check Supabase table → Verify items exist
-- [ ] Go to ordering page → Check if items appear
-- [ ] If not appearing → Click "Refetch Menu Items"
+- [ ] Go to ordering page → **Menu loads automatically**
 - [ ] Check venue ID consistency across upload and fetch
 - [ ] Verify RLS policies allow read/write access
 - [ ] Test with different venue IDs
 - [ ] Test demo vs real venue logic
 
 ## Debug Functions
-
-### **Manual Refetch:**
-```javascript
-// In browser console
-window.refetchMenuItems();
-```
 
 ### **Check Current Venue:**
 ```javascript
@@ -156,4 +149,17 @@ console.log('Current venue:', new URLSearchParams(window.location.search).get('v
 window.location.href = '/order?demo=1';
 ```
 
-This debugging guide should help you identify and fix any remaining issues with menu upload and fetching! 
+### **Check Menu Items in Console:**
+```javascript
+// In browser console (on ordering page)
+console.log('Menu items:', document.querySelectorAll('[data-menu-item]').length);
+```
+
+## Key Changes Made
+
+1. ✅ **Removed debug/refetch buttons** - Clean UI
+2. ✅ **Automatic menu fetching** - No manual action needed
+3. ✅ **Simplified error handling** - Clear error messages
+4. ✅ **Removed unnecessary API endpoints** - Cleaner codebase
+
+The menu system now works automatically without any manual intervention needed! 
