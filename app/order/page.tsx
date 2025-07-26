@@ -53,6 +53,7 @@ export default function CustomerOrderPage() {
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [menuError, setMenuError] = useState<string | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
   // Dynamically generate categories from menuItems
   const uniqueCategories = Array.from(
@@ -88,6 +89,20 @@ export default function CustomerOrderPage() {
     loadMenuItems();
   }, [hasSupabaseConfig, venueId, isLoggedIn]);
 
+  // Function to refetch menu items (can be called from parent components)
+  const refetchMenuItems = () => {
+    console.log("Refetching menu items...");
+    setLastFetchTime(Date.now());
+    loadMenuItems();
+  };
+
+  // Expose refetch function to parent components
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).refetchMenuItems = refetchMenuItems;
+    }
+  }, []);
+
   const loadMenuItems = async () => {
     setLoadingMenu(true);
     setMenuError(null);
@@ -101,7 +116,8 @@ export default function CustomerOrderPage() {
       venueId,
       isLoggedIn,
       isDemoVenue,
-      shouldUseDemoData
+      shouldUseDemoData,
+      lastFetchTime
     });
 
     if (shouldUseDemoData) {
@@ -479,6 +495,13 @@ export default function CustomerOrderPage() {
             )}
             <Button onClick={debugMenu} className="mt-4" variant="outline">
               Debug Database Connection
+            </Button>
+            <Button 
+              onClick={refetchMenuItems} 
+              className="mt-2 ml-2" 
+              variant="outline"
+            >
+              Refetch Menu Items
             </Button>
           </div>
         ) : menuItems.length === 0 ? (

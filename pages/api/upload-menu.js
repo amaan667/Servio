@@ -183,12 +183,90 @@ async function validateAndCleanMenuItems(allMenuItems, chunkErrors) {
   return { menuItems: allMenuItems, chunkErrors };
 }
 
-// Stage 5: Database Integration (Future Enhancement)
+// Stage 5: Database Integration
 async function saveMenuItemsToDatabase(menuItems, venueId) {
-  console.log('[MENU_EXTRACTION] Stage 5: Database Integration (Future Enhancement)');
-  // TODO: Implement database saving logic here
-  // This would save the extracted menu items to Supabase
-  return { success: true, savedCount: menuItems.length };
+  console.log('[MENU_EXTRACTION] Stage 5: Database Integration');
+  console.log(`[MENU_EXTRACTION] Saving ${menuItems.length} items to venue: ${venueId}`);
+  
+  try {
+    // Import Supabase client
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    // First, ensure the venue exists
+    const { data: venueData, error: venueError } = await supabase
+      .from("venues")
+      .select("venue_id")
+      .eq("venue_id", venueId)
+      .single();
+
+    if (venueError || !venueData) {
+      console.log(`[MENU_EXTRACTION] Venue ${venueId} not found, creating it...`);
+      
+      // Create the venue if it doesn't exist
+      const { data: newVenue, error: createVenueError } = await supabase
+        .from("venues")
+        .insert({
+          venue_id: venueId,
+          name: venueId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          description: `Auto-created venue for menu upload`
+        })
+        .select()
+        .single();
+
+      if (createVenueError) {
+        console.error('[MENU_EXTRACTION] Failed to create venue:', createVenueError);
+        return { success: false, savedCount: 0, error: 'Failed to create venue' };
+      }
+      
+      console.log(`[MENU_EXTRACTION] Created venue: ${venueId}`);
+    }
+
+    // Prepare menu items for insertion
+    const itemsToInsert = menuItems.map(item => ({
+      venue_id: venueId,
+      name: item.name,
+      description: item.description || '',
+      price: item.price,
+      category: item.category || 'Uncategorized',
+      available: true,
+      image_url: item.image_url || null,
+      prep_time: item.prep_time || null,
+      rating: item.rating || null
+    }));
+
+    console.log(`[MENU_EXTRACTION] Inserting ${itemsToInsert.length} items...`);
+
+    // Insert menu items
+    const { data: insertedItems, error: insertError } = await supabase
+      .from("menu_items")
+      .insert(itemsToInsert)
+      .select();
+
+    if (insertError) {
+      console.error('[MENU_EXTRACTION] Failed to insert menu items:', insertError);
+      return { success: false, savedCount: 0, error: insertError.message };
+    }
+
+    console.log(`[MENU_EXTRACTION] Successfully saved ${insertedItems.length} items to database`);
+    
+    return { 
+      success: true, 
+      savedCount: insertedItems.length,
+      insertedItems: insertedItems
+    };
+
+  } catch (error) {
+    console.error('[MENU_EXTRACTION] Database integration error:', error);
+    return { 
+      success: false, 
+      savedCount: 0, 
+      error: error.message 
+    };
+  }
 }
 
 // Stage 6: Response & Cleanup
