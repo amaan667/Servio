@@ -68,7 +68,7 @@ export default function PaymentPage() {
       });
 
       if (orderResult.success) {
-        setOrderNumber(orderResult.order?.order_number || "ORD-001");
+        setOrderNumber(orderResult.data?.order_number?.toString() || "ORD-001");
         setPaymentComplete(true);
         // Clear checkout data
         localStorage.removeItem("servio-checkout-data");

@@ -55,6 +55,20 @@ export interface Order {
   created_at: string;
 }
 
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  menu_item_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  item_name: string;
+}
+
+export interface OrderWithItems extends Order {
+  order_items: OrderItem[];
+}
+
 export interface AuthSession {
   user: User;
   venue: Venue;

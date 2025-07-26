@@ -1,6 +1,6 @@
 "use client";
 
-import type { Order } from "@/app/dashboard/[venueId]/page";
+import type { OrderWithItems as Order, OrderItem } from "@/lib/supabase";
 import {
   Card,
   CardContent,
@@ -83,12 +83,12 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
         <Separator />
         <ul className="space-y-2 py-3">
           {order.order_items && order.order_items.length > 0 ? (
-            order.order_items.map((item) => (
+            order.order_items.map((item: OrderItem) => (
               <li key={item.id} className="flex justify-between text-sm">
                 <span>
                   {item.quantity} x {item.item_name}
                 </span>
-                <span>£{(item.price * item.quantity).toFixed(2)}</span>
+                <span>£{item.total_price.toFixed(2)}</span>
               </li>
             ))
           ) : (

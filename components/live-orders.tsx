@@ -151,7 +151,9 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
     return () => {
       logger.debug("LIVE_ORDERS: Cleaning up real-time subscription");
-      supabase.removeChannel(channel);
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [fetchOrders, venueUuid]);
 
