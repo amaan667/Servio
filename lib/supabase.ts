@@ -341,7 +341,7 @@ export async function signInUser(email: string, password: string) {
 export async function signInWithGoogle() {
   if (!supabase) throw new Error("Supabase client not initialized");
   
-  return supabase.auth.signInWithOAuth({ 
+  const { data, error } = await supabase.auth.signInWithOAuth({ 
     provider: 'google',
     options: {
       redirectTo: typeof window !== "undefined" 
@@ -349,6 +349,12 @@ export async function signInWithGoogle() {
         : undefined
     }
   });
+  
+  if (error) {
+    throw error;
+  }
+  
+  return data;
 }
 
 // Sign out function

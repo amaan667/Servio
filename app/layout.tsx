@@ -27,8 +27,10 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <GlobalNav />
-          {children}
+          <AuthWrapper>
+            <GlobalNav />
+            {children}
+          </AuthWrapper>
         </ThemeProvider>
       </body>
     </html>
