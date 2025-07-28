@@ -87,9 +87,10 @@ export async function signUpUser(
       email,
       password,
       options: {
-        emailRedirectTo:
-          typeof window !== "undefined"
-            ? window.location.origin + "/dashboard"
+        emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL
+          ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
+          : typeof window !== "undefined"
+            ? `${window.location.origin}/dashboard`
             : undefined,
         data: { full_name: fullName },
       },

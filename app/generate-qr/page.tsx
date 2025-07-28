@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,6 @@ export default function GenerateQRPage() {
       setSession(session);
       
       if (session?.user) {
-        // Fetch venue for the user
         const { data: venueData, error } = await supabase
           .from("venues")
           .select("*")
@@ -65,9 +63,11 @@ export default function GenerateQRPage() {
   }
 
   const venueId = venue?.venue_id || "demo";
-  const orderUrl = typeof window !== "undefined" 
-    ? `${window.location.origin}/order?venue=${venueId}&table=${tableNumber}`
-    : "";
+  const orderUrl = process.env.NEXT_PUBLIC_SITE_URL
+    ? `${process.env.NEXT_PUBLIC_SITE_URL}/order?venue=${venueId}&table=${tableNumber}`
+    : typeof window !== "undefined" 
+      ? `${window.location.origin}/order?venue=${venueId}&table=${tableNumber}`
+      : "";
 
   const handleCopy = async () => {
     try {
@@ -169,23 +169,21 @@ export default function GenerateQRPage() {
                 Preview and download your QR code
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-center">
-                <div className="text-center">
-                  <div className="bg-white p-4 rounded-lg shadow-sm inline-block">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(orderUrl)}`}
-                      alt="QR Code"
-                      className="w-48 h-48"
-                    />
-                  </div>
-                  <div className="mt-4">
-                    <Badge variant="secondary">Table {tableNumber}</Badge>
-                  </div>
+            <CardContent>
+              <div className="text-center">
+                <div className="bg-white p-4 rounded-lg shadow-sm inline-block">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(orderUrl)}`}
+                    alt="QR Code"
+                    className="w-48 h-48"
+                  />
+                </div>
+                <div className="mt-4">
+                  <Badge variant="secondary">Table {tableNumber}</Badge>
                 </div>
               </div>
 
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 mt-4">
                 <Button onClick={handleCopy} variant="outline" className="flex-1">
                   {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                   {copied ? "Copied!" : "Copy URL"}
