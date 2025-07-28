@@ -340,7 +340,15 @@ export async function signInUser(email: string, password: string) {
 
 export async function signInWithGoogle() {
   if (!supabase) throw new Error("Supabase client not initialized");
-  return supabase.auth.signInWithOAuth({ provider: 'google' });
+  
+  return supabase.auth.signInWithOAuth({ 
+    provider: 'google',
+    options: {
+      redirectTo: typeof window !== "undefined" 
+        ? `${window.location.origin}/dashboard`
+        : undefined
+    }
+  });
 }
 
 // Sign out function
