@@ -107,7 +107,10 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
         if (!data || error) {
           setProfileComplete(false);
           cachedProfileComplete = false;
-          router.replace("/complete-profile");
+          // Only redirect to complete-profile if not already there
+          if (pathname !== '/complete-profile') {
+            router.replace("/complete-profile");
+          }
         } else {
           setProfileComplete(true);
           cachedProfileComplete = true;
@@ -118,10 +121,15 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     
     checkProfile();
     return () => { ignore = true; };
-  }, [user, router]);
+  }, [user, router, pathname]);
 
   // Don't show loading for public routes
   if (isPublicRoute && !user) {
+    return <>{children}</>;
+  }
+
+  // Don't show loading for complete-profile page
+  if (pathname === '/complete-profile') {
     return <>{children}</>;
   }
 
