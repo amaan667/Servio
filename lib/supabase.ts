@@ -201,16 +201,29 @@ export async function signInWithGoogle() {
     console.log("Environment check:", {
       NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
       NODE_ENV: process.env.NODE_ENV,
-      RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT
+      RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
+      currentOrigin: typeof window !== "undefined" ? window.location.origin : "server-side"
     });
 
-    // Always use Railway domain in production, fallback to window.location.origin for development
+    // Determine the correct redirect URL
+    let redirectTo;
+    
+    // Check if we're in a production environment
     const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
-    const redirectTo = isProduction && process.env.NEXT_PUBLIC_SITE_URL
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
-      : typeof window !== "undefined"
-        ? `${window.location.origin}/dashboard`
-        : undefined;
+    
+    if (isProduction && process.env.NEXT_PUBLIC_SITE_URL) {
+      // In production, always use the Railway domain
+      redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
+      console.log("Using production Railway domain:", redirectTo);
+    } else if (typeof window !== "undefined") {
+      // In development, use the current origin
+      redirectTo = `${window.location.origin}/dashboard`;
+      console.log("Using development localhost domain:", redirectTo);
+    } else {
+      // Server-side fallback
+      redirectTo = undefined;
+      console.log("No redirect URL available (server-side)");
+    }
     
     console.log("OAuth redirect configuration:", { isProduction, redirectTo });
     
