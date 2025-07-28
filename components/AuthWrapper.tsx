@@ -19,6 +19,13 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     let ignore = false;
     const checkSession = async () => {
       try {
+        // Check if supabase is available
+        if (!supabase) {
+          console.error("Supabase client not available");
+          setLoading(false);
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (ignore) return;
         setSession(session);
@@ -41,36 +48,41 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     checkSession();
 
     // Listen for changes:
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user?.email);
-      setSession(session);
-      
-      if (!session && !isPublicRoute) {
-        router.replace("/sign-in");
-      } else if (session && event === 'SIGNED_IN') {
-        // User just signed in, check if they have a profile
-        try {
-          const { data: venue } = await supabase
-            .from("venues")
-            .select("*")
-            .eq("owner_id", session.user.id)
-            .maybeSingle();
-          
-          if (!venue && pathname !== '/complete-profile') {
-            router.replace("/complete-profile");
-          } else if (venue && pathname === '/sign-in') {
-            router.replace("/dashboard");
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.email);
+        setSession(session);
+        
+        if (!session && !isPublicRoute) {
+          router.replace("/sign-in");
+        } else if (session && event === 'SIGNED_IN') {
+          // User just signed in, check if they have a profile
+          try {
+            const { data: venue } = await supabase
+              .from("venues")
+              .select("*")
+              .eq("owner_id", session.user.id)
+              .maybeSingle();
+            
+            if (!venue && pathname !== '/complete-profile') {
+              router.replace("/complete-profile");
+            } else if (venue && pathname === '/sign-in') {
+              router.replace("/dashboard");
+            }
+          } catch (error) {
+            console.error("Error checking venue:", error);
           }
-        } catch (error) {
-          console.error("Error checking venue:", error);
         }
-      }
-    });
-    
-    return () => {
-      ignore = true;
-      subscription?.unsubscribe();
-    };
+      });
+      
+      return () => {
+        ignore = true;
+        subscription?.unsubscribe();
+      };
+    } catch (error) {
+      console.error("Error setting up auth state listener:", error);
+      setLoading(false);
+    }
   }, [router, pathname, isPublicRoute]);
 
   // Profile check
