@@ -1,175 +1,218 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  ArrowLeft,
-  ExternalLink,
   QrCode,
-  AlertTriangle,
-  RefreshCw,
+  BarChart3,
+  Clock,
+  Users,
+  Settings,
+  Plus,
+  ArrowRight,
 } from "lucide-react";
-import { MenuManagement } from "@/components/menu-management";
-import { LiveOrders } from "@/components/live-orders";
-import {
-  getValidatedSession,
-  signOutUser,
-  type AuthSession,
-} from "@/lib/supabase";
-import { logger } from "@/lib/logger";
+import { supabase } from "@/lib/supabase";
+import LiveOrders from "@/components/live-orders";
+import MenuManagement from "@/components/menu-management";
 
-export default function VenueDashboard() {
-  const params = useParams() || {};
-  const router = useRouter();
-  const venueId = (params as Record<string, any>).venueId as string;
-
-  const [session, setSession] = useState<AuthSession | null>(null);
+export default function VenueDashboardPage({ params }: { params: { venueId: string } }) {
+  const [session, setSession] = useState<any>(null);
+  const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    logger.info("Initializing venue dashboard", { venueId });
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      
+      if (session?.user) {
+        // Fetch venue for the user
+        const { data: venueData, error } = await supabase
+          .from("venues")
+          .select("*")
+          .eq("owner_id", session.user.id)
+          .single();
+        
+        if (!error && venueData) {
+          setVenue(venueData);
+        }
+      }
+      
+      setLoading(false);
+    };
+    
+    getSession();
 
-    const validatedSession = getValidatedSession();
-    if (!validatedSession) {
-      logger.warn("No valid session found, redirecting to sign-in");
-      router.push("/sign-in");
-      return;
-    }
-
-    if (validatedSession.venue.venue_id !== venueId) {
-      logger.warn("Session venue mismatch", {
-        sessionVenueId: validatedSession.venue.venue_id,
-        requestedVenueId: venueId,
-      });
-      router.push(`/dashboard/${validatedSession.venue.venue_id}`);
-      return;
-    }
-
-    logger.info("Session validated successfully", {
-      userId: validatedSession.user.id,
-      venueId: validatedSession.venue.venue_id,
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
     });
-    setSession(validatedSession);
-    setLoading(false);
-  }, [venueId, router]);
 
-  const handleSignOut = async () => {
-    await signOutUser();
-    setSession(null);
-    router.push("/");
-  };
-
-  const orderPageUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/order?venue=${venueId}&table=1`
-      : "";
-  const qrCodeUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/generate-qr?venue=${venueId}`
-      : "";
+    return () => subscription.unsubscribe();
+  }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4" />
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
   if (!session) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Session expired. Please sign in again.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    router.replace("/sign-in");
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {venue?.name || "My Venue"}
+          </h1>
+          <p className="text-gray-600">
+            Manage your venue operations and track performance
+          </p>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <ExternalLink className="mr-2 h-5 w-5" />
-                Customer Order Page
-              </CardTitle>
-              <CardDescription>
-                Direct link for customers to place orders
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <code className="text-sm break-all">{orderPageUrl}</code>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Today's Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">0</p>
                 </div>
-                <Button
-                  onClick={() => window.open(orderPageUrl, "_blank")}
-                  className="w-full"
-                  variant="outline"
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Open Order Page
-                </Button>
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-blue-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <QrCode className="mr-2 h-5 w-5" />
-                QR Code Generator
-              </CardTitle>
-              <CardDescription>
-                Generate QR codes for table ordering
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={() => window.open(qrCodeUrl, "_blank")}
-                className="w-full"
-              >
-                <QrCode className="mr-2 h-4 w-4" />
-                Generate QR Codes
-              </Button>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Revenue</p>
+                  <p className="text-2xl font-bold text-gray-900">£0.00</p>
+                </div>
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Active Tables</p>
+                  <p className="text-2xl font-bold text-gray-900">0</p>
+                </div>
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Users className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Menu Items</p>
+                  <p className="text-2xl font-bold text-gray-900">0</p>
+                </div>
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <Settings className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Dashboard */}
+        {/* Main Content */}
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="orders">Live Orders</TabsTrigger>
             <TabsTrigger value="menu">Menu Management</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="orders">
-            <LiveOrders venueId={venueId} session={session} />
+          <TabsContent value="orders" className="space-y-4">
+            <LiveOrders venueId={venue?.venue_id || params.venueId} />
           </TabsContent>
 
-          <TabsContent value="menu">
-            <MenuManagement venueId={venueId} session={session} />
+          <TabsContent value="menu" className="space-y-4">
+            <MenuManagement venueId={venue?.venue_id || params.venueId} />
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Venue Settings</CardTitle>
+                <CardDescription>
+                  Manage your venue information and preferences
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Venue Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Venue Name
+                        </label>
+                        <input
+                          type="text"
+                          value={venue?.name || ""}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="Enter venue name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Business Type
+                        </label>
+                        <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                          <option value="restaurant">Restaurant</option>
+                          <option value="cafe">Cafe</option>
+                          <option value="bar">Bar</option>
+                          <option value="food-truck">Food Truck</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-2">Quick Actions</h4>
+                    <div className="flex space-x-4">
+                      <Button variant="outline">
+                        <QrCode className="mr-2 h-4 w-4" />
+                        Generate QR Codes
+                      </Button>
+                      <Button variant="outline">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Menu Items
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
