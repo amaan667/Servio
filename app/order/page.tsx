@@ -274,7 +274,7 @@ export default function CustomerOrderPage() {
       const orderItems = orderData.items.map((item) => ({
         order_id: data.id,
         menu_item_id: item.menu_item_id,
-        quantity: item.quantity,
+            quantity: item.quantity,
         unit_price: item.price,
         total_price: item.price * item.quantity,
         item_name: item.item_name,
@@ -344,17 +344,17 @@ export default function CustomerOrderPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Demo Fallback Notification */}
-      {isDemoFallback && (
-        <div className="bg-blue-50 border-b border-blue-200">
-          <div className="max-w-7xl mx-auto px-4 py-2">
-            <div className="flex items-center justify-center text-sm text-blue-700">
-              <span className="font-medium">Demo Mode:</span>
-              <span className="ml-1">You're viewing a sample menu. This is perfect for testing the ordering experience!</span>
+        {/* Demo Fallback Notification */}
+        {isDemoFallback && (
+          <div className="bg-blue-50 border-b border-blue-200">
+            <div className="max-w-7xl mx-auto px-4 py-2">
+              <div className="flex items-center justify-center text-sm text-blue-700">
+                <span className="font-medium">Demo Mode:</span>
+                <span className="ml-1">You're viewing a sample menu. This is perfect for testing the ordering experience!</span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
@@ -382,15 +382,15 @@ export default function CustomerOrderPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Menu */}
           <div className="lg:col-span-2">
-            {loadingMenu ? (
+        {loadingMenu ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
-            ) : menuError ? (
+        ) : menuError ? (
               <Alert variant="destructive">
                 <AlertDescription>{menuError}</AlertDescription>
               </Alert>
-            ) : menuItems.length === 0 ? (
+        ) : menuItems.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-600">No menu items available.</p>
               </div>
@@ -402,12 +402,12 @@ export default function CustomerOrderPage() {
                       <h2 className="text-xl font-semibold text-gray-900 mb-4 capitalize">
                         {category}
                       </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {menuItems
                           .filter((item) => item.category === category)
                           .map((item) => (
                             <Card key={item.id} className="hover:shadow-md transition-shadow">
-                              <CardContent className="p-4">
+                    <CardContent className="p-4">
                                 <div className="flex justify-between items-start">
                                   <div className="flex-1">
                                     <h3 className="font-semibold text-gray-900">
@@ -419,22 +419,22 @@ export default function CustomerOrderPage() {
                                       </p>
                                     )}
                                     <p className="text-lg font-bold text-purple-600 mt-2">
-                                      £{item.price.toFixed(2)}
+                          £{item.price.toFixed(2)}
                                     </p>
-                                  </div>
-                                  <Button
+                      </div>
+                              <Button
                                     onClick={() => addToCart(item)}
-                                    size="sm"
+                                size="sm"
                                     className="ml-4"
                                   >
                                     <Plus className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
+                              </Button>
                       </div>
-                    </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
                   )
                 )}
               </div>
@@ -444,7 +444,7 @@ export default function CustomerOrderPage() {
           {/* Cart */}
           <div className={`lg:block ${showMobileCart ? "block" : "hidden"}`}>
             <Card className="sticky top-4">
-              <CardHeader>
+                <CardHeader>
                 <CardTitle className="flex items-center">
                   <ShoppingCart className="mr-2 h-5 w-5" />
                   Your Order
@@ -452,15 +452,15 @@ export default function CustomerOrderPage() {
                 <CardDescription>
                   {getTotalItems()} items • £{getTotalPrice().toFixed(2)}
                 </CardDescription>
-              </CardHeader>
+                </CardHeader>
               <CardContent>
-                {cart.length === 0 ? (
+                  {cart.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
                     Your cart is empty. Add some items to get started!
                   </p>
-                ) : (
+                  ) : (
                   <div className="space-y-4">
-                    {cart.map((item) => (
+                        {cart.map((item) => (
                       <div key={item.id} className="border-b pb-4 last:border-b-0">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
@@ -475,7 +475,7 @@ export default function CustomerOrderPage() {
                                 Note: {item.specialInstructions}
                               </p>
                             )}
-                          </div>
+                            </div>
                           <div className="flex items-center space-x-2 ml-4">
                             <Button
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -485,21 +485,21 @@ export default function CustomerOrderPage() {
                               <Minus className="h-3 w-3" />
                             </Button>
                             <span className="w-8 text-center">{item.quantity}</span>
-                            <Button
+                                <Button
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              size="sm"
-                              variant="outline"
-                            >
+                                  size="sm"
+                                  variant="outline"
+                                >
                               <Plus className="h-3 w-3" />
-                            </Button>
-                            <Button
+                                </Button>
+                                <Button
                               onClick={() => removeFromCart(item.id)}
-                              size="sm"
+                                  size="sm"
                               variant="ghost"
                               className="text-red-600 hover:text-red-700"
-                            >
+                                >
                               <X className="h-3 w-3" />
-                            </Button>
+                                </Button>
                           </div>
                         </div>
                         <Textarea
@@ -531,11 +531,11 @@ export default function CustomerOrderPage() {
                       </Button>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
       </div>
 
       {/* Checkout Modal */}

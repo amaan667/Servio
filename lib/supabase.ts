@@ -5,8 +5,15 @@ import { logger } from "./logger";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Create single Supabase client instance
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create single Supabase client instance with proper configuration
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  }
+});
 
 // Types
 export interface User {
@@ -205,27 +212,42 @@ export async function signInWithGoogle() {
       currentOrigin: typeof window !== "undefined" ? window.location.origin : "server-side"
     });
 
-    // Determine the correct redirect URL
+    // Force Railway domain in production - more aggressive approach
     let redirectTo;
     
     // Check if we're in a production environment
     const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
     
-    if (isProduction && process.env.NEXT_PUBLIC_SITE_URL) {
-      // In production, always use the Railway domain
-      redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
-      console.log("Using production Railway domain:", redirectTo);
-    } else if (typeof window !== "undefined") {
-      // In development, use the current origin
-      redirectTo = `${window.location.origin}/dashboard`;
-      console.log("Using development localhost domain:", redirectTo);
+    if (isProduction) {
+      // In production, ALWAYS use Railway domain, no fallbacks
+      if (process.env.NEXT_PUBLIC_SITE_URL) {
+        redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
+        console.log("✅ Using production Railway domain:", redirectTo);
+      } else {
+        console.error("❌ NEXT_PUBLIC_SITE_URL not found in production!");
+        redirectTo = "https://servio-production.up.railway.app/dashboard";
+        console.log("🔄 Using hardcoded Railway domain:", redirectTo);
+      }
     } else {
-      // Server-side fallback
-      redirectTo = undefined;
-      console.log("No redirect URL available (server-side)");
+      // In development, use localhost
+      if (typeof window !== "undefined") {
+        redirectTo = `${window.location.origin}/dashboard`;
+        console.log("🔄 Using development localhost domain:", redirectTo);
+      } else {
+        redirectTo = undefined;
+        console.log("❌ No redirect URL available (server-side)");
+      }
     }
     
-    console.log("OAuth redirect configuration:", { isProduction, redirectTo });
+    console.log("Final OAuth redirect configuration:", { 
+      isProduction, 
+      redirectTo,
+      environment: {
+        RAILWAY_ENV: process.env.RAILWAY_ENVIRONMENT,
+        NODE_ENV: process.env.NODE_ENV,
+        SITE_URL: process.env.NEXT_PUBLIC_SITE_URL
+      }
+    });
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -239,14 +261,14 @@ export async function signInWithGoogle() {
     });
     
     if (error) {
-      console.error("Google OAuth error:", error);
+      console.error("❌ Google OAuth error:", error);
       throw error;
     }
     
-    console.log("Google OAuth initiated successfully", { redirectTo });
+    console.log("✅ Google OAuth initiated successfully", { redirectTo });
     return data;
   } catch (error) {
-    console.error("Google sign-in failed:", error);
+    console.error("❌ Google sign-in failed:", error);
     throw error;
   }
 }

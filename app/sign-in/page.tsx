@@ -92,9 +92,20 @@ export default function SignInPage() {
               onClick={async () => {
                 setLoading(true);
                 setError(null);
+                
+                // Debug the current environment
+                console.log("Sign-in page environment:", {
+                  currentOrigin: window.location.origin,
+                  isProduction: process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production',
+                  RAILWAY_ENV: process.env.RAILWAY_ENVIRONMENT,
+                  NODE_ENV: process.env.NODE_ENV,
+                  SITE_URL: process.env.NEXT_PUBLIC_SITE_URL
+                });
+                
                 try {
                   await signInWithGoogle();
                 } catch (err: any) {
+                  console.error("Google sign-in error on sign-in page:", err);
                   setError("Google sign-in failed. Please try again.");
                   setLoading(false);
                 }
