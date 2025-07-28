@@ -341,20 +341,31 @@ export async function signInUser(email: string, password: string) {
 export async function signInWithGoogle() {
   if (!supabase) throw new Error("Supabase client not initialized");
   
-  const { data, error } = await supabase.auth.signInWithOAuth({ 
-    provider: 'google',
-    options: {
-      redirectTo: typeof window !== "undefined" 
-        ? `${window.location.origin}/dashboard`
-        : undefined
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({ 
+      provider: 'google',
+      options: {
+        redirectTo: typeof window !== "undefined" 
+          ? `${window.location.origin}/dashboard`
+          : undefined,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      }
+    });
+    
+    if (error) {
+      console.error("Google OAuth error:", error);
+      throw error;
     }
-  });
-  
-  if (error) {
+    
+    console.log("Google OAuth initiated successfully");
+    return data;
+  } catch (error) {
+    console.error("Google sign-in failed:", error);
     throw error;
   }
-  
-  return data;
 }
 
 // Sign out function
