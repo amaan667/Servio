@@ -63,12 +63,10 @@ export default function GenerateQRPage() {
   }
 
   const venueId = venue?.venue_id || "demo";
-  const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
-  const orderUrl = isProduction && process.env.NEXT_PUBLIC_SITE_URL
+  // ALWAYS use Railway domain - never localhost
+  const orderUrl = process.env.NEXT_PUBLIC_SITE_URL
     ? `${process.env.NEXT_PUBLIC_SITE_URL}/order?venue=${venueId}&table=${tableNumber}`
-    : typeof window !== "undefined" 
-      ? `${window.location.origin}/order?venue=${venueId}&table=${tableNumber}`
-      : "";
+    : `https://servio-production.up.railway.app/order?venue=${venueId}&table=${tableNumber}`;
 
   const handleCopy = async () => {
     try {

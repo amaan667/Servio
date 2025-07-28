@@ -89,13 +89,10 @@ export async function signUpUser(
   try {
     logger.info("Attempting sign up", { email, fullName });
 
-    // Sign up with Supabase Auth
-    const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
-    const emailRedirectTo = isProduction && process.env.NEXT_PUBLIC_SITE_URL
+    // Sign up with Supabase Auth - ALWAYS use Railway domain
+    const emailRedirectTo = process.env.NEXT_PUBLIC_SITE_URL
       ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
-      : typeof window !== "undefined"
-        ? `${window.location.origin}/dashboard`
-        : undefined;
+      : "https://servio-production.up.railway.app/dashboard";
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -228,10 +225,9 @@ export async function signInWithGoogle() {
         console.log("🔄 Using hardcoded Railway domain:", redirectTo);
       }
     } else {
-      // In development, try to use localhost if possible
-      // If that fails, fall back to Railway domain
-      redirectTo = "http://localhost:3000/dashboard";
-      console.log("🔄 Development: Using localhost domain for OAuth");
+      // NEVER use localhost - always use Railway domain
+      redirectTo = "https://servio-production.up.railway.app/dashboard";
+      console.log("🔄 Development: Using Railway domain for OAuth (no localhost)");
     }
     
     console.log("Final OAuth redirect configuration:", { 
@@ -258,30 +254,8 @@ export async function signInWithGoogle() {
     if (error) {
       console.error("❌ Google OAuth error:", error);
       
-      // If localhost fails, try Railway domain as fallback
-      if (!isProduction && redirectTo.includes('localhost')) {
-        console.log("🔄 Trying Railway domain as fallback...");
-        const fallbackRedirectTo = "https://servio-production.up.railway.app/dashboard";
-        
-        const { data: fallbackData, error: fallbackError } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: fallbackRedirectTo,
-            queryParams: { 
-              access_type: "offline", 
-              prompt: "consent" 
-            }
-          }
-        });
-        
-        if (fallbackError) {
-          console.error("❌ Fallback OAuth also failed:", fallbackError);
-          throw fallbackError;
-        }
-        
-        console.log("✅ Fallback OAuth initiated successfully", { redirectTo: fallbackRedirectTo });
-        return fallbackData;
-      }
+      // No fallback needed - we never use localhost
+      console.error("❌ OAuth failed - this should not happen with Railway domain");
       
       throw error;
     }
