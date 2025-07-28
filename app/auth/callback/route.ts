@@ -21,12 +21,8 @@ export async function GET(request: NextRequest) {
         const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
         let baseUrl;
         
-        if (isProduction) {
-          baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
-        } else {
-          // In development, redirect to localhost
-          baseUrl = "http://localhost:3000";
-        }
+        // ALWAYS use Railway domain - never localhost
+        baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
         
         const redirectUrl = `${baseUrl}${next}`;
         console.log('Auth callback redirecting to:', redirectUrl);
