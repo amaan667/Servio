@@ -83,15 +83,18 @@ export async function signUpUser(
     logger.info("Attempting sign up", { email, fullName });
 
     // Sign up with Supabase Auth
+    const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
+    const emailRedirectTo = isProduction && process.env.NEXT_PUBLIC_SITE_URL
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
+      : typeof window !== "undefined"
+        ? `${window.location.origin}/dashboard`
+        : undefined;
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL
-          ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
-          : typeof window !== "undefined"
-            ? `${window.location.origin}/dashboard`
-            : undefined,
+        emailRedirectTo,
         data: { full_name: fullName },
       },
     });
@@ -194,12 +197,22 @@ export async function signInUser(email: string, password: string) {
 
 export async function signInWithGoogle() {
   try {
-    // Use production URL from environment, fallback to window.location.origin for development
-    const redirectTo = process.env.NEXT_PUBLIC_SITE_URL
+    // Debug environment variables
+    console.log("Environment check:", {
+      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+      NODE_ENV: process.env.NODE_ENV,
+      RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT
+    });
+
+    // Always use Railway domain in production, fallback to window.location.origin for development
+    const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
+    const redirectTo = isProduction && process.env.NEXT_PUBLIC_SITE_URL
       ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
       : typeof window !== "undefined"
         ? `${window.location.origin}/dashboard`
         : undefined;
+    
+    console.log("OAuth redirect configuration:", { isProduction, redirectTo });
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
