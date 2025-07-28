@@ -48,6 +48,37 @@ export default function CompleteProfilePage() {
 
       const venueId = `venue-${user.id.slice(0, 8)}`;
       
+      // First check if venue already exists
+      const { data: existingVenue, error: checkError } = await supabase
+        .from("venues")
+        .select("*")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+
+      if (existingVenue) {
+        // Update existing venue
+        const { data: updatedVenue, error: updateError } = await supabase
+          .from("venues")
+          .update({
+            name: formData.venueName,
+            business_type: formData.businessType,
+            address: formData.address || null,
+            phone: formData.phone || null,
+          })
+          .eq("owner_id", user.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        logger.info("Profile updated successfully", { userId: user.id, venueId });
+        router.replace("/dashboard");
+        return;
+      }
+
+      // Create new venue
       const { data: venue, error: venueError } = await supabase
         .from("venues")
         .insert({
@@ -63,7 +94,18 @@ export default function CompleteProfilePage() {
 
       if (venueError) {
         if (venueError.code === "23505") {
-          // Venue already exists, update it
+          // Unique constraint violation - venue already exists
+          const { data: existingVenue, error: fetchError } = await supabase
+            .from("venues")
+            .select("*")
+            .eq("owner_id", user.id)
+            .single();
+
+          if (fetchError) {
+            throw fetchError;
+          }
+
+          // Update the existing venue
           const { data: updatedVenue, error: updateError } = await supabase
             .from("venues")
             .update({
