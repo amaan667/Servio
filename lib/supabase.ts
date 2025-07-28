@@ -193,10 +193,14 @@ export async function signInUser(email: string, password: string) {
 
 export async function signInWithGoogle() {
   try {
+    // Use environment variable for production, fallback to window.location.origin for development
+    const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+      (typeof window !== "undefined" ? window.location.origin : undefined);
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/dashboard` : undefined,
+        redirectTo: redirectUrl ? `${redirectUrl}/dashboard` : undefined,
         queryParams: { 
           access_type: "offline", 
           prompt: "consent" 
@@ -209,7 +213,7 @@ export async function signInWithGoogle() {
       throw error;
     }
     
-    console.log("Google OAuth initiated successfully");
+    console.log("Google OAuth initiated successfully", { redirectUrl });
     return data;
   } catch (error) {
     console.error("Google sign-in failed:", error);
