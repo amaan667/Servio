@@ -1,15 +1,12 @@
-import { createClient as SupabaseCreateClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { logger } from "./logger";
 
 // Environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const hasSupabaseConfig = !!(supabaseUrl && supabaseAnonKey);
-
-export const supabase = hasSupabaseConfig
-  ? SupabaseCreateClient(supabaseUrl!, supabaseAnonKey!)
-  : null;
+// Create single Supabase client instance
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Types
 export interface User {
@@ -74,67 +71,6 @@ export interface AuthSession {
   venue: Venue;
 }
 
-// Session management
-let currentSession: AuthSession | null = null;
-
-export function setSession(session: AuthSession | null) {
-  currentSession = session;
-  if (typeof window !== "undefined") {
-    if (session) {
-      localStorage.setItem("servio_session", JSON.stringify(session));
-    } else {
-      localStorage.removeItem("servio_session");
-    }
-  }
-}
-
-export function getValidatedSession(): AuthSession | null {
-  if (currentSession) return currentSession;
-
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("servio_session");
-    if (stored) {
-      try {
-        const session = safeJsonParse(stored);
-        if (session) {
-          currentSession = session;
-          return session;
-        } else {
-          logger.error("Failed to parse stored session: not valid JSON", {
-            stored,
-          });
-          localStorage.removeItem("servio_session");
-        }
-      } catch (error) {
-        logger.error("Failed to parse stored session", { error });
-        localStorage.removeItem("servio_session");
-      }
-    }
-  }
-
-  return null;
-}
-
-function safeJsonParse(str: string) {
-  const trimmed = (str || "").trim();
-  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-    try {
-      return JSON.parse(trimmed);
-    } catch (e) {
-      console.log("safeJsonParse error:", e, "input:", trimmed);
-      return null;
-    }
-  }
-  return null;
-}
-
-export function clearSession() {
-  currentSession = null;
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("servio_session");
-  }
-}
-
 // Auth functions
 export async function signUpUser(
   email: string,
@@ -143,10 +79,6 @@ export async function signUpUser(
   venueName: string,
   venueType: string,
 ) {
-  if (!supabase) {
-    return { success: false, message: "Database connection not available" };
-  }
-
   try {
     logger.info("Attempting sign up", { email, fullName });
 
@@ -227,19 +159,9 @@ export async function signUpUser(
         venueData = newVenue;
       }
     }
-    // Set session (for client-side convenience)
-    const session: AuthSession = {
-      user: {
-        id: userId,
-        email: data.user.email!,
-        full_name: fullName,
-        created_at: data.user.created_at!,
-      },
-      venue: venueData,
-    };
-    setSession(session);
+    
     logger.info("Sign up successful", { userId, venueId });
-    return { success: true, session };
+    return { success: true };
   } catch (error) {
     logger.error("Sign up error", { error });
     return { success: false, message: "An unexpected error occurred" };
@@ -247,10 +169,6 @@ export async function signUpUser(
 }
 
 export async function signInUser(email: string, password: string) {
-  if (!supabase) {
-    return { success: false, message: "Database connection not available" };
-  }
-
   try {
     logger.info("Attempting sign in", { email });
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -264,74 +182,9 @@ export async function signInUser(email: string, password: string) {
         message: error?.message || "Invalid email or password",
       };
     }
-    // Fetch venue for user
-    const userId = data.user.id;
-    let { data: venueData, error: venueError } = await supabase
-      .from("venues")
-      .select("*")
-      .eq("owner_id", userId)
-      .single();
-    if (venueError || !venueData) {
-      // Try to create a venue for this user
-      const venueId = `venue-${userId.slice(0, 8)}`;
-      const defaultVenueName =
-        data.user.user_metadata?.venueName ||
-        (data.user.user_metadata?.full_name
-          ? `${data.user.user_metadata.full_name.split(" ")[0]}'s Venue`
-          : "My Venue");
-      const { data: newVenue, error: createVenueError } = await supabase
-        .from("venues")
-        .insert({
-          venue_id: venueId,
-          name: defaultVenueName,
-          business_type: data.user.user_metadata?.venueType || "restaurant",
-          owner_id: userId,
-        })
-        .select()
-        .single();
-      if (createVenueError && createVenueError.code === "23505") {
-        // Unique violation
-        // Venue already exists, fetch it
-        const { data: existingVenue, error: fetchError } = await supabase
-          .from("venues")
-          .select("*")
-          .eq("owner_id", userId)
-          .single();
-        if (fetchError || !existingVenue) {
-          logger.error(
-            "Failed to fetch existing venue after unique violation",
-            { error: fetchError },
-          );
-          return {
-            success: false,
-            message: "Failed to fetch existing venue for this user",
-          };
-        }
-        venueData = existingVenue;
-      } else if (createVenueError || !newVenue) {
-        logger.error("Failed to create venue on sign-in", {
-          error: createVenueError,
-        });
-        return {
-          success: false,
-          message: "Failed to create venue for this user",
-        };
-      } else {
-        venueData = newVenue;
-      }
-    }
-    // Set session (for client-side convenience)
-    const session: AuthSession = {
-      user: {
-        id: userId,
-        email: data.user.email!,
-        full_name: data.user.user_metadata?.full_name || "",
-        created_at: data.user.created_at!,
-      },
-      venue: venueData,
-    };
-    setSession(session);
-    return { success: true, session };
+    
+    logger.info("Sign in successful", { userId: data.user.id });
+    return { success: true };
   } catch (error) {
     logger.error("Sign in error", { error });
     return { success: false, message: "An unexpected error occurred" };
@@ -339,41 +192,19 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  if (!supabase) throw new Error("Supabase client not initialized");
-  
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({ 
-      provider: 'google',
-      options: {
-        redirectTo: typeof window !== "undefined" 
-          ? `${window.location.origin}/dashboard`
-          : undefined,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        }
-      }
-    });
-    
-    if (error) {
-      console.error("Google OAuth error:", error);
-      throw error;
+  return supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/dashboard` : undefined,
+      queryParams: { access_type: "offline", prompt: "consent" }
     }
-    
-    console.log("Google OAuth initiated successfully");
-    return data;
-  } catch (error) {
-    console.error("Google sign-in failed:", error);
-    throw error;
-  }
+  });
 }
 
 // Sign out function
 export async function signOutUser() {
-  if (!supabase) return;
   try {
     await supabase.auth.signOut();
-    clearSession();
     logger.info("User signed out");
   } catch (error) {
     logger.error("Sign out error", { error });
@@ -385,10 +216,6 @@ export async function createMenuItem(
   venueId: string,
   item: Omit<MenuItem, "id" | "venue_id" | "created_at">,
 ) {
-  if (!supabase) {
-    return { success: false, message: "Database connection not available" };
-  }
-
   try {
     const { data, error } = await supabase
       .from("menu_items")
@@ -416,10 +243,6 @@ export async function updateMenuItem(
   itemId: string,
   updates: Partial<MenuItem>,
 ) {
-  if (!supabase) {
-    return { success: false, message: "Database connection not available" };
-  }
-
   try {
     const { data, error } = await supabase
       .from("menu_items")
@@ -442,10 +265,6 @@ export async function updateMenuItem(
 }
 
 export async function deleteMenuItem(itemId: string) {
-  if (!supabase) {
-    return { success: false, message: "Database connection not available" };
-  }
-
   try {
     const { error } = await supabase
       .from("menu_items")
@@ -480,10 +299,6 @@ export async function createOrder(orderData: {
   total_amount: number;
   notes?: string;
 }) {
-  if (!supabase) {
-    return { success: false, message: "Database connection not available" };
-  }
-
   try {
     logger.info("Creating order", {
       venueId: orderData.venue_id,
@@ -545,10 +360,6 @@ export async function createOrder(orderData: {
 
 // Venue functions
 export async function createVenueIfNotExists(venueId: string) {
-  if (!supabase) {
-    throw new Error("Database connection not available");
-  }
-
   // Try to find existing venue
   const { data: existingVenue, error: findError } = await supabase
     .from("venues")
@@ -576,13 +387,4 @@ export async function createVenueIfNotExists(venueId: string) {
   }
 
   return newVenue;
-}
-
-// Export validation function
-export const validateSession = getValidatedSession;
-
-export function createClient() {
-  if (!supabaseUrl || !supabaseAnonKey)
-    throw new Error("Supabase config missing");
-  return SupabaseCreateClient(supabaseUrl, supabaseAnonKey);
 }

@@ -20,7 +20,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { getValidatedSession, type AuthSession } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 function PricingQuickCompare() {
   return (
@@ -71,15 +71,22 @@ function PricingQuickCompare() {
 }
 
 export default function HomePage() {
-  const [session, setSession] = useState<AuthSession | null>(null);
+  const [session, setSession] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const validatedSession = getValidatedSession();
-    if (validatedSession) {
-      setSession(validatedSession);
-    }
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+    };
+    getSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleGetStarted = () => {
