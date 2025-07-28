@@ -4,140 +4,85 @@ import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 
-// Simple in-memory cache for session/profile
-let cachedUser: any = null;
-let cachedProfileComplete: boolean | null = null;
-
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(cachedUser);
-  const [profileComplete, setProfileComplete] = useState<boolean | null>(cachedProfileComplete);
+  const [session, setSession] = useState<any>(null);
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
-  // Public routes that don't require authentication
+  // Only these routes are public:
   const publicRoutes = ['/', '/sign-in', '/sign-up', '/order'];
   const isPublicRoute = pathname ? publicRoutes.some(route => pathname.startsWith(route)) : false;
 
   useEffect(() => {
     let ignore = false;
-    
-    const initializeAuth = async () => {
-      if (!supabase) return;
-      
-      // Get current session
+    const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (ignore) return;
-      
-      if (session?.user) {
-        setUser(session.user);
-        cachedUser = session.user;
-        setLoading(false);
-      } else {
-        setUser(null);
-        cachedUser = null;
-        setLoading(false);
-        
-        // Only redirect to sign-in if not on a public route
-        if (!isPublicRoute) {
-          router.replace("/sign-in");
-        }
+      setSession(session);
+      setLoading(false);
+
+      // If no session and not on a public page, redirect:
+      if (!session && !isPublicRoute) {
+        router.replace("/sign-in");
       }
     };
 
-    initializeAuth();
+    checkSession();
 
-    // Listen for auth state changes
-    if (supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          if (ignore) return;
-          
-          console.log("Auth state changed:", event, session?.user?.email);
-          
-          if (session?.user) {
-            setUser(session.user);
-            cachedUser = session.user;
-            setLoading(false);
-            
-            // If user just signed in and we're on sign-in page, redirect to dashboard
-            if (event === 'SIGNED_IN' && pathname === '/sign-in') {
-              router.replace("/dashboard");
-            }
-          } else {
-            setUser(null);
-            cachedUser = null;
-            setLoading(false);
-            
-            // Only redirect to sign-in if not on a public route
-            if (!isPublicRoute) {
-              router.replace("/sign-in");
-            }
-          }
-        }
-      );
-
-      return () => {
-        ignore = true;
-        subscription?.unsubscribe();
-      };
-    }
+    // Listen for changes:
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (!session && !isPublicRoute) {
+        router.replace("/sign-in");
+      }
+    });
+    return () => {
+      ignore = true;
+      subscription?.unsubscribe();
+    };
   }, [router, pathname, isPublicRoute]);
 
+  // Profile check
   useEffect(() => {
-    if (!user) return;
-    if (cachedProfileComplete !== null) {
-      setProfileComplete(cachedProfileComplete);
-      setLoading(false);
-      return;
-    }
-    
+    if (!session?.user) return;
     let ignore = false;
-    async function checkProfile() {
-      if (!supabase || !user) return;
-      
+    const checkProfile = async () => {
       const { data, error } = await supabase
         .from("venues")
         .select("*")
-        .eq("owner_id", user.id)
+        .eq("owner_id", session.user.id)
         .maybeSingle();
-        
-      if (!ignore) {
-        if (!data || error) {
-          setProfileComplete(false);
-          cachedProfileComplete = false;
-          // Only redirect to complete-profile if not already there
-          if (pathname !== '/complete-profile') {
-            router.replace("/complete-profile");
-          }
-        } else {
-          setProfileComplete(true);
-          cachedProfileComplete = true;
-          setLoading(false);
+      if (ignore) return;
+      if (!data || error) {
+        setProfileComplete(false);
+        if (pathname !== '/complete-profile') {
+          router.replace("/complete-profile");
         }
+      } else {
+        setProfileComplete(true);
       }
-    }
-    
+    };
     checkProfile();
     return () => { ignore = true; };
-  }, [user, router, pathname]);
+  }, [session, pathname, router]);
 
-  // Don't show loading for public routes
-  if (isPublicRoute && !user) {
-    return <>{children}</>;
+  // Render logic:
+  if (isPublicRoute) return <>{children}</>;
+  if (loading || !session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
+      </div>
+    );
   }
-
-  // Don't show loading for complete-profile page
-  if (pathname === '/complete-profile') {
-    return <>{children}</>;
+  if (profileComplete === false && pathname !== "/complete-profile") {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
+      </div>
+    );
   }
-
-  if (loading || profileComplete === false) return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
-    </div>
-  );
-  
   return <>{children}</>;
 } 
