@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         if (isProduction) {
           baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
         } else {
+          // In development, redirect to localhost
           baseUrl = "http://localhost:3000";
         }
         

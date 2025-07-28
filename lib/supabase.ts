@@ -212,14 +212,13 @@ export async function signInWithGoogle() {
       currentOrigin: typeof window !== "undefined" ? window.location.origin : "server-side"
     });
 
-    // Determine redirect URL based on environment
-    let redirectTo;
-    
     // Check if we're in a production environment
     const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
     
+    let redirectTo;
+    
     if (isProduction) {
-      // In production, ALWAYS use Railway domain
+      // In production, use Railway domain
       if (process.env.NEXT_PUBLIC_SITE_URL) {
         redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
         console.log("✅ Using production Railway domain:", redirectTo);
@@ -229,9 +228,10 @@ export async function signInWithGoogle() {
         console.log("🔄 Using hardcoded Railway domain:", redirectTo);
       }
     } else {
-      // In development, use localhost
+      // In development, try to use localhost if possible
+      // If that fails, fall back to Railway domain
       redirectTo = "http://localhost:3000/dashboard";
-      console.log("🔄 Using development localhost domain:", redirectTo);
+      console.log("🔄 Development: Using localhost domain for OAuth");
     }
     
     console.log("Final OAuth redirect configuration:", { 
@@ -257,6 +257,32 @@ export async function signInWithGoogle() {
     
     if (error) {
       console.error("❌ Google OAuth error:", error);
+      
+      // If localhost fails, try Railway domain as fallback
+      if (!isProduction && redirectTo.includes('localhost')) {
+        console.log("🔄 Trying Railway domain as fallback...");
+        const fallbackRedirectTo = "https://servio-production.up.railway.app/dashboard";
+        
+        const { data: fallbackData, error: fallbackError } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: fallbackRedirectTo,
+            queryParams: { 
+              access_type: "offline", 
+              prompt: "consent" 
+            }
+          }
+        });
+        
+        if (fallbackError) {
+          console.error("❌ Fallback OAuth also failed:", fallbackError);
+          throw fallbackError;
+        }
+        
+        console.log("✅ Fallback OAuth initiated successfully", { redirectTo: fallbackRedirectTo });
+        return fallbackData;
+      }
+      
       throw error;
     }
     
