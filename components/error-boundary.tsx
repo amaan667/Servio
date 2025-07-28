@@ -24,6 +24,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    
+    // Log detailed error information for debugging
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      errorInfo: errorInfo
+    });
   }
 
   render() {
@@ -42,6 +50,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <p className="text-gray-600 mb-6">
                 We're sorry, but something unexpected happened. Please try refreshing the page.
               </p>
+              {process.env.NODE_ENV === 'development' && this.state.error && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-left">
+                  <p className="text-sm font-medium text-red-800">Error Details:</p>
+                  <p className="text-xs text-red-600 mt-1">{this.state.error.message}</p>
+                </div>
+              )}
               <button
                 onClick={() => window.location.reload()}
                 className="bg-servio-purple text-white px-4 py-2 rounded-md hover:bg-servio-purple/90"
