@@ -18,7 +18,7 @@ import {
   XCircle,
   AlertTriangle,
 } from "lucide-react";
-import { supabase, hasSupabaseConfig, type AuthSession } from "@/lib/supabase";
+import { supabase, type AuthSession } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 // Add OrderWithItems type locally since it's not exported from supabase
@@ -58,13 +58,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     logger.info("LIVE_ORDERS: Fetching orders", {
       venueUuid,
       hasSupabase: !!supabase,
-      hasConfig: hasSupabaseConfig,
     });
 
     setLoading(true);
     setError(null);
 
-    if (!hasSupabaseConfig || !supabase) {
+    if (!supabase) {
       logger.error("LIVE_ORDERS: Supabase not configured");
       setError("Service is not configured.");
       setLoading(false);

@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import {
   supabase,
-  hasSupabaseConfig,
   type MenuItem as BaseMenuItem,
   type AuthSession,
 } from "@/lib/supabase";
@@ -81,7 +80,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     setLoading(true);
     setError(null);
 
-    if (!hasSupabaseConfig || !supabase) {
+    if (!supabase) {
       logger.error("Supabase not configured");
       setError("Service is not configured.");
       setLoading(false);
@@ -461,7 +460,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
 
   return (
     <div className="space-y-6">
-      {!hasSupabaseConfig && (
+      {!supabase && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>

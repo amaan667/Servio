@@ -212,14 +212,14 @@ export async function signInWithGoogle() {
       currentOrigin: typeof window !== "undefined" ? window.location.origin : "server-side"
     });
 
-    // Force Railway domain in production - more aggressive approach
+    // Determine redirect URL based on environment
     let redirectTo;
     
     // Check if we're in a production environment
     const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
     
     if (isProduction) {
-      // In production, ALWAYS use Railway domain, no fallbacks
+      // In production, ALWAYS use Railway domain
       if (process.env.NEXT_PUBLIC_SITE_URL) {
         redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
         console.log("✅ Using production Railway domain:", redirectTo);
@@ -230,13 +230,8 @@ export async function signInWithGoogle() {
       }
     } else {
       // In development, use localhost
-      if (typeof window !== "undefined") {
-        redirectTo = `${window.location.origin}/dashboard`;
-        console.log("🔄 Using development localhost domain:", redirectTo);
-      } else {
-        redirectTo = undefined;
-        console.log("❌ No redirect URL available (server-side)");
-      }
+      redirectTo = "http://localhost:3000/dashboard";
+      console.log("🔄 Using development localhost domain:", redirectTo);
     }
     
     console.log("Final OAuth redirect configuration:", { 

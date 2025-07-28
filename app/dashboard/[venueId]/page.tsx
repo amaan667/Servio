@@ -16,8 +16,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import LiveOrders from "@/components/live-orders";
-import MenuManagement from "@/components/menu-management";
+import { LiveOrders } from "@/components/live-orders";
+import { MenuManagement } from "@/components/menu-management";
 
 export default function VenueDashboardPage({ params }: { params: { venueId: string } }) {
   const [session, setSession] = useState<any>(null);
@@ -152,11 +152,11 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
           </TabsList>
 
           <TabsContent value="orders" className="space-y-4">
-            <LiveOrders venueId={venue?.venue_id || params.venueId} />
+            <LiveOrders venueId={venue?.venue_id || params.venueId} session={{ user: session?.user, venue }} />
           </TabsContent>
 
           <TabsContent value="menu" className="space-y-4">
-            <MenuManagement venueId={venue?.venue_id || params.venueId} />
+            <MenuManagement venueId={venue?.venue_id || params.venueId} session={{ user: session?.user, venue }} />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">

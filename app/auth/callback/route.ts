@@ -19,9 +19,13 @@ export async function GET(request: NextRequest) {
       if (data.session) {
         // Determine the correct redirect URL
         const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
-        const baseUrl = isProduction && process.env.NEXT_PUBLIC_SITE_URL 
-          ? process.env.NEXT_PUBLIC_SITE_URL 
-          : request.nextUrl.origin;
+        let baseUrl;
+        
+        if (isProduction) {
+          baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
+        } else {
+          baseUrl = "http://localhost:3000";
+        }
         
         const redirectUrl = `${baseUrl}${next}`;
         console.log('Auth callback redirecting to:', redirectUrl);
