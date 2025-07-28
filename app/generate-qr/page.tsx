@@ -63,7 +63,8 @@ export default function GenerateQRPage() {
   }
 
   const venueId = venue?.venue_id || "demo";
-  const orderUrl = process.env.NEXT_PUBLIC_SITE_URL
+  const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
+  const orderUrl = isProduction && process.env.NEXT_PUBLIC_SITE_URL
     ? `${process.env.NEXT_PUBLIC_SITE_URL}/order?venue=${venueId}&table=${tableNumber}`
     : typeof window !== "undefined" 
       ? `${window.location.origin}/order?venue=${venueId}&table=${tableNumber}`
