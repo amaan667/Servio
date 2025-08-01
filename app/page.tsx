@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,9 @@ function PricingQuickCompare() {
 export default function HomePage() {
   const [session, setSession] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [processingOAuth, setProcessingOAuth] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const getSession = async () => {
@@ -88,6 +90,46 @@ export default function HomePage() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      if (!searchParams) return;
+      
+      const code = searchParams.get('code');
+      const error = searchParams.get('error');
+      const errorDescription = searchParams.get('error_description');
+
+      if (error) {
+        console.error('OAuth error:', error, errorDescription);
+        return;
+      }
+
+      if (code && !processingOAuth) {
+        console.log('Processing OAuth callback with code:', code);
+        setProcessingOAuth(true);
+        
+        try {
+          // Let Supabase handle the OAuth callback
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (error) {
+            console.error('Error exchanging code for session:', error);
+          } else {
+            console.log('OAuth callback successful:', data);
+            // Redirect to dashboard after successful OAuth
+            router.push('/dashboard');
+          }
+        } catch (err) {
+          console.error('Error processing OAuth callback:', err);
+        } finally {
+          setProcessingOAuth(false);
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, [searchParams, processingOAuth, router]);
 
   const handleGetStarted = () => {
     if (session) {
@@ -112,6 +154,18 @@ export default function HomePage() {
       router.push("/order?demo=1");
     }
   };
+
+  // Show loading state while processing OAuth
+  if (processingOAuth) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Completing sign in...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
