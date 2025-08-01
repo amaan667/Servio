@@ -31,8 +31,8 @@ export default function DashboardPage() {
       if (session?.user) {
         // Fetch venue for the user
         const { data: venueData, error } = await supabase
-          .from("venues")
-          .select("*")
+        .from("venues")
+        .select("*")
           .eq("owner_id", session.user.id)
           .single();
         
@@ -172,11 +172,11 @@ export default function DashboardPage() {
                 <Button className="w-full justify-start" variant="outline">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Menu Items
-                </Button>
+              </Button>
                 <Button className="w-full justify-start" variant="outline">
-                  <QrCode className="mr-2 h-4 w-4" />
-                  Generate QR Codes
-                </Button>
+                <QrCode className="mr-2 h-4 w-4" />
+                Generate QR Codes
+              </Button>
                 <Button className="w-full justify-start" variant="outline">
                   <Users className="mr-2 h-4 w-4" />
                   Invite Staff
@@ -222,16 +222,16 @@ export default function DashboardPage() {
                   Generate
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </div>
+                    </div>
               
               <div className="flex items-center space-x-4">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                   <span className="text-green-600 font-semibold">3</span>
-                </div>
+                    </div>
                 <div className="flex-1">
                   <h4 className="font-medium">Start receiving orders</h4>
                   <p className="text-sm text-gray-600">Customers can now scan and order</p>
-                </div>
+                  </div>
                 <Badge variant="secondary">Ready</Badge>
               </div>
             </div>

@@ -12,13 +12,13 @@ CREATE TABLE IF NOT EXISTS venues (
   venue_id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
-  address TEXT,
+    address TEXT,
   phone TEXT,
   email TEXT,
   website TEXT,
   logo_url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- =====================================================
@@ -26,20 +26,20 @@ CREATE TABLE IF NOT EXISTS venues (
 -- =====================================================
 -- Stores individual menu items for each venue
 CREATE TABLE IF NOT EXISTS menu_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   venue_id TEXT NOT NULL REFERENCES venues(venue_id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  description TEXT,
-  price DECIMAL(10,2) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
   category TEXT,
   image_url TEXT,
-  available BOOLEAN DEFAULT true,
+    available BOOLEAN DEFAULT true,
   prep_time INTEGER, -- in minutes
   rating DECIMAL(3,2), -- 0.00 to 5.00
   allergens TEXT[], -- array of allergen strings
   dietary_info TEXT[], -- array of dietary info (vegan, gluten-free, etc.)
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Index for efficient venue-based queries
@@ -52,21 +52,21 @@ CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items(category);
 -- =====================================================
 -- Stores customer orders
 CREATE TABLE IF NOT EXISTS orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   venue_id TEXT NOT NULL REFERENCES venues(venue_id) ON DELETE CASCADE,
   customer_name TEXT NOT NULL,
   customer_phone TEXT NOT NULL,
   customer_email TEXT,
   table_number TEXT,
-  total_amount DECIMAL(10,2) NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled')),
   payment_method TEXT,
   payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
   items JSONB NOT NULL, -- Array of order items with quantities and special instructions
   special_instructions TEXT,
   estimated_prep_time INTEGER, -- in minutes
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes for order management
@@ -80,7 +80,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer_phone ON orders(customer_phone);
 -- =====================================================
 -- Tracks menu upload and extraction history
 CREATE TABLE IF NOT EXISTS menu_upload_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   venue_id TEXT NOT NULL REFERENCES venues(venue_id) ON DELETE CASCADE,
   file_name TEXT NOT NULL,
   file_size BIGINT,
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS menu_upload_logs (
   chunk_errors JSONB,
   processing_time_ms INTEGER,
   error_message TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes for upload tracking
@@ -105,13 +105,13 @@ CREATE INDEX IF NOT EXISTS idx_menu_upload_logs_created_at ON menu_upload_logs(c
 -- =====================================================
 -- Stores user accounts for venue management
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
   name TEXT,
   role TEXT DEFAULT 'venue_manager' CHECK (role IN ('admin', 'venue_manager', 'staff')),
   venue_id TEXT REFERENCES venues(venue_id) ON DELETE SET NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes for user management

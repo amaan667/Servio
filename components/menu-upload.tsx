@@ -43,7 +43,7 @@ interface FileValidationResult {
   isValid: boolean;
   message: string;
   file?: File;
-}
+        }
 
 function validateFile(file: File): FileValidationResult {
   // Check file type
@@ -57,15 +57,15 @@ function validateFile(file: File): FileValidationResult {
   // Check file size (10MB limit)
   const fileSizeMB = file.size / (1024 * 1024);
   if (fileSizeMB > 10) {
-    return {
-      isValid: false,
+    return { 
+      isValid: false, 
       message: "File is too large (over 10MB). Please use a smaller file."
     };
   }
-
+  
   if (fileSizeMB > 1) {
-    return {
-      isValid: true,
+    return { 
+      isValid: true, 
       file,
       message: `File is ${fileSizeMB.toFixed(1)}MB. Large files may take longer to process.`
     };
@@ -151,9 +151,9 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
       progress: 10
     });
 
-    const formData = new FormData();
+      const formData = new FormData();
     formData.append("menu", file);
-    formData.append("venueId", venueId);
+      formData.append("venueId", venueId);
 
     try {
       setUploadProgress({
@@ -288,31 +288,31 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="space-y-2">
+              <div className="space-y-2">
               <Label htmlFor="menu-file">Upload Menu PDF</Label>
               <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                 currentStage === 'idle' 
                   ? 'border-gray-300 hover:border-gray-400' 
                   : 'border-blue-300 bg-blue-50'
               }`}>
-                <Input
-                  id="menu-file"
-                  type="file"
+                  <Input
+                    id="menu-file"
+                    type="file"
                   accept=".pdf"
                   onChange={handleFileSelection}
                   disabled={currentStage !== 'idle'}
-                  className="hidden"
-                />
+                    className="hidden"
+                  />
                 <label htmlFor="menu-file" className={`cursor-pointer ${currentStage !== 'idle' ? 'pointer-events-none' : ''}`}>
                   {currentStage === 'idle' ? (
                     <>
-                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600">
-                        Click to upload or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        PDF only, up to 10MB
-                      </p>
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600">
+                    Click to upload or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    PDF only, up to 10MB
+                  </p>
                     </>
                   ) : (
                     <>
@@ -373,16 +373,16 @@ export function MenuUpload({ venueId, onMenuUpdate }: MenuUploadProps) {
                 <div className="text-center p-3 bg-yellow-50 rounded-lg">
                   <div className="font-bold text-yellow-600">{filteredOutCount}</div>
                   <div className="text-gray-600">Filtered Out</div>
-                </div>
+                    </div>
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <div className="font-bold text-blue-600">{extractionResult.chunkErrors?.length || 0}</div>
                   <div className="text-gray-600">Chunk Errors</div>
-                </div>
+                    </div>
                 <div className="text-center p-3 bg-purple-50 rounded-lg">
                   <div className="font-bold text-purple-600">{extractionResult.menuItems.length}</div>
                   <div className="text-gray-600">Total Extracted</div>
-                </div>
-              </div>
+                    </div>
+                  </div>
 
               {/* Filtered Items Table */}
               {filteredItems.length > 0 && (

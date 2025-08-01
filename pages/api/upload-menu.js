@@ -116,7 +116,7 @@ async function extractMenuItemsFromOcr(ocrText) {
       if (!Array.isArray(menuItems)) menuItems = [];
       allMenuItems = allMenuItems.concat(menuItems);
       console.log(`[MENU_EXTRACTION] Chunk ${idx + 1}/${ocrChunks.length}: extracted ${menuItems.length} items.`);
-    } catch (err) {
+  } catch (err) {
       console.error(`[MENU_EXTRACTION] Failed to process chunk ${idx + 1}:`, err);
       chunkErrors.push({ chunk: idx + 1, error: err.message });
     }

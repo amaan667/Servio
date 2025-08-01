@@ -108,10 +108,11 @@ export async function signUpUser(
   try {
     logger.info("Attempting sign up", { email, fullName });
 
-    // Sign up with Supabase Auth - ALWAYS use Railway domain
-    const emailRedirectTo = process.env.NEXT_PUBLIC_SITE_URL
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
-      : "https://servio-production.up.railway.app/dashboard";
+    // Determine redirect URL based on environment
+    const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
+    const emailRedirectTo = isProduction 
+      ? (process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard` : "https://servio-production.up.railway.app/dashboard")
+      : "http://localhost:3000/dashboard";
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -244,9 +245,9 @@ export async function signInWithGoogle() {
         console.log("🔄 Using hardcoded Railway domain:", redirectTo);
       }
     } else {
-      // NEVER use localhost - always use Railway domain
-      redirectTo = "https://servio-production.up.railway.app/dashboard";
-      console.log("🔄 Development: Using Railway domain for OAuth (no localhost)");
+      // In development, use localhost
+      redirectTo = "http://localhost:3000/dashboard";
+      console.log("🔄 Development: Using localhost for OAuth");
     }
     
     console.log("Final OAuth redirect configuration:", { 
@@ -272,10 +273,6 @@ export async function signInWithGoogle() {
     
     if (error) {
       console.error("❌ Google OAuth error:", error);
-      
-      // No fallback needed - we never use localhost
-      console.error("❌ OAuth failed - this should not happen with Railway domain");
-      
       throw error;
     }
     
