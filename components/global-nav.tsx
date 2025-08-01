@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { Menu, X } from "lucide-react";
@@ -34,8 +35,14 @@ export default function GlobalNav() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
-        <Link href="/" className="flex items-center">
-              <span className="text-2xl font-bold text-purple-600">Servio</span>
+            <Link href="/" className="flex items-center">
+              <Image 
+                src="/assets/servio-logo-updated.png" 
+                alt="Servio" 
+                width={120} 
+                height={32}
+                className="h-8 w-auto"
+              />
             </Link>
           </div>
 
@@ -53,67 +60,67 @@ export default function GlobalNav() {
                 className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Features
-        </Link>
-            <Link
+              </Link>
+              <Link
                 href="#pricing"
                 className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-            >
+              >
                 Pricing
-            </Link>
-          {session ? (
-            <>
+              </Link>
+              {session ? (
+                <>
                   <Link
                     href="/dashboard"
                     className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                   >
                     Dashboard
                   </Link>
-              <Button
+                  <Button
                     onClick={handleSignOut}
-                variant="outline"
+                    variant="outline"
                     size="sm"
                     className="ml-4"
-              >
-                Sign Out
-              </Button>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/sign-in"
+                  >
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/sign-in"
                     className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Sign In
-              </Link>
+                  >
+                    Sign In
+                  </Link>
                   <Link href="/sign-up">
                     <Button size="sm" className="ml-4">
-                  Get Started
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-          <Button
-            variant="ghost"
+            <Button
+              variant="ghost"
               size="sm"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? (
                 <X className="h-6 w-6" />
               ) : (
                 <Menu className="h-6 w-6" />
               )}
-          </Button>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Mobile Navigation */}
-          {mobileMenuOpen && (
+      {mobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
             <Link
@@ -130,15 +137,15 @@ export default function GlobalNav() {
             >
               Features
             </Link>
-                  <Link
+            <Link
               href="#pricing"
               className="text-gray-500 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Pricing
-                  </Link>
-                {session ? (
-                  <>
+            </Link>
+            {session ? (
+              <>
                 <Link
                   href="/dashboard"
                   className="text-gray-500 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
@@ -146,34 +153,34 @@ export default function GlobalNav() {
                 >
                   Dashboard
                 </Link>
-                    <Button
+                <Button
                   onClick={handleSignOut}
-                      variant="outline"
+                  variant="outline"
                   size="sm"
-                      className="w-full mt-2"
-                    >
-                      Sign Out
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/sign-in"
+                  className="w-full mt-2"
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/sign-in"
                   className="text-gray-500 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Sign In
-                    </Link>
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
                 <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
                   <Button size="sm" className="w-full mt-2">
-                        Get Started
-                      </Button>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 } 

@@ -14,15 +14,26 @@ import {
   Settings,
   Plus,
   ArrowRight,
+  TrendingUp,
+  ShoppingBag,
+  Activity,
+  UserPlus,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { LiveOrders } from "@/components/live-orders";
 import { MenuManagement } from "@/components/menu-management";
+import Image from "next/image";
 
 export default function VenueDashboardPage({ params }: { params: { venueId: string } }) {
   const [session, setSession] = useState<any>(null);
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    todayOrders: 0,
+    revenue: 0,
+    activeTables: 0,
+    menuItems: 0
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -40,6 +51,8 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
         
         if (!error && venueData) {
           setVenue(venueData);
+          // Load stats
+          await loadStats(venueData.venue_id);
         }
       }
       
@@ -54,6 +67,53 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const loadStats = async (venueId: string) => {
+    try {
+      // Get today's orders
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .eq("venue_id", venueId)
+        .gte("created_at", today.toISOString());
+
+      const { data: menuItems } = await supabase
+        .from("menu_items")
+        .select("id")
+        .eq("venue_id", venueId)
+        .eq("available", true);
+
+      setStats({
+        todayOrders: orders?.length || 0,
+        revenue: orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0,
+        activeTables: 0, // TODO: Implement table tracking
+        menuItems: menuItems?.length || 0
+      });
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    }
+  };
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case "menu":
+        router.push(`/dashboard/${venue?.venue_id}/menu-management`);
+        break;
+      case "qr":
+        router.push(`/generate-qr?venue=${venue?.venue_id}`);
+        break;
+      case "staff":
+        // TODO: Implement staff management
+        alert("Staff management coming soon!");
+        break;
+      case "test-order":
+        router.push(`/order?venue=${venue?.venue_id}&demo=true`);
+        break;
+    }
+  };
 
   if (loading) {
     return (
@@ -73,144 +133,267 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Sticky Header */}
+      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-4">
+              <Image 
+                src="/assets/servio-logo-updated.png" 
+                alt="Servio" 
+                width={120} 
+                height={32}
+                className="h-8 w-auto"
+              />
+              <div className="hidden md:block">
+                <h1 className="text-lg font-semibold text-gray-900">
+                  {venue?.name || "My Venue"}
+                </h1>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
+              <Button variant="ghost" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+        {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {venue?.name || "My Venue"}
-          </h1>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Welcome back, {session?.user?.user_metadata?.full_name || "Manager"}!
+          </h2>
           <p className="text-gray-600">
-            Manage your venue operations and track performance
+            Here's what's happening at {venue?.name || "your venue"} today
           </p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Today's Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">0</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">£0.00</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Active Tables</p>
-                  <p className="text-2xl font-bold text-gray-900">0</p>
-                </div>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Users className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Menu Items</p>
-                  <p className="text-2xl font-bold text-gray-900">0</p>
-                </div>
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <Settings className="h-6 w-6 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="orders">Live Orders</TabsTrigger>
+        {/* Main Dashboard Layout */}
+        <Tabs defaultValue="live" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="live">Live Dashboard</TabsTrigger>
             <TabsTrigger value="menu">Menu Management</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="qr">QR Codes</TabsTrigger>
+            <TabsTrigger value="staff">Staff</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="orders" className="space-y-4">
-            <LiveOrders venueId={venue?.venue_id || params.venueId} session={{ user: session?.user, venue }} />
+          {/* Live Dashboard Tab */}
+          <TabsContent value="live" className="space-y-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Today's Orders</p>
+                      <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Revenue</p>
+                      <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Active Tables</p>
+                      <p className="text-2xl font-bold text-gray-900">{stats.activeTables}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Users className="h-6 w-6 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Menu Items</p>
+                      <p className="text-2xl font-bold text-gray-900">{stats.menuItems}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <ShoppingBag className="h-6 w-6 text-orange-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Live Orders - Takes up 2/3 of the space */}
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Activity className="h-5 w-5 mr-2" />
+                      Live Orders
+                    </CardTitle>
+                    <CardDescription>
+                      Real-time orders and their status
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <LiveOrders venueId={venue?.venue_id || params.venueId} session={{ user: session?.user, venue }} />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Quick Actions & Recent Activity */}
+              <div className="space-y-6">
+                {/* Quick Actions */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Quick Setup</CardTitle>
+                    <CardDescription>
+                      Get your venue up and running
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => handleQuickAction("menu")}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Menu Items
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => handleQuickAction("qr")}
+                    >
+                      <QrCode className="h-4 w-4 mr-2" />
+                      Generate QR Codes
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => handleQuickAction("staff")}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Invite Staff
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => handleQuickAction("test-order")}
+                    >
+                      <ShoppingBag className="h-4 w-4 mr-2" />
+                      Test Order Flow
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Recent Activity */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Activity</CardTitle>
+                    <CardDescription>
+                      Latest updates and actions
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 text-sm">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-gray-600">New order received</span>
+                        <span className="text-gray-400 text-xs">2 min ago</span>
+                      </div>
+                      <div className="flex items-center space-x-3 text-sm">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-gray-600">Menu updated</span>
+                        <span className="text-gray-400 text-xs">1 hour ago</span>
+                      </div>
+                      <div className="flex items-center space-x-3 text-sm">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <span className="text-gray-600">QR code generated</span>
+                        <span className="text-gray-400 text-xs">3 hours ago</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
 
+          {/* Menu Management Tab */}
           <TabsContent value="menu" className="space-y-4">
             <MenuManagement venueId={venue?.venue_id || params.venueId} session={{ user: session?.user, venue }} />
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-4">
+          {/* QR Codes Tab */}
+          <TabsContent value="qr" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Venue Settings</CardTitle>
+                <CardTitle>QR Code Management</CardTitle>
                 <CardDescription>
-                  Manage your venue information and preferences
+                  Generate and manage QR codes for your tables
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Venue Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Venue Name
-                        </label>
-                        <input
-                          type="text"
-                          value={venue?.name || ""}
-                          readOnly
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          placeholder="Enter venue name"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Business Type
-                        </label>
-                        <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
-                          <option value="restaurant">Restaurant</option>
-                          <option value="cafe">Cafe</option>
-                          <option value="bar">Bar</option>
-                          <option value="food-truck">Food Truck</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium mb-2">Quick Actions</h4>
-                    <div className="flex space-x-4">
-                      <Button variant="outline">
-                        <QrCode className="mr-2 h-4 w-4" />
-                        Generate QR Codes
-                      </Button>
-                      <Button variant="outline">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Menu Items
-                      </Button>
-                    </div>
-                  </div>
+                <div className="text-center py-8">
+                  <QrCode className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">QR Code Generator</h3>
+                  <p className="text-gray-600 mb-4">
+                    Create QR codes for your tables to enable easy ordering
+                  </p>
+                  <Button onClick={() => handleQuickAction("qr")}>
+                    Generate QR Codes
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Staff Tab */}
+          <TabsContent value="staff" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Staff Management</CardTitle>
+                <CardDescription>
+                  Invite and manage your team members
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <UserPlus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Staff Management</h3>
+                  <p className="text-gray-600 mb-4">
+                    Invite staff members to help manage your venue
+                  </p>
+                  <Button onClick={() => handleQuickAction("staff")}>
+                    Invite Staff
+                  </Button>
                 </div>
               </CardContent>
             </Card>
