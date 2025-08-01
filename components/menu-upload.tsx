@@ -30,7 +30,9 @@ import {
   Database,
   Settings,
 } from "lucide-react";
-import { supabase, hasSupabaseConfig, type MenuItem } from "@/lib/supabase";
+import { supabase, type MenuItem } from "@/lib/supabase";
+
+const hasSupabaseConfig = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 interface MenuUploadProps {
   venueId: string;

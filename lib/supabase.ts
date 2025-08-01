@@ -5,9 +5,6 @@ import { logger } from "./logger";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Check if Supabase is properly configured
-export const hasSupabaseConfig = !!(supabaseUrl && supabaseAnonKey);
-
 // Debug environment variables
 console.log("Supabase environment check:", {
   hasUrl: !!supabaseUrl,
