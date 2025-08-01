@@ -3,32 +3,25 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  QrCode,
-  BarChart3,
   Clock,
   Users,
-  Settings,
-  Plus,
-  ArrowRight,
   TrendingUp,
   ShoppingBag,
-  Activity,
-  UserPlus,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { LiveOrders } from "@/components/live-orders";
 import { MenuManagement } from "@/components/menu-management";
-import Image from "next/image";
+import { NavBar } from "@/components/NavBar";
 
 export default function VenueDashboardPage({ params }: { params: { venueId: string } }) {
   const [session, setSession] = useState<any>(null);
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("live");
+  const [quickSetupVisible, setQuickSetupVisible] = useState(true);
   const [stats, setStats] = useState({
     todayOrders: 0,
     revenue: 0,
@@ -133,33 +126,7 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sticky Header */}
-      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Venue Info */}
-            <div className="flex items-center space-x-4">
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">
-                  {venue?.name || "My Venue"}
-                </h1>
-                <p className="text-sm text-gray-500">Dashboard</p>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="hidden md:flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <NavBar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
@@ -198,6 +165,46 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
                   </div>
                 </CardContent>
               </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Revenue</p>
+                      <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Active Tables</p>
+                      <p className="text-2xl font-bold text-gray-900">{stats.activeTables}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Users className="h-6 w-6 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Menu Items</p>
+                      <p className="text-2xl font-bold text-gray-900">{stats.menuItems}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <ShoppingBag className="h-6 w-6 text-orange-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
               <Card>
                 <CardContent className="p-6">
