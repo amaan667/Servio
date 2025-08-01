@@ -109,11 +109,22 @@ export async function signUpUser(
   try {
     logger.info("Attempting sign up", { email, fullName });
 
-    // Determine redirect URL based on environment
-    const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
-    const emailRedirectTo = isProduction 
-      ? (process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard` : "https://servio-production.up.railway.app/dashboard")
-      : "http://localhost:3000/dashboard";
+    // Always use production URL for OAuth redirects
+    let emailRedirectTo;
+    
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      // Use the environment variable if available
+      emailRedirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
+      console.log("✅ Using NEXT_PUBLIC_SITE_URL for email redirect:", emailRedirectTo);
+    } else if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+      // Fallback to hardcoded production URL
+      emailRedirectTo = "https://servio-production.up.railway.app/dashboard";
+      console.log("🔄 Using hardcoded Railway domain for email redirect:", emailRedirectTo);
+    } else {
+      // Only use localhost in development
+      emailRedirectTo = "http://localhost:3000/dashboard";
+      console.log("🔄 Development: Using localhost for email redirect");
+    }
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -157,43 +168,36 @@ export async function signUpUser(
         .insert({
           venue_id: venueId,
           name: venueName,
-          business_type: venueType,
+          business_type: venueType.toLowerCase(),
           owner_id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single();
-      if (createVenueError && createVenueError.code === "23505") {
-        // Unique violation
-        // Venue already exists, fetch it
-        const { data: existingVenue, error: fetchError } = await supabase
-          .from("venues")
-          .select("*")
-          .eq("owner_id", userId)
-          .single();
-        if (fetchError || !existingVenue) {
-          logger.error(
-            "Failed to fetch existing venue after unique violation",
-            { error: fetchError },
-          );
-          return {
-            success: false,
-            message: "Failed to fetch existing venue for this user",
-          };
-        }
-        venueData = existingVenue;
-      } else if (createVenueError || !newVenue) {
+
+      if (createVenueError) {
         logger.error("Failed to create venue", { error: createVenueError });
-        return { success: false, message: "Failed to set up your business" };
-      } else {
-        venueData = newVenue;
+        return {
+          success: false,
+          message: "Account created but failed to set up venue. Please contact support.",
+        };
       }
+      venueData = newVenue;
     }
-    
-    logger.info("Sign up successful", { userId, venueId });
-    return { success: true };
+
+    logger.info("User signed up successfully", { userId, venueId });
+    return {
+      success: true,
+      message: "Account created successfully! Welcome to Servio.",
+      data: { user: data.user, venue: venueData },
+    };
   } catch (error) {
     logger.error("Sign up error", { error });
-    return { success: false, message: "An unexpected error occurred" };
+    return {
+      success: false,
+      message: "An unexpected error occurred. Please try again.",
+    };
   }
 }
 
@@ -230,29 +234,24 @@ export async function signInWithGoogle() {
       currentOrigin: typeof window !== "undefined" ? window.location.origin : "server-side"
     });
 
-    // Check if we're in a production environment
-    const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
-    
+    // Always use production URL for OAuth redirects
     let redirectTo;
     
-    if (isProduction) {
-      // In production, use Railway domain
-      if (process.env.NEXT_PUBLIC_SITE_URL) {
-        redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
-        console.log("✅ Using production Railway domain:", redirectTo);
-      } else {
-        console.error("❌ NEXT_PUBLIC_SITE_URL not found in production!");
-        redirectTo = "https://servio-production.up.railway.app/dashboard";
-        console.log("🔄 Using hardcoded Railway domain:", redirectTo);
-      }
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      // Use the environment variable if available
+      redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
+      console.log("✅ Using NEXT_PUBLIC_SITE_URL for OAuth:", redirectTo);
+    } else if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+      // Fallback to hardcoded production URL
+      redirectTo = "https://servio-production.up.railway.app/dashboard";
+      console.log("🔄 Using hardcoded Railway domain for OAuth:", redirectTo);
     } else {
-      // In development, use localhost
+      // Only use localhost in development
       redirectTo = "http://localhost:3000/dashboard";
       console.log("🔄 Development: Using localhost for OAuth");
     }
     
     console.log("Final OAuth redirect configuration:", { 
-      isProduction, 
       redirectTo,
       environment: {
         RAILWAY_ENV: process.env.RAILWAY_ENVIRONMENT,

@@ -28,6 +28,7 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
   const [session, setSession] = useState<any>(null);
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("live");
   const [stats, setStats] = useState({
     todayOrders: 0,
     revenue: 0,
@@ -100,14 +101,13 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "menu":
-        router.push(`/dashboard/${venue?.venue_id}/menu-management`);
+        setActiveTab("menu");
         break;
       case "qr":
-        router.push(`/generate-qr?venue=${venue?.venue_id}`);
+        setActiveTab("qr");
         break;
       case "staff":
-        // TODO: Implement staff management
-        alert("Staff management coming soon!");
+        setActiveTab("staff");
         break;
       case "test-order":
         router.push(`/order?venue=${venue?.venue_id}&demo=true`);
@@ -137,19 +137,13 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
       <div className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
+            {/* Venue Info */}
             <div className="flex items-center space-x-4">
-              <Image 
-                src="/assets/servio-logo-updated.png" 
-                alt="Servio" 
-                width={120} 
-                height={32}
-                className="h-8 w-auto"
-              />
-              <div className="hidden md:block">
+              <div>
                 <h1 className="text-lg font-semibold text-gray-900">
                   {venue?.name || "My Venue"}
                 </h1>
+                <p className="text-sm text-gray-500">Dashboard</p>
               </div>
             </div>
 
@@ -179,7 +173,7 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
         </div>
 
         {/* Main Dashboard Layout */}
-        <Tabs defaultValue="live" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="live">Live Dashboard</TabsTrigger>
             <TabsTrigger value="menu">Menu Management</TabsTrigger>

@@ -39,9 +39,9 @@ export default function GlobalNav() {
               <Image 
                 src="/assets/servio-logo-updated.png" 
                 alt="Servio" 
-                width={120} 
-                height={32}
-                className="h-8 w-auto"
+                width={160} 
+                height={40}
+                className="h-10 w-auto"
               />
             </Link>
           </div>
