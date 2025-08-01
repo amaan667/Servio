@@ -115,13 +115,18 @@ function HomePageContent() {
           
           if (error) {
             console.error('Error exchanging code for session:', error);
+            // Clear the URL parameters to prevent re-processing
+            window.history.replaceState({}, document.title, window.location.pathname);
           } else {
             console.log('OAuth callback successful:', data);
-            // Redirect to dashboard after successful OAuth
+            // Clear the URL parameters and redirect to dashboard
+            window.history.replaceState({}, document.title, '/dashboard');
             router.push('/dashboard');
           }
         } catch (err) {
           console.error('Error processing OAuth callback:', err);
+          // Clear the URL parameters to prevent re-processing
+          window.history.replaceState({}, document.title, window.location.pathname);
         } finally {
           setProcessingOAuth(false);
         }
