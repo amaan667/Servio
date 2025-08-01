@@ -59,7 +59,7 @@ export default function SignInPage() {
         router.push("/dashboard");
       } else {
         logger.error("SIGNIN_PAGE: Sign-in failed", { error: result.message });
-        setError(result.message || "Unknown error");
+        setError(result.message || "Invalid email or password");
       }
     } catch (error: any) {
       logger.error("SIGNIN_PAGE: Unexpected error during sign-in", { error });
@@ -93,15 +93,6 @@ export default function SignInPage() {
                 setLoading(true);
                 setError(null);
                 
-                // Debug the current environment
-                console.log("Sign-in page environment:", {
-                  currentOrigin: window.location.origin,
-                  isProduction: process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production',
-                  RAILWAY_ENV: process.env.RAILWAY_ENVIRONMENT,
-                  NODE_ENV: process.env.NODE_ENV,
-                  SITE_URL: process.env.NEXT_PUBLIC_SITE_URL
-                });
-                
                 try {
                   await signInWithGoogle();
                 } catch (err: any) {
@@ -115,7 +106,17 @@ export default function SignInPage() {
               <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/><path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
               Sign in with Google
             </Button>
-            <form onSubmit={handleSubmit} className="space-y-4">
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
@@ -123,7 +124,7 @@ export default function SignInPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Email Address *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -138,7 +139,7 @@ export default function SignInPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Password *</Label>
                 <Input
                   id="password"
                   type="password"
