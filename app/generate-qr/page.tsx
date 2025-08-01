@@ -99,37 +99,37 @@ export default function GenerateQRPage() {
             <div class="table-info">
               <p>Scan to order</p>
               <p>${venue?.name || "My Venue"}</p>
-            </div>
+      </div>
           </body>
         </html>
       `);
       printWindow.document.close();
       printWindow.print();
-    }
+  }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+      {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Generate QR Codes
-          </h1>
+                </h1>
           <p className="text-gray-600">
             Create QR codes for your tables so customers can order easily
           </p>
-        </div>
+      </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Settings */}
-          <Card>
-            <CardHeader>
+        <Card>
+          <CardHeader>
               <CardTitle>QR Code Settings</CardTitle>
-              <CardDescription>
+            <CardDescription>
                 Configure your QR code generation
-              </CardDescription>
-            </CardHeader>
+            </CardDescription>
+          </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="tableNumber">Table Number</Label>
@@ -142,7 +142,7 @@ export default function GenerateQRPage() {
                   className="mt-1"
                 />
               </div>
-              
+
               <div>
                 <Label>Venue</Label>
                 <div className="mt-1 p-3 bg-gray-50 rounded-md">
@@ -169,7 +169,7 @@ export default function GenerateQRPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center">
+                <div className="text-center">
                 <div className="bg-white p-4 rounded-lg shadow-sm inline-block">
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(orderUrl)}`}
@@ -229,7 +229,7 @@ export default function GenerateQRPage() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-start space-x-4">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-green-600 font-semibold">3</span>

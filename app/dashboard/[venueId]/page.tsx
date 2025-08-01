@@ -43,7 +43,7 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
         }
       }
       
-      setLoading(false);
+    setLoading(false);
     };
     
     getSession();

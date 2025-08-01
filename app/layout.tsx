@@ -23,17 +23,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ErrorBoundary>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem={false}
-            disableTransitionOnChange
-          >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
             <AuthWrapper>
-              <GlobalNav />
-              {children}
+          <GlobalNav />
+          {children}
             </AuthWrapper>
-          </ThemeProvider>
+        </ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>
