@@ -36,7 +36,6 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
       setSession(session);
       
       if (session?.user) {
-        // Fetch venue for the user
         const { data: venueData, error } = await supabase
           .from("venues")
           .select("*")
@@ -45,12 +44,11 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
         
         if (!error && venueData) {
           setVenue(venueData);
-          // Load stats
           await loadStats(venueData.venue_id);
         }
       }
       
-    setLoading(false);
+      setLoading(false);
     };
     
     getSession();
@@ -64,7 +62,6 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
 
   const loadStats = async (venueId: string) => {
     try {
-      // Get today's orders
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -82,8 +79,8 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
 
       setStats({
         todayOrders: orders?.length || 0,
-        revenue: orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0,
-        activeTables: 0, // TODO: Implement table tracking
+        revenue: orders?.reduce((sum: number, order: any) => sum + order.total_amount, 0) || 0,
+        activeTables: 0,
         menuItems: menuItems?.length || 0
       });
     } catch (error) {
@@ -92,20 +89,7 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
   };
 
   const handleQuickAction = (action: string) => {
-    switch (action) {
-      case "menu":
-        setActiveTab("menu");
-        break;
-      case "qr":
-        setActiveTab("qr");
-        break;
-      case "staff":
-        setActiveTab("staff");
-        break;
-      case "test-order":
-        router.push(`/order?venue=${venue?.venue_id}&demo=true`);
-        break;
-    }
+    setActiveTab(action);
   };
 
   if (loading) {
@@ -127,9 +111,7 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Welcome back, {session?.user?.user_metadata?.full_name || "Manager"}!
@@ -139,7 +121,6 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
           </p>
         </div>
 
-        {/* Main Dashboard Layout */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="live">Live Dashboard</TabsTrigger>
@@ -148,254 +129,145 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
             <TabsTrigger value="staff">Staff</TabsTrigger>
           </TabsList>
 
-          {/* Live Dashboard Tab */}
-          <TabsContent value="live" className="space-y-6">
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Today's Orders</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Clock className="h-6 w-6 text-blue-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Revenue</p>
-                      <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                      <TrendingUp className="h-6 w-6 text-green-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Active Tables</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.activeTables}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Users className="h-6 w-6 text-purple-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Menu Items</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.menuItems}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <ShoppingBag className="h-6 w-6 text-orange-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Revenue</p>
-                      <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                      <TrendingUp className="h-6 w-6 text-green-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Active Tables</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.activeTables}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Users className="h-6 w-6 text-purple-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Menu Items</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.menuItems}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <ShoppingBag className="h-6 w-6 text-orange-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Live Orders - Takes up 2/3 of the space */}
-              <div className="lg:col-span-2">
+          <TabsContent value="live">
+            <div className="space-y-6">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Activity className="h-5 w-5 mr-2" />
-                      Live Orders
-                    </CardTitle>
-                    <CardDescription>
-                      Real-time orders and their status
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <LiveOrders venueId={venue?.venue_id || params.venueId} session={{ user: session?.user, venue }} />
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Quick Actions & Recent Activity */}
-              <div className="space-y-6">
-                {/* Quick Actions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Setup</CardTitle>
-                    <CardDescription>
-                      Get your venue up and running
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      onClick={() => handleQuickAction("menu")}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Menu Items
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      onClick={() => handleQuickAction("qr")}
-                    >
-                      <QrCode className="h-4 w-4 mr-2" />
-                      Generate QR Codes
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      onClick={() => handleQuickAction("staff")}
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Invite Staff
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      onClick={() => handleQuickAction("test-order")}
-                    >
-                      <ShoppingBag className="h-4 w-4 mr-2" />
-                      Test Order Flow
-                    </Button>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Today's Orders</p>
+                        <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
+                      </div>
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Clock className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
-                {/* Recent Activity */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                    <CardDescription>
-                      Latest updates and actions
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3 text-sm">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-gray-600">New order received</span>
-                        <span className="text-gray-400 text-xs">2 min ago</span>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Revenue</p>
+                        <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
                       </div>
-                      <div className="flex items-center space-x-3 text-sm">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="text-gray-600">Menu updated</span>
-                        <span className="text-gray-400 text-xs">1 hour ago</span>
+                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <TrendingUp className="h-6 w-6 text-green-600" />
                       </div>
-                      <div className="flex items-center space-x-3 text-sm">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                        <span className="text-gray-600">QR code generated</span>
-                        <span className="text-gray-400 text-xs">3 hours ago</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Active Tables</p>
+                        <p className="text-2xl font-bold text-gray-900">{stats.activeTables}</p>
+                      </div>
+                      <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <Users className="h-6 w-6 text-purple-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Menu Items</p>
+                        <p className="text-2xl font-bold text-gray-900">{stats.menuItems}</p>
+                      </div>
+                      <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <ShoppingBag className="h-6 w-6 text-orange-600" />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
-            </div>
-          </TabsContent>
 
-          {/* Menu Management Tab */}
-          <TabsContent value="menu" className="space-y-4">
-            <MenuManagement venueId={venue?.venue_id || params.venueId} session={{ user: session?.user, venue }} />
-          </TabsContent>
-
-          {/* QR Codes Tab */}
-          <TabsContent value="qr" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>QR Code Management</CardTitle>
-                <CardDescription>
-                  Generate and manage QR codes for your tables
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <QrCode className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">QR Code Generator</h3>
-                  <p className="text-gray-600 mb-4">
-                    Create QR codes for your tables to enable easy ordering
-                  </p>
-                  <Button onClick={() => handleQuickAction("qr")}>
-                    Generate QR Codes
-                  </Button>
+              {/* Main Content Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Live Orders - Takes up 2/3 of the space */}
+                <div className="lg:col-span-2">
+                  <Card>
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-semibold mb-4">Live Orders</h3>
+                      <LiveOrders venueId={params.venueId} />
+                    </CardContent>
+                  </Card>
                 </div>
+                
+                {/* Quick Setup Card */}
+                {quickSetupVisible && (
+                  <div className="lg:col-span-1">
+                    <Card>
+                      <CardContent className="p-6">
+                        <h3 className="text-lg font-semibold mb-4">Quick Setup</h3>
+                        <div className="space-y-3">
+                          <Button
+                            className="w-full"
+                            variant="outline"
+                            onClick={() => handleQuickAction("menu")}
+                          >
+                            Add Menu Items
+                          </Button>
+                          <Button
+                            className="w-full"
+                            variant="outline"
+                            onClick={() => handleQuickAction("qr")}
+                          >
+                            Generate QR Codes
+                          </Button>
+                          <Button
+                            className="w-full"
+                            variant="outline"
+                            onClick={() => handleQuickAction("staff")}
+                          >
+                            Invite Staff
+                          </Button>
+                          <Button
+                            className="w-full"
+                            variant="outline"
+                            onClick={() => router.push(`/order?venue=${venue?.venue_id}&demo=true`)}
+                          >
+                            Test Order Flow
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="menu">
+            <Card>
+              <CardContent className="p-6">
+                <MenuManagement venueId={params.venueId} />
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Staff Tab */}
-          <TabsContent value="staff" className="space-y-4">
+          <TabsContent value="qr">
             <Card>
-              <CardHeader>
-                <CardTitle>Staff Management</CardTitle>
-                <CardDescription>
-                  Invite and manage your team members
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <UserPlus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Staff Management</h3>
-                  <p className="text-gray-600 mb-4">
-                    Invite staff members to help manage your venue
-                  </p>
-                  <Button onClick={() => handleQuickAction("staff")}>
-                    Invite Staff
-                  </Button>
-                </div>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4">QR Code Management</h3>
+                <p className="text-gray-500">Generate and manage QR codes for your tables.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="staff">
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Staff Management</h3>
+                <p className="text-gray-500">Invite and manage your staff members.</p>
               </CardContent>
             </Card>
           </TabsContent>
