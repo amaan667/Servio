@@ -11,8 +11,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export default function CompleteProfile() {
   const [businessType, setBusinessType] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -42,10 +40,8 @@ export default function CompleteProfile() {
       const { error: upsertError } = await supabase.from("venues").upsert({
         venue_id: venueId,
         name: businessName,
-        description: `${businessType} business`,
-        address: address || null,
-        phone: phone || null,
-        email: user.email,
+        business_type: businessType.toLowerCase(),
+        owner_id: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
@@ -134,27 +130,6 @@ export default function CompleteProfile() {
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Address (Optional)</Label>
-                <Input
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Enter your business address"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number (Optional)</Label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter your phone number"
-                  type="tel"
-                />
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
