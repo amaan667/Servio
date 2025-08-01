@@ -2,10 +2,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function CompleteProfile() {
   const [businessType, setBusinessType] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -14,90 +21,149 @@ export default function CompleteProfile() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
     if (!supabase) {
-      setError("Supabase is not initialized.");
+      setError("Database connection not available.");
       setLoading(false);
       return;
     }
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!user || userError) {
       setError("You must be signed in.");
       setLoading(false);
       return;
     }
-    // Upsert venue for this user
-    const { error: upsertError } = await supabase.from("venues").upsert({
-      name: businessName,
-      business_type: businessType,
-      owner_id: user.id,
-      venue_id: `${businessName.toLowerCase().replace(/\s+/g, '-')}-${user.id.substring(0, 8)}`,
-    });
-    if (upsertError) {
-      setError("Failed to save profile. Please try again.");
-      setLoading(false);
-      return;
-    }
-    // Fetch the venue just created
-    const { data: venue, error: venueError } = await supabase
-      .from("venues")
-      .select("*")
-      .eq("owner_id", user.id)
-      .maybeSingle();
-    if (!venue || venueError) {
-      setError("Failed to fetch venue after creation. Please try again.");
-      setLoading(false);
-      return;
-    }
-    // Set session in localStorage (for AuthWrapper and dashboard)
-    const session = {
-      user: {
-        id: user.id,
+
+    try {
+      // Create venue with correct schema fields
+      const venueId = `${businessName.toLowerCase().replace(/\s+/g, '-')}-${user.id.substring(0, 8)}`;
+      
+      const { error: upsertError } = await supabase.from("venues").upsert({
+        venue_id: venueId,
+        name: businessName,
+        description: `${businessType} business`,
+        address: address || null,
+        phone: phone || null,
         email: user.email,
-        full_name: user.user_metadata?.full_name || "",
-        created_at: user.created_at,
-      },
-      venue,
-    };
-    if (typeof window !== "undefined") {
-      localStorage.setItem("servio_session", JSON.stringify(session));
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+      if (upsertError) {
+        console.error("Venue creation error:", upsertError);
+        setError("Failed to save profile. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch the venue just created
+      const { data: venue, error: venueError } = await supabase
+        .from("venues")
+        .select("*")
+        .eq("venue_id", venueId)
+        .single();
+
+      if (!venue || venueError) {
+        console.error("Venue fetch error:", venueError);
+        setError("Failed to fetch venue after creation. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Profile completed successfully:", venue);
+      setLoading(false);
+      router.push("/dashboard");
+
+    } catch (err) {
+      console.error("Profile completion error:", err);
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
-    setLoading(false);
-    router.push("/dashboard");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow max-w-md w-full space-y-6">
-        <h2 className="text-2xl font-bold mb-4">Complete Your Business Profile</h2>
-        {error && <div className="text-red-600 mb-2">{error}</div>}
-        <div>
-          <label className="block mb-1 font-medium">Business Type</label>
-          <select
-            className="w-full border rounded px-3 py-2"
-            value={businessType}
-            onChange={e => setBusinessType(e.target.value)}
-            required
-          >
-            <option value="">Select...</option>
-            <option value="Restaurant">Restaurant</option>
-            <option value="Cafe">Cafe</option>
-            <option value="Food Truck">Food Truck</option>
-            <option value="Coffee Shop">Coffee Shop</option>
-          </select>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-gray-900">Complete Your Profile</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Set up your business details to get started
+          </p>
         </div>
-        <div>
-          <label className="block mb-1 font-medium">Business Name</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            value={businessName}
-            onChange={e => setBusinessName(e.target.value)}
-            required
-          />
-        </div>
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Saving..." : "Save to continue"}
-        </Button>
-      </form>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Business Information</CardTitle>
+            <CardDescription>
+              Tell us about your business to customize your experience
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="businessName">Business Name *</Label>
+                <Input
+                  id="businessName"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="Enter your business name"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="businessType">Business Type *</Label>
+                <Select value={businessType} onValueChange={setBusinessType} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select business type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Restaurant">Restaurant</SelectItem>
+                    <SelectItem value="Cafe">Cafe</SelectItem>
+                    <SelectItem value="Food Truck">Food Truck</SelectItem>
+                    <SelectItem value="Coffee Shop">Coffee Shop</SelectItem>
+                    <SelectItem value="Bar">Bar</SelectItem>
+                    <SelectItem value="Bakery">Bakery</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Address (Optional)</Label>
+                <Input
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Enter your business address"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number (Optional)</Label>
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter your phone number"
+                  type="tel"
+                />
+              </div>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Completing Setup..." : "Complete Setup"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 } 
