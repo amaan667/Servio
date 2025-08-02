@@ -184,3 +184,4 @@ export default function AnalyticsPage({ params }: { params: { venueId: string } 
       </div>
     </div>
   );
+}
