@@ -137,7 +137,10 @@ export default function OrdersPage({ params }: { params: { venueId: string } }) 
             <h3 className="text-lg font-semibold">Orders</h3>
           </CardHeader>
           <CardContent>
-            <LiveOrders venueId={params.venueId} />
+            <LiveOrders 
+              venueId={params.venueId}
+              session={session}
+            />
           </CardContent>
         </Card>
       </div>
