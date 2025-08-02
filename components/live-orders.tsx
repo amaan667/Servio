@@ -46,7 +46,7 @@ interface OrderWithItems {
 
 interface LiveOrdersProps {
   venueId: string; // This is the text-based slug
-  session: AuthSession;
+  session: Session;
 }
 
 export function LiveOrders({ venueId, session }: LiveOrdersProps) {
@@ -55,11 +55,9 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  const venueUuid = session.venue.id;
-
   const fetchOrders = useCallback(async () => {
     logger.info("LIVE_ORDERS: Fetching orders", {
-      venueUuid,
+      venueId,
       hasSupabase: !!supabase,
     });
 
@@ -87,14 +85,14 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           )
         `,
         )
-        .eq("venue_id", venueUuid)
+        .eq("venue_id", venueId)
         .order("created_at", { ascending: false });
 
       if (ordersError) {
         logger.error("LIVE_ORDERS: Failed to fetch orders from Supabase", {
           error: ordersError.message,
           code: ordersError.code,
-          venueUuid,
+          venueId,
         });
         setError("Failed to load orders.");
       } else {
@@ -110,7 +108,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     } finally {
       setLoading(false);
     }
-  }, [venueUuid]);
+  }, [venueId]);
 
   useEffect(() => {
     fetchOrders();
@@ -119,14 +117,14 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
     logger.debug("LIVE_ORDERS: Setting up real-time subscription");
     const channel = supabase
-      .channel(`live-orders-${venueUuid}`)
+      .channel(`live-orders-${venueId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "orders",
-          filter: `venue_id=eq.${venueUuid}`,
+          filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
           logger.info(
@@ -157,7 +155,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         supabase.removeChannel(channel);
       }
     };
-  }, [fetchOrders, venueUuid]);
+  }, [fetchOrders, venueId]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     logger.info("LIVE_ORDERS: Updating order status", { orderId, newStatus });
