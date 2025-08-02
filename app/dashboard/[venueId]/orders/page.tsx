@@ -7,10 +7,17 @@ import { supabase } from "@/lib/supabase";
 import { LiveOrders } from "@/components/live-orders";
 import { NavBar } from "@/components/NavBar";
 import { useRouter } from "next/navigation";
+import { Session } from "@supabase/supabase-js";
+
+interface Venue {
+  venue_id: string;
+  name: string;
+  owner_id: string;
+}
 
 export default function OrdersPage({ params }: { params: { venueId: string } }) {
-  const [session, setSession] = useState<any>(null);
-  const [venue, setVenue] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     todayOrders: 0,
@@ -130,7 +137,7 @@ export default function OrdersPage({ params }: { params: { venueId: string } }) 
             <h3 className="text-lg font-semibold">Orders</h3>
           </CardHeader>
           <CardContent>
-            <LiveOrders venueId={params.venueId} session={session} />
+            <LiveOrders venueId={params.venueId} />
           </CardContent>
         </Card>
       </div>
