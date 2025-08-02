@@ -191,7 +191,7 @@ export default function VenueDashboardPage({ params }: { params: { venueId: stri
           </Card>
 
           <Card className="hover:shadow-lg transition-shadow">
-            <Link href={`/dashboard/${params.venueId}/menu`}>
+            <Link href={`/dashboard/${params.venueId}/menu-management`}>
               <CardContent className="p-6">
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
                   <ShoppingBag className="h-6 w-6 text-orange-600" />
