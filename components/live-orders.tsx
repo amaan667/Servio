@@ -18,6 +18,7 @@ import {
   XCircle,
   AlertTriangle,
 } from "lucide-react";
+import { Session } from "@supabase/supabase-js";
 import { supabase, type AuthSession } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
