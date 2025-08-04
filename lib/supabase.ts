@@ -109,22 +109,12 @@ export async function signUpUser(
   try {
     logger.info("Attempting sign up", { email, fullName });
 
-    // Always use production URL for OAuth redirects
-    let emailRedirectTo;
+    // ALWAYS use Railway production URL - never localhost
+    const emailRedirectTo = process.env.NEXT_PUBLIC_SITE_URL 
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
+      : "https://servio-production.up.railway.app/dashboard";
     
-    if (process.env.NEXT_PUBLIC_SITE_URL) {
-      // Use the environment variable if available
-      emailRedirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
-      console.log("✅ Using NEXT_PUBLIC_SITE_URL for email redirect:", emailRedirectTo);
-    } else if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
-      // Fallback to hardcoded production URL
-      emailRedirectTo = "https://servio-production.up.railway.app/dashboard";
-      console.log("🔄 Using hardcoded Railway domain for email redirect:", emailRedirectTo);
-    } else {
-      // Only use localhost in development
-      emailRedirectTo = "http://localhost:3000/dashboard";
-      console.log("🔄 Development: Using localhost for email redirect");
-    }
+    console.log("✅ Using Railway domain for email redirect:", emailRedirectTo);
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -234,22 +224,10 @@ export async function signInWithGoogle() {
       currentOrigin: typeof window !== "undefined" ? window.location.origin : "server-side"
     });
 
-    // Always use production URL for OAuth redirects
-    let redirectTo;
+    // ALWAYS use Railway production URL - never localhost
+    const redirectTo = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app/auth/callback";
     
-    if (process.env.NEXT_PUBLIC_SITE_URL) {
-      // Use the environment variable if available
-      redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`;
-      console.log("✅ Using NEXT_PUBLIC_SITE_URL for OAuth:", redirectTo);
-    } else if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
-      // Fallback to hardcoded production URL
-      redirectTo = "https://servio-production.up.railway.app/dashboard";
-      console.log("🔄 Using hardcoded Railway domain for OAuth:", redirectTo);
-    } else {
-      // Only use localhost in development
-      redirectTo = "http://localhost:3000/dashboard";
-      console.log("🔄 Development: Using localhost for OAuth");
-    }
+    console.log("✅ Using Railway domain for OAuth:", redirectTo);
     
     console.log("Final OAuth redirect configuration:", { 
       redirectTo,
