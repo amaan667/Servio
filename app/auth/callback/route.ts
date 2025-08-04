@@ -17,12 +17,8 @@ export async function GET(request: NextRequest) {
       }
 
       if (data.session) {
-        // Determine the correct redirect URL
-        const isProduction = process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
-        let baseUrl;
-        
         // ALWAYS use Railway domain - never localhost
-        baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
         
         const redirectUrl = `${baseUrl}${next}`;
         console.log('Auth callback redirecting to:', redirectUrl);
@@ -31,10 +27,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fallback redirect
-    return NextResponse.redirect(new URL('/sign-in', request.url));
+    // Fallback redirect - also use Railway domain
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
+    return NextResponse.redirect(new URL('/sign-in', baseUrl));
   } catch (error) {
     console.error('Auth callback error:', error);
-    return NextResponse.redirect(new URL('/sign-in?error=callback_error', request.url));
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
+    return NextResponse.redirect(new URL('/sign-in?error=callback_error', baseUrl));
   }
-} 
+}
