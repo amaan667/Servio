@@ -5,35 +5,35 @@ import Image from "next/image";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
   return (
-    <nav className="flex items-center justify-between h-36 px-12 bg-white border-b shadow-md sticky top-0 z-20">
-      <div className="flex items-center space-x-6">
-        <div className="flex items-center transform hover:scale-105 transition-transform duration-200">
+    <nav className="flex items-center justify-between h-40 px-16 bg-white border-b shadow-lg sticky top-0 z-20">
+      <div className="flex items-center space-x-8">
+        <div className="flex items-center transform hover:scale-110 transition-transform duration-300">
           <div className="flex-shrink-0">
             <Image
               src="/assets/servio-logo-updated.png"
               alt="Servio"
-              width={140}
-              height={140}
+              width={160}
+              height={160}
               priority
-              className="drop-shadow-xl min-w-[140px] min-h-[140px]"
+              className="drop-shadow-2xl"
               style={{
-                width: '140px',
-                height: '140px',
+                width: '160px',
+                height: '160px',
               }}
             />
           </div>
-          <span className="text-servio-purple text-5xl font-black tracking-tight drop-shadow-lg ml-6">
+          <span className="text-servio-purple text-6xl font-extrabold tracking-tight drop-shadow-xl ml-8">
             Servio
           </span>
         </div>
       </div>
       {showActions && (
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
+        <div className="flex items-center space-x-6">
+          <Button variant="ghost" size="lg">
+            <Settings className="h-5 w-5 mr-2" />
             Settings
           </Button>
-          <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
+          <Button variant="outline" size="lg" onClick={() => supabase.auth.signOut()}>
             Sign Out
           </Button>
         </div>
