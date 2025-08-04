@@ -6,17 +6,18 @@ import Link from "next/link";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
   return (
-    <nav className="flex items-center justify-between h-20 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
         <Link href="/" className="flex items-center">
-          <Image
-            src="/assets/servio-logo-updated.png"
-            alt="Servio"
-            width={120}
-            height={40}
-            priority
-            className="h-10 w-auto"
-          />
+          <div className="w-48 h-16 relative"> {/* Increased size */}
+            <Image
+              src="/assets/servio-logo-updated.png"
+              alt="Servio"
+              fill
+              style={{ objectFit: 'contain' }}
+              priority
+            />
+          </div>
           <span className="text-servio-purple text-2xl font-bold ml-2">Servio</span>
         </Link>
       </div>
