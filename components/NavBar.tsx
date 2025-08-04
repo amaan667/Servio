@@ -5,16 +5,21 @@ import Image from "next/image";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
   return (
-    <nav className="flex items-center justify-between h-32 px-12 bg-white border-b shadow-md sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-36 px-12 bg-white border-b shadow-md sticky top-0 z-20">
       <div className="flex items-center space-x-6">
         <div className="flex items-center transform hover:scale-105 transition-transform duration-200">
-          <div className="relative" style={{ width: '120px', height: '120px' }}>
+          <div className="flex-shrink-0">
             <Image
               src="/assets/servio-logo-updated.png"
               alt="Servio"
-              fill
+              width={140}
+              height={140}
               priority
-              className="drop-shadow-xl object-contain"
+              className="drop-shadow-xl min-w-[140px] min-h-[140px]"
+              style={{
+                width: '140px',
+                height: '140px',
+              }}
             />
           </div>
           <span className="text-servio-purple text-5xl font-black tracking-tight drop-shadow-lg ml-6">
