@@ -8,11 +8,12 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
       <div className="flex-1 flex items-center">
         <div className="flex items-center transform hover:scale-105 transition-transform duration-200 py-4">
           <div className="relative" style={{ minWidth: '180px', height: '80px' }}>
-            <img 
-              src="/servio-logo.svg" 
-              alt="Servio" 
-              className="absolute top-0 left-0 w-full h-full object-contain drop-shadow-2xl" 
-            />
+                      <img 
+            src="/assets/servio-logo-updated.png" 
+            alt="Servio" 
+            className="h-20 w-auto drop-shadow-xl" 
+            style={{ minWidth: 80 }} 
+          />
           </div>
           <span className="text-servio-purple text-5xl font-black tracking-tight drop-shadow-md ml-6 transform -translate-y-1">
             Servio
