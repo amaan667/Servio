@@ -4,10 +4,17 @@ import { Settings } from "lucide-react";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
   return (
-    <nav className="flex items-center justify-between h-20 px-10 bg-white border-b shadow-sm sticky top-0 z-20">
-      <div className="flex items-center space-x-6">
-        <img src="/servio-logo.svg" alt="Servio" className="h-14 w-auto drop-shadow-lg" style={{ minWidth: 56 }} />
-        <span className="text-servio-purple text-3xl font-extrabold tracking-tight drop-shadow-sm">Servio</span>
+    <nav className="flex items-center justify-between h-24 px-12 bg-white border-b shadow-md sticky top-0 z-20">
+      <div className="flex items-center space-x-6 -mt-1">
+        <div className="flex items-center transform hover:scale-105 transition-transform duration-200">
+          <img 
+            src="/servio-logo.svg" 
+            alt="Servio" 
+            className="h-16 w-auto drop-shadow-xl" 
+            style={{ minWidth: 64 }} 
+          />
+          <span className="text-servio-purple text-4xl font-extrabold tracking-tight drop-shadow-sm ml-4">Servio</span>
+        </div>
       </div>
       {showActions && (
         <div className="flex items-center space-x-4">
