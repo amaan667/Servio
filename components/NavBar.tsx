@@ -10,7 +10,7 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
       <div className="flex items-center">
         <Link href="/" className="flex items-center">
           <Image
-            src="/servio-logo.svg"
+            src="/assets/servio-logo-updated.png"
             alt="Servio logo"
             width={160}
             height={40}
