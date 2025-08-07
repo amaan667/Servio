@@ -36,12 +36,12 @@ export default function GlobalNav() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
-              <Image 
-                src="/assets/servio-logo-updated.png" 
-                alt="Servio" 
-                width={160} 
+              <Image
+                src="/servio-logo.svg"
+                alt="Servio logo"
+                width={160}
                 height={40}
-                className="h-10 w-auto"
+                className="mr-4"
               />
             </Link>
           </div>
