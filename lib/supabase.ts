@@ -215,51 +215,23 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  try {
-    // Debug environment variables
-    console.log("Environment check:", {
-      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-      NODE_ENV: process.env.NODE_ENV,
-      RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
-      currentOrigin: typeof window !== "undefined" ? window.location.origin : "server-side"
-    });
+  // Compute redirect URL based on environment or browser origin.
+  const redirectTo = process.env.NEXT_PUBLIC_SITE_URL
+    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+    : typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/callback`
+      : 'https://servio-production.up.railway.app/auth/callback';
 
-    // ALWAYS use Railway production URL - never localhost
-    const redirectTo = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app/auth/callback";
-    
-    console.log("✅ Using Railway domain for OAuth:", redirectTo);
-    
-    console.log("Final OAuth redirect configuration:", { 
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
       redirectTo,
-      environment: {
-        RAILWAY_ENV: process.env.RAILWAY_ENVIRONMENT,
-        NODE_ENV: process.env.NODE_ENV,
-        SITE_URL: process.env.NEXT_PUBLIC_SITE_URL
-      }
-    });
-    
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo,
-        queryParams: { 
-          access_type: "offline", 
-          prompt: "consent" 
-        }
-      }
-    });
-    
-    if (error) {
-      console.error("❌ Google OAuth error:", error);
-      throw error;
-    }
-    
-    console.log("✅ Google OAuth initiated successfully", { redirectTo });
-    return data;
-  } catch (error) {
-    console.error("❌ Google sign-in failed:", error);
-    throw error;
-  }
+      queryParams: { access_type: 'offline', prompt: 'consent' },
+    },
+  });
+
+  if (error) throw error;
+  return data;
 }
 
 // Sign out function
