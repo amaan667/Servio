@@ -231,6 +231,53 @@ export async function signInWithGoogle() {
   return data;
 }
 
+// Handle Google OAuth sign-up and create venue
+export async function handleGoogleSignUp(userId: string, userEmail: string, fullName?: string) {
+  try {
+    console.log("Creating venue for Google sign-up user:", userId);
+    
+    // Check if user already has a venue
+    const { data: existingVenue, error: checkError } = await supabase
+      .from("venues")
+      .select("*")
+      .eq("owner_id", userId)
+      .single();
+
+    if (existingVenue && !checkError) {
+      console.log("User already has venue:", existingVenue.venue_id);
+      return { success: true, venue: existingVenue };
+    }
+
+    // Create default venue for new Google user
+    const venueId = `venue-${userId.slice(0, 8)}`;
+    const venueName = fullName ? `${fullName}'s Business` : "My Business";
+    
+    const { data: newVenue, error: createError } = await supabase
+      .from("venues")
+      .insert({
+        venue_id: venueId,
+        name: venueName,
+        business_type: "Restaurant",
+        owner_id: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error("Failed to create venue for Google user:", createError);
+      return { success: false, error: createError.message };
+    }
+
+    console.log("Created venue for Google user:", newVenue.venue_id);
+    return { success: true, venue: newVenue };
+  } catch (error) {
+    console.error("Error in handleGoogleSignUp:", error);
+    return { success: false, error: "Failed to create venue" };
+  }
+}
+
 // Sign out function
 export async function signOutUser() {
   try {
