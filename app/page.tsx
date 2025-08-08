@@ -73,9 +73,7 @@ function PricingQuickCompare() {
 function HomePageContent() {
   const [session, setSession] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [processingOAuth, setProcessingOAuth] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const getSession = async () => {
@@ -90,51 +88,6 @@ function HomePageContent() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // Handle OAuth callback
-  useEffect(() => {
-    const handleOAuthCallback = async () => {
-      if (!searchParams) return;
-      
-      const code = searchParams.get('code');
-      const error = searchParams.get('error');
-      const errorDescription = searchParams.get('error_description');
-
-      if (error) {
-        console.error('OAuth error:', error, errorDescription);
-        return;
-      }
-
-      if (code && !processingOAuth) {
-        console.log('Processing OAuth callback with code:', code);
-        setProcessingOAuth(true);
-        
-        try {
-          // Let Supabase handle the OAuth callback
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          
-          if (error) {
-            console.error('Error exchanging code for session:', error);
-            // Clear the URL parameters to prevent re-processing
-            window.history.replaceState({}, document.title, window.location.pathname);
-          } else {
-            console.log('OAuth callback successful:', data);
-            // Clear the URL parameters and redirect to dashboard
-            window.history.replaceState({}, document.title, '/dashboard');
-            router.push('/dashboard');
-          }
-        } catch (err) {
-          console.error('Error processing OAuth callback:', err);
-          // Clear the URL parameters to prevent re-processing
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } finally {
-          setProcessingOAuth(false);
-        }
-      }
-    };
-
-    handleOAuthCallback();
-  }, [searchParams, processingOAuth, router]);
 
   const handleGetStarted = () => {
     if (session) {
@@ -159,18 +112,6 @@ function HomePageContent() {
       router.push("/order?demo=1");
     }
   };
-
-  // Show loading state while processing OAuth
-  if (processingOAuth) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Completing sign in...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white">
