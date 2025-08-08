@@ -21,32 +21,59 @@ export default function DashboardPage() {
   const [session, setSession] = useState<any>(null);
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      
-      if (session?.user) {
-        // Fetch venue for the user
-        const { data: venueData, error } = await supabase
-        .from("venues")
-        .select("*")
-          .eq("owner_id", session.user.id)
-          .single();
+      try {
+        console.log("Dashboard: Getting session...");
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (!error && venueData) {
-          setVenue(venueData);
+        if (sessionError) {
+          console.error("Dashboard: Session error:", sessionError);
+          setError("Failed to get session");
+          setLoading(false);
+          return;
         }
+
+        console.log("Dashboard: Session found:", !!session);
+        setSession(session);
+        
+        if (session?.user) {
+          console.log("Dashboard: Fetching venue for user:", session.user.id);
+          // Fetch venue for the user
+          const { data: venueData, error: venueError } = await supabase
+            .from("venues")
+            .select("*")
+            .eq("owner_id", session.user.id)
+            .single();
+          
+          if (venueError) {
+            console.error("Dashboard: Venue fetch error:", venueError);
+            // Don't fail completely if venue fetch fails
+            setVenue(null);
+          } else if (venueData) {
+            console.log("Dashboard: Venue found:", venueData.venue_id);
+            setVenue(venueData);
+          } else {
+            console.log("Dashboard: No venue found for user");
+            setVenue(null);
+          }
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Dashboard: Unexpected error:", error);
+        setError("An unexpected error occurred");
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
     
     getSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Dashboard: Auth state changed:", _event);
       setSession(session);
     });
 
@@ -64,7 +91,19 @@ export default function DashboardPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error: {error}</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!session) {
+    console.log("Dashboard: No session, redirecting to sign-in");
     router.replace("/sign-in");
     return null;
   }

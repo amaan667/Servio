@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, handleGoogleSignUp } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,8 +27,23 @@ export async function GET(request: NextRequest) {
         }
 
         if (data.session) {
-          console.log('OAuth callback successful, redirecting to dashboard');
-          return NextResponse.redirect(`${baseUrl}/dashboard`);
+          console.log('OAuth callback successful, user:', data.session.user.email);
+          
+          // Handle Google sign-up - create venue for new users
+          const venueResult = await handleGoogleSignUp(
+            data.session.user.id,
+            data.session.user.email || '',
+            data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name
+          );
+          
+          if (venueResult.success) {
+            console.log('Venue setup completed, redirecting to dashboard');
+            return NextResponse.redirect(`${baseUrl}/dashboard`);
+          } else {
+            console.error('Failed to setup venue:', venueResult.error);
+            // Still redirect to dashboard even if venue creation fails
+            return NextResponse.redirect(`${baseUrl}/dashboard`);
+          }
         } else {
           console.error('No session after code exchange');
           return NextResponse.redirect(`${baseUrl}/sign-in?error=no_session`);
