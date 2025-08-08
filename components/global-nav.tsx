@@ -30,40 +30,41 @@ export default function GlobalNav() {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
               <Image
-                src="/servio-logo.svg"
+                src="/assets/servio-logo-updated.png"
                 alt="Servio logo"
-                width={160}
-                height={40}
-                className="mr-4"
+                width={240}
+                height={64}
+                className="h-12 w-auto mr-4 drop-shadow-sm"
+                priority
               />
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
+            <div className="ml-10 flex items-center space-x-6">
               <Link
                 href="/"
-                className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Home
               </Link>
               <Link
                 href="#features"
-                className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Features
               </Link>
               <Link
                 href="#pricing"
-                className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Pricing
               </Link>
@@ -71,7 +72,7 @@ export default function GlobalNav() {
                 <>
                   <Link
                     href="/dashboard"
-                    className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                   >
                     Dashboard
                   </Link>
@@ -79,7 +80,7 @@ export default function GlobalNav() {
                     onClick={handleSignOut}
                     variant="outline"
                     size="sm"
-                    className="ml-4"
+                    className="ml-2"
                   >
                     Sign Out
                   </Button>
@@ -88,12 +89,12 @@ export default function GlobalNav() {
                 <>
                   <Link
                     href="/sign-in"
-                    className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                   >
                     Sign In
                   </Link>
                   <Link href="/sign-up">
-                    <Button size="sm" className="ml-4">
+                    <Button size="sm" className="ml-2">
                       Get Started
                     </Button>
                   </Link>
@@ -122,24 +123,24 @@ export default function GlobalNav() {
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
         <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
             <Link
               href="/"
-              className="text-gray-500 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
               Home
             </Link>
             <Link
               href="#features"
-              className="text-gray-500 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
               Features
             </Link>
             <Link
               href="#pricing"
-              className="text-gray-500 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
@@ -148,7 +149,7 @@ export default function GlobalNav() {
               <>
                 <Link
                   href="/dashboard"
-                  className="text-gray-500 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Dashboard
@@ -166,7 +167,7 @@ export default function GlobalNav() {
               <>
                 <Link
                   href="/sign-in"
-                  className="text-gray-500 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sign In

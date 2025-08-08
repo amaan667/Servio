@@ -28,7 +28,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'implicit',
+    flowType: 'pkce',
     debug: process.env.NODE_ENV === 'development'
   }
 });
@@ -215,12 +215,9 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  // Compute redirect URL based on environment or browser origin.
-  const redirectTo = process.env.NEXT_PUBLIC_SITE_URL
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-    : typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/callback`
-      : 'https://servio-production.up.railway.app/auth/callback';
+  // ALWAYS use Railway domain for redirect
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
+  const redirectTo = `${baseUrl}/auth/callback`;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
