@@ -1,14 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const searchParams = url.searchParams;
+    const code = searchParams.get('code');
+    const error = searchParams.get('error');
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
 
-    // Forward the full query string (code, state, error, etc.) to the client at the site root
-    const redirectUrl = `${baseUrl}/?${searchParams.toString()}`;
-    return NextResponse.redirect(redirectUrl);
+    if (error) {
+      console.error('OAuth error:', error);
+      return NextResponse.redirect(`${baseUrl}/sign-in?error=oauth_error`);
+    }
+
+    if (code) {
+      console.log('Processing OAuth callback with code:', code.substring(0, 10) + '...');
+      
+      try {
+        // Exchange the code for a session
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        
+        if (exchangeError) {
+          console.error('Error exchanging code for session:', exchangeError);
+          return NextResponse.redirect(`${baseUrl}/sign-in?error=session_exchange_failed`);
+        }
+
+        if (data.session) {
+          console.log('OAuth callback successful, redirecting to dashboard');
+          return NextResponse.redirect(`${baseUrl}/dashboard`);
+        } else {
+          console.error('No session after code exchange');
+          return NextResponse.redirect(`${baseUrl}/sign-in?error=no_session`);
+        }
+      } catch (exchangeError) {
+        console.error('Exception during code exchange:', exchangeError);
+        return NextResponse.redirect(`${baseUrl}/sign-in?error=exchange_exception`);
+      }
+    }
+
+    // No code provided
+    console.error('No code provided in OAuth callback');
+    return NextResponse.redirect(`${baseUrl}/sign-in?error=no_code`);
   } catch (error) {
     console.error('Auth callback error:', error);
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
