@@ -12,14 +12,19 @@ CREATE TABLE IF NOT EXISTS venues (
   venue_id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
-    address TEXT,
+  address TEXT,
   phone TEXT,
   email TEXT,
   website TEXT,
   logo_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  business_type TEXT DEFAULT 'Restaurant',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Index for efficient owner-based queries
+CREATE INDEX IF NOT EXISTS idx_venues_owner_id ON venues(owner_id);
 
 -- =====================================================
 -- MENU_ITEMS TABLE

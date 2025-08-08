@@ -18,7 +18,7 @@ export default function CompleteProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [formData, setFormData] = useState({
     venueName: "",
-    businessType: "restaurant",
+    businessType: "Restaurant",
     address: "",
     phone: "",
   });
@@ -48,6 +48,8 @@ export default function CompleteProfilePage() {
 
       const venueId = `venue-${user.id.slice(0, 8)}`;
       
+      console.log("Creating/updating venue for user:", user.id);
+      
       // First check if venue already exists
       const { data: existingVenue, error: checkError } = await supabase
         .from("venues")
@@ -56,6 +58,7 @@ export default function CompleteProfilePage() {
         .maybeSingle();
 
       if (existingVenue) {
+        console.log("Updating existing venue:", existingVenue.venue_id);
         // Update existing venue
         const { data: updatedVenue, error: updateError } = await supabase
           .from("venues")
@@ -70,14 +73,16 @@ export default function CompleteProfilePage() {
           .single();
 
         if (updateError) {
+          console.error("Update venue error:", updateError);
           throw updateError;
         }
 
-        logger.info("Profile updated successfully", { userId: user.id, venueId });
+        logger.info("Profile updated successfully", { userId: user.id, venueId: existingVenue.venue_id });
         router.replace("/dashboard");
         return;
       }
 
+      console.log("Creating new venue:", venueId);
       // Create new venue
       const { data: venue, error: venueError } = await supabase
         .from("venues")
@@ -93,8 +98,10 @@ export default function CompleteProfilePage() {
         .single();
 
       if (venueError) {
+        console.error("Create venue error:", venueError);
         if (venueError.code === "23505") {
           // Unique constraint violation - venue already exists
+          console.log("Venue already exists, updating instead");
           const { data: existingVenue, error: fetchError } = await supabase
             .from("venues")
             .select("*")
@@ -102,6 +109,7 @@ export default function CompleteProfilePage() {
             .single();
 
           if (fetchError) {
+            console.error("Fetch existing venue error:", fetchError);
             throw fetchError;
           }
 
@@ -119,6 +127,7 @@ export default function CompleteProfilePage() {
             .single();
 
           if (updateError) {
+            console.error("Update existing venue error:", updateError);
             throw updateError;
           }
         } else {
@@ -129,6 +138,7 @@ export default function CompleteProfilePage() {
       logger.info("Profile completed successfully", { userId: user.id, venueId });
       router.replace("/dashboard");
     } catch (error: any) {
+      console.error("Failed to complete profile:", error);
       logger.error("Failed to complete profile", { error });
       setError(error.message || "Failed to complete profile setup");
     } finally {
@@ -199,12 +209,13 @@ export default function CompleteProfilePage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                   required
                 >
-                  <option value="restaurant">Restaurant</option>
-                  <option value="cafe">Cafe</option>
-                  <option value="bar">Bar</option>
-                  <option value="food-truck">Food Truck</option>
-                  <option value="catering">Catering</option>
-                  <option value="other">Other</option>
+                  <option value="Restaurant">Restaurant</option>
+                  <option value="Cafe">Cafe</option>
+                  <option value="Food Truck">Food Truck</option>
+                  <option value="Coffee Shop">Coffee Shop</option>
+                  <option value="Bar">Bar</option>
+                  <option value="Bakery">Bakery</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
 
