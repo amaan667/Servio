@@ -2,23 +2,23 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '@/lib/logger';
+import { APP_URL } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
     const requestUrl = new URL(req.url);
     const code = requestUrl.searchParams.get('code');
     const error = requestUrl.searchParams.get('error');
-    const origin = requestUrl.origin;
 
     // Handle OAuth errors
     if (error) {
       logger.error('OAuth error:', { error });
-      return NextResponse.redirect(`${origin}/sign-in?error=oauth_error`);
+      return NextResponse.redirect(`${APP_URL}/sign-in?error=oauth_error`);
     }
 
     if (!code) {
       logger.error('No code provided in OAuth callback');
-      return NextResponse.redirect(`${origin}/sign-in?error=no_code`);
+      return NextResponse.redirect(`${APP_URL}/sign-in?error=no_code`);
     }
 
     // Create Supabase client
@@ -30,18 +30,18 @@ export async function GET(req: Request) {
 
       if (sessionError) {
         logger.error('Session exchange error:', { error: sessionError });
-        return NextResponse.redirect(`${origin}/sign-in?error=session_failed`);
+        return NextResponse.redirect(`${APP_URL}/sign-in?error=session_failed`);
       }
 
       if (!user) {
         logger.error('No user after code exchange');
-        return NextResponse.redirect(`${origin}/sign-in?error=no_user`);
+        return NextResponse.redirect(`${APP_URL}/sign-in?error=no_user`);
       }
 
       // Check if email is available
       if (!user.email) {
         logger.error('No email provided by Google');
-        return NextResponse.redirect(`${origin}/sign-in?error=no_email`);
+        return NextResponse.redirect(`${APP_URL}/sign-in?error=no_email`);
       }
 
       // Check if this is a password user trying to use Google
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
         
         if (hasEmailIdentity && !hasGoogleIdentity) {
           logger.info('Email user attempting Google login - needs linking');
-          return NextResponse.redirect(`${origin}/settings/account?link_google=true`);
+          return NextResponse.redirect(`${APP_URL}/settings/account?link_google=true`);
         }
       }
 
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
 
       if (profileError) {
         logger.error('Error upserting profile:', { error: profileError });
-        return NextResponse.redirect(`${origin}/sign-in?error=profile_error`);
+        return NextResponse.redirect(`${APP_URL}/sign-in?error=profile_error`);
       }
 
       // Detect if this is their first login
@@ -96,25 +96,25 @@ export async function GET(req: Request) {
         }
 
         logger.info('Redirecting to onboarding');
-        return NextResponse.redirect(`${origin}/complete-profile`);
+        return NextResponse.redirect(new URL('/complete-profile', APP_URL));
       }
 
       // Check if onboarding is incomplete
       if (profile && !profile.onboarding_complete) {
         logger.info('Onboarding incomplete, redirecting to complete-profile');
-        return NextResponse.redirect(`${origin}/complete-profile`);
+        return NextResponse.redirect(new URL('/complete-profile', APP_URL));
       }
 
       // All good - redirect to dashboard
       logger.info('Authentication successful, redirecting to dashboard');
-      return NextResponse.redirect(`${origin}/dashboard`);
+      return NextResponse.redirect(new URL('/dashboard', APP_URL));
 
     } catch (error) {
       logger.error('Unexpected error in auth callback:', { error });
-      return NextResponse.redirect(`${origin}/sign-in?error=unexpected`);
+      return NextResponse.redirect(`${APP_URL}/sign-in?error=unexpected`);
     }
   } catch (error) {
     logger.error('Critical error in auth callback:', { error });
-    return NextResponse.redirect('/sign-in?error=critical');
+    return NextResponse.redirect(`${APP_URL}/sign-in?error=critical`);
   }
 }

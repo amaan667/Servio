@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { logger } from './logger';
+import { getAuthRedirectUrl } from './auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -42,10 +43,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 export async function signInWithGoogle() {
   try {
-    const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL;
-    const redirectTo = `${origin}/auth/callback`;
+    const redirectTo = getAuthRedirectUrl('/auth/callback');
 
-    logger.info('🔑 Initiating Google OAuth...');
+    logger.info('🔑 Initiating Google OAuth with redirect:', redirectTo);
 
     // Try popup first
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -73,7 +73,6 @@ export async function signInWithGoogle() {
             prompt: 'consent'
           },
           skipBrowserRedirect: false,
-          flowType: 'implicit'
         },
       });
 
@@ -121,8 +120,7 @@ export async function signInUser(email: string, password: string) {
 
 export async function linkGoogleAccount() {
   try {
-    const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL;
-    const redirectTo = `${origin}/settings/account`;
+    const redirectTo = getAuthRedirectUrl('/settings/account');
 
     const { data, error } = await supabase.auth.linkIdentity({
       provider: 'google',
