@@ -1,13 +1,10 @@
-export const APP_URL = 
-  process.env.NEXT_PUBLIC_APP_URL ?? 
-  (typeof window !== 'undefined' && window.location.origin.includes('localhost') 
-    ? window.location.origin 
-    : 'https://servio-production.up.railway.app');
+export const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
 
 console.log('🔧 AUTH CONFIG:', {
   APP_URL,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  NODE_ENV: process.env.NODE_ENV
+  NODE_ENV: process.env.NODE_ENV,
 });
 
 export const getAuthRedirectUrl = (path: string = '/auth/callback') => {
