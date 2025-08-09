@@ -1,92 +1,120 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { logger } from '@/lib/logger';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export async function GET(request: NextRequest) {
+export async function GET(req: Request) {
   try {
-    const requestUrl = new URL(request.url);
+    const requestUrl = new URL(req.url);
     const code = requestUrl.searchParams.get('code');
-    const next = requestUrl.searchParams.get('next') || '/dashboard';
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
+    const error = requestUrl.searchParams.get('error');
+    const origin = requestUrl.origin;
+
+    // Handle OAuth errors
+    if (error) {
+      logger.error('OAuth error:', { error });
+      return NextResponse.redirect(`${origin}/sign-in?error=oauth_error`);
+    }
 
     if (!code) {
-      console.error('No code provided in OAuth callback');
-      return NextResponse.redirect(`${baseUrl}/sign-in?error=no_code`);
+      logger.error('No code provided in OAuth callback');
+      return NextResponse.redirect(`${origin}/sign-in?error=no_code`);
     }
 
-    // Create a new response to handle cookies
-    const response = NextResponse.redirect(`${baseUrl}${next}`);
-    
+    // Create Supabase client
+    const supabase = createRouteHandlerClient({ cookies });
+
     try {
-      // Create a fresh Supabase client for this request
-      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          flowType: 'implicit',
-          detectSessionInUrl: false,
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      });
+      // Exchange code for session
+      const { data: { user }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
 
-      // Get OAuth tokens from code
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (error) {
-        console.error('Error exchanging code for session:', error);
-        return NextResponse.redirect(`${baseUrl}/sign-in?error=auth_failed`);
+      if (sessionError) {
+        logger.error('Session exchange error:', { error: sessionError });
+        return NextResponse.redirect(`${origin}/sign-in?error=session_failed`);
       }
 
-      if (!data.session) {
-        console.error('No session data received');
-        return NextResponse.redirect(`${baseUrl}/sign-in?error=no_session`);
+      if (!user) {
+        logger.error('No user after code exchange');
+        return NextResponse.redirect(`${origin}/sign-in?error=no_user`);
       }
 
-      // Set auth cookies
-      const cookieStore = cookies();
-      response.cookies.set('sb-access-token', data.session.access_token, {
-        path: '/',
-        secure: true,
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-      });
+      // Check if email is available
+      if (!user.email) {
+        logger.error('No email provided by Google');
+        return NextResponse.redirect(`${origin}/sign-in?error=no_email`);
+      }
 
-      response.cookies.set('sb-refresh-token', data.session.refresh_token!, {
-        path: '/',
-        secure: true,
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-      });
-
-      // Create venue for new users
-      try {
-        const venueId = `venue-${data.session.user.id.slice(0, 8)}`;
+      // Check if this is a password user trying to use Google
+      const { data: { identities }, error: identityError } = await supabase.auth.admin.getUserIdentities(user.id);
+      
+      if (identityError) {
+        logger.error('Error checking user identities:', { error: identityError });
+      } else {
+        const hasGoogleIdentity = identities?.some(id => id.provider === 'google');
+        const hasEmailIdentity = identities?.some(id => id.provider === 'email');
         
-        await supabase
-          .from('venues')
-          .upsert({
-            venue_id: venueId,
-            name: data.session.user.user_metadata?.full_name || data.session.user.email?.split('@')[0] || 'My Venue',
-            business_type: 'Restaurant',
-            owner_id: data.session.user.id,
-            email: data.session.user.email,
-          });
-
-        console.log('Venue created/updated successfully');
-      } catch (venueError) {
-        console.error('Non-critical venue creation error:', venueError);
-        // Continue anyway - venue creation is not critical for auth
+        if (hasEmailIdentity && !hasGoogleIdentity) {
+          logger.info('Email user attempting Google login - needs linking');
+          return NextResponse.redirect(`${origin}/settings/account?link_google=true`);
+        }
       }
 
-      return response;
+      // Upsert profile (idempotent)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+          avatar_url: user.user_metadata?.avatar_url || '',
+          onboarding_complete: false
+        }, { 
+          onConflict: 'id',
+          returning: true 
+        })
+        .select()
+        .single();
+
+      if (profileError) {
+        logger.error('Error upserting profile:', { error: profileError });
+        return NextResponse.redirect(`${origin}/sign-in?error=profile_error`);
+      }
+
+      // Detect if this is their first login
+      const isFirstLogin = profile && profile.created_at === profile.updated_at;
+
+      if (isFirstLogin) {
+        logger.info('First-time login detected, provisioning account');
+        
+        // Provision first-time login resources
+        const { error: provisionError } = await supabase.rpc('provision_first_login', { 
+          new_user_id: user.id 
+        });
+
+        if (provisionError) {
+          logger.error('Error provisioning first login:', { error: provisionError });
+        }
+
+        logger.info('Redirecting to onboarding');
+        return NextResponse.redirect(`${origin}/complete-profile`);
+      }
+
+      // Check if onboarding is incomplete
+      if (profile && !profile.onboarding_complete) {
+        logger.info('Onboarding incomplete, redirecting to complete-profile');
+        return NextResponse.redirect(`${origin}/complete-profile`);
+      }
+
+      // All good - redirect to dashboard
+      logger.info('Authentication successful, redirecting to dashboard');
+      return NextResponse.redirect(`${origin}/dashboard`);
+
     } catch (error) {
-      console.error('Auth callback error:', error);
-      return NextResponse.redirect(`${baseUrl}/sign-in?error=callback_error`);
+      logger.error('Unexpected error in auth callback:', { error });
+      return NextResponse.redirect(`${origin}/sign-in?error=unexpected`);
     }
   } catch (error) {
-    console.error('Unexpected error in auth callback:', error);
-    return NextResponse.redirect(`${baseUrl}/sign-in?error=unexpected`);
+    logger.error('Critical error in auth callback:', { error });
+    return NextResponse.redirect('/sign-in?error=critical');
   }
 }
