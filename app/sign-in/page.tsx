@@ -94,10 +94,16 @@ export default function SignInPage() {
                 setError(null);
                 
                 try {
-                  await signInWithGoogle();
+                  console.log("🚀 Starting Google sign-in...");
+                  const result = await signInWithGoogle();
+                  console.log("✅ Google sign-in result:", result);
+                  
+                  // If we get here, the redirect should happen automatically
+                  // The function should redirect to Google's OAuth page
+                  
                 } catch (err: any) {
-                  console.error("Google sign-in error on sign-in page:", err);
-                  setError("Google sign-in failed. Please try again.");
+                  console.error("❌ Google sign-in error on sign-in page:", err);
+                  setError(`Google sign-in failed: ${err.message || 'Please try again.'}`);
                   setLoading(false);
                 }
               }}
