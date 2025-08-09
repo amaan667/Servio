@@ -1,282 +1,45 @@
-"use client";
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { createServerClient } from '@supabase/ssr'
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  QrCode,
-  BarChart3,
-  Clock,
-  Users,
-  Plus,
-  Settings,
-  ArrowRight,
-} from "lucide-react";
-import { supabase } from "@/lib/supabase";
+export const runtime = 'nodejs'
 
-export default function DashboardPage() {
-  const [session, setSession] = useState<any>(null);
-  const [venue, setVenue] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+export default async function DashboardPage() {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (n) => cookies().get(n)?.value,
+        set: (n, v, o) => cookies().set({ name: n, value: v, ...o }),
+        remove: (n, o) => cookies().set({ name: n, value: '', ...o }),
+      },
+    }
+  )
 
-  useEffect(() => {
-    const getSession = async () => {
-      try {
-        console.log("Dashboard: Getting session...");
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Dashboard: Session error:", sessionError);
-          setError("Failed to get session");
-          setLoading(false);
-          return;
-        }
+  // 1) Get user on the server
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/sign-in')
 
-        console.log("Dashboard: Session found:", !!session);
-        setSession(session);
-        
-        if (session?.user) {
-          console.log("Dashboard: Fetching venue for user:", session.user.id);
-          // Fetch venue for the user
-          const { data: venueData, error: venueError } = await supabase
-            .from("venues")
-            .select("*")
-            .eq("owner_id", session.user.id)
-            .single();
-          
-          if (venueError) {
-            console.error("Dashboard: Venue fetch error:", venueError);
-            // Don't fail completely if venue fetch fails
-            setVenue(null);
-          } else if (venueData) {
-            console.log("Dashboard: Venue found:", venueData.venue_id);
-            setVenue(venueData);
-          } else {
-            console.log("Dashboard: No venue found for user");
-            setVenue(null);
-          }
-        }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error("Dashboard: Unexpected error:", error);
-        setError("An unexpected error occurred");
-        setLoading(false);
-      }
-    };
-    
-    getSession();
+  // 2) (Optional) gate onboarding
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('onboarding_complete')
+    .eq('id', user.id)
+    .maybeSingle()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Dashboard: Auth state changed:", _event);
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+  if (profile && profile.onboarding_complete === false) {
+    redirect('/complete-profile')
   }
 
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Error: {error}</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    console.log("Dashboard: No session, redirecting to sign-in");
-    router.replace("/sign-in");
-    return null;
-  }
+  // 3) Load initial dashboard data here (serverside)
+  // const { data: venues } = await supabase.from('venues').select('*').eq('owner_id', user.id)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {session.user.email?.split("@")[0]}!
-          </h1>
-          <p className="text-gray-600">
-            Manage your business operations and track performance
-          </p>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/${venue?.venue_id || 'demo'}`)}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">Dashboard</h3>
-                  <p className="text-sm text-gray-600">View detailed analytics</p>
-                </div>
-                <BarChart3 className="h-8 w-8 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/generate-qr")}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">QR Codes</h3>
-                  <p className="text-sm text-gray-600">Generate table QR codes</p>
-                </div>
-                <QrCode className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/${venue?.venue_id || 'demo'}`)}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">Live Orders</h3>
-                  <p className="text-sm text-gray-600">Monitor incoming orders</p>
-                </div>
-                <Clock className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/${venue?.venue_id || 'demo'}`)}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">Menu Management</h3>
-                  <p className="text-sm text-gray-600">Update your menu items</p>
-                </div>
-                <Settings className="h-8 w-8 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Business Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Business Overview</CardTitle>
-              <CardDescription>
-                Key metrics for your business
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Orders</span>
-                  <Badge variant="secondary">0</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Revenue Today</span>
-                  <Badge variant="secondary">£0.00</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Active Tables</span>
-                  <Badge variant="secondary">0</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Setup</CardTitle>
-              <CardDescription>
-                Get started with your first steps
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button className="w-full justify-start" variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Menu Items
-              </Button>
-                <Button className="w-full justify-start" variant="outline">
-                <QrCode className="mr-2 h-4 w-4" />
-                Generate QR Codes
-              </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  <Users className="mr-2 h-4 w-4" />
-                  Invite Staff
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Getting Started */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Getting Started</CardTitle>
-            <CardDescription>
-              Follow these steps to set up your business
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="text-purple-600 font-semibold">1</span>
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium">Add your menu items</h4>
-                  <p className="text-sm text-gray-600">Upload your menu or add items manually</p>
-                </div>
-                <Button size="sm" variant="outline">
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-semibold">2</span>
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium">Generate QR codes</h4>
-                  <p className="text-sm text-gray-600">Create QR codes for each table</p>
-                </div>
-                <Button size="sm" variant="outline">
-                  Generate
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                    </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-green-600 font-semibold">3</span>
-                    </div>
-                <div className="flex-1">
-                  <h4 className="font-medium">Start receiving orders</h4>
-                  <p className="text-sm text-gray-600">Customers can now scan and order</p>
-                  </div>
-                <Badge variant="secondary">Ready</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+    <main className="p-6">
+      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <p className="text-gray-600 mt-2">Welcome, {user.email}</p>
+      {/* TODO: render real dashboard content using server-fetched data */}
+    </main>
+  )
 }
