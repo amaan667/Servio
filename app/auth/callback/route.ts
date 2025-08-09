@@ -1,120 +1,41 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
+
 import { cookies } from 'next/headers';
-import { logger } from '@/lib/logger';
+import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import { APP_URL } from '@/lib/auth';
 
 export async function GET(req: Request) {
-  try {
-    const requestUrl = new URL(req.url);
-    const code = requestUrl.searchParams.get('code');
-    const error = requestUrl.searchParams.get('error');
+  const url = new URL(req.url);
+  const code = url.searchParams.get('code');
+  console.log('[AUTH] /auth/callback hit. code?', !!code);
 
-    // Handle OAuth errors
-    if (error) {
-      logger.error('OAuth error:', { error });
-      return NextResponse.redirect(`${APP_URL}/sign-in?error=oauth_error`);
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (n) => cookies().get(n)?.value,
+        set: (n, v, o) => cookies().set({ name: n, value: v, ...o }),
+        remove: (n, o) => cookies().set({ name: n, value: '', ...o }),
+      },
     }
+  );
 
-    if (!code) {
-      logger.error('No code provided in OAuth callback');
-      return NextResponse.redirect(`${APP_URL}/sign-in?error=no_code`);
-    }
-
-    // Create Supabase client
-    const supabase = createRouteHandlerClient({ cookies });
-
-    try {
-      // Exchange code for session
-      const { data: { user }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (sessionError) {
-        logger.error('Session exchange error:', { error: sessionError });
-        return NextResponse.redirect(`${APP_URL}/sign-in?error=session_failed`);
-      }
-
-      if (!user) {
-        logger.error('No user after code exchange');
-        return NextResponse.redirect(`${APP_URL}/sign-in?error=no_user`);
-      }
-
-      // Check if email is available
-      if (!user.email) {
-        logger.error('No email provided by Google');
-        return NextResponse.redirect(`${APP_URL}/sign-in?error=no_email`);
-      }
-
-      // Check if this is a password user trying to use Google
-      const { data: { identities }, error: identityError } = await supabase.auth.admin.getUserIdentities(user.id);
-      
-      if (identityError) {
-        logger.error('Error checking user identities:', { error: identityError });
-      } else {
-        const hasGoogleIdentity = identities?.some(id => id.provider === 'google');
-        const hasEmailIdentity = identities?.some(id => id.provider === 'email');
-        
-        if (hasEmailIdentity && !hasGoogleIdentity) {
-          logger.info('Email user attempting Google login - needs linking');
-          return NextResponse.redirect(`${APP_URL}/settings/account?link_google=true`);
-        }
-      }
-
-      // Upsert profile (idempotent)
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          email: user.email,
-          name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-          avatar_url: user.user_metadata?.avatar_url || '',
-          onboarding_complete: false
-        }, { 
-          onConflict: 'id',
-          returning: true 
-        })
-        .select()
-        .single();
-
-      if (profileError) {
-        logger.error('Error upserting profile:', { error: profileError });
-        return NextResponse.redirect(`${APP_URL}/sign-in?error=profile_error`);
-      }
-
-      // Detect if this is their first login
-      const isFirstLogin = profile && profile.created_at === profile.updated_at;
-
-      if (isFirstLogin) {
-        logger.info('First-time login detected, provisioning account');
-        
-        // Provision first-time login resources
-        const { error: provisionError } = await supabase.rpc('provision_first_login', { 
-          new_user_id: user.id 
-        });
-
-        if (provisionError) {
-          logger.error('Error provisioning first login:', { error: provisionError });
-        }
-
-        logger.info('Redirecting to onboarding');
-        return NextResponse.redirect(new URL('/complete-profile', APP_URL));
-      }
-
-      // Check if onboarding is incomplete
-      if (profile && !profile.onboarding_complete) {
-        logger.info('Onboarding incomplete, redirecting to complete-profile');
-        return NextResponse.redirect(new URL('/complete-profile', APP_URL));
-      }
-
-      // All good - redirect to dashboard
-      logger.info('Authentication successful, redirecting to dashboard');
-      return NextResponse.redirect(new URL('/dashboard', APP_URL));
-
-    } catch (error) {
-      logger.error('Unexpected error in auth callback:', { error });
-      return NextResponse.redirect(`${APP_URL}/sign-in?error=unexpected`);
-    }
-  } catch (error) {
-    logger.error('Critical error in auth callback:', { error });
-    return NextResponse.redirect(`${APP_URL}/sign-in?error=critical`);
+  if (!code) {
+    console.error('[AUTH] Missing code');
+    return NextResponse.redirect(new URL('/sign-in?error=no_code', APP_URL));
   }
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error) {
+    console.error('[AUTH] exchangeCodeForSession error:', error.message);
+    return NextResponse.redirect(new URL(`/sign-in?error=${encodeURIComponent(error.message)}`, APP_URL));
+  }
+
+  // Prove cookie/session exists now
+  const { data: { user } } = await supabase.auth.getUser();
+  console.log('[AUTH] user after exchange?', !!user);
+
+  return NextResponse.redirect(new URL('/dashboard', APP_URL));
 }

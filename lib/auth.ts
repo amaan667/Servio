@@ -1,9 +1,12 @@
 export const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  'https://servio-production.up.railway.app';
 
 console.log('🔧 AUTH CONFIG:', {
   APP_URL,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NODE_ENV: process.env.NODE_ENV,
 });
 
