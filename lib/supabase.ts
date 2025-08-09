@@ -28,7 +28,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce',
+    flowType: 'implicit',
+    storage: {
+      getItem: (key) => {
+        if (typeof window !== 'undefined') {
+          return window.localStorage.getItem(key);
+        }
+        return null;
+      },
+      setItem: (key, value) => {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(key, value);
+        }
+      },
+      removeItem: (key) => {
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem(key);
+        }
+      },
+    },
     debug: process.env.NODE_ENV === 'development'
   }
 });
@@ -220,45 +238,28 @@ export async function signInWithGoogle() {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
     const redirectTo = `${baseUrl}/auth/callback`;
 
-    console.log('🔑 Initiating Google OAuth with redirect:', redirectTo);
+    console.log('🔑 Initiating Google OAuth...');
 
-    // Try different OAuth configurations to work around PKCE issues
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        queryParams: { 
-          access_type: 'offline', 
-          prompt: 'select_account'
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
         },
         skipBrowserRedirect: false,
-        scopes: 'email profile'
+        scopes: 'email profile',
+        flowType: 'implicit'
       },
     });
 
     if (error) {
-      console.error('❌ Google OAuth initiation failed:', error);
-      
-      // Try fallback approach
-      console.log('🔄 Trying fallback OAuth approach...');
-      const fallbackResult = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          skipBrowserRedirect: false,
-        },
-      });
-      
-      if (fallbackResult.error) {
-        console.error('❌ Fallback OAuth also failed:', fallbackResult.error);
-        throw fallbackResult.error;
-      }
-      
-      console.log('✅ Fallback OAuth initiated successfully:', fallbackResult.data);
-      return fallbackResult.data;
+      console.error('❌ Google OAuth failed:', error);
+      throw error;
     }
 
-    console.log('✅ Google OAuth initiated successfully:', data);
+    console.log('✅ Google OAuth initiated');
     return data;
   } catch (error) {
     console.error('❌ signInWithGoogle error:', error);
