@@ -1,44 +1,29 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { handleAuthSession } from '@supabase/auth-helpers-nextjs'; // npm i @supabase/auth-helpers-nextjs
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const code = url.searchParams.get('code');
+  // 1) Let Supabase set the auth cookies on this origin
+  const resWithCookies = await handleAuthSession(req); // 200 response with Set-Cookie
 
-  if (!code) {
-    return NextResponse.redirect(new URL('/sign-in?error=no_code', process.env.NEXT_PUBLIC_APP_URL!));
-  }
-
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => 
-            cookieStore.set(name, value, options)
-          )
-        },
-      },
-    }
+  // 2) Preserve those Set-Cookie headers while redirecting to /dashboard
+  const redirect = NextResponse.redirect(
+    new URL('/dashboard', process.env.NEXT_PUBLIC_APP_URL!)
   );
+  // copy ALL headers (esp. Set-Cookie) from resWithCookies to redirect
+  resWithCookies.headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'set-cookie') {
+      // multiple Set-Cookie headers are possible
+      redirect.headers.append(key, value);
+    }
+  });
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) {
-    return NextResponse.redirect(new URL(`/sign-in?error=${encodeURIComponent(error.message)}`, process.env.NEXT_PUBLIC_APP_URL!));
-  }
-
-  return NextResponse.redirect(new URL('/dashboard', process.env.NEXT_PUBLIC_APP_URL!));
+  return redirect;
 }
 
+// Some IdPs POST back; handle it the same way
 export async function POST(req: Request) {
-  // Some providers POST back — cover it too
-  return GET(req);
+  const resWithCookies = await handleAuthSession(req);
+  return resWithCookies;
 }
