@@ -1,24 +1,29 @@
+// app/auth/debug/route.ts
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function GET() {
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => cookies().get(name)?.value,
-        set: (name, value, options) => cookies().set({ name, value, ...options }),
-        remove: (name, options) => cookies().set({ name, value: '', ...options }),
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => 
+            cookieStore.set(name, value, options)
+          )
+        },
       },
     }
   );
-  
   const { data: { user } } = await supabase.auth.getUser();
-  
   return NextResponse.json({
     serverSeesUser: !!user,
-    cookies: cookies().getAll()
+    cookieNames: cookieStore.getAll().map(c => c.name),
   });
 }
