@@ -13,53 +13,36 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-// Create single Supabase client instance with proper configuration
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    flowType: 'pkce', // force PKCE for OAuth
     storage: {
-      getItem: (key) => {
-        if (typeof window !== 'undefined') {
-          return window.localStorage.getItem(key);
-        }
-        return null;
-      },
-      setItem: (key, value) => {
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(key, value);
-        }
-      },
-      removeItem: (key) => {
-        if (typeof window !== 'undefined') {
-          window.localStorage.removeItem(key);
-        }
-      },
+      getItem: (key) => (typeof window !== 'undefined' ? window.localStorage.getItem(key) : null),
+      setItem: (key, value) => (typeof window !== 'undefined' ? window.localStorage.setItem(key, value) : undefined),
+      removeItem: (key) => (typeof window !== 'undefined' ? window.localStorage.removeItem(key) : undefined),
     },
-    debug: process.env.NODE_ENV === 'development'
-  }
+    debug: process.env.NODE_ENV === 'development',
+  },
 });
 
 export async function signInWithGoogle() {
   try {
     const redirectTo = getAuthRedirectUrl('/auth/callback');
 
-    logger.info('🔑 Initiating Google OAuth with redirect', { redirectTo });
+    logger.info('🔑 Initiating Google OAuth with redirect (PKCE)', { redirectTo });
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
         queryParams: { access_type: 'offline', prompt: 'consent' },
-        skipBrowserRedirect: false,
       },
     });
 
-    if (error) {
-      console.error('OAuth start error:', error);
-    }
-
+    if (error) console.error('OAuth start error:', error);
     return data;
   } catch (error) {
     logger.error('❌ signInWithGoogle error', { error });
@@ -70,16 +53,10 @@ export async function signInWithGoogle() {
 export async function signInUser(email: string, password: string) {
   try {
     logger.info("Attempting sign in", { email });
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) {
       logger.error("Sign in failed", { error });
-      return {
-        success: false,
-        message: error?.message || "Failed to sign in"
-      };
+      return { success: false, message: error?.message || "Failed to sign in" };
     }
     return { success: true, user: data.user };
   } catch (error: any) {
@@ -91,28 +68,16 @@ export async function signInUser(email: string, password: string) {
 export async function linkGoogleAccount() {
   try {
     const redirectTo = getAuthRedirectUrl('/settings/account');
-
-    const { data, error } = await supabase.auth.linkIdentity({
-      provider: 'google',
-      options: { redirectTo }
-    });
-
+    const { data, error } = await supabase.auth.linkIdentity({ provider: 'google', options: { redirectTo } });
     if (error) {
       if (error.message?.includes('identity_already_exists')) {
-        return {
-          success: false,
-          message: 'This Google account is already linked to another user. Please sign in with that account instead.'
-        };
+        return { success: false, message: 'This Google account is already linked to another user. Please sign in with that account instead.' };
       }
       throw error;
     }
-
     return { success: true, data };
   } catch (error) {
     logger.error('Error linking Google account', { error });
-    return {
-      success: false,
-      message: 'Failed to link Google account. Please try again.'
-    };
+    return { success: false, message: 'Failed to link Google account. Please try again.' };
   }
 }
