@@ -222,21 +222,40 @@ export async function signInWithGoogle() {
 
     console.log('🔑 Initiating Google OAuth with redirect:', redirectTo);
 
+    // Try different OAuth configurations to work around PKCE issues
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
         queryParams: { 
           access_type: 'offline', 
-          prompt: 'consent'
+          prompt: 'select_account'
         },
         skipBrowserRedirect: false,
+        scopes: 'email profile'
       },
     });
 
     if (error) {
       console.error('❌ Google OAuth initiation failed:', error);
-      throw error;
+      
+      // Try fallback approach
+      console.log('🔄 Trying fallback OAuth approach...');
+      const fallbackResult = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          skipBrowserRedirect: false,
+        },
+      });
+      
+      if (fallbackResult.error) {
+        console.error('❌ Fallback OAuth also failed:', fallbackResult.error);
+        throw fallbackResult.error;
+      }
+      
+      console.log('✅ Fallback OAuth initiated successfully:', fallbackResult.data);
+      return fallbackResult.data;
     }
 
     console.log('✅ Google OAuth initiated successfully:', data);

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { handleGoogleSignUp } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,73 +7,98 @@ export async function GET(request: NextRequest) {
     const searchParams = url.searchParams;
     const code = searchParams.get('code');
     const error = searchParams.get('error');
+    const access_token = searchParams.get('access_token');
+    const refresh_token = searchParams.get('refresh_token');
+    const token_type = searchParams.get('token_type');
+    const expires_in = searchParams.get('expires_in');
+    
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
+
+    console.log('OAuth callback received:', {
+      hasCode: !!code,
+      hasAccessToken: !!access_token,
+      hasError: !!error,
+      error: error
+    });
 
     if (error) {
       console.error('OAuth error:', error);
       return NextResponse.redirect(`${baseUrl}/sign-in?error=oauth_error`);
     }
 
+    // Handle token-based flow (if available)
+    if (access_token && refresh_token) {
+      console.log('Using token-based OAuth flow');
+      
+      try {
+        const { data, error: sessionError } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+
+        if (sessionError) {
+          console.error('Error setting session from tokens:', sessionError);
+          return NextResponse.redirect(`${baseUrl}/sign-in?error=token_session_failed`);
+        }
+
+        if (data.session) {
+          console.log('Token-based OAuth successful, user:', data.session.user.email);
+          return NextResponse.redirect(`${baseUrl}/dashboard`);
+        }
+      } catch (tokenError) {
+        console.error('Exception during token handling:', tokenError);
+      }
+    }
+
+    // Handle code-based flow
     if (code) {
       console.log('Processing OAuth callback with code:', code.substring(0, 10) + '...');
       
       try {
-        // Create response object for cookie handling
-        const response = NextResponse.redirect(`${baseUrl}/dashboard`);
-        
-        // Create a Supabase client configured for server-side
-        const supabase = createServerClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          {
-            cookies: {
-              get: (name: string) => {
-                return request.cookies.get(name)?.value;
-              },
-              set: (name: string, value: string, options: any) => {
-                response.cookies.set({
-                  name,
-                  value,
-                  ...options,
-                });
-              },
-              remove: (name: string, options: any) => {
-                response.cookies.set({
-                  name,
-                  value: '',
-                  ...options,
-                });
-              },
-            },
-          }
-        );
-
-        // Exchange the code for a session
+        // Try the simple approach first
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         
         if (exchangeError) {
           console.error('Error exchanging code for session:', exchangeError);
+          
+          // If PKCE fails, try alternative approach
+          if (exchangeError.message?.includes('code verifier')) {
+            console.log('PKCE error detected, trying alternative OAuth completion...');
+            
+            // Redirect to a client-side handler that can complete the OAuth flow
+            return NextResponse.redirect(`${baseUrl}/auth/complete?code=${code}`);
+          }
+          
           return NextResponse.redirect(`${baseUrl}/sign-in?error=session_exchange_failed`);
         }
 
         if (data.session) {
           console.log('OAuth callback successful, user:', data.session.user.email);
           
-          // Handle Google sign-up - create venue for new users
-          const venueResult = await handleGoogleSignUp(
-            data.session.user.id,
-            data.session.user.email || '',
-            data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name
-          );
-          
-          if (venueResult.success) {
-            console.log('Venue setup completed, redirecting to dashboard');
-          } else {
-            console.error('Failed to setup venue:', venueResult.error);
-            // Still redirect to dashboard even if venue creation fails
+          // Create venue for new users (simplified)
+          try {
+            const venueId = `venue-${data.session.user.id.slice(0, 8)}`;
+            
+            const { error: venueError } = await supabase
+              .from("venues")
+              .upsert({
+                venue_id: venueId,
+                name: data.session.user.user_metadata?.full_name || data.session.user.email?.split('@')[0] || 'My Venue',
+                business_type: 'Restaurant',
+                owner_id: data.session.user.id,
+                email: data.session.user.email,
+              });
+            
+            if (venueError) {
+              console.error('Venue creation error (non-critical):', venueError);
+            } else {
+              console.log('Venue created/updated successfully');
+            }
+          } catch (venueError) {
+            console.error('Venue creation exception (non-critical):', venueError);
           }
           
-          return response;
+          return NextResponse.redirect(`${baseUrl}/dashboard`);
         } else {
           console.error('No session after code exchange');
           return NextResponse.redirect(`${baseUrl}/sign-in?error=no_session`);
@@ -85,9 +109,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // No code provided
-    console.error('No code provided in OAuth callback');
-    return NextResponse.redirect(`${baseUrl}/sign-in?error=no_code`);
+    // No code or token provided
+    console.error('No code or token provided in OAuth callback');
+    return NextResponse.redirect(`${baseUrl}/sign-in?error=no_auth_data`);
   } catch (error) {
     console.error('Auth callback error:', error);
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://servio-production.up.railway.app";
