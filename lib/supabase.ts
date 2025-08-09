@@ -45,61 +45,24 @@ export async function signInWithGoogle() {
   try {
     const redirectTo = getAuthRedirectUrl('/auth/callback');
 
-    console.log('🔑 Starting Google OAuth...');
-    console.log('📍 Redirect URL:', redirectTo);
-    console.log('🌐 Current location:', typeof window !== 'undefined' ? window.location.href : 'server-side');
-    
-    logger.info('🔑 Initiating Google OAuth with redirect:', { redirectTo });
+    logger.info('🔑 Initiating Google OAuth with redirect', { redirectTo });
 
-    // Try OAuth initiation
-    console.log('🚀 Calling supabase.auth.signInWithOAuth...');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent'
-        },
+        queryParams: { access_type: 'offline', prompt: 'consent' },
         skipBrowserRedirect: false,
       },
     });
 
-    console.log('📤 OAuth response:', { data, error });
-
-    // If popup blocked, try redirect flow
-    if (error?.message?.toLowerCase().includes('popup')) {
-      logger.info('Popup blocked, falling back to redirect flow');
-      
-      const { data: redirectData, error: redirectError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent'
-          },
-          skipBrowserRedirect: false,
-        },
-      });
-
-      if (redirectError) {
-        logger.error('❌ Redirect OAuth failed:', redirectError);
-        throw redirectError;
-      }
-
-      return redirectData;
-    }
-
     if (error) {
-      logger.error('❌ Google OAuth failed:', error);
-      throw error;
+      console.error('OAuth start error:', error);
     }
 
-    logger.info('✅ Google OAuth initiated successfully');
     return data;
   } catch (error) {
-    logger.error('❌ signInWithGoogle error:', { error });
+    logger.error('❌ signInWithGoogle error', { error });
     throw error;
   }
 }
@@ -131,9 +94,7 @@ export async function linkGoogleAccount() {
 
     const { data, error } = await supabase.auth.linkIdentity({
       provider: 'google',
-      options: {
-        redirectTo,
-      }
+      options: { redirectTo }
     });
 
     if (error) {
@@ -148,7 +109,7 @@ export async function linkGoogleAccount() {
 
     return { success: true, data };
   } catch (error) {
-    logger.error('Error linking Google account:', { error });
+    logger.error('Error linking Google account', { error });
     return {
       success: false,
       message: 'Failed to link Google account. Please try again.'
