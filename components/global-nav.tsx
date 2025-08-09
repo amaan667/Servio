@@ -32,16 +32,16 @@ export default function GlobalNav() {
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-28">
+        <div className="flex justify-between items-center h-20 sm:h-24 lg:h-28">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
-                alt="Servio logo"
-                width={400}
-                height={100}
-                className="h-20 w-auto mr-8 drop-shadow-lg"
+                alt="Servio"
+                width={500}
+                height={150}
+                className="h-12 sm:h-16 lg:h-20 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-md"
                 priority
               />
             </Link>
@@ -49,7 +49,7 @@ export default function GlobalNav() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
-            <div className="ml-10 flex items-center space-x-6">
+            <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
               <Link
                 href="/"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
