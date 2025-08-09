@@ -45,9 +45,14 @@ export async function signInWithGoogle() {
   try {
     const redirectTo = getAuthRedirectUrl('/auth/callback');
 
+    console.log('🔑 Starting Google OAuth...');
+    console.log('📍 Redirect URL:', redirectTo);
+    console.log('🌐 Current location:', typeof window !== 'undefined' ? window.location.href : 'server-side');
+    
     logger.info('🔑 Initiating Google OAuth with redirect:', { redirectTo });
 
-    // Try popup first
+    // Try OAuth initiation
+    console.log('🚀 Calling supabase.auth.signInWithOAuth...');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -59,6 +64,8 @@ export async function signInWithGoogle() {
         skipBrowserRedirect: false,
       },
     });
+
+    console.log('📤 OAuth response:', { data, error });
 
     // If popup blocked, try redirect flow
     if (error?.message?.toLowerCase().includes('popup')) {
