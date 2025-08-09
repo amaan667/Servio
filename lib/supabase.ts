@@ -45,7 +45,7 @@ export async function signInWithGoogle() {
   try {
     const redirectTo = getAuthRedirectUrl('/auth/callback');
 
-    logger.info('🔑 Initiating Google OAuth with redirect:', redirectTo);
+    logger.info('🔑 Initiating Google OAuth with redirect:', { redirectTo });
 
     // Try popup first
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -92,7 +92,7 @@ export async function signInWithGoogle() {
     logger.info('✅ Google OAuth initiated successfully');
     return data;
   } catch (error) {
-    logger.error('❌ signInWithGoogle error:', error);
+    logger.error('❌ signInWithGoogle error:', { error });
     throw error;
   }
 }
@@ -141,7 +141,7 @@ export async function linkGoogleAccount() {
 
     return { success: true, data };
   } catch (error) {
-    logger.error('Error linking Google account:', error);
+    logger.error('Error linking Google account:', { error });
     return {
       success: false,
       message: 'Failed to link Google account. Please try again.'
