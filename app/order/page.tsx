@@ -28,9 +28,9 @@ interface CartItem extends MenuItem {
 
 export default function CustomerOrderPage() {
   const searchParams = useSearchParams();
-  const venueSlug = searchParams.get("venue") || "demo-cafe";
-  const tableNumber = searchParams.get("table") || "1";
-  const isDemo = searchParams.get("demo") === "1";
+  const venueSlug = searchParams?.get("venue") || "demo-cafe";
+  const tableNumber = searchParams?.get("table") || "1";
+  const isDemo = searchParams?.get("demo") === "1";
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
