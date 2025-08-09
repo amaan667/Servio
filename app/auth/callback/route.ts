@@ -1,4 +1,5 @@
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -8,7 +9,7 @@ import { APP_URL } from '@/lib/auth';
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
-  console.log('[AUTH] /auth/callback hit. code?', !!code);
+  console.log('[AUTH] /auth/callback hit. code?', !!code, 'host:', url.host);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,18 +25,19 @@ export async function GET(req: Request) {
 
   if (!code) {
     console.error('[AUTH] Missing code');
-    return NextResponse.redirect(new URL('/sign-in?error=no_code', APP_URL));
+    return NextResponse.json({ ok: false, where: 'no_code' }, { status: 400 });
   }
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     console.error('[AUTH] exchangeCodeForSession error:', error.message);
-    return NextResponse.redirect(new URL(`/sign-in?error=${encodeURIComponent(error.message)}`, APP_URL));
+    return NextResponse.json({ ok: false, where: 'exchange', error: error.message }, { status: 400 });
   }
 
-  // Prove cookie/session exists now
   const { data: { user } } = await supabase.auth.getUser();
   console.log('[AUTH] user after exchange?', !!user);
 
-  return NextResponse.redirect(new URL('/dashboard', APP_URL));
+  cookies().set({ name: 'dbg', value: '1', httpOnly: true, sameSite: 'lax', secure: true, path: '/' });
+
+  return NextResponse.redirect(new URL('/auth/debug', APP_URL));
 }
