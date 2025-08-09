@@ -1,4 +1,3 @@
-// app/(app)/dashboard/page.tsx
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -24,14 +23,8 @@ export default async function DashboardPage() {
       },
     }
   );
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/sign-in');
 
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      {/* …your content… */}
-    </main>
-  );
+  return <main className="p-6"><h1 className="text-2xl font-semibold">Dashboard</h1></main>;
 }
