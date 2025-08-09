@@ -1,29 +1,35 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
-import { handleAuthSession } from '@supabase/auth-helpers-nextjs'; // npm i @supabase/auth-helpers-nextjs
+import { handleAuthSession } from '@supabase/auth-helpers-nextjs';
 
 export async function GET(req: Request) {
-  // 1) Let Supabase set the auth cookies on this origin
-  const resWithCookies = await handleAuthSession(req); // 200 response with Set-Cookie
+  // 1) Let Supabase set the cookies on this domain
+  const withCookies = await handleAuthSession(req); // 200 + Set-Cookie
 
-  // 2) Preserve those Set-Cookie headers while redirecting to /dashboard
-  const redirect = NextResponse.redirect(
-    new URL('/dashboard', process.env.NEXT_PUBLIC_APP_URL!)
-  );
-  // copy ALL headers (esp. Set-Cookie) from resWithCookies to redirect
-  resWithCookies.headers.forEach((value, key) => {
-    if (key.toLowerCase() === 'set-cookie') {
-      // multiple Set-Cookie headers are possible
-      redirect.headers.append(key, value);
-    }
+  // 2) Build a 200 HTML response that copies ALL Set-Cookie headers, then JS-redirects
+  const html = `<!doctype html>
+  <meta charset="utf-8" />
+  <title>Signing you in…</title>
+  <p>Signing you in…</p>
+  <script>location.replace('/dashboard');</script>`;
+
+  const res = new NextResponse(html, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+
+  // Preserve every Set-Cookie from handleAuthSession
+  withCookies.headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'set-cookie') res.headers.append(key, value);
   });
 
-  return redirect;
+  return res;
 }
 
-// Some IdPs POST back; handle it the same way
+// Some IdPs POST back; cover POST the same way
 export async function POST(req: Request) {
-  const resWithCookies = await handleAuthSession(req);
-  return resWithCookies;
+  const withCookies = await handleAuthSession(req);
+  const res = new NextResponse('OK');
+  withCookies.headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'set-cookie') res.headers.append(key, value);
+  });
+  return res;
 }
