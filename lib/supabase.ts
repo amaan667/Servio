@@ -215,20 +215,36 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  // ALWAYS use Railway domain for redirect
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
-  const redirectTo = `${baseUrl}/auth/callback`;
+  try {
+    // ALWAYS use Railway domain for redirect
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
+    const redirectTo = `${baseUrl}/auth/callback`;
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo,
-      queryParams: { access_type: 'offline', prompt: 'consent' },
-    },
-  });
+    console.log('🔑 Initiating Google OAuth with redirect:', redirectTo);
 
-  if (error) throw error;
-  return data;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        queryParams: { 
+          access_type: 'offline', 
+          prompt: 'consent'
+        },
+        skipBrowserRedirect: false,
+      },
+    });
+
+    if (error) {
+      console.error('❌ Google OAuth initiation failed:', error);
+      throw error;
+    }
+
+    console.log('✅ Google OAuth initiated successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ signInWithGoogle error:', error);
+    throw error;
+  }
 }
 
 // Handle Google OAuth sign-up and create venue
