@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 
 export default async function DashboardPage() {
-  const cookieStore = cookies(); // <- no await
+  const cookieStore = cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
