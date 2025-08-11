@@ -7,15 +7,16 @@ import { createServerClient } from '@supabase/ssr';
 import SignUpForm from './signup-form';
 
 export default async function SignUpPage() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(all) { all.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); }
+        get: (n) => cookieStore.get(n)?.value,
+        set: (n, v, o) => cookieStore.set({ name: n, value: v, ...o }),
+        remove: (n, o) => cookieStore.set({ name: n, value: '', ...o }),
       }
     }
   );

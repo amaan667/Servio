@@ -30,15 +30,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 export async function signInWithGoogle() {
   try {
-    const redirectTo = getAuthRedirectUrl('/auth/callback');
-
+    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
     logger.info('🔑 Initiating Google OAuth with redirect (PKCE)', { redirectTo });
-
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
+      flowType: 'pkce',
     });
-
     if (error) console.error('OAuth start error:', error);
     return data;
   } catch (error) {
