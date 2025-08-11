@@ -6,7 +6,11 @@ import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 
 export default async function DashboardPage() {
+  console.log('[DASHBOARD] Starting dashboard page render...');
+  
   const cookieStore = await cookies();
+  console.log('[DASHBOARD] Got cookies, creating supabase client...');
+  
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,21 +25,30 @@ export default async function DashboardPage() {
     }
   );
 
+  console.log('[DASHBOARD] Checking user auth...');
   // 1) Auth (server)
   const { data: { user }, error: userErr } = await supabase.auth.getUser();
   if (userErr) {
-    console.error('getUser error', userErr);
+    console.error('[DASHBOARD] getUser error', userErr);
     redirect('/sign-in');
   }
-  if (!user) redirect('/sign-in');
+  if (!user) {
+    console.log('[DASHBOARD] No user found, redirecting to sign-in');
+    redirect('/sign-in');
+  }
+  console.log('[DASHBOARD] User found:', user.id);
 
+  console.log('[DASHBOARD] Fetching venues for user...');
   // 2) Route by venue (handle RLS/empty safely)
   const { data: venues, error: venuesErr } = await supabase
     .from('venues')
     .select('venue_id')
     .eq('owner_id', user.id);
 
+  console.log('[DASHBOARD] Venues query result:', { venues, venuesErr });
+
   if (venuesErr) {
+    console.error('[DASHBOARD] RLS/venues error:', venuesErr);
     // Most common cause is missing RLS policy: allow owner to SELECT.
     // Show a simple page instead of infinite loading.
     return (
@@ -48,8 +61,11 @@ export default async function DashboardPage() {
   }
 
   if (venues?.length && venues[0]?.venue_id) {
+    console.log('[DASHBOARD] Redirecting to venue:', venues[0].venue_id);
     redirect(`/dashboard/${venues[0].venue_id}`);
   }
+
+  console.log('[DASHBOARD] No venues found, showing complete profile prompt');
 
   // 3) Fallback when no venues
   return (
