@@ -1,35 +1,45 @@
 export const runtime = 'nodejs';
 
-import { NextResponse } from 'next/server';
-import { handleAuthSession } from '@supabase/auth-helpers-nextjs';
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-export async function GET(req: Request) {
-  // 1) Let Supabase set the cookies on this domain
-  const withCookies = await handleAuthSession(req); // 200 + Set-Cookie
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get('code');
+  const next = searchParams.get('next') ?? '/dashboard';
 
-  // 2) Build a 200 HTML response that copies ALL Set-Cookie headers, then JS-redirects
-  const html = `<!doctype html>
-  <meta charset="utf-8" />
-  <title>Signing you in…</title>
-  <p>Signing you in…</p>
-  <script>location.replace('/dashboard');</script>`;
+  if (code) {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
+        },
+      }
+    );
 
-  const res = new NextResponse(html, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`);
+    }
+  }
 
-  // Preserve every Set-Cookie from handleAuthSession
-  withCookies.headers.forEach((value, key) => {
-    if (key.toLowerCase() === 'set-cookie') res.headers.append(key, value);
-  });
-
-  return res;
-}
-
-// Some IdPs POST back; cover POST the same way
-export async function POST(req: Request) {
-  const withCookies = await handleAuthSession(req);
-  const res = new NextResponse('OK');
-  withCookies.headers.forEach((value, key) => {
-    if (key.toLowerCase() === 'set-cookie') res.headers.append(key, value);
-  });
-  return res;
+  // Return the user to an error page with instructions
+  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
 }
