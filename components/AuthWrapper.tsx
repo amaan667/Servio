@@ -14,7 +14,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   console.log("AuthWrapper initialized:", { pathname, loading, session: !!session });
 
   // Only these routes are public:
-  const publicRoutes = ['/', '/sign-in', '/sign-up', '/order', '/auth'];
+  const publicRoutes = ['/', '/sign-in', '/sign-up', '/order', '/auth', '/dashboard'];
   const isPublicRoute = pathname ? publicRoutes.some(route => pathname.startsWith(route)) : false;
 
   useEffect(() => {
