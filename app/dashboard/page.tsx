@@ -4,8 +4,11 @@ export const dynamic = 'force-dynamic';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
+import SimpleTest from './simple-test';
 
 export default async function DashboardPage() {
+  // Quick test - if this doesn't show, there's a fundamental server issue
+  return <SimpleTest />;
   console.log('[DASHBOARD] Starting dashboard page render...');
   
   const cookieStore = await cookies();
