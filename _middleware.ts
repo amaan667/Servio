@@ -1,18 +1,27 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC = ['/', '/sign-in', '/auth/callback', '/auth/error', '/auth/debug', '/api/env', '/complete-profile', '/dashboard'];
+const PUBLIC = [
+  '/', '/sign-in', '/auth/callback', '/auth/error',
+  '/auth/debug', '/api/env', '/api/dash-check', '/complete-profile', '/dashboard'
+];
 
 export function middleware(req: NextRequest) {
   const p = req.nextUrl.pathname;
+
   if (
     PUBLIC.includes(p) ||
-    p.startsWith('/_next') ||
-    p.startsWith('/static') ||
-    p === '/favicon.ico'
+    p.startsWith('/_next') || p.startsWith('/static') || p === '/favicon.ico'
   ) return NextResponse.next();
 
-  // Optional: add auth later; leave it open for the test
+  // (optional) simple protection by cookie presence
+  const hasSb = req.cookies.getAll().some(c => c.name.includes('-auth-token'));
+  if (!hasSb) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/sign-in';
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 export const config = { matcher: ['/((?!.*\\.).*)'] };
