@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, ArrowLeft } from "lucide-react";
-import { signUpUser, signInWithGoogle } from "@/lib/supabase";
+import { signUpUser, signInWithGoogle, supabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 export default function SignUpPage() {
@@ -31,6 +31,36 @@ export default function SignUpPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          logger.info("SIGNUP_PAGE: User already authenticated, redirecting to dashboard");
+          router.replace("/dashboard");
+          return;
+        }
+      } catch (error) {
+        logger.error("SIGNUP_PAGE: Error checking existing session", { error });
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [router]);
+
+  // Show loading while checking authentication
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-servio-purple" />
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
