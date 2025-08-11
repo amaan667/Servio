@@ -9,17 +9,51 @@ import { Menu, X } from "lucide-react";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [session, setSession] = useState<any>(null);
+  const [authState, setAuthState] = useState<{
+    authenticated: boolean;
+    user: any;
+    loading: boolean;
+  }>({
+    authenticated: false,
+    user: null,
+    loading: true
+  });
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth-check');
+        const data = await response.json();
+        
+        setAuthState({
+          authenticated: data.authenticated,
+          user: data.user,
+          loading: false
+        });
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setAuthState({
+          authenticated: false,
+          user: null,
+          loading: false
+        });
+      }
     };
-    getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    checkAuth();
+
+    // Listen for auth state changes (for sign out)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setAuthState({
+          authenticated: false,
+          user: null,
+          loading: false
+        });
+      } else if (event === 'SIGNED_IN') {
+        // Re-check auth state after sign in
+        checkAuth();
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -68,7 +102,9 @@ export default function GlobalNav() {
               >
                 Pricing
               </Link>
-              {session ? (
+              {authState.loading ? (
+                <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+              ) : authState.authenticated ? (
                 <>
                   <Link
                     href="/dashboard"
@@ -145,7 +181,9 @@ export default function GlobalNav() {
             >
               Pricing
             </Link>
-            {session ? (
+            {authState.loading ? (
+              <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+            ) : authState.authenticated ? (
               <>
                 <Link
                   href="/dashboard"

@@ -54,7 +54,8 @@ export default function SignInForm() {
         logger.info(
           "SIGNIN_FORM: Sign-in successful, redirecting to dashboard",
         );
-        router.push("/dashboard");
+        // Force page reload to sync auth state
+        window.location.href = "/dashboard";
       } else {
         logger.error("SIGNIN_FORM: Sign-in failed", { error: result.message });
         setError(result.message || "Invalid email or password");
@@ -96,8 +97,8 @@ export default function SignInForm() {
                   const result = await signInWithGoogle();
                   console.log("✅ Google sign-in result:", result);
                   
-                  // If we get here, the redirect should happen automatically
-                  // The function should redirect to Google's OAuth page
+                  // Google OAuth will redirect automatically
+                  // No need to handle redirect here
                   
                 } catch (err: any) {
                   console.error("❌ Google sign-in error on sign-in page:", err);
