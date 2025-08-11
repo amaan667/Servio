@@ -29,20 +29,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 export async function signInWithGoogle() {
-  try {
-    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
-    logger.info('🔑 Initiating Google OAuth with redirect (PKCE)', { redirectTo });
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-      flowType: 'pkce',
-    });
-    if (error) console.error('OAuth start error:', error);
-    return data;
-  } catch (error) {
-    logger.error('❌ signInWithGoogle error', { error });
-    throw error;
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+  console.log('[AUTH] start →', redirectTo);
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
+    flowType: 'pkce',
+  });
+
+  if (error) {
+    console.error('[AUTH] start error:', error);
+    alert(`Sign-in error: ${error.message}`);
+    return;
   }
+
+  // Some environments don't auto-redirect. Force it:
+  const url = data?.url;
+  console.log('[AUTH] provider URL:', url);
+  if (url) window.location.href = url;
 }
 
 export async function signInUser(email: string, password: string) {
