@@ -18,7 +18,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const isPublicRoute = pathname ? publicRoutes.some(route => pathname.startsWith(route)) : false;
   
   // Auth pages handle their own server-side auth, don't block them
-  const isAuthPage = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up');
+  const isAuthPage = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up') || pathname?.startsWith('/auth/callback');
 
   useEffect(() => {
     let ignore = false;
