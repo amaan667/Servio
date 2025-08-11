@@ -2,38 +2,36 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function CallbackClient() {
   const [msg, setMsg] = useState('Booting…');
   const router = useRouter();
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
     const run = async () => {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+      if (!code) { 
+        setMsg('No code → /sign-in'); 
+        router.replace('/sign-in?error=no_code'); 
+        return; 
+      }
+
+      setMsg('Exchanging code…');
+      // add a timeout so we see hangs
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000));
       try {
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
-
-        if (!code) {
-          setMsg('No code → /sign-in');
-          router.replace('/sign-in?error=no_code');
-          return;
-        }
-
-        setMsg('Exchanging code…');
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          setMsg('Exchange failed: ' + error.message);
-          router.replace('/sign-in?error=exchange');
-          return;
-        }
-
+        await Promise.race([
+          supabase.auth.exchangeCodeForSession(code),
+          timeout,
+        ]);
         setMsg('Exchange OK → /dashboard');
-        // small delay gives middleware time to sync cookies for SSR
         setTimeout(() => router.replace('/dashboard'), 50);
       } catch (e: any) {
-        setMsg('Callback crashed: ' + (e?.message || String(e)));
-        router.replace('/sign-in?error=callback_crash');
+        setMsg(`Exchange failed: ${e?.message || e}`);
+        router.replace('/sign-in?error=exchange_failed');
       }
     };
     run();
