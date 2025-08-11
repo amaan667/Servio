@@ -16,6 +16,9 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   // Only these routes are public:
   const publicRoutes = ['/', '/sign-in', '/sign-up', '/order', '/auth', '/dashboard'];
   const isPublicRoute = pathname ? publicRoutes.some(route => pathname.startsWith(route)) : false;
+  
+  // Auth pages handle their own server-side auth, don't block them
+  const isAuthPage = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up');
 
   useEffect(() => {
     let ignore = false;
@@ -125,6 +128,10 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
 
   // Render logic:
   if (isPublicRoute) return <>{children}</>;
+  
+  // Auth pages handle their own server-side auth, don't block them
+  if (isAuthPage) return <>{children}</>;
+  
   if (loading || !session) {
     return (
       <div className="flex min-h-screen items-center justify-center">
