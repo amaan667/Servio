@@ -5,20 +5,10 @@ const PUBLIC = ['/', '/sign-in', '/sign-up', '/auth/callback', '/auth/error', '/
 
 export function middleware(req: NextRequest) {
   const p = req.nextUrl.pathname;
-
-  if (
-    PUBLIC.includes(p) ||
-    p.startsWith('/_next') || p.startsWith('/static') || p === '/favicon.ico'
-  ) return NextResponse.next();
-
-  // (optional) simple protection by cookie presence
-  const hasSb = req.cookies.getAll().some(c => c.name.includes('-auth-token'));
-  if (!hasSb) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/sign-in';
-    return NextResponse.redirect(url);
+  if (PUBLIC.includes(p) || p.startsWith('/_next') || p.startsWith('/static') || p === '/favicon.ico') {
+    return NextResponse.next();
   }
-
-  return NextResponse.next();
+  return NextResponse.next(); // keep simple for now
 }
+
 export const config = { matcher: ['/((?!.*\\.).*)'] };
