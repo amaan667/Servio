@@ -32,7 +32,13 @@ export default function DashboardPage() {
         if (error) {
           console.error('Error fetching venues:', error);
         } else {
-          setVenues(venuesData || []);
+          const list = venuesData || [];
+          setVenues(list);
+          // If user has a venue, go straight to it
+          if (list.length > 0 && list[0]?.id) {
+            router.replace(`/dashboard/${list[0].id}`);
+            return;
+          }
         }
       } catch (error) {
         console.error('Error getting user:', error);
@@ -57,41 +63,20 @@ export default function DashboardPage() {
     return null; // Will redirect
   }
 
+  // If no venues, present CTA
   return (
     <main className="p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>
         
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Welcome back, {user.email}!</h2>
-          
-          {venues.length > 0 ? (
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Your Venues:</h3>
-              {venues.map((venue) => (
-                <div key={venue.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                  <h4 className="font-medium">{venue.name}</h4>
-                  <p className="text-gray-600">{venue.venue_type}</p>
-                  <button
-                    onClick={() => router.push(`/dashboard/${venue.id}`)}
-                    className="mt-2 bg-servio-purple text-white px-4 py-2 rounded hover:bg-servio-purple/90"
-                  >
-                    Manage Venue
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">No venues found. Complete your profile to get started.</p>
-              <button
-                onClick={() => router.push('/complete-profile')}
-                className="bg-servio-purple text-white px-6 py-2 rounded hover:bg-servio-purple/90"
-              >
-                Complete Profile
-              </button>
-            </div>
-          )}
+        <div className="bg-white rounded-lg shadow-md p-6 text-center">
+          <p className="text-gray-600 mb-4">No venues found. Complete your profile to get started.</p>
+          <button
+            onClick={() => router.push('/complete-profile')}
+            className="bg-servio-purple text-white px-6 py-2 rounded hover:bg-servio-purple/90"
+          >
+            Complete Profile
+          </button>
         </div>
       </div>
     </main>
