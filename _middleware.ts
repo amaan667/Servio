@@ -6,15 +6,10 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
-
-  // This call refreshes/sets Supabase auth cookies on the response
-  await supabase.auth.getSession();
+  await supabase.auth.getSession();   // refresh/propagate cookies
   return res;
 }
 
 export const config = {
-  matcher: [
-    // apply to all app pages, skip static assets
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|ico|webp)).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|ico|webp)).*)'],
 };
