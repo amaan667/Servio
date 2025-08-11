@@ -29,10 +29,8 @@ export default function RootLayout({
             enableSystem={false}
             disableTransitionOnChange
           >
-            <AuthWrapper>
-              <AppHeader />
-              {children}
-            </AuthWrapper>
+            <AppHeader />
+            {children}
           </ThemeProvider>
         </ErrorBoundary>
       </body>

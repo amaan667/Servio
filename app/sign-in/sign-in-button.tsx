@@ -1,8 +1,7 @@
 'use client';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '@/lib/supabase';
 
 export default function SignInButton() {
-  const supabase = createClientComponentClient();
 
   const onGoogle = async () => {
     const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
