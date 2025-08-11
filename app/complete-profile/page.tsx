@@ -13,23 +13,33 @@ export default async function CompleteProfilePage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(all) { all.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); }
-      }
+        get: (name) => cookieStore.get(name)?.value,
+        set: (name, value, options) =>
+          cookieStore.set({ name, value, ...options }),
+        remove: (name, options) =>
+          cookieStore.set({ name, value: '', ...options }),
+      },
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  if (userErr) {
+    console.error('getUser error in complete-profile', userErr);
+    redirect('/sign-in');
+  }
   if (!user) redirect('/sign-in');
 
   // Check if user already has a venue
-  const { data: venue } = await supabase
+  const { data: venue, error: venueErr } = await supabase
     .from('venues')
     .select('venue_id')
     .eq('owner_id', user.id)
     .maybeSingle();
 
-  if (venue?.venue_id) {
+  if (venueErr) {
+    console.error('Error checking existing venue:', venueErr);
+    // Continue to show the form instead of failing completely
+  } else if (venue?.venue_id) {
     redirect(`/dashboard/${venue.venue_id}`);
   }
 
