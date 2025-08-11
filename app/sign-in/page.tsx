@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
-import SignInButton from './sign-in-button';
+import SignInForm from './signin-form';
 
 export default async function SignInPage() {
   const cookieStore = cookies();
@@ -20,5 +20,5 @@ export default async function SignInPage() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect('/dashboard');      // no client redirect
-  return <SignInButton />;               // simple button
+  return <SignInForm />;                 // beautiful form with proper UI
 }
