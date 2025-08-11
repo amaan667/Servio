@@ -24,15 +24,22 @@ export default function CompleteProfilePage() {
   });
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.replace("/sign-in");
-        return;
+    let cancelled = false;
+    const boot = async () => {
+      try {
+        // Wait for session to be available
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          router.replace('/sign-in');
+          return;
+        }
+        if (!cancelled) setUser(session.user);
+      } catch (e) {
+        console.error('complete-profile boot error', e);
       }
-      setUser(user);
     };
-    getUser();
+    boot();
+    return () => { cancelled = true; };
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
