@@ -1,14 +1,20 @@
+// middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
-const PUBLIC = ['/', '/sign-in', '/sign-up', '/auth/callback', '/auth/error', '/auth/debug', '/api/env'];
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req, res });
 
-export function middleware(req: NextRequest) {
-  const p = req.nextUrl.pathname;
-  if (PUBLIC.includes(p) || p.startsWith('/_next') || p.startsWith('/static') || p === '/favicon.ico') {
-    return NextResponse.next();
-  }
-  return NextResponse.next(); // keep simple for now
+  // This call refreshes/sets Supabase auth cookies on the response
+  await supabase.auth.getSession();
+  return res;
 }
 
-export const config = { matcher: ['/((?!.*\\.).*)'] };
+export const config = {
+  matcher: [
+    // apply to all app pages, skip static assets
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|ico|webp)).*)',
+  ],
+};
