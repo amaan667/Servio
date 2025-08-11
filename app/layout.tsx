@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import GlobalNav from "@/components/global-nav";
+import AppHeader from "@/components/AppHeader";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -23,17 +23,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ErrorBoundary>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
             <AuthWrapper>
-          <GlobalNav />
-          {children}
+              <AppHeader />
+              {children}
             </AuthWrapper>
-        </ThemeProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>

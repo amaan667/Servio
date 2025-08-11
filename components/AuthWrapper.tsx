@@ -14,7 +14,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   console.log("AuthWrapper initialized:", { pathname, loading, session: !!session });
 
   // Only these routes are public:
-  const publicRoutes = ['/', '/sign-in', '/sign-up', '/order'];
+  const publicRoutes = ['/', '/sign-in', '/sign-up', '/order', '/auth'];
   const isPublicRoute = pathname ? publicRoutes.some(route => pathname.startsWith(route)) : false;
 
   useEffect(() => {
@@ -24,26 +24,26 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
         // Check if supabase is available
         if (!supabase) {
           console.error("Supabase client not available");
-      setLoading(false);
-      return;
-    }
+          setLoading(false);
+          return;
+        }
 
         const { data: { session } } = await supabase.auth.getSession();
-      if (ignore) return;
+        if (ignore) return;
         setSession(session);
         setLoading(false);
 
         // If no session and not on a public page, redirect:
         if (!session && !isPublicRoute) {
-        router.replace("/sign-in");
-      }
+          router.replace("/sign-in");
+        }
       } catch (error) {
         console.error("Error checking session:", error);
         if (ignore) return;
         setLoading(false);
         if (!isPublicRoute) {
-        router.replace("/sign-in");
-      }
+          router.replace("/sign-in");
+        }
       }
     };
 
@@ -77,10 +77,10 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
         }
       });
       
-    return () => {
-      ignore = true;
+      return () => {
+        ignore = true;
         subscription?.unsubscribe();
-    };
+      };
     } catch (error) {
       console.error("Error setting up auth state listener:", error);
       setLoading(false);
@@ -93,17 +93,17 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     let ignore = false;
     const checkProfile = async () => {
       try {
-      const { data, error } = await supabase
-        .from("venues")
-        .select("*")
+        const { data, error } = await supabase
+          .from("venues")
+          .select("*")
           .eq("owner_id", session.user.id)
-        .maybeSingle();
+          .maybeSingle();
         
         if (ignore) return;
         
         if (!data || error) {
           setProfileComplete(false);
-          if (pathname !== '/complete-profile') {
+          if (pathname !== '/complete-profile' && !pathname?.startsWith('/auth')) {
             router.replace("/complete-profile");
           }
         } else {
@@ -113,8 +113,8 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
         console.error("Error checking profile:", error);
         if (ignore) return;
         setProfileComplete(false);
-        if (pathname !== '/complete-profile') {
-        router.replace("/complete-profile");
+        if (pathname !== '/complete-profile' && !pathname?.startsWith('/auth')) {
+          router.replace("/complete-profile");
         }
       }
     };
@@ -134,10 +134,10 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   }
   if (profileComplete === false && pathname !== "/complete-profile") {
     return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
-    </div>
-  );
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
+      </div>
+    );
   }
   return <>{children}</>;
 } 
