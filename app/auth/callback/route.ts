@@ -4,8 +4,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+function getRequestOrigin(request: NextRequest): string {
+  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+  return `${forwardedProto}://${forwardedHost}`;
+}
+
+async function handleAuthCallback(request: NextRequest) {
+  const url = request.nextUrl;
+  const searchParams = url.searchParams;
+  const origin = getRequestOrigin(request);
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/dashboard';
 
@@ -25,9 +33,7 @@ export async function GET(request: NextRequest) {
                 cookieStore.set(name, value, options)
               );
             } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
+              // Ignore if set from a Server Component; middleware will refresh
             }
           },
         },
@@ -40,6 +46,13 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Return the user to an error page with instructions
   return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+}
+
+export async function GET(request: NextRequest) {
+  return handleAuthCallback(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handleAuthCallback(request);
 }
