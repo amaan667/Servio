@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC = ['/', '/sign-in', '/auth/callback', '/auth/error', '/auth/debug', '/api/env', '/complete-profile'];
+const PUBLIC = ['/', '/sign-in', '/auth/callback', '/auth/error', '/auth/debug', '/api/env', '/complete-profile', '/dashboard'];
 
 export function middleware(req: NextRequest) {
   const p = req.nextUrl.pathname;
