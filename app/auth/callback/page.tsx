@@ -9,12 +9,22 @@ function CallbackContent() {
   const code = searchParams?.get("code");
 
   useEffect(() => {
+    const currentUrl = typeof window !== "undefined" ? window.location.href : "<no-window>";
+    console.log("[AUTH DEBUG] /auth/callback mounted", {
+      currentUrl,
+      hasCode: Boolean(code),
+    });
+
     if (!code) {
+      console.log("[AUTH DEBUG] /auth/callback: no code found, redirecting to /sign-in?error=no_code");
       router.replace("/sign-in?error=no_code");
       return;
     }
+
+    const handleUrl = `/auth/callback/handle?code=${encodeURIComponent(code)}`;
+    console.log("[AUTH DEBUG] /auth/callback: forwarding to server handler", { handleUrl });
     // Redirect to our server-side handler
-    router.replace(`/auth/callback/handle?code=${encodeURIComponent(code)}`);
+    router.replace(handleUrl);
   }, [code, router]);
 
   return (
