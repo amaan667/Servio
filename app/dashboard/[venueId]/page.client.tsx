@@ -9,7 +9,7 @@ import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus
 import { supabase } from "@/lib/supabase";
 import { NavBar } from "@/components/NavBar";
 
-export default function VenueDashboardClient({ venueId }: { venueId: string }) {
+export default function VenueDashboardClient({ venueId, userId }: { venueId: string; userId: string }) {
   const [session, setSession] = useState<any>(null);
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -18,10 +18,9 @@ export default function VenueDashboardClient({ venueId }: { venueId: string }) {
 
   useEffect(() => {
     const getSessionAndLoad = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+      // Use userId from SSR to avoid waiting on client session
+      setSession({ user: { id: userId } });
 
-      // Load venue by route param, not by owner, to avoid mismatches
       const { data: venueData, error } = await supabase
         .from("venues")
         .select("*")
@@ -39,7 +38,7 @@ export default function VenueDashboardClient({ venueId }: { venueId: string }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
     return () => subscription.unsubscribe();
-  }, [venueId]);
+  }, [venueId, userId]);
 
   const loadStats = async (vId: string) => {
     try {
