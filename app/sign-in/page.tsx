@@ -33,23 +33,19 @@ export default async function SignInPage({
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-  console.log('[AUTH DEBUG] /sign-in getUser result', { hasUser: Boolean(user), userId: user?.id });
-  
   const signedOut = searchParams?.signedOut === 'true';
   const error = searchParams?.error;
   
-  // Only redirect if user exists AND we're not coming from a sign-out
-  if (user && !signedOut) {
-    console.log('[AUTH DEBUG] /sign-in redirecting to /dashboard');
-    redirect("/dashboard");
-  }
-
-  // If user exists but we're coming from sign-out, force clear the session
-  if (user && signedOut) {
-    console.log('[AUTH DEBUG] /sign-in user exists but signedOut=true, forcing session clear');
-    // Force clear the session by setting cookies to empty
-    const authCookies = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token'];
+  // If signedOut=true, bypass any auto-login and always show sign-in form
+  if (signedOut) {
+    console.log('[AUTH DEBUG] /sign-in signedOut=true, bypassing auto-login');
+    // Force clear any remaining session cookies
+    const authCookies = [
+      'sb-access-token', 
+      'sb-refresh-token', 
+      'supabase-auth-token',
+      'supabase-auth-code-verifier'
+    ];
     authCookies.forEach(cookieName => {
       cookieStore.set({ 
         name: cookieName, 
@@ -57,9 +53,19 @@ export default async function SignInPage({
         path: '/', 
         secure: true, 
         sameSite: 'lax',
-        maxAge: 0 
+        maxAge: 0,
+        expires: new Date(0)
       });
     });
+  } else {
+    // Only check for existing user if not coming from sign-out
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('[AUTH DEBUG] /sign-in getUser result', { hasUser: Boolean(user), userId: user?.id });
+    
+    if (user) {
+      console.log('[AUTH DEBUG] /sign-in redirecting to /dashboard');
+      redirect("/dashboard");
+    }
   }
 
   // If there's an error, we should still show the sign-in form

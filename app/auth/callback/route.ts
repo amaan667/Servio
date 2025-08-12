@@ -100,7 +100,22 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL('/complete-profile?error=venues', baseUrl));
   }
 
-  const dest = venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile';
-  log('CALLBACK redirect', { dest, hasVenues: venues?.length > 0 });
-  return NextResponse.redirect(new URL(dest, baseUrl));
+  if (venues?.length) {
+    // User has existing venues, redirect to dashboard
+    const dest = `/dashboard/${venues[0].venue_id}`;
+    log('CALLBACK redirect to existing venue', { dest });
+    return NextResponse.redirect(new URL(dest, baseUrl));
+  } else {
+    // New user, set profileComplete to false and redirect to complete profile
+    const { error: updateError } = await supabase.auth.updateUser({
+      data: { profileComplete: false }
+    });
+    
+    if (updateError) {
+      log('CALLBACK error updating user metadata', { error: updateError.message });
+    }
+    
+    log('CALLBACK redirect to complete profile for new user');
+    return NextResponse.redirect(new URL('/complete-profile', baseUrl));
+  }
 }

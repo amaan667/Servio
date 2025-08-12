@@ -69,6 +69,15 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
           throw updateError;
         }
 
+        // Update user metadata to mark profile as complete
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: { profileComplete: true }
+        });
+        
+        if (metadataError) {
+          console.error("[COMPLETE-PROFILE] Error updating user metadata:", metadataError);
+        }
+        
         logger.info("Profile updated successfully", { userId: user.id, venueId: existingVenue.venue_id });
         router.replace(`/dashboard/${existingVenue.venue_id}`);
         return;
@@ -123,12 +132,30 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
             throw updateError;
           }
 
+          // Update user metadata to mark profile as complete
+          const { error: metadataError } = await supabase.auth.updateUser({
+            data: { profileComplete: true }
+          });
+          
+          if (metadataError) {
+            console.error("[COMPLETE-PROFILE] Error updating user metadata:", metadataError);
+          }
+          
           logger.info("Profile completed successfully", { userId: user.id, venueId: existingVenue.venue_id });
           router.replace(`/dashboard/${existingVenue.venue_id}`);
         } else {
           throw venueError;
         }
       } else {
+        // Update user metadata to mark profile as complete
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: { profileComplete: true }
+        });
+        
+        if (metadataError) {
+          console.error("[COMPLETE-PROFILE] Error updating user metadata:", metadataError);
+        }
+        
         logger.info("Profile completed successfully", { userId: user.id, venueId });
         router.replace(`/dashboard/${venueId}`);
       }

@@ -9,6 +9,11 @@ export async function middleware(req: NextRequest) {
   // Never intercept the auth callback
   if (p.startsWith('/auth/')) return NextResponse.next();
 
+  // Skip auto-redirect for /sign-in if signedOut=true
+  if (p === '/sign-in' && req.nextUrl.searchParams.get('signedOut') === 'true') {
+    return NextResponse.next();
+  }
+
   const res = NextResponse.next();
   try {
     const supabase = createMiddlewareClient({ req, res });
