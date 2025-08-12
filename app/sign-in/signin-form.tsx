@@ -51,26 +51,9 @@ export default function SignInForm() {
       const result = await signInUser(formData.email.trim(), formData.password);
 
       if (result.success) {
-        console.log('[AUTH DEBUG] SignInForm sign-in success, resolving destination');
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          let dest = '/complete-profile';
-          if (user?.id) {
-            const { data: venues } = await supabase
-              .from('venues')
-              .select('venue_id')
-              .eq('owner_id', user.id)
-              .limit(1);
-            if (venues && venues.length > 0) {
-              dest = `/dashboard/${venues[0].venue_id}`;
-            }
-          }
-          console.log('[AUTH DEBUG] SignInForm redirecting to', { dest });
-          window.location.href = dest;
-        } catch (e: any) {
-          console.log('[AUTH DEBUG] SignInForm post-login redirect fallback', { message: e?.message });
-          window.location.href = '/dashboard';
-        }
+        console.log('[AUTH DEBUG] SignInForm sign-in success, redirecting to dashboard');
+        // Simple redirect - let the dashboard page handle venue resolution
+        window.location.href = '/dashboard';
       } else {
         console.log('[AUTH DEBUG] SignInForm sign-in failed', { message: result.message });
         setError(result.message || "Invalid email or password");
