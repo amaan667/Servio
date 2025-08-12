@@ -1,77 +1,49 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const fetchCache = 'force-no-store';
+'use client';
 
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { createServerClient } from "@supabase/ssr";
-import SignInForm from "./signin-form";
+import { useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/sb-client';
+import SignInForm from './signin-form';
 
-export default async function SignInPage({ 
-  searchParams 
-}: { 
-  searchParams?: { signedOut?: string; error?: string } 
-}) {
-  console.log('[AUTH DEBUG] /sign-in server page start', {
-    env_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    env_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    nodeEnv: process.env.NODE_ENV,
-  });
-  
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get: (n) => cookieStore.get(n)?.value,
-        // No-ops here to keep this page read-only for cookies
-        set: () => {},
-        remove: () => {},
-      },
-    }
-  );
+function SignInPageContent() {
+  const router = useRouter();
+  const sp = useSearchParams();
 
-  const signedOut = searchParams?.signedOut === 'true';
-  const error = searchParams?.error;
-  
-  // If signedOut=true, bypass any auto-login and always show sign-in form
-  if (signedOut) {
-    console.log('[AUTH DEBUG] /sign-in signedOut=true, bypassing auto-login');
-    // Force clear any remaining session cookies
-    const authCookies = [
-      'sb-access-token', 
-      'sb-refresh-token', 
-      'supabase-auth-token',
-      'supabase-auth-code-verifier'
-    ];
-    authCookies.forEach(cookieName => {
-      cookieStore.set({ 
-        name: cookieName, 
-        value: '', 
-        path: '/', 
-        secure: true, 
-        sameSite: 'lax',
-        maxAge: 0,
-        expires: new Date(0)
-      });
-    });
-  } else {
-    // Only check for existing user if not coming from sign-out
-    const { data: { user } } = await supabase.auth.getUser();
-    console.log('[AUTH DEBUG] /sign-in getUser result', { hasUser: Boolean(user), userId: user?.id });
-    
-    if (user) {
-      console.log('[AUTH DEBUG] /sign-in redirecting to /dashboard');
-      redirect("/dashboard");
-    }
-  }
+  useEffect(() => {
+    const run = async () => {
+      // If we just signed out, always show the form (don't auto-redirect)
+      if (sp?.get('signedOut') === 'true') return;
 
-  // If there's an error, we should still show the sign-in form
-  if (error) {
-    console.log('[AUTH DEBUG] /sign-in error detected', { error });
-  }
+      // If already signed in, route based on venues
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: venue } = await supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('owner_id', session.user.id)
+        .maybeSingle();
+
+      if (venue?.venue_id) router.replace(`/dashboard/${venue.venue_id}`);
+      else router.replace('/complete-profile');
+    };
+    run();
+  }, [router, sp]);
 
   return <SignInForm />;
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <SignInPageContent />
+    </Suspense>
+  );
 }

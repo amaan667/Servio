@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import SessionClearer from "@/components/session-clearer";
 
