@@ -10,22 +10,20 @@ import { supabase } from "@/lib/sb-client";
 import { NavBar } from "@/components/NavBar";
 
 export default function VenueDashboardClient({ venueId, userId }: { venueId: string; userId: string }) {
-  const [session, setSession] = useState<any>(null);
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, activeTables: 0, menuItems: 0 });
   const router = useRouter();
 
   useEffect(() => {
-    const getSessionAndLoad = async () => {
-      // Use userId from SSR to avoid waiting on client session
-      setSession({ user: { id: userId } });
-
+    const loadVenueAndStats = async () => {
+      // Load venue data and stats (userId already verified by SSR)
       const { data: venueData, error } = await supabase
         .from("venues")
         .select("*")
         .eq("venue_id", venueId)
         .single();
+      
       if (!error && venueData) {
         setVenue(venueData);
         await loadStats(venueData.venue_id);
@@ -34,11 +32,8 @@ export default function VenueDashboardClient({ venueId, userId }: { venueId: str
       setLoading(false);
     };
 
-    getSessionAndLoad();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => subscription.unsubscribe();
-  }, [venueId, userId]);
+    loadVenueAndStats();
+  }, [venueId]);
 
   const loadStats = async (vId: string) => {
     try {
@@ -79,17 +74,7 @@ export default function VenueDashboardClient({ venueId, userId }: { venueId: str
     );
   }
 
-  // Do not redirect on client; SSR has already gated access. If no session yet, show a lightweight loader.
-  if (!session) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" />
-          <p className="mt-2 text-gray-600">Loading your dashboard…</p>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,7 +82,7 @@ export default function VenueDashboardClient({ venueId, userId }: { venueId: str
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome back, {session?.user?.user_metadata?.full_name || "Manager"}!
+            Welcome back, Manager!
           </h2>
           <p className="text-gray-600">Here's what's happening at {venue?.name || "your venue"} today</p>
         </div>
