@@ -182,8 +182,11 @@ export default function VenueDashboardClient({ venueId, userId }: { venueId: str
             <CardContent className="p-6">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                 <BarChart className="h-6 w-6 text-green-600" />
-              </CardContent>
-            </Card>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Analytics</h3>
+              <p className="text-gray-500 text-sm">View detailed reports and business insights</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Getting Started Section */}
