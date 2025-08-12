@@ -1,78 +1,98 @@
-import { NextResponse, NextRequest } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+export const runtime = 'nodejs';
 
-export async function GET(request: Request) {
-  const { searchParams, origin, host, pathname } = new URL(request.url);
-  const code = searchParams.get("code");
-  console.log("[AUTH DEBUG] /auth/callback/handle GET", {
-    origin,
-    host,
-    pathname,
-    hasCode: Boolean(code),
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NODE_ENV: process.env.NODE_ENV,
-  });
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { cookies as nextCookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+
+// Derive the public base URL from forwarded headers (Railway proxy) or env
+function getBaseUrl(req: NextRequest) {
+  const proto = req.headers.get('x-forwarded-proto') ?? 'https';
+  const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '');
+  return `${proto}://${host}`;
+}
+
+// Compute a safe cookie domain. For localhost, omit domain (host-only cookie).
+function getCookieDomain(hostname: string | null) {
+  if (!hostname) return undefined;
+  const bare = hostname.replace(/:\d+$/, '');
+  if (bare === 'localhost' || /^[0-9.]+$/.test(bare)) return undefined;
+  // use the exact host
+  return bare;
+}
+
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const code = url.searchParams.get('code');
+  const next = url.searchParams.get('next');
+
+  const baseUrl = getBaseUrl(req);
+  const hostname = new URL(baseUrl).hostname;
+  const cookieDomain = getCookieDomain(hostname);
 
   if (!code) {
-    console.log("[AUTH DEBUG] /auth/callback/handle: missing code -> redirect /sign-in?error=no_code");
-    return NextResponse.redirect(new URL("/sign-in?error=no_code", request.url));
+    return NextResponse.redirect(new URL('/sign-in?error=no_code', baseUrl));
   }
 
-  const cookieStore = cookies();
+  // Build a cookie bridge that forces the correct domain/flags
+  const jar = nextCookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => cookieStore.get(name)?.value,
-        set: (name, value, options) => cookieStore.set({ name, value, ...options }),
-        remove: (name, options) => cookieStore.set({ name, value: "", ...options }),
+        get: (name) => jar.get(name)?.value,
+        set: (name, value, options) => {
+          jar.set({
+            name,
+            value,
+            // merge options from Supabase, but override domain/secure/samesite/path sensibly
+            ...options,
+            domain: cookieDomain ?? options?.domain,
+            secure: true,
+            sameSite: 'lax',
+            path: '/',
+          });
+        },
+        remove: (name, options) => {
+          jar.set({
+            name,
+            value: '',
+            ...options,
+            domain: cookieDomain ?? options?.domain,
+            secure: true,
+            sameSite: 'lax',
+            path: '/',
+          });
+        },
       },
     }
   );
 
-  // Exchange code for a session
-  console.log("[AUTH DEBUG] exchangeCodeForSession starting");
+  // Do the PKCE code exchange (sets cookies via the adapter above)
   const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
   if (exchangeErr) {
-    console.error("[AUTH DEBUG] exchangeCodeForSession failed", {
-      name: exchangeErr.name,
-      message: exchangeErr.message,
-      status: (exchangeErr as any)?.status,
-    });
-    return NextResponse.redirect(new URL("/sign-in?error=exchange_failed", request.url));
+    return NextResponse.redirect(new URL('/sign-in?error=exchange_failed', baseUrl));
   }
-  console.log("[AUTH DEBUG] exchangeCodeForSession success");
 
-  // Get the user
-  const { data: { user }, error: userErr } = await supabase.auth.getUser();
-  if (userErr || !user) {
-    console.log("[AUTH DEBUG] getUser returned no user", { userErr });
-    return NextResponse.redirect(new URL("/sign-in?error=no_user", request.url));
+  // We should have a session now
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.redirect(new URL('/sign-in?error=no_user', baseUrl));
   }
-  console.log("[AUTH DEBUG] getUser success", { userId: user.id });
 
-  // Check if venue exists
-  console.log("[AUTH DEBUG] querying venues for owner", { ownerId: user.id });
-  const { data: venues, error: venuesErr } = await supabase
-    .from("venues")
-    .select("venue_id")
-    .eq("owner_id", user.id)
+  // If a 'next' param was provided, honor it
+  if (next) {
+    return NextResponse.redirect(new URL(String(next), baseUrl));
+  }
+
+  // New vs existing: check venues
+  const { data: venues } = await supabase
+    .from('venues')
+    .select('venue_id')
+    .eq('owner_id', user.id)
     .limit(1);
 
-  if (venuesErr) {
-    console.log("[AUTH DEBUG] venues query error", { venuesErr });
-  }
-
-  if (!venues || venues.length === 0) {
-    console.log("[AUTH DEBUG] no venues found -> redirect /complete-profile");
-    return NextResponse.redirect(new URL("/complete-profile", request.url));
-  }
-
-  const dest = `/dashboard/${venues[0].venue_id}`;
-  console.log("[AUTH DEBUG] venues found -> redirect to", { dest });
-  // Redirect to dashboard
-  return NextResponse.redirect(new URL(dest, request.url));
+  const dest = venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile';
+  return NextResponse.redirect(new URL(dest, baseUrl));
 }
