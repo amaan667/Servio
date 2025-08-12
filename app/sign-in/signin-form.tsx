@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,6 +18,7 @@ import { RefreshCw } from "lucide-react";
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { supabase } from "@/lib/supabase";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -27,6 +28,15 @@ export default function SignInForm() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check for URL error parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlError = urlParams.get('error');
+    if (urlError) {
+      setError(`Authentication error: ${urlError}`);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,8 +62,8 @@ export default function SignInForm() {
 
       if (result.success) {
         console.log('[AUTH DEBUG] SignInForm sign-in success, redirecting to dashboard');
-        // Simple redirect - let the dashboard page handle venue resolution
-        window.location.href = '/dashboard';
+        // Use router.push for smoother navigation
+        router.push('/dashboard');
       } else {
         console.log('[AUTH DEBUG] SignInForm sign-in failed', { message: result.message });
         setError(result.message || "Invalid email or password");
@@ -67,8 +77,10 @@ export default function SignInForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-md w-full mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <NavigationBreadcrumb showBackButton={false} />
+        
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
           <p className="mt-2 text-sm text-gray-600">
@@ -76,7 +88,8 @@ export default function SignInForm() {
           </p>
         </div>
 
-        <Card>
+        <div className="mt-8">
+          <Card>
           <CardHeader>
             <CardTitle>Sign In</CardTitle>
             <CardDescription>Access your restaurant dashboard</CardDescription>
@@ -188,6 +201,7 @@ export default function SignInForm() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

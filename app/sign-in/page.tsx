@@ -9,7 +9,7 @@ import SignInForm from "./signin-form";
 export default async function SignInPage({ 
   searchParams 
 }: { 
-  searchParams?: { signedOut?: string } 
+  searchParams?: { signedOut?: string; error?: string } 
 }) {
   console.log('[AUTH DEBUG] /sign-in server page start', {
     env_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
@@ -35,9 +35,16 @@ export default async function SignInPage({
   console.log('[AUTH DEBUG] /sign-in getUser result', { hasUser: Boolean(user), userId: user?.id });
   
   const signedOut = searchParams?.signedOut === 'true';
+  const error = searchParams?.error;
+  
   if (user && !signedOut) {
     console.log('[AUTH DEBUG] /sign-in redirecting to /dashboard');
     redirect("/dashboard");
+  }
+
+  // If there's an error, we should still show the sign-in form
+  if (error) {
+    console.log('[AUTH DEBUG] /sign-in error detected', { error });
   }
 
   return <SignInForm />;

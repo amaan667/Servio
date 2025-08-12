@@ -24,9 +24,22 @@ export async function GET(req: NextRequest) {
     }
   );
 
-  // Server sign-out (clears Supabase session cookies)
-  await supabase.auth.signOut();
+            // Server sign-out (clears Supabase session cookies)
+          await supabase.auth.signOut();
 
-  // Hard redirect to sign-in (no client state needed)
-  return NextResponse.redirect(new URL('/sign-in?signedOut=true', base));
+          // Clear all auth-related cookies to ensure clean state
+          const authCookies = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token'];
+          authCookies.forEach(cookieName => {
+            jar.set({ 
+              name: cookieName, 
+              value: '', 
+              path: '/', 
+              secure: true, 
+              sameSite: 'lax',
+              maxAge: 0 
+            });
+          });
+
+          // Hard redirect to sign-in (no client state needed)
+          return NextResponse.redirect(new URL('/sign-in?signedOut=true', base));
 }

@@ -9,6 +9,7 @@ import { NavBar } from "@/components/NavBar";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Session } from "@supabase/supabase-js";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface Table {
   id: string;
@@ -127,6 +128,8 @@ export default function QRCodePage({ params }: { params: { venueId: string } }) 
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
+        
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">QR Code Management</h2>
