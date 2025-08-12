@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function AuthCallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const code = searchParams.get("code");
+  const code = searchParams?.get("code");
 
   useEffect(() => {
     if (!code) {
@@ -22,5 +22,13 @@ export default function AuthCallbackPage() {
       <h1>Finishing sign in…</h1>
       <p>Please wait while we log you in.</p>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 24 }}>Loading...</div>}>
+      <CallbackContent />
+    </Suspense>
   );
 }
