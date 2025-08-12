@@ -99,6 +99,7 @@ export default function SignInForm() {
                   const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: "google",
                     options: { redirectTo },
+                    flowType: "pkce",
                   });
                   if (error) {
                     console.error("OAuth start error:", error.message);
