@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Download, Printer, Copy, Check } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 export default function GenerateQRPage() {

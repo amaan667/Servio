@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QrCode, Download, Plus } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import { NavBar } from "@/components/NavBar";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -128,7 +128,7 @@ export default function QRCodePage({ params }: { params: { venueId: string } }) 
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
+        <NavigationBreadcrumb customBackPath={`/dashboard/${params.venueId}`} customBackLabel="Dashboard" />
         
         <div className="mb-8 flex justify-between items-center">
           <div>
