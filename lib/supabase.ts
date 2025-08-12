@@ -4,12 +4,21 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 export const supabase = createClientComponentClient();
 
 export async function signInWithGoogle() {
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
+  const redirectTo = 'https://servio-production.up.railway.app/auth/callback'; // <-- hardcode for now
+  console.log('[AUTH] using redirectTo =', redirectTo);
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
     options: { redirectTo },
+    flowType: 'pkce',
   });
-  if (error) console.error("[AUTH] Google sign-in error:", error.message);
+
+  if (error) {
+    console.error('[AUTH] start error:', error.message);
+    alert(error.message);
+    return;
+  }
+  if (data?.url) window.location.href = data.url; // force navigation
 }
 
 export async function signInUser(email: string, password: string) {
