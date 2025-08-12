@@ -5,28 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
-  const handleSignOut = async () => {
-    try {
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Sign out error:', error);
-      }
-      
-      // Clear any local storage
-      if (typeof window !== 'undefined') {
-        localStorage.clear();
-        sessionStorage.clear();
-      }
-      
-      // Force a hard redirect to sign-in page with sign-out parameter
-      window.location.href = '/sign-in?signedOut=true';
-    } catch (error) {
-      console.error('Error during sign out:', error);
-      // Still redirect even if there's an error
-      window.location.href = '/sign-in?signedOut=true';
-    }
-  };
+  // Sign out handled by server route
 
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
@@ -54,8 +33,8 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
                 Settings
               </Button>
             </Link>
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-lg">
-              Sign Out
+            <Button variant="outline" size="sm" asChild>
+              <a href="/auth/sign-out">Sign Out</a>
             </Button>
           </>
         )}

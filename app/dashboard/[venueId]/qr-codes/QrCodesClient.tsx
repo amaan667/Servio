@@ -1,200 +1,98 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { QrCode, Download, Plus } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
-import { NavBar } from "@/components/NavBar";
-import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import QRCode from 'qrcode';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
-interface Table {
-  id: string;
-  qr_code: string | null;
-  created_at?: string;
-  name?: string;
-}
+export default function QrCodesClient({ venue }: { venue: { id: string; name: string | null } }) {
+  const [from, setFrom] = useState(1);
+  const [to, setTo] = useState(10);
+  const [size, setSize] = useState(512);
+  const [previewTable, setPreviewTable] = useState(1);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-interface Stats {
-  totalTables: number;
-  activeQRCodes: number;
-}
+  const base = 'https://servio-production.up.railway.app';
+  const urlFor = (t: number) => `${base}/order/${venue.id}?table=${t}`;
 
-export default function QrCodesClient({ venueId, venueName }: { venueId: string; venueName: string }) {
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<Stats>({
-    totalTables: 0,
-    activeQRCodes: 0
-  });
-  const [tables, setTables] = useState<Table[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    loadStats();
-  }, [venueId]);
-
-  const loadStats = async () => {
-    try {
-      const { data: tables, error: tablesError } = await supabase
-        .from("tables")
-        .select("id, qr_code, created_at, name")
-        .eq("venue_id", venueId);
-
-      if (tablesError) {
-        console.error("Error fetching tables:", tablesError.message);
-        return;
-      }
-
-      if (tables) {
-        const activeQRCodes = tables.filter((table: Table) => table.qr_code)?.length || 0;
-        setStats({
-          totalTables: tables.length || 0,
-          activeQRCodes
-        });
-        setTables(tables);
-      }
-    } catch (error) {
-      console.error("Error loading QR code stats:", error);
-    } finally {
-      setLoading(false);
-    }
+  const renderPreview = async () => {
+    const c = canvasRef.current;
+    if (!c) return;
+    await QRCode.toCanvas(c, urlFor(previewTable), { width: size, margin: 2 });
   };
 
-  const handleGenerateQR = async () => {
-    setIsGenerating(true);
-    try {
-      router.push(`/generate-qr?venue=${venueId}`);
-    } catch (error) {
-      console.error("Error navigating to QR generation:", error);
-    } finally {
-      setIsGenerating(false);
+  useEffect(() => { renderPreview(); /* eslint-disable-next-line */ }, [previewTable, size]);
+
+  const generateZip = async () => {
+    const zip = new JSZip();
+    for (let t = from; t <= to; t++) {
+      const dataUrl = await QRCode.toDataURL(urlFor(t), { width: size, margin: 2 });
+      const base64 = dataUrl.split(',')[1];
+      zip.file(`table-${t}.png`, base64!, { base64: true });
     }
+    const blob = await zip.generateAsync({ type: 'blob' });
+    saveAs(blob, `${venue.name ?? 'venue'}-qr-t${from}-${to}.zip`);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <NavBar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const downloadPNG = async () => {
+    const dataUrl = canvasRef.current?.toDataURL('image/png');
+    if (!dataUrl) return;
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `table-${previewTable}.png`;
+    a.click();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">QR Code Management</h2>
-            <p className="text-gray-600">Generate and manage QR codes for {venueName}</p>
-          </div>
-          <Button 
-            onClick={handleGenerateQR} 
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-white" />
-            ) : (
-              <Plus className="h-4 w-4 mr-2" />
-            )}
-            {isGenerating ? 'Generating...' : 'Generate New QR Code'}
-          </Button>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Tables</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalTables}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <QrCode className="h-6 w-6 text-blue-600" />
-                </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <h3 className="text-lg font-semibold">QR Settings</h3>
+            <p className="text-sm text-gray-500">Generate table QR codes</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>From Table</Label>
+                <Input type="number" min={1} value={from} onChange={e => setFrom(Number(e.target.value || 1))} />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Active QR Codes</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.activeQRCodes}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <QrCode className="h-6 w-6 text-green-600" />
-                </div>
+              <div>
+                <Label>To Table</Label>
+                <Input type="number" min={from} value={to} onChange={e => setTo(Number(e.target.value || from))} />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+            <div>
+              <Label>Preview Table</Label>
+              <Input type="number" min={from} max={to} value={previewTable} onChange={e => setPreviewTable(Number(e.target.value || from))} />
+            </div>
+            <div>
+              <Label>Size (px)</Label>
+              <Input type="number" min={256} step={64} value={size} onChange={e => setSize(Number(e.target.value || 512))} />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button onClick={renderPreview}>Generate Preview</Button>
+              <Button variant="outline" onClick={downloadPNG}>Download PNG</Button>
+            </div>
+            <div className="pt-2">
+              <Button className="w-full" onClick={generateZip}>Bulk Download ZIP</Button>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* QR Code List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Add placeholder card for when no QR codes exist */}
-          {stats.totalTables === 0 && (
-            <Card className="col-span-full">
-              <CardContent className="p-6 text-center">
-                <QrCode className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold mb-2">No QR Codes Yet</h3>
-                <p className="text-gray-500 mb-4">Get started by generating your first QR code</p>
-                <Button 
-                  onClick={handleGenerateQR}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-white" />
-                  ) : null}
-                  {isGenerating ? 'Generating...' : 'Generate QR Code'}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {tables.map((table: Table) => (
-            <Card key={table.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="aspect-square relative mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
-                  {table.qr_code ? (
-                    <Image
-                      src={table.qr_code}
-                      alt={`QR Code for ${table.name || `Table ${table.id}`}`}
-                      fill
-                      className="object-contain p-4"
-                    />
-                  ) : (
-                    <QrCode className="h-12 w-12 text-gray-400" />
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">{table.name || `Table ${table.id}`}</h4>
-                    <p className="text-sm text-gray-500">
-                      Created on {new Date(table.created_at || Date.now()).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {table.qr_code && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={table.qr_code} download={`qr-${table.name || table.id}.png`}>
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <h3 className="text-lg font-semibold">Preview</h3>
+            <p className="text-sm text-gray-500">Table #{previewTable}</p>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center py-6">
+            <canvas ref={canvasRef} className="bg-white p-4 rounded shadow" />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
