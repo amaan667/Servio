@@ -40,5 +40,5 @@ export default async function VenueDashboardPage({ params }: { params: { venueId
     redirect('/complete-profile');
   }
 
-  return <VenueDashboardClient venueId={params.venueId} />;
+  return <VenueDashboardClient venueId={params.venueId} userId={user.id} />;
 }
