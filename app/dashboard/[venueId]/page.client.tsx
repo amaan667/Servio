@@ -148,53 +148,42 @@ export default function VenueDashboardClient({ venueId, userId }: { venueId: str
 
         {/* Feature grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="hover:shadow-lg transition-shadow">
-            <Link href={`/dashboard/${venueId}/orders`}>
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Live Orders</h3>
-                <p className="text-gray-500 text-sm">Monitor and manage incoming orders in real-time</p>
-              </CardContent>
-            </Link>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/live-orders`)}>
+            <CardContent className="p-6">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <Clock className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Live Orders</h3>
+              <p className="text-gray-500 text-sm">Monitor and manage incoming orders in real-time</p>
+            </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow">
-            <Link href={`/dashboard/${venueId}/menu-management`}>
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                  <ShoppingBag className="h-6 w-6 text-orange-600" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Menu Management</h3>
-                <p className="text-gray-500 text-sm">Update your menu items and manage categories</p>
-              </CardContent>
-            </Link>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/menu`)}>
+            <CardContent className="p-6">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                <ShoppingBag className="h-6 w-6 text-orange-600" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Menu Management</h3>
+              <p className="text-gray-500 text-sm">Update your menu items and manage categories</p>
+            </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow">
-            <Link href={`/dashboard/${venueId}/qr`}>
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <QrCode className="h-6 w-6 text-purple-600" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">QR Codes</h3>
-                <p className="text-gray-500 text-sm">Generate and manage QR codes for your tables</p>
-              </CardContent>
-            </Link>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/qr-codes`)}>
+            <CardContent className="p-6">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                <QrCode className="h-6 w-6 text-purple-600" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">QR Codes</h3>
+              <p className="text-gray-500 text-sm">Generate and manage QR codes for your tables</p>
+            </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow">
-            <Link href={`/dashboard/${venueId}/analytics`}>
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart className="h-6 w-6 text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Analytics</h3>
-                <p className="text-gray-500 text-sm">View detailed reports and business insights</p>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/analytics`)}>
+            <CardContent className="p-6">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <BarChart className="h-6 w-6 text-green-600" />
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
         </div>
 
         {/* Getting Started Section */}
@@ -230,7 +219,7 @@ export default function VenueDashboardClient({ venueId, userId }: { venueId: str
                     <p className="text-sm text-gray-500">Create QR codes for your tables</p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => router.push(`/dashboard/${venueId}/qr`)}>
+                <Button variant="outline" onClick={() => router.push(`/dashboard/${venueId}/qr-codes`)}>
                   Generate
                 </Button>
               </div>
