@@ -1,5 +1,7 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -37,9 +39,27 @@ export default async function SignInPage({
   const signedOut = searchParams?.signedOut === 'true';
   const error = searchParams?.error;
   
+  // Only redirect if user exists AND we're not coming from a sign-out
   if (user && !signedOut) {
     console.log('[AUTH DEBUG] /sign-in redirecting to /dashboard');
     redirect("/dashboard");
+  }
+
+  // If user exists but we're coming from sign-out, force clear the session
+  if (user && signedOut) {
+    console.log('[AUTH DEBUG] /sign-in user exists but signedOut=true, forcing session clear');
+    // Force clear the session by setting cookies to empty
+    const authCookies = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token'];
+    authCookies.forEach(cookieName => {
+      cookieStore.set({ 
+        name: cookieName, 
+        value: '', 
+        path: '/', 
+        secure: true, 
+        sameSite: 'lax',
+        maxAge: 0 
+      });
+    });
   }
 
   // If there's an error, we should still show the sign-in form
