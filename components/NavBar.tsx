@@ -3,8 +3,16 @@ import { supabase } from "@/lib/supabase";
 import { Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/sign-in');
+  };
+
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
@@ -17,20 +25,21 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
             className="mr-4"
             priority
           />
-          <span className="text-servio-purple text-3xl font-bold ml-3">Servio</span>
         </Link>
       </div>
-      <div className="flex items-center space-x-4">
-        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
-        <Link href="#features" className="text-gray-600 hover:text-gray-900">Features</Link>
-        <Link href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
+      <div className="flex items-center space-x-6">
+        <Link href="/" className="text-gray-700 hover:text-gray-900 font-medium text-lg">Home</Link>
+        <Link href="#features" className="text-gray-700 hover:text-gray-900 font-medium text-lg">Features</Link>
+        <Link href="#pricing" className="text-gray-700 hover:text-gray-900 font-medium text-lg">Pricing</Link>
         {showActions && (
           <>
-            <Button variant="ghost" size="sm">
-              <Settings className="h-5 w-5 mr-2" />
-              Settings
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
+            <Link href="/settings">
+              <Button variant="ghost" size="sm" className="text-lg">
+                <Settings className="h-5 w-5 mr-2" />
+                Settings
+              </Button>
+            </Link>
+            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-lg">
               Sign Out
             </Button>
           </>
