@@ -5,21 +5,16 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 export async function middleware(req: NextRequest) {
   const p = req.nextUrl.pathname;
-  const host = req.headers.get('host');
-  console.log('[AUTH DEBUG] middleware start', { path: p, host });
-  if (p.startsWith('/auth/')) {
-    console.log('[AUTH DEBUG] middleware bypass for /auth/*');
-    return NextResponse.next(); // never gate callback
-  }
+
+  // Never intercept the auth callback
+  if (p.startsWith('/auth/')) return NextResponse.next();
 
   const res = NextResponse.next();
   try {
     const supabase = createMiddlewareClient({ req, res });
-    console.log('[AUTH DEBUG] middleware calling getSession to sync cookies');
     await supabase.auth.getSession(); // sync cookies for SSR
-    console.log('[AUTH DEBUG] middleware getSession complete');
-  } catch (e) {
-    console.log('[AUTH DEBUG] middleware getSession error', { message: (e as any)?.message });
+  } catch {
+    // swallow
   }
   return res;
 }
