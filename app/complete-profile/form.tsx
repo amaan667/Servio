@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/lib/supabase';
 import { logger } from "@/lib/logger";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface CompleteProfileFormProps {
   user: any;
@@ -141,8 +142,10 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-md w-full mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <NavigationBreadcrumb showBackButton={false} />
+        
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900">Complete Your Profile</h2>
           <p className="mt-2 text-sm text-gray-600">

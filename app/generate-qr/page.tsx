@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Download, Printer, Copy, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 export default function GenerateQRPage() {
   const [session, setSession] = useState<any>(null);
@@ -111,15 +112,17 @@ export default function GenerateQRPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
+        <NavigationBreadcrumb customBackPath="/dashboard" customBackLabel="Dashboard" />
+        
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Generate QR Codes
-                </h1>
+          </h1>
           <p className="text-gray-600">
             Create QR codes for your tables so customers can order easily
           </p>
-      </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Settings */}

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { NavBar } from "@/components/NavBar";
 import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, Plus, Upload, Edit, Trash2, ShoppingBag, FileText } from "lucide-react";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface MenuItem {
   id: string;
@@ -197,16 +198,10 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
+        
         {/* Header */}
         <div className="mb-8">
-          <Button 
-            variant="outline" 
-            onClick={() => router.push(`/dashboard/${venueId}`)}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
