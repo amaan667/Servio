@@ -6,8 +6,26 @@ import Link from "next/link";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/sign-in';
+    try {
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Sign out error:', error);
+      }
+      
+      // Clear any local storage
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      
+      // Force a hard redirect to sign-in page with sign-out parameter
+      window.location.href = '/sign-in?signedOut=true';
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      // Still redirect even if there's an error
+      window.location.href = '/sign-in?signedOut=true';
+    }
   };
 
   return (
