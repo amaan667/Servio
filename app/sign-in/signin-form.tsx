@@ -31,9 +31,7 @@ export default function SignInForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    logger.info("SIGNIN_FORM: Form submission started", {
-      email: formData.email,
-    });
+    console.log('[AUTH DEBUG] SignInForm submit start', { email: formData.email });
 
     setError(null);
 
@@ -50,20 +48,19 @@ export default function SignInForm() {
     setLoading(true);
 
     try {
+      console.log('[AUTH DEBUG] SignInForm calling signInUser');
       const result = await signInUser(formData.email.trim(), formData.password);
 
       if (result.success) {
-        logger.info(
-          "SIGNIN_FORM: Sign-in successful, redirecting to dashboard",
-        );
+        console.log('[AUTH DEBUG] SignInForm sign-in success, hard redirect to /dashboard');
         // Force page reload to sync auth state
         window.location.href = "/dashboard";
       } else {
-        logger.error("SIGNIN_FORM: Sign-in failed", { error: result.message });
+        console.log('[AUTH DEBUG] SignInForm sign-in failed', { message: result.message });
         setError(result.message || "Invalid email or password");
       }
     } catch (error: any) {
-      logger.error("SIGNIN_FORM: Unexpected error during sign-in", { error });
+      console.log('[AUTH DEBUG] SignInForm unexpected error', { message: error?.message });
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -96,19 +93,30 @@ export default function SignInForm() {
 
                 try {
                   const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+                  console.log('[AUTH DEBUG] SignInForm Google button clicked', {
+                    redirectTo,
+                    env_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+                    env_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+                    nodeEnv: process.env.NODE_ENV,
+                  });
                   const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: "google",
                     options: { redirectTo },
                   });
                   if (error) {
-                    console.error("OAuth start error:", error.message);
+                    console.error('[AUTH DEBUG] OAuth start error', { message: error.message });
                     setError(error.message);
                     setLoading(false);
                     return;
                   }
-                  if (data?.url) window.location.href = data.url; // force navigation
+                  if (data?.url) {
+                    console.log('[AUTH DEBUG] SignInForm redirecting browser to Google URL', { url: data.url });
+                    window.location.href = data.url; // force navigation
+                  } else {
+                    console.log('[AUTH DEBUG] SignInForm no OAuth URL returned');
+                  }
                 } catch (err: any) {
-                  console.error("❌ Google sign-in error on sign-in page:", err);
+                  console.error('[AUTH DEBUG] Google sign-in error on sign-in page', { message: err?.message });
                   setError(`Google sign-in failed: ${err.message || "Please try again."}`);
                   setLoading(false);
                 }

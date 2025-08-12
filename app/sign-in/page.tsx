@@ -7,6 +7,11 @@ import { createServerClient } from "@supabase/ssr";
 import SignInForm from "./signin-form";
 
 export default async function SignInPage() {
+  console.log('[AUTH DEBUG] /sign-in server page start', {
+    env_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    env_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    nodeEnv: process.env.NODE_ENV,
+  });
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,7 +26,11 @@ export default async function SignInPage() {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect("/dashboard");
+  console.log('[AUTH DEBUG] /sign-in getUser result', { hasUser: Boolean(user), userId: user?.id });
+  if (user) {
+    console.log('[AUTH DEBUG] /sign-in redirecting to /dashboard');
+    redirect("/dashboard");
+  }
 
   return <SignInForm />;
 }
