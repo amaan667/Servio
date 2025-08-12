@@ -17,11 +17,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "@/lib/supabase";
 
 export default function SignInForm() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
