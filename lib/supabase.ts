@@ -20,7 +20,6 @@ export async function signInWithGoogle() {
 
   if (error) {
     console.error('[AUTH DEBUG] signInWithGoogle error', { message: error.message });
-    alert(error.message);
     return;
   }
   if (data?.url) {
