@@ -3,14 +3,11 @@ import { supabase } from "@/lib/supabase";
 import { Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
-  const router = useRouter();
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/sign-in');
+    window.location.href = '/sign-in';
   };
 
   return (
