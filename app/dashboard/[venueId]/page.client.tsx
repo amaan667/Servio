@@ -80,10 +80,15 @@ export default function VenueDashboardClient({ venueId }: { venueId: string }) {
     );
   }
 
-  // Do not redirect on client; SSR has already gated access. Show minimal message instead.
+  // Do not redirect on client; SSR has already gated access. If no session yet, show a lightweight loader.
   if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-gray-600">Unable to load session.</div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" />
+          <p className="mt-2 text-gray-600">Loading your dashboard…</p>
+        </div>
+      </div>
     );
   }
 
