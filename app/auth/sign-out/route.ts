@@ -24,8 +24,8 @@ export async function GET(req: NextRequest) {
     }
   );
 
-            // Server sign-out (clears Supabase session cookies)
-          await supabase.auth.signOut();
+            // Server sign-out with local scope (clears Supabase session cookies)
+          await supabase.auth.signOut({ scope: 'local' });
 
           // Clear all auth-related cookies to ensure clean state
           const authCookies = [
@@ -56,7 +56,18 @@ export async function GET(req: NextRequest) {
             });
           });
 
-          // Also clear any localStorage/sessionStorage by redirecting to a client-side clear page first
+          // Clear the Supabase PKCE code_verifier cookie
+          jar.set({
+            name: 'supabase-auth-code-verifier',
+            value: '',
+            path: '/',
+            secure: true,
+            sameSite: 'lax',
+            maxAge: 0,
+            expires: new Date(0)
+          });
+
+          // Redirect to client-side clear page to handle localStorage/sessionStorage
           const clearUrl = new URL('/auth/clear-session', base);
           clearUrl.searchParams.set('redirect', '/sign-in?signedOut=true');
           return NextResponse.redirect(clearUrl);

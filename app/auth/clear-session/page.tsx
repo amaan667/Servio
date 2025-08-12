@@ -27,6 +27,13 @@ function ClearSessionContent() {
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
+      // Also clear any remaining Supabase items that might have been added after clear()
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('supabase') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
       console.log('[AUTH DEBUG] Cleared all client-side storage');
     }
 
