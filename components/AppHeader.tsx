@@ -6,6 +6,7 @@ import GlobalNav from "@/components/global-nav";
 export default function AppHeader() {
   const pathname = usePathname();
   const hideOnDashboard = pathname?.startsWith("/dashboard");
-  if (hideOnDashboard) return null;
+  const hideOnSettings = pathname?.startsWith("/settings");
+  if (hideOnDashboard || hideOnSettings) return null;
   return <GlobalNav />;
 }
