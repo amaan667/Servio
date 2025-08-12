@@ -19,6 +19,7 @@ import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { supabase } from "@/lib/supabase";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import SessionClearer from "@/components/session-clearer";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -29,12 +30,20 @@ export default function SignInForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for URL error parameters
+  // Check for URL parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlError = urlParams.get('error');
+    const signedOut = urlParams.get('signedOut');
+    
     if (urlError) {
       setError(`Authentication error: ${urlError}`);
+    }
+    
+    if (signedOut === 'true') {
+      // Clear any remaining form data when coming from sign-out
+      setFormData({ email: "", password: "" });
+      setError(null);
     }
   }, []);
 
@@ -78,6 +87,7 @@ export default function SignInForm() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SessionClearer />
       <div className="max-w-md w-full mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <NavigationBreadcrumb showBackButton={false} />
         

@@ -28,7 +28,22 @@ export async function GET(req: NextRequest) {
           await supabase.auth.signOut();
 
           // Clear all auth-related cookies to ensure clean state
-          const authCookies = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token'];
+          const authCookies = [
+            'sb-access-token', 
+            'sb-refresh-token', 
+            'supabase-auth-token',
+            'supabase-auth-token-0',
+            'supabase-auth-token-1',
+            'supabase-auth-token-2',
+            'supabase-auth-token-3',
+            'supabase-auth-token-4',
+            'supabase-auth-token-5',
+            'supabase-auth-token-6',
+            'supabase-auth-token-7',
+            'supabase-auth-token-8',
+            'supabase-auth-token-9'
+          ];
+          
           authCookies.forEach(cookieName => {
             jar.set({ 
               name: cookieName, 
@@ -36,10 +51,13 @@ export async function GET(req: NextRequest) {
               path: '/', 
               secure: true, 
               sameSite: 'lax',
-              maxAge: 0 
+              maxAge: 0,
+              expires: new Date(0)
             });
           });
 
-          // Hard redirect to sign-in (no client state needed)
-          return NextResponse.redirect(new URL('/sign-in?signedOut=true', base));
+          // Also clear any localStorage/sessionStorage by redirecting to a client-side clear page first
+          const clearUrl = new URL('/auth/clear-session', base);
+          clearUrl.searchParams.set('redirect', '/sign-in?signedOut=true');
+          return NextResponse.redirect(clearUrl);
 }
