@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import { NavBar } from "@/components/NavBar";
 
 export default function VenueDashboardClient({ venueId, userId }: { venueId: string; userId: string }) {
