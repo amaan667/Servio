@@ -1,11 +1,28 @@
 import { Button } from "./ui/button";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import { Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
-  // Sign out handled by server route
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut(); // full sign-out
+
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        Object.keys(localStorage).forEach((k) => {
+          if (k.includes('supabase') || k.includes('sb-')) localStorage.removeItem(k);
+        });
+      }
+
+      window.location.href = '/sign-in?signedOut=true'; // hard redirect
+    } catch (e) {
+      console.error('Error signing out:', e);
+      window.location.href = '/sign-in?signedOut=true';
+    }
+  };
 
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
@@ -22,9 +39,24 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
         </Link>
       </div>
       <div className="flex items-center space-x-6">
-        <Link href="/" className="text-gray-700 hover:text-gray-900 font-medium text-lg">Home</Link>
-        <Link href="#features" className="text-gray-700 hover:text-gray-900 font-medium text-lg">Features</Link>
-        <Link href="#pricing" className="text-gray-700 hover:text-gray-900 font-medium text-lg">Pricing</Link>
+        <Link
+          href="/"
+          className="text-gray-700 hover:text-gray-900 font-medium text-lg"
+        >
+          Home
+        </Link>
+        <Link
+          href="#features"
+          className="text-gray-700 hover:text-gray-900 font-medium text-lg"
+        >
+          Features
+        </Link>
+        <Link
+          href="#pricing"
+          className="text-gray-700 hover:text-gray-900 font-medium text-lg"
+        >
+          Pricing
+        </Link>
         {showActions && (
           <>
             <Link href="/settings">
@@ -33,8 +65,8 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
                 Settings
               </Button>
             </Link>
-            <Button variant="outline" size="sm" asChild>
-              <a href="/auth/sign-out">Sign Out</a>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              Sign Out
             </Button>
           </>
         )}
