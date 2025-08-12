@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { supabase } from "@/lib/supabase";
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { logger } from "@/lib/logger";
 
 interface CompleteProfileFormProps {
@@ -17,6 +17,7 @@ interface CompleteProfileFormProps {
 
 export default function CompleteProfileForm({ user }: CompleteProfileFormProps) {
   const router = useRouter();
+  const supabase = createClientComponentClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
