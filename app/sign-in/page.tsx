@@ -19,8 +19,9 @@ export default async function SignInPage() {
     {
       cookies: {
         get: (n) => cookieStore.get(n)?.value,
-        set: (n, v, o) => cookieStore.set({ name: n, value: v, ...o }),
-        remove: (n, o) => cookieStore.set({ name: n, value: "", ...o }),
+        // No-ops here to keep this page read-only for cookies
+        set: () => {},
+        remove: () => {},
       },
     }
   );
