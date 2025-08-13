@@ -52,10 +52,13 @@ export default function StaffClient({ venueId }: { venueId: string }) {
     if (!name.trim()) { setError('Enter a name'); return; }
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('staff')
-        .insert({ venue_id: venueId, name: name.trim(), role: role.trim() || 'Server' });
-      if (error) throw error;
+      const res = await fetch('/api/staff/add', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ venue_id: venueId, name: name.trim(), role: role.trim() || 'Server' }),
+      });
+      const j = await res.json().catch(()=>({}));
+      if (!res.ok || j?.error) throw new Error(j?.error || 'Failed');
       setName(''); setRole('Server');
       await load();
     } catch (err: any) {
