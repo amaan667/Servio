@@ -101,13 +101,14 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
       try {
         const r1 = await fetch('/api/orders/update-status', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ orderId, status }) });
         const j1 = await r1.json().catch(()=>({}));
-        ok = r1.ok && (j1?.ok ?? true);
+        // treat ok only if the order object is returned and status matches
+        ok = r1.ok && (j1?.ok === true) && !!j1?.order && (j1.order.status === status);
         msg = j1?.error || '';
       } catch {}
       if (!ok) {
         const r2 = await fetch(`/api/dashboard/orders/${orderId}`, { method:'PATCH', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ status }) });
         const j2 = await r2.json().catch(()=>({}));
-        ok = r2.ok && (j2?.ok ?? true);
+        ok = r2.ok && (j2?.ok === true) && !!j2?.order && (j2.order.status === status);
         msg = j2?.error || msg || '';
       }
       if (!ok) throw new Error(msg || 'Update failed');
@@ -122,8 +123,21 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
     const prev = orders;
     setOrders((p)=>p.map(o=>o.id===orderId?{...o, payment_status: 'paid'}:o));
     try {
-      const res = await fetch('/api/orders/mark-paid', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ orderId }) });
-      if (!res.ok) throw new Error('Mark paid failed');
+      // Try service-role endpoint first via dashboard PATCH (sets paid status field where applicable)
+      let ok = false; let msg = '';
+      try {
+        const r1 = await fetch(`/api/dashboard/orders/${orderId}`, { method:'PATCH', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ status: 'paid' }) });
+        const j1 = await r1.json().catch(()=>({}));
+        ok = r1.ok && (j1?.ok === true);
+        msg = j1?.error || '';
+      } catch {}
+      if (!ok) {
+        const res = await fetch('/api/orders/mark-paid', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ orderId }) });
+        const j = await res.json().catch(()=>({}));
+        ok = res.ok && (j?.ok === true);
+        msg = j?.error || msg || '';
+      }
+      if (!ok) throw new Error(msg || 'Mark paid failed');
       toast({ title: 'Marked Paid', description: `Order ${orderId.slice(0,6)} paid` });
     } catch (e:any) {
       setOrders(prev);
