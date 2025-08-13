@@ -113,10 +113,10 @@ export default function GlobalNav() {
               ) : authState.authenticated ? (
                 <>
                   <Link
-                    href="/dashboard"
+                    href="/"
                     className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium"
                   >
-                    Dashboard
+                    Home
                   </Link>
                   <Link
                     href="/settings"
