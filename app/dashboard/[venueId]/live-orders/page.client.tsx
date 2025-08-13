@@ -288,8 +288,10 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
 
 function RowTimer({ createdAt, nowTick }: { createdAt: string; nowTick: number }) {
   const elapsed = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000));
-  const minutes = Math.floor(elapsed / 60);
-  const label = `${minutes}m`;
+  const minutesTotal = Math.floor(elapsed / 60);
+  const hours = Math.floor(minutesTotal / 60);
+  const mins = minutesTotal % 60;
+  const label = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   const color = elapsed > 1200 ? 'text-red-600' : elapsed > 600 ? 'text-orange-500' : 'text-gray-500';
   return <span className={`text-xs ${color}`}>{label}</span>;
 }
