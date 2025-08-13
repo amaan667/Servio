@@ -11,12 +11,11 @@ function SignInPageContent() {
 
   useEffect(() => {
     const run = async () => {
-      // If we just signed out, always show the form (don't auto-redirect)
-      if (sp?.get('signedOut') === 'true') return;
+      // If we just signed out BUT already have a session (e.g., auth cookies restored), still route
 
       // If already signed in, route based on venues
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) return; // show form
 
       const { data: venue } = await supabase
         .from('venues')
