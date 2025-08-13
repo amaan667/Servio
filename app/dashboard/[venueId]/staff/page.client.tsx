@@ -46,8 +46,7 @@ export default function StaffClient({ venueId }: { venueId: string }) {
     })();
   }, []);
 
-  const add = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  const add = async () => {
     setError(null);
     if (!name.trim()) { setError('Enter a name'); return; }
     setLoading(true);
@@ -59,8 +58,10 @@ export default function StaffClient({ venueId }: { venueId: string }) {
       });
       const j = await res.json().catch(()=>({}));
       if (!res.ok || j?.error) throw new Error(j?.error || 'Failed');
+      // Append new staff locally for immediacy
+      const inserted = (j?.data && j.data[0]) ? j.data[0] : { id: crypto.randomUUID(), name: name.trim(), role: role.trim() || 'Server', active: true };
+      setStaff(prev => [inserted, ...prev]);
       setName(''); setRole('Server');
-      await load();
     } catch (err: any) {
       console.error('[STAFF] add error', err);
       setError(err?.message || 'Failed to add staff');
@@ -84,11 +85,11 @@ export default function StaffClient({ venueId }: { venueId: string }) {
         <h1 className="text-2xl font-semibold mb-4">Staff Management</h1>
 
         <Card className="mb-4"><CardContent className="p-4">
-          <form className="flex flex-col sm:flex-row gap-2" onSubmit={add}>
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input placeholder="Name" value={name} onChange={e=>setName(e.target.value)} />
             <Input placeholder="Role (e.g. Barista)" value={role} onChange={e=>setRole(e.target.value)} />
-            <Button type="submit" disabled={loading}>{loading ? 'Adding...' : 'Add'}</Button>
-          </form>
+            <Button type="button" onClick={()=>add()} disabled={loading}>{loading ? 'Adding...' : 'Add'}</Button>
+          </div>
           {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
           {needsInit && (
             <div className="text-sm text-amber-700 mt-2">
