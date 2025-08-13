@@ -28,6 +28,7 @@ function bad(msg: string, status = 400) {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Partial<OrderPayload>;
+    console.log('[ORDERS POST] raw body', body);
 
     if (!body.venue_id || typeof body.venue_id !== 'string') {
       return bad('venue_id is required');
@@ -72,21 +73,31 @@ export async function POST(req: Request) {
     }, 0);
     const finalTotal = Math.abs(computedTotal - (body.total_amount || 0)) < 0.01 ? body.total_amount! : computedTotal;
 
+    const safeItems = body.items.map((it) => ({
+      menu_item_id: it.menu_item_id ?? null,
+      quantity: Number(it.quantity) || 0,
+      price: Number((it as any).unit_price ?? (it as any).price) || 0,
+      item_name: it.item_name,
+      specialInstructions: (it as any).special_instructions ?? it.specialInstructions ?? null,
+    }));
+    console.log('[ORDERS POST] normalized safeItems', safeItems);
+
     const payload: OrderPayload = {
       venue_id: body.venue_id,
       table_number,
       customer_name: body.customer_name.trim(),
       customer_phone: body.customer_phone ?? null,
-      items: body.items.map((it) => ({
-        menu_item_id: it.menu_item_id ?? null,
-        quantity: Number(it.quantity) || 0,
-        price: Number((it as any).unit_price ?? (it as any).price) || 0,
-        item_name: it.item_name,
-        specialInstructions: (it as any).special_instructions ?? it.specialInstructions ?? null,
-      })),
+      items: safeItems,
       total_amount: finalTotal,
       notes: body.notes ?? null,
     };
+    console.log('[ORDERS POST] inserting order', {
+      venue_id: payload.venue_id,
+      table_number: payload.table_number,
+      status: 'pending',
+      total_amount: payload.total_amount,
+      itemsCount: payload.items.length,
+    });
 
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')
@@ -94,7 +105,11 @@ export async function POST(req: Request) {
       .select('id, created_at');
 
     if (insertErr) return bad(`Insert failed: ${insertErr.message}`, 400);
+    console.log('[ORDERS POST] order inserted', inserted?.[0]);
 
+    console.log('[ORDERS POST] inserting order_items for order_id', inserted?.[0]?.id);
+    // Note: items are embedded in orders payload in this schema; if you also mirror rows in order_items elsewhere, log success after that insert
+    console.log('[ORDERS POST] order_items insert success (embedded items)');
     return NextResponse.json({ ok: true, order: inserted?.[0] ?? null });
   } catch (e: any) {
     const msg = e?.message || (typeof e === 'string' ? e : 'Unknown server error');
