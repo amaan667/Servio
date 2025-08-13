@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export const runtime = 'nodejs';
@@ -10,14 +11,30 @@ export async function GET(req: Request) {
   const status = searchParams.get('status');
   if (!venueId) return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
 
+  // Verify requester owns venue via cookie-auth'd client
   const jar = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
   );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ ok:false, error:'Not authenticated' }, { status:401 });
+  const { data: v } = await supabase
+    .from('venues')
+    .select('venue_id, owner_id')
+    .eq('venue_id', venueId)
+    .eq('owner_id', user.id)
+    .maybeSingle();
+  if (!v) return NextResponse.json({ ok:false, error:'Forbidden' }, { status:403 });
 
-  let q = supabase.from('orders')
+  // Use service role to bypass RLS for joined data
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) return NextResponse.json({ ok:false, error:'Missing service role' }, { status:500 });
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey, { auth: { persistSession:false, autoRefreshToken:false } });
+
+  const statuses = status === 'open' ? ['pending','preparing'] : status ? [status] : undefined;
+  let q = admin.from('orders')
     .select(`
       id, venue_id, table_number, customer_name, total_amount, status, notes, created_at,
       order_items:order_items ( id, item_name, price, quantity, special_instructions )
@@ -25,7 +42,7 @@ export async function GET(req: Request) {
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false })
     .limit(100);
-  if (status) q = q.eq('status', status);
+  if (statuses) q = q.in('status', statuses as any);
 
   const { data, error } = await q;
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
