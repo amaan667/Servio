@@ -34,9 +34,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   // fetch initial
   useEffect(() => {
     (async () => {
-      const url = `/api/live-orders?venueId=${encodeURIComponent(venueId)}${
-        statusFilter === 'open' ? '&status=pending' : statusFilter !== 'open' ? `&status=${statusFilter}` : ''
-      }`;
+      const url = `/api/live-orders?venueId=${encodeURIComponent(venueId)}${statusFilter ? `&status=${statusFilter}` : ''}`;
       const res = await fetch(url, { cache:'no-store' });
       const j = await res.json();
       if (j?.ok) setOrders(j.orders);
