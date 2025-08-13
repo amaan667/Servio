@@ -22,7 +22,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid order payload' }, { status: 400 });
     }
 
-    // Create order
+    // Normalize items for JSON column and order_items
+    const normalizedItems = (body.items || []).map((item: any) => ({
+      menu_item_id: item.menu_item_id ?? null,
+      item_name: item.item_name,
+      quantity: Number(item.quantity) || 1,
+      unit_price: Number(item.price) || 0,
+      special_instructions: item.specialInstructions || null,
+    }));
+
+    // Create order (orders.items is JSONB NOT NULL)
     const { data: order, error: orderError } = await admin
       .from('orders')
       .insert({
@@ -33,6 +42,7 @@ export async function POST(req: Request) {
         status: 'pending',
         total_amount: body.total_amount,
         notes: body.notes,
+        items: normalizedItems,
       })
       .select()
       .single();
@@ -42,14 +52,16 @@ export async function POST(req: Request) {
     }
 
     // Create order items
-    const orderItems = body.items.map((item: any) => ({
-      order_id: order.id,
-      menu_item_id: item.menu_item_id,
-      quantity: item.quantity,
-      unit_price: item.price,
-      total_price: item.price * item.quantity,
-      item_name: item.item_name,
-    }));
+    const orderItems = normalizedItems
+      .filter((it: any) => !!it.item_name)
+      .map((it: any) => ({
+        order_id: order.id,
+        menu_item_id: it.menu_item_id ?? null,
+        item_name: it.item_name,
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        special_instructions: it.special_instructions,
+      }));
 
     if (orderItems.length > 0) {
       const { error: itemsError } = await admin
