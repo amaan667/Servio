@@ -181,12 +181,12 @@ export default function StaffClient({
               {/* Inline shift section */}
               <div id={`shift-form-${grouped[r][0]?.id || r}`} className="mt-4">
                 <div className="text-sm font-semibold mb-2">Add Shift</div>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <Input type="datetime-local" className="md:w-1/3" onChange={()=>{}} placeholder="Start" />
-                  <Input type="datetime-local" className="md:w-1/3" onChange={()=>{}} placeholder="End" />
-                  <Input placeholder="Area (optional)" className="md:w-1/4" onChange={()=>{}} />
-                  <Button disabled>Save (select person via row)</Button>
-                </div>
+                <ShiftRow
+                  value={{ date: '', start: '', end: '', area: '' }}
+                  onChange={()=>{}}
+                  onSave={()=>{}}
+                />
+                <div className="text-xs text-gray-500 mt-1">Click a row’s “Shifts” button to target that staff member, then fill and save.</div>
               </div>
             </CardContent>
           </Card>
