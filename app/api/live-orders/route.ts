@@ -37,7 +37,7 @@ export async function GET(req: Request) {
   let q = admin.from('orders')
     .select(`
       id, venue_id, table_number, customer_name, total_amount, status, notes, created_at,
-      order_items:order_items ( id, item_name, price, quantity, special_instructions )
+      order_items:order_items ( id, item_name, unit_price, quantity, special_instructions )
     `)
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false })
@@ -49,9 +49,10 @@ export async function GET(req: Request) {
 
   const hydrated = (data ?? []).map((o: any) => {
     const items = (o.order_items ?? []).map((it: any) => {
-      const price = Number(it.price); const qty = Number(it.quantity);
+      const price = Number(it.price ?? it.unit_price);
+      const qty = Number(it.quantity);
       const line_total = (Number.isFinite(price) ? price : 0) * (Number.isFinite(qty) ? qty : 0);
-      return { ...it, price, quantity: qty, line_total };
+      return { id: it.id, item_name: it.item_name, price, quantity: qty, special_instructions: it.special_instructions, line_total };
     });
     const computed_total = items.reduce((s: number, it: any) => s + it.line_total, 0);
     const total = Number.isFinite(Number(o.total_amount)) ? Number(o.total_amount) : computed_total;
