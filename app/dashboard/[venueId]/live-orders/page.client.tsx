@@ -247,6 +247,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
                 <span>• Table {o.table_number ?? '—'}</span>
                 <span>• {new Date(o.created_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</span>
                 <StatusChip status={o.status} />
+                <PaidChip paid={(o.payment_status ?? 'unpaid') === 'paid'} />
                 <RowTimer nowTick={tick} createdAt={o.created_at} />
               </div>
               <div className="text-right">
@@ -292,15 +293,32 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
               )}
             </div>
             <div className="mt-3 flex gap-2">
-              {nextAction(o.status)?.label ? (
-                <Button onClick={()=>{
-                  const next = nextAction(o.status)!;
-                  if (next.to === 'paid') { markPaid(o.id); }
-                  else { updateStatus(o.id, next.to as any); }
-                }}>{nextAction(o.status)!.label}</Button>
-              ) : null}
-              <Button variant="outline" onClick={()=>updateStatus(o.id,'served')}>Mark Served</Button>
-              <Button variant="outline" onClick={()=>markPaid(o.id)}>Mark Paid</Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const isServed = o.status === 'served' || (o as any).status === 'delivered';
+                  updateStatus(o.id, isServed ? 'preparing' : 'served');
+                }}
+              >
+                {(o.status === 'served' || (o as any).status === 'delivered') ? 'Unmark Served' : 'Mark Served'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const isPaid = (o.payment_status ?? 'unpaid') === 'paid';
+                  if (isPaid) {
+                    const prevPaid = o.payment_status;
+                    setOrders((p)=>p.map(or=>or.id===o.id?{...or, payment_status: 'pending' as any}:or));
+                    fetch(`/api/dashboard/orders/${o.id}`, { method:'PATCH', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ payment_status: 'pending' }) })
+                      .then(async r=>{ if(!r.ok){ throw new Error((await r.json().catch(()=>({})))?.error||'Unmark paid failed'); } })
+                      .catch(()=> setOrders((p)=>p.map(or=>or.id===o.id?{...or, payment_status: prevPaid }:or)));
+                  } else {
+                    markPaid(o.id);
+                  }
+                }}
+              >
+                {(o.payment_status ?? 'unpaid') === 'paid' ? 'Unmark Paid' : 'Mark Paid'}
+              </Button>
               <Button variant="destructive" onClick={()=>{ if (confirm('Delete this order?')) deleteOrder(o.id); }}>Delete</Button>
             </div>
           </div>
@@ -335,6 +353,11 @@ function StatusChip({ status }: { status: Order['status'] }) {
   } as any;
   const text = String(status).toUpperCase();
   return <span className={`text-[10px] rounded px-2 py-0.5 ${map[status] || 'bg-gray-200 text-gray-800'}`}>{text}</span>;
+}
+
+function PaidChip({ paid }: { paid: boolean }) {
+  if (!paid) return null;
+  return <span className="text-[10px] rounded px-2 py-0.5 bg-[#9CA3AF] text-white">PAID</span>;
 }
 
 function nextAction(status: Order['status']): { label: string; to: Order['status'] } | null {
