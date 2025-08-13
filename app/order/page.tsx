@@ -239,6 +239,15 @@ export default function CustomerOrderPage() {
 
     setIsSubmitting(true);
     try {
+      // Demo mode: simulate a successful order without hitting the API
+      if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        setOrderSubmitted(true);
+        setCart([]);
+        setShowCheckout(false);
+        return;
+      }
+
       const orderData = {
         venue_id: venueSlug,
         table_number: safeTable,
