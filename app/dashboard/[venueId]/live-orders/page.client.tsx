@@ -28,14 +28,14 @@ type Order = {
 export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const supabase = createClientComponentClient();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'open'|'pending'|'preparing'|'served'>('open');
+  const [statusFilter, setStatusFilter] = useState<'all'|'open'|'pending'|'preparing'|'served'>('all');
   const [tableFilter, setTableFilter] = useState<string>('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // fetch initial
   useEffect(() => {
     (async () => {
-      const url = `/api/live-orders?venueId=${encodeURIComponent(venueId)}${statusFilter ? `&status=${statusFilter}` : ''}`;
+      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}${statusFilter ? `&status=${statusFilter}` : ''}&limit=1000`;
       const res = await fetch(url, { cache:'no-store' });
       const j = await res.json();
       if (j?.ok) setOrders(j.orders);
@@ -77,7 +77,11 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   };
 
   const visible = useMemo(() => {
-    let list = statusFilter === 'open' ? orders.filter(o => o.status !== 'served') : orders.filter(o => o.status === statusFilter);
+    let list = statusFilter === 'all'
+      ? orders
+      : statusFilter === 'open'
+        ? orders.filter(o => o.status !== 'served')
+        : orders.filter(o => o.status === statusFilter);
     if (tableFilter.trim()) {
       const needle = tableFilter.trim().toLowerCase();
       list = list.filter(o => String(o.table_number ?? '').toLowerCase().includes(needle));
@@ -100,7 +104,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
             placeholder="Filter by table #"
             className="border rounded px-2 py-1 text-sm"
           />
-          {(['open','pending','preparing','served'] as const).map(s=> (
+          {(['all','open','pending','preparing','served'] as const).map(s=> (
             <Button key={s} variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
               {s[0].toUpperCase()+s.slice(1)}
             </Button>
