@@ -10,10 +10,10 @@ import { supabase } from "@/lib/sb-client";
 import { NavBar } from "@/components/NavBar";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
-export default function VenueDashboardClient({ venueId, userId }: { venueId: string; userId: string }) {
+export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0 }: { venueId: string; userId: string; activeTables?: number }) {
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, activeTables: 0, menuItems: 0 });
+  const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, activeTables: activeTablesFromSSR, menuItems: 0 });
   const router = useRouter();
 
   useEffect(() => {
