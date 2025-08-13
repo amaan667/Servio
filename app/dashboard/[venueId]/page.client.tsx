@@ -248,7 +248,7 @@ export default function VenueDashboardClient({ venueId, userId }: { venueId: str
                     <p className="text-sm text-gray-500">Customize your venue settings</p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => router.push(`/dashboard/${venueId}/settings`)}>
+                <Button variant="outline" onClick={() => router.push(`/settings`)}>
                   Configure
                 </Button>
               </div>

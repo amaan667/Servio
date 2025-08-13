@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard, Smartphone } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import { demoMenuItems } from "@/data/demoMenuItems";
 
 interface MenuItem {
@@ -69,8 +69,8 @@ export default function CustomerOrderPage() {
     setMenuError(null);
     setIsDemoFallback(false);
 
-    // Check if this is a demo or if user is not logged in
-    if (isDemo || !isLoggedIn || venueSlug === "demo-cafe" || venueSlug === "demo") {
+    // Check if this is a demo
+    if (isDemo || venueSlug === "demo-cafe" || venueSlug === "demo") {
       console.log("Loading demo menu items");
       setMenuItems(
         demoMenuItems.map((item, idx) => ({
@@ -250,43 +250,15 @@ export default function CustomerOrderPage() {
           .join("; "),
       };
 
-      const { data, error } = await supabase
-        .from("orders")
-        .insert({
-          venue_id: orderData.venue_id,
-          table_number: orderData.table_number,
-          customer_name: orderData.customer_name,
-          customer_phone: orderData.customer_phone,
-          status: "pending",
-          total_amount: orderData.total_amount,
-          notes: orderData.notes,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error creating order:", error);
-        alert("Failed to submit order. Please try again.");
-        return;
-      }
-
-      // Create order items
-      const orderItems = orderData.items.map((item) => ({
-        order_id: data.id,
-        menu_item_id: item.menu_item_id,
-            quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
-        item_name: item.item_name,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) {
-        console.error("Error creating order items:", itemsError);
-        alert("Failed to submit order. Please try again.");
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Order API failed', errText);
+        alert('Failed to submit order. Please try again.');
         return;
       }
 
