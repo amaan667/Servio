@@ -106,6 +106,72 @@ export default function StaffClient({
     }
   };
 
+  function ShiftRow({
+    value,
+    onChange,
+    onSave,
+    areas = ['Front of House', 'Kitchen', 'Bar'],
+    disabled,
+  }: {
+    value: { date: string; start: string; end: string; area?: string };
+    onChange: (p: Partial<{ date: string; start: string; end: string; area?: string }>) => void;
+    onSave: () => void;
+    areas?: string[];
+    disabled?: boolean;
+  }) {
+    return (
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-3">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+          <input
+            type="date"
+            className="w-full rounded-md border px-3 py-2"
+            value={value.date}
+            onChange={(e) => onChange({ date: e.target.value })}
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
+          <input
+            type="time"
+            className="w-full rounded-md border px-3 py-2"
+            value={value.start}
+            onChange={(e) => onChange({ start: e.target.value })}
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
+          <input
+            type="time"
+            className="w-full rounded-md border px-3 py-2"
+            value={value.end}
+            onChange={(e) => onChange({ end: e.target.value })}
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+          <select
+            className="w-full rounded-md border px-3 py-2"
+            value={value.area ?? ''}
+            onChange={(e) => onChange({ area: e.target.value })}
+          >
+            <option value="">Select…</option>
+            {areas.map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+        </div>
+        <button
+          onClick={onSave}
+          disabled={disabled}
+          className="h-10 px-4 rounded-md bg-purple-600 text-white font-medium md:ml-2 disabled:opacity-60"
+        >
+          Save
+        </button>
+      </div>
+    );
+  }
+
   const grouped = useMemo(() => {
     const by: Record<string, StaffRow[]> = {};
     for (const r of staff) {
