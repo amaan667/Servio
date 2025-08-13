@@ -246,9 +246,9 @@ export default function CustomerOrderPage() {
         items: cart.map((item) => ({
           menu_item_id: item.id && item.id.startsWith('demo-') ? null : item.id,
           quantity: item.quantity,
-          price: item.price,
+          unit_price: item.price, // align with DB/API
           item_name: item.name,
-          specialInstructions: item.specialInstructions || null,
+          special_instructions: item.specialInstructions || null,
         })),
         total_amount: getTotalPrice(),
         notes: cart
