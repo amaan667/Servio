@@ -7,20 +7,16 @@ import Link from "next/link";
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut(); // full sign-out
-
+      // Prefer server-side sign out to clear HttpOnly cookies reliably
       if (typeof window !== 'undefined') {
-        localStorage.clear();
-        sessionStorage.clear();
-        Object.keys(localStorage).forEach((k) => {
-          if (k.includes('supabase') || k.includes('sb-')) localStorage.removeItem(k);
-        });
+        window.location.href = '/auth/sign-out';
+        return;
       }
-
-      window.location.href = '/sign-in?signedOut=true'; // hard redirect
     } catch (e) {
       console.error('Error signing out:', e);
-      window.location.href = '/sign-in?signedOut=true';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/sign-out';
+      }
     }
   };
 
