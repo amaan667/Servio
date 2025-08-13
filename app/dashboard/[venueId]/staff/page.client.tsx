@@ -34,6 +34,18 @@ export default function StaffClient({ venueId }: { venueId: string }) {
 
   useEffect(() => { load(); }, [venueId]);
 
+  // On mount, check if staff table exists; if not, show inline hint
+  const [needsInit, setNeedsInit] = useState(false);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/staff/check');
+        const j = await res.json();
+        if (j?.ok && j.exists === false) setNeedsInit(true);
+      } catch {}
+    })();
+  }, []);
+
   const add = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setError(null);
@@ -75,6 +87,12 @@ export default function StaffClient({ venueId }: { venueId: string }) {
             <Button type="submit" disabled={loading}>{loading ? 'Adding...' : 'Add'}</Button>
           </form>
           {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
+          {needsInit && (
+            <div className="text-sm text-amber-700 mt-2">
+              Staff table is missing. Ask the owner to run scripts/staff-schema.sql in Supabase or click
+              <Button className="ml-2" size="sm" variant="outline" onClick={async ()=>{ await fetch('/api/staff/init',{method:'POST'}); setNeedsInit(false); load(); }}>Init Now</Button>
+            </div>
+          )}
         </CardContent></Card>
 
         <div className="space-y-2">
