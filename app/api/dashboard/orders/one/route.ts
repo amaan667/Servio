@@ -53,7 +53,8 @@ export async function GET(req: Request) {
     const price = Number(it.unit_price ?? it.price ?? 0);
     const qty = Number(it.quantity ?? 0);
     const line_total = price * qty;
-    return { id: it.id, item_name: it.item_name, price, quantity: qty, special_instructions: it.special_instructions, line_total };
+    const item_name = (it.item_name ?? it.name ?? it.menu_item_name ?? 'Item') as string;
+    return { id: it.id, item_name, price, quantity: qty, special_instructions: it.special_instructions, line_total };
   });
   const computed_total = mappedItems.reduce((s, it) => s + it.line_total, 0);
   return NextResponse.json({ ok:true, order: { ...order, items: mappedItems, computed_total } });

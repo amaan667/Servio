@@ -43,7 +43,7 @@ export async function GET(req: Request) {
   let q = admin.from('orders')
     .select(`
       id, venue_id, table_number, customer_name, total_amount, status, notes, created_at,
-      order_items ( id, item_name, unit_price, quantity, special_instructions )
+      order_items ( id, item_name, name, menu_item_name, unit_price, price, quantity, special_instructions )
     `)
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false })
@@ -58,11 +58,13 @@ export async function GET(req: Request) {
 
   const hydrated = (data ?? []).map((o: any) => {
     const items = (o.order_items ?? []).map((it: any) => {
-      const price = Number(it.unit_price ?? 0);
+      const price = Number(it.unit_price ?? it.price ?? 0);
       const qty = Number(it.quantity ?? 0);
-      return { ...it, price, quantity: qty, line_total: price * qty };
+      const item_name = (it.item_name ?? it.name ?? it.menu_item_name ?? 'Item') as string;
+      return { id: it.id, item_name, price, quantity: qty, special_instructions: it.special_instructions, line_total: price * qty };
     });
-    return { ...o, items, computed_total: items.reduce((sum: number, it: any) => sum + it.line_total, 0) };
+    const computed_total = items.reduce((sum: number, it: any) => sum + it.line_total, 0);
+    return { ...o, items, computed_total };
   });
 
   console.log("[LIVE ORDERS GET] hydrated orders:", hydrated);
