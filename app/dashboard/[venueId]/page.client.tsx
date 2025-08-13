@@ -55,7 +55,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       const activeTableSet = new Set(
         (orders ?? [])
-          .filter((o: any) => o.status !== 'served')
+          .filter((o: any) => o.status !== 'delivered')
           .map((o: any) => o.table_number)
           .filter((t: any) => t != null)
       );
