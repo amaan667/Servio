@@ -240,10 +240,11 @@ export default function CustomerOrderPage() {
         customer_name: customerInfo.name,
         customer_phone: customerInfo.phone || undefined,
         items: cart.map((item) => ({
-          menu_item_id: item.id,
+          menu_item_id: item.id && item.id.startsWith('demo-') ? null : item.id,
           quantity: item.quantity,
           price: item.price,
           item_name: item.name,
+          specialInstructions: item.specialInstructions || null,
         })),
         total_amount: getTotalPrice(),
         notes: cart
