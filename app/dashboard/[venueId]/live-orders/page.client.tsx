@@ -80,12 +80,15 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
     return orders.filter(o => o.status === statusFilter);
   }, [orders, statusFilter]);
 
+  const activeTables = new Set(orders.filter(o=>o.status!=='served').map(o=>o.table_number).filter(v=>v!=null));
+
   return (
     <div className="max-w-5xl mx-auto p-6">
       <audio ref={audioRef} src="/assets/new-order.mp3" preload="auto" />
       <div className="flex items-center justify-between mb-4">
         <Link href={`/dashboard/${venueId}`} className="text-sm text-gray-600">← Back to Dashboard</Link>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-gray-600 mr-3">Active Tables: {activeTables.size}</div>
           {(['open','pending','preparing','served'] as const).map(s=> (
             <Button key={s} variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
               {s[0].toUpperCase()+s.slice(1)}
