@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import { Menu, X } from "lucide-react";
 
 export default function GlobalNav() {
@@ -60,7 +60,9 @@ export default function GlobalNav() {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/sign-out';
+    }
   };
 
   return (
@@ -84,53 +86,58 @@ export default function GlobalNav() {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
-              <Link
-                href="/"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Home
-              </Link>
-              <Link
-                href="#features"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Features
-              </Link>
-              <Link
-                href="#pricing"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Pricing
-              </Link>
+              {!authState.authenticated && (
+                <>
+                  <Link
+                    href="/"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    href="#features"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Features
+                  </Link>
+                  <Link
+                    href="#pricing"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Pricing
+                  </Link>
+                </>
+              )}
               {authState.loading ? (
                 <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
               ) : authState.authenticated ? (
                 <>
                   <Link
                     href="/dashboard"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium"
                   >
                     Dashboard
+                  </Link>
+                  <Link
+                    href="/settings"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Settings
                   </Link>
                   <Button
                     onClick={handleSignOut}
                     variant="outline"
                     size="sm"
-                    className="ml-2"
+                    className="ml-2 text-base"
                   >
                     Sign Out
                   </Button>
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/sign-in"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Sign In
-                  </Link>
+                  <Link href="/sign-in" className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium">Sign In</Link>
                   <Link href="/sign-up">
-                    <Button size="sm" className="ml-2">
+                    <Button size="sm" className="ml-2 text-base">
                       Get Started
                     </Button>
                   </Link>
@@ -156,42 +163,29 @@ export default function GlobalNav() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+          {/* Mobile Navigation */}
       {mobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
-            <Link
-              href="/"
-              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="#features"
-              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Features
-            </Link>
-            <Link
-              href="#pricing"
-              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Pricing
-            </Link>
+                {!authState.authenticated && (
+                  <>
+                    <Link href="/" className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+                    <Link href="#features" className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+                    <Link href="#pricing" className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+                  </>
+                )}
             {authState.loading ? (
               <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
             ) : authState.authenticated ? (
               <>
                 <Link
                   href="/dashboard"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                      className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Dashboard
                 </Link>
+                    <Link href="/settings" className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium" onClick={() => setMobileMenuOpen(false)}>Settings</Link>
                 <Button
                   onClick={handleSignOut}
                   variant="outline"
@@ -203,15 +197,9 @@ export default function GlobalNav() {
               </>
             ) : (
               <>
-                <Link
-                  href="/sign-in"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
+                    <Link href="/sign-in" className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
                 <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
-                  <Button size="sm" className="w-full mt-2">
+                      <Button size="sm" className="w-full mt-2 text-base">
                     Get Started
                   </Button>
                 </Link>
