@@ -50,7 +50,7 @@ export async function GET(req: Request) {
   // 1️⃣ Fetch orders first
   let ordersQuery = admin
     .from('orders')
-    .select('id, venue_id, table_number, customer_name, total_amount, status, notes, created_at')
+    .select('id, venue_id, table_number, customer_name, total_amount, status, notes, created_at, items')
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -80,13 +80,23 @@ export async function GET(req: Request) {
   // 3️⃣ Merge items into orders
   const hydrated = orders.map((o: any) => {
     const oItems = (items ?? []).filter((it: any) => it.order_id === o.id);
-    const mappedItems = oItems.map((it: any) => {
+    let mappedItems = oItems.map((it: any) => {
       const price = Number(it.unit_price ?? it.price ?? 0);
       const qty = Number(it.quantity ?? 0);
       const line_total = price * qty;
       const item_name = (it.item_name ?? it.name ?? it.menu_item_name ?? 'Item') as string;
       return { id: it.id, item_name, price, quantity: qty, special_instructions: it.special_instructions, line_total };
     });
+    if (!mappedItems.length && Array.isArray(o.items)) {
+      mappedItems = (o.items as any[]).map((it: any, idx: number) => {
+        const price = Number(it.unit_price ?? it.price ?? it.unitPrice ?? 0);
+        const qty = Number(it.quantity ?? it.qty ?? 0);
+        const line_total = price * qty;
+        const item_name = (it.item_name ?? it.name ?? it.menu_item_name ?? it.title ?? 'Item') as string;
+        const special_instructions = (it.special_instructions ?? it.specialInstructions ?? null) as string | null;
+        return { id: it.id ?? `embedded-${idx}`, item_name, price, quantity: qty, special_instructions, line_total };
+      });
+    }
     const computed_total = mappedItems.reduce((s: number, it: any) => s + it.line_total, 0);
     const total = Number.isFinite(Number(o.total_amount)) && Number(o.total_amount) > 0 ? Number(o.total_amount) : computed_total;
     return { ...o, items: mappedItems, computed_total: total };
