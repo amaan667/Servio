@@ -116,7 +116,7 @@ export default function CustomerOrderPage() {
       // Fetch menu items for the venue
       const { data, error } = await supabase
         .from("menu_items")
-        .select("*")
+        .select("*, venues!inner(name)")
         .eq("venue_id", venueSlug)
         .eq("available", true)
         .order("category", { ascending: true });
@@ -139,7 +139,9 @@ export default function CustomerOrderPage() {
         return;
       }
 
-      setMenuItems(data || []);
+      // Attach venue_name for display
+      const normalized = (data || []).map((mi: any) => ({ ...mi, venue_name: mi.venues?.name }));
+      setMenuItems(normalized);
       if (!data || data.length === 0) {
         console.log(`No menu items found for venue '${venueSlug}', falling back to demo mode`);
         setIsDemoFallback(true);
@@ -261,6 +263,8 @@ export default function CustomerOrderPage() {
         alert('Failed to submit order. Please try again.');
         return;
       }
+      const out = await res.json();
+      console.log('Order submitted', out);
 
       setOrderSubmitted(true);
       setCart([]);
@@ -334,7 +338,7 @@ export default function CustomerOrderPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                {isDemoFallback ? "Demo Cafe" : venueSlug}
+                {isDemoFallback ? "Demo Cafe" : (menuItems[0]?.venue_name || 'Our Venue')}
               </h1>
               <p className="text-gray-600">Table {tableNumber}</p>
             </div>
