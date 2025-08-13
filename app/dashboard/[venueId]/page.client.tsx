@@ -38,14 +38,13 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
   const loadStats = async (vId: string) => {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const since = new Date(Date.now() - 24*60*60*1000);
 
       const { data: orders } = await supabase
         .from("orders")
         .select("total_amount, table_number, status, payment_status, created_at")
         .eq("venue_id", vId)
-        .gte("created_at", today.toISOString());
+        .gte("created_at", since.toISOString());
 
       const { data: menuItems } = await supabase
         .from("menu_items")
@@ -62,7 +61,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       setStats({
         todayOrders: orders?.length || 0,
-        revenue: orders?.reduce((sum: number, order: any) => sum + (Number(order.total_amount) || 0), 0) || 0,
+        revenue: (orders ?? []).reduce((sum: number, order: any) => sum + (parseFloat(order.total_amount as any) || 0), 0),
         activeTables: activeTableSet.size,
         menuItems: menuItems?.length || 0,
         unpaid: (orders ?? []).filter((o: any) => (o.payment_status ?? 'unpaid') !== 'paid').length,
