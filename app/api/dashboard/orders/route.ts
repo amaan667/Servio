@@ -9,6 +9,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const venueId = searchParams.get('venueId');
   const status = searchParams.get('status');
+  const limit = Number(searchParams.get('limit') || '500');
   if (!venueId) {
     return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
   }
@@ -45,7 +46,7 @@ export async function GET(req: Request) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const statuses = status === 'open' ? ['pending', 'preparing'] : status ? [status] : undefined;
+  const statuses = status === 'all' ? undefined : status === 'open' ? ['pending', 'preparing'] : status ? [status] : undefined;
 
   // 1️⃣ Fetch orders first
   let ordersQuery = admin
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
     .select('*')
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false })
-    .limit(100);
+    .limit(limit);
   if (statuses) {
     ordersQuery = ordersQuery.in('status', statuses as any);
   }
