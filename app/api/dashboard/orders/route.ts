@@ -50,7 +50,7 @@ export async function GET(req: Request) {
   let statuses: string[] | undefined;
   if (status === 'all' || !status) {
     statuses = undefined;
-  } else if (status === 'open') {
+  } else if (status === 'open' || status === 'preparing') {
     statuses = ['pending', 'preparing'];
   } else if (status === 'served') {
     statuses = ['delivered'];

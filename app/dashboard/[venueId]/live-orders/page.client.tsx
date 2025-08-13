@@ -32,7 +32,7 @@ type Order = {
 export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const supabase = createClientComponentClient();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all'|'open'|'served'|'paid'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all'|'preparing'|'served'|'paid'>('all');
   const [tableFilter, setTableFilter] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -45,7 +45,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   // fetch initial
   useEffect(() => {
     (async () => {
-      const qStatus = statusFilter === 'paid' ? 'all' : statusFilter; // server filters on order.status only; 'open' supported
+      const qStatus = statusFilter === 'paid' ? 'all' : statusFilter; // server filters on order.status only; 'preparing' maps to pending+preparing
       const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}${qStatus ? `&status=${qStatus}` : ''}&limit=1000`;
       const res = await fetch(url, { cache:'no-store' });
       const j = await res.json();
@@ -219,11 +219,13 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
             className="border rounded px-2 py-1 text-xs sm:text-sm flex-shrink-0"
           />
           <div className="flex gap-2 flex-shrink-0">
-          {(['all','open','served','paid'] as const).map(s=> (
-            <Button key={s} size="sm" variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
+          <div className="flex gap-2 flex-shrink-0 overflow-x-auto">
+          {(['all','preparing','served','paid'] as const).map(s=> (
+            <Button key={s} size="sm" className="flex-shrink-0" variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
               {s[0].toUpperCase()+s.slice(1)}
             </Button>
           ))}
+          </div>
           </div>
         </div>
       </div>
@@ -254,9 +256,9 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
               </div>
               <div className="text-right sm:min-w-[100px]">
                 <div className="text-base sm:text-lg font-semibold">{toMoney(o.computed_total)}</div>
-                {(o.payment_status ?? 'unpaid') !== 'paid' && (
-                  <Badge className="mt-1 bg-amber-100 text-amber-700">Unpaid</Badge>
-                )}
+                 {(o.payment_status ?? 'unpaid') !== 'paid' && !(o.status === 'served' || (o as any).status === 'delivered') && (
+                   <Badge className="mt-1 bg-amber-100 text-amber-700">Unpaid</Badge>
+                 )}
               </div>
             </div>
             <div className="mt-1 text-[11px] sm:text-xs" />
