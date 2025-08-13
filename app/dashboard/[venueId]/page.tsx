@@ -25,14 +25,12 @@ export default async function Page({ params }: { params: { venueId: string } }) 
   log('DASH SSR venue', { ok: !!venue, err: vErr?.message });
   if (vErr || !venue) return notFound();
 
-  // Compute unique active tables today: status != 'served'
-  const startOfTodayISO = () => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString(); };
+  // Compute unique active tables (open tickets): status != 'delivered'
   const { data: activeRows } = await supabase
     .from('orders')
-    .select('table_number, status, created_at')
+    .select('table_number, status')
     .eq('venue_id', params.venueId)
-    .neq('status', 'served')
-    .gte('created_at', startOfTodayISO());
+    .neq('status', 'delivered');
   const uniqueActiveTables = new Set((activeRows ?? []).map((r: any) => r.table_number).filter((t: any) => t != null)).size;
 
   return <DashboardClient venueId={params.venueId} userId={user.id} activeTables={uniqueActiveTables} />;
