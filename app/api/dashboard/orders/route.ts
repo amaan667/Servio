@@ -102,7 +102,7 @@ export async function GET(req: Request) {
       });
     }
     const computed_total = mappedItems.reduce((s: number, it: any) => s + it.line_total, 0);
-    const total = Number.isFinite(Number(o.total_amount)) && Number(o.total_amount) > 0 ? Number(o.total_amount) : computed_total;
+    const total = (computed_total || 0) > 0 ? computed_total : (Number(o.total_amount) || 0);
     return { ...o, items: mappedItems, computed_total: total };
   });
 

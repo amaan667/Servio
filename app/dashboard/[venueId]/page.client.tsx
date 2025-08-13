@@ -100,7 +100,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+           <Card>
             <CardContent className="p-6 cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/live-orders?since=today`)}>
               <div className="flex items-center justify-between">
                 <div>
@@ -131,7 +131,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
             </CardContent>
           </Card>
 
-          <Card>
+           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
