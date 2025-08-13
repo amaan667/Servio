@@ -29,6 +29,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const supabase = createClientComponentClient();
   const [orders, setOrders] = useState<Order[]>([]);
   const [statusFilter, setStatusFilter] = useState<'open'|'pending'|'preparing'|'served'>('open');
+  const [tableFilter, setTableFilter] = useState<string>('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // fetch initial
@@ -76,9 +77,13 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   };
 
   const visible = useMemo(() => {
-    if (statusFilter === 'open') return orders.filter(o => o.status !== 'served');
-    return orders.filter(o => o.status === statusFilter);
-  }, [orders, statusFilter]);
+    let list = statusFilter === 'open' ? orders.filter(o => o.status !== 'served') : orders.filter(o => o.status === statusFilter);
+    if (tableFilter.trim()) {
+      const needle = tableFilter.trim().toLowerCase();
+      list = list.filter(o => String(o.table_number ?? '').toLowerCase().includes(needle));
+    }
+    return list;
+  }, [orders, statusFilter, tableFilter]);
 
   const activeTables = new Set(orders.filter(o=>o.status!=='served').map(o=>o.table_number).filter(v=>v!=null));
 
@@ -89,6 +94,12 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
         <Link href={`/dashboard/${venueId}`} className="text-sm text-gray-600">← Back to Dashboard</Link>
         <div className="flex items-center gap-2">
           <div className="text-sm text-gray-600 mr-3">Active Tables: {activeTables.size}</div>
+          <input
+            value={tableFilter}
+            onChange={e=>setTableFilter(e.target.value)}
+            placeholder="Filter by table #"
+            className="border rounded px-2 py-1 text-sm"
+          />
           {(['open','pending','preparing','served'] as const).map(s=> (
             <Button key={s} variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
               {s[0].toUpperCase()+s.slice(1)}
@@ -105,6 +116,9 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
                 {new Date(o.created_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} • Table {o.table_number ?? '—'}
               </div>
               <div className="text-lg font-semibold">{toMoney(o.computed_total)}</div>
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Timer: <OrderTimer createdAt={o.created_at} />
             </div>
             <div className="mt-2 text-sm text-gray-700">
               {o.items?.map(it => (
@@ -130,6 +144,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
               ) : (
                 <Button variant="outline" onClick={()=>updateStatus(o.id,'preparing')}>Undo Served</Button>
               )}
+              <Button variant="outline" onClick={async ()=>{ await fetch('/api/orders/mark-paid',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({orderId:o.id})});}}>Mark Paid</Button>
             </div>
           </div>
         ))}
@@ -139,6 +154,18 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
       </div>
     </div>
   );
+}
+
+function OrderTimer({ createdAt }: { createdAt: string }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const start = new Date(createdAt).getTime();
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [createdAt]);
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const ss = String(elapsed % 60).padStart(2, '0');
+  return <span>{mm}:{ss}</span>;
 }
 
 
