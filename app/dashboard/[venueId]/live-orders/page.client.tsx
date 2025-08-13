@@ -96,7 +96,10 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   }, [orders, statusFilter, tableFilter]);
 
   const activeTables = useMemo(()=>{
-    return new Set(orders.map(o=>o.table_number).filter(v=>v!=null));
+    const today = new Date(); today.setHours(0,0,0,0);
+    const sameDay = (iso:string)=>{ const d = new Date(iso); return d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth() && d.getDate()===today.getDate(); };
+    const openToday = orders.filter(o => sameDay(o.created_at) && o.status !== 'served');
+    return new Set(openToday.map(o=>o.table_number).filter(v=>v!=null));
   }, [orders]);
 
   return (
