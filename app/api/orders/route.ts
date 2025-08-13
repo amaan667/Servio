@@ -1,81 +1,104 @@
-export const runtime = 'nodejs';
-
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const runtime = 'nodejs';
+
+type OrderItem = {
+  menu_item_id: string | null;
+  quantity: number;
+  price: number;
+  item_name: string;
+  specialInstructions?: string | null;
+};
+
+type OrderPayload = {
+  venue_id: string;
+  table_number?: number | null;
+  customer_name: string;
+  customer_phone?: string | null;
+  items: OrderItem[];
+  total_amount: number;
+  notes?: string | null;
+};
+
+function bad(msg: string, status = 400) {
+  return NextResponse.json({ ok: false, error: msg }, { status });
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as Partial<OrderPayload>;
 
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      return NextResponse.json({ error: 'Missing service role key' }, { status: 500 });
+    if (!body.venue_id || typeof body.venue_id !== 'string') {
+      return bad('venue_id is required');
+    }
+    if (!body.customer_name || !body.customer_name.trim()) {
+      return bad('customer_name is required');
+    }
+    if (!Array.isArray(body.items) || body.items.length === 0) {
+      return bad('items must be a non-empty array');
+    }
+    if (typeof body.total_amount !== 'number' || isNaN(body.total_amount)) {
+      return bad('total_amount must be a number');
     }
 
-    const admin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
+    const tn = body.table_number;
+    const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
 
-    // Basic validation
-    if (!body?.venue_id || !Array.isArray(body?.items) || body.items.length === 0) {
-      return NextResponse.json({ error: 'Invalid order payload' }, { status: 400 });
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !serviceKey) {
+      return bad('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY', 500);
     }
+    const supabase = createClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
-    // Normalize items for JSON column and order_items
-    const normalizedItems = (body.items || []).map((item: any) => ({
-      menu_item_id: item.menu_item_id ?? null,
-      item_name: item.item_name,
-      quantity: Number(item.quantity) || 1,
-      unit_price: Number(item.price) || 0,
-      special_instructions: item.specialInstructions || null,
-    }));
+    // Verify venue exists
+    const { data: venue, error: venueErr } = await supabase
+      .from('venues')
+      .select('venue_id')
+      .eq('venue_id', body.venue_id)
+      .maybeSingle();
 
-    // Create order (insert minimal columns for widest schema compatibility)
-    const { data: order, error: orderError } = await admin
-      .from('orders')
-      .insert({
-        venue_id: body.venue_id,
-        table_number: body.table_number,
-        customer_name: body.customer_name,
-        customer_phone: body.customer_phone,
-        status: 'pending',
-        total_amount: body.total_amount,
-        notes: body.notes,
-      })
-      .select()
-      .single();
+    if (venueErr) return bad(`Failed to verify venue: ${venueErr.message}`, 500);
+    if (!venue) return bad('Invalid venue_id');
 
-    if (orderError || !order) {
-      return NextResponse.json({ error: orderError?.message || 'Order insert failed' }, { status: 400 });
-    }
+    // Recompute total server-side for safety
+    const computedTotal = body.items.reduce((sum, it) => {
+      const qty = Number(it.quantity) || 0;
+      const price = Number(it.price) || 0;
+      return sum + qty * price;
+    }, 0);
+    const finalTotal = Math.abs(computedTotal - (body.total_amount || 0)) < 0.01 ? body.total_amount! : computedTotal;
 
-    // Create order items
-    const orderItems = normalizedItems
-      .filter((it: any) => !!it.item_name)
-      .map((it: any) => ({
-        order_id: order.id,
+    const payload: OrderPayload = {
+      venue_id: body.venue_id,
+      table_number,
+      customer_name: body.customer_name.trim(),
+      customer_phone: body.customer_phone ?? null,
+      items: body.items.map((it) => ({
         menu_item_id: it.menu_item_id ?? null,
+        quantity: Number(it.quantity) || 0,
+        price: Number(it.price) || 0,
         item_name: it.item_name,
-        quantity: it.quantity,
-        unit_price: it.unit_price,
-        special_instructions: it.special_instructions,
-      }));
+        specialInstructions: it.specialInstructions ?? null,
+      })),
+      total_amount: finalTotal,
+      notes: body.notes ?? null,
+    };
 
-    let itemsWarning: string | undefined;
-    if (orderItems.length > 0) {
-      const { error: itemsError } = await admin
-        .from('order_items')
-        .insert(orderItems);
-      if (itemsError) {
-        // Do not fail the whole request; return a warning so the order still appears
-        itemsWarning = itemsError.message;
-      }
-    }
+    const { data: inserted, error: insertErr } = await supabase
+      .from('orders')
+      .insert(payload)
+      .select('id, created_at');
 
-    return NextResponse.json({ success: true, orderId: order.id, itemsWarning });
+    if (insertErr) return bad(`Insert failed: ${insertErr.message}`, 400);
+
+    return NextResponse.json({ ok: true, order: inserted?.[0] ?? null });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 });
+    const msg = e?.message || (typeof e === 'string' ? e : 'Unknown server error');
+    return bad(`Server error: ${msg}`, 500);
   }
 }
 

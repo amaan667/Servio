@@ -19,6 +19,7 @@ interface MenuItem {
   price: number;
   category: string;
   available: boolean;
+  venue_name?: string; // added for display in header when loaded with join
 }
 
 interface CartItem extends MenuItem {
@@ -232,12 +233,15 @@ export default function CustomerOrderPage() {
       return;
     }
 
+    const tn = Number(tableNumber);
+    const safeTable = Number.isFinite(tn) ? tn : null;
+
     setIsSubmitting(true);
     try {
       const orderData = {
         venue_id: venueSlug,
-        table_number: parseInt(tableNumber),
-        customer_name: customerInfo.name,
+        table_number: safeTable,
+        customer_name: customerInfo.name.trim(),
         customer_phone: customerInfo.phone || undefined,
         items: cart.map((item) => ({
           menu_item_id: item.id && item.id.startsWith('demo-') ? null : item.id,
@@ -258,13 +262,12 @@ export default function CustomerOrderPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(orderData),
       });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error('Order API failed', errText);
-        alert('Failed to submit order. Please try again.');
+      const out = await res.json().catch(() => ({} as any));
+      if (!res.ok || !out?.ok) {
+        console.error('Order API failed', out);
+        alert(out?.error || 'Failed to submit order. Please try again.');
         return;
       }
-      const out = await res.json();
       console.log('Order submitted', out);
 
       setOrderSubmitted(true);
