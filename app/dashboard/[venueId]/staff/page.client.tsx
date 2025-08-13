@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { NavBar } from '@/components/NavBar';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
-type Staff = { id: string; name: string; role: string; active: boolean };
+type Staff = { id: string; name: string; role: string; active: boolean; area?: string | null };
 
 export default function StaffClient({ venueId }: { venueId: string }) {
   const router = useRouter();
@@ -102,14 +102,13 @@ export default function StaffClient({ venueId }: { venueId: string }) {
         <div className="space-y-4">
           {useMemo(() => {
             if (!staff.length) return <div className="text-gray-500">No staff yet.</div>;
-            // Group by role, sort roles and names
             const groups: Record<string, Staff[]> = {};
             for (const s of staff) {
               const r = (s.role || 'Staff').trim();
               if (!groups[r]) groups[r] = [];
               groups[r].push(s);
             }
-            const preferred = ['Barista','Cashier','Server'];
+            const preferred = ['Manager','Kitchen','Barista','Cashier','Server'];
             const roles = Object.keys(groups)
               .sort((a,b)=>{
                 const ai = preferred.indexOf(a);
@@ -126,7 +125,7 @@ export default function StaffClient({ venueId }: { venueId: string }) {
                     {list.map(s => (
                       <Card key={s.id}><CardContent className="p-4 flex items-center justify-between">
                         <div>
-                          <div className="font-medium">{s.name}</div>
+                          <div className="font-medium">{s.name}{s.area ? <span className="text-xs text-gray-500"> • {s.area}</span> : null}</div>
                           <div className="text-xs text-gray-500">{s.active ? 'Active' : 'Inactive'}</div>
                         </div>
                         <div className="flex gap-2">
