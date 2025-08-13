@@ -175,7 +175,7 @@ export default function VenueDashboardClient({ venueId, userId }: { venueId: str
             </Card>
           </Link>
 
-          <div onClick={() => router.push(`/generate-qr?venue=${venueId}`)}>
+          <Link href={`/dashboard/${venueId}/qr-codes`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
@@ -185,7 +185,7 @@ export default function VenueDashboardClient({ venueId, userId }: { venueId: str
                 <p className="text-gray-500 text-sm">Generate and manage QR codes for your tables</p>
               </CardContent>
             </Card>
-          </div>
+          </Link>
 
           <Link href={`/dashboard/${venueId}/analytics`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
