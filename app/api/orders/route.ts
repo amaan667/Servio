@@ -80,9 +80,9 @@ export async function POST(req: Request) {
       items: body.items.map((it) => ({
         menu_item_id: it.menu_item_id ?? null,
         quantity: Number(it.quantity) || 0,
-        price: Number(it.price) || 0,
+        price: Number((it as any).unit_price ?? (it as any).price) || 0,
         item_name: it.item_name,
-        specialInstructions: it.specialInstructions ?? null,
+        specialInstructions: (it as any).special_instructions ?? it.specialInstructions ?? null,
       })),
       total_amount: finalTotal,
       notes: body.notes ?? null,
