@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       special_instructions: item.specialInstructions || null,
     }));
 
-    // Create order (orders.items is JSONB NOT NULL)
+    // Create order (insert minimal columns for widest schema compatibility)
     const { data: order, error: orderError } = await admin
       .from('orders')
       .insert({
@@ -42,7 +42,6 @@ export async function POST(req: Request) {
         status: 'pending',
         total_amount: body.total_amount,
         notes: body.notes,
-        items: normalizedItems,
       })
       .select()
       .single();
@@ -63,16 +62,18 @@ export async function POST(req: Request) {
         special_instructions: it.special_instructions,
       }));
 
+    let itemsWarning: string | undefined;
     if (orderItems.length > 0) {
       const { error: itemsError } = await admin
         .from('order_items')
         .insert(orderItems);
       if (itemsError) {
-        return NextResponse.json({ error: itemsError.message }, { status: 400 });
+        // Do not fail the whole request; return a warning so the order still appears
+        itemsWarning = itemsError.message;
       }
     }
 
-    return NextResponse.json({ success: true, orderId: order.id });
+    return NextResponse.json({ success: true, orderId: order.id, itemsWarning });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 });
   }
