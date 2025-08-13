@@ -43,7 +43,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       const { data: orders } = await supabase
         .from("orders")
-        .select("total_amount")
+        .select("total_amount, table_number, status, created_at")
         .eq("venue_id", vId)
         .gte("created_at", today.toISOString());
 
@@ -53,10 +53,17 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         .eq("venue_id", vId)
         .eq("available", true);
 
+      const activeTableSet = new Set(
+        (orders ?? [])
+          .filter((o: any) => o.status !== 'served')
+          .map((o: any) => o.table_number)
+          .filter((t: any) => t != null)
+      );
+
       setStats({
         todayOrders: orders?.length || 0,
-        revenue: orders?.reduce((sum: number, order: any) => sum + order.total_amount, 0) || 0,
-        activeTables: 0,
+        revenue: orders?.reduce((sum: number, order: any) => sum + (Number(order.total_amount) || 0), 0) || 0,
+        activeTables: activeTableSet.size,
         menuItems: menuItems?.length || 0,
       });
     } catch (error) {
