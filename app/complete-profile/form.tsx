@@ -38,127 +38,29 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         return;
       }
 
-      const venueId = `venue-${user.id.slice(0, 8)}`;
-      
-      console.log("[COMPLETE-PROFILE] Creating/updating venue for user:", user.id);
-      
-      // First check if venue already exists
-      const { data: existingVenue, error: checkError } = await supabase
-        .from("venues")
-        .select("*")
-        .eq("owner_id", user.id)
-        .maybeSingle();
-
-      if (existingVenue) {
-        console.log("[COMPLETE-PROFILE] Updating existing venue:", existingVenue.venue_id);
-        // Update existing venue
-        const { data: updatedVenue, error: updateError } = await supabase
-          .from("venues")
-          .update({
-            name: formData.venueName,
-            business_type: formData.businessType,
-            address: formData.address || null,
-            phone: formData.phone || null,
-          })
-          .eq("owner_id", user.id)
-          .select()
-          .single();
-
-        if (updateError) {
-          console.error("[COMPLETE-PROFILE] Update venue error:", updateError);
-          throw updateError;
-        }
-
-        // Update user metadata to mark profile as complete
-        const { error: metadataError } = await supabase.auth.updateUser({
-          data: { profileComplete: true }
-        });
-        
-        if (metadataError) {
-          console.error("[COMPLETE-PROFILE] Error updating user metadata:", metadataError);
-        }
-        
-        logger.info("Profile updated successfully", { userId: user.id, venueId: existingVenue.venue_id });
-        router.replace(`/dashboard/${existingVenue.venue_id}`);
-        return;
-      }
-
-      console.log("[COMPLETE-PROFILE] Creating new venue:", venueId);
-      // Create new venue
-      const { data: venue, error: venueError } = await supabase
-        .from("venues")
-        .insert({
-          venue_id: venueId,
+      console.log("[COMPLETE-PROFILE] Upserting venue via server route (service role)", user.id);
+      const res = await fetch('/api/venues/upsert', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
           name: formData.venueName,
           business_type: formData.businessType,
           address: formData.address || null,
           phone: formData.phone || null,
-          owner_id: user.id,
         })
-        .select()
-        .single();
+      });
+      const j = await res.json().catch(()=>({}));
+      if (!res.ok || !j?.ok) throw new Error(j?.error || 'Failed to save venue');
 
-      if (venueError) {
-        console.error("[COMPLETE-PROFILE] Create venue error:", venueError);
-        if (venueError.code === "23505") {
-          // Unique constraint violation - venue already exists
-          console.log("[COMPLETE-PROFILE] Venue already exists, updating instead");
-          const { data: existingVenue, error: fetchError } = await supabase
-            .from("venues")
-            .select("*")
-            .eq("owner_id", user.id)
-            .single();
+      const venueId = j.venue_id as string;
 
-          if (fetchError) {
-            console.error("[COMPLETE-PROFILE] Fetch existing venue error:", fetchError);
-            throw fetchError;
-          }
+      // Update user metadata to mark profile as complete
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { profileComplete: true }
+      });
+      if (metadataError) console.error('[COMPLETE-PROFILE] metadata update error', metadataError);
 
-          // Update the existing venue
-          const { data: updatedVenue, error: updateError } = await supabase
-            .from("venues")
-            .update({
-              name: formData.venueName,
-              business_type: formData.businessType,
-              address: formData.address || null,
-              phone: formData.phone || null,
-            })
-            .eq("owner_id", user.id)
-            .select()
-            .single();
-
-          if (updateError) {
-            console.error("[COMPLETE-PROFILE] Update existing venue error:", updateError);
-            throw updateError;
-          }
-
-          // Update user metadata to mark profile as complete
-          const { error: metadataError } = await supabase.auth.updateUser({
-            data: { profileComplete: true }
-          });
-          
-          if (metadataError) {
-            console.error("[COMPLETE-PROFILE] Error updating user metadata:", metadataError);
-          }
-          
-          logger.info("Profile completed successfully", { userId: user.id, venueId: existingVenue.venue_id });
-          router.replace(`/dashboard/${existingVenue.venue_id}`);
-        } else {
-          throw venueError;
-        }
-      } else {
-        // Update user metadata to mark profile as complete
-        const { error: metadataError } = await supabase.auth.updateUser({
-          data: { profileComplete: true }
-        });
-        
-        if (metadataError) {
-          console.error("[COMPLETE-PROFILE] Error updating user metadata:", metadataError);
-        }
-        
-        logger.info("Profile completed successfully", { userId: user.id, venueId });
-        router.replace(`/dashboard/${venueId}`);
-      }
+      router.replace(`/dashboard/${venueId}`);
     } catch (error: any) {
       console.error("[COMPLETE-PROFILE] Failed to complete profile:", error);
       logger.error("Failed to complete profile", { error });
