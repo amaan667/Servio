@@ -12,14 +12,22 @@ function admin() {
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const { id } = params;
   const body = await req.json().catch(() => ({}));
-  const { status } = body as { status?: 'pending'|'preparing'|'served'|'paid' };
-  if (!id || (status && !['pending','preparing','served','paid'].includes(status))) {
+  const { status, payment_status } = body as { status?: 'pending'|'preparing'|'served'|'paid', payment_status?: 'pending'|'paid'|'failed'|'refunded' };
+  if (!id) {
+    return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
+  }
+  if (status && !['pending','preparing','served','paid'].includes(status)) {
     return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
   }
   const supa = admin();
+  // Map UI status -> DB status when needed (served -> delivered)
+  const dbStatus = status === 'served' ? 'delivered' : status;
+  const update: Record<string, any> = {};
+  if (dbStatus) update.status = dbStatus;
+  if (payment_status) update.payment_status = payment_status;
   const { data, error } = await supa
     .from('orders')
-    .update({ ...(status ? { status } : {}) })
+    .update(update)
     .eq('id', id)
     .select('*')
     .maybeSingle();
