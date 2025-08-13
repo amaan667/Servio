@@ -247,6 +247,10 @@ export default function StaffClient({
       if (!by[day]) by[day] = [];
       by[day].push(s);
     }
+    // sort shifts within each day by start time ascending
+    for (const d of Object.keys(by)) {
+      by[d].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    }
     // sort days desc
     const entries = Object.entries(by).sort((a,b)=> a[0] > b[0] ? -1 : 1);
     return entries;
