@@ -200,7 +200,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
       <audio ref={audioRef} src="/assets/new-order.mp3" preload="auto" />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
         <Link href={`/dashboard/${venueId}`} className="text-sm text-gray-600">← Back to Dashboard</Link>
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2 pb-1 flex-wrap">
           <div className="flex items-center text-xs sm:text-sm text-gray-600 mr-3 flex-shrink-0">
             <span className={`inline-block h-2 w-2 rounded-full mr-1 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}></span>
             Live
@@ -218,14 +218,12 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
             placeholder="Filter by table #"
             className="border rounded px-2 py-1 text-xs sm:text-sm flex-shrink-0"
           />
-          <div className="flex gap-2 flex-shrink-0">
-          <div className="flex gap-2 flex-shrink-0 overflow-x-auto">
+          <div className="flex gap-2 flex-shrink-0 flex-wrap">
           {(['all','preparing','served','paid'] as const).map(s=> (
             <Button key={s} size="sm" className="flex-shrink-0" variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
               {s[0].toUpperCase()+s.slice(1)}
             </Button>
           ))}
-          </div>
           </div>
         </div>
       </div>
