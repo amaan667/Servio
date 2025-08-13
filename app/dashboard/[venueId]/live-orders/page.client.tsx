@@ -189,10 +189,10 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   }, [orders, statusFilter, tableFilter, search]);
 
   const activeTables = useMemo(()=>{
-    const today = new Date(); today.setHours(0,0,0,0);
-    const sameDay = (iso:string)=>{ const d = new Date(iso); return d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth() && d.getDate()===today.getDate(); };
-    const openToday = orders.filter(o => sameDay(o.created_at) && !(o.status === 'served' || (o as any).status === 'delivered'));
-    return new Set(openToday.map(o=>o.table_number).filter(v=>v!=null));
+    const since = Date.now() - 24*60*60*1000; // last 24h to match dashboard card logic
+    const isRecent = (iso: string) => new Date(iso).getTime() >= since;
+    const openRecent = orders.filter(o => isRecent(o.created_at) && !(o.status === 'served' || (o as any).status === 'delivered'));
+    return new Set(openRecent.map(o=>o.table_number).filter(v=>v!=null));
   }, [orders]);
 
   return (
