@@ -46,7 +46,17 @@ export async function GET(req: Request) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const statuses = status === 'all' ? undefined : status === 'open' ? ['pending', 'preparing'] : status ? [status] : undefined;
+  // Map client statuses to DB statuses for querying
+  let statuses: string[] | undefined;
+  if (status === 'all' || !status) {
+    statuses = undefined;
+  } else if (status === 'open') {
+    statuses = ['pending', 'preparing'];
+  } else if (status === 'served') {
+    statuses = ['delivered'];
+  } else {
+    statuses = [status];
+  }
 
   // 1️⃣ Fetch orders first
   let ordersQuery = admin
@@ -103,7 +113,8 @@ export async function GET(req: Request) {
     }
     const computed_total = mappedItems.reduce((s: number, it: any) => s + it.line_total, 0);
     const total = (computed_total || 0) > 0 ? computed_total : (Number(o.total_amount) || 0);
-    return { ...o, items: mappedItems, computed_total: total };
+    const uiStatus = o.status === 'delivered' ? 'served' : o.status;
+    return { ...o, status: uiStatus, items: mappedItems, computed_total: total };
   });
 
   return NextResponse.json({ ok: true, orders: hydrated });
