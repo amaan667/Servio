@@ -32,7 +32,7 @@ type Order = {
 export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const supabase = createClientComponentClient();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all'|'pending'|'preparing'|'served'|'paid'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all'|'open'|'served'|'paid'>('all');
   const [tableFilter, setTableFilter] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -45,7 +45,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   // fetch initial
   useEffect(() => {
     (async () => {
-      const qStatus = statusFilter === 'paid' ? 'all' : statusFilter; // server filters on order.status only
+      const qStatus = statusFilter === 'paid' ? 'all' : statusFilter; // server filters on order.status only; 'open' supported
       const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}${qStatus ? `&status=${qStatus}` : ''}&limit=1000`;
       const res = await fetch(url, { cache:'no-store' });
       const j = await res.json();
@@ -170,7 +170,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
         ? orders.filter(o => (o.payment_status ?? 'unpaid') === 'paid')
         : statusFilter === 'served'
           ? orders.filter(o => o.status === 'served' || (o as any).status === 'delivered')
-          : orders.filter(o => o.status === statusFilter);
+          : orders.filter(o => !(o.status === 'served' || (o as any).status === 'delivered'));
     // sort by created_at ascending (oldest first) for historical view
     list = [...list].sort((a,b)=> new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     if (tableFilter.trim()) {
@@ -219,7 +219,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
             className="border rounded px-2 py-1 text-xs sm:text-sm flex-shrink-0"
           />
           <div className="flex gap-2 flex-shrink-0">
-          {(['all','pending','preparing','served','paid'] as const).map(s=> (
+          {(['all','open','served','paid'] as const).map(s=> (
             <Button key={s} size="sm" variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
               {s[0].toUpperCase()+s.slice(1)}
             </Button>

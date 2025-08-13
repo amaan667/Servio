@@ -21,15 +21,15 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
   };
 
   return (
-    <nav className="flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-28 sm:h-36 px-4 sm:px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center min-w-0">
         <Link href="/" className="flex items-center min-w-0">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
-            width={128}
-            height={32}
-            className="mr-3 w-auto h-6 sm:h-8 object-contain"
+            width={512}
+            height={128}
+            className="mr-3 w-auto h-24 sm:h-32 object-contain"
             priority
           />
         </Link>
