@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { redirect, notFound } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { log } from '@/lib/debug';
-import LiveOrdersClient from './LiveOrdersClient';
+import LiveOrdersClient from './page.client';
 
 export default async function LiveOrdersPage({ params }: { params: { venueId: string } }) {
   const jar = await cookies();
@@ -25,5 +25,5 @@ export default async function LiveOrdersPage({ params }: { params: { venueId: st
   log('LIVE_ORDERS SSR venue', { ok: !!venue, err: vErr?.message });
   if (vErr || !venue) return notFound();
 
-  return <LiveOrdersClient venueId={params.venueId} venueName={venue.name} />;
+  return <LiveOrdersClient venueId={params.venueId} />;
 }
