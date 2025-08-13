@@ -86,6 +86,8 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
       : statusFilter === 'open'
         ? orders.filter(o => o.status !== 'served')
         : orders.filter(o => o.status === statusFilter);
+    // sort by created_at ascending (oldest first) for historical view
+    list = [...list].sort((a,b)=> new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     if (tableFilter.trim()) {
       const needle = tableFilter.trim().toLowerCase();
       list = list.filter(o => String(o.table_number ?? '').toLowerCase().includes(needle));
@@ -190,6 +192,13 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
                 <Button variant="outline" onClick={()=>updateStatus(o.id,'preparing')}>Undo Served</Button>
               )}
               <Button variant="outline" onClick={async ()=>{ await fetch('/api/orders/mark-paid',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({orderId:o.id})});}}>Mark Paid</Button>
+              <Button variant="destructive" onClick={async ()=>{
+                if (!confirm('Delete this order?')) return;
+                const res = await fetch('/api/orders/delete', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ orderId:o.id, venue_id: venueId }) });
+                const j = await res.json().catch(()=>({}));
+                if (!res.ok || j?.error) { alert(j?.error || 'Failed to delete'); return; }
+                setOrders(prev=>prev.filter(or=>or.id!==o.id));
+              }}>Delete</Button>
             </div>
           </div>
         ))}
