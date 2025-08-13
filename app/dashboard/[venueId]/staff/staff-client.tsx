@@ -244,16 +244,17 @@ export default function StaffClient({
   const groupedByDay = useMemo(() => {
     const by: Record<string, Shift[]> = {};
     for (const s of allShifts) {
-      const day = new Date(s.start_time).toISOString().slice(0,10);
+      const dObj = new Date(s.start_time);
+      const year = dObj.getFullYear();
+      if (year < 2000) continue; // skip clearly invalid legacy rows
+      const day = dObj.toLocaleDateString('en-CA'); // YYYY-MM-DD in local tz
       if (!by[day]) by[day] = [];
       by[day].push(s);
     }
-    // sort shifts within each day by start time ascending
     for (const d of Object.keys(by)) {
       by[d].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
     }
-    // sort days desc
-    const entries = Object.entries(by).sort((a,b)=> a[0] > b[0] ? -1 : 1);
+    const entries = Object.entries(by).sort((a,b)=> new Date(b[0]).getTime() - new Date(a[0]).getTime());
     return entries;
   }, [allShifts]);
 
