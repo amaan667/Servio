@@ -1,127 +1,64 @@
-// app/api/orders/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export const runtime = 'nodejs';
 
-type OrderItemIn = {
-  menu_item_id: string | null;             // can be null (ad-hoc/demo item)
-  item_name: string;
-  quantity: number;
-  unit_price: number;                      // £ per unit
-  special_instructions?: string | null;
-};
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const venueId = searchParams.get('venueId');
+  const status = searchParams.get('status');
+  console.log('[LIVE ORDERS GET] query', { venueId, status });
+  if (!venueId) return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
 
-type OrderIn = {
-  venue_id: string;
-  table_number: number | null;             // nullable for takeaway
-  customer_name: string;
-  customer_phone?: string | null;
-  items: OrderItemIn[];
-  total_amount?: number;                   // optional from client; we recompute anyway
-  notes?: string | null;
-};
+  // Auth and ownership check
+  const jar = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  console.log('[LIVE ORDERS GET] user', { userId: user?.id });
+  if (!user) return NextResponse.json({ ok:false, error:'Not authenticated' }, { status:401 });
+  const { data: v } = await supabase
+    .from('venues')
+    .select('venue_id, owner_id')
+    .eq('venue_id', venueId)
+    .eq('owner_id', user.id)
+    .maybeSingle();
+  console.log('[LIVE ORDERS GET] venue ownership check', v);
+  if (!v) return NextResponse.json({ ok:false, error:'Forbidden' }, { status:403 });
 
-function bad(error: string, status = 400) {
-  return NextResponse.json({ ok: false, error }, { status });
-}
+  // Query with status filter (open = pending+preparing)
+  let q = supabase.from('orders')
+    .select(`
+      id, venue_id, table_number, customer_name, total_amount, status, notes, created_at,
+      order_items:order_items ( id, item_name, unit_price, price, quantity, special_instructions )
+    `)
+    .eq('venue_id', venueId)
+    .order('created_at', { ascending: false })
+    .limit(200);
+  const statuses = status === 'open' ? ['pending','preparing'] : status ? [status] : ['pending','preparing'];
+  if (statuses) q = q.in('status', statuses as any);
+  console.log('[LIVE ORDERS GET] filter', { venueId, statuses });
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = (await req.json()) as Partial<OrderIn>;
-    // ---- Basic validation
-    if (!body?.venue_id || typeof body.venue_id !== 'string') {
-      return bad('venue_id is required');
-    }
-    if (!body?.customer_name || !body.customer_name.trim()) {
-      return bad('customer_name is required');
-    }
-    if (!Array.isArray(body.items) || body.items.length === 0) {
-      return bad('items must be a non-empty array');
-    }
+  const { data, error } = await q;
+  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  console.log('[LIVE ORDERS GET] raw data', data);
 
-    // ---- Service role (bypass RLS for public ordering)
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !serviceKey) {
-      return bad('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY', 500);
-    }
-    const admin = createClient(url, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
+  const hydrated = (data ?? []).map((o: any) => {
+    const items = (o.order_items ?? []).map((it: any) => {
+      const price = Number(it.unit_price ?? it.price);
+      const qty = Number(it.quantity);
+      const line_total = (Number.isFinite(price) ? price : 0) * (Number.isFinite(qty) ? qty : 0);
+      return { id: it.id, item_name: it.item_name, price, quantity: qty, special_instructions: it.special_instructions, line_total };
     });
+    const computed_total = items.reduce((s: number, it: any) => s + it.line_total, 0);
+    const total = Number.isFinite(Number(o.total_amount)) ? Number(o.total_amount) : computed_total;
+    return { ...o, items, computed_total: total };
+  });
+  console.log('[LIVE ORDERS GET] hydrated', hydrated);
 
-    // ---- Confirm venue exists
-    const { data: venue, error: vErr } = await admin
-      .from('venues')
-      .select('venue_id')
-      .eq('venue_id', body.venue_id)
-      .maybeSingle();
-
-    if (vErr) return bad(`Failed to verify venue: ${vErr.message}`, 500);
-    if (!venue) return bad('Invalid venue_id', 404);
-
-    // ---- Normalize items (qty/price) & recompute total
-    const safeItems: OrderItemIn[] = body.items.map((it) => ({
-      menu_item_id: it.menu_item_id ?? null,
-      item_name: (it.item_name ?? '').trim() || 'Item',
-      quantity: Math.max(1, Number(it.quantity ?? 1)),
-      unit_price: Number.isFinite(Number(it.unit_price)) ? Number(it.unit_price) : 0,
-      special_instructions: it.special_instructions ?? null,
-    }));
-
-    const computedTotal = safeItems.reduce(
-      (sum, it) => sum + it.unit_price * it.quantity,
-      0
-    );
-    // round to 2dp
-    const total_amount = Math.round((computedTotal + Number.EPSILON) * 100) / 100;
-
-    // ---- Insert order (defaults to 'pending')
-    const { data: orderRow, error: orderErr } = await admin
-      .from('orders')
-      .insert({
-        venue_id: body.venue_id,
-        table_number:
-          body.table_number === null || body.table_number === undefined
-            ? null
-            : Number.isFinite(Number(body.table_number))
-            ? Number(body.table_number)
-            : null,
-        customer_name: body.customer_name.trim(),
-        customer_phone: body.customer_phone ?? null,
-        total_amount,
-        notes: body.notes ?? null,
-        status: 'pending',
-      })
-      .select('id')
-      .single();
-
-    if (orderErr || !orderRow) {
-      return bad(orderErr?.message || 'Order insert failed', 500);
-    }
-
-    // ---- Insert order items
-    const itemsPayload = safeItems.map((it) => ({
-      order_id: orderRow.id,
-      menu_item_id: it.menu_item_id,
-      item_name: it.item_name,
-      quantity: it.quantity,
-      unit_price: it.unit_price,
-      special_instructions: it.special_instructions,
-    }));
-
-    const { error: itemsErr } = await admin.from('order_items').insert(itemsPayload);
-    if (itemsErr) {
-      return bad(`Items insert failed: ${itemsErr.message}`, 500);
-    }
-
-    // ---- Done
-    return NextResponse.json(
-      { ok: true, order_id: orderRow.id },
-      { status: 200 }
-    );
-  } catch (e: any) {
-    const msg = e?.message || 'Unexpected server error';
-    return bad(msg, 500);
-  }
+  return NextResponse.json({ ok: true, orders: hydrated });
 }
