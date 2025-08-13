@@ -104,7 +104,7 @@ export default function StaffClient({
     }
   };
 
-  const StaffRowItem = memo(function StaffRowItem({ row, onDeleteRow }: { row: StaffRow; onDeleteRow: (r: StaffRow) => void }) {
+  const StaffRowItem = memo(function StaffRowItem({ row, onDeleteRow, onShiftsChanged }: { row: StaffRow; onDeleteRow: (r: StaffRow) => void; onShiftsChanged: () => void }) {
     const [showEditor, setShowEditor] = useState(false);
     const [date, setDate] = useState('');
     const [start, setStart] = useState<TimeValue>({ hour: null, minute: null, ampm: 'AM' });
@@ -145,7 +145,8 @@ export default function StaffClient({
       setStart({ hour: null, minute: null, ampm: 'AM' });
       setEnd({ hour: null, minute: null, ampm: 'PM' });
       await load();
-    }, [area, date, end.ampm, end.hour, end.minute, load, row.id, start.ampm, start.hour, start.minute, venueId]);
+      onShiftsChanged();
+    }, [area, date, end.ampm, end.hour, end.minute, load, onShiftsChanged, row.id, start.ampm, start.hour, start.minute, venueId]);
 
     return (
       <div className="rounded border p-3">
@@ -161,7 +162,7 @@ export default function StaffClient({
         </div>
         {showEditor && (
           <div className="mt-3 space-y-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                 <input type="date" className="w-full rounded-md border px-3 py-2" value={date} onChange={(e)=>setDate(e.target.value)} />
@@ -183,7 +184,9 @@ export default function StaffClient({
                   <option>Bar</option>
                 </select>
               </div>
-              <Button onClick={save} disabled={saving} className="h-10 px-4 rounded-md bg-purple-600 text-white font-medium md:ml-2 disabled:opacity-60">{saving ? 'Saving…' : 'Save'}</Button>
+              <div>
+                <Button onClick={save} disabled={saving} className="w-full md:w-auto h-10 px-4 rounded-md bg-purple-600 text-white font-medium disabled:opacity-60">{saving ? 'Saving…' : 'Save'}</Button>
+              </div>
             </div>
             {err && <div className="text-sm text-red-600">{err}</div>}
             <div>
@@ -193,7 +196,7 @@ export default function StaffClient({
                   {shifts.map((s)=> (
                     <div key={s.id} className="flex items-center justify-between text-xs text-gray-700">
                       <div>
-                        {new Date(s.start_time).toLocaleDateString()} • {new Date(s.start_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} – {new Date(s.end_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
+                        {new Date(s.start_time).toLocaleDateString()} • {new Date(s.start_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12: true })} – {new Date(s.end_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12: true })}
                         {s.area ? <> • {s.area}</> : null}
                       </div>
                       <Button size="sm" variant="ghost" className="text-red-600" onClick={async ()=>{
@@ -202,6 +205,7 @@ export default function StaffClient({
                         const j = await res.json().catch(()=>({}));
                         if (!res.ok || j?.error) { alert(j?.error || 'Failed to delete shift'); return; }
                         await load();
+                        onShiftsChanged();
                       }}>Delete</Button>
                     </div>
                   ))}
@@ -226,6 +230,27 @@ export default function StaffClient({
   }, [staff]);
 
   const roles = Object.keys(grouped).sort();
+
+  const [allShifts, setAllShifts] = useState<Shift[]>([]);
+  const reloadAllShifts = useCallback(async ()=>{
+    const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
+    const j = await res.json().catch(()=>({}));
+    if (res.ok && !j?.error) setAllShifts(j.shifts || []);
+  }, [venueId]);
+
+  useEffect(()=>{ reloadAllShifts(); }, [reloadAllShifts]);
+
+  const groupedByDay = useMemo(() => {
+    const by: Record<string, Shift[]> = {};
+    for (const s of allShifts) {
+      const day = new Date(s.start_time).toISOString().slice(0,10);
+      if (!by[day]) by[day] = [];
+      by[day].push(s);
+    }
+    // sort days desc
+    const entries = Object.entries(by).sort((a,b)=> a[0] > b[0] ? -1 : 1);
+    return entries;
+  }, [allShifts]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -276,13 +301,46 @@ export default function StaffClient({
             </CardHeader>
             <CardContent className="space-y-3">
               {grouped[r].map((row) => (
-                <StaffRowItem key={row.id} row={row} onDeleteRow={onDelete} />
+                <StaffRowItem key={row.id} row={row} onDeleteRow={onDelete} onShiftsChanged={reloadAllShifts} />
               ))}
               {/* shift editor moved to global card above */}
             </CardContent>
           </Card>
         ))
       )}
+
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="font-semibold">All Active Shifts</div>
+          <div className="text-sm text-gray-500">Grouped by day</div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {groupedByDay.length ? (
+            groupedByDay.map(([day, shifts]) => (
+              <div key={day}>
+                <div className="text-sm font-semibold mb-2">{day}</div>
+                <div className="space-y-1">
+                  {shifts.map((s)=>{
+                    const person = staff.find(p=>p.id===s.staff_id);
+                    return (
+                      <div key={s.id} className="flex items-center justify-between text-sm text-gray-700">
+                        <div>
+                          <span className="font-medium">{person?.name || '—'}</span>
+                          {' '}• {new Date(s.start_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12: true })}
+                          {' '}– {new Date(s.end_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12: true })}
+                          {s.area ? <> • {s.area}</> : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-sm text-gray-500">No shifts across all staff.</div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
