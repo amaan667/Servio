@@ -89,7 +89,9 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
     return list;
   }, [orders, statusFilter, tableFilter]);
 
-  const activeTables = new Set(orders.filter(o=>o.status!=='served').map(o=>o.table_number).filter(v=>v!=null));
+  const activeTables = useMemo(()=>{
+    return new Set(orders.map(o=>o.table_number).filter(v=>v!=null));
+  }, [orders]);
 
   return (
     <div className="max-w-5xl mx-auto p-6">
