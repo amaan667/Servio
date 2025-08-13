@@ -32,7 +32,7 @@ type Order = {
 export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const supabase = createClientComponentClient();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all'|'open'|'pending'|'preparing'|'served'|'paid'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all'|'pending'|'preparing'|'served'|'paid'>('all');
   const [tableFilter, setTableFilter] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -166,10 +166,10 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const visible = useMemo(() => {
     let list = statusFilter === 'all'
       ? orders
-      : statusFilter === 'open'
-        ? orders.filter(o => o.status !== 'served')
-        : statusFilter === 'paid'
-          ? orders.filter(o => (o.payment_status ?? 'unpaid') === 'paid')
+      : statusFilter === 'paid'
+        ? orders.filter(o => (o.payment_status ?? 'unpaid') === 'paid')
+        : statusFilter === 'served'
+          ? orders.filter(o => o.status === 'served' || (o as any).status === 'delivered')
           : orders.filter(o => o.status === statusFilter);
     // sort by created_at ascending (oldest first) for historical view
     list = [...list].sort((a,b)=> new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -191,7 +191,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const activeTables = useMemo(()=>{
     const today = new Date(); today.setHours(0,0,0,0);
     const sameDay = (iso:string)=>{ const d = new Date(iso); return d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth() && d.getDate()===today.getDate(); };
-    const openToday = orders.filter(o => sameDay(o.created_at) && o.status !== 'served');
+    const openToday = orders.filter(o => sameDay(o.created_at) && !(o.status === 'served' || (o as any).status === 'delivered'));
     return new Set(openToday.map(o=>o.table_number).filter(v=>v!=null));
   }, [orders]);
 
@@ -218,7 +218,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
             placeholder="Filter by table #"
             className="border rounded px-2 py-1 text-sm"
           />
-          {(['all','open','pending','preparing','served','paid'] as const).map(s=> (
+          {(['all','pending','preparing','served','paid'] as const).map(s=> (
             <Button key={s} variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
               {s[0].toUpperCase()+s.slice(1)}
             </Button>
