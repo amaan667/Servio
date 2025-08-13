@@ -86,6 +86,25 @@ export default function StaffClient({
     }
   };
 
+  const onDelete = async (row: StaffRow) => {
+    if (!confirm(`Delete ${row.name}? This cannot be undone.`)) return;
+    // optimistic remove
+    const prev = staff;
+    setStaff((s) => s.filter((r) => r.id !== row.id));
+    try {
+      const res = await fetch('/api/staff/delete', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: row.id }),
+      });
+      const out = await res.json();
+      if (!res.ok || out?.error) throw new Error(out?.error || 'Delete failed');
+    } catch (e) {
+      alert((e as any)?.message || 'Failed to delete');
+      setStaff(prev);
+    }
+  };
+
   const grouped = useMemo(() => {
     const by: Record<string, StaffRow[]> = {};
     for (const r of staff) {
@@ -117,7 +136,10 @@ export default function StaffClient({
             <option>Kitchen</option>
             <option>Manager</option>
           </select>
-          <Button onClick={onAdd} disabled={adding}>{adding ? 'Adding…' : 'Add'}</Button>
+          <div className="flex gap-2">
+            <Button onClick={onAdd} disabled={adding}>{adding ? 'Adding…' : 'Add'}</Button>
+            <Button variant="outline" onClick={()=>{ setName(''); setRole('Server'); }}>Clear</Button>
+          </div>
           {error && <span className="text-red-600 text-sm">{error}</span>}
         </CardContent>
       </Card>
@@ -142,6 +164,7 @@ export default function StaffClient({
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={() => openShiftFor(row.id)}>Shifts</Button>
+                    <Button variant="destructive" onClick={() => onDelete(row)}>Delete</Button>
                     <Button variant={row.active ? 'outline' : 'default'} onClick={() => onToggleActive(row)}>
                       {row.active ? 'Deactivate' : 'Activate'}
                     </Button>
