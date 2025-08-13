@@ -1,11 +1,13 @@
 // app/dashboard/[venueId]/staff/staff-client.tsx
 'use client';
 
-import { useEffect, useMemo, useState, Fragment } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import TimeField, { TimeValue } from '@/components/inputs/TimeField';
+import { to24h, buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 
 type StaffRow = {
   id: string;
@@ -29,44 +31,7 @@ export default function StaffClient({
   const [role, setRole] = useState('Server');
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const selectedStaff = useMemo(() => staff.find(s => s.id === selectedStaffId) || null, [staff, selectedStaffId]);
-  const [shiftDate, setShiftDate] = useState('');
-  const [shiftStart, setShiftStart] = useState('');
-  const [shiftEnd, setShiftEnd] = useState('');
-  const [shiftArea, setShiftArea] = useState('');
   type Shift = { id:string; staff_id:string; start_time:string; end_time:string; area?:string };
-  const [shiftsByStaff, setShiftsByStaff] = useState<Record<string, Shift[]>>({});
-  const [savingShift, setSavingShift] = useState(false);
-  const [shiftsError, setShiftsError] = useState<string | null>(null);
-
-  const openShiftFor = (staffId: string) => {
-    setSelectedStaffId(staffId);
-    const el = document.getElementById('shift-editor');
-    if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
-  };
-
-  const loadShifts = async (staffId?: string) => {
-    const target = staffId || selectedStaffId;
-    if (!target) return;
-    const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}&staff_id=${encodeURIComponent(target)}`);
-    const j = await res.json().catch(()=>({}));
-    if (!res.ok || j?.error) { setShiftsError(j?.error || 'Failed to load shifts'); return; }
-    setShiftsByStaff((prev) => ({ ...prev, [target]: j.shifts || [] }));
-  };
-
-  useEffect(() => { loadShifts(); }, [selectedStaffId]);
-
-  function formatTime12h(time: string): string {
-    if (!time) return '';
-    const [hh = '0', mm = '00'] = time.split(':');
-    let h = parseInt(hh, 10);
-    if (Number.isNaN(h)) return time;
-    const suffix = h >= 12 ? 'PM' : 'AM';
-    h = h % 12;
-    if (h === 0) h = 12;
-    return `${h}:${mm} ${suffix}`;
-  }
 
   const onAdd = async () => {
     setError(null);
@@ -139,75 +104,117 @@ export default function StaffClient({
     }
   };
 
-  function ShiftRow({
-    value,
-    onChange,
-    onSave,
-    areas = ['Front of House', 'Kitchen', 'Bar'],
-    disabled,
-  }: {
-    value: { date: string; start: string; end: string; area?: string };
-    onChange: (p: Partial<{ date: string; start: string; end: string; area?: string }>) => void;
-    onSave: () => void;
-    areas?: string[];
-    disabled?: boolean;
-  }) {
+  const StaffRowItem = memo(function StaffRowItem({ row, onDeleteRow }: { row: StaffRow; onDeleteRow: (r: StaffRow) => void }) {
+    const [showEditor, setShowEditor] = useState(false);
+    const [date, setDate] = useState('');
+    const [start, setStart] = useState<TimeValue>({ hour: null, minute: null, ampm: 'AM' });
+    const [end, setEnd] = useState<TimeValue>({ hour: null, minute: null, ampm: 'PM' });
+    const [area, setArea] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
+    const [shifts, setShifts] = useState<Shift[]>([]);
+
+    const load = useCallback(async () => {
+      if (!showEditor) return;
+      const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}&staff_id=${encodeURIComponent(row.id)}`);
+      const j = await res.json().catch(()=>({}));
+      if (!res.ok || j?.error) { setErr(j?.error || 'Failed to load shifts'); return; }
+      setShifts(j.shifts || []);
+    }, [row.id, showEditor, venueId]);
+
+    useEffect(() => { load(); }, [load]);
+
+    const save = useCallback(async () => {
+      setErr(null);
+      if (!date || start.hour == null || start.minute == null || end.hour == null || end.minute == null) {
+        setErr('Please select date, start and end time');
+        return;
+      }
+      setSaving(true);
+      const s24 = to24h(start.hour, start.minute, start.ampm);
+      const e24 = to24h(end.hour, end.minute, end.ampm);
+      const overnight = isOvernight(s24.hour, s24.minute, e24.hour, e24.minute);
+      const startIso = buildIsoFromLocal(date, s24.hour, s24.minute);
+      const endDate = overnight ? addDaysISO(date, 1) : date;
+      const endIso = buildIsoFromLocal(endDate, e24.hour, e24.minute);
+      const res = await fetch('/api/staff/shifts/add', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ staff_id: row.id, venue_id: venueId, start_time: startIso, end_time: endIso, area: area || null }) });
+      const j = await res.json().catch(()=>({}));
+      if (!res.ok || j?.error) { setErr(j?.error || 'Failed to save shift'); setSaving(false); return; }
+      setSaving(false);
+      setArea('');
+      setStart({ hour: null, minute: null, ampm: 'AM' });
+      setEnd({ hour: null, minute: null, ampm: 'PM' });
+      await load();
+    }, [area, date, end.ampm, end.hour, end.minute, load, row.id, start.ampm, start.hour, start.minute, venueId]);
+
     return (
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-3">
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-          <input
-            type="date"
-            className="w-full rounded-md border px-3 py-2"
-            value={value.date}
-            onChange={(e) => onChange({ date: e.target.value })}
-          />
+      <div className="rounded border p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="font-medium">{row.name}</div>
+            {!row.active && <Badge variant="destructive">Inactive</Badge>}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowEditor((v) => !v)}>{showEditor ? 'Close' : 'Shift'}</Button>
+            <Button variant="destructive" onClick={() => onDeleteRow(row)}>Delete</Button>
+          </div>
         </div>
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
-          <input
-            type="time"
-            className="w-full rounded-md border px-3 py-2"
-            step={60}
-            value={value.start}
-            onChange={(e) => onChange({ start: e.target.value })}
-          />
-          {value.start && <div className="text-xs text-gray-500 mt-1">{formatTime12h(value.start)}</div>}
-        </div>
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
-          <input
-            type="time"
-            className="w-full rounded-md border px-3 py-2"
-            step={60}
-            value={value.end}
-            onChange={(e) => onChange({ end: e.target.value })}
-          />
-          {value.end && <div className="text-xs text-gray-500 mt-1">{formatTime12h(value.end)}</div>}
-        </div>
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
-          <select
-            className="w-full rounded-md border px-3 py-2"
-            value={value.area ?? ''}
-            onChange={(e) => onChange({ area: e.target.value })}
-          >
-            <option value="">Select…</option>
-            {areas.map((a) => (
-              <option key={a} value={a}>{a}</option>
-            ))}
-          </select>
-        </div>
-        <button
-          onClick={onSave}
-          disabled={disabled}
-          className="h-10 px-4 rounded-md bg-purple-600 text-white font-medium md:ml-2 disabled:opacity-60"
-        >
-          Save
-        </button>
+        {showEditor && (
+          <div className="mt-3 space-y-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-3">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input type="date" className="w-full rounded-md border px-3 py-2" value={date} onChange={(e)=>setDate(e.target.value)} />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
+                <TimeField value={start} onChange={setStart} />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
+                <TimeField value={end} onChange={setEnd} />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                <select className="w-full rounded-md border px-3 py-2" value={area} onChange={(e)=>setArea(e.target.value)}>
+                  <option value="">Select…</option>
+                  <option>Front of House</option>
+                  <option>Kitchen</option>
+                  <option>Bar</option>
+                </select>
+              </div>
+              <Button onClick={save} disabled={saving} className="h-10 px-4 rounded-md bg-purple-600 text-white font-medium md:ml-2 disabled:opacity-60">{saving ? 'Saving…' : 'Save'}</Button>
+            </div>
+            {err && <div className="text-sm text-red-600">{err}</div>}
+            <div>
+              <div className="text-xs font-semibold mb-1">Active Shifts</div>
+              {shifts.length ? (
+                <div className="space-y-1">
+                  {shifts.map((s)=> (
+                    <div key={s.id} className="flex items-center justify-between text-xs text-gray-700">
+                      <div>
+                        {new Date(s.start_time).toLocaleDateString()} • {new Date(s.start_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} – {new Date(s.end_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
+                        {s.area ? <> • {s.area}</> : null}
+                      </div>
+                      <Button size="sm" variant="ghost" className="text-red-600" onClick={async ()=>{
+                        if (!confirm('Delete this shift?')) return;
+                        const res = await fetch('/api/staff/shifts/delete', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ id: s.id }) });
+                        const j = await res.json().catch(()=>({}));
+                        if (!res.ok || j?.error) { alert(j?.error || 'Failed to delete shift'); return; }
+                        await load();
+                      }}>Delete</Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-gray-500">No shifts yet.</div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
-  }
+  });
 
   const grouped = useMemo(() => {
     const by: Record<string, StaffRow[]> = {};
@@ -254,77 +261,7 @@ export default function StaffClient({
         </CardContent>
       </Card>
 
-      <Card id="shift-editor" className="mb-6">
-        <CardHeader>
-          <div className="font-semibold">Shift</div>
-          <div className="text-sm text-gray-500">
-            {selectedStaff ? (
-              <>For <span className="font-medium">{selectedStaff.name}</span> ({selectedStaff.role})</>
-            ) : (
-              <>Select a staff member by clicking the “Shift” button next to their name.</>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ShiftRow
-            value={{ date: shiftDate, start: shiftStart, end: shiftEnd, area: shiftArea }}
-            onChange={(p)=>{
-              if ('date' in p) setShiftDate(p.date as string);
-              if ('start' in p) setShiftStart(p.start as string);
-              if ('end' in p) setShiftEnd(p.end as string);
-              if ('area' in p) setShiftArea((p.area as string) ?? '');
-            }}
-            onSave={async ()=>{
-              setShiftsError(null);
-              if (!selectedStaffId) { setShiftsError('Choose a staff member'); return; }
-              if (!shiftDate || !shiftStart || !shiftEnd) { setShiftsError('Date, start and end are required'); return; }
-              setSavingShift(true);
-              const startIso = new Date(`${shiftDate}T${shiftStart}:00`).toISOString();
-              let endDate = shiftDate;
-              if (shiftEnd < shiftStart) {
-                const d = new Date(shiftDate); d.setDate(d.getDate() + 1); endDate = d.toISOString().slice(0,10);
-              }
-              const endIso = new Date(`${endDate}T${shiftEnd}:00`).toISOString();
-              const res = await fetch('/api/staff/shifts/add', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ staff_id: selectedStaffId, venue_id: venueId, start_time: startIso, end_time: endIso, area: shiftArea || null }) });
-              const j = await res.json().catch(()=>({}));
-              if (!res.ok || j?.error) { setShiftsError(j?.error || 'Failed to save shift'); setSavingShift(false); return; }
-              setSavingShift(false);
-              setShiftStart(''); setShiftEnd(''); setShiftArea('');
-              await loadShifts(selectedStaffId);
-            }}
-            disabled={!selectedStaffId || savingShift}
-          />
-          {shiftsError && <div className="text-sm text-red-600">{shiftsError}</div>}
-          <div className="mt-2">
-            <div className="text-sm font-semibold mb-2">Active Shifts</div>
-            {selectedStaffId ? (
-              (shiftsByStaff[selectedStaffId]?.length ?? 0) ? (
-                <div className="space-y-2">
-                  {shiftsByStaff[selectedStaffId]!.map(s => (
-                    <div key={s.id} className="flex items-center justify-between rounded border p-3">
-                      <div className="text-sm text-gray-700">
-                        {new Date(s.start_time).toLocaleDateString()} • {new Date(s.start_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} – {new Date(s.end_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
-                        {s.area ? <> • {s.area}</> : null}
-                      </div>
-                      <Button variant="destructive" onClick={async ()=>{
-                        if (!confirm('Delete this shift?')) return;
-                        const res = await fetch('/api/staff/shifts/delete', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ id: s.id }) });
-                        const j = await res.json().catch(()=>({}));
-                        if (!res.ok || j?.error) { alert(j?.error || 'Failed to delete shift'); return; }
-                        await loadShifts(selectedStaffId);
-                      }}>Delete</Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500">No shifts yet for this staff member.</div>
-              )
-            ) : (
-              <div className="text-sm text-gray-500">Choose a staff member to view shifts.</div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* per-row editors below; removed global shift editor to avoid list-wide re-renders */}
 
       {roles.length === 0 ? (
         <p className="text-gray-500">No staff yet.</p>
@@ -339,44 +276,7 @@ export default function StaffClient({
             </CardHeader>
             <CardContent className="space-y-3">
               {grouped[r].map((row) => (
-                <Fragment key={row.id}>
-                  <div className="flex items-center justify-between rounded border p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="font-medium">{row.name}</div>
-                      {!row.active && <Badge variant="destructive">Inactive</Badge>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" onClick={() => openShiftFor(row.id)}>Shift</Button>
-                      <Button variant="destructive" onClick={() => onDelete(row)}>Delete</Button>
-                    </div>
-                  </div>
-                  {selectedStaffId === row.id && (
-                    <div className="mt-2 ml-2 border-l pl-3">
-                      <div className="text-xs font-semibold mb-1">Active Shifts for {row.name}</div>
-                      {(shiftsByStaff[row.id]?.length ?? 0) ? (
-                        <div className="space-y-1">
-                          {shiftsByStaff[row.id]!.map(s => (
-                            <div key={s.id} className="flex items-center justify-between text-xs text-gray-700">
-                              <div>
-                                {new Date(s.start_time).toLocaleDateString()} • {new Date(s.start_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} – {new Date(s.end_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
-                                {s.area ? <> • {s.area}</> : null}
-                              </div>
-                              <Button size="sm" variant="ghost" className="text-red-600" onClick={async ()=>{
-                                if (!confirm('Delete this shift?')) return;
-                                const res = await fetch('/api/staff/shifts/delete', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ id: s.id }) });
-                                const j = await res.json().catch(()=>({}));
-                                if (!res.ok || j?.error) { alert(j?.error || 'Failed to delete shift'); return; }
-                                await loadShifts(row.id);
-                              }}>Delete</Button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-gray-500">No shifts yet.</div>
-                      )}
-                    </div>
-                  )}
-                </Fragment>
+                <StaffRowItem key={row.id} row={row} onDeleteRow={onDelete} />
               ))}
               {/* shift editor moved to global card above */}
             </CardContent>
