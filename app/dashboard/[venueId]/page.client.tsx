@@ -198,6 +198,18 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
               </CardContent>
             </Card>
           </Link>
+
+          <Link href={`/dashboard/${venueId}/staff`}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="h-6 w-6 text-slate-700" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Staff Management</h3>
+                <p className="text-gray-500 text-sm">Add staff and manage roles</p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Getting Started Section */}

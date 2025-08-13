@@ -20,6 +20,7 @@ interface MenuItem {
   category: string;
   available: boolean;
   venue_name?: string; // added for display in header when loaded with join
+  options?: Array<{ label: string; values: string[] }>; // modifiers/options
 }
 
 interface CartItem extends MenuItem {
