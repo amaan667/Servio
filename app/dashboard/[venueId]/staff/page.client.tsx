@@ -123,13 +123,37 @@ export default function StaffClient({ venueId }: { venueId: string }) {
                   <h2 className="text-sm font-semibold text-gray-700 mb-2">{role}</h2>
                   <div className="space-y-2">
                     {list.map(s => (
-                      <Card key={s.id}><CardContent className="p-4 flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">{s.name}{s.area ? <span className="text-xs text-gray-500"> • {s.area}</span> : null}</div>
-                          <div className="text-xs text-gray-500">{s.active ? 'Active' : 'Inactive'}</div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" onClick={()=>toggleActive(s.id, s.active)}>{s.active ? 'Deactivate' : 'Activate'}</Button>
+                      <Card key={s.id}><CardContent className="p-4">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">{s.name}{s.area ? <span className="text-xs text-gray-500"> • {s.area}</span> : null}</div>
+                              <div className="text-xs text-gray-500">{s.active ? 'Active' : 'Inactive'}</div>
+                            </div>
+                            <div className="flex gap-2">
+                              <select value={s.role} onChange={e=>updateRole(s.id, e.target.value)} className="border rounded px-2 py-1 text-sm">
+                                {['Manager','Kitchen','Barista','Cashier','Server'].map(r=>(<option key={r} value={r}>{r}</option>))}
+                              </select>
+                              <select value={s.area || ''} onChange={e=>updateArea(s.id, e.target.value)} className="border rounded px-2 py-1 text-sm">
+                                <option value="">Area</option>
+                                {['Counter','Kitchen','Table Service'].map(a=>(<option key={a} value={a}>{a}</option>))}
+                              </select>
+                              <Button variant="outline" onClick={()=>toggleActive(s.id, s.active)}>{s.active ? 'Deactivate' : 'Activate'}</Button>
+                            </div>
+                          </div>
+                          <div>
+                            {openShiftFor === s.id ? (
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <input type="datetime-local" className="border rounded px-2 py-1 text-sm" value={shiftStart} onChange={e=>setShiftStart(e.target.value)} />
+                                <input type="datetime-local" className="border rounded px-2 py-1 text-sm" value={shiftEnd} onChange={e=>setShiftEnd(e.target.value)} />
+                                <input type="text" className="border rounded px-2 py-1 text-sm" placeholder="Area (optional)" value={shiftArea} onChange={e=>setShiftArea(e.target.value)} />
+                                <Button size="sm" onClick={()=>addShift(s.id)}>Add Shift</Button>
+                                <Button size="sm" variant="ghost" onClick={()=>{ setOpenShiftFor(null); setShiftStart(''); setShiftEnd(''); setShiftArea(''); }}>Cancel</Button>
+                              </div>
+                            ) : (
+                              <Button size="sm" variant="outline" onClick={()=>{ setOpenShiftFor(s.id); setShiftStart(''); setShiftEnd(''); setShiftArea(s.area || ''); }}>Add Shift</Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent></Card>
                     ))}
@@ -137,7 +161,25 @@ export default function StaffClient({ venueId }: { venueId: string }) {
                 </div>
               );
             });
-          }, [staff])}
+          }, [staff, openShiftFor, shiftStart, shiftEnd, shiftArea])}
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-sm font-semibold text-gray-700 mb-2">Today's Shifts</h2>
+          {!shifts.length ? (
+            <div className="text-gray-500 text-sm">No shifts scheduled today.</div>
+          ) : (
+            <div className="space-y-1 text-sm text-gray-700">
+              {shifts.map(sh => {
+                const person = staff.find(s=>s.id===sh.staff_id);
+                return (
+                  <div key={sh.id}>
+                    {person?.name || 'Staff'} • {new Date(sh.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–{new Date(sh.end_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}{sh.area?` • ${sh.area}`:''}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
