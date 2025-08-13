@@ -1,7 +1,7 @@
 // app/dashboard/[venueId]/staff/staff-client.tsx
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -339,42 +339,44 @@ export default function StaffClient({
             </CardHeader>
             <CardContent className="space-y-3">
               {grouped[r].map((row) => (
-                <div key={row.id} className="flex items-center justify-between rounded border p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="font-medium">{row.name}</div>
-                    {!row.active && <Badge variant="destructive">Inactive</Badge>}
+                <Fragment key={row.id}>
+                  <div className="flex items-center justify-between rounded border p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="font-medium">{row.name}</div>
+                      {!row.active && <Badge variant="destructive">Inactive</Badge>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" onClick={() => openShiftFor(row.id)}>Shift</Button>
+                      <Button variant="destructive" onClick={() => onDelete(row)}>Delete</Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => openShiftFor(row.id)}>Shift</Button>
-                    <Button variant="destructive" onClick={() => onDelete(row)}>Delete</Button>
-                  </div>
-                </div>
-                {selectedStaffId === row.id && (
-                  <div className="mt-2 ml-2 border-l pl-3">
-                    <div className="text-xs font-semibold mb-1">Active Shifts for {row.name}</div>
-                    {(shiftsByStaff[row.id]?.length ?? 0) ? (
-                      <div className="space-y-1">
-                        {shiftsByStaff[row.id]!.map(s => (
-                          <div key={s.id} className="flex items-center justify-between text-xs text-gray-700">
-                            <div>
-                              {new Date(s.start_time).toLocaleDateString()} • {new Date(s.start_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} – {new Date(s.end_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
-                              {s.area ? <> • {s.area}</> : null}
+                  {selectedStaffId === row.id && (
+                    <div className="mt-2 ml-2 border-l pl-3">
+                      <div className="text-xs font-semibold mb-1">Active Shifts for {row.name}</div>
+                      {(shiftsByStaff[row.id]?.length ?? 0) ? (
+                        <div className="space-y-1">
+                          {shiftsByStaff[row.id]!.map(s => (
+                            <div key={s.id} className="flex items-center justify-between text-xs text-gray-700">
+                              <div>
+                                {new Date(s.start_time).toLocaleDateString()} • {new Date(s.start_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} – {new Date(s.end_time).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
+                                {s.area ? <> • {s.area}</> : null}
+                              </div>
+                              <Button size="sm" variant="ghost" className="text-red-600" onClick={async ()=>{
+                                if (!confirm('Delete this shift?')) return;
+                                const res = await fetch('/api/staff/shifts/delete', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ id: s.id }) });
+                                const j = await res.json().catch(()=>({}));
+                                if (!res.ok || j?.error) { alert(j?.error || 'Failed to delete shift'); return; }
+                                await loadShifts(row.id);
+                              }}>Delete</Button>
                             </div>
-                            <Button size="sm" variant="ghost" className="text-red-600" onClick={async ()=>{
-                              if (!confirm('Delete this shift?')) return;
-                              const res = await fetch('/api/staff/shifts/delete', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ id: s.id }) });
-                              const j = await res.json().catch(()=>({}));
-                              if (!res.ok || j?.error) { alert(j?.error || 'Failed to delete shift'); return; }
-                              await loadShifts(row.id);
-                            }}>Delete</Button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-gray-500">No shifts yet.</div>
-                    )}
-                  </div>
-                )}
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500">No shifts yet.</div>
+                      )}
+                    </div>
+                  )}
+                </Fragment>
               ))}
               {/* shift editor moved to global card above */}
             </CardContent>
