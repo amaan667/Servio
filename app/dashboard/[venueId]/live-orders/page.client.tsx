@@ -30,6 +30,10 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all'|'open'|'pending'|'preparing'|'served'>('all');
   const [tableFilter, setTableFilter] = useState<string>('');
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugLoading, setDebugLoading] = useState(false);
+  const [debugError, setDebugError] = useState<string | null>(null);
+  const [debugData, setDebugData] = useState<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // fetch initial
@@ -111,8 +115,40 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
               {s[0].toUpperCase()+s.slice(1)}
             </Button>
           ))}
+          <Button
+            variant={debugOpen ? 'default' : 'outline'}
+            onClick={async ()=>{
+              if (!debugOpen) {
+                setDebugLoading(true); setDebugError(null);
+                try {
+                  const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}&status=all&limit=1000`;
+                  const res = await fetch(url, { cache:'no-store' });
+                  const j = await res.json().catch(()=>({}));
+                  if (!res.ok) throw new Error(j?.error || 'Request failed');
+                  setDebugData(j);
+                } catch (e:any) {
+                  setDebugError(e?.message || 'Failed to load');
+                } finally {
+                  setDebugLoading(false);
+                }
+              }
+              setDebugOpen(v=>!v);
+            }}
+          >
+            {debugOpen ? 'Hide Debug' : 'Show Debug'}
+          </Button>
         </div>
       </div>
+
+      {debugOpen && (
+        <div className="mb-4 rounded border bg-gray-50 p-3">
+          {debugLoading && <div className="text-xs text-gray-600">Loading…</div>}
+          {debugError && <div className="text-xs text-red-600">{debugError}</div>}
+          {!debugLoading && !debugError && (
+            <pre className="text-[11px] whitespace-pre-wrap break-words max-h-96 overflow-auto">{JSON.stringify(debugData, null, 2)}</pre>
+          )}
+        </div>
+      )}
 
       <div className="space-y-4">
         {visible.map(o => (
