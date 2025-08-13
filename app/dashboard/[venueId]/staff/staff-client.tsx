@@ -31,7 +31,8 @@ export default function StaffClient({
   const [error, setError] = useState<string | null>(null);
 
   const openShiftFor = (staffId: string) => {
-    alert(`Open shift editor for staff: ${staffId}`);
+    const el = document.getElementById(`shift-form-${staffId}`);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
   };
 
   const onAdd = async () => {
@@ -138,7 +139,13 @@ export default function StaffClient({
           </select>
           <div className="flex gap-2">
             <Button onClick={onAdd} disabled={adding}>{adding ? 'Adding…' : 'Add'}</Button>
-            <Button variant="outline" onClick={()=>{ setName(''); setRole('Server'); }}>Clear</Button>
+            <Button variant="outline" onClick={async ()=>{
+              if (!confirm('This will delete all staff for this venue. Continue?')) return;
+              const res = await fetch('/api/staff/clear', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ venue_id: venueId })});
+              const j = await res.json().catch(()=>({}));
+              if (!res.ok || j?.error) { alert(j?.error || 'Failed to clear'); return; }
+              setStaff([]);
+            }}>Clear</Button>
           </div>
           {error && <span className="text-red-600 text-sm">{error}</span>}
         </CardContent>
@@ -171,6 +178,16 @@ export default function StaffClient({
                   </div>
                 </div>
               ))}
+              {/* Inline shift section */}
+              <div id={`shift-form-${grouped[r][0]?.id || r}`} className="mt-4">
+                <div className="text-sm font-semibold mb-2">Add Shift</div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <Input type="datetime-local" className="md:w-1/3" onChange={()=>{}} placeholder="Start" />
+                  <Input type="datetime-local" className="md:w-1/3" onChange={()=>{}} placeholder="End" />
+                  <Input placeholder="Area (optional)" className="md:w-1/4" onChange={()=>{}} />
+                  <Button disabled>Save (select person via row)</Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ))
