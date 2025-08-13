@@ -17,9 +17,11 @@ export async function POST(req: Request) {
     { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
   );
 
+  // Map to DB domain values (served -> delivered)
+  const dbStatus = status === 'served' ? 'delivered' : status;
   const { data, error } = await supabase
     .from('orders')
-    .update({ status })
+    .update({ status: dbStatus as any })
     .eq('id', orderId)
     .select('id,status,venue_id');
 

@@ -101,14 +101,18 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
       try {
         const r1 = await fetch('/api/orders/update-status', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ orderId, status }) });
         const j1 = await r1.json().catch(()=>({}));
-        // treat ok only if the order object is returned and status matches
-        ok = r1.ok && (j1?.ok === true) && !!j1?.order && (j1.order.status === status);
+        const serverStatus = j1?.order?.status;
+        // Accept delivered as served equivalence
+        const matches = (status === 'served' && serverStatus === 'delivered') || serverStatus === status;
+        ok = r1.ok && (j1?.ok === true) && !!j1?.order && matches;
         msg = j1?.error || '';
       } catch {}
       if (!ok) {
         const r2 = await fetch(`/api/dashboard/orders/${orderId}`, { method:'PATCH', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ status }) });
         const j2 = await r2.json().catch(()=>({}));
-        ok = r2.ok && (j2?.ok === true) && !!j2?.order && (j2.order.status === status);
+        const serverStatus = j2?.order?.status;
+        const matches = (status === 'served' && serverStatus === 'delivered') || serverStatus === status;
+        ok = r2.ok && (j2?.ok === true) && !!j2?.order && matches;
         msg = j2?.error || msg || '';
       }
       if (!ok) throw new Error(msg || 'Update failed');
