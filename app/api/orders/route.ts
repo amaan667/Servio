@@ -1,21 +1,29 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const jar = await cookies();
-    const supabase = createServerClient(
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ error: 'Missing service role key' }, { status: 500 });
+    }
+
+    const admin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } }
     );
 
+    // Basic validation
+    if (!body?.venue_id || !Array.isArray(body?.items) || body.items.length === 0) {
+      return NextResponse.json({ error: 'Invalid order payload' }, { status: 400 });
+    }
+
     // Create order
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await admin
       .from('orders')
       .insert({
         venue_id: body.venue_id,
@@ -34,7 +42,7 @@ export async function POST(req: Request) {
     }
 
     // Create order items
-    const orderItems = (body.items || []).map((item: any) => ({
+    const orderItems = body.items.map((item: any) => ({
       order_id: order.id,
       menu_item_id: item.menu_item_id,
       quantity: item.quantity,
@@ -44,7 +52,7 @@ export async function POST(req: Request) {
     }));
 
     if (orderItems.length > 0) {
-      const { error: itemsError } = await supabase
+      const { error: itemsError } = await admin
         .from('order_items')
         .insert(orderItems);
       if (itemsError) {

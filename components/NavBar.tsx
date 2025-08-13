@@ -41,18 +41,6 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
         >
           Home
         </Link>
-        <Link
-          href="#features"
-          className="text-gray-700 hover:text-gray-900 font-medium text-lg"
-        >
-          Features
-        </Link>
-        <Link
-          href="#pricing"
-          className="text-gray-700 hover:text-gray-900 font-medium text-lg"
-        >
-          Pricing
-        </Link>
         {showActions && (
           <>
             <Link href="/settings">
