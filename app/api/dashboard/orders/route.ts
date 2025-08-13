@@ -10,6 +10,7 @@ export async function GET(req: Request) {
   const venueId = searchParams.get('venueId');
   const status = searchParams.get('status');
   const limit = Number(searchParams.get('limit') || '500');
+  const since = searchParams.get('since');
   if (!venueId) {
     return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
   }
@@ -50,10 +51,13 @@ export async function GET(req: Request) {
   // 1️⃣ Fetch orders first
   let ordersQuery = admin
     .from('orders')
-    .select('id, venue_id, table_number, customer_name, total_amount, status, notes, created_at, items')
+    .select('id, venue_id, table_number, customer_name, total_amount, status, payment_status, notes, created_at, items')
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false })
     .limit(limit);
+  if (since) {
+    ordersQuery = ordersQuery.gte('created_at', since);
+  }
   if (statuses) {
     ordersQuery = ordersQuery.in('status', statuses as any);
   }
