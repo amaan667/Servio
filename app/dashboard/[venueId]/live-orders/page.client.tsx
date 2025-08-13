@@ -257,9 +257,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
                 )}
               </div>
             </div>
-            <div className="mt-1 text-xs">
-              
-            </div>
+            <div className="mt-1 text-xs" />
              <div className="mt-2 text-sm text-gray-700">
               {(() => {
                 const items = o.items ?? [];
