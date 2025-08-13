@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/sb-client';
 import { Button } from '@/components/ui/button';
@@ -98,19 +98,46 @@ export default function StaffClient({ venueId }: { venueId: string }) {
           )}
         </CardContent></Card>
 
-        <div className="space-y-2">
-          {staff.map(s => (
-            <Card key={s.id}><CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <div className="font-medium">{s.name}</div>
-                <div className="text-sm text-gray-600">{s.role} • {s.active ? 'Active' : 'Inactive'}</div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={()=>toggleActive(s.id, s.active)}>{s.active ? 'Deactivate' : 'Activate'}</Button>
-              </div>
-            </CardContent></Card>
-          ))}
-          {!staff.length && <div className="text-gray-500">No staff yet.</div>}
+        <div className="space-y-4">
+          {useMemo(() => {
+            if (!staff.length) return <div className="text-gray-500">No staff yet.</div>;
+            // Group by role, sort roles and names
+            const groups: Record<string, Staff[]> = {};
+            for (const s of staff) {
+              const r = (s.role || 'Staff').trim();
+              if (!groups[r]) groups[r] = [];
+              groups[r].push(s);
+            }
+            const preferred = ['Barista','Cashier','Server'];
+            const roles = Object.keys(groups)
+              .sort((a,b)=>{
+                const ai = preferred.indexOf(a);
+                const bi = preferred.indexOf(b);
+                if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+                return a.localeCompare(b);
+              });
+            return roles.map(role => {
+              const list = groups[role].slice().sort((a,b)=>a.name.localeCompare(b.name));
+              return (
+                <div key={role}>
+                  <h2 className="text-sm font-semibold text-gray-700 mb-2">{role}</h2>
+                  <div className="space-y-2">
+                    {list.map(s => (
+                      <Card key={s.id}><CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{s.name}</div>
+                          <div className="text-xs text-gray-500">{s.active ? 'Active' : 'Inactive'}</div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" onClick={()=>toggleActive(s.id, s.active)}>{s.active ? 'Deactivate' : 'Activate'}</Button>
+                        </div>
+                      </CardContent></Card>
+                    ))}
+                  </div>
+                </div>
+              );
+            });
+          }, [staff])}
         </div>
       </div>
     </div>
