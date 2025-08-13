@@ -51,7 +51,7 @@ export async function GET(req: Request) {
   // 1️⃣ Fetch orders first
   let ordersQuery = admin
     .from('orders')
-    .select('*')
+    .select('id, venue_id, table_number, customer_name, total_amount, status, notes, created_at')
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -71,7 +71,7 @@ export async function GET(req: Request) {
   const orderIds = orders.map((o: any) => o.id);
   const { data: items, error: itemsErr } = await admin
     .from('order_items')
-    .select('*')
+    .select('id, order_id, item_name, unit_price, price, quantity, special_instructions')
     .in('order_id', orderIds);
 
   if (itemsErr) {
@@ -85,17 +85,11 @@ export async function GET(req: Request) {
       const price = Number(it.unit_price ?? it.price ?? 0);
       const qty = Number(it.quantity ?? 0);
       const line_total = price * qty;
-      return {
-        id: it.id,
-        item_name: it.item_name,
-        price,
-        quantity: qty,
-        special_instructions: it.special_instructions,
-        line_total,
-      };
+      return { id: it.id, item_name: it.item_name, price, quantity: qty, special_instructions: it.special_instructions, line_total };
     });
     const computed_total = mappedItems.reduce((s: number, it: any) => s + it.line_total, 0);
-    return { ...o, items: mappedItems, computed_total };
+    const total = Number.isFinite(Number(o.total_amount)) && Number(o.total_amount) > 0 ? Number(o.total_amount) : computed_total;
+    return { ...o, items: mappedItems, computed_total: total };
   });
 
   return NextResponse.json({ ok: true, orders: hydrated });

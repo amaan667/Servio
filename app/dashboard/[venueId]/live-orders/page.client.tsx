@@ -135,6 +135,9 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
                 </div>
               ))}
               {o.notes ? <div className="mt-2 text-gray-600 italic">Notes: {o.notes}</div> : null}
+              {!o.items?.length && (
+                <div className="text-xs text-gray-500">No items found for this order.</div>
+              )}
             </div>
             <div className="mt-3 flex gap-2">
               {o.status !== 'preparing' && o.status !== 'served' ? (
