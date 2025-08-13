@@ -121,14 +121,28 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
       </div>
 
 
+      {/* Group by table for clearer view */}
       <div className="space-y-4">
-        {visible.map(o => (
+        {Object.entries(
+          visible.reduce<Record<string, Order[]>>((acc, o) => {
+            const key = String(o.table_number ?? '—');
+            (acc[key] ||= []).push(o);
+            return acc;
+          }, {})
+        ).map(([table, list]) => (
+          <div key={table} className="rounded-lg border bg-white">
+            <div className="px-4 py-2 border-b bg-gray-50 text-sm font-medium">Table {table}</div>
+            <div className="p-4 space-y-4">
+              {list.map(o => (
           <div key={o.id} className="rounded-lg border bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-500">
                 {new Date(o.created_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} • Table {o.table_number ?? '—'}
               </div>
               <div className="text-lg font-semibold">{toMoney(o.computed_total)}</div>
+            </div>
+            <div className="mt-1 text-xs">
+              <span className={`inline-flex items-center rounded px-2 py-0.5 font-medium ${o.status==='pending'?'bg-yellow-100 text-yellow-700':o.status==='preparing'?'bg-blue-100 text-blue-700':o.status==='served'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'}`}>{o.status}</span>
             </div>
             <div className="mt-1 text-xs text-gray-500">
               Timer: <OrderTimer createdAt={o.created_at} />
@@ -161,6 +175,10 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
                 <Button variant="outline" onClick={()=>updateStatus(o.id,'preparing')}>Undo Served</Button>
               )}
               <Button variant="outline" onClick={async ()=>{ await fetch('/api/orders/mark-paid',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({orderId:o.id})});}}>Mark Paid</Button>
+              <Button variant="default" onClick={async ()=>{
+                await fetch('/api/orders/mark-paid',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({orderId:o.id})});
+                await updateStatus(o.id,'served');
+              }}>Paid + Served</Button>
               <Button variant="destructive" onClick={async ()=>{
                 if (!confirm('Delete this order?')) return;
                 const res = await fetch('/api/orders/delete', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ orderId:o.id, venue_id: venueId }) });
@@ -168,6 +186,9 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
                 if (!res.ok || j?.error) { alert(j?.error || 'Failed to delete'); return; }
                 setOrders(prev=>prev.filter(or=>or.id!==o.id));
               }}>Delete</Button>
+            </div>
+          </div>
+              ))}
             </div>
           </div>
         ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0 }: { venueId: string; userId: string; activeTables?: number }) {
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, activeTables: activeTablesFromSSR, menuItems: 0 });
+  const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, activeTables: activeTablesFromSSR, menuItems: 0, unpaid: 0 });
   const router = useRouter();
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       const { data: orders } = await supabase
         .from("orders")
-        .select("total_amount, table_number, status, created_at")
+        .select("total_amount, table_number, status, payment_status, created_at")
         .eq("venue_id", vId)
         .gte("created_at", today.toISOString());
 
@@ -65,6 +65,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         revenue: orders?.reduce((sum: number, order: any) => sum + (Number(order.total_amount) || 0), 0) || 0,
         activeTables: activeTableSet.size,
         menuItems: menuItems?.length || 0,
+        unpaid: (orders ?? []).filter((o: any) => (o.payment_status ?? 'unpaid') !== 'paid').length,
       });
     } catch (error) {
       console.error("Error loading stats:", error);
@@ -100,7 +101,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-6 cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/live-orders?since=today`)}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Today's Orders</p>
@@ -114,7 +115,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-6 cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/analytics`)}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Revenue</p>
@@ -124,6 +125,9 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                   <TrendingUp className="h-6 w-6 text-green-600" />
                 </div>
               </div>
+              {stats.unpaid > 0 && (
+                <div className="mt-2 text-xs text-red-600">{stats.unpaid} unpaid</div>
+              )}
             </CardContent>
           </Card>
 
