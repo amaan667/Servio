@@ -119,6 +119,12 @@ export default function GlobalNav() {
                     Home
                   </Link>
                   <Link
+                    href="/dashboard"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
                     href="/settings"
                     className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium"
                   >
@@ -178,13 +184,8 @@ export default function GlobalNav() {
               <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
             ) : authState.authenticated ? (
               <>
-                <Link
-                  href="/dashboard"
-                      className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
+                <Link href="/" className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+                <Link href="/dashboard" className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
                     <Link href="/settings" className="text-gray-700 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium" onClick={() => setMobileMenuOpen(false)}>Settings</Link>
                 <Button
                   onClick={handleSignOut}
