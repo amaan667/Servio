@@ -96,9 +96,21 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
     const prev = orders;
     setOrders((p)=>p.map(o=>o.id===orderId?{...o,status}:o));
     try {
-      const res = await fetch(`/api/dashboard/orders/${orderId}`, { method:'PATCH', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ status }) });
-      const j = await res.json();
-      if (!res.ok || !j?.ok) throw new Error(j?.error || 'Update failed');
+      // Legacy endpoint first (works with existing RLS/policies)
+      let ok = false; let msg = '';
+      try {
+        const r1 = await fetch('/api/orders/update-status', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ orderId, status }) });
+        const j1 = await r1.json().catch(()=>({}));
+        ok = r1.ok && (j1?.ok ?? true);
+        msg = j1?.error || '';
+      } catch {}
+      if (!ok) {
+        const r2 = await fetch(`/api/dashboard/orders/${orderId}`, { method:'PATCH', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ status }) });
+        const j2 = await r2.json().catch(()=>({}));
+        ok = r2.ok && (j2?.ok ?? true);
+        msg = j2?.error || msg || '';
+      }
+      if (!ok) throw new Error(msg || 'Update failed');
       toast({ title: 'Updated', description: `Order ${orderId.slice(0,6)} → ${status.toUpperCase()}` });
     } catch (e: any) {
       setOrders(prev);
@@ -108,7 +120,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
 
   const markPaid = async (orderId: string) => {
     const prev = orders;
-    setOrders((p)=>p.map(o=>o.id===orderId?{...o, status: o.status === 'served' ? 'served' : o.status}:o));
+    setOrders((p)=>p.map(o=>o.id===orderId?{...o, payment_status: 'paid'}:o));
     try {
       const res = await fetch('/api/orders/mark-paid', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ orderId }) });
       if (!res.ok) throw new Error('Mark paid failed');
