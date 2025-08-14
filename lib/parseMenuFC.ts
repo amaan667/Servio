@@ -87,18 +87,37 @@ async function callMenuTool(system: string, user: string) {
 
   let args = call.function.arguments || "{}";
   console.log('[MENU PARSE] Tool arguments length:', args.length);
+  console.log('[MENU PARSE] Tool arguments preview:', args.substring(0, 200));
 
+  // Enhanced error handling for JSON parsing
   try {
     return JSON.parse(args);
   } catch (parseError) {
     console.log('[MENU PARSE] Initial parse failed, attempting jsonrepair...');
+    console.log('[MENU PARSE] Raw arguments:', args);
+    console.log('[MENU PARSE] Parse error:', parseError.message);
+    
     try {
       const repaired = jsonrepair(args);
       console.log('[MENU PARSE] jsonrepair successful, length:', repaired.length);
+      console.log('[MENU PARSE] Repaired JSON preview:', repaired.substring(0, 200));
       return JSON.parse(repaired);
     } catch (repairError) {
       console.error('[MENU PARSE] jsonrepair also failed:', repairError);
-      throw new Error("Failed to parse tool arguments after repair.");
+      console.error('[MENU PARSE] Failed arguments:', args);
+      
+      // Try to extract any valid JSON from the response
+      const jsonMatch = args.match(/\{.*\}/s);
+      if (jsonMatch) {
+        try {
+          console.log('[MENU PARSE] Attempting to extract JSON from response...');
+          return JSON.parse(jsonMatch[0]);
+        } catch (extractError) {
+          console.error('[MENU PARSE] JSON extraction failed:', extractError);
+        }
+      }
+      
+      throw new Error(`Failed to parse tool arguments after repair. Original: ${args.substring(0, 100)}`);
     }
   }
 }
@@ -165,6 +184,7 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
       console.log(`[MENU PARSE] ${sec.name}: kept=${normalizedKept.length} reassigned=${reassigned.length}`);
     } catch (e) {
       console.warn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
+      // Continue with other sections instead of failing completely
     }
   }
 

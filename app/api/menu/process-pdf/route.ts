@@ -34,9 +34,15 @@ export async function POST(req: Request) {
       rawPayload = await parseMenuInChunks(extractedText);
     } catch (parseError: any) {
       console.error('[AUTH DEBUG] Menu parsing failed:', parseError);
+      console.error('[AUTH DEBUG] Parse error details:', {
+        message: parseError.message,
+        stack: parseError.stack,
+        name: parseError.name
+      });
       return NextResponse.json({ 
         ok: false, 
-        error: `Menu parsing failed: ${parseError.message}` 
+        error: `Menu parsing failed: ${parseError.message}`,
+        details: parseError.stack
       }, { status: 500 });
     }
 
@@ -111,9 +117,15 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('[AUTH DEBUG] PDF processing error:', error);
+    console.error('[AUTH DEBUG] Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return NextResponse.json({ 
       ok: false, 
-      error: `PDF processing failed: ${error.message}` 
+      error: `PDF processing failed: ${error.message}`,
+      details: error.stack
     }, { status: 500 });
   }
 }
