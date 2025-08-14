@@ -25,11 +25,7 @@ import {
   Link,
   FileText,
 } from "lucide-react";
-import {
-  supabase,
-  type MenuItem as BaseMenuItem,
-  type AuthSession,
-} from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import {
   Dialog,
@@ -39,6 +35,31 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+
+// Define types locally since they're not exported from supabase
+interface BaseMenuItem {
+  id: string;
+  venue_id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  category: string;
+  available: boolean;
+  position?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface AuthSession {
+  user: {
+    id: string;
+    email?: string;
+  };
+  venue: {
+    id: string;
+    venue_id?: string;
+  };
+}
 
 interface MenuManagementProps {
   venueId: string;
@@ -427,127 +448,13 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         </Alert>
       )}
 
-      <Tabs defaultValue="manual" className="w-full">
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="manual">
-          <Card>
-            <CardHeader>
-              <CardTitle>Add Menu Items Manually</CardTitle>
-              <CardDescription>
-                Add individual menu items to your restaurant.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Item Name *</Label>
-                  <Input
-                    id="name"
-                    value={newItem.name}
-                    onChange={(e) =>
-                      setNewItem({ ...newItem, name: e.target.value })
-                    }
-                    placeholder="e.g., Cappuccino"
-                    disabled={saving === "add"}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
-                  <Input
-                    id="category"
-                    value={newItem.category}
-                    onChange={(e) =>
-                      setNewItem({ ...newItem, category: e.target.value })
-                    }
-                    placeholder="e.g., Coffee"
-                    disabled={saving === "add"}
-                    list="categories"
-                  />
-                  <datalist id="categories">
-                    {sortedCategories.map(({ name }) => (
-                      <option key={name} value={name} />
-                    ))}
-                  </datalist>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (£) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={newItem.price}
-                    onChange={(e) =>
-                      setNewItem({
-                        ...newItem,
-                        price: Number.parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="0.00"
-                    disabled={saving === "add"}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="available">Availability</Label>
-                  <div className="flex items-center space-x-2 pt-2">
-                    <Switch
-                      id="available"
-                      checked={newItem.available}
-                      onCheckedChange={(checked) =>
-                        setNewItem({ ...newItem, available: checked })
-                      }
-                      disabled={saving === "add"}
-                    />
-                    <Label htmlFor="available">Available for ordering</Label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  value={newItem.description}
-                  onChange={(e) =>
-                    setNewItem({ ...newItem, description: e.target.value })
-                  }
-                  placeholder="Optional description of the item"
-                  disabled={saving === "add"}
-                />
-              </div>
-
-              <Button
-                onClick={handleAddItem}
-                disabled={saving === "add" || loading}
-                className="w-full"
-              >
-                {saving === "add" ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                )}
-                Add Item
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Upload and URL extraction tabs removed */}
-      </Tabs>
-
       {/* Existing Menu Items */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Current Menu ({menuItems.length} items)</span>
             {menuItems.length > 0 && (
-              <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -555,7 +462,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                   disabled={saving === "clear"}
                 >
                   <Trash2 className={`mr-2 h-4 w-4 ${saving === "clear" ? "animate-spin" : ""}`} />
-                  Clear
+                  Clear Menu
                 </Button>
                 <Button
                   variant="outline"
@@ -590,7 +497,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-600 mb-4">
-                No menu items found. Add some items above to get started.
+                No menu items found. Add some items below to get started.
               </p>
             </div>
           ) : (
@@ -617,13 +524,13 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                             <div className="flex flex-col md:flex-row md:items-center gap-2">
                               <Input
                                 value={editItemDraft?.name ?? item.name}
-                                onChange={e => setEditItemDraft(draft => ({ ...draft, name: e.target.value }))}
+                                onChange={(e) => setEditItemDraft((draft: Partial<MenuItem> | null) => ({ ...draft, name: e.target.value }))}
                                 className="w-40"
                                 placeholder="Name"
                               />
                               <Input
                                 value={editItemDraft?.category ?? item.category}
-                                onChange={e => setEditItemDraft(draft => ({ ...draft, category: e.target.value }))}
+                                onChange={(e) => setEditItemDraft((draft: Partial<MenuItem> | null) => ({ ...draft, category: e.target.value }))}
                                 className="w-32"
                                 placeholder="Category"
                               />
@@ -631,20 +538,20 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
                                 type="number"
                                 step="0.01"
                                 value={editItemDraft?.price ?? item.price}
-                                onChange={e => setEditItemDraft(draft => ({ ...draft, price: Number(e.target.value) }))}
+                                onChange={(e) => setEditItemDraft((draft: Partial<MenuItem> | null) => ({ ...draft, price: Number(e.target.value) }))}
                                 className="w-24"
                                 placeholder="Price"
                               />
                               <Input
-                                value={editItemDraft?.description ?? item.description}
-                                onChange={e => setEditItemDraft(draft => ({ ...draft, description: e.target.value }))}
+                                value={editItemDraft?.description ?? item.description ?? ""}
+                                onChange={(e) => setEditItemDraft((draft: Partial<MenuItem> | null) => ({ ...draft, description: e.target.value }))}
                                 className="w-48"
                                 placeholder="Description"
                               />
                               <div className="flex items-center gap-2">
                                 <Switch
                                   checked={editItemDraft?.available ?? item.available}
-                                  onCheckedChange={checked => setEditItemDraft(draft => ({ ...draft, available: checked }))}
+                                  onCheckedChange={(checked) => setEditItemDraft((draft: Partial<MenuItem> | null) => ({ ...draft, available: checked }))}
                                 />
                                 <Label className="text-sm">{(editItemDraft?.available ?? item.available) ? "Available" : "Unavailable"}</Label>
                               </div>
@@ -719,6 +626,112 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Add Menu Items Section - Moved below the menu items */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Add Menu Items</CardTitle>
+          <CardDescription>
+            Add individual menu items to your restaurant.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Item Name *</Label>
+              <Input
+                id="name"
+                value={newItem.name}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, name: e.target.value })
+                }
+                placeholder="e.g., Cappuccino"
+                disabled={saving === "add"}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category *</Label>
+              <Input
+                id="category"
+                value={newItem.category}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, category: e.target.value })
+                }
+                placeholder="e.g., Coffee"
+                disabled={saving === "add"}
+                list="categories"
+              />
+              <datalist id="categories">
+                {sortedCategories.map(({ name }) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="price">Price (£) *</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={newItem.price}
+                onChange={(e) =>
+                  setNewItem({
+                    ...newItem,
+                    price: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
+                placeholder="0.00"
+                disabled={saving === "add"}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="available">Availability</Label>
+              <div className="flex items-center space-x-2 pt-2">
+                <Switch
+                  id="available"
+                  checked={newItem.available}
+                  onCheckedChange={(checked) =>
+                    setNewItem({ ...newItem, available: checked })
+                  }
+                  disabled={saving === "add"}
+                />
+                <Label htmlFor="available">Available for ordering</Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Input
+              id="description"
+              value={newItem.description}
+              onChange={(e) =>
+                setNewItem({ ...newItem, description: e.target.value })
+              }
+              placeholder="Optional description of the item"
+              disabled={saving === "add"}
+            />
+          </div>
+
+          <Button
+            onClick={handleAddItem}
+            disabled={saving === "add" || loading}
+            className="w-full"
+          >
+            {saving === "add" ? (
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <PlusCircle className="mr-2 h-4 w-4" />
+            )}
+            Add Item
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Sticky batch action bar */}
       {selectedItems.length > 0 && (
         <div className="fixed bottom-0 left-0 w-full bg-white border-t z-50 shadow-lg flex items-center justify-center gap-4 py-3">
