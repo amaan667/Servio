@@ -36,18 +36,37 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
     
     console.log('[AUTH DEBUG] PDF buffer size:', buffer.length);
+    console.log('[AUTH DEBUG] Buffer first 100 bytes:', buffer.slice(0, 100));
 
     // Extract text using pdf-parse (dynamic import to avoid build issues)
     let text = '';
     try {
+      console.log('[AUTH DEBUG] Importing pdf-parse...');
       const pdfParse = (await import('pdf-parse')).default;
+      console.log('[AUTH DEBUG] pdf-parse imported successfully');
+      
+      console.log('[AUTH DEBUG] Starting PDF parsing...');
       const data = await pdfParse(buffer);
+      console.log('[AUTH DEBUG] PDF parsing completed');
+      
       text = data.text;
       console.log('[AUTH DEBUG] Extracted text length:', text.length);
       console.log('[AUTH DEBUG] Text preview:', text.substring(0, 500));
+      
+      if (!text || text.trim().length === 0) {
+        console.log('[AUTH DEBUG] No text extracted from PDF');
+        return NextResponse.json({ ok: false, error: 'No text could be extracted from PDF. This might be an image-based PDF that needs OCR.' }, { status: 400 });
+      }
     } catch (parseError) {
-      console.error('[AUTH DEBUG] PDF parse error:', parseError);
-      return NextResponse.json({ ok: false, error: 'Failed to parse PDF' }, { status: 500 });
+      console.error('[AUTH DEBUG] PDF parse error details:', parseError);
+      console.error('[AUTH DEBUG] Error name:', parseError.name);
+      console.error('[AUTH DEBUG] Error message:', parseError.message);
+      console.error('[AUTH DEBUG] Error stack:', parseError.stack);
+      
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Failed to parse PDF: ${parseError.message}. This might be an image-based PDF that needs OCR.` 
+      }, { status: 500 });
     }
 
     if (text.length < 200) {
@@ -185,6 +204,9 @@ ${text.substring(0, 3000)}`;
 
   } catch (error) {
     console.error('[AUTH DEBUG] Process PDF error:', error);
+    console.error('[AUTH DEBUG] Error name:', error.name);
+    console.error('[AUTH DEBUG] Error message:', error.message);
+    console.error('[AUTH DEBUG] Error stack:', error.stack);
     return NextResponse.json({ ok: false, error: 'Processing failed' }, { status: 500 });
   }
 }
