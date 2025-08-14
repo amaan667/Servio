@@ -69,28 +69,58 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       
       if (fileExtension === '.pdf') {
         addDebugLog('Processing PDF file...');
-        // For PDF files, send to server for processing
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('venue_id', venueId);
         
-        addDebugLog('Sending PDF to server for processing...');
+        // Step 1: Upload the file
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', file);
+        uploadFormData.append('venue_id', venueId);
         
-        const response = await fetch('/api/menu/process-pdf', {
+        addDebugLog('Uploading PDF file...');
+        
+        const uploadResponse = await fetch('/api/menu/upload', {
           method: 'POST',
-          body: formData
+          body: uploadFormData
         });
 
-        addDebugLog(`PDF processing response status: ${response.status}`);
+        addDebugLog(`Upload response status: ${uploadResponse.status}`);
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          addDebugLog(`PDF processing error: ${errorText}`);
-          throw new Error(`PDF processing failed: ${response.status} - ${errorText}`);
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          addDebugLog(`Upload error: ${errorText}`);
+          throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
         }
 
-        const result = await response.json();
-        addDebugLog(`PDF processing result: ${JSON.stringify(result)}`);
+        const uploadResult = await uploadResponse.json();
+        addDebugLog(`Upload result: ${JSON.stringify(uploadResult)}`);
+        
+        if (!uploadResult.ok) {
+          throw new Error(`Upload failed: ${uploadResult.error}`);
+        }
+
+        // Step 2: Process the uploaded file
+        addDebugLog('Processing uploaded PDF...');
+        
+        const processResponse = await fetch('/api/menu/process', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            upload_id: uploadResult.upload_id,
+            venue_id: venueId
+          })
+        });
+
+        addDebugLog(`Process response status: ${processResponse.status}`);
+        
+        if (!processResponse.ok) {
+          const errorText = await processResponse.text();
+          addDebugLog(`Process error: ${errorText}`);
+          throw new Error(`Processing failed: ${processResponse.status} - ${errorText}`);
+        }
+
+        const result = await processResponse.json();
+        addDebugLog(`Process result: ${JSON.stringify(result)}`);
         
         if (result.ok) {
           addDebugLog(`Success: ${result.counts.inserted} inserted, ${result.counts.skipped} skipped`);
@@ -99,78 +129,57 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
           });
           onSuccess?.();
-          return;
         } else {
-          addDebugLog(`PDF processing returned error: ${result.error}`);
-          toast({
-            title: 'Import failed',
-            description: result.error || 'Failed to process PDF',
-            variant: 'destructive'
-          });
-          return;
+          throw new Error(`Processing failed: ${result.error}`);
         }
+        
       } else {
+        // For text files, read and send directly
         addDebugLog('Processing text file...');
-        // For text files, read directly
         text = await file.text();
-        addDebugLog(`Text file content length: ${text.length}`);
+        
+        addDebugLog(`Text content preview: ${text.substring(0, 200)}...`);
+        
+        const response = await fetch('/api/menu/process-text', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            venue_id: venueId,
+            filename: file.name,
+            text: text
+          })
+        });
+
+        addDebugLog(`Text processing response status: ${response.status}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          addDebugLog(`Text processing error: ${errorText}`);
+          throw new Error(`Text processing failed: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        addDebugLog(`Text processing result: ${JSON.stringify(result)}`);
+        
+        if (result.ok) {
+          addDebugLog(`Success: ${result.counts.inserted} inserted, ${result.counts.skipped} skipped`);
+          toast({
+            title: 'Menu imported successfully',
+            description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
+          });
+          onSuccess?.();
+        } else {
+          throw new Error(`Text processing failed: ${result.error}`);
+        }
       }
       
-      if (text.length < 200) {
-        addDebugLog(`Text too short: ${text.length} < 200`);
-        toast({
-          title: 'Text too short',
-          description: 'Please upload a file with at least 200 characters',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      addDebugLog('Sending to process-text API...');
-      addDebugLog(`Text preview: ${text.substring(0, 200)}...`);
-
-      const response = await fetch('/api/menu/process-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          venue_id: venueId,
-          filename: file.name,
-          text
-        })
-      });
-
-      addDebugLog(`API response status: ${response.status}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        addDebugLog(`API error response: ${errorText}`);
-        throw new Error(`API error: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      addDebugLog(`API response: ${JSON.stringify(result)}`);
-
-      if (result.ok) {
-        addDebugLog(`Success: ${result.counts.inserted} inserted, ${result.counts.skipped} skipped`);
-        toast({
-          title: 'Menu imported successfully',
-          description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
-        });
-        onSuccess?.();
-      } else {
-        addDebugLog(`API returned error: ${result.error}`);
-        toast({
-          title: 'Import failed',
-          description: result.error || 'Failed to process menu',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      addDebugLog(`Upload error: ${error}`);
-      console.error('Upload error:', error);
+    } catch (error: any) {
+      addDebugLog(`Upload error: ${error.message}`);
       toast({
         title: 'Upload failed',
-        description: 'Failed to upload and process file',
+        description: error.message,
         variant: 'destructive'
       });
     } finally {
@@ -182,62 +191,90 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   };
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
           Upload Menu
         </CardTitle>
-        <CardDescription>
-          Upload your menu as a PDF or OCR text file
-        </CardDescription>
+        <CardDescription>Upload, parse and preview a PDF menu. OCR is used only if needed.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            <div className="space-y-2">
-              <p className="font-medium">Upload Your Menu</p>
-              <p>
-                Upload your menu as a PDF or text file. PDFs will be automatically processed with Google Vision OCR for accurate text extraction.
-              </p>
-            </div>
-          </AlertDescription>
-        </Alert>
-
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">Upload File</Badge>
-            <span className="text-sm text-gray-600">PDF or text file (.txt, .md, .json)</span>
-          </div>
-          
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600 mb-4">
-              Upload PDF (max 10MB) or text file (max 1MB)
-            </p>
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isProcessing}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {isProcessing ? 'Processing...' : 'Choose File'}
+            </Button>
             <input
               ref={fileInputRef}
               type="file"
               accept=".pdf,.txt,.md,.json"
               onChange={handleFileUpload}
               className="hidden"
-              disabled={isProcessing}
             />
-            <Button 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isProcessing}
-            >
-              {isProcessing ? 'Processing...' : 'Choose File'}
-            </Button>
+          </div>
+          
+          <div className="text-sm text-gray-500">
+            Supported formats: PDF (max 10MB), TXT, MD, JSON (max 1MB)
           </div>
         </div>
 
-        {/* Debug Info */}
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <p>For scanned/image-based PDFs, consider converting to text first using online OCR tools:</p>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="https://www.ilovepdf.com/pdf_to_word"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  iLovePDF
+                </a>
+                <a
+                  href="https://smallpdf.com/pdf-to-word"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  SmallPDF
+                </a>
+                <a
+                  href="https://www.adobe.com/acrobat/online/pdf-to-word.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Adobe
+                </a>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+
         {debugInfo && (
-          <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-            <h4 className="font-medium mb-2">Debug Info:</h4>
-            <pre className="text-xs text-gray-700 whitespace-pre-wrap max-h-40 overflow-y-auto">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Debug Info:</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDebugInfo('')}
+              >
+                Clear
+              </Button>
+            </div>
+            <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">
               {debugInfo}
             </pre>
           </div>
