@@ -50,7 +50,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       .from('menu_items')
       .select('*')
       .eq('venue_id', venueId)
-      .order('created_at', { ascending: false });
+      .order('order_index', { ascending: true });
 
     if (!error && data) {
       setMenuItems(data);

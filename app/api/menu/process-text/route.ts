@@ -15,18 +15,23 @@ export async function POST(req: NextRequest) {
   try {
     const { venue_id, filename, text } = await req.json();
 
+    console.log('[AUTH DEBUG] Process-text API called with:', { venue_id, filename, textLength: text?.length });
+
     // Validate input
     if (!venue_id || typeof venue_id !== 'string') {
+      console.log('[AUTH DEBUG] Invalid venue_id:', venue_id);
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
     if (!text || typeof text !== 'string' || text.length < 200) {
+      console.log('[AUTH DEBUG] Invalid text:', { textLength: text?.length, textType: typeof text });
       return NextResponse.json({ ok: false, error: 'text must be at least 200 characters' }, { status: 400 });
     }
 
     console.log('[AUTH DEBUG] Processing text menu for venue:', venue_id, 'length:', text.length);
+    console.log('[AUTH DEBUG] Text preview:', text.substring(0, 500));
 
-    // Extract menu items using OpenAI
+    // Extract menu items using OpenAI with order preservation
     const prompt = `You are extracting a structured restaurant/cafe menu from OCR'd text. Return ONLY a valid JSON object with this exact schema:
 
 {
@@ -36,7 +41,8 @@ export async function POST(req: NextRequest) {
       "description": "string|null",
       "price": "number (GBP, no currency symbols)",
       "category": "string",
-      "available": true
+      "available": true,
+      "order_index": "number (position in menu, starting from 0)"
     }
   ],
   "categories": ["string", "..."]
@@ -46,7 +52,8 @@ Rules:
 - Find food/drink items with prices
 - Normalize currency to GBP numbers (strip £, $, € symbols)
 - Infer categories from headings or item types
-- Drop duplicates (keep first occurrence)
+- Preserve the EXACT order from the original menu (drinks at bottom, etc.)
+- Assign order_index based on position in the menu (0, 1, 2, etc.)
 - Only include items with price > 0
 - Name must be <= 80 characters
 - Ignore headers, footers, "about us", allergy info, promotions
@@ -54,6 +61,8 @@ Rules:
 
 OCR Text (truncated):
 ${text.substring(0, 3000)}`;
+
+    console.log('[AUTH DEBUG] Sending to OpenAI...');
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -65,8 +74,11 @@ ${text.substring(0, 3000)}`;
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
+      console.log('[AUTH DEBUG] No content from OpenAI');
       return NextResponse.json({ ok: false, error: 'Failed to extract menu items' }, { status: 500 });
     }
+
+    console.log('[AUTH DEBUG] OpenAI response:', content);
 
     let parsed;
     try {
@@ -79,7 +91,7 @@ ${text.substring(0, 3000)}`;
     const items = parsed.items || [];
     console.log('[AUTH DEBUG] Extracted', items.length, 'menu items');
 
-    // Validate and normalize items
+    // Validate and normalize items, preserving order
     const validItems = items
       .filter((item: any) => 
         item.name && 
@@ -89,16 +101,19 @@ ${text.substring(0, 3000)}`;
         typeof item.price === 'number' && 
         item.price > 0
       )
-      .map((item: any) => ({
+      .map((item: any, index: number) => ({
         venue_id,
         name: item.name.trim(),
         description: item.description || null,
         price: Math.round(item.price * 100) / 100, // Round to 2 decimal places
         category: item.category || 'Uncategorized',
-        available: true
-      }));
+        available: true,
+        order_index: item.order_index !== undefined ? item.order_index : index
+      }))
+      .sort((a: any, b: any) => a.order_index - b.order_index); // Sort by order_index
 
     console.log('[AUTH DEBUG] Valid items:', validItems.length);
+    console.log('[AUTH DEBUG] Items with order:', validItems.map((item: any) => ({ name: item.name, order: item.order_index })));
 
     // Insert items in batches of 50
     let inserted = 0;
