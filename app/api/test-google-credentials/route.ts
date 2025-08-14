@@ -4,14 +4,16 @@ import { Storage } from '@google-cloud/storage';
 export async function GET() {
   try {
     console.log('[TEST] Testing Google Cloud credentials...');
+    console.log('[TEST] GOOGLE_CREDENTIALS_B64 exists:', !!process.env.GOOGLE_CREDENTIALS_B64);
     console.log('[TEST] GOOGLE_APPLICATION_CREDENTIALS exists:', !!process.env.GOOGLE_APPLICATION_CREDENTIALS);
     console.log('[TEST] GOOGLE_PROJECT_ID:', process.env.GOOGLE_PROJECT_ID);
     console.log('[TEST] GCS_BUCKET_NAME:', process.env.GCS_BUCKET_NAME);
 
-    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    // Check for credentials
+    if (!process.env.GOOGLE_CREDENTIALS_B64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       return NextResponse.json({ 
         ok: false, 
-        error: 'GOOGLE_APPLICATION_CREDENTIALS not found' 
+        error: 'No credentials found. Need either GOOGLE_CREDENTIALS_B64 or GOOGLE_APPLICATION_CREDENTIALS' 
       });
     }
 
@@ -32,7 +34,14 @@ export async function GET() {
     // Try to parse credentials
     let credentials;
     try {
-      credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+      if (process.env.GOOGLE_CREDENTIALS_B64) {
+        console.log('[TEST] Using base64 encoded credentials');
+        const credentialsJson = Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, 'base64').toString('utf8');
+        credentials = JSON.parse(credentialsJson);
+      } else {
+        console.log('[TEST] Using regular credentials');
+        credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS!);
+      }
       console.log('[TEST] Credentials parsed successfully');
       console.log('[TEST] Project ID from credentials:', credentials.project_id);
     } catch (parseError) {
@@ -80,7 +89,8 @@ export async function GET() {
       message: 'Google Cloud credentials are working correctly',
       projectId: process.env.GOOGLE_PROJECT_ID,
       bucketName: process.env.GCS_BUCKET_NAME,
-      credentialsProjectId: credentials.project_id
+      credentialsProjectId: credentials.project_id,
+      credentialsType: process.env.GOOGLE_CREDENTIALS_B64 ? 'base64' : 'json'
     });
 
   } catch (error) {
