@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Upload, Info, ExternalLink } from 'lucide-react';
@@ -15,7 +14,6 @@ interface MenuUploadCardProps {
 }
 
 export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
-  const [activeTab, setActiveTab] = useState('pdf');
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -54,8 +52,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       let text = '';
       
       if (fileExtension === '.pdf') {
-        // For PDF files, we'll extract text content
-        // This assumes the PDF has been OCR'd or contains text
+        // For PDF files, extract text content
         const arrayBuffer = await file.arrayBuffer();
         const pdfjsLib = await import('pdfjs-dist');
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -66,9 +63,12 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           const pageText = textContent.items.map((item: any) => item.str).join(' ');
           text += pageText + '\n';
         }
+        
+        console.log('[AUTH DEBUG] Extracted text from PDF:', text.length, 'characters');
       } else {
         // For text files, read directly
         text = await file.text();
+        console.log('[AUTH DEBUG] Read text file:', text.length, 'characters');
       }
       
       if (text.length < 200) {
@@ -79,6 +79,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         });
         return;
       }
+
+      console.log('[AUTH DEBUG] Sending to process-text API...');
 
       const response = await fetch('/api/menu/process-text', {
         method: 'POST',
@@ -91,6 +93,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       });
 
       const result = await response.json();
+      console.log('[AUTH DEBUG] API response:', result);
 
       if (result.ok) {
         toast({
@@ -131,99 +134,67 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           Upload your menu as a PDF or OCR text file
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="pdf">PDF</TabsTrigger>
-            <TabsTrigger value="text">Text (OCR result)</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pdf" className="space-y-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <div className="space-y-2">
-                  <p className="font-medium">Got a scanned/image PDF?</p>
-                  <p>
-                    If your menu is mostly images (common), first convert it with OCR and upload the text file. 
-                    This gives the most accurate results.
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <a href="https://ocr.space/" target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        OCR.space
-                      </a>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <a href="https://drive.google.com/" target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Google Drive OCR
-                      </a>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <a href="https://www.adobe.com/acrobat/online/ocr-pdf.html" target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Adobe Online OCR
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 mb-4">
-                Upload PDF file (max 10MB)
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-                disabled={isProcessing}
-              />
-              <Button 
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Processing...' : 'Choose PDF File'}
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="text" className="space-y-4">
+      <CardContent className="space-y-4">
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">Recommended</Badge>
-                <span className="text-sm text-gray-600">Upload OCR text for best results</span>
-              </div>
-              
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-4">
-                  Upload .txt, .md, or .json file (max 1MB)
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".txt,.md,.json"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  disabled={isProcessing}
-                />
-                <Button 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? 'Processing...' : 'Choose File'}
+              <p className="font-medium">Got a scanned/image PDF?</p>
+              <p>
+                If your menu is mostly images (common), first convert it with OCR and upload the text file. 
+                This gives the most accurate results.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button variant="outline" size="sm" asChild>
+                  <a href="https://ocr.space/" target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    OCR.space
+                  </a>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <a href="https://drive.google.com/" target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Google Drive OCR
+                  </a>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <a href="https://www.adobe.com/acrobat/online/ocr-pdf.html" target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Adobe Online OCR
+                  </a>
                 </Button>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </AlertDescription>
+        </Alert>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">Upload File</Badge>
+            <span className="text-sm text-gray-600">PDF or text file (.txt, .md, .json)</span>
+          </div>
+          
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+            <p className="text-sm text-gray-600 mb-4">
+              Upload PDF (max 10MB) or text file (max 1MB)
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.txt,.md,.json"
+              onChange={handleFileUpload}
+              className="hidden"
+              disabled={isProcessing}
+            />
+            <Button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Processing...' : 'Choose File'}
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
