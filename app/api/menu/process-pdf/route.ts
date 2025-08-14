@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
       }
       
       console.log('[AUTH DEBUG] Extracted text length:', text.length);
+      console.log('[AUTH DEBUG] FULL EXTRACTED TEXT:', text);
       console.log('[AUTH DEBUG] Text preview:', text.substring(0, 500));
       
       if (!text || text.trim().length === 0) {
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
 
     if (text.length < 200) {
       console.log('[AUTH DEBUG] Text too short:', text.length);
+      console.log('[AUTH DEBUG] Short text content:', text);
       return NextResponse.json({ 
         ok: false, 
         error: 'Extracted text is too short (less than 200 characters). This might be an image-based PDF. Please use OCR tools to convert it to text first.' 
@@ -126,7 +128,8 @@ Rules:
 OCR Text (truncated):
 ${text.substring(0, 3000)}`;
 
-    console.log('[AUTH DEBUG] Sending to OpenAI...');
+    console.log('[AUTH DEBUG] Sending to OpenAI with prompt length:', prompt.length);
+    console.log('[AUTH DEBUG] Prompt preview:', prompt.substring(0, 500));
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -142,18 +145,20 @@ ${text.substring(0, 3000)}`;
       return NextResponse.json({ ok: false, error: 'Failed to extract menu items' }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] OpenAI response:', content);
+    console.log('[AUTH DEBUG] FULL OpenAI response:', content);
 
     let parsed;
     try {
       parsed = JSON.parse(content);
     } catch (parseErr) {
       console.error('[AUTH DEBUG] Failed to parse OpenAI response:', parseErr);
+      console.error('[AUTH DEBUG] Raw OpenAI response:', content);
       return NextResponse.json({ ok: false, error: 'Invalid response format' }, { status: 500 });
     }
 
     const items = parsed.items || [];
     console.log('[AUTH DEBUG] Extracted', items.length, 'menu items');
+    console.log('[AUTH DEBUG] Raw items from OpenAI:', JSON.stringify(items, null, 2));
 
     // Validate and normalize items, preserving order
     const validItems = items
@@ -176,8 +181,8 @@ ${text.substring(0, 3000)}`;
       }))
       .sort((a: any, b: any) => a.order_index - b.order_index); // Sort by order_index
 
-    console.log('[AUTH DEBUG] Valid items:', validItems.length);
-    console.log('[AUTH DEBUG] Items with order:', validItems.map((item: any) => ({ name: item.name, order: item.order_index })));
+    console.log('[AUTH DEBUG] Valid items after filtering:', validItems.length);
+    console.log('[AUTH DEBUG] Valid items with order:', validItems.map((item: any) => ({ name: item.name, order: item.order_index })));
 
     // Insert items in batches of 50
     let inserted = 0;
