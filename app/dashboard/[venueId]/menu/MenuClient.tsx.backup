@@ -339,7 +339,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               </CardContent>
             </Card>
           ) : (
-            // Group items by category with proper ordering
+            // Group items by category
             (() => {
               const groupedItems = menuItems.reduce((acc: { [key: string]: MenuItem[] }, item) => {
                 const category = item.category || 'Uncategorized';
@@ -350,36 +350,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 return acc;
               }, {});
 
-                            // Define category priority order to match PDF structure
-              const categoryPriority = [
-                "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course", 
-                "mains", "main", "salads", "salad", "sides", "side dishes", "desserts", "dessert", 
-                "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
-              ];
-
-              // Sort categories based on priority and creation order
-              const sortedCategories = Object.entries(groupedItems).sort(([catA], [catB]) => {
-                const priorityA = categoryPriority.findIndex(priority => 
-                  catA.toLowerCase().includes(priority.toLowerCase())
-                );
-                const priorityB = categoryPriority.findIndex(priority => 
-                  catB.toLowerCase().includes(priority.toLowerCase())
-                );
-                
-                // If both categories have priority, sort by priority
-                if (priorityA >= 0 && priorityB >= 0) {
-                  return priorityA - priorityB;
-                }
-                
-                // If only one has priority, prioritize it
-                if (priorityA >= 0) return -1;
-                if (priorityB >= 0) return 1;
-                
-                // If neither has priority, sort alphabetically
-                return catA.localeCompare(catB);
-              });
-
-              return sortedCategories.map(([category, items]) => (
+              return Object.entries(groupedItems).map(([category, items]) => (
                 <div key={category} className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-900">{category}</h2>
