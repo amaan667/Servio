@@ -46,14 +46,20 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   }, [venueId]);
 
   const loadMenuItems = async () => {
+    console.log('[AUTH DEBUG] Loading menu items for venue:', venueId);
     const { data, error } = await supabase
       .from('menu_items')
       .select('*')
       .eq('venue_id', venueId)
-      .order('order_index', { ascending: true });
+      .order('created_at', { ascending: true });
 
+    console.log('[AUTH DEBUG] Menu items query result:', { data, error, count: data?.length });
+    
     if (!error && data) {
       setMenuItems(data);
+      console.log('[AUTH DEBUG] Set menu items:', data.length, 'items');
+    } else if (error) {
+      console.error('[AUTH DEBUG] Error loading menu items:', error);
     }
     setLoading(false);
   };
