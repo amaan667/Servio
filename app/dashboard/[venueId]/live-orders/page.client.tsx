@@ -163,24 +163,21 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
     }
   };
 
-  const visible = useMemo(() => {
-    const startToday = new Date(); startToday.setHours(0,0,0,0);
-    const isToday = (iso: string) => { const d = new Date(iso); return d >= startToday; };
-    let base = orders;
-    // Separate today's vs older orders
-    const todays = base.filter(o => isToday(o.created_at));
-    const older = base.filter(o => !isToday(o.created_at));
+  const visibleByDay = useMemo(() => {
+    // Helper: get day key in local time (YYYY-MM-DD)
+    const dayKey = (iso: string) => {
+      const d = new Date(iso);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dd}`;
+    };
 
-    // Filter set operates on today's list for primary view
-    let list = statusFilter === 'all'
-      ? todays
-      : statusFilter === 'paid'
-        ? todays.filter(o => (o.payment_status ?? 'unpaid') === 'paid')
-        : statusFilter === 'served'
-          ? todays.filter(o => o.status === 'served' || (o as any).status === 'delivered')
-          : todays.filter(o => !(o.status === 'served' || (o as any).status === 'delivered'));
-    // sort by created_at ascending (oldest first) for historical view
-    list = [...list].sort((a,b)=> new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    // Apply status/search/table filters on all orders
+    let list = [...orders];
+    if (statusFilter === 'paid') list = list.filter(o => (o.payment_status ?? 'unpaid') === 'paid');
+    else if (statusFilter === 'served') list = list.filter(o => o.status === 'served' || (o as any).status === 'delivered');
+    else if (statusFilter === 'preparing') list = list.filter(o => !(o.status === 'served' || (o as any).status === 'delivered'));
     if (tableFilter.trim()) {
       const needle = tableFilter.trim().toLowerCase();
       list = list.filter(o => String(o.table_number ?? '').toLowerCase().includes(needle));
@@ -193,13 +190,20 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
         String(o.customer_name ?? '').toLowerCase().includes(q)
       );
     }
-    // Append a visual separator by pushing a stub entry if there are older orders
-    if (older.length) {
-      // Tag older orders with a virtual table key -1 and a header row will render below.
-      // We'll render a small 'Yesterday & earlier' header where table key is '—'.
-      list = [...list, ...older];
-    }
-    return list;
+
+    // Group by day
+    const groups = list.reduce<Record<string, Order[]>>((acc, o) => {
+      const key = dayKey(o.created_at);
+      (acc[key] ||= []).push(o);
+      return acc;
+    }, {});
+
+    // Sort each day by time ascending
+    Object.values(groups).forEach(arr => arr.sort((a,b)=> new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+
+    // Sort day keys descending (newest day first)
+    const sortedKeys = Object.keys(groups).sort((a,b)=> new Date(b).getTime() - new Date(a).getTime());
+    return sortedKeys.map(k => ({ key: k, orders: groups[k] }));
   }, [orders, statusFilter, tableFilter, search]);
 
   const activeTables = useMemo(()=>{
@@ -243,19 +247,24 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
       </div>
 
 
-      {/* Group by table for clearer view */}
-      <div className="space-y-4">
-        {Object.entries(
-          visible.reduce<Record<string, Order[]>>((acc, o) => {
-            const key = String(o.table_number ?? '—');
-            (acc[key] ||= []).push(o);
+      {/* Group by day, then by table for clearer view */}
+      <div className="space-y-6">
+        {visibleByDay.map(({ key, orders: dayOrders }) => {
+          const dateLabel = new Date(key).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+          // group by table within day
+          const byTable = dayOrders.reduce<Record<string, Order[]>>((acc, o) => {
+            const t = String(o.table_number ?? '—');
+            (acc[t] ||= []).push(o);
             return acc;
-          }, {})
-        ).map(([table, list]) => (
-          <div key={table} className="rounded-lg border bg-white">
-            <div className="px-4 py-2 border-b bg-gray-50 text-xs sm:text-sm font-medium sticky top-0 z-10">Table {table}</div>
-            <div className="p-4 space-y-4">
-              {list.map(o => (
+          }, {});
+          return (
+            <div key={key}>
+              <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">{dateLabel}</div>
+              {Object.entries(byTable).map(([table, list]) => (
+                <div key={table} className="rounded-lg border bg-white mb-3">
+                  <div className="px-4 py-2 border-b bg-gray-50 text-xs sm:text-sm font-medium sticky top-0 z-10">Table {table}</div>
+                  <div className="p-4 space-y-4">
+                    {list.map(o => (
           <div key={o.id} className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="text-xs sm:text-sm text-gray-600 flex flex-wrap items-center gap-2">
@@ -337,11 +346,14 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
               </Button>
               <Button size="sm" variant="destructive" onClick={()=>{ if (confirm('Delete this order?')) deleteOrder(o.id); }}>Delete</Button>
             </div>
-          </div>
+           </div>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
-        ))}
+          );
+        })}
         {!visible.length && (
           <div className="text-center text-gray-500 py-16">No orders yet.</div>
         )}
