@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     console.log('[AUTH DEBUG] Text preview:', text.substring(0, 500));
 
     // Extract menu items using OpenAI with order preservation
-    const prompt = `You are extracting a structured restaurant/cafe menu from OCR'd text. Return ONLY a valid JSON object with this exact schema:
+    const prompt = `Extract menu items from this restaurant menu text. Return ONLY a valid JSON object with this exact schema:
 
 {
   "items": [
@@ -41,28 +41,26 @@ export async function POST(req: NextRequest) {
       "description": "string|null",
       "price": "number (GBP, no currency symbols)",
       "category": "string",
-      "available": true,
-      "order_index": "number (position in menu, starting from 0)"
+      "available": true
     }
-  ],
-  "categories": ["string", "..."]
+  ]
 }
 
 Rules:
 - Find food/drink items with prices
 - Normalize currency to GBP numbers (strip £, $, € symbols)
 - Infer categories from headings or item types
-- Preserve the EXACT order from the original menu (drinks at bottom, etc.)
-- Assign order_index based on position in the menu (0, 1, 2, etc.)
 - Only include items with price > 0
 - Name must be <= 80 characters
 - Ignore headers, footers, "about us", allergy info, promotions
 - Return valid JSON only
+- Focus on actual menu items with prices
 
-OCR Text (truncated):
+Menu Text:
 ${text.substring(0, 3000)}`;
 
-    console.log('[AUTH DEBUG] Sending to OpenAI...');
+    console.log('[AUTH DEBUG] Sending to OpenAI with prompt length:', prompt.length);
+    console.log('[AUTH DEBUG] Prompt preview:', prompt.substring(0, 500));
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -78,29 +76,36 @@ ${text.substring(0, 3000)}`;
       return NextResponse.json({ ok: false, error: 'Failed to extract menu items' }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] OpenAI response:', content);
+    console.log('[AUTH DEBUG] FULL OpenAI response:', content);
 
     let parsed;
     try {
       parsed = JSON.parse(content);
     } catch (parseErr) {
       console.error('[AUTH DEBUG] Failed to parse OpenAI response:', parseErr);
+      console.error('[AUTH DEBUG] Raw OpenAI response:', content);
       return NextResponse.json({ ok: false, error: 'Invalid response format' }, { status: 500 });
     }
 
     const items = parsed.items || [];
     console.log('[AUTH DEBUG] Extracted', items.length, 'menu items');
+    console.log('[AUTH DEBUG] Raw items from OpenAI:', JSON.stringify(items, null, 2));
 
-    // Validate and normalize items, preserving order
+    // Validate and normalize items
     const validItems = items
-      .filter((item: any) => 
-        item.name && 
-        typeof item.name === 'string' && 
-        item.name.length <= 80 &&
-        item.price && 
-        typeof item.price === 'number' && 
-        item.price > 0
-      )
+      .filter((item: any) => {
+        const isValid = item.name && 
+          typeof item.name === 'string' && 
+          item.name.length <= 80 &&
+          item.price && 
+          typeof item.price === 'number' && 
+          item.price > 0;
+        
+        if (!isValid) {
+          console.log('[AUTH DEBUG] Filtered out invalid item:', item);
+        }
+        return isValid;
+      })
       .map((item: any, index: number) => ({
         venue_id,
         name: item.name.trim(),
@@ -110,8 +115,8 @@ ${text.substring(0, 3000)}`;
         available: true
       }));
 
-    console.log('[AUTH DEBUG] Valid items:', validItems.length);
-    console.log('[AUTH DEBUG] Items:', validItems.map((item: any) => ({ name: item.name, category: item.category })));
+    console.log('[AUTH DEBUG] Valid items after filtering:', validItems.length);
+    console.log('[AUTH DEBUG] Items to insert:', validItems.map((item: any) => ({ name: item.name, category: item.category, price: item.price })));
 
     // Insert items in batches of 50
     let inserted = 0;
@@ -131,25 +136,30 @@ ${text.substring(0, 3000)}`;
           .maybeSingle();
 
         if (existing) {
+          console.log('[AUTH DEBUG] Skipping existing item:', item.name);
           skipped++;
           continue;
         }
 
         // Insert new item
-        const { error: insertErr } = await supa
+        const { data: insertedItem, error: insertErr } = await supa
           .from('menu_items')
-          .insert(item);
+          .insert(item)
+          .select()
+          .single();
 
         if (insertErr) {
           console.error('[AUTH DEBUG] Failed to insert item:', insertErr);
+          console.error('[AUTH DEBUG] Item that failed:', item);
           skipped++;
         } else {
+          console.log('[AUTH DEBUG] Successfully inserted item:', insertedItem);
           inserted++;
         }
       }
     }
 
-    console.log('[AUTH DEBUG] Inserted:', inserted, 'Skipped:', skipped);
+    console.log('[AUTH DEBUG] Final result - Inserted:', inserted, 'Skipped:', skipped);
 
     return NextResponse.json({
       ok: true,
