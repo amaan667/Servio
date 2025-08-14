@@ -1,99 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
+import { extractTextFromPdf } from '@/lib/googleVisionOCR';
 
-export const runtime = 'nodejs';
-
-const supa = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export async function POST(req: NextRequest) {
+const supa = createClient(supabaseUrl, supabaseServiceKey);
+
+export async function POST(request: NextRequest) {
   try {
-    const formData = await req.formData();
+    const formData = await request.formData();
     const file = formData.get('file') as File;
-    const venue_id = formData.get('venue_id') as string;
+    const venueId = formData.get('venue_id') as string;
 
-    console.log('[AUTH DEBUG] Process-pdf API called with:', { venue_id, filename: file?.name, fileSize: file?.size });
-
-    if (!file || !venue_id) {
-      console.log('[AUTH DEBUG] Missing file or venue_id');
-      return NextResponse.json({ ok: false, error: 'File and venue_id are required' }, { status: 400 });
+    if (!file || !venueId) {
+      return NextResponse.json({ ok: false, error: 'Missing file or venue_id' }, { status: 400 });
     }
 
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      console.log('[AUTH DEBUG] Not a PDF file:', file.name);
-      return NextResponse.json({ ok: false, error: 'File must be a PDF' }, { status: 400 });
-    }
-
-    console.log('[AUTH DEBUG] Processing PDF file:', file.name, 'size:', file.size);
+    console.log('[AUTH DEBUG] Processing PDF for venue:', venueId);
+    console.log('[AUTH DEBUG] File name:', file.name);
+    console.log('[AUTH DEBUG] File size:', file.size);
 
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
-    console.log('[AUTH DEBUG] PDF buffer size:', buffer.length);
-    console.log('[AUTH DEBUG] Buffer first 100 bytes:', buffer.slice(0, 100));
 
-    // Extract text using a simple approach - try to find text content in the PDF
-    let text = '';
+    // Extract text using Google Vision OCR
+    let text;
     try {
-      console.log('[AUTH DEBUG] Attempting simple text extraction...');
-      
-      // Convert buffer to string and look for text patterns
-      const bufferString = buffer.toString('utf8', 0, Math.min(buffer.length, 10000));
-      
-      // Look for common PDF text markers
-      const textMatches = bufferString.match(/\/Text\s*\[(.*?)\]/g);
-      const contentMatches = bufferString.match(/\/Contents\s*\[(.*?)\]/g);
-      
-      if (textMatches && textMatches.length > 0) {
-        text = textMatches.join(' ');
-        console.log('[AUTH DEBUG] Found text markers:', textMatches.length);
-      } else if (contentMatches && contentMatches.length > 0) {
-        text = contentMatches.join(' ');
-        console.log('[AUTH DEBUG] Found content markers:', contentMatches.length);
-      } else {
-        // Try to extract any readable text from the buffer
-        const readableText = bufferString.replace(/[^\x20-\x7E]/g, ' ').replace(/\s+/g, ' ').trim();
-        if (readableText.length > 100) {
-          text = readableText;
-          console.log('[AUTH DEBUG] Extracted readable text from buffer');
-        }
-      }
-      
-      console.log('[AUTH DEBUG] Extracted text length:', text.length);
-      console.log('[AUTH DEBUG] FULL EXTRACTED TEXT:', text);
-      console.log('[AUTH DEBUG] Text preview:', text.substring(0, 500));
-      
-      if (!text || text.trim().length === 0) {
-        console.log('[AUTH DEBUG] No text extracted from PDF');
-        return NextResponse.json({ 
-          ok: false, 
-          error: 'No text could be extracted from PDF. This appears to be an image-based PDF. Please use OCR tools to convert it to text first, then upload the text file.' 
-        }, { status: 400 });
-      }
-    } catch (parseError) {
-      console.error('[AUTH DEBUG] Text extraction error details:', parseError);
-      console.error('[AUTH DEBUG] Error name:', parseError.name);
-      console.error('[AUTH DEBUG] Error message:', parseError.message);
-      console.error('[AUTH DEBUG] Error stack:', parseError.stack);
-      
+      text = await extractTextFromPdf(buffer, file.name);
+      console.log('[AUTH DEBUG] OCR completed successfully');
+    } catch (ocrError) {
+      console.error('[AUTH DEBUG] OCR failed:', ocrError);
       return NextResponse.json({ 
         ok: false, 
-        error: `Failed to extract text from PDF: ${parseError.message}. This might be an image-based PDF that needs OCR.` 
+        error: `OCR failed: ${ocrError.message}` 
       }, { status: 500 });
     }
 
-    if (text.length < 200) {
-      console.log('[AUTH DEBUG] Text too short:', text.length);
-      console.log('[AUTH DEBUG] Short text content:', text);
+    if (!text || text.length < 100) {
       return NextResponse.json({ 
         ok: false, 
-        error: 'Extracted text is too short (less than 200 characters). This might be an image-based PDF. Please use OCR tools to convert it to text first.' 
+        error: 'OCR extracted insufficient text. Please ensure the PDF contains clear, readable menu text.' 
       }, { status: 400 });
     }
 
@@ -213,7 +163,7 @@ ${text}`;
         }
         
         return {
-          venue_id,
+          venue_id: venueId,
           name: item.name.trim(),
           description: item.description || null,
           price: Math.round(numericPrice * 100) / 100, // Round to 2 decimal places
@@ -271,10 +221,10 @@ ${text}`;
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Process PDF error:', error);
-    console.error('[AUTH DEBUG] Error name:', error.name);
-    console.error('[AUTH DEBUG] Error message:', error.message);
-    console.error('[AUTH DEBUG] Error stack:', error.stack);
-    return NextResponse.json({ ok: false, error: 'Processing failed' }, { status: 500 });
+    console.error('[AUTH DEBUG] PDF processing error:', error);
+    return NextResponse.json({ 
+      ok: false, 
+      error: `PDF processing failed: ${error.message}` 
+    }, { status: 500 });
   }
 }
