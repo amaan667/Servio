@@ -62,7 +62,7 @@ ${text}`;
 
     console.log('[AUTH DEBUG] Sending to OpenAI with prompt length:', prompt.length);
     console.log('[AUTH DEBUG] Full text length:', text.length);
-    console.log('[AUTH DEBUG] Text preview (first 1000 chars):', text.substring(0, 1000));
+    console.log('[AUTH DEBUG] Text preview (first 500 chars):', text.substring(0, 500));
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -78,20 +78,34 @@ ${text}`;
       return NextResponse.json({ ok: false, error: 'Failed to extract menu items' }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] FULL OpenAI response:', content);
+    console.log('[AUTH DEBUG] OpenAI response length:', content.length);
+    console.log('[AUTH DEBUG] OpenAI response preview:', content.substring(0, 500));
 
     let parsed;
     try {
       parsed = JSON.parse(content);
     } catch (parseErr) {
       console.error('[AUTH DEBUG] Failed to parse OpenAI response:', parseErr);
-      console.error('[AUTH DEBUG] Raw OpenAI response:', content);
-      return NextResponse.json({ ok: false, error: 'Invalid response format' }, { status: 500 });
+      console.error('[AUTH DEBUG] Raw OpenAI response (first 1000 chars):', content.substring(0, 1000));
+      
+      // Try to fix common JSON issues
+      try {
+        // Remove trailing commas and fix common issues
+        let fixedContent = content
+          .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+          .replace(/([^"])\s*}\s*$/g, '$1}') // Fix missing closing braces
+          .replace(/([^"])\s*]\s*$/g, '$1]'); // Fix missing closing brackets
+        
+        parsed = JSON.parse(fixedContent);
+        console.log('[AUTH DEBUG] Successfully parsed after fixing JSON issues');
+      } catch (fixErr) {
+        console.error('[AUTH DEBUG] Failed to fix JSON:', fixErr);
+        return NextResponse.json({ ok: false, error: 'Invalid response format from AI' }, { status: 500 });
+      }
     }
 
     const items = parsed.items || [];
     console.log('[AUTH DEBUG] Extracted', items.length, 'menu items from OpenAI');
-    console.log('[AUTH DEBUG] Raw items from OpenAI:', JSON.stringify(items, null, 2));
 
     // More lenient validation - only filter out completely invalid items
     const validItems = items
@@ -101,12 +115,10 @@ ${text}`;
         const hasPrice = item.price !== undefined && item.price !== null;
         
         if (!hasName) {
-          console.log('[AUTH DEBUG] Filtered out item with no name:', item);
           return false;
         }
         
         if (!hasPrice) {
-          console.log('[AUTH DEBUG] Filtered out item with no price:', item);
           return false;
         }
         
@@ -117,13 +129,11 @@ ${text}`;
         }
         
         if (isNaN(numericPrice) || numericPrice <= 0) {
-          console.log('[AUTH DEBUG] Filtered out item with invalid price:', item, 'numericPrice:', numericPrice);
           return false;
         }
         
         // Check name length
         if (item.name.length > 80) {
-          console.log('[AUTH DEBUG] Filtered out item with name too long:', item.name, 'length:', item.name.length);
           return false;
         }
         
@@ -147,12 +157,6 @@ ${text}`;
       });
 
     console.log('[AUTH DEBUG] Valid items after filtering:', validItems.length);
-    console.log('[AUTH DEBUG] Items to insert:', validItems.map((item: any) => ({ 
-      name: item.name, 
-      category: item.category, 
-      price: item.price,
-      description: item.description 
-    })));
 
     // Insert items in batches of 50
     let inserted = 0;
@@ -172,7 +176,6 @@ ${text}`;
           .maybeSingle();
 
         if (existing) {
-          console.log('[AUTH DEBUG] Skipping existing item:', item.name);
           skipped++;
           continue;
         }
@@ -185,11 +188,9 @@ ${text}`;
           .single();
 
         if (insertErr) {
-          console.error('[AUTH DEBUG] Failed to insert item:', insertErr);
-          console.error('[AUTH DEBUG] Item that failed:', item);
+          console.error('[AUTH DEBUG] Failed to insert item:', insertErr.message);
           skipped++;
         } else {
-          console.log('[AUTH DEBUG] Successfully inserted item:', insertedItem);
           inserted++;
         }
       }
