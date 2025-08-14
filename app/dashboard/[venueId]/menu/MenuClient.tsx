@@ -48,20 +48,16 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   }, [venueId]);
 
   const loadMenuItems = async () => {
-    console.log('[AUTH DEBUG] Loading menu items for venue:', venueId);
     const { data, error } = await supabase
       .from('menu_items')
       .select('*')
       .eq('venue_id', venueId)
       .order('created_at', { ascending: true });
 
-    console.log('[AUTH DEBUG] Menu items query result:', { data, error, count: data?.length });
     
     if (!error && data) {
       setMenuItems(data);
-      console.log('[AUTH DEBUG] Set menu items:', data.length, 'items');
     } else if (error) {
-      console.error('[AUTH DEBUG] Error loading menu items:', error);
     }
     setLoading(false);
   };
@@ -220,7 +216,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         <div className="mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
-            <p className="text-gray-600 mt-2">Manage menu items for {venueName}</p>
+            <p className="text-gray-600 mt-2">Manage menu items for {venueName} • {menuItems.length} total items</p>
           </div>
         </div>
 
