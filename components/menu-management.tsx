@@ -460,31 +460,6 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         </Alert>
       )}
 
-      {/* Action Buttons - Moved above menu items */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Menu Management</h2>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={fetchMenu}
-            disabled={loading}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          {menuItems.length > 0 && (
-            <Button
-              variant="destructive"
-              onClick={handleClearMenu}
-              disabled={saving === "clear"}
-            >
-              <Trash2 className={`mr-2 h-4 w-4 ${saving === "clear" ? "animate-spin" : ""}`} />
-              Clear Menu
-            </Button>
-          )}
-        </div>
-      </div>
-
       {/* Existing Menu Items */}
       <Card>
         <CardHeader>
@@ -512,7 +487,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-600 mb-4">
-                No menu items found. Add some items below to get started.
+                No menu items found. Add some items above to get started.
               </p>
             </div>
           ) : (
@@ -736,6 +711,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
             onClick={handleAddItem}
             disabled={saving === "add" || loading}
             className="w-full"
+            data-add-item-button
           >
             {saving === "add" ? (
               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
