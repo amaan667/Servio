@@ -266,7 +266,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         </div>
 
         {/* Menu Items Grid */}
-        <div className="grid gap-6">
+        <div className="space-y-6">
           {menuItems.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
@@ -280,52 +280,74 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               </CardContent>
             </Card>
           ) : (
-            menuItems.map((item) => (
-              <Card key={item.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
+            // Group items by category
+            (() => {
+              const groupedItems = menuItems.reduce((acc: { [key: string]: MenuItem[] }, item) => {
+                const category = item.category || 'Uncategorized';
+                if (!acc[category]) {
+                  acc[category] = [];
+                }
+                acc[category].push(item);
+                return acc;
+              }, {});
+
+              return Object.entries(groupedItems).map(([category, items]) => (
+                <div key={category} className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-semibold">{item.name}</h3>
-                        <span className="text-lg font-bold text-green-600">
-                          £{item.price.toFixed(2)}
-                        </span>
-                      </div>
-                      {item.description && (
-                        <p className="text-gray-600 text-sm mb-2">{item.description}</p>
-                      )}
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={item.available}
-                            onCheckedChange={(checked) => handleToggleAvailable(item.id, checked)}
-                          />
-                          <span className="text-sm text-gray-600">
-                            {item.available ? 'Available' : 'Unavailable'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditModal(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900">{category}</h2>
+                    <span className="text-sm text-gray-500">{items.length} item{items.length !== 1 ? 's' : ''}</span>
                   </div>
-                </CardContent>
-              </Card>
-            ))
+                  <div className="grid gap-4">
+                    {items.map((item) => (
+                      <Card key={item.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <h3 className="text-lg font-semibold">{item.name}</h3>
+                                <span className="text-lg font-bold text-green-600">
+                                  £{item.price.toFixed(2)}
+                                </span>
+                              </div>
+                              {item.description && (
+                                <p className="text-gray-600 text-sm mb-2">{item.description}</p>
+                              )}
+                              <div className="flex items-center space-x-4">
+                                <div className="flex items-center space-x-2">
+                                  <Switch
+                                    checked={item.available}
+                                    onCheckedChange={(checked) => handleToggleAvailable(item.id, checked)}
+                                  />
+                                  <span className="text-sm text-gray-600">
+                                    {item.available ? 'Available' : 'Unavailable'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openEditModal(item)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              ));
+            })()
           )}
         </div>
       </div>

@@ -97,8 +97,8 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Extract menu items using OpenAI with order preservation
-    const prompt = `Extract menu items from this restaurant menu text. Return ONLY a valid JSON object with this exact schema:
+    // Extract menu items using OpenAI with comprehensive extraction
+    const prompt = `Extract ALL menu items from this restaurant menu text. Be thorough and extract every single food/drink item with a price. Return ONLY a valid JSON object with this exact schema:
 
 {
   "items": [
@@ -112,28 +112,30 @@ export async function POST(req: NextRequest) {
   ]
 }
 
-Rules:
-- Find food/drink items with prices
-- Normalize currency to GBP numbers (strip £, $, € symbols)
-- Infer categories from headings or item types
-- Only include items with price > 0
-- Name must be <= 80 characters
-- Ignore headers, footers, "about us", allergy info, promotions
-- Return valid JSON only
-- Focus on actual menu items with prices
+CRITICAL RULES:
+- Extract EVERY single menu item with a price - don't miss any
+- Look for prices in various formats: £7.50, 7.50, £7, 7, etc.
+- Normalize all prices to numbers (strip £, $, € symbols)
+- Infer categories from section headers (STARTERS, MAIN COURSES, DESSERTS, DRINKS, etc.)
+- Include items even if description is missing
+- Only filter out items with no price or price = 0
+- Be very thorough - extract items from all sections
+- Preserve the exact item names and descriptions
+- Don't skip items that seem incomplete - extract what you can
 
 Menu Text:
-${text.substring(0, 3000)}`;
+${text}`;
 
     console.log('[AUTH DEBUG] Sending to OpenAI with prompt length:', prompt.length);
-    console.log('[AUTH DEBUG] Prompt preview:', prompt.substring(0, 500));
+    console.log('[AUTH DEBUG] Full text length:', text.length);
+    console.log('[AUTH DEBUG] Text preview (first 1000 chars):', text.substring(0, 1000));
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       temperature: 0.1,
-      max_tokens: 2000
+      max_tokens: 4000
     });
 
     const content = response.choices[0]?.message?.content;
@@ -154,35 +156,69 @@ ${text.substring(0, 3000)}`;
     }
 
     const items = parsed.items || [];
-    console.log('[AUTH DEBUG] Extracted', items.length, 'menu items');
+    console.log('[AUTH DEBUG] Extracted', items.length, 'menu items from OpenAI');
     console.log('[AUTH DEBUG] Raw items from OpenAI:', JSON.stringify(items, null, 2));
 
-    // Validate and normalize items
+    // More lenient validation - only filter out completely invalid items
     const validItems = items
       .filter((item: any) => {
-        const isValid = item.name && 
-          typeof item.name === 'string' && 
-          item.name.length <= 80 &&
-          item.price && 
-          typeof item.price === 'number' && 
-          item.price > 0;
+        // Check if item has basic required fields
+        const hasName = item.name && typeof item.name === 'string' && item.name.trim().length > 0;
+        const hasPrice = item.price !== undefined && item.price !== null;
         
-        if (!isValid) {
-          console.log('[AUTH DEBUG] Filtered out invalid item:', item);
+        if (!hasName) {
+          console.log('[AUTH DEBUG] Filtered out item with no name:', item);
+          return false;
         }
-        return isValid;
+        
+        if (!hasPrice) {
+          console.log('[AUTH DEBUG] Filtered out item with no price:', item);
+          return false;
+        }
+        
+        // Convert price to number if it's a string
+        let numericPrice = item.price;
+        if (typeof item.price === 'string') {
+          numericPrice = parseFloat(item.price.replace(/[£$€,]/g, ''));
+        }
+        
+        if (isNaN(numericPrice) || numericPrice <= 0) {
+          console.log('[AUTH DEBUG] Filtered out item with invalid price:', item, 'numericPrice:', numericPrice);
+          return false;
+        }
+        
+        // Check name length
+        if (item.name.length > 80) {
+          console.log('[AUTH DEBUG] Filtered out item with name too long:', item.name, 'length:', item.name.length);
+          return false;
+        }
+        
+        return true;
       })
-      .map((item: any, index: number) => ({
-        venue_id,
-        name: item.name.trim(),
-        description: item.description || null,
-        price: Math.round(item.price * 100) / 100, // Round to 2 decimal places
-        category: item.category || 'Uncategorized',
-        available: true
-      }));
+      .map((item: any, index: number) => {
+        // Convert price to number if it's a string
+        let numericPrice = item.price;
+        if (typeof item.price === 'string') {
+          numericPrice = parseFloat(item.price.replace(/[£$€,]/g, ''));
+        }
+        
+        return {
+          venue_id,
+          name: item.name.trim(),
+          description: item.description || null,
+          price: Math.round(numericPrice * 100) / 100, // Round to 2 decimal places
+          category: item.category || 'Uncategorized',
+          available: true
+        };
+      });
 
     console.log('[AUTH DEBUG] Valid items after filtering:', validItems.length);
-    console.log('[AUTH DEBUG] Items to insert:', validItems.map((item: any) => ({ name: item.name, category: item.category, price: item.price })));
+    console.log('[AUTH DEBUG] Items to insert:', validItems.map((item: any) => ({ 
+      name: item.name, 
+      category: item.category, 
+      price: item.price,
+      description: item.description 
+    })));
 
     // Insert items in batches of 50
     let inserted = 0;
@@ -225,7 +261,7 @@ ${text.substring(0, 3000)}`;
       }
     }
 
-    console.log('[AUTH DEBUG] Final result - Inserted:', inserted, 'Skipped:', skipped);
+    console.log('[AUTH DEBUG] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Total processed:', validItems.length);
 
     return NextResponse.json({
       ok: true,
