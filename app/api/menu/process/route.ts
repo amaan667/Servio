@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import { isMenuLike } from '@/lib/menuLike';
 import { tryParseMenuWithGPT } from '@/lib/safeParse';
-import sharp from 'sharp';
 import { PDFDocument } from 'pdf-lib';
 
 const supa = createClient(
@@ -45,51 +44,41 @@ export async function POST(req: NextRequest) {
 
     console.log('[AUTH DEBUG] Downloaded file, size:', file.size, 'bytes');
 
-    // Convert PDF to images using pdf-lib and sharp
+    // Extract PDF pages using pdf-lib
     const pdfBytes = await file.arrayBuffer();
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const pageCount = pdfDoc.getPageCount();
     
     console.log('[AUTH DEBUG] PDF has', pageCount, 'pages');
 
-    const images: string[] = [];
+    const pdfPages: string[] = [];
     const maxPages = Math.min(pageCount, 6); // Limit to first 6 pages
 
     for (let i = 0; i < maxPages; i++) {
-      const page = pdfDoc.getPage(i);
-      const { width, height } = page.getSize();
-      
       // Create a new PDF with just this page
       const singlePagePdf = await PDFDocument.create();
       const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [i]);
       singlePagePdf.addPage(copiedPage);
       
       const singlePageBytes = await singlePagePdf.save();
+      const base64 = Buffer.from(singlePageBytes).toString('base64');
+      pdfPages.push(`data:application/pdf;base64,${base64}`);
       
-      // Convert to image using sharp
-      const image = await sharp(Buffer.from(singlePageBytes))
-        .png()
-        .resize(1200, Math.round(1200 * height / width), { fit: 'inside' })
-        .toBuffer();
-      
-      const base64 = image.toString('base64');
-      images.push(`data:image/png;base64,${base64}`);
-      
-      console.log('[AUTH DEBUG] Converted page', i + 1, 'to image, size:', image.length, 'bytes');
+      console.log('[AUTH DEBUG] Extracted page', i + 1, 'size:', singlePageBytes.length, 'bytes');
     }
 
     // Try to extract text from first page for menu-likeness check
     let rawText = '';
     try {
-      const firstImage = images[0];
+      const firstPage = pdfPages[0];
       const visionResponse = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           {
             role: 'user',
             content: [
-              { type: 'text', text: 'Extract all text from this image. Return only the raw text, no formatting or structure.' },
-              { type: 'image_url', image_url: { url: firstImage } }
+              { type: 'text', text: 'Extract all text from this PDF page. Return only the raw text, no formatting or structure.' },
+              { type: 'image_url', image_url: { url: firstPage } }
             ]
           }
         ],
@@ -128,26 +117,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Process all images with OpenAI Vision
-    console.log('[AUTH DEBUG] Processing', images.length, 'images with OpenAI Vision');
+    // Process all PDF pages with OpenAI Vision
+    console.log('[AUTH DEBUG] Processing', pdfPages.length, 'PDF pages with OpenAI Vision');
     
     const allMenuItems: any[] = [];
     let totalTokens = 0;
 
-    for (let i = 0; i < images.length; i++) {
+    for (let i = 0; i < pdfPages.length; i++) {
       try {
         const response = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
-              content: `You are a menu parsing expert. Extract menu items from this image and return ONLY a valid JSON array. Each item should have: category (string), name (string), price (number), description (string, optional). Ignore headers, footers, "about us", allergy info, or promotional text. Focus only on food/drink items with prices.`
+              content: `You are a menu parsing expert. Extract menu items from this PDF page and return ONLY a valid JSON array. Each item should have: category (string), name (string), price (number), description (string, optional). Ignore headers, footers, "about us", allergy info, or promotional text. Focus only on food/drink items with prices.`
             },
             {
               role: 'user',
               content: [
-                { type: 'text', text: 'Extract menu items from this image. Return valid JSON array only.' },
-                { type: 'image_url', image_url: { url: images[i] } }
+                { type: 'text', text: 'Extract menu items from this PDF page. Return valid JSON array only.' },
+                { type: 'image_url', image_url: { url: pdfPages[i] } }
               ]
             }
           ],
