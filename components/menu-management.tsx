@@ -417,18 +417,30 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     }
   };
 
-  // Group and sort categories by category_position before JSX
+  // Group and sort categories with starters first
   const categoryGroups: Record<string, MenuItem[]> = {};
   menuItems.forEach((item: MenuItem) => {
     const cat = item.category || "Uncategorized";
     if (!categoryGroups[cat]) categoryGroups[cat] = [];
     categoryGroups[cat].push(item);
   });
+  
+  // Define category priority order
+  const categoryPriority = [
+    "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course", 
+    "mains", "main", "desserts", "dessert", "drinks", "beverages", "coffee", "tea", "wine", "beer"
+  ];
+  
   const sortedCategories: { name: string; position: number }[] = Object.keys(categoryGroups)
-    .map((cat) => ({
-      name: cat,
-      position: Math.min(...categoryGroups[cat].map((i) => i.category_position ?? 0)),
-    }))
+    .map((cat) => {
+      const priorityIndex = categoryPriority.findIndex(priority => 
+        cat.toLowerCase().includes(priority.toLowerCase())
+      );
+      return {
+        name: cat,
+        position: priorityIndex >= 0 ? priorityIndex : 999, // Put unknown categories at the end
+      };
+    })
     .sort((a, b) => a.position - b.position);
 
   return (
@@ -448,33 +460,36 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         </Alert>
       )}
 
+      {/* Action Buttons - Moved above menu items */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">Menu Management</h2>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={fetchMenu}
+            disabled={loading}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          {menuItems.length > 0 && (
+            <Button
+              variant="destructive"
+              onClick={handleClearMenu}
+              disabled={saving === "clear"}
+            >
+              <Trash2 className={`mr-2 h-4 w-4 ${saving === "clear" ? "animate-spin" : ""}`} />
+              Clear Menu
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Existing Menu Items */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Current Menu ({menuItems.length} items)</span>
-            {menuItems.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearMenu}
-                  disabled={saving === "clear"}
-                >
-                  <Trash2 className={`mr-2 h-4 w-4 ${saving === "clear" ? "animate-spin" : ""}`} />
-                  Clear Menu
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchMenu}
-                  disabled={loading}
-                >
-                  <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                  Refresh
-                </Button>
-              </div>
-            )}
           </CardTitle>
           <CardDescription>
             {menuItems.length > 0 && (
