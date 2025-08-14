@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
-import { PDFDocument } from 'pdf-lib';
-import pdfParse from 'pdf-parse';
 
 export const runtime = 'nodejs';
 
@@ -39,9 +37,10 @@ export async function POST(req: NextRequest) {
     
     console.log('[AUTH DEBUG] PDF buffer size:', buffer.length);
 
-    // Extract text using pdf-parse
+    // Extract text using pdf-parse (dynamic import to avoid build issues)
     let text = '';
     try {
+      const pdfParse = (await import('pdf-parse')).default;
       const data = await pdfParse(buffer);
       text = data.text;
       console.log('[AUTH DEBUG] Extracted text length:', text.length);
