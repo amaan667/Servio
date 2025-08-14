@@ -11,9 +11,10 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NavBar } from "@/components/NavBar";
 import { supabase } from "@/lib/sb-client";
-import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
+import { useToast } from "@/hooks/use-toast";
 
 interface MenuItem {
   id: string;
@@ -38,7 +39,8 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     category: '',
     available: true
   });
-  // PDF upload removed
+  const [isClearing, setIsClearing] = useState(false);
+  const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
@@ -133,6 +135,46 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     }
   };
 
+  const handleClearMenu = async () => {
+    if (!confirm('Are you sure you want to delete ALL menu items? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsClearing(true);
+    try {
+      const response = await fetch('/api/menu/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venue_id: venueId })
+      });
+
+      const result = await response.json();
+
+      if (result.ok) {
+        setMenuItems([]);
+        toast({
+          title: 'Menu cleared',
+          description: 'All menu items have been deleted successfully'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error || 'Failed to clear menu items',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Clear menu error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to clear menu items',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -143,8 +185,6 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     });
     setEditingItem(null);
   };
-
-  // PDF upload removed
 
   const openEditModal = (item: MenuItem) => {
     setEditingItem(item);
@@ -184,6 +224,14 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               <p className="text-gray-600 mt-2">Manage menu items for {venueName}</p>
             </div>
             <div className="flex space-x-2">
+              <Button 
+                variant="destructive" 
+                onClick={handleClearMenu}
+                disabled={isClearing || menuItems.length === 0}
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                {isClearing ? 'Clearing...' : 'Clear Menu'}
+              </Button>
               <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={resetForm}>

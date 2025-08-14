@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     console.log('[AUTH DEBUG] Text preview:', text.substring(0, 500));
 
     // Extract menu items using OpenAI with comprehensive extraction
-    const prompt = `Extract ALL menu items from this restaurant menu text. Be thorough and extract every single food/drink item with a price. Return ONLY a valid JSON object with this exact schema:
+    const prompt = `You are a professional menu extraction expert. Extract ALL menu items from this restaurant menu text with 100% accuracy. Return ONLY a valid JSON object with this exact schema:
 
 {
   "items": [
@@ -46,16 +46,18 @@ export async function POST(req: NextRequest) {
   ]
 }
 
-CRITICAL RULES:
-- Extract EVERY single menu item with a price - don't miss any
-- Look for prices in various formats: £7.50, 7.50, £7, 7, etc.
+CRITICAL EXTRACTION RULES:
+- Extract EVERY single menu item with a price - do not miss any
+- Look for prices in all formats: £7.50, 7.50, £7, 7, etc.
 - Normalize all prices to numbers (strip £, $, € symbols)
-- Infer categories from section headers (STARTERS, MAIN COURSES, DESSERTS, DRINKS, etc.)
+- Use exact category names from the menu: STARTERS, MAIN COURSES, DESSERTS, DRINKS, SALADS, etc.
 - Include items even if description is missing
 - Only filter out items with no price or price = 0
-- Be very thorough - extract items from all sections
+- Be extremely thorough - extract items from all sections
 - Preserve the exact item names and descriptions
-- Don't skip items that seem incomplete - extract what you can
+- Do not skip items that seem incomplete - extract what you can
+- Ensure all JSON strings are properly escaped
+- Return valid JSON only - no trailing commas, no unescaped quotes
 
 Menu Text:
 ${text}`;
@@ -90,16 +92,32 @@ ${text}`;
       
       // Try to fix common JSON issues
       try {
+        console.log('[AUTH DEBUG] Attempting to fix JSON issues...');
+        
         // Remove trailing commas and fix common issues
         let fixedContent = content
           .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
           .replace(/([^"])\s*}\s*$/g, '$1}') // Fix missing closing braces
-          .replace(/([^"])\s*]\s*$/g, '$1]'); // Fix missing closing brackets
+          .replace(/([^"])\s*]\s*$/g, '$1]') // Fix missing closing brackets
+          .replace(/([^\\])"/g, '$1\\"') // Escape unescaped quotes
+          .replace(/\\"/g, '"') // Fix double-escaped quotes
+          .replace(/\n/g, '\\n') // Escape newlines
+          .replace(/\r/g, '\\r') // Escape carriage returns
+          .replace(/\t/g, '\\t'); // Escape tabs
+        
+        // Try to find the end of the JSON object
+        const lastBrace = fixedContent.lastIndexOf('}');
+        if (lastBrace > 0) {
+          fixedContent = fixedContent.substring(0, lastBrace + 1);
+        }
+        
+        console.log('[AUTH DEBUG] Fixed content preview:', fixedContent.substring(0, 500));
         
         parsed = JSON.parse(fixedContent);
         console.log('[AUTH DEBUG] Successfully parsed after fixing JSON issues');
       } catch (fixErr) {
         console.error('[AUTH DEBUG] Failed to fix JSON:', fixErr);
+        console.error('[AUTH DEBUG] Attempted fix content:', fixedContent.substring(0, 1000));
         return NextResponse.json({ ok: false, error: 'Invalid response format from AI' }, { status: 500 });
       }
     }
