@@ -90,7 +90,7 @@ export async function POST(req: Request) {
 
       const { data: ins, error: insErr } = await supa
         .from('menu_uploads')
-        .insert({ venue_id: venueId, filename: `${hash}.pdf`, sha256: hash, status: 'uploaded' })
+        .insert({ venue_id: venueId, filename: path, sha256: hash, status: 'uploaded' })
         .select('id')
         .maybeSingle();
       if (insErr) {
