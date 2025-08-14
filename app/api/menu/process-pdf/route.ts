@@ -38,40 +38,61 @@ export async function POST(req: NextRequest) {
     console.log('[AUTH DEBUG] PDF buffer size:', buffer.length);
     console.log('[AUTH DEBUG] Buffer first 100 bytes:', buffer.slice(0, 100));
 
-    // Extract text using pdf-parse (dynamic import to avoid build issues)
+    // Extract text using a simple approach - try to find text content in the PDF
     let text = '';
     try {
-      console.log('[AUTH DEBUG] Importing pdf-parse...');
-      const pdfParse = (await import('pdf-parse')).default;
-      console.log('[AUTH DEBUG] pdf-parse imported successfully');
+      console.log('[AUTH DEBUG] Attempting simple text extraction...');
       
-      console.log('[AUTH DEBUG] Starting PDF parsing...');
-      const data = await pdfParse(buffer);
-      console.log('[AUTH DEBUG] PDF parsing completed');
+      // Convert buffer to string and look for text patterns
+      const bufferString = buffer.toString('utf8', 0, Math.min(buffer.length, 10000));
       
-      text = data.text;
+      // Look for common PDF text markers
+      const textMatches = bufferString.match(/\/Text\s*\[(.*?)\]/g);
+      const contentMatches = bufferString.match(/\/Contents\s*\[(.*?)\]/g);
+      
+      if (textMatches && textMatches.length > 0) {
+        text = textMatches.join(' ');
+        console.log('[AUTH DEBUG] Found text markers:', textMatches.length);
+      } else if (contentMatches && contentMatches.length > 0) {
+        text = contentMatches.join(' ');
+        console.log('[AUTH DEBUG] Found content markers:', contentMatches.length);
+      } else {
+        // Try to extract any readable text from the buffer
+        const readableText = bufferString.replace(/[^\x20-\x7E]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (readableText.length > 100) {
+          text = readableText;
+          console.log('[AUTH DEBUG] Extracted readable text from buffer');
+        }
+      }
+      
       console.log('[AUTH DEBUG] Extracted text length:', text.length);
       console.log('[AUTH DEBUG] Text preview:', text.substring(0, 500));
       
       if (!text || text.trim().length === 0) {
         console.log('[AUTH DEBUG] No text extracted from PDF');
-        return NextResponse.json({ ok: false, error: 'No text could be extracted from PDF. This might be an image-based PDF that needs OCR.' }, { status: 400 });
+        return NextResponse.json({ 
+          ok: false, 
+          error: 'No text could be extracted from PDF. This appears to be an image-based PDF. Please use OCR tools to convert it to text first, then upload the text file.' 
+        }, { status: 400 });
       }
     } catch (parseError) {
-      console.error('[AUTH DEBUG] PDF parse error details:', parseError);
+      console.error('[AUTH DEBUG] Text extraction error details:', parseError);
       console.error('[AUTH DEBUG] Error name:', parseError.name);
       console.error('[AUTH DEBUG] Error message:', parseError.message);
       console.error('[AUTH DEBUG] Error stack:', parseError.stack);
       
       return NextResponse.json({ 
         ok: false, 
-        error: `Failed to parse PDF: ${parseError.message}. This might be an image-based PDF that needs OCR.` 
+        error: `Failed to extract text from PDF: ${parseError.message}. This might be an image-based PDF that needs OCR.` 
       }, { status: 500 });
     }
 
     if (text.length < 200) {
       console.log('[AUTH DEBUG] Text too short:', text.length);
-      return NextResponse.json({ ok: false, error: 'Extracted text is too short (less than 200 characters)' }, { status: 400 });
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Extracted text is too short (less than 200 characters). This might be an image-based PDF. Please use OCR tools to convert it to text first.' 
+      }, { status: 400 });
     }
 
     // Extract menu items using OpenAI with order preservation
