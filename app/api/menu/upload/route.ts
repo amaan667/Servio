@@ -29,6 +29,37 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'file and venue_id are required' }, { status: 400 });
     }
 
+    // Ensure table + RLS exists (idempotent)
+    try {
+      // Use a lightweight insert-select approach to avoid ts complaints; Supabase JS doesn't support arbitrary SQL without a function.
+      // Expect this to fail harmlessly if a security defers creation; DDL should be applied via scripts as the primary path.
+      await supa.from('menu_uploads' as any).select('id').limit(1);
+    } catch (e) {
+      console.warn('[MENU_UPLOAD] menu_uploads not accessible yet');
+    }
+    // Note: primary table creation should be done via scripts/menu-upload-schema.sql
+    // Included here as documentation for desired RLS settings:
+    /*
+    create extension if not exists pgcrypto;
+    create table if not exists public.menu_uploads (
+      id uuid primary key default gen_random_uuid(),
+      venue_id text not null references public.venues(venue_id) on delete cascade,
+      filename text not null,
+      sha256 text not null,
+      pages int,
+      status text default 'uploaded',
+      ocr_used boolean default false,
+      raw_text text,
+      parsed_json jsonb,
+      error text,
+      created_at timestamptz default now(),
+      unique (venue_id, sha256)
+    );
+    alter table public.menu_uploads enable row level security;
+    */
+    
+    
+
     // Ensure bucket exists
     try {
       const { data: buckets } = await supa.storage.listBuckets();
