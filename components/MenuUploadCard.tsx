@@ -77,11 +77,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           const pdfjsLib = await import('pdfjs-dist');
           addDebugLog('pdfjs-dist imported successfully');
           
-          // Set up the worker
-          if (typeof window !== 'undefined') {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-            addDebugLog('PDF worker configured');
-          }
+          // Disable worker for client-side processing
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+          addDebugLog('PDF worker disabled for client-side processing');
           
           const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
           addDebugLog(`PDF loaded, pages: ${pdf.numPages}`);
