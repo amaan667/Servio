@@ -34,8 +34,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: error?.message || 'upload not found' }, { status: 404 });
     }
 
-    const pdfPath = `${row.venue_id}/${row.sha256}.pdf`;
-    const { data: file, error: dlErr } = await supa.storage.from('menus').download(pdfPath);
+    // Prefer row.filename if present, else fall back to venue/hash path
+    const storagePath = row.filename || `${row.venue_id}/${row.sha256}.pdf`;
+    const { data: file, error: dlErr } = await supa.storage.from('menus').download(storagePath);
     if (dlErr) {
       console.error('[MENU_PROCESS] storage download error', dlErr);
       return NextResponse.json({ ok: false, error: dlErr.message }, { status: 400 });
