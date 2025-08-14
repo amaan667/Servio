@@ -20,15 +20,18 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleTextFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     // Validate file type
-    if (!file.name.endsWith('.txt') && !file.name.endsWith('.md') && !file.name.endsWith('.json')) {
+    const validTypes = ['.txt', '.md', '.json', '.pdf'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!validTypes.includes(fileExtension)) {
       toast({
         title: 'Invalid file type',
-        description: 'Please upload a .txt, .md, or .json file',
+        description: 'Please upload a .txt, .md, .json, or .pdf file',
         variant: 'destructive'
       });
       return;
@@ -47,7 +50,25 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     setIsProcessing(true);
 
     try {
-      const text = await file.text();
+      let text = '';
+      
+      if (fileExtension === '.pdf') {
+        // For PDF files, we'll extract text content
+        // This assumes the PDF has been OCR'd or contains text
+        const arrayBuffer = await file.arrayBuffer();
+        const pdfjsLib = await import('pdfjs-dist');
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        for (let i = 1; i <= Math.min(pdf.numPages, 6); i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          text += pageText + '\n';
+        }
+      } else {
+        // For text files, read directly
+        text = await file.text();
+      }
       
       if (text.length < 200) {
         toast({
@@ -153,10 +174,21 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 mb-4">
-                PDF upload coming soon...
+                Upload PDF file (max 1MB)
               </p>
-              <Button disabled variant="outline">
-                Upload PDF
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                className="hidden"
+                disabled={isProcessing}
+              />
+              <Button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Choose PDF File'}
               </Button>
             </div>
           </TabsContent>
@@ -177,7 +209,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
                   ref={fileInputRef}
                   type="file"
                   accept=".txt,.md,.json"
-                  onChange={handleTextFileUpload}
+                  onChange={handleFileUpload}
                   className="hidden"
                   disabled={isProcessing}
                 />
@@ -188,19 +220,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
                   {isProcessing ? 'Processing...' : 'Choose File'}
                 </Button>
               </div>
-
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  <p className="font-medium mb-1">What counts as good OCR?</p>
-                  <ul className="text-sm space-y-1">
-                    <li>• Keep prices next to items</li>
-                    <li>• Avoid extra headers/footers</li>
-                    <li>• Clean up any obvious OCR errors</li>
-                    <li>• Include item descriptions if available</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
             </div>
           </TabsContent>
         </Tabs>
