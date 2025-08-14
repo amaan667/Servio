@@ -14,7 +14,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  serverExternalPackages: ["tesseract.js", "pdf-poppler"],
+  // Remove legacy PDF/OCR externals
+  serverExternalPackages: [],
   webpack: (config) => {
     config.resolve = config.resolve || {};
     config.resolve.alias = config.resolve.alias || {};
