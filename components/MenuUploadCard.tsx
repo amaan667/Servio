@@ -69,35 +69,46 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       
       if (fileExtension === '.pdf') {
         addDebugLog('Processing PDF file...');
-        // For PDF files, extract text content
-        const arrayBuffer = await file.arrayBuffer();
-        addDebugLog(`PDF arrayBuffer size: ${arrayBuffer.byteLength}`);
+        // For PDF files, send to server for processing
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('venue_id', venueId);
         
-        try {
-          const pdfjsLib = await import('pdfjs-dist');
-          addDebugLog('pdfjs-dist imported successfully');
-          
-          // Disable worker for client-side processing
-          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-          addDebugLog('PDF worker disabled for client-side processing');
-          
-          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-          addDebugLog(`PDF loaded, pages: ${pdf.numPages}`);
-          
-          for (let i = 1; i <= Math.min(pdf.numPages, 6); i++) {
-            addDebugLog(`Processing page ${i}...`);
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items.map((item: any) => item.str).join(' ');
-            text += pageText + '\n';
-            addDebugLog(`Page ${i} text length: ${pageText.length}`);
-          }
-        } catch (pdfError) {
-          addDebugLog(`PDF processing error: ${pdfError}`);
-          throw pdfError;
+        addDebugLog('Sending PDF to server for processing...');
+        
+        const response = await fetch('/api/menu/process-pdf', {
+          method: 'POST',
+          body: formData
+        });
+
+        addDebugLog(`PDF processing response status: ${response.status}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          addDebugLog(`PDF processing error: ${errorText}`);
+          throw new Error(`PDF processing failed: ${response.status} - ${errorText}`);
         }
+
+        const result = await response.json();
+        addDebugLog(`PDF processing result: ${JSON.stringify(result)}`);
         
-        addDebugLog(`Total extracted text length: ${text.length}`);
+        if (result.ok) {
+          addDebugLog(`Success: ${result.counts.inserted} inserted, ${result.counts.skipped} skipped`);
+          toast({
+            title: 'Menu imported successfully',
+            description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
+          });
+          onSuccess?.();
+          return;
+        } else {
+          addDebugLog(`PDF processing returned error: ${result.error}`);
+          toast({
+            title: 'Import failed',
+            description: result.error || 'Failed to process PDF',
+            variant: 'destructive'
+          });
+          return;
+        }
       } else {
         addDebugLog('Processing text file...');
         // For text files, read directly
