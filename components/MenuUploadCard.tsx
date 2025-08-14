@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Upload, Info, ExternalLink } from 'lucide-react';
+import { FileText, Upload, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface MenuUploadCardProps {
@@ -65,62 +65,31 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     addDebugLog('Starting file processing...');
 
     try {
-      let text = '';
-      
       if (fileExtension === '.pdf') {
         addDebugLog('Processing PDF file...');
         
-        // Step 1: Upload the file
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', file);
-        uploadFormData.append('venue_id', venueId);
+        // Send PDF directly to process-pdf endpoint
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('venue_id', venueId);
         
-        addDebugLog('Uploading PDF file...');
+        addDebugLog('Sending PDF to server for processing...');
         
-        const uploadResponse = await fetch('/api/menu/upload', {
+        const response = await fetch('/api/menu/process-pdf', {
           method: 'POST',
-          body: uploadFormData
+          body: formData
         });
 
-        addDebugLog(`Upload response status: ${uploadResponse.status}`);
+        addDebugLog(`PDF processing response status: ${response.status}`);
         
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          addDebugLog(`Upload error: ${errorText}`);
-          throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          addDebugLog(`PDF processing error: ${errorText}`);
+          throw new Error(`PDF processing failed: ${response.status} - ${errorText}`);
         }
 
-        const uploadResult = await uploadResponse.json();
-        addDebugLog(`Upload result: ${JSON.stringify(uploadResult)}`);
-        
-        if (!uploadResult.ok) {
-          throw new Error(`Upload failed: ${uploadResult.error}`);
-        }
-
-        // Step 2: Process the uploaded file
-        addDebugLog('Processing uploaded PDF...');
-        
-        const processResponse = await fetch('/api/menu/process', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            upload_id: uploadResult.upload_id,
-            venue_id: venueId
-          })
-        });
-
-        addDebugLog(`Process response status: ${processResponse.status}`);
-        
-        if (!processResponse.ok) {
-          const errorText = await processResponse.text();
-          addDebugLog(`Process error: ${errorText}`);
-          throw new Error(`Processing failed: ${processResponse.status} - ${errorText}`);
-        }
-
-        const result = await processResponse.json();
-        addDebugLog(`Process result: ${JSON.stringify(result)}`);
+        const result = await response.json();
+        addDebugLog(`PDF processing result: ${JSON.stringify(result)}`);
         
         if (result.ok) {
           addDebugLog(`Success: ${result.counts.inserted} inserted, ${result.counts.skipped} skipped`);
@@ -130,13 +99,13 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           });
           onSuccess?.();
         } else {
-          throw new Error(`Processing failed: ${result.error}`);
+          throw new Error(`PDF processing failed: ${result.error}`);
         }
         
       } else {
         // For text files, read and send directly
         addDebugLog('Processing text file...');
-        text = await file.text();
+        const text = await file.text();
         
         addDebugLog(`Text content preview: ${text.substring(0, 200)}...`);
         
@@ -197,7 +166,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Upload className="h-5 w-5" />
           Upload Menu
         </CardTitle>
-        <CardDescription>Upload, parse and preview a PDF menu. OCR is used only if needed.</CardDescription>
+        <CardDescription>Upload and parse PDF menus using advanced OCR and AI processing.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -228,36 +197,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Info className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-2">
-              <p>For scanned/image-based PDFs, consider converting to text first using online OCR tools:</p>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href="https://www.ilovepdf.com/pdf_to_word"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  iLovePDF
-                </a>
-                <a
-                  href="https://smallpdf.com/pdf-to-word"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  SmallPDF
-                </a>
-                <a
-                  href="https://www.adobe.com/acrobat/online/pdf-to-word.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Adobe
-                </a>
-              </div>
+              <p>PDF processing uses Google Vision OCR for accurate text extraction from scanned documents and images.</p>
+              <p>For best results, ensure your PDF has clear, readable text and good contrast.</p>
             </div>
           </AlertDescription>
         </Alert>
