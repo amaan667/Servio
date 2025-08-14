@@ -218,99 +218,110 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         
         {/* Header */}
         <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
-              <p className="text-gray-600 mt-2">Manage menu items for {venueName}</p>
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                variant="destructive" 
-                onClick={handleClearMenu}
-                disabled={isClearing || menuItems.length === 0}
-              >
-                <Trash className="h-4 w-4 mr-2" />
-                {isClearing ? 'Clearing...' : 'Clear Menu'}
-              </Button>
-              <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={resetForm}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Item
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <Label htmlFor="name">Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="price">Price (£) *</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.price}
-                        onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="category">Category *</Label>
-                      <Input
-                        id="category"
-                        value={formData.category}
-                        onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                        placeholder="e.g., Beverages, Main Courses, Desserts"
-                        required
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="available"
-                        checked={formData.available}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, available: checked }))}
-                      />
-                      <Label htmlFor="available">Available</Label>
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        {editingItem ? 'Update' : 'Add'} Item
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
+            <p className="text-gray-600 mt-2">Manage menu items for {venueName}</p>
           </div>
         </div>
 
         {/* Upload Menu */}
         <div className="mb-8">
           <MenuUploadCard venueId={venueId} onSuccess={loadMenuItems} />
+        </div>
+
+        {/* Action Buttons - Positioned between upload and menu items */}
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={loadMenuItems}
+              disabled={loading}
+            >
+              Refresh
+            </Button>
+            {menuItems.length > 0 && (
+              <Button 
+                variant="destructive" 
+                onClick={handleClearMenu}
+                disabled={isClearing}
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                {isClearing ? 'Clearing...' : 'Clear Menu'}
+              </Button>
+            )}
+          </div>
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Item
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="price">Price (£) *</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.price}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="category">Category *</Label>
+                  <Input
+                    id="category"
+                    value={formData.category}
+                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                    placeholder="e.g., Beverages, Main Courses, Desserts"
+                    required
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="available"
+                    checked={formData.available}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, available: checked }))}
+                  />
+                  <Label htmlFor="available">Available</Label>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    {editingItem ? 'Update' : 'Add'} Item
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Menu Items Grid */}
