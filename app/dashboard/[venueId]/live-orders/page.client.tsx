@@ -354,7 +354,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
             </div>
           );
         })}
-        {!visible.length && (
+        {visibleByDay.reduce((n,g)=>n+g.orders.length,0) === 0 && (
           <div className="text-center text-gray-500 py-16">No orders yet.</div>
         )}
       </div>
