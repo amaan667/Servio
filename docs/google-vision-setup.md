@@ -7,7 +7,7 @@ Add these to your `.env` file:
 ```env
 GOOGLE_PROJECT_ID=your-project-id
 GOOGLE_APPLICATION_CREDENTIALS=./service-account.json
-GOOGLE_BUCKET_NAME=your-bucket-name
+GCS_BUCKET_NAME=your-bucket-name
 ```
 
 ## Setup Steps
@@ -40,7 +40,7 @@ Enable these APIs in your Google Cloud project:
 ### 5. Railway Deployment
 For Railway deployment, add these environment variables in the Railway dashboard:
 - `GOOGLE_PROJECT_ID`
-- `GOOGLE_BUCKET_NAME`
+- `GCS_BUCKET_NAME`
 - `GOOGLE_APPLICATION_CREDENTIALS` (as a file variable with the service account JSON content)
 
 ## Benefits

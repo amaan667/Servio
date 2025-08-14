@@ -197,31 +197,10 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           <Info className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-2">
-              <p className="font-medium">Got a scanned/image PDF?</p>
+              <p className="font-medium">Upload Your Menu</p>
               <p>
-                If your menu is mostly images (common), first convert it with OCR and upload the text file. 
-                This gives the most accurate results.
+                Upload your menu as a PDF or text file. PDFs will be automatically processed with Google Vision OCR for accurate text extraction.
               </p>
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button variant="outline" size="sm" asChild>
-                  <a href="https://ocr.space/" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    OCR.space
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href="https://drive.google.com/" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Google Drive OCR
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href="https://www.adobe.com/acrobat/online/ocr-pdf.html" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Adobe Online OCR
-                  </a>
-                </Button>
-              </div>
             </div>
           </AlertDescription>
         </Alert>
