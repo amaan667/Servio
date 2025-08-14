@@ -1,45 +1,48 @@
--- Create storage bucket 'menus' manually in Supabase dashboard if needed
-
-create table if not exists public.menu_uploads (
-  id uuid primary key default gen_random_uuid(),
-  venue_id text not null references public.venues(venue_id) on delete cascade,
-  filename text not null,
-  sha256 text not null,
-  pages int,
-  status text default 'uploaded',
-  ocr_used boolean default false,
-  raw_text text,
-  parsed_json jsonb,
-  error text,
-  created_at timestamptz default now(),
-  unique (venue_id, sha256)
+-- Menu uploads audit trail table
+CREATE TABLE IF NOT EXISTS public.menu_uploads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  venue_id TEXT NOT NULL REFERENCES public.venues(venue_id) ON DELETE CASCADE,
+  filename TEXT NOT NULL,
+  storage_path TEXT,
+  file_size BIGINT,
+  extracted_text_length INTEGER,
+  mode TEXT DEFAULT 'strict' CHECK (mode IN ('strict', 'loose')),
+  inserted_count INTEGER DEFAULT 0,
+  skipped_count INTEGER DEFAULT 0,
+  total_count INTEGER DEFAULT 0,
+  categories TEXT[],
+  error TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id)
 );
 
-alter table public.menu_uploads enable row level security;
+-- Enable RLS
+ALTER TABLE public.menu_uploads ENABLE ROW LEVEL SECURITY;
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies where tablename='menu_uploads' and policyname='owner can manage menu uploads'
-  ) then
-    create policy "owner can manage menu uploads"
-    on public.menu_uploads
-    for all
-    using (
-      exists (
-        select 1 from public.venues v
-        where v.venue_id = menu_uploads.venue_id
-          and v.owner_id = auth.uid()
-      )
+-- RLS policies
+CREATE POLICY "Users can view their own venue uploads" ON public.menu_uploads
+  FOR SELECT USING (
+    venue_id IN (
+      SELECT venue_id FROM public.venues 
+      WHERE owner_id = auth.uid()
     )
-    with check (
-      exists (
-        select 1 from public.venues v
-        where v.venue_id = menu_uploads.venue_id
-          and v.owner_id = auth.uid()
-      )
-    );
-  end if;
-end $$;
+  );
 
+CREATE POLICY "Users can insert uploads for their venues" ON public.menu_uploads
+  FOR INSERT WITH CHECK (
+    venue_id IN (
+      SELECT venue_id FROM public.venues 
+      WHERE owner_id = auth.uid()
+    )
+  );
 
+-- Add import_info column to menu_items if it doesn't exist
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'menu_items' AND column_name = 'import_info'
+  ) THEN
+    ALTER TABLE public.menu_items ADD COLUMN import_info JSONB;
+  END IF;
+END $$;
