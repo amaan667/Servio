@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
+import { ocrPdfToText } from '@/lib/ocr';
+import { isMenuLike } from '@/lib/menuLike';
+import { tryParseMenuWithGPT } from '@/lib/safeParse';
 
 export const runtime = 'nodejs';
 
@@ -10,16 +13,7 @@ function admin() {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-const currencyRegex = /[£€$]|\bGBP\b|\bEUR\b|\bUSD\b/i;
-const priceRegex = /(?:£|€|\$)?\s?\d{1,3}(?:[\.,:]\d{2})/;
-
-function looksLikeMenu(text: string): boolean {
-  if (!text) return false;
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const hasCurrency = currencyRegex.test(text) || lines.some((l) => priceRegex.test(l));
-  const hasMultipleLines = lines.length >= 5;
-  return hasCurrency && hasMultipleLines;
-}
+// replaced by lib/menuLike.ts
 
 export async function POST(req: Request) {
   const supa = admin();
@@ -51,29 +45,29 @@ export async function POST(req: Request) {
       pages = res?.numpages || 0;
     } catch {}
 
-    if (!looksLikeMenu(raw_text)) {
+    if (!isMenuLike(raw_text)) {
       // Fallback to OCR of first 5 pages using tesseract.js (simplified, page rasterization omitted here)
       try {
-        const { createWorker } = await import('tesseract.js');
-        const worker: any = await createWorker({ logger: () => {} });
-        await worker.loadLanguage('eng');
-        await worker.initialize('eng');
-        const { data } = await worker.recognize(await file.arrayBuffer());
-        raw_text = (data?.text || raw_text || '').toString();
-        await worker.terminate();
-        ocr_used = true;
+        const text = await ocrPdfToText(Buffer.from(await file.arrayBuffer()), 5);
+        if (text) { raw_text = text; ocr_used = true; }
       } catch {}
     }
 
     // Save raw and basic diagnostics
     await supa.from('menu_uploads').update({ raw_text, ocr_used, pages: pages || null, status: 'processing' }).eq('id', upload_id);
     const len = raw_text?.length || 0;
-    const menuLike = looksLikeMenu(raw_text);
+    const menuLike = isMenuLike(raw_text);
     console.log('[MENU_PROCESS] ocr_len=', len, 'menu_like=', menuLike);
 
-    // Pre-filter: only call GPT when the text looks menu-like
+    // If not menu-like, attempt fallback candidate-line GPT parsing
     if (!menuLike) {
-      await supa.from('menu_uploads').update({ status: 'not_menu', parsed_json: null }).eq('id', upload_id);
+      const fallback = await tryParseMenuWithGPT(raw_text);
+      console.log('[MENU_PROCESS] fallback_ok=', fallback.ok, 'items=', Array.isArray(fallback.parsed) ? fallback.parsed.length : 0);
+      if (fallback.ok) {
+        await supa.from('menu_uploads').update({ parsed_json: fallback.parsed, status: 'ready' }).eq('id', upload_id);
+        return NextResponse.json({ ok: true, upload_id, parsed: fallback.parsed, usage: null });
+      }
+      await supa.from('menu_uploads').update({ status: 'needs_review', error: 'Text not menu-like', parsed_json: null }).eq('id', upload_id);
       return NextResponse.json({ ok: false, error: 'Text not menu-like', upload_id });
     }
 
