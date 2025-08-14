@@ -18,6 +18,10 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
 export async function POST(req: Request) {
   const supa = admin();
   try {
+    console.log('[MENU_UPLOAD] start', {
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
     const form = await req.formData();
     const file = form.get('file') as File | null;
     const venueId = (form.get('venue_id') as string) || (form.get('venueId') as string) || '';
@@ -46,7 +50,7 @@ export async function POST(req: Request) {
       .eq('sha256', hash)
       .maybeSingle();
     if (selErr) {
-      // continue anyway
+      console.error('[MENU_UPLOAD] select cache error', selErr);
     }
     let uploadId: string | null = existing?.id ?? null;
     if (!existing) {
@@ -58,12 +62,16 @@ export async function POST(req: Request) {
         .insert({ venue_id: venueId, filename: `${hash}.pdf`, sha256: hash, status: 'uploaded' })
         .select('id')
         .maybeSingle();
-      if (insErr) return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 });
+      if (insErr) {
+        console.error('[MENU_UPLOAD] insert error', insErr);
+        return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 });
+      }
       uploadId = ins?.id ?? null;
     }
 
     return NextResponse.json({ ok: true, upload_id: uploadId, sha256: hash, path });
   } catch (e: any) {
+    console.error('[MENU_UPLOAD] fatal', e);
     return NextResponse.json({ ok: false, error: e?.message || 'upload failed' }, { status: 500 });
   }
 }

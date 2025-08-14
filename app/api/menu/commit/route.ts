@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const { upload_id } = await req.json();
     if (!upload_id) return NextResponse.json({ ok: false, error: 'upload_id required' }, { status: 400 });
     const { data: row, error } = await supa.from('menu_uploads').select('*').eq('id', upload_id).maybeSingle();
-    if (error || !row) return NextResponse.json({ ok: false, error: error?.message || 'upload not found' }, { status: 404 });
+    if (error || !row) { console.error('[MENU_COMMIT] fetch upload error', error); return NextResponse.json({ ok: false, error: error?.message || 'upload not found' }, { status: 404 }); }
 
     const parsed = row.parsed_json as any;
     if (!parsed?.categories) return NextResponse.json({ ok: false, error: 'no parsed categories' }, { status: 400 });
@@ -38,11 +38,12 @@ export async function POST(req: Request) {
       .from('menu_items')
       .upsert(items, { onConflict: 'venue_id,name' })
       .select('id');
-    if (insErr) return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 });
+    if (insErr) { console.error('[MENU_COMMIT] upsert error', insErr); return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 }); }
 
     await supa.from('menu_uploads').update({ status: 'committed' }).eq('id', upload_id);
     return NextResponse.json({ ok: true, count: inserted?.length || 0 });
   } catch (e: any) {
+    console.error('[MENU_COMMIT] fatal', e);
     return NextResponse.json({ ok: false, error: e?.message || 'commit failed' }, { status: 500 });
   }
 }

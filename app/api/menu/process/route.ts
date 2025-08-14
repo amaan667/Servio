@@ -23,11 +23,17 @@ export async function POST(req: Request) {
     if (!upload_id) return NextResponse.json({ ok: false, error: 'upload_id required' }, { status: 400 });
 
     const { data: row, error } = await supa.from('menu_uploads').select('*').eq('id', upload_id).maybeSingle();
-    if (error || !row) return NextResponse.json({ ok: false, error: error?.message || 'upload not found' }, { status: 404 });
+    if (error || !row) {
+      console.error('[MENU_PROCESS] fetch upload error', error);
+      return NextResponse.json({ ok: false, error: error?.message || 'upload not found' }, { status: 404 });
+    }
 
     const pdfPath = `${row.venue_id}/${row.sha256}.pdf`;
     const { data: file, error: dlErr } = await supa.storage.from('menus').download(pdfPath);
-    if (dlErr) return NextResponse.json({ ok: false, error: dlErr.message }, { status: 400 });
+    if (dlErr) {
+      console.error('[MENU_PROCESS] storage download error', dlErr);
+      return NextResponse.json({ ok: false, error: dlErr.message }, { status: 400 });
+    }
 
     // Prefer native text using pdf-parse (dynamic import to reduce edge size)
     let raw_text = '';
@@ -80,6 +86,7 @@ export async function POST(req: Request) {
     await supa.from('menu_uploads').update({ parsed_json: parsed, status: 'ready' }).eq('id', upload_id);
     return NextResponse.json({ ok: true, upload_id, parsed });
   } catch (e: any) {
+    console.error('[MENU_PROCESS] fatal', e);
     return NextResponse.json({ ok: false, error: e?.message || 'process failed' }, { status: 500 });
   }
 }
