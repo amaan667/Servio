@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { extractTextFromPdf } from '@/lib/googleVisionOCR';
-import { parseMenuStrict } from '@/lib/parseWithOpenAI';
+import { parseMenuInChunks } from '@/lib/parseMenuFC';
 import { normalizeForInsert } from '@/lib/normalizeMenu';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Parse menu using robust parsing with Zod validation
+    // Parse menu using function-calling with chunking
     let payload;
     try {
-      payload = await parseMenuStrict(text);
+      payload = await parseMenuInChunks(text);
       console.log('[AUTH DEBUG] Menu parsing completed successfully');
     } catch (parseError) {
       console.error('[AUTH DEBUG] Menu parsing failed:', parseError);
