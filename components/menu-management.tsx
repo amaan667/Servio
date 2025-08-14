@@ -52,10 +52,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [extracting, setExtracting] = useState(false);
-  const dropRef = useRef<HTMLDivElement>(null);
-  const [dragActive, setDragActive] = useState<boolean>(false);
+  // PDF/URL upload removed
   // Remove menuUrl state
   const [newItem, setNewItem] = useState({
     name: "",
@@ -154,57 +151,12 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   }, [fetchMenu, venueUuid]);
 
   // Enhanced file upload handler for both input and drag-and-drop
-  const handleFile = (file: File) => {
-    setUploading(true);
-    setError(null);
+  // Removed file upload handlers
 
-    const formData = new FormData();
-    formData.append("menu", file);
-    formData.append("venueId", venueUuid);
-
-    fetch("/api/upload-menu", {
-      method: "POST",
-      body: formData,
-    })
-      .then((res) => res.json())
-      .then((result) => {
-        if (result.error) {
-          setError(result.error || "Failed to process menu file.");
-          setUploading(false);
-          return;
-        }
-        // Success - the upload-menu API handles both upload and database insertion
-        setError(null);
-        setUploading(false);
-        // Refresh the menu to show new items
-        fetchMenu();
-      })
-      .catch((error) => {
-        setError("Failed to process menu file.");
-        setUploading(false);
-      });
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) handleFile(file);
-  };
+  // Removed file upload input handler
 
   // Drag-and-drop handlers
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
-    else if (e.type === "dragleave") setDragActive(false);
-  };
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
+  // Removed drag-and-drop handlers
 
   const handleAddItem = async () => {
     logger.info("Starting add item process", {
@@ -476,10 +428,8 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       )}
 
       <Tabs defaultValue="manual" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-          <TabsTrigger value="upload">Upload Menu</TabsTrigger>
-          <TabsTrigger value="url">Extract from URL</TabsTrigger>
         </TabsList>
 
         <TabsContent value="manual">
@@ -588,109 +538,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="upload">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Menu File</CardTitle>
-              <CardDescription>
-                Upload a photo or PDF of your menu and we'll extract the items
-                automatically.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div
-                ref={dropRef}
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive ? "border-servio-purple bg-purple-50" : "border-gray-300"}`}
-                style={{ cursor: uploading ? "not-allowed" : "pointer" }}
-              >
-                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <div className="space-y-2">
-                  <Label htmlFor="menu-file" className="cursor-pointer">
-                    <span className="text-sm font-medium text-servio-purple hover:text-servio-purple-dark">
-                      Click to upload
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {" "}
-                      or drag and drop
-                    </span>
-                  </Label>
-                  <Input
-                    id="menu-file"
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                    className="hidden"
-                  />
-                  <p className="text-xs text-gray-500">
-                    PNG, JPG, PDF up to 10MB
-                  </p>
-                </div>
-                {dragActive && (
-                  <div className="absolute inset-0 bg-servio-purple/10 border-4 border-servio-purple rounded-lg pointer-events-none flex items-center justify-center">
-                    <span className="text-servio-purple font-semibold text-lg">
-                      Drop your file here
-                    </span>
-                  </div>
-                )}
-              </div>
-              {uploading && (
-                <div className="text-center">
-                  <RefreshCw className="h-6 w-6 mx-auto animate-spin text-servio-purple mb-2" />
-                  <p className="text-sm text-gray-600">
-                    Processing your menu...
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="url">
-          <Card>
-            <CardHeader>
-              <CardTitle>Extract from URL</CardTitle>
-              <CardDescription>
-                Provide a URL to your online menu and we'll extract the items
-                automatically.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="menu-url">Menu URL</Label>
-                <Input
-                  id="menu-url"
-                  type="url"
-                  placeholder="https://yourrestaurant.com/menu"
-                  disabled={extracting}
-                />
-              </div>
-              <Button
-                onClick={() => {}}
-                disabled={extracting || !newItem.name.trim()}
-                className="w-full"
-              >
-                {extracting ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Link className="mr-2 h-4 w-4" />
-                )}
-                Extract Menu Items
-              </Button>
-              {extracting && (
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">
-                    Extracting menu items from URL...
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Upload and URL extraction tabs removed */}
       </Tabs>
 
       {/* Existing Menu Items */}

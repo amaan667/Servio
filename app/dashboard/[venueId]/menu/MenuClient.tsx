@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NavBar } from "@/components/NavBar";
 import { supabase } from "@/lib/sb-client";
-import { ArrowLeft, Plus, Upload, Edit, Trash2, ShoppingBag, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface MenuItem {
@@ -37,9 +37,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     category: '',
     available: true
   });
-  const [isPdfUploadOpen, setIsPdfUploadOpen] = useState(false);
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  // PDF upload removed
   const router = useRouter();
 
   useEffect(() => {
@@ -139,36 +137,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     setEditingItem(null);
   };
 
-  const handlePdfUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pdfFile) return;
-
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', pdfFile);
-      formData.append('venueId', venueId);
-
-      const response = await fetch('/api/extract-menu', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        // Reload menu items after successful upload
-        await loadMenuItems();
-        setIsPdfUploadOpen(false);
-        setPdfFile(null);
-      } else {
-        console.error('PDF upload failed');
-      }
-    } catch (error) {
-      console.error('Error uploading PDF:', error);
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  // PDF upload removed
 
   const openEditModal = (item: MenuItem) => {
     setEditingItem(item);
@@ -208,39 +177,6 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               <p className="text-gray-600 mt-2">Manage menu items for {venueName}</p>
             </div>
             <div className="flex space-x-2">
-              <Dialog open={isPdfUploadOpen} onOpenChange={setIsPdfUploadOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload PDF
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Upload Menu PDF</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handlePdfUpload} className="space-y-4">
-                    <div>
-                      <Label htmlFor="pdfFile">Select PDF File</Label>
-                      <Input
-                        id="pdfFile"
-                        type="file"
-                        accept=".pdf"
-                        onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
-                        required
-                      />
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button type="button" variant="outline" onClick={() => setIsPdfUploadOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={isUploading || !pdfFile}>
-                        {isUploading ? 'Uploading...' : 'Upload PDF'}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
               <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={resetForm}>
