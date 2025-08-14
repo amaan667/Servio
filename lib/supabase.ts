@@ -44,3 +44,50 @@ export async function signInUser(email: string, password: string) {
     return { success: false, message: "An unexpected error occurred" };
   }
 }
+
+// Additional helpers to satisfy imports across the app
+export async function signUpUser(email: string, password: string) {
+  try {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    return { success: true, data } as const;
+  } catch (error: any) {
+    return { success: false, message: error?.message || 'Sign up failed' } as const;
+  }
+}
+
+type CreateOrderItem = {
+  menu_item_id: string | null;
+  quantity: number;
+  price?: number;
+  unit_price?: number;
+  item_name: string;
+  special_instructions?: string | null;
+};
+
+type CreateOrderPayload = {
+  venue_id: string;
+  table_number: number | null;
+  customer_name: string;
+  items: CreateOrderItem[];
+  total_amount: number;
+  customer_phone?: string | null;
+  notes?: string | null;
+};
+
+export async function createOrder(payload: CreateOrderPayload) {
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || !out?.ok) {
+      throw new Error(out?.error || 'Failed to create order');
+    }
+    return { success: true, data: out.order } as const;
+  } catch (error: any) {
+    return { success: false, message: error?.message || 'Create order failed' } as const;
+  }
+}
