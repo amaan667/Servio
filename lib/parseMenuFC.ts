@@ -1,6 +1,9 @@
 import OpenAI from "openai";
 import { jsonrepair } from "jsonrepair";
 import { MenuPayload, MenuPayloadT, MenuItem } from "./menuSchema";
+import { findSections, sliceSection } from "./menuSections";
+import { sectionPrompt } from "./prompts";
+import { keepOnlyBelongingItems } from "./sectionPostProcess";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -23,25 +26,22 @@ const menuFunction = {
               category: { type: "string" },
               available: { type: "boolean" },
               order_index: { type: "integer" },
+              out_of_section: { type: "boolean" },
+              reasons: { type: ["string", "null"] },
             },
             required: ["name", "price", "category", "available"],
             additionalProperties: false,
           },
         },
-        categories: {
-          type: "array",
-          items: { type: "string" },
-        },
       },
-      required: ["items", "categories"],
+      required: ["items"],
       additionalProperties: false,
     },
   },
 };
 
 function sanitizeText(s: string) {
-  // Make the OCR a bit safer for prompts
-  return s.replace(/\u0000/g, "").slice(0, 180_000); // keep under ~180k chars
+  return s.replace(/\u0000/g, "").slice(0, 180_000);
 }
 
 async function callMenuTool(system: string, user: string) {
@@ -57,7 +57,7 @@ async function callMenuTool(system: string, user: string) {
       { role: "user", content: user },
     ],
     tools: [menuFunction],
-    tool_choice: { type: "function", function: { name: "return_menu" } }, // force tool
+    tool_choice: { type: "function", function: { name: "return_menu" } },
   });
 
   const call = resp.choices[0]?.message?.tool_calls?.[0];
@@ -68,9 +68,7 @@ async function callMenuTool(system: string, user: string) {
 
   let args = call.function.arguments || "{}";
   console.log('[MENU PARSE] Tool arguments length:', args.length);
-  console.log('[MENU PARSE] Tool arguments preview:', args.substring(0, 200));
 
-  // Quick repair if any weirdness
   try {
     return JSON.parse(args);
   } catch (parseError) {
@@ -86,86 +84,51 @@ async function callMenuTool(system: string, user: string) {
   }
 }
 
-export async function extractCategories(ocrText: string): Promise<string[]> {
-  console.log('[MENU PARSE] Extracting categories from OCR text...');
-  
-  const system = [
-    "You extract category headings from a restaurant/cafe menu OCR.",
-    "Return categories in reading order. Use exact headings from the text.",
-    "Look for section headers like STARTERS, MAIN COURSES, DESSERTS, DRINKS, SALADS, etc.",
-  ].join("\n");
-  const user = `OCR TEXT:\n${sanitizeText(ocrText)}\nReturn via the function. items may be empty; categories must be filled.`;
-
-  const out = await callMenuTool(system, user);
-  const categories: string[] = Array.isArray(out?.categories) ? out.categories : [];
-  const filtered = categories.filter(Boolean).map((c: string) => c.trim());
-  
-  console.log('[MENU PARSE] Extracted categories:', filtered);
-  return filtered;
-}
-
-export async function extractItemsForCategory(ocrText: string, category: string, catIndex: number): Promise<MenuPayloadT["items"]> {
-  console.log(`[MENU PARSE] Extracting items for category: "${category}" (index: ${catIndex})`);
-  
-  const system = [
-    "You extract menu items with prices from OCR text for ONE category.",
-    "Only return items belonging to the requested category heading.",
-    "Preserve item order as in the text. Use numbers for price with no symbols.",
-    "Extract EVERY single menu item with a price - do not miss any.",
-    "Include items even if description is missing.",
-  ].join("\n");
-
-  const user = [
-    `OCR TEXT (snippet may include other categories):\n${sanitizeText(ocrText)}`,
-    `Target category: "${category}" (category_index=${catIndex}).`,
-    "Return only items of this category via the function. categories can include just this category.",
-  ].join("\n\n");
-
-  const out = await callMenuTool(system, user);
-
-  // Basic normalization & order_index fill
-  const items = Array.isArray(out?.items) ? out.items : [];
-  const normalized = items.map((it: any, i: number) => ({
-    name: String(it.name ?? "").trim(),
-    description: it.description ?? null,
-    price: Number(it.price ?? 0),
-    category,
-    available: Boolean(it.available ?? true),
-    order_index: Number.isFinite(it.order_index) ? it.order_index : i,
-  }));
-
-  console.log(`[MENU PARSE] Extracted ${normalized.length} items for category "${category}"`);
-  return normalized;
-}
-
 export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> {
-  console.log('[MENU PARSE] Starting chunked menu parsing...');
+  console.log('[MENU PARSE] Starting section-based menu parsing...');
   console.log('[MENU PARSE] OCR text length:', ocrText.length);
 
-  // 1) Get categories
-  let cats = await extractCategories(ocrText);
-  if (!cats.length) {
-    console.log('[MENU PARSE] No categories found, using fallback "Menu" category');
-    // fallback: ask for items globally
-    cats = ["Menu"];
+  // 1) Find sections in OCR text
+  const sections = findSections(ocrText);
+  console.log('[MENU PARSE] Found sections:', sections.map(s => s.name));
+
+  if (sections.length === 0) {
+    console.log('[MENU PARSE] No sections found, falling back to old method');
+    // Fallback to old method if no sections found
+    return await parseMenuInChunksFallback(ocrText);
   }
 
-  // 2) Collect items per category (chunked)
+  // 2) Process each section individually
   const allItems: MenuPayloadT["items"] = [];
-  for (let i = 0; i < cats.length; i++) {
-    const cat = cats[i];
+  const movedAll: any[] = [];
+
+  for (let i = 0; i < sections.length; i++) {
+    const sec = sections[i];
+    const prev = sections[i - 1]?.name;
+    const next = sections[i + 1]?.name;
+    const slice = sliceSection(ocrText, sec);
+
+    console.log(`[MENU PARSE] Processing section "${sec.name}" (${slice.length} chars)`);
+
     try {
-      const items = await extractItemsForCategory(ocrText, cat, i);
-      allItems.push(...items);
+      const prompt = sectionPrompt(sec.name, { prev, next });
+      const raw = await callMenuTool(prompt, slice);
+
+      const { kept, moved } = keepOnlyBelongingItems(sec.name, raw.items ?? []);
+      allItems.push(...kept);
+      movedAll.push(...moved);
+
+      console.log(`[MENU PARSE] ${sec.name}: kept ${kept.length}, moved ${moved.length}`);
     } catch (e) {
-      console.warn(`[MENU PARSE] Category "${cat}" failed:`, e);
-      // continue other categories
+      console.warn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
     }
   }
 
-  console.log('[MENU PARSE] Total items collected:', allItems.length);
+  if (movedAll.length) {
+    console.warn("[MENU PARSE] Items moved due to misclassification:", movedAll.slice(0, 5));
+  }
 
-  // 3) Sanitize names before validation to prevent 80-char limit errors
+  // 3) Sanitize names before validation
   const sanitizedItems = allItems.map(item => {
     const originalName = item.name;
     const sanitizedName = item.name.length > 80
@@ -183,9 +146,58 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
   });
 
   // 4) Validate final shape
-  const payload = { items: sanitizedItems, categories: cats };
+  const payload = { 
+    items: sanitizedItems, 
+    categories: sections.map(s => s.name) 
+  };
   const validated = MenuPayload.parse(payload);
   
   console.log('[MENU PARSE] Final validation successful:', validated.items.length, 'items,', validated.categories.length, 'categories');
   return validated;
+}
+
+// Fallback method for when no sections are found
+async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT> {
+  console.log('[MENU PARSE] Using fallback parsing method...');
+  
+  // Use the old method as fallback
+  const system = [
+    "You extract restaurant/cafe menus from OCR text.",
+    "Return ONLY a JSON object that matches the schema:",
+    `{
+      "items": [
+        {"name": "string <=80", "description": "string|null", "price": number, "category": "string", "available": true, "order_index": number}
+      ],
+      "categories": ["string", "..."]
+    }`,
+    "Rules:",
+    "- Preserve category names and menu order as they appear.",
+    "- Include only items with prices; convert £/€ to numbers (no symbols).",
+    "- Extract EVERY single menu item with a price - do not miss any.",
+  ].join("\n");
+
+  const user = `OCR TEXT:\n${sanitizeText(ocrText)}`;
+
+  const resp = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    response_format: { type: "json_object" },
+    temperature: 0,
+    max_tokens: 4000,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+  });
+
+  const raw = resp.choices[0]?.message?.content ?? "";
+  
+  try {
+    const parsed = JSON.parse(raw);
+    const validated = MenuPayload.parse(parsed);
+    console.log('[MENU PARSE] Fallback parsing successful:', validated.items.length, 'items');
+    return validated;
+  } catch (e) {
+    console.error('[MENU PARSE] Fallback parsing failed:', e);
+    throw new Error("Failed to parse menu with fallback method.");
+  }
 }
