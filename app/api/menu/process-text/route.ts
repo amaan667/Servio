@@ -107,13 +107,11 @@ ${text.substring(0, 3000)}`;
         description: item.description || null,
         price: Math.round(item.price * 100) / 100, // Round to 2 decimal places
         category: item.category || 'Uncategorized',
-        available: true,
-        order_index: item.order_index !== undefined ? item.order_index : index
-      }))
-      .sort((a: any, b: any) => a.order_index - b.order_index); // Sort by order_index
+        available: true
+      }));
 
     console.log('[AUTH DEBUG] Valid items:', validItems.length);
-    console.log('[AUTH DEBUG] Items with order:', validItems.map((item: any) => ({ name: item.name, order: item.order_index })));
+    console.log('[AUTH DEBUG] Items:', validItems.map((item: any) => ({ name: item.name, category: item.category })));
 
     // Insert items in batches of 50
     let inserted = 0;
