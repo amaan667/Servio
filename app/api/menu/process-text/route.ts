@@ -10,14 +10,16 @@ export async function POST(req: Request) {
   try {
     // Add better error handling for request parsing
     let requestBody;
+    let rawBodyText = '';
+    
     try {
-      const rawBody = await req.text();
-      console.log('[AUTH DEBUG] Raw request body preview:', rawBody.substring(0, 200));
+      rawBodyText = await req.text();
+      console.log('[AUTH DEBUG] Raw request body preview:', rawBodyText.substring(0, 200));
       
-      requestBody = JSON.parse(rawBody);
+      requestBody = JSON.parse(rawBodyText);
     } catch (parseError: any) {
       console.error('[AUTH DEBUG] Failed to parse request JSON:', parseError);
-      console.error('[AUTH DEBUG] Raw request body:', await req.text());
+      console.error('[AUTH DEBUG] Raw request body:', rawBodyText);
       return NextResponse.json({ 
         ok: false, 
         error: `Invalid JSON in request body: ${parseError.message}` 
