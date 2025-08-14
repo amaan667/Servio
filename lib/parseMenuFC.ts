@@ -165,8 +165,25 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
 
   console.log('[MENU PARSE] Total items collected:', allItems.length);
 
-  // 3) Validate final shape
-  const payload = { items: allItems, categories: cats };
+  // 3) Sanitize names before validation to prevent 80-char limit errors
+  const sanitizedItems = allItems.map(item => {
+    const originalName = item.name;
+    const sanitizedName = item.name.length > 80
+      ? item.name.slice(0, 77).trim() + "..."
+      : item.name;
+    
+    if (originalName !== sanitizedName) {
+      console.log(`[MENU PARSE] Truncated long name: "${originalName}" -> "${sanitizedName}"`);
+    }
+    
+    return {
+      ...item,
+      name: sanitizedName
+    };
+  });
+
+  // 4) Validate final shape
+  const payload = { items: sanitizedItems, categories: cats };
   const validated = MenuPayload.parse(payload);
   
   console.log('[MENU PARSE] Final validation successful:', validated.items.length, 'items,', validated.categories.length, 'categories');
