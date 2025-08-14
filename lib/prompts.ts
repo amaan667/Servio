@@ -1,29 +1,18 @@
-export const sectionPrompt = (sectionName: string, neighborHints?: { prev?: string; next?: string }) => `
-You extract menu items ONLY for the section: "${sectionName}".
-Return JSON with EXACT schema:
+export const sectionPrompt = (sectionName: string) => `
+You extract menu items ONLY for the section "${sectionName}".
 
-{
-  "items": [
-    {
-      "name": "string",
-      "description": "string|null",
-      "price": number,
-      "category": "string",        // MUST equal "${sectionName}"
-      "available": true,
-      "out_of_section": boolean,   // true if it looks like it belongs to another section
-      "reasons": "string|null"     // brief reason if out_of_section
-    }
-  ]
-}
+Return JSON:
+{"items":[{"name":"string","description":"string|null","price":number,"category":"${sectionName}","available":true,"out_of_section":boolean,"reason":"string|null"}]}
 
 Rules:
 - Include ONLY items that clearly belong to "${sectionName}".
-- If a line looks like a different course (e.g., platter, 18 prawns, rack of ribs, mains-level pricing),
-  set out_of_section=true and explain in reasons.
-- Price extraction: normalize like 7.50 or 25.95 (GBP, no symbols).
-- Do NOT invent items. Skip headings or marketing text.
+- If an item looks like a main/sharing platter (large quantities, "platter", "mountain", "50 prawns", "whole", "rack", "thermidor") or the price is unusually high for starters, set out_of_section=true with a short reason and KEEP category as "${sectionName}" (we will filter later).
+- No invented items. Normalize price to a number (e.g., 7.5, 28, 64).
 
-Hints:
-Prev section: ${neighborHints?.prev ?? "n/a"}
-Next section: ${neighborHints?.next ?? "n/a"}
-`;
+Counter-examples (mark these as out_of_section for "${sectionName}"):
+- "WORLD FAMOUS Jimmy's Mountain of Killer Prawns" £59.00 → out_of_section=true (sharing platter)
+- "LOBSTER THERMIDOR 700g 800g" £64.00 → out_of_section=true (whole lobster)
+- "MILLIONAIRES PLATTER" £136.00 → out_of_section=true (platter)
+- "JIMMY'S SAUCY PRAWNS (18 Medium Prawns)" £28.00 → out_of_section=true (quantity/main)
+
+Only output JSON.`;

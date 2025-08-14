@@ -3,7 +3,8 @@ import { jsonrepair } from "jsonrepair";
 import { MenuPayload, MenuPayloadT, MenuItem } from "./menuSchema";
 import { findSections, sliceSection } from "./menuSections";
 import { sectionPrompt } from "./prompts";
-import { keepOnlyBelongingItems } from "./sectionPostProcess";
+import { filterSectionItems } from "./sectionPost";
+import { reassignMoved } from "./reassign";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -27,7 +28,7 @@ const menuFunction = {
               available: { type: "boolean" },
               order_index: { type: "integer" },
               out_of_section: { type: "boolean" },
-              reasons: { type: ["string", "null"] },
+              reason: { type: ["string", "null"] },
             },
             required: ["name", "price", "category", "available"],
             additionalProperties: false,
@@ -85,7 +86,7 @@ async function callMenuTool(system: string, user: string) {
 }
 
 export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> {
-  console.log('[MENU PARSE] Starting section-based menu parsing...');
+  console.log('[MENU PARSE] Starting enhanced section-based menu parsing...');
   console.log('[MENU PARSE] OCR text length:', ocrText.length);
 
   // 1) Find sections in OCR text
@@ -98,38 +99,41 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
     return await parseMenuInChunksFallback(ocrText);
   }
 
-  // 2) Process each section individually
-  const allItems: MenuPayloadT["items"] = [];
+  // 2) Process each section individually with strict windowing
+  const itemsAll: any[] = [];
   const movedAll: any[] = [];
 
-  for (let i = 0; i < sections.length; i++) {
-    const sec = sections[i];
-    const prev = sections[i - 1]?.name;
-    const next = sections[i + 1]?.name;
+  for (const sec of sections) {
     const slice = sliceSection(ocrText, sec);
-
     console.log(`[MENU PARSE] Processing section "${sec.name}" (${slice.length} chars)`);
 
     try {
-      const prompt = sectionPrompt(sec.name, { prev, next });
+      const prompt = sectionPrompt(sec.name);
       const raw = await callMenuTool(prompt, slice);
-
-      const { kept, moved } = keepOnlyBelongingItems(sec.name, raw.items ?? []);
-      allItems.push(...kept);
+      const { kept, moved } = filterSectionItems(sec.name, raw?.items ?? []);
+      
+      itemsAll.push(...kept);
       movedAll.push(...moved);
-
-      console.log(`[MENU PARSE] ${sec.name}: kept ${kept.length}, moved ${moved.length}`);
+      
+      console.log(`[MENU PARSE] ${sec.name}: kept=${kept.length} moved=${moved.length}`);
     } catch (e) {
       console.warn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
     }
+  }
+
+  // 3) Optionally reassign moved items to appropriate sections
+  const reassigned = reassignMoved(movedAll);
+  if (reassigned.length > 0) {
+    console.log('[MENU PARSE] Reassigned items:', reassigned.length);
+    itemsAll.push(...reassigned);
   }
 
   if (movedAll.length) {
     console.warn("[MENU PARSE] Items moved due to misclassification:", movedAll.slice(0, 5));
   }
 
-  // 3) Sanitize names before validation
-  const sanitizedItems = allItems.map(item => {
+  // 4) Sanitize names before validation
+  const sanitizedItems = itemsAll.map(item => {
     const originalName = item.name;
     const sanitizedName = item.name.length > 80
       ? item.name.slice(0, 77).trim() + "..."
@@ -145,7 +149,7 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
     };
   });
 
-  // 4) Validate final shape
+  // 5) Validate final shape
   const payload = { 
     items: sanitizedItems, 
     categories: sections.map(s => s.name) 

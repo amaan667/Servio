@@ -1,23 +1,21 @@
-export function classifyBelongs(section: string, name: string, desc: string | null, price: number) {
-  const s = section.toUpperCase();
-  const text = `${name} ${desc ?? ""}`.toUpperCase();
+type Verdict = { ok: true } | { ok: false; reason: string; suggest?: string };
 
-  // Heuristics
-  const isLargeQuantity = /\b(18|20|24|50)\b/.test(text) || /\bPLATTER|SHARING|FEAST|COMBO|RACK|WHOLE\b/.test(text);
-  const looksLikeMainByPrice = price >= 15;  // tweak per region
-  const startersMax = 14;                    // tweak per venue type
+const KW_PLATTER = /\b(PLATTER|MOUNTAIN|FEAST|COMBO|SHARING|RACK|WHOLE|THERMIDOR)\b/i;
+const KW_BULK = /\b(18|20|24|50)\b/;
+const KW_MAINS = /\b(RIBS|STEAK|SURF AND TURF|SEA BASS|LOBSTER)\b/i;
+
+export function belongsToSection(section: string, name: string, desc: string|null, price: number): Verdict {
+  const s = section.toUpperCase();
+  const text = `${name} ${desc??""}`;
+  const looksPlatter = KW_PLATTER.test(text) || KW_BULK.test(text);
+  const looksMain = KW_MAINS.test(text);
+  const startersMax = 14;      // tune per venue type
+  const highPrice = price >= startersMax;
 
   if (s === "STARTERS") {
-    if (isLargeQuantity || looksLikeMainByPrice || price > startersMax) {
-      return { ok: false, suggest: "MAIN COURSES", reason: "quantity/price too large for STARTERS" };
+    if (looksPlatter || looksMain || highPrice) {
+      return { ok:false, reason:"too large/expensive for starters", suggest:"MAIN COURSES" };
     }
   }
-
-  if (s === "SALADS" && /\bRIBS|STEAK|PRAWN(?! COCKTAIL)\b/.test(text) && price >= 16) {
-    return { ok: false, suggest: "MAIN COURSES", reason: "protein + mains price" };
-  }
-
-  // Add lightweight rules per section as needed…
-
-  return { ok: true };
+  return { ok:true };
 }
