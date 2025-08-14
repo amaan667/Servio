@@ -39,9 +39,25 @@ Enable these APIs in your Google Cloud project:
 
 ### 5. Railway Deployment
 For Railway deployment, add these environment variables in the Railway dashboard:
-- `GOOGLE_PROJECT_ID`
-- `GCS_BUCKET_NAME`
-- `GOOGLE_APPLICATION_CREDENTIALS` (as a file variable with the service account JSON content)
+
+**Regular Variables:**
+- `GOOGLE_PROJECT_ID` = your-project-id
+- `GCS_BUCKET_NAME` = your-bucket-name
+
+**File Variable (Important!):**
+- `GOOGLE_APPLICATION_CREDENTIALS` = **File Variable**
+  - Click "Add Variable"
+  - Name: `GOOGLE_APPLICATION_CREDENTIALS`
+  - Type: **File**
+  - Upload your `service-account.json` file content
+
+**How to set up the file variable:**
+1. Open your `service-account.json` file
+2. Copy the entire JSON content
+3. In Railway Variables tab, create a new variable
+4. Name: `GOOGLE_APPLICATION_CREDENTIALS`
+5. Type: **File**
+6. Paste the entire JSON content
 
 ## Benefits
 
