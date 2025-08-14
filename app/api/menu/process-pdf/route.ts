@@ -8,7 +8,23 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const { extractedText, venueId } = await req.json();
+    // Add better error handling for request parsing
+    let requestBody;
+    try {
+      const rawBody = await req.text();
+      console.log('[AUTH DEBUG] Raw request body preview:', rawBody.substring(0, 200));
+      
+      requestBody = JSON.parse(rawBody);
+    } catch (parseError: any) {
+      console.error('[AUTH DEBUG] Failed to parse request JSON:', parseError);
+      console.error('[AUTH DEBUG] Raw request body:', await req.text());
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Invalid JSON in request body: ${parseError.message}` 
+      }, { status: 400 });
+    }
+
+    const { extractedText, venueId } = requestBody;
     
     if (!extractedText) {
       return NextResponse.json({ 
@@ -25,8 +41,8 @@ export async function POST(req: Request) {
     }
 
     console.log('[AUTH DEBUG] Processing PDF for venue:', venueId);
-    console.log('[AUTH DEBUG] File name:', extractedText.substring(0, 100) + '...');
-    console.log('[AUTH DEBUG] File size:', extractedText.length);
+    console.log('[AUTH DEBUG] Extracted text preview:', extractedText.substring(0, 200) + '...');
+    console.log('[AUTH DEBUG] Extracted text length:', extractedText.length);
 
     // Parse menu using function-calling with chunking
     let rawPayload;

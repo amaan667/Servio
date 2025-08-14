@@ -8,7 +8,23 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const { venue_id, filename, text } = await req.json();
+    // Add better error handling for request parsing
+    let requestBody;
+    try {
+      const rawBody = await req.text();
+      console.log('[AUTH DEBUG] Raw request body preview:', rawBody.substring(0, 200));
+      
+      requestBody = JSON.parse(rawBody);
+    } catch (parseError: any) {
+      console.error('[AUTH DEBUG] Failed to parse request JSON:', parseError);
+      console.error('[AUTH DEBUG] Raw request body:', await req.text());
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Invalid JSON in request body: ${parseError.message}` 
+      }, { status: 400 });
+    }
+
+    const { venue_id, filename, text } = requestBody;
     
     if (!venue_id) {
       return NextResponse.json({ 
