@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { parseMenuInChunks } from '@/lib/parseMenuFC';
 import { normalizeForInsert } from '@/lib/normalizeMenu';
+import { MenuPayload } from '@/lib/menuSchema';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -28,9 +29,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse menu using function-calling with chunking
-    let payload;
+    let rawPayload;
     try {
-      payload = await parseMenuInChunks(text);
+      rawPayload = await parseMenuInChunks(text);
       console.log('[AUTH DEBUG] Menu parsing completed successfully');
     } catch (parseError) {
       console.error('[AUTH DEBUG] Menu parsing failed:', parseError);
@@ -40,16 +41,38 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Normalize for database insertion
-    const normalized = normalizeForInsert(payload);
+    // Sanitize first to enforce limits
+    const normalized = normalizeForInsert(rawPayload);
     console.log('[AUTH DEBUG] Normalized items:', normalized.items.length);
+
+    // Now validate against schema
+    let validated;
+    try {
+      validated = MenuPayload.parse(normalized);
+      console.log('[AUTH DEBUG] Schema validation successful');
+    } catch (validationError: any) {
+      console.error('[AUTH DEBUG] Schema validation failed:', validationError);
+      // Log the longest offending name for quick triage
+      if (validationError.issues) {
+        const nameIssues = validationError.issues.filter((issue: any) => 
+          issue.path.includes('name') && issue.code === 'too_big'
+        );
+        if (nameIssues.length > 0) {
+          console.error('[AUTH DEBUG] Name length issues found:', nameIssues);
+        }
+      }
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Schema validation failed: ${validationError.message}` 
+      }, { status: 500 });
+    }
 
     // Insert items in batches of 50
     let inserted = 0;
     let skipped = 0;
 
-    for (let i = 0; i < normalized.items.length; i += 50) {
-      const batch = normalized.items.slice(i, i + 50);
+    for (let i = 0; i < validated.items.length; i += 50) {
+      const batch = validated.items.slice(i, i + 50);
       
       for (const item of batch) {
         // Check if item already exists
@@ -92,15 +115,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[AUTH DEBUG] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Total processed:', normalized.items.length);
+    console.log('[AUTH DEBUG] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Total processed:', validated.items.length);
 
     return NextResponse.json({
       ok: true,
       counts: { inserted, skipped },
-      total: normalized.items.length
+      total: validated.items.length
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AUTH DEBUG] Text processing error:', error);
     return NextResponse.json({ 
       ok: false, 

@@ -1,14 +1,43 @@
 import { MenuPayloadT } from "./menuSchema";
 
+const MAX_NAME = 80;
+const MAX_DESC = 240;
+
+function cleanStr(s: unknown) {
+  return String(s ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function normalizeForInsert(payload: MenuPayloadT) {
-  const items = payload.items.map((it, idx) => ({
-    name: it.name.trim(),
-    description: (it.description ?? null) || null,
-    category: it.category.trim(),
-    price: Number.isFinite(it.price) ? Number(it.price) : 0,
-    available: it.available ?? true,
-    order_index: Number.isFinite(it.order_index!) ? it.order_index! : idx,
-  }));
-  const categories = payload.categories.map((c) => c.trim());
+  // sanitize first
+  const items = (payload.items ?? []).map((it, idx) => {
+    const name = cleanStr(it.name).slice(0, MAX_NAME);
+    const descriptionRaw = it.description == null ? null : cleanStr(it.description);
+    const description = descriptionRaw ? descriptionRaw.slice(0, MAX_DESC) : null;
+
+    const priceNum = Number(it.price);
+    const price = Number.isFinite(priceNum) ? Math.round(priceNum * 100) / 100 : 0;
+
+    const category = cleanStr(it.category);
+
+    const order_index = Number.isFinite(it.order_index as number)
+      ? (it.order_index as number)
+      : idx;
+
+    return {
+      name,
+      description,
+      price,
+      category,
+      available: Boolean(it.available ?? true),
+      order_index,
+    };
+  });
+
+  const categories = (payload.categories ?? [])
+    .map((c) => cleanStr(c))
+    .filter(Boolean);
+
   return { items, categories };
 }
