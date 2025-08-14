@@ -46,7 +46,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   useEffect(() => {
     (async () => {
       const qStatus = statusFilter === 'paid' ? 'all' : statusFilter; // server filters on order.status only; 'preparing' maps to pending+preparing
-      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}${qStatus ? `&status=${qStatus}` : ''}&limit=1000`;
+      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}${qStatus ? `&status=${qStatus}` : ''}&limit=1000&day=all`;
       const res = await fetch(url, { cache:'no-store' });
       const j = await res.json();
       if (j?.ok) setOrders(j.orders);
@@ -83,7 +83,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   useEffect(() => {
     if (connected) return;
     const id = setInterval(async () => {
-      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}&status=${statusFilter}&limit=1000`;
+      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}&status=${statusFilter}&limit=1000&day=all`;
       const res = await fetch(url, { cache: 'no-store' }).catch(()=>null);
       const j = await res?.json().catch(()=>null);
       if (j?.ok) setOrders(j.orders);
@@ -164,13 +164,21 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   };
 
   const visible = useMemo(() => {
+    const startToday = new Date(); startToday.setHours(0,0,0,0);
+    const isToday = (iso: string) => { const d = new Date(iso); return d >= startToday; };
+    let base = orders;
+    // Separate today's vs older orders
+    const todays = base.filter(o => isToday(o.created_at));
+    const older = base.filter(o => !isToday(o.created_at));
+
+    // Filter set operates on today's list for primary view
     let list = statusFilter === 'all'
-      ? orders
+      ? todays
       : statusFilter === 'paid'
-        ? orders.filter(o => (o.payment_status ?? 'unpaid') === 'paid')
+        ? todays.filter(o => (o.payment_status ?? 'unpaid') === 'paid')
         : statusFilter === 'served'
-          ? orders.filter(o => o.status === 'served' || (o as any).status === 'delivered')
-          : orders.filter(o => !(o.status === 'served' || (o as any).status === 'delivered'));
+          ? todays.filter(o => o.status === 'served' || (o as any).status === 'delivered')
+          : todays.filter(o => !(o.status === 'served' || (o as any).status === 'delivered'));
     // sort by created_at ascending (oldest first) for historical view
     list = [...list].sort((a,b)=> new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     if (tableFilter.trim()) {
@@ -184,6 +192,12 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
         String(o.table_number ?? '').includes(q) ||
         String(o.customer_name ?? '').toLowerCase().includes(q)
       );
+    }
+    // Append a visual separator by pushing a stub entry if there are older orders
+    if (older.length) {
+      // Tag older orders with a virtual table key -1 and a header row will render below.
+      // We'll render a small 'Yesterday & earlier' header where table key is '—'.
+      list = [...list, ...older];
     }
     return list;
   }, [orders, statusFilter, tableFilter, search]);

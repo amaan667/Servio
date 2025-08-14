@@ -26,13 +26,13 @@ export default async function Page({ params }: { params: { venueId: string } }) 
   if (vErr || !venue) return notFound();
 
   // Compute unique active tables today (open tickets): status != 'delivered'
-  const since24hISO = () => { const d = new Date(Date.now() - 24*60*60*1000); return d.toISOString(); };
+  const startOfTodayISO = () => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString(); };
   const { data: activeRows } = await supabase
     .from('orders')
     .select('table_number, status, created_at')
     .eq('venue_id', params.venueId)
     .neq('status', 'delivered')
-    .gte('created_at', since24hISO());
+    .gte('created_at', startOfTodayISO());
   const uniqueActiveTables = new Set((activeRows ?? []).map((r: any) => r.table_number).filter((t: any) => t != null)).size;
 
   return <DashboardClient venueId={params.venueId} userId={user.id} activeTables={uniqueActiveTables} />;

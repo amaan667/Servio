@@ -11,6 +11,7 @@ export async function GET(req: Request) {
   const status = searchParams.get('status');
   const limit = Number(searchParams.get('limit') || '500');
   const since = searchParams.get('since');
+  const day = searchParams.get('day'); // 'today' | 'all'
   if (!venueId) {
     return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
   }
@@ -67,6 +68,10 @@ export async function GET(req: Request) {
     .limit(limit);
   if (since) {
     ordersQuery = ordersQuery.gte('created_at', since);
+  }
+  if (day === 'today') {
+    const d = new Date(); d.setHours(0,0,0,0);
+    ordersQuery = ordersQuery.gte('created_at', d.toISOString());
   }
   if (statuses) {
     ordersQuery = ordersQuery.in('status', statuses as any);
