@@ -1,112 +1,210 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
-import { ocrPdfToText } from '@/lib/ocr';
 import { isMenuLike } from '@/lib/menuLike';
+import { tryParseMenuWithGPT } from '@/lib/safeParse';
+import sharp from 'sharp';
+import { PDFDocument } from 'pdf-lib';
 
-export const runtime = 'nodejs';
+const supa = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-function admin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-}
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// replaced by lib/menuLike.ts
-
-const priceG = /(?:£|€|\$)?\s?\d{1,3}(?:[\.,:]\d{2})/g;
-function scoreText(text: string): number {
-  if (!text) return 0;
-  const priceCount = (text.match(priceG) || []).length; // signal of priced lines
-  const lengthScore = Math.min(10, Math.floor((text.length || 0) / 400));
-  return priceCount + lengthScore;
-}
-
-export async function POST(req: Request) {
-  const supa = admin();
+export async function POST(req: NextRequest) {
   try {
-    const { upload_id } = await req.json();
-    if (!upload_id) return NextResponse.json({ ok: false, error: 'upload_id required' }, { status: 400 });
+    const { uploadId } = await req.json();
+    
+    console.log('[AUTH DEBUG] Processing menu upload:', uploadId);
 
-    const { data: row, error } = await supa.from('menu_uploads').select('*').eq('id', upload_id).maybeSingle();
-    if (error || !row) {
-      console.error('[MENU_PROCESS] fetch upload error', error);
-      return NextResponse.json({ ok: false, error: error?.message || 'upload not found' }, { status: 404 });
+    // Get upload record
+    const { data: row, error: fetchErr } = await supa
+      .from('menu_uploads')
+      .select('*')
+      .eq('id', uploadId)
+      .maybeSingle();
+
+    if (fetchErr || !row) {
+      console.error('[AUTH DEBUG] Failed to fetch upload:', fetchErr);
+      return NextResponse.json({ ok: false, error: 'Upload not found' }, { status: 404 });
     }
 
-    // Prefer row.filename if present, else fall back to venue/hash path
+    console.log('[AUTH DEBUG] Found upload:', { id: row.id, filename: row.filename, status: row.status });
+
+    // Download PDF from Supabase Storage
     const storagePath = row.filename || `${row.venue_id}/${row.sha256}.pdf`;
+    console.log('[AUTH DEBUG] Downloading from storage path:', storagePath);
+    
     const { data: file, error: dlErr } = await supa.storage.from('menus').download(storagePath);
     if (dlErr) {
-      console.error('[MENU_PROCESS] storage download error', dlErr);
-      return NextResponse.json({ ok: false, error: dlErr.message }, { status: 400 });
+      console.error('[AUTH DEBUG] Failed to download file:', dlErr);
+      return NextResponse.json({ ok: false, error: 'Failed to download file' }, { status: 500 });
     }
 
-    // OCR-first: OCR first 6 pages @ ~200DPI for image-based PDFs
-    let ocr_used = true;
-    let pages = 0;
-    const pdfBuffer = Buffer.from(await file.arrayBuffer());
-    let ocrText = '';
+    console.log('[AUTH DEBUG] Downloaded file, size:', file.size, 'bytes');
+
+    // Convert PDF to images using pdf-lib and sharp
+    const pdfBytes = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const pageCount = pdfDoc.getPageCount();
+    
+    console.log('[AUTH DEBUG] PDF has', pageCount, 'pages');
+
+    const images: string[] = [];
+    const maxPages = Math.min(pageCount, 6); // Limit to first 6 pages
+
+    for (let i = 0; i < maxPages; i++) {
+      const page = pdfDoc.getPage(i);
+      const { width, height } = page.getSize();
+      
+      // Create a new PDF with just this page
+      const singlePagePdf = await PDFDocument.create();
+      const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [i]);
+      singlePagePdf.addPage(copiedPage);
+      
+      const singlePageBytes = await singlePagePdf.save();
+      
+      // Convert to image using sharp
+      const image = await sharp(Buffer.from(singlePageBytes))
+        .png()
+        .resize(1200, Math.round(1200 * height / width), { fit: 'inside' })
+        .toBuffer();
+      
+      const base64 = image.toString('base64');
+      images.push(`data:image/png;base64,${base64}`);
+      
+      console.log('[AUTH DEBUG] Converted page', i + 1, 'to image, size:', image.length, 'bytes');
+    }
+
+    // Try to extract text from first page for menu-likeness check
+    let rawText = '';
     try {
-      // Our ocr util renders at 220 DPI; still acceptable for 200 DPI target
-      ocrText = await ocrPdfToText(pdfBuffer, 6);
-      pages = Math.max(pages, 6); // best-effort
-    } catch (e) {
-      console.error('[MENU_PROCESS] OCR failed, will try native text only', e);
-      ocr_used = false;
+      const firstImage = images[0];
+      const visionResponse = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Extract all text from this image. Return only the raw text, no formatting or structure.' },
+              { type: 'image_url', image_url: { url: firstImage } }
+            ]
+          }
+        ],
+        max_tokens: 2000
+      });
+      
+      rawText = visionResponse.choices[0]?.message?.content || '';
+      console.log('[AUTH DEBUG] Extracted text length:', rawText.length);
+    } catch (textErr) {
+      console.error('[AUTH DEBUG] Failed to extract text:', textErr);
+      rawText = 'Failed to extract text';
     }
 
-    // Also attempt native text and select the better scoring text
-    let nativeText = '';
-    try {
-      const pdfParse = (await import('pdf-parse')).default as any;
-      const res = await pdfParse(pdfBuffer);
-      nativeText = res?.text || '';
-      pages = res?.numpages || pages;
-    } catch {}
+    // Check if text is menu-like
+    const menuScore = isMenuLike(rawText);
+    console.log('[AUTH DEBUG] Menu-likeness score:', menuScore);
 
-    const ocrScore = scoreText(ocrText);
-    const nativeScore = scoreText(nativeText);
-    const chosen = nativeScore > ocrScore ? nativeText : ocrText || nativeText;
-    ocr_used = nativeScore > ocrScore ? false : ocr_used;
-    let raw_text = chosen || ocrText || nativeText || '';
+    if (menuScore < 10) {
+      console.log('[AUTH DEBUG] Text not menu-like, score:', menuScore);
+      
+      // Update status to needs_review
+      await supa
+        .from('menu_uploads')
+        .update({ 
+          status: 'needs_review', 
+          raw_text: rawText,
+          error: 'Text not menu-like'
+        })
+        .eq('id', uploadId);
 
-    // Save raw and basic diagnostics
-    await supa.from('menu_uploads').update({ raw_text, ocr_used, pages: pages || null, status: 'processing' }).eq('id', upload_id);
-    const len = raw_text?.length || 0;
-    const menuLike = isMenuLike(raw_text);
-    const simpleScore = scoreText(raw_text);
-    console.log('[MENU_PROCESS] len=', len, 'menu_like=', menuLike, 'score=', simpleScore, 'ocr_used=', ocr_used, 'ocrScore=', ocrScore, 'nativeScore=', nativeScore);
-    console.log('[MENU_PROCESS] preview lines:\n', raw_text.split(/\r?\n/).slice(0, 30).join('\n'));
-
-    // Gate on score < 10 (unless force=true in body)
-    let force = false;
-    try { const body = await req.clone().json(); force = !!body?.force; } catch {}
-    if (simpleScore < 10 && !force) {
-      await supa.from('menu_uploads').update({ status: 'needs_review', error: 'Text not menu-like', raw_text }).eq('id', upload_id);
-      return NextResponse.json({ ok: false, error: 'Text not menu-like', upload_id });
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Text not menu-like',
+        score: menuScore,
+        preview: rawText.substring(0, 200) + '...'
+      });
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const prompt = `You are extracting a structured restaurant/cafe menu from OCR/native text.\nReturn JSON only as an array of items using this exact schema:\n[ { "category": string, "name": string, "description": string|null, "unit_price": number, "available": true } ]\nRules:\n- Only include actual purchasable items with a price.\n- Ignore about-us, allergy disclaimers, addresses, contact info, hours, or promotions.\n- Ignore any category descriptions without prices.\n- Merge multi-line item names into one.\n- unit_price is numeric GBP without currency symbols.\n- Infer a category from headings; if none, use "Uncategorized".\n- available must be true for all returned items.\n- Do not include any commentary; output JSON only.\nSOURCE TEXT (truncated):\n${raw_text.slice(0, 15000)}`;
+    // Process all images with OpenAI Vision
+    console.log('[AUTH DEBUG] Processing', images.length, 'images with OpenAI Vision');
+    
+    const allMenuItems: any[] = [];
+    let totalTokens = 0;
 
-    const chat = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0,
+    for (let i = 0; i < images.length; i++) {
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a menu parsing expert. Extract menu items from this image and return ONLY a valid JSON array. Each item should have: category (string), name (string), price (number), description (string, optional). Ignore headers, footers, "about us", allergy info, or promotional text. Focus only on food/drink items with prices.`
+            },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: 'Extract menu items from this image. Return valid JSON array only.' },
+                { type: 'image_url', image_url: { url: images[i] } }
+              ]
+            }
+          ],
+          max_tokens: 2000,
+          temperature: 0.1
+        });
+
+        const content = response.choices[0]?.message?.content;
+        if (content) {
+          try {
+            const items = JSON.parse(content);
+            if (Array.isArray(items)) {
+              allMenuItems.push(...items);
+            }
+          } catch (parseErr) {
+            console.error('[AUTH DEBUG] Failed to parse JSON from page', i + 1, ':', parseErr);
+          }
+        }
+
+        totalTokens += response.usage?.total_tokens || 0;
+        console.log('[AUTH DEBUG] Processed page', i + 1, 'tokens:', response.usage?.total_tokens);
+        
+      } catch (visionErr) {
+        console.error('[AUTH DEBUG] Vision API error on page', i + 1, ':', visionErr);
+      }
+    }
+
+    console.log('[AUTH DEBUG] Total items extracted:', allMenuItems.length);
+    console.log('[AUTH DEBUG] Total tokens used:', totalTokens);
+
+    // Save results
+    const { error: updateErr } = await supa
+      .from('menu_uploads')
+      .update({
+        status: 'processed',
+        raw_text: rawText,
+        parsed_json: allMenuItems,
+        pages: maxPages
+      })
+      .eq('id', uploadId);
+
+    if (updateErr) {
+      console.error('[AUTH DEBUG] Failed to update upload:', updateErr);
+      return NextResponse.json({ ok: false, error: 'Failed to save results' }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      items: allMenuItems,
+      pages: maxPages,
+      tokens: totalTokens,
+      preview: rawText.substring(0, 200) + '...'
     });
-    const content = chat.choices[0].message.content || '{}';
-    let parsed: any;
-    try { parsed = JSON.parse(content); } catch { parsed = []; }
-    const usage = (chat as any)?.usage || (chat as any)?.usage_metadata || null;
-    console.log('[MENU_PROCESS] gpt tokens:', usage);
 
-    await supa.from('menu_uploads').update({ parsed_json: parsed, status: 'ready', ocr_used, pages }).eq('id', upload_id);
-    return NextResponse.json({ ok: true, upload_id, parsed, usage });
-  } catch (e: any) {
-    console.error('[MENU_PROCESS] fatal', e);
-    return NextResponse.json({ ok: false, error: e?.message || 'process failed' }, { status: 500 });
+  } catch (error) {
+    console.error('[AUTH DEBUG] Process error:', error);
+    return NextResponse.json({ ok: false, error: 'Processing failed' }, { status: 500 });
   }
 }
 
