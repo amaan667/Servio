@@ -1,12 +1,23 @@
 import { z } from "zod";
 
+// Soft normalization functions
+function clampName(s: string) {
+  return s.length <= 80 ? s : s.slice(0, 77) + '...';
+}
+
+function parsePriceAny(p: any) {
+  if (typeof p === 'number') return p;
+  const m = String(p||'').replace(',', '.').match(/(\d+(\.\d{1,2})?)/);
+  return m ? Number(m[1]) : NaN;
+}
+
 export const MenuItem = z.object({
-  name: z.string().max(80),
-  description: z.string().nullable().optional(),
-  price: z.number().nonnegative(),
-  category: z.string().min(1),
+  name: z.string().transform(s => clampName(s)),
+  description: z.string().nullable().optional().default(null),
+  price: z.union([z.number(), z.string()]).transform(parsePriceAny).refine(v => !isNaN(v), 'price required'),
+  category: z.string(),
   available: z.boolean().default(true),
-  order_index: z.number().int().nonnegative().optional(), // fill later
+  order_index: z.number().int().nonnegative().optional(),
 });
 
 export const MenuPayload = z.object({

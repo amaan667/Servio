@@ -45,6 +45,24 @@ function sanitizeText(s: string) {
   return s.replace(/\u0000/g, "").slice(0, 180_000);
 }
 
+// Soft normalization functions
+function clampName(s: string) {
+  return s.length <= 80 ? s : s.slice(0, 77) + '...';
+}
+
+function parsePriceAny(p: any) {
+  if (typeof p === 'number') return p;
+  const m = String(p||'').replace(',', '.').match(/(\d+(\.\d{1,2})?)/);
+  return m ? Number(m[1]) : NaN;
+}
+
+function reassignCategory(it: any) {
+  const t = (it.name||'').toUpperCase();
+  if (/PLATTER|MOUNTAIN|THERMIDOR|RACK|SURF AND TURF|SEA BASS|RIBS/.test(t)) return 'MAIN COURSES';
+  if (/FRIES|GARLIC BREAD|ONION RINGS|SIDE/.test(t)) return 'SIDES';
+  return null;
+}
+
 async function callMenuTool(system: string, user: string) {
   console.log('[MENU PARSE] Calling menu tool with system prompt length:', system.length);
   console.log('[MENU PARSE] User prompt length:', user.length);
@@ -102,6 +120,7 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
   // 2) Process each section individually with strict windowing
   const itemsAll: any[] = [];
   const movedAll: any[] = [];
+  let rawTotal = 0;
 
   for (const sec of sections) {
     const slice = sliceSection(ocrText, sec);
@@ -110,48 +129,64 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
     try {
       const prompt = sectionPrompt(sec.name);
       const raw = await callMenuTool(prompt, slice);
-      const { kept, moved } = filterSectionItems(sec.name, raw?.items ?? []);
       
-      itemsAll.push(...kept);
-      movedAll.push(...moved);
+      // A) Instrument the funnel (counts + reasons)
+      console.log('[PARSE] found_raw', raw.items.length);
+      rawTotal += raw.items.length;
+
+      const tooLong = raw.items.filter((i: any) => (i.name||'').length > 80);
+      console.log('[PARSE] drop_name_too_long', tooLong.length, tooLong.map((i: any) => i.name.slice(0,50)));
+
+      const noPrice = raw.items.filter((i: any) => typeof i.price !== 'number' || isNaN(i.price));
+      console.log('[PARSE] drop_no_price', noPrice.length, noPrice.map((i: any) => i.name));
+
+      const afterBasic = raw.items.filter((i: any) => (i.name||'').length && typeof i.price === 'number' && !isNaN(i.price));
+      console.log('[PARSE] basic_ok', afterBasic.length);
+
+      const { kept, moved } = filterSectionItems(sec.name, afterBasic);
+      console.log('[PARSE] kept_in_section', kept.length, 'moved_out', moved.length, moved.map((m: any) => ({ name: m.name, suggest: m.suggest||m.reason })));
+
+      // B) Soft-normalize instead of reject
+      const normalizedKept = kept.map((item: any) => ({
+        ...item,
+        name: clampName(item.name || 'Item'),
+        price: parsePriceAny(item.price),
+        category: sec.name
+      })).filter((item: any) => !isNaN(item.price));
+
+      const reassigned = moved.map((m: any) => {
+        const newCategory = reassignCategory(m);
+        return newCategory ? { ...m, category: newCategory, name: clampName(m.name || 'Item'), price: parsePriceAny(m.price) } : null;
+      }).filter((m: any) => m && !isNaN(m.price));
+
+      itemsAll.push(...normalizedKept);
+      movedAll.push(...reassigned);
       
-      console.log(`[MENU PARSE] ${sec.name}: kept=${kept.length} moved=${moved.length}`);
+      console.log(`[MENU PARSE] ${sec.name}: kept=${normalizedKept.length} reassigned=${reassigned.length}`);
     } catch (e) {
       console.warn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
     }
   }
 
-  // 3) Optionally reassign moved items to appropriate sections
-  const reassigned = reassignMoved(movedAll);
-  if (reassigned.length > 0) {
-    console.log('[MENU PARSE] Reassigned items:', reassigned.length);
-    itemsAll.push(...reassigned);
-  }
+  // C) Final processing and validation
+  const finalItems = itemsAll.concat(movedAll);
+  console.log('[DB] about_to_insert', finalItems.length);
 
-  if (movedAll.length) {
-    console.warn("[MENU PARSE] Items moved due to misclassification:", movedAll.slice(0, 5));
-  }
+  // D) Soft validation with transformation
+  const validatedItems = finalItems.map((item: any, index: number) => ({
+    name: clampName(item.name || 'Item'),
+    description: item.description || null,
+    price: parsePriceAny(item.price),
+    category: item.category || 'Uncategorized',
+    available: Boolean(item.available ?? true),
+    order_index: Number.isFinite(item.order_index) ? item.order_index : index,
+  })).filter((item: any) => !isNaN(item.price) && item.name.length > 0);
 
-  // 4) Sanitize names before validation
-  const sanitizedItems = itemsAll.map(item => {
-    const originalName = item.name;
-    const sanitizedName = item.name.length > 80
-      ? item.name.slice(0, 77).trim() + "..."
-      : item.name;
-    
-    if (originalName !== sanitizedName) {
-      console.log(`[MENU PARSE] Truncated long name: "${originalName}" -> "${sanitizedName}"`);
-    }
-    
-    return {
-      ...item,
-      name: sanitizedName
-    };
-  });
+  console.log('[VERIFY] source_total', rawTotal, 'final_validated', validatedItems.length);
 
   // 5) Validate final shape
   const payload = { 
-    items: sanitizedItems, 
+    items: validatedItems, 
     categories: sections.map(s => s.name) 
   };
   const validated = MenuPayload.parse(payload);
