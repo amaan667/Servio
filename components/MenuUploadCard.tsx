@@ -15,18 +15,32 @@ interface MenuUploadCardProps {
 
 export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const addDebugLog = (message: string) => {
+    console.log('[AUTH DEBUG]', message);
+    setDebugInfo(prev => prev + '\n' + new Date().toISOString() + ': ' + message);
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      addDebugLog('No file selected');
+      return;
+    }
+
+    addDebugLog(`File selected: ${file.name} (${file.size} bytes)`);
 
     // Validate file type
     const validTypes = ['.txt', '.md', '.json', '.pdf'];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     
+    addDebugLog(`File extension: ${fileExtension}`);
+    
     if (!validTypes.includes(fileExtension)) {
+      addDebugLog(`Invalid file type: ${fileExtension}`);
       toast({
         title: 'Invalid file type',
         description: 'Please upload a .txt, .md, .json, or .pdf file',
@@ -38,6 +52,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     // Validate file size (max 10MB for PDF, 1MB for text files)
     const maxSize = fileExtension === '.pdf' ? 10 * 1024 * 1024 : 1024 * 1024;
     if (file.size > maxSize) {
+      addDebugLog(`File too large: ${file.size} > ${maxSize}`);
       toast({
         title: 'File too large',
         description: `Please upload a file smaller than ${fileExtension === '.pdf' ? '10MB' : '1MB'}`,
@@ -47,31 +62,47 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
 
     setIsProcessing(true);
+    addDebugLog('Starting file processing...');
 
     try {
       let text = '';
       
       if (fileExtension === '.pdf') {
+        addDebugLog('Processing PDF file...');
         // For PDF files, extract text content
         const arrayBuffer = await file.arrayBuffer();
-        const pdfjsLib = await import('pdfjs-dist');
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        addDebugLog(`PDF arrayBuffer size: ${arrayBuffer.byteLength}`);
         
-        for (let i = 1; i <= Math.min(pdf.numPages, 6); i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str).join(' ');
-          text += pageText + '\n';
+        try {
+          const pdfjsLib = await import('pdfjs-dist');
+          addDebugLog('pdfjs-dist imported successfully');
+          
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          addDebugLog(`PDF loaded, pages: ${pdf.numPages}`);
+          
+          for (let i = 1; i <= Math.min(pdf.numPages, 6); i++) {
+            addDebugLog(`Processing page ${i}...`);
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map((item: any) => item.str).join(' ');
+            text += pageText + '\n';
+            addDebugLog(`Page ${i} text length: ${pageText.length}`);
+          }
+        } catch (pdfError) {
+          addDebugLog(`PDF processing error: ${pdfError}`);
+          throw pdfError;
         }
         
-        console.log('[AUTH DEBUG] Extracted text from PDF:', text.length, 'characters');
+        addDebugLog(`Total extracted text length: ${text.length}`);
       } else {
+        addDebugLog('Processing text file...');
         // For text files, read directly
         text = await file.text();
-        console.log('[AUTH DEBUG] Read text file:', text.length, 'characters');
+        addDebugLog(`Text file content length: ${text.length}`);
       }
       
       if (text.length < 200) {
+        addDebugLog(`Text too short: ${text.length} < 200`);
         toast({
           title: 'Text too short',
           description: 'Please upload a file with at least 200 characters',
@@ -80,7 +111,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         return;
       }
 
-      console.log('[AUTH DEBUG] Sending to process-text API...');
+      addDebugLog('Sending to process-text API...');
+      addDebugLog(`Text preview: ${text.substring(0, 200)}...`);
 
       const response = await fetch('/api/menu/process-text', {
         method: 'POST',
@@ -92,16 +124,26 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         })
       });
 
+      addDebugLog(`API response status: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        addDebugLog(`API error response: ${errorText}`);
+        throw new Error(`API error: ${response.status} - ${errorText}`);
+      }
+
       const result = await response.json();
-      console.log('[AUTH DEBUG] API response:', result);
+      addDebugLog(`API response: ${JSON.stringify(result)}`);
 
       if (result.ok) {
+        addDebugLog(`Success: ${result.counts.inserted} inserted, ${result.counts.skipped} skipped`);
         toast({
           title: 'Menu imported successfully',
           description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
         });
         onSuccess?.();
       } else {
+        addDebugLog(`API returned error: ${result.error}`);
         toast({
           title: 'Import failed',
           description: result.error || 'Failed to process menu',
@@ -109,6 +151,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         });
       }
     } catch (error) {
+      addDebugLog(`Upload error: ${error}`);
       console.error('Upload error:', error);
       toast({
         title: 'Upload failed',
@@ -195,6 +238,16 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             </Button>
           </div>
         </div>
+
+        {/* Debug Info */}
+        {debugInfo && (
+          <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+            <h4 className="font-medium mb-2">Debug Info:</h4>
+            <pre className="text-xs text-gray-700 whitespace-pre-wrap max-h-40 overflow-y-auto">
+              {debugInfo}
+            </pre>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
