@@ -1,199 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
+import { parseMenuStrict } from '@/lib/parseWithOpenAI';
+import { normalizeForInsert } from '@/lib/normalizeMenu';
 
-export const runtime = 'nodejs';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const supa = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supa = createClient(supabaseUrl, supabaseServiceKey);
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { venue_id, filename, text } = await req.json();
+    const { venue_id, filename, text } = await request.json();
 
-    console.log('[AUTH DEBUG] Process-text API called with:', { venue_id, filename, textLength: text?.length });
-
-    // Validate input
-    if (!venue_id || typeof venue_id !== 'string') {
-      console.log('[AUTH DEBUG] Invalid venue_id:', venue_id);
-      return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
+    if (!venue_id || !text) {
+      return NextResponse.json({ ok: false, error: 'venue_id and text are required' }, { status: 400 });
     }
 
-    if (!text || typeof text !== 'string' || text.length < 200) {
-      console.log('[AUTH DEBUG] Invalid text:', { textLength: text?.length, textType: typeof text });
-      return NextResponse.json({ ok: false, error: 'text must be at least 200 characters' }, { status: 400 });
-    }
-
+    console.log('[AUTH DEBUG] Process-text API called with:', { venue_id, filename, textLength: text.length });
     console.log('[AUTH DEBUG] Processing text menu for venue:', venue_id, 'length:', text.length);
-    console.log('[AUTH DEBUG] Text preview:', text.substring(0, 500));
+    console.log('[AUTH DEBUG] Text preview:', text.substring(0, 200));
 
-    // Extract menu items using OpenAI with comprehensive extraction
-    const prompt = `You are a professional menu extraction expert. Extract ALL menu items from this restaurant menu text with 100% accuracy. Return ONLY a valid JSON object with this exact schema:
-
-{
-  "items": [
-    {
-      "name": "string (max 80 chars)",
-      "description": "string|null",
-      "price": "number (GBP, no currency symbols)",
-      "category": "string",
-      "available": true
-    }
-  ]
-}
-
-CRITICAL EXTRACTION RULES:
-- Extract EVERY single menu item with a price - do not miss any
-- Look for prices in all formats: £7.50, 7.50, £7, 7, etc.
-- Normalize all prices to numbers (strip £, $, € symbols)
-- Use exact category names from the menu: STARTERS, MAIN COURSES, DESSERTS, DRINKS, SALADS, etc.
-- Include items even if description is missing
-- Only filter out items with no price or price = 0
-- Be extremely thorough - extract items from all sections
-- Preserve the exact item names and descriptions
-- Do not skip items that seem incomplete - extract what you can
-- Ensure all JSON strings are properly escaped
-- Return valid JSON only - no trailing commas, no unescaped quotes
-
-Menu Text:
-${text}`;
-
-    console.log('[AUTH DEBUG] Sending to OpenAI with prompt length:', prompt.length);
-    console.log('[AUTH DEBUG] Full text length:', text.length);
-    console.log('[AUTH DEBUG] Text preview (first 500 chars):', text.substring(0, 500));
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0.1,
-      max_tokens: 4000
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      console.log('[AUTH DEBUG] No content from OpenAI');
-      return NextResponse.json({ ok: false, error: 'Failed to extract menu items' }, { status: 500 });
+    if (text.length < 200) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Text is too short. Please provide a longer menu text.' 
+      }, { status: 400 });
     }
 
-    console.log('[AUTH DEBUG] OpenAI response length:', content.length);
-    console.log('[AUTH DEBUG] OpenAI response preview:', content.substring(0, 500));
-
-    let parsed;
+    // Parse menu using robust parsing with Zod validation
+    let payload;
     try {
-      parsed = JSON.parse(content);
-    } catch (parseErr) {
-      console.error('[AUTH DEBUG] Failed to parse OpenAI response:', parseErr);
-      console.error('[AUTH DEBUG] Raw OpenAI response (first 1000 chars):', content.substring(0, 1000));
-      
-      // Try to fix common JSON issues
-      try {
-        console.log('[AUTH DEBUG] Attempting to fix JSON issues...');
-        
-        // Remove trailing commas and fix common issues
-        let fixedContent = content
-          .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
-          .replace(/([^"])\s*}\s*$/g, '$1}') // Fix missing closing braces
-          .replace(/([^"])\s*]\s*$/g, '$1]') // Fix missing closing brackets
-          .replace(/([^\\])"/g, '$1\\"') // Escape unescaped quotes
-          .replace(/\\"/g, '"') // Fix double-escaped quotes
-          .replace(/\n/g, '\\n') // Escape newlines
-          .replace(/\r/g, '\\r') // Escape carriage returns
-          .replace(/\t/g, '\\t'); // Escape tabs
-        
-        // Try to find the end of the JSON object
-        const lastBrace = fixedContent.lastIndexOf('}');
-        if (lastBrace > 0) {
-          fixedContent = fixedContent.substring(0, lastBrace + 1);
-        }
-        
-        console.log('[AUTH DEBUG] Fixed content preview:', fixedContent.substring(0, 500));
-        
-        parsed = JSON.parse(fixedContent);
-        console.log('[AUTH DEBUG] Successfully parsed after fixing JSON issues');
-      } catch (fixErr) {
-        console.error('[AUTH DEBUG] Failed to fix JSON:', fixErr);
-        console.error('[AUTH DEBUG] Attempted fix content:', fixedContent.substring(0, 1000));
-        return NextResponse.json({ ok: false, error: 'Invalid response format from AI' }, { status: 500 });
-      }
+      payload = await parseMenuStrict(text);
+      console.log('[AUTH DEBUG] Menu parsing completed successfully');
+    } catch (parseError) {
+      console.error('[AUTH DEBUG] Menu parsing failed:', parseError);
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Menu parsing failed: ${parseError.message}` 
+      }, { status: 500 });
     }
 
-    const items = parsed.items || [];
-    console.log('[AUTH DEBUG] Extracted', items.length, 'menu items from OpenAI');
-
-    // More lenient validation - only filter out completely invalid items
-    const validItems = items
-      .filter((item: any) => {
-        // Check if item has basic required fields
-        const hasName = item.name && typeof item.name === 'string' && item.name.trim().length > 0;
-        const hasPrice = item.price !== undefined && item.price !== null;
-        
-        if (!hasName) {
-          return false;
-        }
-        
-        if (!hasPrice) {
-          return false;
-        }
-        
-        // Convert price to number if it's a string
-        let numericPrice = item.price;
-        if (typeof item.price === 'string') {
-          numericPrice = parseFloat(item.price.replace(/[£$€,]/g, ''));
-        }
-        
-        if (isNaN(numericPrice) || numericPrice <= 0) {
-          return false;
-        }
-        
-        // Check name length
-        if (item.name.length > 80) {
-          return false;
-        }
-        
-        return true;
-      })
-      .map((item: any, index: number) => {
-        // Convert price to number if it's a string
-        let numericPrice = item.price;
-        if (typeof item.price === 'string') {
-          numericPrice = parseFloat(item.price.replace(/[£$€,]/g, ''));
-        }
-        
-        return {
-          venue_id,
-          name: item.name.trim(),
-          description: item.description || null,
-          price: Math.round(numericPrice * 100) / 100, // Round to 2 decimal places
-          category: item.category || 'Uncategorized',
-          available: true
-        };
-      });
-
-    console.log('[AUTH DEBUG] Valid items after filtering:', validItems.length);
+    // Normalize for database insertion
+    const normalized = normalizeForInsert(payload);
+    console.log('[AUTH DEBUG] Normalized items:', normalized.items.length);
 
     // Insert items in batches of 50
     let inserted = 0;
     let skipped = 0;
 
-    for (let i = 0; i < validItems.length; i += 50) {
-      const batch = validItems.slice(i, i + 50);
+    for (let i = 0; i < normalized.items.length; i += 50) {
+      const batch = normalized.items.slice(i, i + 50);
       
       for (const item of batch) {
         // Check if item already exists
         const { data: existing } = await supa
           .from('menu_items')
           .select('id')
-          .eq('venue_id', item.venue_id)
+          .eq('venue_id', venue_id)
           .eq('name', item.name)
           .eq('price', item.price)
           .maybeSingle();
 
         if (existing) {
+          console.log('[AUTH DEBUG] Skipping existing item:', item.name);
           skipped++;
           continue;
         }
@@ -201,29 +70,41 @@ ${text}`;
         // Insert new item
         const { data: insertedItem, error: insertErr } = await supa
           .from('menu_items')
-          .insert(item)
+          .insert({
+            venue_id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            category: item.category,
+            available: item.available
+          })
           .select()
           .single();
 
         if (insertErr) {
           console.error('[AUTH DEBUG] Failed to insert item:', insertErr.message);
+          console.error('[AUTH DEBUG] Item that failed:', item);
           skipped++;
         } else {
+          console.log('[AUTH DEBUG] Successfully inserted item:', insertedItem);
           inserted++;
         }
       }
     }
 
-    console.log('[AUTH DEBUG] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Total processed:', validItems.length);
+    console.log('[AUTH DEBUG] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Total processed:', normalized.items.length);
 
     return NextResponse.json({
       ok: true,
       counts: { inserted, skipped },
-      total: validItems.length
+      total: normalized.items.length
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Process text error:', error);
-    return NextResponse.json({ ok: false, error: 'Processing failed' }, { status: 500 });
+    console.error('[AUTH DEBUG] Text processing error:', error);
+    return NextResponse.json({ 
+      ok: false, 
+      error: `Text processing failed: ${error.message}` 
+    }, { status: 500 });
   }
 }
