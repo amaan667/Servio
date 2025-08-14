@@ -13,6 +13,7 @@ import { NavBar } from "@/components/NavBar";
 import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import UploadMenuCard from "@/components/UploadMenuCard";
 
 interface MenuItem {
   id: string;
@@ -251,6 +252,11 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               </Dialog>
             </div>
           </div>
+        </div>
+
+        {/* Upload PDF pipeline */}
+        <div className="mb-8">
+          <UploadMenuCard venueId={venueId} />
         </div>
 
         {/* Menu Items Grid */}
