@@ -37,11 +37,12 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       return;
     }
 
-    // Validate file size (max 1MB)
-    if (file.size > 1024 * 1024) {
+    // Validate file size (max 10MB for PDF, 1MB for text files)
+    const maxSize = fileExtension === '.pdf' ? 10 * 1024 * 1024 : 1024 * 1024;
+    if (file.size > maxSize) {
       toast({
         title: 'File too large',
-        description: 'Please upload a file smaller than 1MB',
+        description: `Please upload a file smaller than ${fileExtension === '.pdf' ? '10MB' : '1MB'}`,
         variant: 'destructive'
       });
       return;
@@ -174,7 +175,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 mb-4">
-                Upload PDF file (max 1MB)
+                Upload PDF file (max 10MB)
               </p>
               <input
                 ref={fileInputRef}
