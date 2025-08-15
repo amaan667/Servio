@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { NavBar } from "@/components/NavBar";
 import { supabase } from "@/lib/sb-client";
 import { Clock, ArrowLeft } from "lucide-react";
+import { todayWindowForTZ } from "@/lib/time";
 
 interface Order {
   id: string;
@@ -27,16 +28,29 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [todayWindow, setTodayWindow] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
-    // Load initial orders
-    const loadOrders = async () => {
+    // Load venue timezone and set up today window
+    const loadVenueAndOrders = async () => {
+      const { data: venueData } = await supabase
+        .from('venues')
+        .select('timezone')
+        .eq('venue_id', venueId)
+        .single();
+      
+      const window = todayWindowForTZ(venueData?.timezone);
+      setTodayWindow(window);
+      
+      // Load initial orders for today only
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
         .in('status', ['pending', 'preparing'])
+        .gte('created_at', window.startUtcISO)
+        .lt('created_at', window.endUtcISO)
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -45,7 +59,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
       setLoading(false);
     };
 
-    loadOrders();
+    loadVenueAndOrders();
 
     // Set up real-time subscription
     const channel = supabase
@@ -59,6 +73,16 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
         }, 
         (payload) => {
           console.log('Order change:', payload);
+          
+          // Only process orders from today
+          const orderCreatedAt = payload.new?.created_at || payload.old?.created_at;
+          const isInTodayWindow = orderCreatedAt >= todayWindow?.startUtcISO && orderCreatedAt < todayWindow?.endUtcISO;
+          
+          if (!isInTodayWindow) {
+            console.log('Ignoring historical order change');
+            return;
+          }
+          
           if (payload.eventType === 'INSERT') {
             setOrders(prev => [payload.new as Order, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
@@ -135,7 +159,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
             Back to Dashboard
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">Live Orders</h1>
-          <p className="text-gray-600 mt-2">Real-time order feed for {venueName}</p>
+          <p className="text-gray-600 mt-2">Real-time order feed for {venueName} • Today • Local time</p>
         </div>
 
         {/* Orders Grid */}

@@ -123,10 +123,11 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         zone: window.zone
       });
 
-      // Calculate revenue from today's orders
+      // Calculate revenue from today's paid orders only
       const todayRevenue = (orders ?? []).reduce((sum: number, order: any) => {
         const amount = parseFloat(order.total_amount as any) || 0;
-        return sum + amount;
+        // Only count orders that are marked as paid
+        return (order.payment_status === 'paid') ? sum + amount : sum;
       }, 0);
 
       setStats({
