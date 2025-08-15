@@ -14,7 +14,7 @@ import {
 import { supabase } from "@/lib/sb-client";
 import { Menu, X, User, Home, Settings, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface UniversalHeaderProps {
   showActions?: boolean;
@@ -27,6 +27,11 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   const [loading, setLoading] = useState<boolean>(true);
   const { session } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Determine if we're on home page or dashboard page
+  const isHomePage = pathname === '/' || pathname === '/home';
+  const isDashboardPage = pathname?.startsWith('/dashboard') || pathname?.startsWith('/settings');
 
   // Fetch primary venue when user is signed in
   useEffect(() => {
@@ -90,21 +95,6 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center h-32">
-          {/* Mobile Navigation - Left side (hamburger menu) */}
-          <div className="md:hidden flex items-center order-1">
-            <Button
-              variant="ghost"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2"
-            >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </Button>
-          </div>
-
           {/* Logo - Centered on mobile, left aligned on desktop */}
           <div className="flex items-center justify-center md:justify-start flex-1 md:flex-none order-2 md:order-1">
             <Link href={session ? dashboardHref : homeHref} className="flex items-center group">
@@ -221,9 +211,25 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
             )}
           </div>
 
-          {/* Mobile Navigation - Right side (profile menu) */}
+          {/* Mobile Navigation - Right side */}
           <div className="md:hidden flex items-center order-3">
-            {session && showActions && (
+            {/* Show hamburger menu only on home page */}
+            {isHomePage && (
+              <Button
+                variant="ghost"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </Button>
+            )}
+            
+            {/* Show profile dropdown only on dashboard page */}
+            {isDashboardPage && session && showActions && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -268,8 +274,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
         </div>
       </div>
 
-      {/* Mobile Navigation Menu */}
-      {mobileMenuOpen && (
+      {/* Mobile Navigation Menu - Only show on home page */}
+      {mobileMenuOpen && isHomePage && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
             {session ? (
