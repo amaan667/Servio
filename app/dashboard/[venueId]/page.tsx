@@ -36,7 +36,7 @@ export default async function Page({ params }: { params: { venueId: string } }) 
 
   console.log('[DASHBOARD VENUE] Querying venue:', params.venueId);
   const { data: venue, error: vErr } = await supabase
-    .from('venues').select('venue_id,name,timezone').eq('venue_id', params.venueId).eq('owner_id', user.id).maybeSingle();
+    .from('venues').select('venue_id,name').eq('venue_id', params.venueId).eq('owner_id', user.id).maybeSingle();
 
   console.log('[DASHBOARD VENUE] Venue query result:', { 
     hasVenue: !!venue, 
@@ -51,8 +51,8 @@ export default async function Page({ params }: { params: { venueId: string } }) 
     return notFound();
   }
 
-  // Get timezone-aware today window
-  const todayWindow = todayWindowForTZ(venue.timezone);
+  // Get timezone-aware today window (default to Europe/London until migration is run)
+  const todayWindow = todayWindowForTZ('Europe/London');
   
   // Compute unique active tables today (open tickets): status != 'served' and != 'paid' AND created today
   const { data: activeRows } = await supabase
