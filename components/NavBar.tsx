@@ -1,10 +1,13 @@
 import { Button } from "./ui/button";
 import { supabase } from "@/lib/sb-client";
-import { Settings } from "lucide-react";
+import { Settings, Moon, Sun } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
+  const { theme, setTheme } = useTheme();
+  
   const handleSignOut = async () => {
     try {
       // Prefer server-side sign out to clear HttpOnly cookies reliably
@@ -43,6 +46,14 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
         </Link>
         {showActions && (
           <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="text-sm"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Link href="/settings" className="hidden sm:block">
               <Button variant="ghost" size="sm" className="text-sm">
                 <Settings className="h-4 w-4 mr-2" />

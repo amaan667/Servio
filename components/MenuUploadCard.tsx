@@ -15,32 +15,20 @@ interface MenuUploadCardProps {
 
 export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-
-  const addDebugLog = (message: string) => {
-    console.log('[AUTH DEBUG]', message);
-    setDebugInfo(prev => prev + '\n' + new Date().toISOString() + ': ' + message);
-  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
-      addDebugLog('No file selected');
       return;
     }
-
-    addDebugLog(`File selected: ${file.name} (${file.size} bytes)`);
 
     // Validate file type
     const validTypes = ['.txt', '.md', '.json', '.pdf'];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     
-    addDebugLog(`File extension: ${fileExtension}`);
-    
     if (!validTypes.includes(fileExtension)) {
-      addDebugLog(`Invalid file type: ${fileExtension}`);
       toast({
         title: 'Invalid file type',
         description: 'Please upload a .txt, .md, .json, or .pdf file',
@@ -52,7 +40,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     // Validate file size (max 10MB for PDF, 1MB for text files)
     const maxSize = fileExtension === '.pdf' ? 10 * 1024 * 1024 : 1024 * 1024;
     if (file.size > maxSize) {
-      addDebugLog(`File too large: ${file.size} > ${maxSize}`);
       toast({
         title: 'File too large',
         description: `Please upload a file smaller than ${fileExtension === '.pdf' ? '10MB' : '1MB'}`,
@@ -62,37 +49,27 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
 
     setIsProcessing(true);
-    addDebugLog('Starting file processing...');
 
     try {
       if (fileExtension === '.pdf') {
-        addDebugLog('Processing PDF file...');
-        
         // Send PDF directly to process-pdf endpoint
         const formData = new FormData();
         formData.append('file', file);
         formData.append('venue_id', venueId);
         
-        addDebugLog('Sending PDF to server for processing...');
-        
         const response = await fetch('/api/menu/process-pdf', {
           method: 'POST',
           body: formData
         });
-
-        addDebugLog(`PDF processing response status: ${response.status}`);
         
         if (!response.ok) {
           const errorText = await response.text();
-          addDebugLog(`PDF processing error: ${errorText}`);
           throw new Error(`PDF processing failed: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
-        addDebugLog(`PDF processing result: ${JSON.stringify(result)}`);
         
         if (result.ok) {
-          addDebugLog(`Success: ${result.counts.inserted} inserted, ${result.counts.skipped} skipped`);
           toast({
             title: 'Menu imported successfully',
             description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
@@ -104,10 +81,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         
       } else {
         // For text files, read and send directly
-        addDebugLog('Processing text file...');
         const text = await file.text();
-        
-        addDebugLog(`Text content preview: ${text.substring(0, 200)}...`);
         
         const response = await fetch('/api/menu/process-text', {
           method: 'POST',
@@ -120,20 +94,15 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
             text: text
           })
         });
-
-        addDebugLog(`Text processing response status: ${response.status}`);
         
         if (!response.ok) {
           const errorText = await response.text();
-          addDebugLog(`Text processing error: ${errorText}`);
           throw new Error(`Text processing failed: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
-        addDebugLog(`Text processing result: ${JSON.stringify(result)}`);
         
         if (result.ok) {
-          addDebugLog(`Success: ${result.counts.inserted} inserted, ${result.counts.skipped} skipped`);
           toast({
             title: 'Menu imported successfully',
             description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
@@ -145,7 +114,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
       }
       
     } catch (error: any) {
-      addDebugLog(`Upload error: ${error.message}`);
       toast({
         title: 'Upload failed',
         description: error.message,
@@ -203,23 +171,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           </AlertDescription>
         </Alert>
 
-        {debugInfo && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">Debug Info:</h4>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDebugInfo('')}
-              >
-                Clear
-              </Button>
-            </div>
-            <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">
-              {debugInfo}
-            </pre>
-          </div>
-        )}
+
       </CardContent>
     </Card>
   );
