@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft } from "lucide-react";
 
 interface NavigationBreadcrumbProps {
-  showBackButton?: boolean;
-  showHomeButton?: boolean;
   customBackPath?: string;
   customBackLabel?: string;
 }
@@ -48,7 +46,28 @@ export default function NavigationBreadcrumb({
     return "Home";
   };
 
-  // Universal layout: Home → Dashboard (Back) → Current Page
+  const pageTitle = getPageTitle();
+  const isDashboardRoot = /^\/dashboard\/(?:[^/]+)\/?$/.test(pathname);
+
+  // Dashboard root: Home → Dashboard (current)
+  if (isDashboardRoot) {
+    return (
+      <nav aria-label="Breadcrumb" className="mb-4">
+        <ol className="flex items-center gap-2 text-sm">
+          <li>
+            <Button variant="ghost" size="sm" onClick={handleHome} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+              <Home className="h-4 w-4" />
+              <span className="hidden sm:inline">Home</span>
+            </Button>
+          </li>
+          <li className="text-gray-400">→</li>
+          <li className="text-gray-700 font-medium">Dashboard</li>
+        </ol>
+      </nav>
+    );
+  }
+
+  // Subpages: Home → Dashboard (Back) → Current Page
   return (
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center gap-2 text-sm">
@@ -66,7 +85,7 @@ export default function NavigationBreadcrumb({
           </Button>
         </li>
         <li className="text-gray-400">→</li>
-        <li className="text-gray-700 font-medium">{getPageTitle()}</li>
+        <li className="text-gray-700 font-medium">{pageTitle}</li>
       </ol>
     </nav>
   );
