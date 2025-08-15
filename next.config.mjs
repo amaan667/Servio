@@ -15,6 +15,7 @@ const nextConfig = {
     unoptimized: true,
   },
   // Railway deployment configuration
+  output: 'standalone',
   generateEtags: false,
   // Remove legacy PDF/OCR externals
   serverExternalPackages: [],
