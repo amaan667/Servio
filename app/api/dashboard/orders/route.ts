@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { todayWindowForTZ } from '@/lib/dates';
+import { ENV } from '@/lib/env';
 
 export const runtime = 'nodejs';
 
@@ -9,9 +11,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const venueId = searchParams.get('venueId');
   const status = searchParams.get('status');
+  const scope = (searchParams.get('scope') || searchParams.get('day') || 'today').toLowerCase(); // today | all
   const limit = Number(searchParams.get('limit') || '500');
   const since = searchParams.get('since');
-  const day = searchParams.get('day'); // 'today' | 'all'
   if (!venueId) {
     return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
   }
@@ -39,13 +41,19 @@ export async function GET(req: Request) {
   } catch {}
 
   // Admin client (bypass RLS)
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = ENV.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) {
     return NextResponse.json({ ok: false, error: 'Missing service role' }, { status: 500 });
   }
-  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey, {
+  const admin = createClient(ENV.SUPABASE_URL, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // Fetch venue timezone (optional)
+  let timezone: string | undefined = undefined;
+  const { data: venueRow } = await admin.from('venues').select('timezone').eq('venue_id', venueId).maybeSingle();
+  timezone = (venueRow as any)?.timezone as string | undefined;
+  const window = todayWindowForTZ(timezone);
 
   // Map client statuses to DB statuses for querying
   let statuses: string[] | undefined;
@@ -69,9 +77,10 @@ export async function GET(req: Request) {
   if (since) {
     ordersQuery = ordersQuery.gte('created_at', since);
   }
-  if (day === 'today') {
-    const d = new Date(); d.setHours(0,0,0,0);
-    ordersQuery = ordersQuery.gte('created_at', d.toISOString());
+  if (scope !== 'all') {
+    ordersQuery = ordersQuery
+      .gte('created_at', window.startUtcISO)
+      .lt('created_at', window.endUtcISO);
   }
   if (statuses) {
     ordersQuery = ordersQuery.in('status', statuses as any);
@@ -81,23 +90,29 @@ export async function GET(req: Request) {
   if (ordersErr) {
     return NextResponse.json({ ok: false, error: ordersErr.message }, { status: 500 });
   }
-  if (!orders || orders.length === 0) {
-    return NextResponse.json({ ok: true, orders: [] });
-  }
+  // active tables today metric
+  const { data: activeRows, error: activeErr } = await admin
+    .from('orders')
+    .select('table_number')
+    .eq('venue_id', venueId)
+    .in('status', ['pending', 'preparing'] as any)
+    .gte('created_at', window.startUtcISO)
+    .lt('created_at', window.endUtcISO);
+  const activeTablesToday = activeErr ? 0 : new Set((activeRows ?? []).map((r: any) => r.table_number).filter((t: any) => t != null)).size;
 
   // 2️⃣ Fetch all related items manually
-  const orderIds = orders.map((o: any) => o.id);
+  const orderIds = (orders ?? []).map((o: any) => o.id);
   const { data: items, error: itemsErr } = await admin
     .from('order_items')
     .select('*')
-    .in('order_id', orderIds);
+    .in('order_id', orderIds.length ? orderIds : ['00000000-0000-0000-0000-000000000000']);
 
   if (itemsErr) {
     return NextResponse.json({ ok: false, error: itemsErr.message }, { status: 500 });
   }
 
   // 3️⃣ Merge items into orders
-  const hydrated = orders.map((o: any) => {
+  const hydrated = (orders ?? []).map((o: any) => {
     const oItems = (items ?? []).filter((it: any) => it.order_id === o.id);
     let mappedItems = oItems.map((it: any) => {
       const price = Number(it.unit_price ?? it.price ?? 0);
@@ -122,7 +137,7 @@ export async function GET(req: Request) {
     return { ...o, status: uiStatus, items: mappedItems, computed_total: total };
   });
 
-  return NextResponse.json({ ok: true, orders: hydrated });
+  return NextResponse.json({ ok: true, orders: hydrated, meta: { activeTablesToday, window } });
 }
 
 

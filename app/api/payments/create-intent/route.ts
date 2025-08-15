@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { ENV } from '@/lib/env';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
     const { amount, currency = 'gbp', metadata } = await req.json();
-    if (!process.env.STRIPE_SECRET_KEY) {
+    if (!ENV.STRIPE_SECRET_KEY) {
       return NextResponse.json({ ok:false, error:'Missing STRIPE_SECRET_KEY' }, { status:500 });
     }
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
+    const stripe = new Stripe(ENV.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
     if (!Number.isFinite(amount) || amount < 50) {
       return NextResponse.json({ ok:false, error:'Invalid amount' }, { status:400 });
     }

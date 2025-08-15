@@ -32,7 +32,8 @@ type Order = {
 export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const supabase = createClientComponentClient();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all'|'preparing'|'served'|'paid'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all'|'preparing'|'served'|'paid'|'open'>('open');
+  const [activeTablesToday, setActiveTablesToday] = useState<number>(0);
   const [tableFilter, setTableFilter] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -45,11 +46,16 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   // fetch initial
   useEffect(() => {
     (async () => {
-      const qStatus = statusFilter === 'paid' ? 'all' : statusFilter; // server filters on order.status only; 'preparing' maps to pending+preparing
-      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}${qStatus ? `&status=${qStatus}` : ''}&limit=1000&day=all`;
+      // scope today for all tabs except 'all'
+      const scope = statusFilter === 'all' ? 'all' : 'today';
+      const qStatus = statusFilter === 'open' ? 'open' : statusFilter;
+      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}${qStatus ? `&status=${qStatus}` : ''}&limit=1000&scope=${scope}`;
       const res = await fetch(url, { cache:'no-store' });
       const j = await res.json();
-      if (j?.ok) setOrders(j.orders);
+      if (j?.ok) {
+        setOrders(j.orders);
+        setActiveTablesToday(j?.meta?.activeTablesToday ?? 0);
+      }
     })();
   }, [venueId, statusFilter]);
 
@@ -83,10 +89,15 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   useEffect(() => {
     if (connected) return;
     const id = setInterval(async () => {
-      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}&status=${statusFilter}&limit=1000&day=all`;
+      const scope = statusFilter === 'all' ? 'all' : 'today';
+      const qStatus = statusFilter === 'open' ? 'open' : statusFilter;
+      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}&status=${qStatus}&limit=1000&scope=${scope}`;
       const res = await fetch(url, { cache: 'no-store' }).catch(()=>null);
       const j = await res?.json().catch(()=>null);
-      if (j?.ok) setOrders(j.orders);
+      if (j?.ok) {
+        setOrders(j.orders);
+        setActiveTablesToday(j?.meta?.activeTablesToday ?? 0);
+      }
     }, 10000);
     return () => clearInterval(id);
   }, [connected, venueId, statusFilter]);
@@ -223,7 +234,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
             <span className={`inline-block h-2 w-2 rounded-full mr-1 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}></span>
             Live
           </div>
-          <div className="text-xs sm:text-sm text-gray-600 mr-3 flex-shrink-0">Active Tables: {activeTables.size}</div>
+          <div className="text-xs sm:text-sm text-gray-600 mr-3 flex-shrink-0">Active Tables: {activeTablesToday}</div>
           <input
             value={search}
             onChange={e=>setSearch(e.target.value)}
@@ -237,7 +248,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
             className="border rounded px-2 py-1 text-xs sm:text-sm flex-shrink-0"
           />
           <div className="flex gap-2 flex-shrink-0 flex-wrap">
-          {(['all','preparing','served','paid'] as const).map(s=> (
+          {(['all','open','preparing','served','paid'] as const).map(s=> (
             <Button key={s} size="sm" className="flex-shrink-0" variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
               {s[0].toUpperCase()+s.slice(1)}
             </Button>
