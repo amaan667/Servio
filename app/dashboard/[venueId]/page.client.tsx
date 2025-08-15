@@ -47,12 +47,31 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         }, 
         (payload) => {
           console.log('Dashboard order change:', payload);
+          
+          // Get the order date from the payload
+          const orderCreatedAt = payload.new?.created_at || payload.old?.created_at;
+          if (!orderCreatedAt) {
+            console.log('No created_at found in payload, ignoring');
+            return;
+          }
+          
           // Only refresh stats if the order is from today
-          const orderDate = new Date(payload.new?.created_at || payload.old?.created_at);
+          const orderDate = new Date(orderCreatedAt);
           const today = new Date();
-          const isToday = orderDate.getDate() === today.getDate() && 
-                         orderDate.getMonth() === today.getMonth() && 
-                         orderDate.getFullYear() === today.getFullYear();
+          today.setHours(0, 0, 0, 0);
+          
+          const orderDateOnly = new Date(orderDate);
+          orderDateOnly.setHours(0, 0, 0, 0);
+          
+          const isToday = orderDateOnly.getTime() === today.getTime();
+          
+          console.log('[DASHBOARD] Order change analysis:', {
+            orderCreatedAt,
+            orderDateOnly: orderDateOnly.toISOString(),
+            today: today.toISOString(),
+            isToday,
+            orderId: payload.new?.id || payload.old?.id
+          });
           
           if (isToday && venue) {
             console.log('Refreshing stats for today\'s order change');
@@ -97,9 +116,12 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         // Only count orders from today that are not served or paid
         const orderDate = new Date(o.created_at);
         const today = new Date();
-        const isToday = orderDate.getDate() === today.getDate() && 
-                       orderDate.getMonth() === today.getMonth() && 
-                       orderDate.getFullYear() === today.getFullYear();
+        today.setHours(0, 0, 0, 0);
+        
+        const orderDateOnly = new Date(orderDate);
+        orderDateOnly.setHours(0, 0, 0, 0);
+        
+        const isToday = orderDateOnly.getTime() === today.getTime();
         return isToday && o.status !== 'served' && o.status !== 'paid';
       });
 
