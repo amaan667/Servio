@@ -20,7 +20,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 
 function PricingQuickCompare() {
   return (
