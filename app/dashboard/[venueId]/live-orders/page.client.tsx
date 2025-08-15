@@ -241,7 +241,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
       <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
       <audio ref={audioRef} src="/assets/new-order.mp3" preload="auto" />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
-        <Link href={`/dashboard/${venueId}`} className="text-sm text-muted-foreground">← Back to Dashboard</Link>
+        {/* Breadcrumb already renders elsewhere; avoid duplicating back link */}
         <div className="flex items-center gap-2 pb-1 flex-wrap">
           <div className="flex items-center text-xs sm:text-sm text-muted-foreground mr-3 flex-shrink-0">
             <span className={`inline-block h-2 w-2 rounded-full mr-1 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}></span>
