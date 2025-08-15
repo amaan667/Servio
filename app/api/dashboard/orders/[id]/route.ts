@@ -23,7 +23,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // Map UI status -> DB status when needed (served -> delivered)
   const dbStatus = status === 'served' ? 'delivered' : status;
   const update: Record<string, any> = {};
-  if (dbStatus) update.status = dbStatus;
+  // When client asks to set status to 'paid', treat it as payment action
+  if (dbStatus === 'paid') {
+    update.payment_status = 'paid';
+  } else if (dbStatus) {
+    update.status = dbStatus;
+  }
   if (payment_status) update.payment_status = payment_status;
   const { data, error } = await supa
     .from('orders')
