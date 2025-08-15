@@ -101,7 +101,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       const { data: orders } = await supabase
         .from("orders")
-        .select("total_amount, table_number, status, payment_status, created_at")
+        .select("total_amount, table_number, status, payment_status, created_at, items")
         .eq("venue_id", vId)
         .gte("created_at", window.startUtcISO)
         .lt("created_at", window.endUtcISO);
@@ -133,9 +133,18 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         zone: window.zone
       });
 
-      // Calculate revenue from today's paid orders only (case-insensitive; also accept status='paid')
+      // Calculate revenue from today's paid orders only (robust amount fallback)
       const todayRevenue = (orders ?? []).reduce((sum: number, order: any) => {
-        const amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
+        let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
+        if (!Number.isFinite(amount) || amount <= 0) {
+          if (Array.isArray(order.items)) {
+            amount = order.items.reduce((s: number, it: any) => {
+              const unit = Number(it.unit_price ?? it.price ?? 0);
+              const qty = Number(it.quantity ?? it.qty ?? 0);
+              return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
+            }, 0);
+          }
+        }
         const ps = String(order.payment_status ?? '').toLowerCase();
         const st = String(order.status ?? '').toLowerCase();
         return (ps === 'paid' || st === 'paid') ? sum + amount : sum;
