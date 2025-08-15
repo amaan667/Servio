@@ -39,6 +39,14 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
 
   useEffect(() => {
     loadStats();
+    // Listen to orders changes to reflect active tables today
+    const channel = supabase
+      .channel('qr-dashboard-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `venue_id=eq.${venueId}` }, () => {
+        loadStats();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [venueId]);
 
   const loadStats = async () => {
@@ -53,14 +61,28 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
         return;
       }
 
+      let totalTables = 0;
+      let activeQRCodes = 0;
       if (tables) {
-        const activeQRCodes = tables.filter((table: Table) => table.qr_code)?.length || 0;
-        setStats({
-          totalTables: tables.length || 0,
-          activeQRCodes
-        });
+        activeQRCodes = tables.filter((table: Table) => table.qr_code)?.length || 0;
+        totalTables = tables.length || 0;
         setTables(tables);
       }
+
+      // Align "Total Tables" with Active Tables on dashboard: distinct table_number of today's open orders
+      const today = new Date(); today.setHours(0,0,0,0);
+      const startIso = today.toISOString();
+      const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
+      const { data: openOrders } = await supabase
+        .from('orders')
+        .select('table_number, status, created_at')
+        .eq('venue_id', venueId)
+        .in('status', ['pending','preparing'])
+        .gte('created_at', startIso)
+        .lt('created_at', endIso);
+      const activeTables = new Set((openOrders ?? []).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
+
+      setStats({ totalTables: activeTables, activeQRCodes });
     } catch (error) {
       console.error("Error loading QR code stats:", error);
     } finally {
