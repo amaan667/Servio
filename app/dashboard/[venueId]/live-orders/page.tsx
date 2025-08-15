@@ -25,5 +25,10 @@ export default async function LiveOrdersPage({ params }: { params: { venueId: st
   log('LIVE_ORDERS SSR venue', { ok: !!venue, err: vErr?.message });
   if (vErr || !venue) return notFound();
 
-  return <LiveOrdersClient venueId={params.venueId} />;
+  return (
+    <div className="max-w-5xl mx-auto px-3 py-4 sm:p-6">
+      <p className="text-sm text-muted-foreground mb-2">Today • Local time</p>
+      <LiveOrdersClient venueId={params.venueId} />
+    </div>
+  );
 }

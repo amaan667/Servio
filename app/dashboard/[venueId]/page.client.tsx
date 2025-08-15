@@ -169,6 +169,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Reversed breadcrumbs */}
         <NavigationBreadcrumb showBackButton={false} />
         
         <div className="mb-8">
