@@ -12,6 +12,9 @@ Added a comment for venueName state in LiveOrdersClient.tsx on 2025-08-19.
 Railway environment variables are properly configured.
 Google OAuth now uses Railway domain in production.
 
+IMPORTANT: This project is configured for Railway Node.js buildpack deployment.
+No Dockerfile should be used - Railway will automatically detect Next.js and use npm scripts.
+
 Timestamp: 2025-08-16T17:45:00Z 
 
 Trivial change for testing push functionality.
