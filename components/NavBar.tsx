@@ -10,7 +10,7 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
   const homeHref = '/dashboard';
   // Avoid dumping cookies in production logs and mutating them here
   return (
-    <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-32 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
         <Link href={homeHref} className="flex items-center group">
           <Image
@@ -19,7 +19,7 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
             width={240}
             height={60}
             priority
-            className="h-12 w-auto transition-all duration-300 group-hover:scale-105"
+            className="h-48 w-auto transition-all duration-300 group-hover:scale-105"
           />
         </Link>
       </div>

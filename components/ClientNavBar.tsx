@@ -58,7 +58,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
 
   if (loading) {
     return (
-      <nav className="flex items-center justify-between h-20 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <nav className="flex items-center justify-between h-32 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
         <div className="flex items-center">
           <div className="w-[240px] h-[48px] bg-gray-200 animate-pulse rounded"></div>
         </div>
@@ -79,7 +79,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
   };
 
   return (
-    <nav className="flex items-center justify-between h-20 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+    <nav className="flex items-center justify-between h-32 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
       <div className="flex items-center">
         {/* Logo links to main home page */}
         <Link href={homeHref} className="flex items-center group">
@@ -89,7 +89,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
             width={240}
             height={60}
             priority
-            className="h-12 w-auto transition-all duration-300 group-hover:scale-105"
+            className="h-48 w-auto transition-all duration-300 group-hover:scale-105"
           />
         </Link>
       </div>
