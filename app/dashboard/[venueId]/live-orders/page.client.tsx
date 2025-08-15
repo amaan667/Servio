@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTick } from '@/hooks/use-tick';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 type Item = {
   id: string;
@@ -237,6 +238,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
 
   return (
     <div className="max-w-5xl mx-auto px-3 py-4 sm:p-6">
+      <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
       <audio ref={audioRef} src="/assets/new-order.mp3" preload="auto" />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
         <Link href={`/dashboard/${venueId}`} className="text-sm text-muted-foreground">← Back to Dashboard</Link>
