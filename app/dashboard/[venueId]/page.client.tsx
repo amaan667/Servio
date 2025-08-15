@@ -47,9 +47,18 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         }, 
         (payload) => {
           console.log('Dashboard order change:', payload);
-          // Refresh stats when orders change
-          if (venue) {
+          // Only refresh stats if the order is from today
+          const orderDate = new Date(payload.new?.created_at || payload.old?.created_at);
+          const today = new Date();
+          const isToday = orderDate.getDate() === today.getDate() && 
+                         orderDate.getMonth() === today.getMonth() && 
+                         orderDate.getFullYear() === today.getFullYear();
+          
+          if (isToday && venue) {
+            console.log('Refreshing stats for today\'s order change');
             loadStats(venue.venue_id);
+          } else {
+            console.log('Ignoring historical order change, not refreshing stats');
           }
         }
       )
@@ -67,11 +76,15 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       today.setHours(0, 0, 0, 0);
       const startOfToday = today.toISOString();
 
+      console.log('[DASHBOARD] Loading stats for today:', startOfToday);
+
       const { data: orders } = await supabase
         .from("orders")
         .select("total_amount, table_number, status, payment_status, created_at")
         .eq("venue_id", vId)
         .gte("created_at", startOfToday);
+
+      console.log('[DASHBOARD] Found orders for today:', orders?.length || 0);
 
       const { data: menuItems } = await supabase
         .from("menu_items")
@@ -80,20 +93,28 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         .eq("available", true);
 
       // Calculate active tables (orders that are not served or paid AND created today)
+      const todayOrders = (orders ?? []).filter((o: any) => {
+        // Only count orders from today that are not served or paid
+        const orderDate = new Date(o.created_at);
+        const today = new Date();
+        const isToday = orderDate.getDate() === today.getDate() && 
+                       orderDate.getMonth() === today.getMonth() && 
+                       orderDate.getFullYear() === today.getFullYear();
+        return isToday && o.status !== 'served' && o.status !== 'paid';
+      });
+
       const activeTableSet = new Set(
-        (orders ?? [])
-          .filter((o: any) => {
-            // Only count orders from today that are not served or paid
-            const orderDate = new Date(o.created_at);
-            const today = new Date();
-            const isToday = orderDate.getDate() === today.getDate() && 
-                           orderDate.getMonth() === today.getMonth() && 
-                           orderDate.getFullYear() === today.getFullYear();
-            return isToday && o.status !== 'served' && o.status !== 'paid';
-          })
+        todayOrders
           .map((o: any) => o.table_number)
           .filter((t: any) => t != null)
       );
+
+      console.log('[DASHBOARD] Active tables calculation:', {
+        totalOrdersToday: orders?.length || 0,
+        activeOrdersToday: todayOrders.length,
+        activeTables: activeTableSet.size,
+        activeTableNumbers: Array.from(activeTableSet)
+      });
 
       // Calculate revenue from today's orders
       const todayRevenue = (orders ?? []).reduce((sum: number, order: any) => {
