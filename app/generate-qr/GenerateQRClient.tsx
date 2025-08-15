@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Printer, Copy, Check } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { supabase } from "@/lib/sb-client";
 
 interface Props {
   venueId: string;
@@ -17,6 +18,7 @@ interface Props {
 export default function GenerateQRClient({ venueId, venueName }: Props) {
   const [tableNumber, setTableNumber] = useState("1");
   const [copied, setCopied] = useState(false);
+  const [stats, setStats] = useState({ totalTablesToday: 0, activeTablesNow: 0 });
   const router = useRouter();
 
   const orderUrl = process.env.NEXT_PUBLIC_SITE_URL
@@ -63,12 +65,53 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
     }
   };
 
+  useEffect(() => {
+    const loadStats = async () => {
+      // Today window
+      const today = new Date(); today.setHours(0,0,0,0);
+      const startIso = today.toISOString();
+      const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
+      // Any tables that interacted today (orders placed). If qr_scans table exists, union here later.
+      const { data: anyOrders } = await supabase
+        .from('orders')
+        .select('table_number,status,created_at')
+        .eq('venue_id', venueId)
+        .gte('created_at', startIso)
+        .lt('created_at', endIso);
+      const totalTablesToday = new Set((anyOrders ?? []).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
+      const activeTablesNow = new Set((anyOrders ?? []).filter((o:any)=>['pending','preparing'].includes(String(o.status))).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
+      setStats({ totalTablesToday, activeTablesNow });
+    };
+    loadStats();
+  }, [venueId]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb customBackPath="/dashboard" customBackLabel="Dashboard" />
         
-        <div className="mb-8">
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Tables (today)</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalTablesToday}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Active QR Codes (now)</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.activeTablesNow}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Generate QR Codes
           </h1>
