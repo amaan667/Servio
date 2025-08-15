@@ -25,7 +25,7 @@ export default async function Page({ params }: { params: { venueId: string } }) 
   log('DASH SSR venue', { ok: !!venue, err: vErr?.message });
   if (vErr || !venue) return notFound();
 
-  // Compute unique active tables today (open tickets): status != 'served' and != 'paid'
+  // Compute unique active tables today (open tickets): status != 'served' and != 'paid' AND created today
   const startOfTodayISO = () => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString(); };
   const { data: activeRows } = await supabase
     .from('orders')
