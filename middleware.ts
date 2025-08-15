@@ -95,6 +95,14 @@ export async function middleware(req: NextRequest) {
                        req.nextUrl.pathname === '/sign-up' ||
                        req.nextUrl.pathname.startsWith('/order');
 
+  console.log('[MIDDLEWARE] Route check:', {
+    pathname: req.nextUrl.pathname,
+    isProtectedRoute,
+    isPublicRoute,
+    hasSession: !!session,
+    userId: session?.user?.id
+  });
+
   if (!session && isProtectedRoute && !isPublicRoute) {
     console.log('[MIDDLEWARE] No session, redirecting to sign-in from:', req.nextUrl.pathname);
     return NextResponse.redirect(new URL('/sign-in', req.url));

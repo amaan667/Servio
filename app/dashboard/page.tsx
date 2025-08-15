@@ -4,8 +4,12 @@ import { getSupabaseServerReadOnly } from '@/lib/supabase-server'
 export default async function DashboardIndex() {
   const supabase = getSupabaseServerReadOnly()
   
+  console.log('[DASHBOARD] Dashboard index page loading')
+  
   try {
     const { data: { user }, error } = await supabase.auth.getUser()
+    
+    console.log('[DASHBOARD] Auth check result:', { hasUser: !!user, error: error?.message })
     
     if (error) {
       console.error('[DASHBOARD] Auth error:', error.message)
