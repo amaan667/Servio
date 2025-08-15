@@ -212,16 +212,25 @@ export async function POST(req: Request) {
 
     console.log('[PDF_PROCESS] Schema validation successful');
 
-    // Prepare items for database insertion
-    const itemsToUpsert = validated.items.map((item: any, idx: number) => ({
-      venue_id: venueId,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      category: item.category,
-      available: item.available,
-      order_index: idx
-    }));
+    // Prepare items for database insertion with de-duplication by (venue_id, normalized name)
+    const cleanName = (s: string) => s.replace(/\s+/g, ' ').trim();
+    const seen = new Set<string>();
+    const itemsToUpsert = validated.items
+      .map((item: any, idx: number) => ({
+        venue_id: venueId,
+        name: cleanName(item.name),
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        available: item.available,
+        order_index: idx
+      }))
+      .filter((it) => {
+        const key = `${it.venue_id}::${it.name.toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
     console.log('[DB] about_to_upsert', itemsToUpsert.length);
 
