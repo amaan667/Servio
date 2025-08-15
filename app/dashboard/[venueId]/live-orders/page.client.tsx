@@ -150,10 +150,10 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
     const prev = orders;
     setOrders((p)=>p.map(o=>o.id===orderId?{...o, payment_status: 'paid'}:o));
     try {
-      // Try service-role endpoint first via dashboard PATCH (sets paid status field where applicable)
+      // Try service-role endpoint first via dashboard PATCH (sets payment_status)
       let ok = false; let msg = '';
       try {
-        const r1 = await fetch(`/api/dashboard/orders/${orderId}`, { method:'PATCH', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ status: 'paid' }) });
+        const r1 = await fetch(`/api/dashboard/orders/${orderId}`, { method:'PATCH', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ payment_status: 'paid' }) });
         const j1 = await r1.json().catch(()=>({}));
         ok = r1.ok && (j1?.ok === true);
         msg = j1?.error || '';
