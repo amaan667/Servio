@@ -195,13 +195,7 @@ export async function POST(req: Request) {
             price: typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0,
             category: item.category || 'UNCATEGORIZED',
             available: Boolean(item.available ?? true),
-            order_index: Number.isFinite(item.order_index) ? item.order_index : index,
-            import_info: {
-              original_name: item.name,
-              original_price: item.price,
-              original_category: item.category,
-              coerced: true
-            }
+            order_index: Number.isFinite(item.order_index) ? item.order_index : index
           })),
           categories: normalized.categories || ['UNCATEGORIZED']
         };
@@ -227,8 +221,7 @@ export async function POST(req: Request) {
       price: item.price,
       category: item.category,
       available: item.available,
-      order_index: item.order_index,
-      import_info: item.import_info || null
+      order_index: item.order_index
     }));
 
     console.log('[DB] about_to_upsert', itemsToUpsert.length);
