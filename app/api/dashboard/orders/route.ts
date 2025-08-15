@@ -57,12 +57,17 @@ export async function GET(req: Request) {
 
   // Map client statuses to DB statuses for querying
   let statuses: string[] | undefined;
+  let filterPaid: boolean = false;
   if (status === 'all' || !status) {
     statuses = undefined;
   } else if (status === 'open' || status === 'preparing') {
     statuses = ['pending', 'preparing'];
   } else if (status === 'served') {
     statuses = ['delivered'];
+  } else if (status === 'paid') {
+    // Special case: we filter by payment_status, not order.status
+    filterPaid = true;
+    statuses = undefined;
   } else {
     statuses = [status];
   }
@@ -84,6 +89,9 @@ export async function GET(req: Request) {
   }
   if (statuses) {
     ordersQuery = ordersQuery.in('status', statuses as any);
+  }
+  if (filterPaid) {
+    ordersQuery = ordersQuery.eq('payment_status', 'paid' as any);
   }
 
   const { data: orders, error: ordersErr } = await ordersQuery;
