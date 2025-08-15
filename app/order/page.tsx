@@ -120,8 +120,7 @@ export default function CustomerOrderPage() {
         .from("menu_items")
         .select("*, venues!inner(name)")
         .eq("venue_id", venueSlug)
-        .eq("available", true)
-        .order("category", { ascending: true });
+        .eq("available", true);
 
       if (error) {
         console.log(`Error loading menu: ${error.message}, falling back to demo mode`);
@@ -386,18 +385,33 @@ export default function CustomerOrderPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {Array.from(new Set(menuItems.map((item) => item.category))).map(
-                  (category) => (
+                {(() => {
+                  const categoryPriority = [
+                    "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course",
+                    "mains", "main", "salads", "salad", "sides", "side dishes", "desserts", "dessert",
+                    "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
+                  ];
+                  const categories = Array.from(new Set(menuItems.map((i) => i.category)));
+                  const sortedCats = categories.sort((a,b)=>{
+                    const aIdx = categoryPriority.findIndex(p => (a||'').toLowerCase().includes(p));
+                    const bIdx = categoryPriority.findIndex(p => (b||'').toLowerCase().includes(p));
+                    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+                    if (aIdx !== -1) return -1;
+                    if (bIdx !== -1) return 1;
+                    return String(a||'').localeCompare(String(b||''));
+                  });
+                  return sortedCats.map((category) => (
                     <div key={category}>
                       <h2 className="text-xl font-semibold text-gray-900 mb-4 capitalize">
                         {category}
                       </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {menuItems
                           .filter((item) => item.category === category)
+                          .sort((a,b)=> String(a.name).localeCompare(String(b.name)))
                           .map((item) => (
                             <Card key={item.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
+                              <CardContent className="p-4">
                                 <div className="flex justify-between items-start">
                                   <div className="flex-1">
                                     <h3 className="font-semibold text-gray-900">
@@ -409,24 +423,24 @@ export default function CustomerOrderPage() {
                                       </p>
                                     )}
                                     <p className="text-lg font-bold text-purple-600 mt-2">
-                          £{item.price.toFixed(2)}
+                                      £{item.price.toFixed(2)}
                                     </p>
-                      </div>
-                              <Button
+                                  </div>
+                                  <Button
                                     onClick={() => addToCart(item)}
-                                size="sm"
+                                    size="sm"
                                     className="ml-4"
                                   >
                                     <Plus className="h-4 w-4" />
-                              </Button>
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-                  )
-                )}
+                    </div>
+                  ));
+                })()}
               </div>
             )}
           </div>
