@@ -19,23 +19,38 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    console.log('[ERROR_BOUNDARY] getDerivedStateFromError called with:', error.message);
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error('[ERROR_BOUNDARY] ErrorBoundary caught an error:', error, errorInfo);
     
     // Log detailed error information for debugging
-    console.error('Error details:', {
+    console.error('[ERROR_BOUNDARY] Error details:', {
       message: error.message,
       stack: error.stack,
       name: error.name,
       errorInfo: errorInfo
     });
+
+    // Check if this is a temporary error that might resolve itself
+    const isTemporaryError = error.message.includes('Supabase') || 
+                            error.message.includes('environment variables') ||
+                            error.message.includes('network') ||
+                            error.message.includes('fetch');
+
+    if (isTemporaryError) {
+      console.log('[ERROR_BOUNDARY] Detected temporary error, not showing error state immediately');
+      // Don't set hasError for temporary errors, let them resolve
+      return;
+    }
   }
 
   render() {
     if (this.state.hasError) {
+      console.log('[ERROR_BOUNDARY] Rendering error state');
+      
       if (this.props.fallback) {
         return this.props.fallback;
       }
