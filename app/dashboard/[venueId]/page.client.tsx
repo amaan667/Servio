@@ -34,17 +34,44 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     };
 
     loadVenueAndStats();
-  }, [venueId]);
+
+    // Set up real-time subscription for orders
+    const channel = supabase
+      .channel('dashboard-orders')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders',
+          filter: `venue_id=eq.${venueId}`
+        }, 
+        (payload) => {
+          console.log('Dashboard order change:', payload);
+          // Refresh stats when orders change
+          if (venue) {
+            loadStats(venue.venue_id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [venueId, venue]);
 
   const loadStats = async (vId: string) => {
     try {
-      const since = new Date(Date.now() - 24*60*60*1000);
+      // Get start of today in local timezone
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startOfToday = today.toISOString();
 
       const { data: orders } = await supabase
         .from("orders")
         .select("total_amount, table_number, status, payment_status, created_at")
         .eq("venue_id", vId)
-        .gte("created_at", since.toISOString());
+        .gte("created_at", startOfToday);
 
       const { data: menuItems } = await supabase
         .from("menu_items")
@@ -52,16 +79,23 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         .eq("venue_id", vId)
         .eq("available", true);
 
+      // Calculate active tables (orders that are not served or paid)
       const activeTableSet = new Set(
         (orders ?? [])
-          .filter((o: any) => o.status !== 'delivered')
+          .filter((o: any) => o.status !== 'served' && o.status !== 'paid')
           .map((o: any) => o.table_number)
           .filter((t: any) => t != null)
       );
 
+      // Calculate revenue from today's orders
+      const todayRevenue = (orders ?? []).reduce((sum: number, order: any) => {
+        const amount = parseFloat(order.total_amount as any) || 0;
+        return sum + amount;
+      }, 0);
+
       setStats({
         todayOrders: orders?.length || 0,
-        revenue: (orders ?? []).reduce((sum: number, order: any) => sum + (parseFloat(order.total_amount as any) || 0), 0),
+        revenue: todayRevenue,
         activeTables: activeTableSet.size,
         menuItems: menuItems?.length || 0,
         unpaid: (orders ?? []).filter((o: any) => (o.payment_status ?? 'unpaid') !== 'paid').length,

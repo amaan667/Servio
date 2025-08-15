@@ -25,13 +25,13 @@ export default async function Page({ params }: { params: { venueId: string } }) 
   log('DASH SSR venue', { ok: !!venue, err: vErr?.message });
   if (vErr || !venue) return notFound();
 
-  // Compute unique active tables today (open tickets): status != 'delivered'
+  // Compute unique active tables today (open tickets): status != 'served' and != 'paid'
   const startOfTodayISO = () => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString(); };
   const { data: activeRows } = await supabase
     .from('orders')
-    .select('table_number, status, created_at')
+    .select('table_number, status, payment_status, created_at')
     .eq('venue_id', params.venueId)
-    .neq('status', 'delivered')
+    .not('status', 'in', '(served,paid)')
     .gte('created_at', startOfTodayISO());
   const uniqueActiveTables = new Set((activeRows ?? []).map((r: any) => r.table_number).filter((t: any) => t != null)).size;
 
