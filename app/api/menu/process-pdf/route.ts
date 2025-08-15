@@ -227,10 +227,7 @@ export async function POST(req: Request) {
     // Insert into database using service role
     const { data: upsertedItems, error: upsertError } = await supa
       .from('menu_items')
-      .upsert(itemsToUpsert, { 
-        onConflict: 'venue_id,name',
-        ignoreDuplicates: false 
-      })
+      .insert(itemsToUpsert)
       .select('id, name, price, category');
 
     if (upsertError) {
