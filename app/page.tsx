@@ -90,17 +90,23 @@ function HomePageContent() {
   }, []);
 
   const handleGetStarted = () => {
+    console.log('[HOME] handleGetStarted called', { hasSession: !!session, sessionId: session?.user?.id });
     if (session) {
+      console.log('[HOME] Redirecting to dashboard');
       router.push("/dashboard");
     } else {
+      console.log('[HOME] Redirecting to sign-up');
       router.push("/sign-up");
     }
   };
 
   const handleSignIn = () => {
+    console.log('[HOME] handleSignIn called', { hasSession: !!session, sessionId: session?.user?.id });
     if (session) {
+      console.log('[HOME] Redirecting to dashboard');
       router.push("/dashboard");
     } else {
+      console.log('[HOME] Redirecting to sign-in');
       router.push("/sign-in");
     }
   };
