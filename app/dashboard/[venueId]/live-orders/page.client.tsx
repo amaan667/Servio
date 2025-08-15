@@ -32,7 +32,9 @@ type Order = {
 export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const supabase = createClientComponentClient();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all'|'preparing'|'served'|'paid'|'open'>('open');
+  const [statusFilter, setStatusFilter] = useState<'all'|'preparing'|'served'|'paid'>('preparing');
+  const cacheRef = useRef<Record<string, { orders: Order[]; meta?: any }>>({});
+  const controllerRef = useRef<AbortController | null>(null);
   const [activeTablesToday, setActiveTablesToday] = useState<number>(0);
   const [tableFilter, setTableFilter] = useState<string>('');
   const [search, setSearch] = useState<string>('');
@@ -43,19 +45,29 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const tick = useTick();
   const { toast } = useToast();
 
-  // fetch initial
+  // fetch with cache for seamless tab switching
   useEffect(() => {
     (async () => {
-      // scope today for all tabs except 'all'
       const scope = statusFilter === 'all' ? 'all' : 'today';
-      const qStatus = statusFilter === 'open' ? 'open' : statusFilter;
-      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}${qStatus ? `&status=${qStatus}` : ''}&limit=1000&scope=${scope}`;
-      const res = await fetch(url, { cache:'no-store' });
-      const j = await res.json();
-      if (j?.ok) {
-        setOrders(j.orders);
-        setActiveTablesToday(j?.meta?.activeTablesToday ?? 0);
+      const key = `${statusFilter}:${scope}`;
+      const cached = cacheRef.current[key];
+      if (cached) {
+        setOrders(cached.orders);
+        setActiveTablesToday(cached?.meta?.activeTablesToday ?? 0);
       }
+      controllerRef.current?.abort();
+      const ac = new AbortController();
+      controllerRef.current = ac;
+      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}&status=${statusFilter}&limit=1000&scope=${scope}`;
+      try {
+        const res = await fetch(url, { cache:'no-store', signal: ac.signal });
+        const j = await res.json();
+        if (j?.ok) {
+          cacheRef.current[key] = { orders: j.orders, meta: j.meta };
+          setOrders(j.orders);
+          setActiveTablesToday(j?.meta?.activeTablesToday ?? 0);
+        }
+      } catch {}
     })();
   }, [venueId, statusFilter]);
 
@@ -90,8 +102,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
     if (connected) return;
     const id = setInterval(async () => {
       const scope = statusFilter === 'all' ? 'all' : 'today';
-      const qStatus = statusFilter === 'open' ? 'open' : statusFilter;
-      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}&status=${qStatus}&limit=1000&scope=${scope}`;
+      const url = `/api/dashboard/orders?venueId=${encodeURIComponent(venueId)}&status=${statusFilter}&limit=1000&scope=${scope}`;
       const res = await fetch(url, { cache: 'no-store' }).catch(()=>null);
       const j = await res?.json().catch(()=>null);
       if (j?.ok) {
@@ -228,13 +239,13 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
     <div className="max-w-5xl mx-auto px-3 py-4 sm:p-6">
       <audio ref={audioRef} src="/assets/new-order.mp3" preload="auto" />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
-        <Link href={`/dashboard/${venueId}`} className="text-sm text-gray-600">← Back to Dashboard</Link>
+        <Link href={`/dashboard/${venueId}`} className="text-sm text-muted-foreground">← Back to Dashboard</Link>
         <div className="flex items-center gap-2 pb-1 flex-wrap">
-          <div className="flex items-center text-xs sm:text-sm text-gray-600 mr-3 flex-shrink-0">
+          <div className="flex items-center text-xs sm:text-sm text-muted-foreground mr-3 flex-shrink-0">
             <span className={`inline-block h-2 w-2 rounded-full mr-1 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}></span>
             Live
           </div>
-          <div className="text-xs sm:text-sm text-gray-600 mr-3 flex-shrink-0">Active Tables: {activeTablesToday}</div>
+          <div className="text-xs sm:text-sm text-muted-foreground mr-3 flex-shrink-0">Active Tables: {activeTablesToday}</div>
           <input
             value={search}
             onChange={e=>setSearch(e.target.value)}
@@ -248,7 +259,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
             className="border rounded px-2 py-1 text-xs sm:text-sm flex-shrink-0"
           />
           <div className="flex gap-2 flex-shrink-0 flex-wrap">
-          {(['all','open','preparing','served','paid'] as const).map(s=> (
+          {(['all','preparing','served','paid'] as const).map(s=> (
             <Button key={s} size="sm" className="flex-shrink-0" variant={s===statusFilter?'default':'outline'} onClick={()=>setStatusFilter(s)}>
               {s[0].toUpperCase()+s.slice(1)}
             </Button>
@@ -270,31 +281,31 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
           }, {});
           return (
             <div key={key}>
-              <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">{dateLabel}</div>
+              <div className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2">{dateLabel}</div>
               {Object.entries(byTable).map(([table, list]) => (
-                <div key={table} className="rounded-lg border bg-white mb-3">
-                  <div className="px-4 py-2 border-b bg-gray-50 text-xs sm:text-sm font-medium sticky top-0 z-10">Table {table}</div>
+                <div key={table} className="rounded-lg border bg-card mb-3">
+                  <div className="px-4 py-2 border-b bg-muted text-xs sm:text-sm font-medium sticky top-0 z-10">Table {table}</div>
                   <div className="p-4 space-y-4">
                     {list.map(o => (
-          <div key={o.id} className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm">
+          <div key={o.id} className="rounded-lg border bg-card p-3 sm:p-4 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="text-xs sm:text-sm text-gray-600 flex flex-wrap items-center gap-2">
+              <div className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-2">
                 <span className="font-mono">#{o.id.slice(0,6)}</span>
-                <span>• Table {o.table_number ?? '—'}</span>
-                <span>• {new Date(o.created_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</span>
+                <span className="text-foreground">• Table {o.table_number ?? '—'}</span>
+                <span className="text-foreground">• {new Date(o.created_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</span>
                 <StatusChip status={o.status} />
                 <PaidChip paid={(o.payment_status ?? 'unpaid') === 'paid'} />
                 <RowTimer nowTick={tick} createdAt={o.created_at} />
               </div>
-              <div className="text-right sm:min-w-[100px]">
-                <div className="text-base sm:text-lg font-semibold">{toMoney(o.computed_total)}</div>
+              <div className="text-right sm:min-w-[100px] text-foreground">
+                <div className="text-base sm:text-lg font-semibold text-foreground">{toMoney(o.computed_total)}</div>
                  {(o.payment_status ?? 'unpaid') !== 'paid' && !(o.status === 'served' || (o as any).status === 'delivered') && (
                    <Badge className="mt-1 bg-amber-100 text-amber-700">Unpaid</Badge>
                  )}
               </div>
             </div>
             <div className="mt-1 text-[11px] sm:text-xs" />
-             <div className="mt-2 text-sm sm:text-[13px] text-gray-700">
+             <div className="mt-2 text-sm sm:text-[13px] text-foreground">
               {(() => {
                 const items = o.items ?? [];
                 const isOpen = !!expanded[o.id];
@@ -305,7 +316,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
                       <div key={it.id} className="flex justify-between py-1">
                         <div>
                           <span className="font-medium">{it.quantity}× {it.item_name}</span>
-                          {it.special_instructions ? <span className="text-gray-500"> — {it.special_instructions}</span> : null}
+                          {it.special_instructions ? <span className="text-muted-foreground"> — {it.special_instructions}</span> : null}
                         </div>
                         <div className="ml-2 sm:ml-4">{toMoney(it.line_total)}</div>
                       </div>
@@ -321,9 +332,9 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
                   </>
                 );
               })()}
-              {o.notes ? <div className="mt-2 text-gray-600 italic">Notes: {o.notes}</div> : null}
+              {o.notes ? <div className="mt-2 text-muted-foreground italic">Notes: {o.notes}</div> : null}
               {!o.items?.length && (
-                <div className="text-xs text-gray-500">No items found for this order.</div>
+                <div className="text-xs text-muted-foreground">No items found for this order.</div>
               )}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
