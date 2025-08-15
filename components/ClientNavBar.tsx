@@ -80,8 +80,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
 
   return (
     <nav className="flex items-center justify-between h-32 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-      <div className="flex items-center">
-        {/* Logo links to main home page */}
+      {/* Logo - Left aligned on desktop, centered on mobile */}
+      <div className="flex-shrink-0 md:flex-shrink-0 md:order-1 order-2 md:justify-start justify-center flex-1 md:flex-none">
         <Link href={homeHref} className="flex items-center group">
           <Image
             src="/assets/servio-logo-updated.png"
@@ -94,8 +94,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
         </Link>
       </div>
       
-      {/* Desktop Navigation */}
-      <div className="hidden md:flex items-center space-x-4">
+      {/* Desktop Navigation - Right side */}
+      <div className="hidden md:flex items-center space-x-4 md:order-2">
         {/* Home goes to main home page */}
         <Link 
           href={homeHref} 
@@ -151,8 +151,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
         )}
       </div>
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden flex items-center">
+      {/* Mobile Navigation - Right side */}
+      <div className="md:hidden flex items-center md:order-3 order-1">
         {showActions && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

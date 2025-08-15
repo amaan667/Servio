@@ -60,8 +60,8 @@ export default function GlobalNav() {
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-32 sm:h-36">
-          {/* Logo */}
-          <div className="flex-shrink-0">
+          {/* Logo - Left aligned on desktop, centered on mobile */}
+          <div className="flex-shrink-0 md:flex-shrink-0 md:order-1 order-2 md:justify-start justify-center flex-1 md:flex-none">
             <Link href={session ? "/dashboard" : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
@@ -74,8 +74,8 @@ export default function GlobalNav() {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:block">
+          {/* Desktop Navigation - Right side */}
+          <div className="hidden md:block md:order-2">
             <div className="ml-4 lg:ml-6 flex items-center space-x-3 lg:space-x-4">
               {session ? (
                 // Signed in navigation
@@ -168,8 +168,8 @@ export default function GlobalNav() {
             </div>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile menu button - Right side */}
+          <div className="md:hidden md:order-3 order-1">
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
