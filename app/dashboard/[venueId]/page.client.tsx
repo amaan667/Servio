@@ -9,11 +9,13 @@ import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus
 import { supabase } from "@/lib/sb-client";
 import { NavBar } from "@/components/NavBar";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { todayWindowForTZ } from "@/lib/time";
 
 export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0 }: { venueId: string; userId: string; activeTables?: number }) {
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, activeTables: activeTablesFromSSR, menuItems: 0, unpaid: 0 });
+  const [todayWindow, setTodayWindow] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -27,7 +29,9 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       
       if (!error && venueData) {
         setVenue(venueData);
-        await loadStats(venueData.venue_id);
+        const window = todayWindowForTZ(venueData.timezone);
+        setTodayWindow(window);
+        await loadStats(venueData.venue_id, window);
       }
 
       setLoading(false);
@@ -55,27 +59,20 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
             return;
           }
           
-          // Only refresh stats if the order is from today
-          const orderDate = new Date(orderCreatedAt);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          const orderDateOnly = new Date(orderDate);
-          orderDateOnly.setHours(0, 0, 0, 0);
-          
-          const isToday = orderDateOnly.getTime() === today.getTime();
+          // Only refresh stats if the order is within today's window
+          const isInTodayWindow = orderCreatedAt >= todayWindow?.startUtcISO && orderCreatedAt < todayWindow?.endUtcISO;
           
           console.log('[DASHBOARD] Order change analysis:', {
             orderCreatedAt,
-            orderDateOnly: orderDateOnly.toISOString(),
-            today: today.toISOString(),
-            isToday,
+            windowStart: todayWindow?.startUtcISO,
+            windowEnd: todayWindow?.endUtcISO,
+            isInTodayWindow,
             orderId: payload.new?.id || payload.old?.id
           });
           
-          if (isToday && venue) {
+          if (isInTodayWindow && venue && todayWindow) {
             console.log('Refreshing stats for today\'s order change');
-            loadStats(venue.venue_id);
+            loadStats(venue.venue_id, todayWindow);
           } else {
             console.log('Ignoring historical order change, not refreshing stats');
           }
@@ -88,20 +85,16 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     };
   }, [venueId, venue]);
 
-  const loadStats = async (vId: string) => {
+  const loadStats = async (vId: string, window: any) => {
     try {
-      // Get start of today in local timezone
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const startOfToday = today.toISOString();
-
-      console.log('[DASHBOARD] Loading stats for today:', startOfToday);
+      console.log('[DASHBOARD] Loading stats for today:', window.startUtcISO, 'to', window.endUtcISO);
 
       const { data: orders } = await supabase
         .from("orders")
         .select("total_amount, table_number, status, payment_status, created_at")
         .eq("venue_id", vId)
-        .gte("created_at", startOfToday);
+        .gte("created_at", window.startUtcISO)
+        .lt("created_at", window.endUtcISO);
 
       console.log('[DASHBOARD] Found orders for today:', orders?.length || 0);
 
@@ -113,16 +106,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       // Calculate active tables (orders that are not served or paid AND created today)
       const todayOrders = (orders ?? []).filter((o: any) => {
-        // Only count orders from today that are not served or paid
-        const orderDate = new Date(o.created_at);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const orderDateOnly = new Date(orderDate);
-        orderDateOnly.setHours(0, 0, 0, 0);
-        
-        const isToday = orderDateOnly.getTime() === today.getTime();
-        return isToday && o.status !== 'served' && o.status !== 'paid';
+        return o.status !== 'served' && o.status !== 'paid';
       });
 
       const activeTableSet = new Set(
@@ -135,7 +119,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         totalOrdersToday: orders?.length || 0,
         activeOrdersToday: todayOrders.length,
         activeTables: activeTableSet.size,
-        activeTableNumbers: Array.from(activeTableSet)
+        activeTableNumbers: Array.from(activeTableSet),
+        zone: window.zone
       });
 
       // Calculate revenue from today's orders

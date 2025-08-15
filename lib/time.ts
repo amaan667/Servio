@@ -1,3 +1,5 @@
+import { DateTime } from 'luxon';
+
 export type AmPm = 'AM' | 'PM';
 
 export function to24h(hour12: number, minute: number, ampm: AmPm): { hour: number; minute: number } {
@@ -24,6 +26,19 @@ export function addDaysISO(dateYYYYMMDD: string, days: number): string {
   const d = new Date(dateYYYYMMDD);
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+export function todayWindowForTZ(tz?: string) {
+  const zone = tz || 'Europe/London';
+  const start = DateTime.now().setZone(zone).startOf('day');
+  const end = start.plus({ days: 1 });
+  return {
+    zone,
+    startUtcISO: start.toUTC().toISO(),
+    endUtcISO: end.toUTC().toISO(),
+    startLocalISO: start.toISO(),
+    endLocalISO: end.toISO(),
+  };
 }
 
 
