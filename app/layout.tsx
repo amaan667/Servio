@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
+import ThemeToggleFloat from "@/components/ThemeToggleFloat";
 import AppHeader from "@/components/AppHeader";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -26,6 +27,7 @@ export default function RootLayout({
           <Providers>
             <AppHeader />
             {children}
+            <ThemeToggleFloat />
           </Providers>
         </ErrorBoundary>
       </body>
