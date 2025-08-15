@@ -118,7 +118,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
           <p className="text-gray-600">
             Create QR codes for your tables so customers can order easily
           </p>
-        </div>
+        
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card>
