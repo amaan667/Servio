@@ -147,7 +147,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+          <p className="mt-2 text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -156,16 +156,16 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb showBackButton={false} />
         
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             Welcome back, Manager!
           </h2>
-          <p className="text-gray-600">Here's what's happening at {venue?.name || "your venue"} today</p>
+          <p className="text-muted-foreground">Here's what's happening at {venue?.name || "your venue"} today</p>
         </div>
 
         {/* Stats Overview */}
@@ -174,8 +174,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
             <CardContent className="p-6 cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/live-orders?since=today`)}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Today's Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Today's Orders</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.todayOrders}</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Clock className="h-6 w-6 text-blue-600" />
@@ -188,8 +188,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
             <CardContent className="p-6 cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/analytics`)}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Revenue</p>
+                  <p className="text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-green-600" />
@@ -205,8 +205,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Active Tables</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.activeTables}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Active Tables</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.activeTables}</p>
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                   <Users className="h-6 w-6 text-purple-600" />
@@ -219,8 +219,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Menu Items</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.menuItems}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Menu Items</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.menuItems}</p>
                 </div>
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                   <ShoppingBag className="h-6 w-6 text-orange-600" />
@@ -238,8 +238,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                   <Clock className="h-6 w-6 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Live Orders</h3>
-                <p className="text-gray-500 text-sm">Monitor and manage incoming orders in real-time</p>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Live Orders</h3>
+                <p className="text-muted-foreground text-sm">Monitor and manage incoming orders in real-time</p>
               </CardContent>
             </Card>
           </Link>
@@ -250,8 +250,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
                   <ShoppingBag className="h-6 w-6 text-orange-600" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Menu Management</h3>
-                <p className="text-gray-500 text-sm">Update your menu items and manage categories</p>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Menu Management</h3>
+                <p className="text-muted-foreground text-sm">Update your menu items and manage categories</p>
               </CardContent>
             </Card>
           </Link>
@@ -262,8 +262,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
                   <QrCode className="h-6 w-6 text-purple-600" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">QR Codes</h3>
-                <p className="text-gray-500 text-sm">Generate and manage QR codes for your tables</p>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">QR Codes</h3>
+                <p className="text-muted-foreground text-sm">Generate and manage QR codes for your tables</p>
               </CardContent>
             </Card>
           </Link>
@@ -274,8 +274,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                   <BarChart className="h-6 w-6 text-green-600" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Analytics</h3>
-                <p className="text-gray-500 text-sm">View detailed reports and business insights</p>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Analytics</h3>
+                <p className="text-muted-foreground text-sm">View detailed reports and business insights</p>
               </CardContent>
             </Card>
           </Link>
@@ -286,8 +286,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                 <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
                   <Users className="h-6 w-6 text-slate-700" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Staff Management</h3>
-                <p className="text-gray-500 text-sm">Add staff and manage roles</p>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Staff Management</h3>
+                <p className="text-muted-foreground text-sm">Add staff and manage roles</p>
               </CardContent>
             </Card>
           </Link>
@@ -297,18 +297,18 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         <div className="mt-12">
           <Card>
             <CardHeader>
-              <h3 className="text-lg font-semibold">Getting Started</h3>
-              <p className="text-gray-500">Complete these steps to set up your venue</p>
+              <h3 className="text-lg font-semibold text-foreground">Getting Started</h3>
+              <p className="text-muted-foreground">Complete these steps to set up your venue</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                     <Plus className="h-4 w-4 text-purple-600" />
                   </div>
                   <div>
-                    <h4 className="font-medium">Add Menu Items</h4>
-                    <p className="text-sm text-gray-500">Upload your menu or add items manually</p>
+                    <h4 className="font-medium text-foreground">Add Menu Items</h4>
+                    <p className="text-sm text-muted-foreground">Upload your menu or add items manually</p>
                   </div>
                 </div>
                 <Button variant="outline" onClick={() => router.push(`/dashboard/${venueId}/menu?openAdd=true`)}>
@@ -316,14 +316,14 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                     <QrCode className="h-4 w-4 text-purple-600" />
                   </div>
                   <div>
-                    <h4 className="font-medium">Generate QR Codes</h4>
-                    <p className="text-sm text-gray-500">Create QR codes for your tables</p>
+                    <h4 className="font-medium text-foreground">Generate QR Codes</h4>
+                    <p className="text-sm text-muted-foreground">Create QR codes for your tables</p>
                   </div>
                 </div>
                 <Button variant="outline" onClick={() => router.push(`/dashboard/${venueId}/qr-codes`)}>
@@ -331,14 +331,14 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                     <Settings className="h-4 w-4 text-purple-600" />
                   </div>
                   <div>
-                    <h4 className="font-medium">Configure Settings</h4>
-                    <p className="text-sm text-gray-500">Customize your venue settings</p>
+                    <h4 className="font-medium text-foreground">Configure Settings</h4>
+                    <p className="text-sm text-muted-foreground">Customize your venue settings</p>
                   </div>
                 </div>
                 <Button variant="outline" onClick={() => router.push(`/settings`)}>

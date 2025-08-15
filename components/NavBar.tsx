@@ -24,7 +24,7 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
   };
 
   return (
-    <nav className="flex items-center justify-between h-28 sm:h-36 px-4 sm:px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-28 sm:h-36 px-4 sm:px-6 bg-background border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center min-w-0">
         <Link href="/" className="flex items-center min-w-0">
           <Image
@@ -40,7 +40,7 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
       <div className="flex items-center gap-3 sm:gap-6">
         <Link
           href="/"
-          className="text-gray-700 hover:text-gray-900 font-medium text-sm sm:text-base"
+          className="text-foreground hover:text-foreground/80 font-medium text-sm sm:text-base"
         >
           Home
         </Link>
