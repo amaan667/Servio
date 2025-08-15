@@ -18,8 +18,8 @@ interface Table {
 }
 
 interface Stats {
-  totalTables: number;
-  activeQRCodes: number;
+  totalTables: number; // distinct tables that had scans or any orders today
+  activeQRCodes: number; // tables currently active (open orders today)
 }
 
 interface QRCodeClientProps {
@@ -51,28 +51,22 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
 
   const loadStats = async () => {
     try {
+      // Load tables list
       const { data: tables, error: tablesError } = await supabase
         .from("tables")
         .select("id, qr_code, created_at, name")
         .eq("venue_id", venueId);
-
       if (tablesError) {
         console.error("Error fetching tables:", tablesError.message);
-        return;
+      } else {
+        setTables(tables || []);
       }
 
-      let totalTables = 0;
-      let activeQRCodes = 0;
-      if (tables) {
-        activeQRCodes = tables.filter((table: Table) => table.qr_code)?.length || 0;
-        totalTables = tables.length || 0;
-        setTables(tables);
-      }
-
-      // Align "Total Tables" with Active Tables on dashboard: distinct table_number of today's open orders
+      // Today window in UTC (device-based)
       const today = new Date(); today.setHours(0,0,0,0);
       const startIso = today.toISOString();
       const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
+      // Active open orders today (pending|preparing)
       const { data: openOrders } = await supabase
         .from('orders')
         .select('table_number, status, created_at')
@@ -81,8 +75,17 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
         .gte('created_at', startIso)
         .lt('created_at', endIso);
       const activeTables = new Set((openOrders ?? []).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
+      // Any tables that interacted today (any order placed). If you later add a qr_scans table,
+      // union those table_numbers here as well.
+      const { data: anyOrders } = await supabase
+        .from('orders')
+        .select('table_number')
+        .eq('venue_id', venueId)
+        .gte('created_at', startIso)
+        .lt('created_at', endIso);
+      const interactedTables = new Set((anyOrders ?? []).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
 
-      setStats({ totalTables: activeTables, activeQRCodes });
+      setStats({ totalTables: interactedTables, activeQRCodes: activeTables });
     } catch (error) {
       console.error("Error loading QR code stats:", error);
     } finally {
