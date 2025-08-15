@@ -9,6 +9,7 @@ import { NavBar } from '@/components/NavBar';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 type Staff = { id: string; name: string; role: string; active: boolean; area?: string | null };
+type Shift = { id: string; staff_id: string; start_time: string; end_time: string; area?: string | null };
 
 export default function StaffClient({ venueId }: { venueId: string }) {
   const router = useRouter();
@@ -17,6 +18,11 @@ export default function StaffClient({ venueId }: { venueId: string }) {
   const [role, setRole] = useState('Server');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [openShiftFor, setOpenShiftFor] = useState<string | null>(null);
+  const [shiftStart, setShiftStart] = useState('');
+  const [shiftEnd, setShiftEnd] = useState('');
+  const [shiftArea, setShiftArea] = useState('');
 
   const load = async () => {
     setError(null);
@@ -76,6 +82,39 @@ export default function StaffClient({ venueId }: { venueId: string }) {
     if (error) { console.error('[STAFF] toggle error', error); setError(error.message); }
     else load();
   };
+
+  async function updateRole(id: string, role: string) {
+    await supabase.from('staff').update({ role }).eq('id', id);
+    load();
+  }
+
+  async function updateArea(id: string, area: string) {
+    await supabase.from('staff').update({ area }).eq('id', id);
+    load();
+  }
+
+  async function addShift(staffId: string) {
+    if (!shiftStart || !shiftEnd) return;
+    const { error } = await supabase.from('staff_shifts').insert({ staff_id: staffId, start_time: shiftStart, end_time: shiftEnd, area: shiftArea || null });
+    if (!error) {
+      setOpenShiftFor(null); setShiftStart(''); setShiftEnd(''); setShiftArea('');
+      loadShifts();
+    }
+  }
+
+  async function loadShifts() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const startIso = today.toISOString();
+    const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
+    const { data } = await supabase
+      .from('staff_shifts')
+      .select('id,staff_id,start_time,end_time,area')
+      .gte('start_time', startIso)
+      .lt('end_time', endIso);
+    setShifts((data || []) as any);
+  }
+
+  useEffect(()=>{ loadShifts(); }, [venueId]);
 
   return (
     <div className="min-h-screen bg-gray-50">

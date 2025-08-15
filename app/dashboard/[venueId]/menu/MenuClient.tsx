@@ -54,10 +54,8 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       .select('*')
       .eq('venue_id', venueId)
       .order('category', { ascending: true })
-      .order('order_index', { ascending: true, nullsLast: true })
       .order('name', { ascending: true });
 
-    
     if (!error && data) {
       setMenuItems(data);
     } else if (error) {
