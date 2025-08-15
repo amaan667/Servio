@@ -79,10 +79,18 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         .eq("venue_id", vId)
         .eq("available", true);
 
-      // Calculate active tables (orders that are not served or paid)
+      // Calculate active tables (orders that are not served or paid AND created today)
       const activeTableSet = new Set(
         (orders ?? [])
-          .filter((o: any) => o.status !== 'served' && o.status !== 'paid')
+          .filter((o: any) => {
+            // Only count orders from today that are not served or paid
+            const orderDate = new Date(o.created_at);
+            const today = new Date();
+            const isToday = orderDate.getDate() === today.getDate() && 
+                           orderDate.getMonth() === today.getMonth() && 
+                           orderDate.getFullYear() === today.getFullYear();
+            return isToday && o.status !== 'served' && o.status !== 'paid';
+          })
           .map((o: any) => o.table_number)
           .filter((t: any) => t != null)
       );
