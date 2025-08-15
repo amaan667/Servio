@@ -38,8 +38,17 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     };
 
     loadVenueAndStats();
+  }, [venueId, venue]);
 
-    // Set up real-time subscription for orders
+  // Set up real-time subscription for orders (separate useEffect to avoid dependency issues)
+  useEffect(() => {
+    if (!venue || !todayWindow) {
+      console.log('[DASHBOARD] Skipping subscription setup - venue or todayWindow not ready');
+      return;
+    }
+
+    console.log('[DASHBOARD] Setting up real-time subscription with window:', todayWindow);
+    
     const channel = supabase
       .channel('dashboard-orders')
       .on('postgres_changes', 
@@ -60,17 +69,17 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
           }
           
           // Only refresh stats if the order is within today's window
-          const isInTodayWindow = orderCreatedAt >= todayWindow?.startUtcISO && orderCreatedAt < todayWindow?.endUtcISO;
+          const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
           
           console.log('[DASHBOARD] Order change analysis:', {
             orderCreatedAt,
-            windowStart: todayWindow?.startUtcISO,
-            windowEnd: todayWindow?.endUtcISO,
+            windowStart: todayWindow.startUtcISO,
+            windowEnd: todayWindow.endUtcISO,
             isInTodayWindow,
             orderId: payload.new?.id || payload.old?.id
           });
           
-          if (isInTodayWindow && venue && todayWindow) {
+          if (isInTodayWindow) {
             console.log('Refreshing stats for today\'s order change');
             loadStats(venue.venue_id, todayWindow);
           } else {
@@ -81,9 +90,10 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       .subscribe();
 
     return () => {
+      console.log('[DASHBOARD] Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [venueId, venue]);
+  }, [venueId, venue, todayWindow]);
 
   const loadStats = async (vId: string, window: any) => {
     try {
