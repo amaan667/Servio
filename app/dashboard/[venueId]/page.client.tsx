@@ -133,11 +133,12 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         zone: window.zone
       });
 
-      // Calculate revenue from today's paid orders only
+      // Calculate revenue from today's paid orders only (case-insensitive; also accept status='paid')
       const todayRevenue = (orders ?? []).reduce((sum: number, order: any) => {
-        const amount = parseFloat(order.total_amount as any) || 0;
-        // Only count orders that are marked as paid
-        return (order.payment_status === 'paid') ? sum + amount : sum;
+        const amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
+        const ps = String(order.payment_status ?? '').toLowerCase();
+        const st = String(order.status ?? '').toLowerCase();
+        return (ps === 'paid' || st === 'paid') ? sum + amount : sum;
       }, 0);
 
       setStats({
@@ -145,7 +146,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         revenue: todayRevenue,
         activeTables: activeTableSet.size,
         menuItems: menuItems?.length || 0,
-        unpaid: (orders ?? []).filter((o: any) => (o.payment_status ?? 'unpaid') !== 'paid').length,
+        unpaid: (orders ?? []).filter((o: any) => String(o.payment_status ?? '').toLowerCase() !== 'paid' && String(o.status ?? '').toLowerCase() !== 'paid').length,
       });
     } catch (error) {
       console.error("Error loading stats:", error);
