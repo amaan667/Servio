@@ -26,6 +26,13 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className={cn("mb-6 sm:mb-8", className)}>
+      {/* Back button above breadcrumbs */}
+      {showBackForward && (
+        <div className="mb-2">
+          <BackForwardNav venueId={venueId} />
+        </div>
+      )}
+      
       {/* Breadcrumbs */}
       {showBreadcrumbs && <UniversalBreadcrumbs />}
       
@@ -36,9 +43,6 @@ export default function PageHeader({
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
               {title}
             </h1>
-            {showBackForward && (
-              <BackForwardNav venueId={venueId} />
-            )}
           </div>
           {description && (
             <p className="text-sm sm:text-lg text-muted-foreground">
