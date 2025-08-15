@@ -10,7 +10,6 @@ import { supabase } from "@/lib/sb-client";
 import { NavBar } from "@/components/NavBar";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
-import Breadcrumbs from '@/components/Breadcrumbs';
 
 export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0 }: { venueId: string; userId: string; activeTables?: number }) {
   const [venue, setVenue] = useState<any>(null);
@@ -171,7 +170,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Reversed breadcrumbs */}
-        <Breadcrumbs />
+        <NavigationBreadcrumb showBackButton={true} showHomeButton={true} customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
         
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-2">
