@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { NavBar } from '@/components/NavBar';
-import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 type Staff = { id: string; name: string; role: string; active: boolean; area?: string | null };
 
@@ -81,7 +81,7 @@ export default function StaffClient({ venueId }: { venueId: string }) {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       <div className="max-w-5xl mx-auto p-6">
-        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
+        <Breadcrumbs />
         <h1 className="text-2xl font-semibold mb-4">Staff Management</h1>
 
         <Card className="mb-4"><CardContent className="p-4">
