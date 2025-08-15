@@ -213,13 +213,14 @@ export async function POST(req: Request) {
     console.log('[PDF_PROCESS] Schema validation successful');
 
     // Prepare items for database insertion
-    const itemsToUpsert = validated.items.map((item: any) => ({
+    const itemsToUpsert = validated.items.map((item: any, idx: number) => ({
       venue_id: venueId,
       name: item.name,
       description: item.description,
       price: item.price,
       category: item.category,
-      available: item.available
+      available: item.available,
+      order_index: idx
     }));
 
     console.log('[DB] about_to_upsert', itemsToUpsert.length);
@@ -227,7 +228,7 @@ export async function POST(req: Request) {
     // Insert into database using service role
     const { data: upsertedItems, error: upsertError } = await supa
       .from('menu_items')
-      .insert(itemsToUpsert)
+      .upsert(itemsToUpsert, { onConflict: 'venue_id,name', ignoreDuplicates: false })
       .select('id, name, price, category');
 
     if (upsertError) {
