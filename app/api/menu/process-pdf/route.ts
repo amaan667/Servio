@@ -231,23 +231,30 @@ export async function POST(req: Request) {
         return true;
       });
 
-    console.log('[DB] about_to_upsert', itemsToUpsert.length);
+    console.log('[DB] about_to_insert', itemsToUpsert.length);
 
-    // Insert into database using service role
-    const { data: upsertedItems, error: upsertError } = await supa
+    // Fetch existing items to avoid duplicates without relying on DB constraint
+    const { data: existing } = await supa
       .from('menu_items')
-      .upsert(itemsToUpsert, { onConflict: 'venue_id,name', ignoreDuplicates: false })
-      .select('id, name, price, category');
+      .select('name')
+      .eq('venue_id', venueId);
+    const existingNames = new Set((existing || []).map((r:any)=>String(r.name||'').toLowerCase()));
+    const toInsert = itemsToUpsert.filter(it=>!existingNames.has(String(it.name).toLowerCase()));
 
-    if (upsertError) {
-      console.error('[PDF_PROCESS] Database insertion failed:', upsertError);
-      return NextResponse.json({ 
-        ok: false, 
-        error: `Database insertion failed: ${upsertError.message}` 
-      }, { status: 500 });
+    let upsertedItems: any[] = [];
+    if (toInsert.length) {
+      const { data: inserted, error: insertErr } = await supa
+        .from('menu_items')
+        .insert(toInsert)
+        .select('id, name, price, category');
+      if (insertErr) {
+        console.error('[PDF_PROCESS] Database insertion failed:', insertErr);
+        return NextResponse.json({ ok:false, error: `Database insertion failed: ${insertErr.message}` }, { status:500 });
+      }
+      upsertedItems = inserted || [];
     }
 
-    const inserted = upsertedItems?.length || 0;
+    const inserted = upsertedItems.length || 0;
     const total = validated.items.length;
     const skipped = total - inserted;
 
