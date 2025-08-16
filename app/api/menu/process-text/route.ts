@@ -95,8 +95,7 @@ export async function POST(req: Request) {
       description: item.description,
       price: item.price,
       category: item.category,
-      available: item.available,
-      order_index: item.order_index || 0
+      available: item.available
     }));
 
     console.log('[DB] about_to_upsert', itemsToUpsert.length);
