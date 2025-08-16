@@ -12,7 +12,7 @@ export default function ThemeToggleFloat() {
       type="button"
       onClick={toggle}
       aria-label="Toggle theme"
-      className="fixed bottom-4 right-4 z-50 rounded-full border bg-background/90 backdrop-blur px-3 py-3 shadow-lg hover:scale-105 transition-transform"
+      className="fixed bottom-4 left-4 z-50 rounded-full border bg-background/90 backdrop-blur px-3 py-3 shadow-lg hover:scale-105 transition-transform md:left-auto md:right-4"
     >
       {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
