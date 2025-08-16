@@ -41,7 +41,7 @@ export default function NavigationBreadcrumb({
     if (pathname.includes("/sign-in")) return "Sign In";
     if (pathname.includes("/sign-up")) return "Sign Up";
     if (pathname.includes("/complete-profile")) return "Complete Profile";
-    if (pathname.includes("/generate-qr")) return "Generate QR Code";
+    if (pathname.includes("/generate-qr")) return "QR Codes";
     if (pathname.includes("/order")) return "Order";
     return "Home";
   };
