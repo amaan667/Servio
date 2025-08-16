@@ -289,11 +289,23 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/feedback`}>
+          <Link href={`/dashboard/${venueId}/analytics`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                   <BarChart className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Analytics</h3>
+                <p className="text-muted-foreground text-sm">View detailed reports and business insights</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href={`/dashboard/${venueId}/feedback`}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart className="h-6 w-6 text-yellow-600" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2 text-foreground">Feedback</h3>
                 <p className="text-muted-foreground text-sm">See customer reviews and ratings</p>

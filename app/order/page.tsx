@@ -759,46 +759,145 @@ export default function CustomerOrderPage() {
   );
 }
 
-function FeedbackSection({ orderId }: { orderId: string | null }) {
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+function FeedbackSection({ orderId }: { orderId?: string }) {
+  const searchParams = useSearchParams();
+  const venueSlug = searchParams?.get("venue") || "";
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [customQuestions, setCustomQuestions] = useState<any[]>([]);
+  const [responses, setResponses] = useState<{[key: string]: any}>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = async () => {
-    if (!rating) return setSubmitted(true);
+  useEffect(() => {
+    if (orderId && venueSlug) {
+      // Fetch custom feedback questions
+      fetch('/api/feedback/questions?venue_id=' + venueSlug)
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok && data.questions) {
+            setCustomQuestions(data.questions);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [orderId, venueSlug]);
+
+  const submitCustomFeedback = async () => {
+    if (customQuestions.length === 0) return;
+    
     setSubmitting(true);
     try {
-      if (orderId) {
-        const r = await fetch('/api/reviews/add', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ orderId, rating, comment }) });
-        const j = await r.json().catch(()=>({}));
-        if (!r.ok || j?.ok !== true) {
-          console.error('feedback failed', j);
-        }
+      const responseData = customQuestions.map(q => ({
+        question_id: q.id,
+        response: responses[q.id] || '',
+        rating: q.question_type === 'rating' ? responses[q.id] : null
+      }));
+
+      const r = await fetch('/api/feedback/submit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: venueSlug,
+          order_id: orderId,
+          responses: responseData
+        })
+      });
+
+      if (r.ok) {
+        setShowFeedback(false);
+        alert('Thank you for your feedback!');
+      } else {
+        alert('Failed to submit feedback');
       }
-      setSubmitted(true);
+    } catch (e) {
+      console.error('Feedback submission error:', e);
+      alert('Failed to submit feedback');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (submitted) return (
-    <div className="p-4 bg-green-50 border rounded">
-      <div className="text-green-700 text-sm">Thanks for your feedback!</div>
-    </div>
-  );
+  if (customQuestions.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      <h3 className="font-semibold">How was your experience?</h3>
-      <div className="flex gap-2">
-        {[1,2,3,4,5].map(n=> (
-          <button key={n} onClick={()=>setRating(n)} className={`px-3 py-2 rounded border ${rating>=n?'bg-yellow-400 text-black':'bg-white'}`}>★</button>
-        ))}
-      </div>
-      <textarea className="w-full border rounded p-2 text-sm" placeholder="Leave a short comment (optional)" value={comment} onChange={e=>setComment(e.target.value)} rows={3} />
-      <Button onClick={submit} disabled={submitting || rating===0} className="w-full">Submit feedback</Button>
-      <p className="text-xs text-gray-500">Rating is about the venue’s service and food quality.</p>
+    <div className="space-y-4">
+      <h3 className="font-semibold">Additional Feedback</h3>
+      {!showFeedback ? (
+        <Button onClick={() => setShowFeedback(true)} variant="outline" className="w-full">
+          Answer Feedback Questions
+        </Button>
+      ) : (
+        <div className="space-y-4">
+          {customQuestions.map((question) => (
+            <div key={question.id} className="space-y-2">
+              <label className="block text-sm font-medium">{question.question}</label>
+              
+              {question.question_type === 'rating' && (
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => setResponses(prev => ({ ...prev, [question.id]: rating }))}
+                      className={`p-2 rounded ${
+                        responses[question.id] === rating 
+                          ? 'bg-yellow-100 text-yellow-600' 
+                          : 'bg-gray-100 text-gray-400'
+                      }`}
+                    >
+                      ★ {rating}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {question.question_type === 'text' && (
+                <textarea
+                  value={responses[question.id] || ''}
+                  onChange={(e) => setResponses(prev => ({ ...prev, [question.id]: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                  rows={3}
+                  placeholder="Your feedback..."
+                />
+              )}
+              
+              {question.question_type === 'multiple_choice' && question.options && (
+                <div className="space-y-2">
+                  {question.options.map((option: string, index: number) => (
+                    <label key={index} className="flex items-center">
+                      <input
+                        type="radio"
+                        name={question.id}
+                        value={option}
+                        checked={responses[question.id] === option}
+                        onChange={(e) => setResponses(prev => ({ ...prev, [question.id]: e.target.value }))}
+                        className="mr-2"
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          
+          <div className="flex gap-2">
+            <Button 
+              onClick={submitCustomFeedback} 
+              disabled={submitting}
+              className="flex-1"
+            >
+              {submitting ? 'Submitting...' : 'Submit Feedback'}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowFeedback(false)}
+              disabled={submitting}
+            >
+              Skip
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
