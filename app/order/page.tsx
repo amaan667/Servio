@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard, Smartphone } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
+import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 
 interface MenuItem {
@@ -41,6 +42,7 @@ export default function CustomerOrderPage() {
   const [isDemoFallback, setIsDemoFallback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSubmitted, setOrderSubmitted] = useState(false);
+  const [submittedOrder, setSubmittedOrder] = useState<any>(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<string>("card");
   const [customerInfo, setCustomerInfo] = useState({
@@ -242,6 +244,7 @@ export default function CustomerOrderPage() {
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         setOrderSubmitted(true);
+        setSubmittedOrder({ id: null, items: cart, total: getTotalPrice(), table_number: safeTable, venue_id: venueSlug });
         setCart([]);
         setShowCheckout(false);
         return;
@@ -280,6 +283,7 @@ export default function CustomerOrderPage() {
       console.log('Order submitted', out);
 
       setOrderSubmitted(true);
+      setSubmittedOrder({ id: out?.order?.id, items: cart, total: getTotalPrice(), table_number: safeTable, venue_id: venueSlug });
       setCart([]);
       setShowCheckout(false);
     } catch (error) {
@@ -292,41 +296,63 @@ export default function CustomerOrderPage() {
 
   if (orderSubmitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Order Submitted!
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Thank you for your order. We'll prepare it right away.
-            </p>
-            <Button
-              onClick={() => {
-                setOrderSubmitted(false);
-                loadMenuItems();
-              }}
-              className="w-full"
-            >
-              Place Another Order
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Order Confirmed</CardTitle>
+              <CardDescription>Thank you! Your order is on its way.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-2">Order Summary</h3>
+                <div className="space-y-2">
+                  {(submittedOrder?.items || []).map((it: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <div>
+                        <span className="font-medium">{it.name}</span>
+                        <span className="ml-2 text-gray-500">× {it.quantity}</span>
+                      </div>
+                      <div>£{(it.price * it.quantity).toFixed(2)}</div>
+                    </div>
+                  ))}
+                  <div className="flex justify-between border-t pt-2 mt-2 font-semibold">
+                    <span>Total</span>
+                    <span>£{Number(submittedOrder?.total || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {submittedOrder?.id ? (
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Payment</h3>
+                  <Button onClick={async()=>{
+                    try{
+                      const r=await fetch('/api/stripe/checkout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({orderId: submittedOrder.id})});
+                      const j=await r.json();
+                      if(r.ok && j?.url){ window.location.href=j.url; } else { alert(j?.error||'Failed to start checkout'); }
+                    }catch(e){ alert('Failed to start checkout'); }
+                  }} className="w-full">
+                    Pay with card
+                  </Button>
+                  <p className="text-xs text-gray-500">Payment via Stripe Checkout.</p>
+                </div>
+              ) : null}
+
+              <FeedbackSection orderId={submittedOrder?.id} />
+
+              <div className="pt-2">
+                <Button
+                  onClick={() => { setOrderSubmitted(false); setSubmittedOrder(null); loadMenuItems(); }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Place Another Order
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -772,6 +798,50 @@ export default function CustomerOrderPage() {
           </Card>
         </div>
       )}
+    </div>
+  );
+}
+
+function FeedbackSection({ orderId }: { orderId: string | null }) {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    if (!rating) return setSubmitted(true);
+    setSubmitting(true);
+    try {
+      if (orderId) {
+        const r = await fetch('/api/reviews/add', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ orderId, rating, comment }) });
+        const j = await r.json().catch(()=>({}));
+        if (!r.ok || j?.ok !== true) {
+          console.error('feedback failed', j);
+        }
+      }
+      setSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) return (
+    <div className="p-4 bg-green-50 border rounded">
+      <div className="text-green-700 text-sm">Thanks for your feedback!</div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <h3 className="font-semibold">How was your experience?</h3>
+      <div className="flex gap-2">
+        {[1,2,3,4,5].map(n=> (
+          <button key={n} onClick={()=>setRating(n)} className={`px-3 py-2 rounded border ${rating>=n?'bg-yellow-400 text-black':'bg-white'}`}>★</button>
+        ))}
+      </div>
+      <textarea className="w-full border rounded p-2 text-sm" placeholder="Leave a short comment (optional)" value={comment} onChange={e=>setComment(e.target.value)} rows={3} />
+      <Button onClick={submit} disabled={submitting || rating===0} className="w-full">Submit feedback</Button>
+      <p className="text-xs text-gray-500">Rating is about the venue’s service and food quality.</p>
     </div>
   );
 }
