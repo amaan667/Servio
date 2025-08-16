@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const supabase = getSupabaseClient();
   
   try {
-    const { venue_id, order_id, responses } = await req.json();
+    const { venue_id, order_id, customer_name, comments, responses } = await req.json();
     
     if (!venue_id || !responses || !Array.isArray(responses)) {
       return NextResponse.json({ 
@@ -38,7 +38,9 @@ export async function POST(req: Request) {
       question_id: r.question_id,
       order_id: order_id || null,
       response: r.response,
-      rating: r.rating || null
+      rating: r.rating || null,
+      customer_name: customer_name || null,
+      comments: comments || null
     }));
 
     const { data, error } = await supabase

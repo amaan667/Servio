@@ -19,13 +19,6 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
     return null;
   }
 
-  const { data: reviews } = await supabase
-    .from('reviews')
-    .select('id, rating, comment, created_at, orders!inner(id, table_number)')
-    .eq('venue_id', params.venueId)
-    .order('created_at', { ascending: false })
-    .limit(100);
-
   const { data: customQuestions } = await supabase
     .from('feedback_questions')
     .select('*')
@@ -43,7 +36,6 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
       <NavigationBreadcrumb customBackPath={`/dashboard/${params.venueId}`} customBackLabel="Dashboard" />
       <FeedbackClient 
         venueId={params.venueId}
-        reviews={reviews || []}
         customQuestions={customQuestions || []}
         questionResponses={questionResponses || []}
       />

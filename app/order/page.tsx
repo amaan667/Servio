@@ -765,6 +765,8 @@ function FeedbackSection({ orderId }: { orderId?: string }) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [customQuestions, setCustomQuestions] = useState<any[]>([]);
   const [responses, setResponses] = useState<{[key: string]: any}>({});
+  const [customerName, setCustomerName] = useState("");
+  const [comments, setComments] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -798,6 +800,8 @@ function FeedbackSection({ orderId }: { orderId?: string }) {
         body: JSON.stringify({
           venue_id: venueSlug,
           order_id: orderId,
+          customer_name: customerName,
+          comments: comments,
           responses: responseData
         })
       });
@@ -827,6 +831,17 @@ function FeedbackSection({ orderId }: { orderId?: string }) {
         </Button>
       ) : (
         <div className="space-y-4">
+          {/* Customer Name */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Your Name (Optional)</label>
+            <Input
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Enter your name"
+            />
+          </div>
+
+          {/* Feedback Questions */}
           {customQuestions.map((question) => (
             <div key={question.id} className="space-y-2">
               <label className="block text-sm font-medium">{question.question}</label>
@@ -879,6 +894,18 @@ function FeedbackSection({ orderId }: { orderId?: string }) {
               )}
             </div>
           ))}
+
+          {/* Additional Comments */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Additional Comments (Optional)</label>
+            <textarea
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
+              className="w-full border rounded-md px-3 py-2 text-sm"
+              rows={3}
+              placeholder="Any additional comments or suggestions..."
+            />
+          </div>
           
           <div className="flex gap-2">
             <Button 

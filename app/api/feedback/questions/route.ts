@@ -9,6 +9,50 @@ function getSupabaseClient() {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
+// Default questions when no custom questions exist
+const DEFAULT_QUESTIONS = [
+  {
+    id: 'default-service',
+    question: 'How was the service?',
+    question_type: 'rating' as const,
+    options: null,
+    active: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'default-staff',
+    question: 'How was the staff?',
+    question_type: 'rating' as const,
+    options: null,
+    active: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'default-food',
+    question: 'How was the food quality?',
+    question_type: 'rating' as const,
+    options: null,
+    active: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'default-overall',
+    question: 'Overall experience?',
+    question_type: 'rating' as const,
+    options: null,
+    active: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'default-comments',
+    question: 'Any additional comments?',
+    question_type: 'text' as const,
+    options: null,
+    active: true,
+    created_at: new Date().toISOString()
+  }
+];
+
 export async function GET(req: Request) {
   const supabase = getSupabaseClient();
   
@@ -38,9 +82,12 @@ export async function GET(req: Request) {
       }, { status: 500 });
     }
 
+    // If no custom questions exist, return default questions
+    const questions = (data && data.length > 0) ? data : DEFAULT_QUESTIONS;
+
     return NextResponse.json({
       ok: true,
-      questions: data || []
+      questions: questions
     });
 
   } catch (error: any) {
