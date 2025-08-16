@@ -187,16 +187,15 @@ export default function CustomerOrderPage() {
 
   const submitOrder = async () => {
     if (!customerInfo.name.trim()) {
-      alert("Please enter your name");
+      alert("Please enter your name.");
       return;
     }
 
-    const tn = Number(tableNumber);
-    const safeTable = Number.isFinite(tn) ? tn : null;
-
     setIsSubmitting(true);
     try {
-      // Demo mode: simulate a successful order without hitting the API
+      const safeTable = parseInt(tableNumber) || 1;
+
+      // For demo orders, create immediately
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         setOrderSubmitted(true);
@@ -206,6 +205,7 @@ export default function CustomerOrderPage() {
         return;
       }
 
+      // For real orders, store order data and show payment first
       const orderData = {
         venue_id: venueSlug,
         table_number: safeTable,
@@ -214,7 +214,7 @@ export default function CustomerOrderPage() {
         items: cart.map((item) => ({
           menu_item_id: item.id && item.id.startsWith('demo-') ? null : item.id,
           quantity: item.quantity,
-          unit_price: item.price, // align with DB/API
+          unit_price: item.price,
           item_name: item.name,
           special_instructions: item.specialInstructions || null,
         })),
@@ -225,28 +225,54 @@ export default function CustomerOrderPage() {
           .join("; "),
       };
 
+      // Store order data for payment confirmation
+      setSubmittedOrder({ 
+        id: null, 
+        items: cart, 
+        total: getTotalPrice(), 
+        table_number: safeTable, 
+        venue_id: venueSlug,
+        pendingOrderData: orderData 
+      });
+      setOrderSubmitted(true);
+      setCart([]);
+      setShowCheckout(false);
+    } catch (error) {
+      console.error("Error preparing order:", error);
+      alert("Failed to prepare order. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (orderData: any) => {
+    try {
+      // Now create the actual order in the database
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(orderData),
       });
       const out = await res.json().catch(() => ({} as any));
+      
       if (!res.ok || !out?.ok) {
         console.error('Order API failed', out);
-        alert(out?.error || 'Failed to submit order. Please try again.');
+        alert(out?.error || 'Failed to confirm order. Please contact support.');
         return;
       }
-      console.log('Order submitted', out);
-
-      setOrderSubmitted(true);
-      setSubmittedOrder({ id: out?.order?.id, items: cart, total: getTotalPrice(), table_number: safeTable, venue_id: venueSlug });
-      setCart([]);
-      setShowCheckout(false);
+      
+      console.log('Order confirmed after payment', out);
+      
+      // Update the submitted order with the real ID
+      setSubmittedOrder((prev: any) => ({ 
+        ...prev, 
+        id: out?.order?.id,
+        pendingOrderData: undefined 
+      }));
+      
     } catch (error) {
-      console.error("Error submitting order:", error);
-      alert("Failed to submit order. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error confirming order:", error);
+      alert("Failed to confirm order. Please contact support.");
     }
   };
 
@@ -256,8 +282,15 @@ export default function CustomerOrderPage() {
         <div className="max-w-2xl mx-auto px-4 py-8">
           <Card>
             <CardHeader>
-              <CardTitle>Order Confirmed</CardTitle>
-              <CardDescription>Thank you! Your order is on its way.</CardDescription>
+              <CardTitle>
+                {submittedOrder?.id ? 'Order Confirmed' : 'Complete Payment'}
+              </CardTitle>
+              <CardDescription>
+                {submittedOrder?.id 
+                  ? 'Thank you! Your order is on its way.' 
+                  : 'Please complete payment to confirm your order.'
+                }
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
@@ -279,23 +312,38 @@ export default function CustomerOrderPage() {
                 </div>
               </div>
 
-              {submittedOrder?.id ? (
+              {!submittedOrder?.id && submittedOrder?.pendingOrderData ? (
                 <div className="space-y-2">
-                  <h3 className="font-semibold">Payment</h3>
+                  <h3 className="font-semibold">Payment Required</h3>
                   <Button onClick={async()=>{
                     try{
-                      const r=await fetch('/api/stripe/checkout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({orderId: submittedOrder.id})});
+                      const r=await fetch('/api/stripe/checkout',{
+                        method:'POST',
+                        headers:{'content-type':'application/json'},
+                        body:JSON.stringify({
+                          orderData: submittedOrder.pendingOrderData,
+                          returnUrl: window.location.href
+                        })
+                      });
                       const j=await r.json();
-                      if(r.ok && j?.url){ window.location.href=j.url; } else { alert(j?.error||'Failed to start checkout'); }
-                    }catch(e){ alert('Failed to start checkout'); }
+                      if(r.ok && j?.url){ 
+                        window.location.href=j.url; 
+                      } else { 
+                        alert(j?.error||'Failed to start checkout'); 
+                      }
+                    }catch(e){ 
+                      alert('Failed to start checkout'); 
+                    }
                   }} className="w-full">
                     Pay with card
                   </Button>
-                  <p className="text-xs text-gray-500">Payment via Stripe Checkout.</p>
+                  <p className="text-xs text-gray-500">Payment via Stripe Checkout. Order will be confirmed after payment.</p>
                 </div>
               ) : null}
 
-              <FeedbackSection orderId={submittedOrder?.id} />
+              {submittedOrder?.id ? (
+                <FeedbackSection orderId={submittedOrder.id} />
+              ) : null}
 
               <div className="pt-2">
                 <Button
