@@ -61,6 +61,8 @@ export default function FeedbackClient({
         active: true
       };
 
+      console.log('[FEEDBACK_CLIENT] Adding question:', questionData);
+
       const { data, error } = await supabase
         .from('feedback_questions')
         .insert(questionData)
@@ -68,10 +70,18 @@ export default function FeedbackClient({
         .single();
 
       if (error) {
-        console.error('Error adding question:', error);
-        alert('Failed to add question. Please try again.');
+        console.error('[FEEDBACK_CLIENT] Error adding question:', error);
+        console.error('[FEEDBACK_CLIENT] Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        alert(`Failed to add question: ${error.message}`);
         return;
       }
+
+      console.log('[FEEDBACK_CLIENT] Successfully added question:', data);
 
       // Add the new question to the state
       setCustomQuestions(prev => [data, ...prev]);
@@ -86,7 +96,7 @@ export default function FeedbackClient({
       setActiveTab('questions');
       
     } catch (error) {
-      console.error('Error adding question:', error);
+      console.error('[FEEDBACK_CLIENT] Error adding question:', error);
       alert('Failed to add question. Please try again.');
     } finally {
       setIsAdding(false);
