@@ -25,5 +25,5 @@ export default async function LiveOrdersPage({ params }: { params: { venueId: st
   log('LIVE_ORDERS SSR venue', { ok: !!venue, err: vErr?.message });
   if (vErr || !venue) return notFound();
 
-  return <LiveOrdersClient venueId={params.venueId} />;
+  return <LiveOrdersClient venueId={params.venueId} venueName={venue.name} />;
 }
