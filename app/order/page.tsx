@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard, Smartphone } from "lucide-react";
+import { Loader2, ShoppingCart, Plus, Minus, X } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
@@ -44,7 +44,6 @@ export default function CustomerOrderPage() {
   const [orderSubmitted, setOrderSubmitted] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState<any>(null);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<string>("card");
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     phone: "",
@@ -687,36 +686,6 @@ export default function CustomerOrderPage() {
                   placeholder="Enter your phone number"
                   type="tel"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Method
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      value="card"
-                      checked={selectedPayment === "card"}
-                      onChange={(e) => setSelectedPayment(e.target.value)}
-                      className="text-purple-600"
-                    />
-                    <CreditCard className="h-4 w-4" />
-                    <span>Credit/Debit Card</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      value="mobile"
-                      checked={selectedPayment === "mobile"}
-                      onChange={(e) => setSelectedPayment(e.target.value)}
-                      className="text-purple-600"
-                    />
-                    <Smartphone className="h-4 w-4" />
-                    <span>Mobile Payment</span>
-                  </label>
-                </div>
               </div>
 
               <div className="border-t pt-4">
