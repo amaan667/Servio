@@ -4,18 +4,9 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Star, MessageSquare, Settings } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
-
-interface Review {
-  id: string;
-  rating: number;
-  comment?: string;
-  created_at: string;
-  orders: { id: string; table_number: number };
-}
 
 interface CustomQuestion {
   id: string;
@@ -31,20 +22,20 @@ interface QuestionResponse {
   question_id: string;
   response: string;
   rating?: number;
+  customer_name?: string;
+  comments?: string;
   created_at: string;
   feedback_questions: CustomQuestion;
 }
 
 interface FeedbackClientProps {
   venueId: string;
-  reviews: Review[];
   customQuestions: CustomQuestion[];
   questionResponses: QuestionResponse[];
 }
 
 export default function FeedbackClient({ 
   venueId, 
-  reviews, 
   customQuestions, 
   questionResponses 
 }: FeedbackClientProps) {
@@ -52,7 +43,7 @@ export default function FeedbackClient({
   const [newQuestion, setNewQuestion] = useState("");
   const [questionType, setQuestionType] = useState<'rating' | 'text' | 'multiple_choice'>('rating');
   const [options, setOptions] = useState<string[]>(['']);
-  const [activeTab, setActiveTab] = useState<'reviews' | 'questions' | 'responses'>('reviews');
+  const [activeTab, setActiveTab] = useState<'questions' | 'responses'>('responses');
 
   const addQuestion = async () => {
     if (!newQuestion.trim()) return;
@@ -100,6 +91,16 @@ export default function FeedbackClient({
     setOptions(options.filter((_, i) => i !== index));
   };
 
+  // Group responses by customer session (assuming responses with same timestamp are from same customer)
+  const groupedResponses = questionResponses.reduce((groups: any, response) => {
+    const date = new Date(response.created_at).toLocaleDateString();
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(response);
+    return groups;
+  }, {});
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -113,13 +114,13 @@ export default function FeedbackClient({
       {/* Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         <button
-          onClick={() => setActiveTab('reviews')}
+          onClick={() => setActiveTab('responses')}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
-            activeTab === 'reviews' ? 'bg-white shadow-sm' : 'text-gray-600'
+            activeTab === 'responses' ? 'bg-white shadow-sm' : 'text-gray-600'
           }`}
         >
-          <Star className="h-4 w-4 inline mr-2" />
-          Reviews ({reviews.length})
+          <MessageSquare className="h-4 w-4 inline mr-2" />
+          Responses ({questionResponses.length})
         </button>
         <button
           onClick={() => setActiveTab('questions')}
@@ -129,15 +130,6 @@ export default function FeedbackClient({
         >
           <Settings className="h-4 w-4 inline mr-2" />
           Questions ({customQuestions.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('responses')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
-            activeTab === 'responses' ? 'bg-white shadow-sm' : 'text-gray-600'
-          }`}
-        >
-          <MessageSquare className="h-4 w-4 inline mr-2" />
-          Responses ({questionResponses.length})
         </button>
       </div>
 
@@ -206,39 +198,64 @@ export default function FeedbackClient({
         </Card>
       )}
 
-      {/* Reviews Tab */}
-      {activeTab === 'reviews' && (
-        <div className="space-y-3">
-          {reviews.length === 0 ? (
+      {/* Responses Tab */}
+      {activeTab === 'responses' && (
+        <div className="space-y-6">
+          {Object.keys(groupedResponses).length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Reviews Yet</h3>
-                <p className="text-gray-600">Customer reviews will appear here once they start leaving feedback.</p>
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Feedback Yet</h3>
+                <p className="text-gray-600">Customer feedback will appear here once they start responding to your questions.</p>
               </CardContent>
             </Card>
           ) : (
-            reviews.map((review) => (
-              <Card key={review.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <span key={n} className={n <= review.rating ? 'text-yellow-400' : 'text-gray-300'}>
-                          ★
-                        </span>
-                      ))}
+            Object.entries(groupedResponses).map(([date, responses]: [string, any]) => (
+              <Card key={date}>
+                <CardHeader>
+                  <CardTitle className="text-lg">Feedback from {date}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {responses.map((response: QuestionResponse) => (
+                    <div key={response.id} className="border-l-4 border-blue-200 pl-4">
+                      <div className="mb-2">
+                        <h4 className="font-medium text-gray-900">
+                          {response.feedback_questions.question}
+                        </h4>
+                      </div>
+                      
+                      <div className="mb-2">
+                        {response.feedback_questions.question_type === 'rating' && response.rating ? (
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <span key={n} className={n <= response.rating! ? 'text-yellow-400' : 'text-gray-300'}>
+                                ★
+                              </span>
+                            ))}
+                            <span className="ml-2 text-sm text-gray-600">({response.rating}/5)</span>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-700">{response.response}</div>
+                        )}
+                      </div>
+
+                      {response.customer_name && (
+                        <div className="text-sm text-gray-600 mb-1">
+                          <strong>Name:</strong> {response.customer_name}
+                        </div>
+                      )}
+
+                      {response.comments && (
+                        <div className="text-sm text-gray-700 mb-2">
+                          <strong>Comments:</strong> {response.comments}
+                        </div>
+                      )}
+
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(response.created_at).toLocaleTimeString()}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(review.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                  {review.comment && (
-                    <div className="text-sm text-gray-700">{review.comment}</div>
-                  )}
-                  <div className="mt-2">
-                    <Badge variant="outline">Table {review.orders.table_number}</Badge>
-                  </div>
+                  ))}
                 </CardContent>
               </Card>
             ))
@@ -286,50 +303,6 @@ export default function FeedbackClient({
                   )}
                   <div className="text-xs text-muted-foreground mt-2">
                     Created: {new Date(question.created_at).toLocaleDateString()}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* Responses Tab */}
-      {activeTab === 'responses' && (
-        <div className="space-y-3">
-          {questionResponses.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Responses Yet</h3>
-                <p className="text-gray-600">Customer responses to your custom questions will appear here.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            questionResponses.map((response) => (
-              <Card key={response.id}>
-                <CardContent className="p-4">
-                  <div className="mb-2">
-                    <h3 className="font-medium text-gray-900">
-                      {response.feedback_questions.question}
-                    </h3>
-                  </div>
-                  <div className="mb-2">
-                    {response.feedback_questions.question_type === 'rating' && response.rating ? (
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <span key={n} className={n <= response.rating! ? 'text-yellow-400' : 'text-gray-300'}>
-                            ★
-                          </span>
-                        ))}
-                        <span className="ml-2 text-sm text-gray-600">({response.rating}/5)</span>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-700">{response.response}</div>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(response.created_at).toLocaleString()}
                   </div>
                 </CardContent>
               </Card>

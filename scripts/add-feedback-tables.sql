@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS public.feedback_responses (
     order_id UUID REFERENCES public.orders(id) ON DELETE SET NULL,
     response TEXT NOT NULL,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    customer_name TEXT,
+    comments TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
