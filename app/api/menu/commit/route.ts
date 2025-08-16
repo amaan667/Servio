@@ -33,12 +33,15 @@ export async function POST(req: Request) {
 
     if (!items.length) return NextResponse.json({ ok: false, error: 'no items to import' }, { status: 400 });
 
-    // Upsert by (venue_id, name)
+    // Insert while avoiding duplicates without relying on DB constraint
+    const { data: existing } = await supa.from('menu_items').select('name').eq('venue_id', row.venue_id);
+    const existingNames = new Set((existing||[]).map((r:any)=>String(r.name||'').toLowerCase()));
+    const toInsert = items.filter(i=>!existingNames.has(String(i.name).toLowerCase()));
     const { data: inserted, error: insErr } = await supa
       .from('menu_items')
-      .upsert(items, { onConflict: 'venue_id,name' })
+      .insert(toInsert)
       .select('id');
-    if (insErr) { console.error('[MENU_COMMIT] upsert error', insErr); return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 }); }
+    if (insErr) { console.error('[MENU_COMMIT] insert error', insErr); return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 }); }
 
     await supa.from('menu_uploads').update({ status: 'committed' }).eq('id', upload_id);
     return NextResponse.json({ ok: true, count: inserted?.length || 0 });

@@ -98,23 +98,24 @@ export async function POST(req: Request) {
       available: item.available
     }));
 
-    console.log('[DB] about_to_upsert', itemsToUpsert.length);
+    console.log('[DB] about_to_insert', itemsToUpsert.length);
 
-    // Batch UPSERT with conflict resolution
-    const { data: upsertedItems, error: upsertError } = await supabase
+    // Avoid relying on ON CONFLICT; filter existing names first
+    const { data: existing } = await supabase
       .from('menu_items')
-      .upsert(itemsToUpsert, { 
-        onConflict: 'venue_id,name',
-        ignoreDuplicates: false 
-      })
+      .select('name')
+      .eq('venue_id', venue_id);
+    const existingNames = new Set((existing || []).map((r:any)=>String(r.name||'').toLowerCase()));
+    const toInsert = itemsToUpsert.filter(it=>!existingNames.has(String(it.name).toLowerCase()));
+
+    const { data: upsertedItems, error: insertErr } = await supabase
+      .from('menu_items')
+      .insert(toInsert)
       .select('id, name, price');
 
-    if (upsertError) {
-      console.error('[AUTH DEBUG] UPSERT failed:', upsertError);
-      return NextResponse.json({ 
-        ok: false, 
-        error: `Database insertion failed: ${upsertError.message}` 
-      }, { status: 500 });
+    if (insertErr) {
+      console.error('[AUTH DEBUG] INSERT failed:', insertErr);
+      return NextResponse.json({ ok:false, error:`Database insertion failed: ${insertErr.message}` }, { status:500 });
     }
 
     const inserted = upsertedItems?.length || 0;
