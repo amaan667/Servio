@@ -63,28 +63,27 @@ export default function FeedbackClient({
 
       console.log('[FEEDBACK_CLIENT] Adding question:', questionData);
 
-      const { data, error } = await supabase
-        .from('feedback_questions')
-        .insert(questionData)
-        .select()
-        .single();
+      // Use the API route instead of direct Supabase client to bypass RLS
+      const response = await fetch('/api/feedback/add-question', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(questionData)
+      });
 
-      if (error) {
-        console.error('[FEEDBACK_CLIENT] Error adding question:', error);
-        console.error('[FEEDBACK_CLIENT] Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        alert(`Failed to add question: ${error.message}`);
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        console.error('[FEEDBACK_CLIENT] Error adding question:', result.error);
+        alert(`Failed to add question: ${result.error || 'Unknown error'}`);
         return;
       }
 
-      console.log('[FEEDBACK_CLIENT] Successfully added question:', data);
+      console.log('[FEEDBACK_CLIENT] Successfully added question:', result.data);
 
       // Add the new question to the state
-      setCustomQuestions(prev => [data, ...prev]);
+      setCustomQuestions(prev => [result.data, ...prev]);
       
       // Reset form
       setNewQuestion("");
@@ -105,14 +104,22 @@ export default function FeedbackClient({
 
   const toggleQuestionActive = async (questionId: string, currentActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('feedback_questions')
-        .update({ active: !currentActive })
-        .eq('id', questionId);
+      const response = await fetch('/api/feedback/toggle-question', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question_id: questionId,
+          active: !currentActive
+        })
+      });
 
-      if (error) {
-        console.error('Error toggling question:', error);
-        alert('Failed to update question. Please try again.');
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        console.error('[FEEDBACK_CLIENT] Error toggling question:', result.error);
+        alert(`Failed to update question: ${result.error || 'Unknown error'}`);
         return;
       }
 
@@ -125,7 +132,7 @@ export default function FeedbackClient({
         )
       );
     } catch (error) {
-      console.error('Error toggling question:', error);
+      console.error('[FEEDBACK_CLIENT] Error toggling question:', error);
       alert('Failed to update question. Please try again.');
     }
   };
