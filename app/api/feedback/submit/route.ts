@@ -15,6 +15,8 @@ export async function POST(req: Request) {
   try {
     const { venue_id, order_id, customer_name, comments, responses } = await req.json();
     
+    console.log('[FEEDBACK_SUBMIT] Request data:', { venue_id, order_id, customer_name, comments, responses });
+    
     if (!venue_id || !responses || !Array.isArray(responses)) {
       return NextResponse.json({ 
         ok: false, 
@@ -43,6 +45,8 @@ export async function POST(req: Request) {
       comments: comments || null
     }));
 
+    console.log('[FEEDBACK_SUBMIT] Inserting response data:', responseData);
+
     const { data, error } = await supabase
       .from('feedback_responses')
       .insert(responseData)
@@ -55,6 +59,8 @@ export async function POST(req: Request) {
         error: `Failed to save feedback: ${error.message}` 
       }, { status: 500 });
     }
+
+    console.log('[FEEDBACK_SUBMIT] Successfully inserted responses:', data);
 
     return NextResponse.json({
       ok: true,
