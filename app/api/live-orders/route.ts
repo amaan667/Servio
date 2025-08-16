@@ -73,7 +73,9 @@ export async function GET(req: Request) {
       });
     }
     const computed_total = items.reduce((sum: number, it: any) => sum + it.line_total, 0);
-    return { ...o, items, computed_total };
+    // Handle null customer_name gracefully
+    const customer_name = o.customer_name || 'Guest';
+    return { ...o, items, computed_total, customer_name };
   });
 
   console.log("[LIVE ORDERS GET] hydrated orders:", hydrated);

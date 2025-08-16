@@ -82,11 +82,14 @@ export async function GET(req: Request) {
   if (since) {
     ordersQuery = ordersQuery.gte('created_at', since);
   }
-  if (scope !== 'all') {
+  if (scope === 'today') {
     ordersQuery = ordersQuery
       .gte('created_at', window.startUtcISO)
       .lt('created_at', window.endUtcISO);
+  } else if (scope === 'history') {
+    ordersQuery = ordersQuery.lt('created_at', window.startUtcISO);
   }
+  // scope === 'all' means no date filtering
   if (statuses) {
     ordersQuery = ordersQuery.in('status', statuses as any);
   }
@@ -142,7 +145,9 @@ export async function GET(req: Request) {
     const computed_total = mappedItems.reduce((s: number, it: any) => s + it.line_total, 0);
     const total = (computed_total || 0) > 0 ? computed_total : (Number(o.total_amount) || 0);
     const uiStatus = o.status === 'delivered' ? 'served' : o.status;
-    return { ...o, status: uiStatus, items: mappedItems, computed_total: total };
+    // Handle null customer_name gracefully
+    const customer_name = o.customer_name || 'Guest';
+    return { ...o, status: uiStatus, items: mappedItems, computed_total: total, customer_name };
   });
 
   return NextResponse.json({ ok: true, orders: hydrated, meta: { activeTablesToday, window } });
