@@ -31,7 +31,7 @@ interface CartItem extends MenuItem {
 
 export default function CustomerOrderPage() {
   const searchParams = useSearchParams();
-  const venueSlug = searchParams?.get("venue") || "demo-cafe";
+  const venueSlug = searchParams?.get("venue") || "";
   const tableNumber = searchParams?.get("table") || "1";
   const isDemo = searchParams?.get("demo") === "1";
 
@@ -73,8 +73,8 @@ export default function CustomerOrderPage() {
     setMenuError(null);
     setIsDemoFallback(false);
 
-    // Check if this is a demo
-    if (isDemo || venueSlug === "demo-cafe" || venueSlug === "demo") {
+    // Explicit demo only
+    if (isDemo) {
       console.log("Loading demo menu items");
       setMenuItems(
         demoMenuItems.map((item, idx) => ({
@@ -92,6 +92,11 @@ export default function CustomerOrderPage() {
     }
 
     try {
+      if (!venueSlug) {
+        setMenuError("Invalid or missing venue in QR link.");
+        setLoadingMenu(false);
+        return;
+      }
       // First check if venue exists
       const { data: venue, error: venueError } = await supabase
         .from("venues")
@@ -100,19 +105,7 @@ export default function CustomerOrderPage() {
         .single();
 
       if (venueError || !venue) {
-        console.log(`Venue '${venueSlug}' not found, falling back to demo mode`);
-        setIsDemoFallback(true);
-        setMenuItems(
-          demoMenuItems.map((item, idx) => ({
-            ...item,
-            id: `demo-${idx}`,
-            available: true,
-            price:
-              typeof item.price === "number"
-                ? item.price
-                : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
-          }))
-        );
+        setMenuError("Venue not found.");
         setLoadingMenu(false);
         return;
       }
@@ -125,19 +118,7 @@ export default function CustomerOrderPage() {
         .eq("available", true);
 
       if (error) {
-        console.log(`Error loading menu: ${error.message}, falling back to demo mode`);
-        setIsDemoFallback(true);
-        setMenuItems(
-          demoMenuItems.map((item, idx) => ({
-            ...item,
-            id: `demo-${idx}`,
-            available: true,
-            price:
-              typeof item.price === "number"
-                ? item.price
-                : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
-          }))
-        );
+        setMenuError(`Error loading menu: ${error.message}`);
         setLoadingMenu(false);
         return;
       }
@@ -146,35 +127,11 @@ export default function CustomerOrderPage() {
       const normalized = (data || []).map((mi: any) => ({ ...mi, venue_name: mi.venues?.name }));
       setMenuItems(normalized);
       if (!data || data.length === 0) {
-        console.log(`No menu items found for venue '${venueSlug}', falling back to demo mode`);
-        setIsDemoFallback(true);
-        setMenuItems(
-          demoMenuItems.map((item, idx) => ({
-            ...item,
-            id: `demo-${idx}`,
-            available: true,
-            price:
-              typeof item.price === "number"
-                ? item.price
-                : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
-          }))
-        );
+        setMenuError("This venue has no available menu items yet.");
       }
       setLoadingMenu(false);
     } catch (err: any) {
-      console.log(`Error loading menu: ${err.message}, falling back to demo mode`);
-      setIsDemoFallback(true);
-      setMenuItems(
-        demoMenuItems.map((item, idx) => ({
-          ...item,
-          id: `demo-${idx}`,
-          available: true,
-          price:
-            typeof item.price === "number"
-              ? item.price
-              : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
-        }))
-      );
+      setMenuError(`Error loading menu: ${err.message}`);
       setLoadingMenu(false);
     }
   };
@@ -360,12 +317,12 @@ export default function CustomerOrderPage() {
   return (
     <div className="min-h-screen bg-gray-50">
         {/* Demo Fallback Notification */}
-        {isDemoFallback && (
+        {isDemo && (
           <div className="bg-blue-50 border-b border-blue-200">
             <div className="max-w-7xl mx-auto px-4 py-2">
               <div className="flex items-center justify-center text-sm text-blue-700">
                 <span className="font-medium">Demo Mode:</span>
-                <span className="ml-1">You're viewing a sample menu. This is perfect for testing the ordering experience!</span>
+                <span className="ml-1">You're viewing a sample menu.</span>
               </div>
             </div>
           </div>
@@ -377,7 +334,7 @@ export default function CustomerOrderPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                {isDemoFallback ? "Demo Cafe" : (menuItems[0]?.venue_name || 'Our Venue')}
+                {isDemo ? "Demo Cafe" : (menuItems[0]?.venue_name || 'Our Venue')}
               </h1>
               <p className="text-gray-600">Table {tableNumber}</p>
             </div>
