@@ -759,6 +759,7 @@ export default function CustomerOrderPage() {
   );
 }
 
+// FeedbackSection component definition
 function FeedbackSection({ orderId }: { orderId?: string }) {
   const searchParams = useSearchParams();
   const venueSlug = searchParams?.get("venue") || "";
@@ -768,9 +769,11 @@ function FeedbackSection({ orderId }: { orderId?: string }) {
   const [customerName, setCustomerName] = useState("");
   const [comments, setComments] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
 
   useEffect(() => {
     if (orderId && venueSlug) {
+      setLoadingQuestions(true);
       // Fetch custom feedback questions
       fetch('/api/feedback/questions?venue_id=' + venueSlug)
         .then(r => r.json())
@@ -779,7 +782,8 @@ function FeedbackSection({ orderId }: { orderId?: string }) {
             setCustomQuestions(data.questions);
           }
         })
-        .catch(console.error);
+        .catch(console.error)
+        .finally(() => setLoadingQuestions(false));
     }
   }, [orderId, venueSlug]);
 
@@ -820,6 +824,18 @@ function FeedbackSection({ orderId }: { orderId?: string }) {
     }
   };
 
+  if (loadingQuestions) {
+    return (
+      <div className="space-y-4">
+        <h3 className="font-semibold">Loading Feedback Questions...</h3>
+        <div className="animate-pulse space-y-2">
+          <div className="h-4 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        </div>
+      </div>
+    );
+  }
+
   if (customQuestions.length === 0) return null;
 
   return (
@@ -827,7 +843,7 @@ function FeedbackSection({ orderId }: { orderId?: string }) {
       <h3 className="font-semibold">Additional Feedback</h3>
       {!showFeedback ? (
         <Button onClick={() => setShowFeedback(true)} variant="outline" className="w-full">
-          Answer Feedback Questions
+          Answer Feedback Questions ({customQuestions.length})
         </Button>
       ) : (
         <div className="space-y-4">

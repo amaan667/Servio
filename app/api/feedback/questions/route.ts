@@ -83,11 +83,13 @@ export async function GET(req: Request) {
     }
 
     // If no custom questions exist, return default questions
+    // Otherwise return the custom questions
     const questions = (data && data.length > 0) ? data : DEFAULT_QUESTIONS;
 
     return NextResponse.json({
       ok: true,
-      questions: questions
+      questions: questions,
+      isDefault: !data || data.length === 0
     });
 
   } catch (error: any) {

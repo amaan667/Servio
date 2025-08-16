@@ -36,45 +36,88 @@ interface FeedbackClientProps {
 
 export default function FeedbackClient({ 
   venueId, 
-  customQuestions, 
-  questionResponses 
+  customQuestions: initialCustomQuestions, 
+  questionResponses: initialQuestionResponses 
 }: FeedbackClientProps) {
   const [showAddQuestion, setShowAddQuestion] = useState(false);
   const [newQuestion, setNewQuestion] = useState("");
   const [questionType, setQuestionType] = useState<'rating' | 'text' | 'multiple_choice'>('rating');
   const [options, setOptions] = useState<string[]>(['']);
   const [activeTab, setActiveTab] = useState<'questions' | 'responses'>('responses');
+  const [customQuestions, setCustomQuestions] = useState(initialCustomQuestions);
+  const [questionResponses, setQuestionResponses] = useState(initialQuestionResponses);
+  const [isAdding, setIsAdding] = useState(false);
 
   const addQuestion = async () => {
-    if (!newQuestion.trim()) return;
+    if (!newQuestion.trim() || isAdding) return;
 
-    const questionData = {
-      venue_id: venueId,
-      question: newQuestion.trim(),
-      question_type: questionType,
-      options: questionType === 'multiple_choice' ? options.filter(o => o.trim()) : null,
-      active: true
-    };
+    setIsAdding(true);
+    try {
+      const questionData = {
+        venue_id: venueId,
+        question: newQuestion.trim(),
+        question_type: questionType,
+        options: questionType === 'multiple_choice' ? options.filter(o => o.trim()) : null,
+        active: true
+      };
 
-    const { error } = await supabase
-      .from('feedback_questions')
-      .insert(questionData);
+      const { data, error } = await supabase
+        .from('feedback_questions')
+        .insert(questionData)
+        .select()
+        .single();
 
-    if (!error) {
+      if (error) {
+        console.error('Error adding question:', error);
+        alert('Failed to add question. Please try again.');
+        return;
+      }
+
+      // Add the new question to the state
+      setCustomQuestions(prev => [data, ...prev]);
+      
+      // Reset form
       setNewQuestion("");
       setQuestionType('rating');
       setOptions(['']);
       setShowAddQuestion(false);
-      window.location.reload();
+      
+      // Switch to questions tab to show the new question
+      setActiveTab('questions');
+      
+    } catch (error) {
+      console.error('Error adding question:', error);
+      alert('Failed to add question. Please try again.');
+    } finally {
+      setIsAdding(false);
     }
   };
 
   const toggleQuestionActive = async (questionId: string, currentActive: boolean) => {
-    await supabase
-      .from('feedback_questions')
-      .update({ active: !currentActive })
-      .eq('id', questionId);
-    window.location.reload();
+    try {
+      const { error } = await supabase
+        .from('feedback_questions')
+        .update({ active: !currentActive })
+        .eq('id', questionId);
+
+      if (error) {
+        console.error('Error toggling question:', error);
+        alert('Failed to update question. Please try again.');
+        return;
+      }
+
+      // Update the question in state
+      setCustomQuestions(prev => 
+        prev.map(q => 
+          q.id === questionId 
+            ? { ...q, active: !currentActive }
+            : q
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling question:', error);
+      alert('Failed to update question. Please try again.');
+    }
   };
 
   const addOption = () => {
@@ -146,6 +189,7 @@ export default function FeedbackClient({
                 value={newQuestion}
                 onChange={(e) => setNewQuestion(e.target.value)}
                 placeholder="e.g., How was the service speed?"
+                disabled={isAdding}
               />
             </div>
             
@@ -155,6 +199,7 @@ export default function FeedbackClient({
                 value={questionType}
                 onChange={(e) => setQuestionType(e.target.value as any)}
                 className="w-full border rounded-md px-3 py-2"
+                disabled={isAdding}
               >
                 <option value="rating">Rating (1-5 stars)</option>
                 <option value="text">Text Response</option>
@@ -171,26 +216,29 @@ export default function FeedbackClient({
                       value={option}
                       onChange={(e) => updateOption(index, e.target.value)}
                       placeholder={`Option ${index + 1}`}
+                      disabled={isAdding}
                     />
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => removeOption(index)}
-                      disabled={options.length === 1}
+                      disabled={options.length === 1 || isAdding}
                     >
                       Remove
                     </Button>
                   </div>
                 ))}
-                <Button variant="outline" size="sm" onClick={addOption}>
+                <Button variant="outline" size="sm" onClick={addOption} disabled={isAdding}>
                   Add Option
                 </Button>
               </div>
             )}
 
             <div className="flex gap-2">
-              <Button onClick={addQuestion}>Add Question</Button>
-              <Button variant="outline" onClick={() => setShowAddQuestion(false)}>
+              <Button onClick={addQuestion} disabled={isAdding || !newQuestion.trim()}>
+                {isAdding ? 'Adding...' : 'Add Question'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowAddQuestion(false)} disabled={isAdding}>
                 Cancel
               </Button>
             </div>
