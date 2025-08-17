@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { redirect, notFound } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { log } from '@/lib/debug';
-import LiveOrdersClient from './page.client';
+import LiveOrdersClient from './LiveOrdersClient';
 
 export default async function LiveOrdersPage({ params }: { params: { venueId: string } }) {
   const jar = await cookies();
