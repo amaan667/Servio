@@ -1,63 +1,88 @@
-import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-
 export const runtime = 'nodejs';
 
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+import { todayWindowForTZ } from '@/lib/time';
+
+type OrderRow = {
+  id: string;
+  venue_id: string;
+  table_number: number | null;
+  customer_name: string | null;
+  items: any[];                    // jsonb[]
+  total_amount: number;
+  created_at: string;              // timestamptz
+  status: 'pending' | 'preparing' | 'served' | 'delivered' | 'cancelled';
+  payment_status: 'paid' | 'unpaid' | null;
+};
+
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const venueId = searchParams.get('venueId');
-  const orderId = searchParams.get('orderId');
-  if (!venueId || !orderId) {
-    return NextResponse.json({ ok: false, error: 'venueId and orderId required' }, { status: 400 });
+  try {
+    const url = new URL(req.url);
+    const venueId = url.searchParams.get('venueId');
+    // scope: 'all' (today, all statuses) | 'live' (today, pending/preparing) | 'history' (before today)
+    const scope = (url.searchParams.get('scope') || 'all') as 'all' | 'live' | 'history';
+
+    if (!venueId) {
+      return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
+    }
+
+    // SSR supabase client (uses user cookies for RLS)
+    const jar = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { get: n => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+    );
+
+    // find venue tz
+    const { data: venue, error: vErr } = await supabase
+      .from('venues')
+      .select('timezone')
+      .eq('venue_id', venueId)
+      .maybeSingle();
+
+    if (vErr) {
+      return NextResponse.json({ ok: false, error: vErr.message }, { status: 500 });
+    }
+
+    const { startUtcISO, endUtcISO, zone } = todayWindowForTZ(venue?.timezone);
+
+    // base query: always sort by created_at DESC  ✅ (Requirement #2)
+    let q = supabase
+      .from('orders')
+      .select(
+        'id, venue_id, table_number, customer_name, items, total_amount, created_at, status, payment_status'
+      )
+      .eq('venue_id', venueId)
+      .order('created_at', { ascending: false });
+
+    if (scope === 'all') {
+      // Today only, ALL statuses  ✅ (Requirement #3)
+      q = q.gte('created_at', startUtcISO).lt('created_at', endUtcISO);
+    } else if (scope === 'live') {
+      // optional: live view (today + active)
+      q = q
+        .gte('created_at', startUtcISO)
+        .lt('created_at', endUtcISO)
+        .in('status', ['pending', 'preparing']);
+    } else if (scope === 'history') {
+      // before today
+      q = q.lt('created_at', startUtcISO).limit(500);
+    }
+
+    const { data, error } = await q;
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      meta: { scope, zone, startUtcISO, endUtcISO, count: data?.length ?? 0 },
+      orders: (data || []) as OrderRow[],
+    });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
   }
-
-  const jar = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
-  );
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ ok:false, error:'Not authenticated' }, { status:401 });
-
-  const { data: v } = await supabase
-    .from('venues')
-    .select('venue_id, owner_id')
-    .eq('venue_id', venueId)
-    .eq('owner_id', user.id)
-    .maybeSingle();
-  if (!v) return NextResponse.json({ ok:false, error:'Forbidden' }, { status:403 });
-
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey) return NextResponse.json({ ok:false, error:'Missing service role' }, { status:500 });
-  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey, { auth: { persistSession:false, autoRefreshToken:false } });
-
-  const { data: order, error: orderErr } = await admin
-    .from('orders')
-    .select('*')
-    .eq('id', orderId)
-    .eq('venue_id', venueId)
-    .maybeSingle();
-  if (orderErr) return NextResponse.json({ ok:false, error: orderErr.message }, { status:500 });
-  if (!order) return NextResponse.json({ ok:true, order: null });
-
-  const { data: items, error: itemsErr } = await admin
-    .from('order_items')
-    .select('*')
-    .eq('order_id', orderId);
-  if (itemsErr) return NextResponse.json({ ok:false, error: itemsErr.message }, { status:500 });
-
-  const mappedItems = (items ?? []).map((it: any) => {
-    const price = Number(it.unit_price ?? it.price ?? 0);
-    const qty = Number(it.quantity ?? 0);
-    const line_total = price * qty;
-    const item_name = (it.item_name ?? it.name ?? it.menu_item_name ?? 'Item') as string;
-    return { id: it.id, item_name, price, quantity: qty, special_instructions: it.special_instructions, line_total };
-  });
-  const computed_total = mappedItems.reduce((s, it) => s + it.line_total, 0);
-  return NextResponse.json({ ok:true, order: { ...order, items: mappedItems, computed_total } });
 }
-
-

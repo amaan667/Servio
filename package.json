@@ -98,6 +98,7 @@
     "@types/d3-path": "^3.1.1",
     "@types/express": "^5.0.3",
     "@types/express-serve-static-core": "^5.0.7",
+    "@types/luxon": "^3.7.1",
     "@types/mime": "^3.0.4",
     "@types/node": "^20",
     "@types/range-parser": "^1.2.7",
