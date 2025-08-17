@@ -15,8 +15,8 @@ interface Order {
   id: string;
   venue_id: string;
   table_number: number | null;
-  customer_name: string;
-  customer_phone?: string;
+  customer_name: string | null;
+  customer_phone?: string | null;
   items: Array<{
     name: string;
     quantity: number;
@@ -28,21 +28,23 @@ interface Order {
   payment_status?: string;
 }
 
-interface GroupedOrders {
+interface GroupedHistoryOrders {
   [date: string]: Order[];
 }
 
 export default function LiveOrdersClient({ venueId, venueName }: { venueId: string; venueName: string }) {
-  const [liveOrders, setLiveOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
-  const [groupedHistoryOrders, setGroupedHistoryOrders] = useState<GroupedOrders>({});
+  const [groupedHistoryOrders, setGroupedHistoryOrders] = useState<GroupedHistoryOrders>({});
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [todayWindow, setTodayWindow] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("live");
   const router = useRouter();
 
   useEffect(() => {
+    // Load venue timezone and set up today window
     const loadVenueAndOrders = async () => {
       const { data: venueData } = await supabase
         .from('venues')
@@ -79,10 +81,10 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
         .eq('venue_id', venueId)
         .lt('created_at', window.startUtcISO)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(100); // Limit to last 100 orders
 
       if (!liveError && liveData) {
-        setLiveOrders(liveData as Order[]);
+        setOrders(liveData as Order[]);
       }
       if (!allError && allData) {
         setAllOrders(allData as Order[]);
@@ -92,7 +94,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
         setHistoryOrders(history);
         
         // Group history orders by date
-        const grouped = history.reduce((acc: GroupedOrders, order) => {
+        const grouped = history.reduce((acc: GroupedHistoryOrders, order) => {
           const date = new Date(order.created_at).toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
@@ -130,7 +132,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
           if (payload.eventType === 'INSERT') {
             const newOrder = payload.new as Order;
             if (isInTodayWindow) {
-              setLiveOrders(prev => [newOrder, ...prev]);
+              setOrders(prev => [newOrder, ...prev]);
               setAllOrders(prev => [newOrder, ...prev]);
             } else {
               setHistoryOrders(prev => [newOrder, ...prev]);
@@ -148,7 +150,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
           } else if (payload.eventType === 'UPDATE') {
             const updatedOrder = payload.new as Order;
             if (isInTodayWindow) {
-              setLiveOrders(prev => prev.map(order => 
+              setOrders(prev => prev.map(order => 
                 order.id === updatedOrder.id ? updatedOrder : order
               ));
               setAllOrders(prev => prev.map(order => 
@@ -162,7 +164,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
           } else if (payload.eventType === 'DELETE') {
             const deletedOrder = payload.old as Order;
             if (isInTodayWindow) {
-              setLiveOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+              setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
               setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
             } else {
               setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
@@ -185,7 +187,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
       .eq('venue_id', venueId);
 
     if (!error) {
-      setLiveOrders(prev => prev.map(order => 
+      setOrders(prev => prev.map(order => 
         order.id === orderId ? { ...order, status } : order
       ));
       setAllOrders(prev => prev.map(order => 
@@ -198,6 +200,14 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
     return new Date(dateString).toLocaleTimeString('en-GB', { 
       hour: '2-digit', 
       minute: '2-digit' 
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
     });
   };
 
@@ -229,10 +239,18 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
             <div className="font-medium">
               Table {order.table_number || 'Takeaway'}
             </div>
-            <div className="flex items-center text-sm text-gray-600">
-              <User className="h-4 w-4 mr-1" />
-              {order.customer_name || 'Guest'}
-            </div>
+            {order.customer_name && (
+              <div className="flex items-center text-sm text-gray-600">
+                <User className="h-4 w-4 mr-1" />
+                {order.customer_name}
+              </div>
+            )}
+            {!order.customer_name && (
+              <div className="flex items-center text-sm text-gray-500">
+                <User className="h-4 w-4 mr-1" />
+                Guest
+              </div>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             <Badge className={getStatusColor(order.status)}>
@@ -318,14 +336,14 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="live">Live Orders ({liveOrders.length})</TabsTrigger>
+            <TabsTrigger value="live">Live Orders ({orders.length})</TabsTrigger>
             <TabsTrigger value="all">All Today ({allOrders.length})</TabsTrigger>
             <TabsTrigger value="history">History ({historyOrders.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="live" className="mt-6">
             <div className="grid gap-6">
-              {liveOrders.length === 0 ? (
+              {orders.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -334,7 +352,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
                   </CardContent>
                 </Card>
               ) : (
-                liveOrders.map((order) => renderOrderCard(order, true))
+                orders.map((order) => renderOrderCard(order, true))
               )}
             </div>
           </TabsContent>

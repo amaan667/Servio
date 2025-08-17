@@ -42,7 +42,7 @@ export async function GET(req: Request) {
 
   let q = admin.from('orders')
     .select(`
-      id, venue_id, table_number, customer_name, total_amount, status, notes, created_at, items,
+      id, venue_id, table_number, customer_name, customer_phone, total_amount, status, payment_status, notes, created_at, items,
       order_items ( id, item_name, name, menu_item_name, unit_price, price, quantity, special_instructions )
     `)
     .eq('venue_id', venueId)
@@ -73,9 +73,7 @@ export async function GET(req: Request) {
       });
     }
     const computed_total = items.reduce((sum: number, it: any) => sum + it.line_total, 0);
-    // Handle null customer_name gracefully
-    const customer_name = o.customer_name || 'Guest';
-    return { ...o, items, computed_total, customer_name };
+    return { ...o, items, computed_total };
   });
 
   console.log("[LIVE ORDERS GET] hydrated orders:", hydrated);
