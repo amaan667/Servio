@@ -12,3 +12,5 @@ Railway environment variables are properly configured.
 Google OAuth now uses Railway domain in production.
 
 Timestamp: 2025-08-16T17:45:00Z 
+
+Trivial change for testing push functionality.
