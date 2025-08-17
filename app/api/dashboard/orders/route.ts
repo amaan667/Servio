@@ -82,11 +82,29 @@ export async function GET(req: Request) {
   if (since) {
     ordersQuery = ordersQuery.gte('created_at', since);
   }
-  if (scope !== 'all') {
+  
+  // Handle different scopes
+  if (scope === 'history') {
+    // History: orders from before today
+    ordersQuery = ordersQuery.lt('created_at', window.startUtcISO);
+  } else if (scope === 'live') {
+    // Live: only pending/preparing orders from today
+    ordersQuery = ordersQuery
+      .gte('created_at', window.startUtcISO)
+      .lt('created_at', window.endUtcISO)
+      .in('status', ['pending', 'preparing']);
+  } else if (scope === 'all') {
+    // All: all orders from today
+    ordersQuery = ordersQuery
+      .gte('created_at', window.startUtcISO)
+      .lt('created_at', window.endUtcISO);
+  } else {
+    // Default: today's orders
     ordersQuery = ordersQuery
       .gte('created_at', window.startUtcISO)
       .lt('created_at', window.endUtcISO);
   }
+  
   if (statuses) {
     ordersQuery = ordersQuery.in('status', statuses as any);
   }
