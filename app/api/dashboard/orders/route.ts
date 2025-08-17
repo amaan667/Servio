@@ -162,7 +162,12 @@ export async function GET(req: Request) {
     const uiStatus = o.status === 'delivered' ? 'served' : o.status;
     return { ...o, status: uiStatus, items: mappedItems, computed_total: total };
   });
-
+  console.log('[ORDERS API]', {
+    venueId,
+    scope,
+    window,
+    count: (hydrated ?? []).length,
+  });
   return NextResponse.json({ ok: true, orders: hydrated, meta: { activeTablesToday, window } });
 }
 
