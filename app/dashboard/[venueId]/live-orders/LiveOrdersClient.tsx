@@ -126,8 +126,8 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
         (payload) => {
           console.log('Order change:', payload);
           
-          const orderCreatedAt = payload.new?.created_at || payload.old?.created_at;
-          const isInTodayWindow = orderCreatedAt >= todayWindow?.startUtcISO && orderCreatedAt < todayWindow?.endUtcISO;
+          const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
+          const isInTodayWindow = orderCreatedAt && orderCreatedAt >= todayWindow?.startUtcISO && orderCreatedAt < todayWindow?.endUtcISO;
           
           if (payload.eventType === 'INSERT') {
             const newOrder = payload.new as Order;
