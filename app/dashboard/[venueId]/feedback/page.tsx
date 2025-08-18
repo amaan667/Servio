@@ -34,7 +34,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar />
+      <NavBar venueId={params.venueId} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb customBackPath={`/dashboard/${params.venueId}`} customBackLabel="Dashboard" />
         <FeedbackClient 

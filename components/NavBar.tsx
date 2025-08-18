@@ -4,7 +4,9 @@ import { Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-export function NavBar({ showActions = true }: { showActions?: boolean }) {
+export function NavBar({ showActions = true, venueId }: { showActions?: boolean; venueId?: string }) {
+  const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
+  
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
@@ -22,7 +24,7 @@ export function NavBar({ showActions = true }: { showActions?: boolean }) {
       </div>
       <div className="flex items-center space-x-4">
         <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
-        <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link>
+        <Link href={dashboardLink} className="text-gray-600 hover:text-gray-900">Dashboard</Link>
         <Link href="#features" className="text-gray-600 hover:text-gray-900">Features</Link>
         <Link href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
         {showActions && (
