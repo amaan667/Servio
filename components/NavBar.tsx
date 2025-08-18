@@ -1,56 +1,36 @@
 import { Button } from "./ui/button";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabase";
 import { Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 export function NavBar({ showActions = true }: { showActions?: boolean }) {
-  
-  const handleSignOut = async () => {
-    try {
-      // Prefer server-side sign out to clear HttpOnly cookies reliably
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/sign-out';
-        return;
-      }
-    } catch (e) {
-      console.error('Error signing out:', e);
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/sign-out';
-      }
-    }
-  };
-
   return (
-    <nav className="flex items-center justify-between h-28 sm:h-36 px-4 sm:px-6 bg-background border-b shadow-lg sticky top-0 z-20">
-      <div className="flex items-center min-w-0">
-        <Link href="/" className="flex items-center min-w-0">
+    <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+      <div className="flex items-center">
+        <Link href="/" className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
-            width={512}
-            height={128}
-            className="mr-3 w-auto h-24 sm:h-32 object-contain"
+            width={160}
+            height={40}
+            className="mr-4"
             priority
           />
+          <span className="text-servio-purple text-3xl font-bold ml-3">Servio</span>
         </Link>
       </div>
-      <div className="flex items-center gap-3 sm:gap-6">
-        <Link
-          href="/"
-          className="text-foreground hover:text-foreground/80 font-medium text-sm sm:text-base"
-        >
-          Home
-        </Link>
+      <div className="flex items-center space-x-4">
+        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
+        <Link href="#features" className="text-gray-600 hover:text-gray-900">Features</Link>
+        <Link href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
         {showActions && (
           <>
-            <Link href="/settings" className="hidden sm:block">
-              <Button variant="ghost" size="sm" className="text-sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </Link>
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-sm">
+            <Button variant="ghost" size="sm">
+              <Settings className="h-5 w-5 mr-2" />
+              Settings
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
               Sign Out
             </Button>
           </>
