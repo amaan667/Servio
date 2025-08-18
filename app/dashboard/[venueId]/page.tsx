@@ -1,5 +1,6 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 import { cookies } from 'next/headers';
 import { redirect, notFound } from 'next/navigation';
@@ -9,6 +10,7 @@ import { todayWindowForTZ } from '@/lib/time';
 import DashboardClient from './page.client';
 
 export default async function Page({ params }: { params: { venueId: string } }) {
+  console.log('[VENUE PAGE] params.venueId =', params.venueId);
   console.log('[DASHBOARD VENUE] Page function called with venueId:', params.venueId);
   
   const jar = await cookies();

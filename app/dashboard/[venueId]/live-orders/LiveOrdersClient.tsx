@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -321,14 +322,15 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Button 
-            variant="outline" 
-            onClick={() => router.push(`/dashboard/${venueId}`)}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
+          <Link href={`/dashboard/${venueId}`}>
+            <Button 
+              variant="outline" 
+              className="mb-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
           <h1 className="text-3xl font-bold text-gray-900">Live Orders</h1>
           <p className="text-gray-600 mt-2">Real-time order feed for {venueName} • Today • Local time</p>
         </div>
