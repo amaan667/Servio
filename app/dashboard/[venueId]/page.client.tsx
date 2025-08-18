@@ -61,8 +61,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         (payload) => {
           console.log('Dashboard order change:', payload);
           
-          // Get the order date from the payload
-          const orderCreatedAt = payload.new?.created_at || payload.old?.created_at;
+          // Get the order date from the payload with proper type checking
+          const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
           if (!orderCreatedAt) {
             console.log('No created_at found in payload, ignoring');
             return;
@@ -76,7 +76,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
             windowStart: todayWindow.startUtcISO,
             windowEnd: todayWindow.endUtcISO,
             isInTodayWindow,
-            orderId: payload.new?.id || payload.old?.id
+            orderId: (payload.new as any)?.id || (payload.old as any)?.id
           });
           
           if (isInTodayWindow) {
@@ -180,7 +180,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Reversed breadcrumbs */}
-        <NavigationBreadcrumb showBackButton={true} showHomeButton={true} customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
+        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
         
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-2">
