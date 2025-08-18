@@ -42,12 +42,18 @@ export default async function Page({ params }: { params: { venueId: string } }) 
     hasVenue: !!venue, 
     venueId: venue?.venue_id,
     venueName: venue?.name,
-    error: vErr?.message 
+    error: vErr?.message,
+    userId: user.id,
+    requestedVenueId: params.venueId
   });
 
   log('DASH SSR venue', { ok: !!venue, err: vErr?.message });
-  if (vErr || !venue) {
-    console.log('[DASHBOARD VENUE] Venue not found or error, returning notFound');
+  if (vErr) {
+    console.error('[DASHBOARD VENUE] Database error:', vErr);
+    return notFound();
+  }
+  if (!venue) {
+    console.log('[DASHBOARD VENUE] Venue not found - user may not have access or venue does not exist');
     return notFound();
   }
 
