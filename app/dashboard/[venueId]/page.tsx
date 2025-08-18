@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { cookies } from 'next/headers';
-import { redirect, notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { log, error } from '@/lib/debug';
 import { todayWindowForTZ } from '@/lib/time';
@@ -51,11 +51,13 @@ export default async function VenuePage({ params, searchParams }: { params: { ve
   log('DASH SSR venue', { ok: !!venue, err: vErr?.message });
   if (vErr) {
     console.error('[DASHBOARD VENUE] Database error:', vErr);
-    return notFound();
+    // Avoid returning notFound() to prevent static 404 caching; redirect to sign-in.
+    redirect('/sign-in');
   }
   if (!venue) {
     console.log('[DASHBOARD VENUE] Venue not found - user may not have access or venue does not exist');
-    return notFound();
+    // Redirect to sign-in rather than returning a 404 to avoid stale cached pages.
+    redirect('/sign-in');
   }
 
   // Get timezone-aware today window (default to Europe/London until migration is run)

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { NavBar } from "@/components/NavBar";
@@ -62,11 +63,11 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
                 Generate QR codes and start taking orders to see your business insights.
               </p>
               <div className="flex justify-center space-x-4">
-                <Button onClick={() => router.push(`/dashboard/${venueId}/qr-codes`)}>
-                  Generate QR Codes
+                <Button asChild>
+                  <Link href={`/dashboard/${venueId}/qr-codes`}>Generate QR Codes</Link>
                 </Button>
-                <Button variant="outline" onClick={() => router.push(`/dashboard/${venueId}/live-orders`)}>
-                  View Live Orders
+                <Button asChild variant="outline">
+                  <Link href={`/dashboard/${venueId}/live-orders`}>View Live Orders</Link>
                 </Button>
               </div>
             </CardContent>
