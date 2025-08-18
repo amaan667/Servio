@@ -14,18 +14,8 @@ export default function NavigationBreadcrumb({
   customBackPath,
   customBackLabel,
 }: NavigationBreadcrumbProps) {
-  const router = useRouter();
   const pathnameRaw = usePathname();
   const pathname = pathnameRaw || '';
-
-  const handleBack = () => {
-    // keep fallback for history back
-    router.back();
-  };
-
-  const handleHome = () => {
-    router.push("/");
-  };
 
   const getPageTitle = () => {
     if (pathname.includes("/dashboard")) {
@@ -100,7 +90,7 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" onClick={() => router.back()} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+            <Button variant="ghost" size="sm" onClick={() => window.history.back()} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
             </Button>
