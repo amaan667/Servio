@@ -9,6 +9,7 @@ import { useTick } from '@/hooks/use-tick';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+import { NavBar } from '@/components/NavBar';
 
 type Item = {
   id: string;
@@ -237,17 +238,19 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   }, [orders]);
 
   return (
-    <div className="max-w-5xl mx-auto px-3 py-4 sm:p-6">
-      <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
-      <audio ref={audioRef} src="/assets/new-order.mp3" preload="auto" />
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
-        {/* Breadcrumb already renders elsewhere; avoid duplicating back link */}
-        <div className="flex items-center gap-2 pb-1 flex-wrap">
-          <div className="flex items-center text-xs sm:text-sm text-muted-foreground mr-3 flex-shrink-0">
-            <span className={`inline-block h-2 w-2 rounded-full mr-1 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-            Live
-          </div>
-          <div className="text-xs sm:text-sm text-muted-foreground mr-3 flex-shrink-0">Active Tables: {activeTablesToday}</div>
+    <div className="min-h-screen bg-gray-50">
+      <NavBar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
+        <audio ref={audioRef} src="/assets/new-order.mp3" preload="auto" />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+          {/* Breadcrumb already renders elsewhere; avoid duplicating back link */}
+          <div className="flex items-center gap-2 pb-1 flex-wrap">
+            <div className="flex items-center text-xs sm:text-sm text-muted-foreground mr-3 flex-shrink-0">
+              <span className={`inline-block h-2 w-2 rounded-full mr-1 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+              Live
+            </div>
+            <div className="text-xs sm:text-sm text-muted-foreground mr-3 flex-shrink-0">Active Tables: {activeTablesToday}</div>
           <input
             value={search}
             onChange={e=>setSearch(e.target.value)}
@@ -381,6 +384,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
         {visibleByDay.reduce((n,g)=>n+g.orders.length,0) === 0 && (
           <div className="text-center text-gray-500 py-16">No orders yet.</div>
         )}
+      </div>
       </div>
     </div>
   );

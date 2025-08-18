@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+import { NavBar } from '@/components/NavBar';
 import FeedbackClient from './FeedbackClient';
 
 export default async function FeedbackPage({ params }: { params: { venueId: string } }) {
@@ -32,13 +33,16 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
     .order('created_at', { ascending: false });
 
   return (
-    <div className="max-w-5xl mx-auto px-3 py-4 sm:p-6">
-      <NavigationBreadcrumb customBackPath={`/dashboard/${params.venueId}`} customBackLabel="Dashboard" />
-      <FeedbackClient 
-        venueId={params.venueId}
-        customQuestions={customQuestions || []}
-        questionResponses={questionResponses || []}
-      />
+    <div className="min-h-screen bg-gray-50">
+      <NavBar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <NavigationBreadcrumb customBackPath={`/dashboard/${params.venueId}`} customBackLabel="Dashboard" />
+        <FeedbackClient 
+          venueId={params.venueId}
+          customQuestions={customQuestions || []}
+          questionResponses={questionResponses || []}
+        />
+      </div>
     </div>
   );
 }

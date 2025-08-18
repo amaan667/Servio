@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import TimeField, { TimeValue } from '@/components/inputs/TimeField';
 import { to24h, buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+import { NavBar } from '@/components/NavBar';
 
 type StaffRow = {
   id: string;
@@ -259,14 +260,14 @@ export default function StaffClient({
   }, [allShifts]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-4">
-        <NavigationBreadcrumb />
-      </div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">Staff Management</h2>
-        <p className="text-gray-500">Manage staff for {venueName}</p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <NavBar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold">Staff Management</h2>
+          <p className="text-gray-500">Manage staff for {venueName}</p>
+        </div>
 
       <Card className="mb-6">
         <CardHeader>
@@ -350,6 +351,7 @@ export default function StaffClient({
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
