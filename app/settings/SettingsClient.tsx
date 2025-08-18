@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { NavBar } from "@/components/NavBar";
+import NavBar from "@/components/NavBar";
 import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, Save, User, Building, Mail, Phone } from "lucide-react";
 

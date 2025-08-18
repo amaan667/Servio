@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { NavBar } from "@/components/NavBar";
+import NavBar from "@/components/NavBar";
 import { supabase } from "@/lib/sb-client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
@@ -54,20 +54,23 @@ export default async function DashboardIndexPage(props: any) {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [todayWindow, setTodayWindow] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("live");
+  const [venueName, setVenueName] = useState<string>('');
   const router = useRouter();
 
   useEffect(() => {
-    // Load venue timezone and set up today window
     const loadVenueAndOrders = async () => {
       const { data: venueData } = await supabase
         .from('venues')
-        .select('timezone')
+        .select('name, timezone')
         .eq('venue_id', params.venueId)
         .single();
-      
+
+      setVenueName(venueData?.name || '');
+
       const window = todayWindowForTZ(venueData?.timezone);
       setTodayWindow(window);
       
+      // Load live orders (pending/preparing from today)
       // Load live orders (pending/preparing from today)
       const { data: liveData, error: liveError } = await supabase
         .from('orders')

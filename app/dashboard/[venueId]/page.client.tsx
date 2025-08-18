@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
-import { NavBar } from "@/components/NavBar";
+import NavBar from "@/components/NavBar";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
 

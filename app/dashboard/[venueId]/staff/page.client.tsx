@@ -5,7 +5,7 @@ import { supabase } from '@/lib/sb-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { NavBar } from '@/components/NavBar';
+import NavBar from '@/components/NavBar';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 type Staff = { id: string; name: string; role: string; active: boolean; area?: string | null };

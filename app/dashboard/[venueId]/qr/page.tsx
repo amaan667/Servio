@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QrCode, Download, Plus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { NavBar } from "@/components/NavBar";
+import NavBar from "@/components/NavBar";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Session } from "@supabase/supabase-js";

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { LiveOrders } from "@/components/live-orders";
-import { NavBar } from "@/components/NavBar";
+import NavBar from "@/components/NavBar";
 import { useRouter } from "next/navigation";
 import { Session } from "@supabase/supabase-js";
 

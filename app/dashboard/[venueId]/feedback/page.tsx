@@ -1,48 +1,78 @@
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
 
+export const runtime = 'nodejs';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
-import { NavBar } from '@/components/NavBar';
-import FeedbackClient from './FeedbackClient';
+import Link from 'next/link';
+import { venuePath } from '@/lib/path';
 
-export default async function FeedbackPage({ params }: { params: { venueId: string } }) {
+export default async function FeedbackPage({ params }: { params: { venueId: string }}) {
   const jar = await cookies();
-  const supabase = createServerClient(
+  const supa = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+    { cookies: { get: n => jar.get(n)?.value, set: () => {}, remove: () => {} } }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supa.auth.getUser();
   if (!user) {
-    return null;
+    return (
+      <div className="p-8">
+        <p>Please sign in.</p>
+        <Link href="/sign-in">Sign in</Link>
+      </div>
+    );
   }
 
-  const { data: customQuestions } = await supabase
-    .from('feedback_questions')
-    .select('*')
+  // Optional: assert venue ownership; don’t throw on failure, just show empty state
+  const { data: venue, error: vErr } = await supa
+    .from('venues')
+    .select('venue_id, name')
     .eq('venue_id', params.venueId)
+    .eq('owner_id', user.id)
+    .maybeSingle();
+
+  if (vErr || !venue) {
+    console.log('[FEEDBACK] venue check failed', vErr?.message);
+    return (
+      <div className="p-8">
+        <nav className="mb-4">
+          <Link href={venuePath(params.venueId)}>Home</Link> / <span>Feedback</span>
+        </nav>
+        <h1 className="text-2xl font-bold">Feedback</h1>
+        <p className="text-gray-500 mt-2">No access to this venue or it does not exist.</p>
+      </div>
+    );
+  }
+
+  const { data: rows, error } = await supa
+    .from('order_feedback')
+    .select('id, created_at, rating, comment, order_id')
     .order('created_at', { ascending: false });
 
-  const { data: questionResponses } = await supabase
-    .from('feedback_responses')
-    .select('*, feedback_questions!inner(*)')
-    .eq('venue_id', params.venueId)
-    .order('created_at', { ascending: false });
+  if (error) {
+    console.log('[FEEDBACK] list error', error.message);
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavBar venueId={params.venueId} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb customBackPath={`/dashboard/${params.venueId}`} customBackLabel="Dashboard" />
-        <FeedbackClient 
-          venueId={params.venueId}
-          customQuestions={customQuestions || []}
-          questionResponses={questionResponses || []}
-        />
-      </div>
+    <div className="p-8">
+      <nav className="mb-4">
+        <Link href={venuePath(params.venueId)}>Home</Link> / <span>Feedback</span>
+      </nav>
+      <h1 className="text-2xl font-bold">Feedback</h1>
+      {!rows?.length ? (
+        <p className="text-gray-500 mt-4">No feedback yet.</p>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {rows.map(r => (
+            <li key={r.id} className="rounded border p-4">
+              <div className="text-sm text-gray-500">{new Date(r.created_at).toLocaleString()}</div>
+              <div className="font-medium">Rating: {r.rating}/5</div>
+              {r.comment && <div className="mt-1">{r.comment}</div>}
+              <div className="text-xs text-gray-500 mt-1">Order: {r.order_id}</div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
