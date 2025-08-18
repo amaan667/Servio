@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft } from "lucide-react";
+import Link from 'next/link';
 
 interface NavigationBreadcrumbProps {
   customBackPath?: string;
@@ -14,14 +15,12 @@ export default function NavigationBreadcrumb({
   customBackLabel,
 }: NavigationBreadcrumbProps) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathnameRaw = usePathname();
+  const pathname = pathnameRaw || '';
 
   const handleBack = () => {
-    if (customBackPath) {
-      router.push(customBackPath);
-    } else {
-      router.back();
-    }
+    // keep fallback for history back
+    router.back();
   };
 
   const handleHome = () => {
@@ -59,9 +58,13 @@ export default function NavigationBreadcrumb({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button variant="ghost" size="sm" onClick={handleHome} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Home className="h-4 w-4" />
-              <span className="hidden sm:inline">Home</span>
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+              <Link href="/">
+                <>
+                  <Home className="h-4 w-4" />
+                  <span className="hidden sm:inline">Home</span>
+                </>
+              </Link>
             </Button>
           </li>
           <li className="text-gray-400">→</li>
@@ -76,17 +79,32 @@ export default function NavigationBreadcrumb({
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center gap-2 text-sm">
         <li>
-          <Button variant="ghost" size="sm" onClick={handleHome} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-            <Home className="h-4 w-4" />
-            <span className="hidden sm:inline">Home</span>
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+            <Link href="/">
+              <>
+                <Home className="h-4 w-4" />
+                <span className="hidden sm:inline">Home</span>
+              </>
+            </Link>
           </Button>
         </li>
         <li className="text-gray-400">→</li>
         <li>
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
-          </Button>
+          {customBackPath ? (
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+              <Link href={customBackPath}>
+                <>
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
+                </>
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => router.back()} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
+            </Button>
+          )}
         </li>
         <li className="text-gray-400">→</li>
         <li className="text-gray-700 font-medium">{pageTitle}</li>
