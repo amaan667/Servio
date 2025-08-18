@@ -118,7 +118,7 @@ export default function StaffClient({ venueId }: { venueId: string }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar />
+      <NavBar venueId={venueId} />
       <div className="max-w-5xl mx-auto p-6">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
         <h1 className="text-2xl font-semibold mb-4">Staff Management</h1>
