@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NavBar } from "@/components/NavBar";
 import { supabase } from "@/lib/sb-client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
+import { redirect } from 'next/navigation';
 
 interface Order {
   id: string;
@@ -33,7 +34,18 @@ interface GroupedHistoryOrders {
   [date: string]: Order[];
 }
 
-export default function LiveOrdersClient({ venueId, venueName }: { venueId: string; venueName: string }) {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function DashboardIndexPage(props: any) {
+  const {
+    params,
+    searchParams,
+  } = props;
+
+  console.log('[VENUE PAGE] params.venueId =', params.venueId);
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
@@ -50,7 +62,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
       const { data: venueData } = await supabase
         .from('venues')
         .select('timezone')
-        .eq('venue_id', venueId)
+        .eq('venue_id', params.venueId)
         .single();
       
       const window = todayWindowForTZ(venueData?.timezone);
@@ -60,7 +72,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
       const { data: liveData, error: liveError } = await supabase
         .from('orders')
         .select('*')
-        .eq('venue_id', venueId)
+        .eq('venue_id', params.venueId)
         .in('status', ['pending', 'preparing'])
         .gte('created_at', window.startUtcISO)
         .lt('created_at', window.endUtcISO)
@@ -70,7 +82,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
       const { data: allData, error: allError } = await supabase
         .from('orders')
         .select('*')
-        .eq('venue_id', venueId)
+        .eq('venue_id', params.venueId)
         .gte('created_at', window.startUtcISO)
         .lt('created_at', window.endUtcISO)
         .order('created_at', { ascending: false });
@@ -79,7 +91,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
       const { data: historyData, error: historyError } = await supabase
         .from('orders')
         .select('*')
-        .eq('venue_id', venueId)
+        .eq('venue_id', params.venueId)
         .lt('created_at', window.startUtcISO)
         .order('created_at', { ascending: false })
         .limit(100); // Limit to last 100 orders
@@ -122,7 +134,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
           event: '*', 
           schema: 'public', 
           table: 'orders',
-          filter: `venue_id=eq.${venueId}`
+          filter: `venue_id=eq.${params.venueId}`
         }, 
         (payload) => {
           console.log('Order change:', payload);
@@ -178,14 +190,14 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [venueId]);
+  }, [params.venueId]);
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
     const { error } = await supabase
       .from('orders')
       .update({ status })
       .eq('id', orderId)
-      .eq('venue_id', venueId);
+      .eq('venue_id', params.venueId);
 
     if (!error) {
       setOrders(prev => prev.map(order => 
@@ -323,7 +335,7 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
         {/* Header */}
         <div className="mb-8">
           <Button asChild variant="outline">
-            <Link href={`/dashboard/${venueId}`} className="inline-flex items-center gap-2">
+            <Link href={`/dashboard/${params.venueId}`} className="inline-flex items-center gap-2">
               Back to Dashboard
             </Link>
           </Button>
@@ -397,4 +409,24 @@ export default function LiveOrdersClient({ venueId, venueName }: { venueId: stri
       </div>
     </div>
   );
+}
+
+export async function signInWithGoogle() {
+  // Compute redirect URL based on env or browser origin.
+  const redirectTo = process.env.NEXT_PUBLIC_SITE_URL
+    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+    : typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/callback`
+      : 'https://servio-production.up.railway.app/auth/callback';
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+      queryParams: { access_type: 'offline', prompt: 'consent' },
+    },
+  });
+
+  if (error) throw error;
+  return data;
 }
