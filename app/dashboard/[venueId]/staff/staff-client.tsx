@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import TimeField, { TimeValue } from '@/components/inputs/TimeField';
 import { to24h, buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
-import { NavBar } from '@/components/NavBar';
+import NavBar from '@/components/NavBar';
 
 type StaffRow = {
   id: string;

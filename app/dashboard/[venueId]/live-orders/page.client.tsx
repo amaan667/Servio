@@ -9,7 +9,7 @@ import { useTick } from '@/hooks/use-tick';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
-import { NavBar } from '@/components/NavBar';
+import NavBar from '@/components/NavBar';
 
 type Item = {
   id: string;

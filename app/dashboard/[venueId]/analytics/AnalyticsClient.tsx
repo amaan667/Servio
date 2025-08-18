@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { NavBar } from "@/components/NavBar";
+import NavBar from "@/components/NavBar";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag } from "lucide-react";

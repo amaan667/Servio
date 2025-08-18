@@ -1,16 +1,19 @@
+
 import { Button } from "./ui/button";
-import { supabase } from "@/lib/supabase";
 import { Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { getPrimaryVenueId } from '@/lib/server/getPrimaryVenue';
 
-export function NavBar({ showActions = true, venueId }: { showActions?: boolean; venueId?: string }) {
-  const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
-  
+export default async function NavBar({ showActions = true, venueId }: { showActions?: boolean; venueId?: string }) {
+  const resolvedVenueId = venueId ?? (await getPrimaryVenueId());
+  const homeHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
+  // [NAV] Home link resolved
+  console.log('[NAV] Home link:', homeHref);
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
-        <Link href="/" className="flex items-center">
+        <Link href={homeHref} className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
@@ -23,8 +26,8 @@ export function NavBar({ showActions = true, venueId }: { showActions?: boolean;
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
-        <Link href={dashboardLink} className="text-gray-600 hover:text-gray-900">Dashboard</Link>
+        <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Home</Link>
+        <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Dashboard</Link>
         <Link href="#features" className="text-gray-600 hover:text-gray-900">Features</Link>
         <Link href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
         {showActions && (
@@ -33,9 +36,7 @@ export function NavBar({ showActions = true, venueId }: { showActions?: boolean;
               <Settings className="h-5 w-5 mr-2" />
               Settings
             </Button>
-            <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
-              Sign Out
-            </Button>
+            {/* Sign Out button logic can be added here if needed */}
           </>
         )}
       </div>
