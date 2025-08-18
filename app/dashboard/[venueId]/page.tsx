@@ -9,9 +9,8 @@ import { log, error } from '@/lib/debug';
 import { todayWindowForTZ } from '@/lib/time';
 import DashboardClient from './page.client';
 
-export default async function Page({ params }: { params: { venueId: string } }) {
+export default async function VenuePage({ params, searchParams }: { params: { venueId: string }, searchParams: any }) {
   console.log('[VENUE PAGE] params.venueId =', params.venueId);
-  console.log('[DASHBOARD VENUE] Page function called with venueId:', params.venueId);
   
   const jar = await cookies();
   console.log('[DASHBOARD VENUE] Cookies jar created');
@@ -80,5 +79,7 @@ export default async function Page({ params }: { params: { venueId: string } }) 
     activeTables: uniqueActiveTables 
   });
 
-  return <DashboardClient venueId={params.venueId} userId={user.id} activeTables={uniqueActiveTables} />;
+  return (
+    <DashboardClient venueId={params.venueId} userId={user.id} activeTables={uniqueActiveTables} />
+  );
 }
