@@ -51,13 +51,29 @@ export default async function VenuePage({ params, searchParams }: { params: { ve
   log('DASH SSR venue', { ok: !!venue, err: vErr?.message });
   if (vErr) {
     console.error('[DASHBOARD VENUE] Database error:', vErr);
-    // Avoid returning notFound() to prevent static 404 caching; redirect to sign-in.
-    redirect('/sign-in');
+    // If it's a database connection error, don't redirect to sign-in
+    // Instead, we should show an error page or retry
+    error('Venue query error', vErr);
+    redirect('/sign-in?error=database_error');
   }
   if (!venue) {
     console.log('[DASHBOARD VENUE] Venue not found - user may not have access or venue does not exist');
-    // Redirect to sign-in rather than returning a 404 to avoid stale cached pages.
-    redirect('/sign-in');
+    // Check if user has any venues at all before redirecting to sign-in
+    const { data: userVenues } = await supabase
+      .from('venues')
+      .select('venue_id')
+      .eq('owner_id', user.id)
+      .limit(1);
+    
+    if (userVenues && userVenues.length > 0) {
+      // User has venues but not this specific one - redirect to their first venue
+      console.log('[DASHBOARD VENUE] User has other venues, redirecting to first venue');
+      redirect(`/dashboard/${userVenues[0].venue_id}`);
+    } else {
+      // User has no venues - redirect to complete profile
+      console.log('[DASHBOARD VENUE] User has no venues, redirecting to complete profile');
+      redirect('/complete-profile');
+    }
   }
 
   // Get timezone-aware today window (default to Europe/London until migration is run)

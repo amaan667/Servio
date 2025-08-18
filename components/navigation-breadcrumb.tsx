@@ -8,11 +8,13 @@ import Link from 'next/link';
 interface NavigationBreadcrumbProps {
   customBackPath?: string;
   customBackLabel?: string;
+  showBackButton?: boolean;
 }
 
 export default function NavigationBreadcrumb({
   customBackPath,
   customBackLabel,
+  showBackButton = true,
 }: NavigationBreadcrumbProps) {
   const pathnameRaw = usePathname();
   const pathname = pathnameRaw || '';
@@ -41,6 +43,30 @@ export default function NavigationBreadcrumb({
 
   const pageTitle = getPageTitle();
   const isDashboardRoot = /^\/dashboard\/(?:[^/]+)\/?$/.test(pathname);
+  const isSignInPage = pathname.includes("/sign-in");
+  const isSignUpPage = pathname.includes("/sign-up");
+
+  // For sign-in/sign-up pages: Home → Sign In/Sign Up (current)
+  if ((isSignInPage || isSignUpPage) && !showBackButton) {
+    return (
+      <nav aria-label="Breadcrumb" className="mb-4">
+        <ol className="flex items-center gap-2 text-sm">
+          <li>
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+              <Link href="/">
+                <>
+                  <Home className="h-4 w-4" />
+                  <span className="hidden sm:inline">Home</span>
+                </>
+              </Link>
+            </Button>
+          </li>
+          <li className="text-gray-400">→</li>
+          <li className="text-gray-700 font-medium">{pageTitle}</li>
+        </ol>
+      </nav>
+    );
+  }
 
   // Dashboard root: Home → Dashboard (current)
   if (isDashboardRoot) {
