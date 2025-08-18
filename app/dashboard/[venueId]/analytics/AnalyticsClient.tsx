@@ -23,7 +23,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .eq('venue_id', venueId)
         .limit(1);
 
-      setHasData(orders && orders.length > 0);
+  setHasData(Array.isArray(orders) && orders.length > 0);
       setLoading(false);
     };
 
