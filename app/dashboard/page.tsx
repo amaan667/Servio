@@ -52,11 +52,6 @@ export default async function DashboardIndexPage(props: any) {
                         Manage Venue
                       </Button>
                     </Link>
-                    <Link href={`/dashboard/${venue.venue_id}/live-orders`}>
-                      <Button variant="outline" className="w-full">
-                        Live Orders
-                      </Button>
-                    </Link>
                   </div>
                 </CardContent>
               </Card>
