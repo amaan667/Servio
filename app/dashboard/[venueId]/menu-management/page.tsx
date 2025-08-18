@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Plus, Trash2, RefreshCw } from "lucide-react";
@@ -121,13 +122,11 @@ export default function MenuManagementPage({ params }: { params: { venueId: stri
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => router.push(`/dashboard/${params.venueId}`)}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
+            <Button asChild variant="ghost" size="sm">
+              <Link href={`/dashboard/${params.venueId}`}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Link>
             </Button>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -184,4 +183,4 @@ export default function MenuManagementPage({ params }: { params: { venueId: stri
       </div>
     </div>
   );
-} 
+}

@@ -11,6 +11,7 @@ import { NavBar } from '@/components/NavBar';
 import { supabase } from '@/lib/sb-client';
 import { Clock, ArrowLeft, User } from 'lucide-react';
 import { todayWindowForTZ } from '@/lib/time';
+import Link from 'next/link';
 
 type Order = {
   id: string;
@@ -213,9 +214,11 @@ export default function LiveOrdersClient({
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Button variant="outline" onClick={() => router.push(`/dashboard/${venueId}`)} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Dashboard
+        <Button asChild variant="outline" className="mb-4">
+          <Link href={`/dashboard/${venueId}`}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Link>
         </Button>
         <h1 className="text-3xl font-bold text-gray-900">Live Orders</h1>
         <p className="text-gray-600 mt-2">

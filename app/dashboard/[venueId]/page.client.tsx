@@ -191,36 +191,40 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-           <Card>
-            <CardContent className="p-6 cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/live-orders?since=today`)}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Today's Orders</p>
-                  <p className="text-2xl font-bold text-foreground">{stats.todayOrders}</p>
+           <Link href={`/dashboard/${venueId}/live-orders?since=today`}>
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Today's Orders</p>
+                    <p className="text-2xl font-bold text-foreground">{stats.todayOrders}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-blue-600" />
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card>
-            <CardContent className="p-6 cursor-pointer" onClick={() => router.push(`/dashboard/${venueId}/analytics`)}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Revenue</p>
-                  <p className="text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
+          <Link href={`/dashboard/${venueId}/analytics`}>
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Revenue</p>
+                    <p className="text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-green-600" />
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-              {stats.unpaid > 0 && (
-                <div className="mt-2 text-xs text-red-600">{stats.unpaid} unpaid</div>
-              )}
-            </CardContent>
-          </Card>
+                {stats.unpaid > 0 && (
+                  <div className="mt-2 text-xs text-red-600">{stats.unpaid} unpaid</div>
+                )}
+              </CardContent>
+            </Card>
+          </Link>
 
            <Card>
             <CardContent className="p-6">
@@ -344,8 +348,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                     <p className="text-sm text-muted-foreground">Upload your menu or add items manually</p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => router.push(`/dashboard/${venueId}/menu?openAdd=true`)}>
-                  Get Started
+                <Button variant="outline" asChild>
+                  <Link href={`/dashboard/${venueId}/menu?openAdd=true`}>Get Started</Link>
                 </Button>
               </div>
 
@@ -359,8 +363,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                     <p className="text-sm text-muted-foreground">Create QR codes for your tables</p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => router.push(`/generate-qr?venue=${venueId}`)}>
-                  Generate
+                <Button variant="outline" asChild>
+                  <Link href={`/generate-qr?venue=${venueId}`}>Generate</Link>
                 </Button>
               </div>
 
@@ -374,8 +378,8 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
                     <p className="text-sm text-muted-foreground">Customize your venue settings</p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => router.push(`/settings`)}>
-                  Configure
+                <Button variant="outline" asChild>
+                  <Link href={`/settings`}>Configure</Link>
                 </Button>
               </div>
             </CardContent>
