@@ -1,3 +1,8 @@
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
+
 "use client";
 
 import { useEffect, Suspense } from "react";
@@ -9,6 +14,7 @@ function ClearSessionContent() {
   const redirectTo = searchParams?.get('redirect') || '/sign-in?signedOut=true';
 
   useEffect(() => {
+    console.log('[AUTH] Clearing client-side storage');
     // Clear all client-side storage
     if (typeof window !== 'undefined') {
       // Clear localStorage
@@ -34,11 +40,12 @@ function ClearSessionContent() {
         }
       });
       
-      console.log('[AUTH DEBUG] Cleared all client-side storage');
+      console.log('[AUTH] Cleared all client-side storage');
     }
 
     // Redirect after a brief delay to ensure storage is cleared
     setTimeout(() => {
+      console.log('[AUTH] Redirecting to', redirectTo);
       router.replace(redirectTo);
     }, 100);
   }, [redirectTo, router]);
