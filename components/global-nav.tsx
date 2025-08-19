@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import { Menu, X } from "lucide-react";
 
 export default function GlobalNav() {
@@ -26,7 +26,8 @@ export default function GlobalNav() {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    // Prefer server route to sign out to keep cookies consistent
+    window.location.href = '/auth/sign-out';
   };
 
   return (
