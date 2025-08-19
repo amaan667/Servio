@@ -53,7 +53,7 @@ export default function NavigationBreadcrumb({
         <ol className="flex items-center gap-2 text-sm">
           <li>
             <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href="/">
+              <Link href="/dashboard">
                 <>
                   <Home className="h-4 w-4" />
                   <span className="hidden sm:inline">Home</span>
@@ -75,7 +75,7 @@ export default function NavigationBreadcrumb({
         <ol className="flex items-center gap-2 text-sm">
           <li>
             <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href="/">
+              <Link href="/dashboard">
                 <>
                   <Home className="h-4 w-4" />
                   <span className="hidden sm:inline">Home</span>
@@ -96,7 +96,7 @@ export default function NavigationBreadcrumb({
       <ol className="flex items-center gap-2 text-sm">
         <li>
           <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-            <Link href="/">
+            <Link href="/dashboard">
               <>
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Home</span>

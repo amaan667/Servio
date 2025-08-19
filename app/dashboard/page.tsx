@@ -25,7 +25,15 @@ export default async function DashboardIndexPage(props: any) {
     .from('venues')
     .select('venue_id, name, created_at')
     .eq('owner_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
+
+  // Add required log for testing
+  console.log('[HOME NAV TEST] user=', !!user, 'venueId=', venues?.[0]?.venue_id);
+
+  // If user has venues, redirect to the first one (primary venue)
+  if (venues && venues.length > 0) {
+    redirect(`/dashboard/${venues[0].venue_id}`);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
