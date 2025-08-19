@@ -1,5 +1,6 @@
 
 import { Button } from "./ui/button";
+import { cookies } from 'next/headers';
 import { Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,6 +11,9 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
   const homeHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
   // [NAV] Home link resolved
   console.log('[NAV] Home link:', homeHref);
+  const jar = await cookies();
+  const allCookies = Object.fromEntries(jar.getAll().map(c => [c.name, c.value]));
+  console.log('[NAV DEBUG] cookies:', allCookies);
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
