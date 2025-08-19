@@ -49,7 +49,7 @@ export default function SignInForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[AUTH DEBUG] SignInForm submit start', { email: formData.email });
+    console.log('[AUTH] SignInForm submit start', { email: formData.email });
 
     setError(null);
 
@@ -66,19 +66,39 @@ export default function SignInForm() {
     setLoading(true);
 
     try {
-      console.log('[AUTH DEBUG] SignInForm calling signInUser');
+      console.log('[AUTH] SignInForm calling signInUser');
       const result = await signInUser(formData.email.trim(), formData.password);
 
       if (result.success) {
-        console.log('[AUTH DEBUG] SignInForm sign-in success, redirecting to dashboard');
-        // Use router.push for smoother navigation
-        router.push('/dashboard');
+        console.log('[AUTH] SignInForm sign-in success, waiting for session');
+        
+        // Wait for session to be established
+        let attempts = 0;
+        const maxAttempts = 10;
+        const checkSession = async (): Promise<boolean> => {
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log('[AUTH] Session check attempt', attempts + 1, { hasSession: !!session });
+          return !!session;
+        };
+
+        while (attempts < maxAttempts) {
+          if (await checkSession()) {
+            console.log('[AUTH] Session confirmed, redirecting to dashboard');
+            router.replace('/dashboard');
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 300));
+          attempts++;
+        }
+
+        console.log('[AUTH] Session not confirmed after attempts, redirecting anyway');
+        router.replace('/dashboard');
       } else {
-        console.log('[AUTH DEBUG] SignInForm sign-in failed', { message: result.message });
+        console.log('[AUTH] SignInForm sign-in failed', { message: result.message });
         setError(result.message || "Invalid email or password");
       }
     } catch (error: any) {
-      console.log('[AUTH DEBUG] SignInForm unexpected error', { message: error?.message });
+      console.log('[AUTH] SignInForm unexpected error', { message: error?.message });
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -115,7 +135,7 @@ export default function SignInForm() {
 
                 try {
                   const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
-                  console.log('[AUTH DEBUG] SignInForm Google button clicked', {
+                  console.log('[AUTH] Google OAuth sign-in initiated', {
                     redirectTo,
                     env_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
                     env_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -126,19 +146,21 @@ export default function SignInForm() {
                     options: { redirectTo },
                   });
                   if (error) {
-                    console.error('[AUTH DEBUG] OAuth start error', { message: error.message });
+                    console.error('[AUTH] OAuth start error', { message: error.message });
                     setError(error.message);
                     setLoading(false);
                     return;
                   }
                   if (data?.url) {
-                    console.log('[AUTH DEBUG] SignInForm redirecting browser to Google URL', { url: data.url });
+                    console.log('[AUTH] Redirecting to Google OAuth', { url: data.url });
                     window.location.href = data.url; // force navigation
                   } else {
-                    console.log('[AUTH DEBUG] SignInForm no OAuth URL returned');
+                    console.log('[AUTH] No OAuth URL returned');
+                    setError('Failed to start Google sign-in');
+                    setLoading(false);
                   }
                 } catch (err: any) {
-                  console.error('[AUTH DEBUG] Google sign-in error on sign-in page', { message: err?.message });
+                  console.error('[AUTH] Google sign-in error', { message: err?.message });
                   setError(`Google sign-in failed: ${err.message || "Please try again."}`);
                   setLoading(false);
                 }
