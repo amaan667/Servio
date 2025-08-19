@@ -56,7 +56,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
   return (
     <div className="p-8">
       <nav className="mb-4">
-        <Link href={venuePath(params.venueId)}>Home</Link> / <span>Feedback</span>
+  <Link href={venuePath(params.venueId)}>Home</Link> / <span>Feedback</span>
       </nav>
       <h1 className="text-2xl font-bold">Feedback</h1>
       {!rows?.length ? (

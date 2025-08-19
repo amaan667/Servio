@@ -9,7 +9,7 @@ export default async function QrCodesPage({ params }: { params: { venueId: strin
   return (
     <>
       <nav className="mb-4 flex items-center gap-2 text-sm breadcrumbs">
-        <Link href={venuePath(v)} className="text-gray-600 hover:text-gray-900">Home</Link>
+  <Link href={venuePath(v)} className="text-gray-600 hover:text-gray-900">Home</Link>
         <span className="text-gray-400">/</span>
         <Link href={venuePath(v)} className="text-gray-600 hover:text-gray-900">Dashboard</Link>
         <span className="text-gray-400">/</span>
