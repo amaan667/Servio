@@ -27,6 +27,12 @@ export default async function DashboardIndexPage(props: any) {
     .eq('owner_id', user.id)
     .order('created_at', { ascending: false });
 
+  // Redirect to first venue if available
+  if (venues && venues.length > 0) {
+    const venue = venues[0];
+    redirect(`/dashboard/${venue.venue_id}`);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-10">
