@@ -66,14 +66,12 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
             alt="Servio logo"
             width={160}
             height={40}
-            className="mr-4"
             priority
           />
-          <span className="text-servio-purple text-3xl font-bold ml-3">Servio</span>
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-        <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Home</Link>
+        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
         <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Dashboard</Link>
         {showActions && (
           <>

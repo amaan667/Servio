@@ -19,14 +19,12 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
             alt="Servio logo"
             width={160}
             height={40}
-            className="mr-4"
             priority
           />
-          <span className="text-servio-purple text-3xl font-bold ml-3">Servio</span>
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-        <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Home</Link>
+        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
         <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Dashboard</Link>
         <Link href="#features" className="text-gray-600 hover:text-gray-900">Features</Link>
         <Link href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
