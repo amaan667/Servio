@@ -19,7 +19,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
-import { supabase, type AuthSession } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
+import type { AuthSession } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
 const hasSupabaseConfig = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);

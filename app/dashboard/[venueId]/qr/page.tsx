@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QrCode, Download, Plus } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import ClientNavBar from "@/components/ClientNavBar";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
