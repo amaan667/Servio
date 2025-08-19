@@ -1,5 +1,6 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 export const revalidate = 0;
 
 import { cookies } from 'next/headers';
@@ -20,6 +21,10 @@ export default async function DashboardIndexPage(props: any) {
 
   const { data: { user } } = await supabase.auth.getUser();
   console.log('[DASH REDIRECT]', { hasUser: !!user, userId: user?.id });
+  console.log('[DASHBOARD/index] dynamic=true', {
+    hasUser: !!user,
+    userId: user?.id,
+  });
   if (!user) redirect('/sign-in');
 
   const { data: venues, error } = await supabase
