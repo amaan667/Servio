@@ -44,6 +44,7 @@ export default function LiveOrdersClient(props: any) {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [todayWindow, setTodayWindow] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("live");
+  // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>('');
   const router = useRouter();
 
