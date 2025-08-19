@@ -1,15 +1,9 @@
 
 export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
-export const revalidate = 0;
-
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import Link from 'next/link';
 import { venuePath } from '@/lib/path';
-import ClientNavBar from '@/components/ClientNavBar';
-import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 export default async function FeedbackPage({ params }: { params: { venueId: string }}) {
   const jar = await cookies();
@@ -40,13 +34,12 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
   if (vErr || !venue) {
     console.log('[FEEDBACK] venue check failed', vErr?.message);
     return (
-      <div className="min-h-screen bg-background">
-        <ClientNavBar venueId={params.venueId} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <NavigationBreadcrumb venueId={params.venueId} />
-          <h1 className="text-2xl font-bold">Feedback</h1>
-          <p className="text-gray-500 mt-2">No access to this venue or it does not exist.</p>
-        </div>
+      <div className="p-8">
+        <nav className="mb-4">
+          <Link href={venuePath(params.venueId)}>Home</Link> / <span>Feedback</span>
+        </nav>
+        <h1 className="text-2xl font-bold">Feedback</h1>
+        <p className="text-gray-500 mt-2">No access to this venue or it does not exist.</p>
       </div>
     );
   }
@@ -54,7 +47,6 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
   const { data: rows, error } = await supa
     .from('order_feedback')
     .select('id, created_at, rating, comment, order_id')
-    .eq('venue_id', params.venueId)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -62,26 +54,25 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <ClientNavBar venueId={params.venueId} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb venueId={params.venueId} />
-        <h1 className="text-2xl font-bold">Feedback</h1>
-        {!rows?.length ? (
-          <p className="text-gray-500 mt-4">No feedback yet.</p>
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {rows.map(r => (
-              <li key={r.id} className="rounded border p-4">
-                <div className="text-sm text-gray-500">{new Date(r.created_at).toLocaleString()}</div>
-                <div className="font-medium">Rating: {r.rating}/5</div>
-                {r.comment && <div className="mt-1">{r.comment}</div>}
-                <div className="text-xs text-gray-500 mt-1">Order: {r.order_id}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+    <div className="p-8">
+      <nav className="mb-4">
+        <Link href={venuePath(params.venueId)}>Home</Link> / <span>Feedback</span>
+      </nav>
+      <h1 className="text-2xl font-bold">Feedback</h1>
+      {!rows?.length ? (
+        <p className="text-gray-500 mt-4">No feedback yet.</p>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {rows.map(r => (
+            <li key={r.id} className="rounded border p-4">
+              <div className="text-sm text-gray-500">{new Date(r.created_at).toLocaleString()}</div>
+              <div className="font-medium">Rating: {r.rating}/5</div>
+              {r.comment && <div className="mt-1">{r.comment}</div>}
+              <div className="text-xs text-gray-500 mt-1">Order: {r.order_id}</div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
