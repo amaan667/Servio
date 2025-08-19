@@ -27,6 +27,17 @@ export default async function DashboardIndexPage(props: any) {
     .eq('owner_id', user.id)
     .order('created_at', { ascending: false });
 
+  // Get first venue for redirect
+  const firstVenue = venues && venues.length > 0 ? venues[0] : null;
+  
+  // Required logging for Home navigation test
+  console.log('[HOME NAV TEST] user=', !!user, 'venueId=', firstVenue?.venue_id);
+
+  // If user has venues, redirect to the first one
+  if (firstVenue) {
+    redirect(`/dashboard/${firstVenue.venue_id}`);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-10">

@@ -18,8 +18,8 @@ export default async function CompleteProfilePage() {
     {
       cookies: {
         get: (n) => jar.get(n)?.value,
-        set: (n, v, o) => jar.set({ name: n, value: v, ...o }),
-        remove: (n, o) => jar.set({ name: n, value: '', ...o }),
+        set: () => {}, // No cookie mutation on GET
+        remove: () => {},
       },
     }
   );

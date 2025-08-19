@@ -71,7 +71,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
+        <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Home</Link>
         <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Dashboard</Link>
         {showActions && (
           <>
