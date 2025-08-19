@@ -6,24 +6,12 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/sb-client";
 import { Menu, X } from "lucide-react";
+import { useAuth } from "@/app/authenticated-client-provider";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [session, setSession] = useState<any>(null);
-
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-    };
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  // Use our central auth context instead of local state
+  const { session } = useAuth();
 
   const handleSignOut = async () => {
     // Prefer server route to sign out to keep cookies consistent

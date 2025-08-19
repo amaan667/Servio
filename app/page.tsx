@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/app/authenticated-client-provider";
 import {
   QrCode,
   Smartphone,
@@ -20,7 +21,6 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
 
 function PricingQuickCompare() {
   return (
@@ -71,23 +71,11 @@ function PricingQuickCompare() {
 }
 
 function HomePageContent() {
-  const [session, setSession] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-    };
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  
+  // Use our central auth context instead of duplicating logic
+  const { session, isLoading } = useAuth();
 
   const handleGetStarted = () => {
     console.log('[HOME] handleGetStarted called', { hasSession: !!session, sessionId: session?.user?.id });

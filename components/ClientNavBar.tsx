@@ -6,16 +6,17 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/sb-client";
+import { useAuth } from "@/app/authenticated-client-provider";
 
 export default function ClientNavBar({ showActions = true, venueId }: { showActions?: boolean; venueId?: string }) {
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  // Use our central auth context
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchPrimaryVenue = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
         if (user) {
           const { data, error } = await supabase
             .from('venues')
@@ -86,6 +87,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
               onClick={async () => {
                 try {
                   await supabase.auth.signOut();
+                  console.log("[ClientNavBar] Signed out successfully");
                 } finally {
                   window.location.href = '/sign-in?signedOut=true';
                 }

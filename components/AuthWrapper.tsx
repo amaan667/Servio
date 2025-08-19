@@ -3,15 +3,17 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/sb-client";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/app/authenticated-client-provider";
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<any>(null);
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
-  console.log("AuthWrapper initialized:", { pathname, loading, session: !!session });
+  // Use our central auth context
+  const { session, isLoading } = useAuth();
+
+  console.log("AuthWrapper initialized:", { pathname, loading: isLoading, session: !!session });
 
   // Only these routes are public:
   const publicRoutes = ['/', '/sign-in', '/sign-up', '/order', '/auth', '/dashboard'];
@@ -21,110 +23,43 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const isAuthPage = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up') || pathname?.startsWith('/auth/callback');
 
   useEffect(() => {
-    let ignore = false;
-    const checkSession = async () => {
-      try {
-        // Check if supabase is available
-        if (!supabase) {
-          console.error("Supabase client not available");
-          setLoading(false);
-          return;
-        }
-
-        const { data: { session } } = await supabase.auth.getSession();
-        if (ignore) return;
-        setSession(session);
-        setLoading(false);
-
-        // If no session and not on a public page, redirect:
-        if (!session && !isPublicRoute) {
-          router.replace("/sign-in");
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-        if (ignore) return;
-        setLoading(false);
-        if (!isPublicRoute) {
-          router.replace("/sign-in");
-        }
-      }
-    };
-
-    checkSession();
-
-    // Listen for changes:
-    try {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.email);
-        setSession(session);
-        
-        if (!session && !isPublicRoute) {
-          router.replace("/sign-in");
-        } else if (session && event === 'SIGNED_IN') {
-          // User just signed in, check if they have a profile
+    // Only handle redirect logic, auth state is managed by AuthenticatedClientProvider
+    if (!isLoading) {
+      // If no session and not on a public page, redirect:
+      if (!session && !isPublicRoute && !isAuthPage) {
+        console.log("[AuthWrapper] No session, redirecting to sign-in");
+        router.replace("/sign-in");
+      } else if (session) {
+        // Check if user has completed profile setup
+        const checkProfile = async () => {
           try {
-            const { data: venue } = await supabase
+            const { data, error } = await supabase
               .from("venues")
               .select("*")
               .eq("owner_id", session.user.id)
               .maybeSingle();
             
-            if (!venue && pathname !== '/complete-profile') {
+            // If signed in but no profile, and not already on complete-profile page
+            if (!data && pathname !== '/complete-profile') {
+              console.log("[AuthWrapper] No profile, redirecting to complete-profile");
+              setProfileComplete(false);
               router.replace("/complete-profile");
-            } else if (venue && pathname === '/sign-in') {
-              router.replace("/dashboard");
+            } else {
+              setProfileComplete(true);
             }
           } catch (error) {
             console.error("Error checking venue:", error);
+            setProfileComplete(false);
+            if (pathname !== '/complete-profile' && !pathname?.startsWith('/auth')) {
+              router.replace("/complete-profile");
+            }
           }
-        }
-      });
-      
-      return () => {
-        ignore = true;
-        subscription?.unsubscribe();
-      };
-    } catch (error) {
-      console.error("Error setting up auth state listener:", error);
-      setLoading(false);
-    }
-  }, [router, pathname, isPublicRoute]);
-
-  // Profile check
-  useEffect(() => {
-    if (!session?.user) return;
-    let ignore = false;
-    const checkProfile = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("venues")
-          .select("*")
-          .eq("owner_id", session.user.id)
-          .maybeSingle();
+        };
         
-        if (ignore) return;
-        
-        if (!data || error) {
-          setProfileComplete(false);
-          if (pathname !== '/complete-profile' && !pathname?.startsWith('/auth')) {
-            router.replace("/complete-profile");
-          }
-        } else {
-          setProfileComplete(true);
-        }
-      } catch (error) {
-        console.error("Error checking profile:", error);
-        if (ignore) return;
-        setProfileComplete(false);
-        if (pathname !== '/complete-profile' && !pathname?.startsWith('/auth')) {
-          router.replace("/complete-profile");
-        }
+        checkProfile();
       }
-    };
-    
-    checkProfile();
-    return () => { ignore = true; };
-  }, [session, pathname, router]);
+    }
+  }, [session, isLoading, router, pathname, isPublicRoute, isAuthPage]);
 
   // Render logic:
   if (isPublicRoute) return <>{children}</>;
@@ -132,7 +67,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   // Auth pages handle their own server-side auth, don't block them
   if (isAuthPage) return <>{children}</>;
   
-  if (loading || !session) {
+  if (isLoading || !session) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
@@ -147,4 +82,4 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     );
   }
   return <>{children}</>;
-} 
+}
