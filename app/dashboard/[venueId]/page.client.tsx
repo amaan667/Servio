@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
-import NavBar from "@/components/NavBar";
+import ClientNavBar from "@/components/ClientNavBar";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
 
@@ -177,7 +177,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar venueId={venueId} />
+      <ClientNavBar venueId={venueId} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Simple breadcrumb for main dashboard */}
         <NavigationBreadcrumb />

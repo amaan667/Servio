@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import NavBar from "@/components/NavBar";
+import ClientNavBar from "@/components/ClientNavBar";
 import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -199,7 +199,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <NavBar />
+        <ClientNavBar venueId={venueId} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -211,7 +211,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar venueId={venueId} />
+      <ClientNavBar venueId={venueId} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
         
