@@ -2,9 +2,7 @@
 export const runtime = 'nodejs';
 import Link from 'next/link';
 import { venuePath } from '@/lib/path';
-import dynamic from 'next/dynamic';
-
-const QRCodeClient = dynamic(() => import('./QRCodeClient'), { ssr: false });
+import QRCodeClientWrapper from './QRCodeClientWrapper';
 
 export default async function QrCodesPage({ params }: { params: { venueId: string }}) {
   const v = params.venueId;
@@ -17,7 +15,7 @@ export default async function QrCodesPage({ params }: { params: { venueId: strin
         <span className="text-gray-400">/</span>
         <span className="text-gray-700 font-medium">QR Codes</span>
       </nav>
-      <QRCodeClient venueId={v} venueName={''} />
+  <QRCodeClientWrapper venueId={v} venueName={''} />
     </>
   );
 }
