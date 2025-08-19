@@ -21,11 +21,18 @@ export default async function DashboardIndexPage(props: any) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/sign-in');
 
-  const { data: venues } = await supabase
+  const { data: venues, error } = await supabase
     .from('venues')
     .select('venue_id, name, created_at')
     .eq('owner_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
+
+  const firstVenueId = venues?.[0]?.venue_id as string | undefined;
+  console.log('[HOME NAV TEST] user=', !!user, 'venueId=', firstVenueId ?? null);
+
+  if (!error && firstVenueId) {
+    redirect(`/dashboard/${firstVenueId}`);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
