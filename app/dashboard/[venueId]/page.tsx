@@ -1,5 +1,6 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 export const revalidate = 0;
 
 import { cookies } from 'next/headers';
@@ -28,6 +29,7 @@ export default async function VenuePage({ params, searchParams }: { params: { ve
     userId: user?.id, 
     userError: userError?.message 
   });
+  console.log('[DASHBOARD/venue] dynamic=true', { venueId: params.venueId, hasUser: !!user });
   
   log('DASH SSR user', { hasUser: !!user });
   if (!user) {
