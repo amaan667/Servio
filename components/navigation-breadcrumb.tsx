@@ -58,11 +58,9 @@ export default function NavigationBreadcrumb({
         <ol className="flex items-center gap-2 text-sm">
           <li>
             <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href="/dashboard">
-                <>
-                  <Home className="h-4 w-4" />
-                  <span className="hidden sm:inline">Home</span>
-                </>
+              <Link href="/dashboard" className="flex items-center gap-1">
+                <Home className="h-4 w-4" />
+                <span className="hidden sm:inline">Home</span>
               </Link>
             </Button>
           </li>
@@ -80,11 +78,9 @@ export default function NavigationBreadcrumb({
         <ol className="flex items-center gap-2 text-sm">
           <li>
             <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href={homeLink}>
-                <>
-                  <Home className="h-4 w-4" />
-                  <span className="hidden sm:inline">Home</span>
-                </>
+              <Link href={homeLink} className="flex items-center gap-1">
+                <Home className="h-4 w-4" />
+                <span className="hidden sm:inline">Home</span>
               </Link>
             </Button>
           </li>
@@ -101,11 +97,9 @@ export default function NavigationBreadcrumb({
       <ol className="flex items-center gap-2 text-sm">
         <li>
           <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-            <Link href={homeLink}>
-              <>
-                <Home className="h-4 w-4" />
-                <span className="hidden sm:inline">Home</span>
-              </>
+            <Link href={homeLink} className="flex items-center gap-1">
+              <Home className="h-4 w-4" />
+              <span className="hidden sm:inline">Home</span>
             </Link>
           </Button>
         </li>
@@ -113,11 +107,9 @@ export default function NavigationBreadcrumb({
         <li>
           {customBackPath ? (
             <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href={customBackPath}>
-                <>
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
-                </>
+              <Link href={customBackPath} className="flex items-center gap-1">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
               </Link>
             </Button>
           ) : (
