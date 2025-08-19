@@ -72,9 +72,9 @@ export default function SignInForm() {
       if (result.success) {
         console.log('[AUTH] SignInForm sign-in success, waiting for session');
         
-        // Wait for session to be established
+        // Wait for session to be established with longer timeout
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 15; // Increased from 10
         const checkSession = async (): Promise<boolean> => {
           const { data: { session } } = await supabase.auth.getSession();
           console.log('[AUTH] Session check attempt', attempts + 1, { hasSession: !!session });
@@ -87,7 +87,7 @@ export default function SignInForm() {
             router.replace('/dashboard');
             return;
           }
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, 400)); // Increased from 300ms
           attempts++;
         }
 

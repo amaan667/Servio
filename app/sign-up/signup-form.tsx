@@ -15,8 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
-import { signUpUser, signInWithGoogle } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
+import { signUpUser, signInWithGoogle, signInUser } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -32,7 +32,7 @@ export default function SignUpForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    logger.info("SIGNUP_FORM: Form submission started", {
+    console.log('[AUTH] Sign-up form submission started', {
       email: formData.email,
     });
 
@@ -66,6 +66,7 @@ export default function SignUpForm() {
     setLoading(true);
 
     try {
+      console.log('[AUTH] Calling signUpUser');
       const result = await signUpUser(
         formData.email.trim(),
         formData.password,
@@ -75,17 +76,43 @@ export default function SignUpForm() {
       );
 
       if (result.success) {
-        logger.info(
-          "SIGNUP_FORM: Sign-up successful, redirecting to dashboard",
-        );
-        // Force page reload to sync auth state
-        window.location.href = "/dashboard";
+        console.log('[AUTH] Sign-up successful, checking session');
+        
+        // Wait for session to be established
+        let attempts = 0;
+        const maxAttempts = 10;
+        const checkSession = async (): Promise<boolean> => {
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log('[AUTH] Session check attempt', attempts + 1, { hasSession: !!session });
+          return !!session;
+        };
+
+        while (attempts < maxAttempts) {
+          if (await checkSession()) {
+            console.log('[AUTH] Session confirmed after sign-up, redirecting to dashboard');
+            router.replace('/dashboard');
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 300));
+          attempts++;
+        }
+
+        // If no session after attempts, try to sign in manually
+        console.log('[AUTH] No session after sign-up, attempting manual sign-in');
+        const signInResult = await signInUser(formData.email.trim(), formData.password);
+        if (signInResult.success) {
+          console.log('[AUTH] Manual sign-in successful, redirecting to dashboard');
+          router.replace('/dashboard');
+        } else {
+          console.log('[AUTH] Manual sign-in failed, showing message');
+          setError("Account created successfully! Please check your email to confirm your account before signing in.");
+        }
       } else {
-        logger.error("SIGNUP_FORM: Sign-up failed", { error: result.message });
+        console.log('[AUTH] Sign-up failed', { message: result.message });
         setError(result.message || "Unknown error");
       }
     } catch (error: any) {
-      logger.error("SIGNUP_FORM: Unexpected error during sign-up", { error });
+      console.log('[AUTH] Unexpected error during sign-up', { message: error?.message });
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
