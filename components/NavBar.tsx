@@ -24,17 +24,22 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
-        <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Dashboard</Link>
-        <Link href="#features" className="text-gray-600 hover:text-gray-900">Features</Link>
-        <Link href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
+        {/* Home should always go to the server dashboard resolver to preserve session */}
+        <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Home</Link>
+        {/* Remove extra Dashboard link in dashboard context */}
+        {/* <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Dashboard</Link> */}
         {showActions && (
           <>
-            <Button variant="ghost" size="sm">
-              <Settings className="h-5 w-5 mr-2" />
-              Settings
-            </Button>
-            {/* Sign Out button logic can be added here if needed */}
+            <Link href={resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/dashboard'}>
+              <Button variant="ghost" size="sm" className="flex items-center">
+                <Settings className="h-5 w-5 mr-2" />
+                Settings
+              </Button>
+            </Link>
+            {/* Server-side sign out route */}
+            <Link href="/auth/sign-out">
+              <Button variant="outline" size="sm">Sign Out</Button>
+            </Link>
           </>
         )}
       </div>
