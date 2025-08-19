@@ -12,6 +12,7 @@ import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
+
 interface Order {
   id: string;
   venue_id: string;
@@ -29,12 +30,17 @@ interface Order {
   payment_status?: string;
 }
 
+interface LiveOrdersClientProps {
+  venueId: string;
+  venueName?: string;
+}
+
 interface GroupedHistoryOrders {
   [date: string]: Order[];
 }
 
 
-export default function LiveOrdersClient({ venueId }: { venueId: string }) {
+export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
@@ -44,20 +50,22 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const [todayWindow, setTodayWindow] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("live");
   // State to hold the venue name for display in the UI
-  const [venueName, setVenueName] = useState<string>('');
+  const [venueName, setVenueName] = useState<string>(venueNameProp || '');
   const router = useRouter();
 
   useEffect(() => {
     const loadVenueAndOrders = async () => {
-      const { data: venueData } = await supabase
-        .from('venues')
-        .select('name, timezone')
-        .eq('venue_id', venueId)
-        .single();
-
-      setVenueName(venueData?.name || '');
-
-      const window = todayWindowForTZ(venueData?.timezone);
+      let venueTimezone;
+      if (!venueNameProp) {
+        const { data: venueData } = await supabase
+          .from('venues')
+          .select('name, timezone')
+          .eq('venue_id', venueId)
+          .single();
+        setVenueName(venueData?.name || '');
+        venueTimezone = venueData?.timezone;
+      }
+      const window = todayWindowForTZ(venueTimezone);
       setTodayWindow(window);
       
       // Load live orders (pending/preparing from today)
