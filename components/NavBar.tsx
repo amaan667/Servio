@@ -24,8 +24,8 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-  {/* Home should go to marketing home without affecting session */}
-  <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
+  {/* Home should go to the server dashboard resolver to preserve session */}
+  <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Home</Link>
         {/* Remove extra Dashboard link in dashboard context */}
         {/* <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Dashboard</Link> */}
         {showActions && (
