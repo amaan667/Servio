@@ -42,7 +42,7 @@ export default function AuthCodeErrorPage() {
                   Try Again
                 </Button>
               </Link>
-              <Link href="/" className="flex-1">
+              <Link href="/dashboard" className="flex-1">
                 <Button variant="outline" className="w-full">
                   Go Home
                 </Button>

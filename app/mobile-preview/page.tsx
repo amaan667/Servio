@@ -39,7 +39,7 @@ export default function MobilePreview() {
             <div className="hidden lg:flex items-center space-x-12">
               <nav className="flex items-center space-x-8">
                 <Link
-                  href="/"
+                  href="/dashboard"
                   className="text-lg font-medium text-gray-700 hover:text-servio-purple transition-colors"
                 >
                   Home
@@ -120,7 +120,7 @@ export default function MobilePreview() {
               <div className="p-6 space-y-6">
                 <nav className="space-y-4">
                   <Link
-                    href="/"
+                    href="/dashboard"
                     className="block text-xl font-medium text-gray-700 hover:text-servio-purple transition-colors py-3 border-b border-gray-100"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
