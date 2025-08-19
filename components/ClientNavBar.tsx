@@ -71,8 +71,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-  {/* Home goes to marketing root; session is preserved by Supabase cookies */}
-  <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
+  {/* Home goes to server dashboard resolver to keep session stable */}
+  <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Home</Link>
         {showActions && (
           <>
             <Link href={`/dashboard/${resolvedVenueId}/settings`} className="text-gray-600 hover:text-gray-900">

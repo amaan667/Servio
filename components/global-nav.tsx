@@ -79,7 +79,7 @@ export default function GlobalNav() {
                   </Link>
                   <Button
                     onClick={handleSignOut}
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
                     className="ml-2"
                   >
