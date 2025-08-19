@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/sb-client";
-import { Clock, ArrowLeft, User } from "lucide-react";
+import { Clock, ArrowLeft, User, Settings } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
@@ -319,8 +319,34 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-  {/* NavBar is rendered by the server component */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Client-safe navigation header */}
+        <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+          <div className="flex items-center">
+            <Link href={`/dashboard/${venueId}`} className="flex items-center">
+              <img
+                src="/assets/servio-logo-updated.png"
+                alt="Servio logo"
+                width={160}
+                height={40}
+              />
+            </Link>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Link href={`/dashboard/${venueId}`} className="text-gray-600 hover:text-gray-900">
+              Home
+            </Link>
+            <Link href={`/dashboard/${venueId}/settings`}>
+              <Button variant="ghost" size="sm" className="flex items-center">
+                <Settings className="h-5 w-5 mr-2" />
+                Settings
+              </Button>
+            </Link>
+            <Link href="/auth/sign-out">
+              <Button variant="destructive" size="sm">Sign Out</Button>
+            </Link>
+          </div>
+        </nav>
+        <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
           </div>
@@ -331,17 +357,44 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   return (
     <div className="min-h-screen bg-gray-50">
-  {/* NavBar is rendered by the server component */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Client-safe navigation header */}
+      <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+        <div className="flex items-center">
+          <Link href={`/dashboard/${venueId}`} className="flex items-center">
+            <img
+              src="/assets/servio-logo-updated.png"
+              alt="Servio logo"
+              width={160}
+              height={40}
+            />
+          </Link>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Link href={`/dashboard/${venueId}`} className="text-gray-600 hover:text-gray-900">
+            Home
+          </Link>
+          <Link href={`/dashboard/${venueId}/settings`}>
+            <Button variant="ghost" size="sm" className="flex items-center">
+              <Settings className="h-5 w-5 mr-2" />
+              Settings
+            </Button>
+          </Link>
+          <Link href="/auth/sign-out">
+            <Button variant="destructive" size="sm">Sign Out</Button>
+          </Link>
+        </div>
+      </nav>
+
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <NavigationBreadcrumb 
+          customBackPath={`/dashboard/${venueId}`}
+          customBackLabel="Dashboard"
+        />
+        
         {/* Header */}
         <div className="mb-8">
-          <NavigationBreadcrumb 
-            customBackPath={`/dashboard/${venueId}`} 
-            customBackLabel="Dashboard"
-            venueId={venueId}
-          />
           <h1 className="text-3xl font-bold text-gray-900">Live Orders</h1>
-          <p className="text-gray-600 mt-2">Real-time order feed for {venueName} • Today • Local time</p>
+          <p className="text-gray-600 mt-2">Real-time order feed for {venueName}</p>
         </div>
 
         {/* Tabs */}
