@@ -85,11 +85,18 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
             <Button
               variant="destructive"
               onClick={async () => {
+                console.log('[AUTH] Sign-out button clicked');
                 try {
+                  // First sign out from Supabase client
                   await supabase.auth.signOut();
-                  console.log("[ClientNavBar] Signed out successfully");
-                } finally {
-                  window.location.href = '/sign-in?signedOut=true';
+                  console.log("[AUTH] Client sign-out successful");
+                  
+                  // Then redirect to server sign-out route for proper cookie clearing
+                  window.location.href = '/auth/sign-out';
+                } catch (error) {
+                  console.error('[AUTH] Sign-out error:', error);
+                  // Fallback to direct redirect
+                  window.location.href = '/auth/sign-out';
                 }
               }}
             >
