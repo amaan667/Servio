@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import Link from 'next/link';
 import { venuePath } from '@/lib/path';
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 export default async function FeedbackPage({ params }: { params: { venueId: string }}) {
   const jar = await cookies();
@@ -35,9 +36,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
     console.log('[FEEDBACK] venue check failed', vErr?.message);
     return (
       <div className="p-8">
-        <nav className="mb-4">
-          <Link href={venuePath(params.venueId)}>Home</Link> / <span>Feedback</span>
-        </nav>
+        <NavigationBreadcrumb venueId={params.venueId} />
         <h1 className="text-2xl font-bold">Feedback</h1>
         <p className="text-gray-500 mt-2">No access to this venue or it does not exist.</p>
       </div>
@@ -55,9 +54,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
 
   return (
     <div className="p-8">
-      <nav className="mb-4">
-        <Link href={venuePath(params.venueId)}>Home</Link> / <span>Feedback</span>
-      </nav>
+      <NavigationBreadcrumb venueId={params.venueId} />
       <h1 className="text-2xl font-bold">Feedback</h1>
       {!rows?.length ? (
         <p className="text-gray-500 mt-4">No feedback yet.</p>
