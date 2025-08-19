@@ -6,7 +6,6 @@ export const revalidate = 0;
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
-import NavBar from '@/components/NavBar';
 import LiveOrdersClient from './LiveOrdersClient';
 
 export default async function LiveOrdersPage({ params }: { params: { venueId: string } }) {
@@ -29,9 +28,6 @@ export default async function LiveOrdersPage({ params }: { params: { venueId: st
   if (error || !venue) redirect('/sign-in');
 
   return (
-    <>
-      <NavBar venueId={venueId} />
-      <LiveOrdersClient venueId={venueId} venueName={venue.name} />
-    </>
+    <LiveOrdersClient venueId={venueId} venueName={venue.name} />
   );
 }
