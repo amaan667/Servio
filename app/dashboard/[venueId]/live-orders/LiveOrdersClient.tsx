@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/sb-client";
-import { Clock, ArrowLeft, User, Settings } from "lucide-react";
+import { Clock, User, Settings } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
@@ -40,6 +39,7 @@ interface GroupedHistoryOrders {
 }
 
 
+
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -47,11 +47,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [groupedHistoryOrders, setGroupedHistoryOrders] = useState<GroupedHistoryOrders>({});
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [todayWindow, setTodayWindow] = useState<any>(null);
+  const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(null);
   const [activeTab, setActiveTab] = useState("live");
   // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
-  const router = useRouter();
 
   useEffect(() => {
     const loadVenueAndOrders = async () => {
@@ -138,8 +137,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           filter: `venue_id=eq.${venueId}`
         }, 
         (payload) => {
-          console.log('Order change:', payload);
-          
           const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
           const isInTodayWindow = orderCreatedAt && orderCreatedAt >= todayWindow?.startUtcISO && orderCreatedAt < todayWindow?.endUtcISO;
           
