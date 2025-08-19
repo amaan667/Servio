@@ -13,7 +13,7 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
-        <Link href="/" className="flex items-center">
+        <Link href={homeHref} className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
@@ -24,10 +24,7 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-  {/* Home goes to marketing home (features & pricing) */}
-  <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
-        {/* Remove extra Dashboard link in dashboard context */}
-        {/* <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Dashboard</Link> */}
+        <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Home</Link>
         {showActions && (
           <>
             <Link href={resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/dashboard'}>
