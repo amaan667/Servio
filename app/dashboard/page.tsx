@@ -19,6 +19,7 @@ export default async function DashboardIndexPage(props: any) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
+  console.log('[DASH REDIRECT]', { hasUser: !!user, userId: user?.id });
   if (!user) redirect('/sign-in');
 
   const { data: venues, error } = await supabase
@@ -28,7 +29,6 @@ export default async function DashboardIndexPage(props: any) {
     .order('created_at', { ascending: true });
 
   const firstVenueId = venues?.[0]?.venue_id as string | undefined;
-  console.log('[HOME NAV TEST] user=', !!user, 'venueId=', firstVenueId ?? null);
 
   if (!error && firstVenueId) {
     redirect(`/dashboard/${firstVenueId}`);
