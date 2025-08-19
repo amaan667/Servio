@@ -34,17 +34,9 @@ interface GroupedHistoryOrders {
   [date: string]: Order[];
 }
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
-export default async function DashboardIndexPage(props: any) {
-  const {
-    params,
-    searchParams,
-  } = props;
-
-  console.log('[VENUE PAGE] params.venueId =', params.venueId);
+export default function LiveOrdersClient(props: any) {
+  const { params, searchParams } = props;
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
