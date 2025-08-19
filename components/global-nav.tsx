@@ -51,7 +51,7 @@ export default function GlobalNav() {
           <div className="hidden md:block">
             <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
               <Link
-                href="/"
+                href={session ? "/home" : "/"}
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Home
@@ -125,7 +125,7 @@ export default function GlobalNav() {
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
             <Link
-              href="/"
+              href={session ? "/home" : "/"}
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
