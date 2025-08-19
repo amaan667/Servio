@@ -330,6 +330,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
           <NavigationBreadcrumb 
             customBackPath={`/dashboard/${venueId}`} 
             customBackLabel="Dashboard"
+            venueId={venueId}
           />
           <h1 className="text-3xl font-bold text-gray-900">Live Orders</h1>
           <p className="text-gray-600 mt-2">Real-time order feed for {venueName} • Today • Local time</p>

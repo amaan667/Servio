@@ -120,7 +120,7 @@ export default function StaffClient({ venueId }: { venueId: string }) {
     <div className="min-h-screen bg-gray-50">
       <NavBar venueId={venueId} />
       <div className="max-w-5xl mx-auto p-6">
-        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
+        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
         <h1 className="text-2xl font-semibold mb-4">Staff Management</h1>
 
         <Card className="mb-4"><CardContent className="p-4">
