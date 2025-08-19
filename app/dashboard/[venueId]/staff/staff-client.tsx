@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import TimeField, { TimeValue } from '@/components/inputs/TimeField';
 import { to24h, buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
-import NavBar from '@/components/NavBar';
+import ClientNavBar from '@/components/ClientNavBar';
 
 type StaffRow = {
   id: string;
@@ -261,7 +261,7 @@ export default function StaffClient({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar venueId={venueId} />
+      <ClientNavBar venueId={venueId} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
         <div className="mb-6">

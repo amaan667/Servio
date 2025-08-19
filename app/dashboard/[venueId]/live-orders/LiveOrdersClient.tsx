@@ -7,11 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// NavBar must only be used in server components
 import { supabase } from "@/lib/sb-client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
-import { redirect } from 'next/navigation';
 
 interface Order {
   id: string;
@@ -404,24 +402,4 @@ export default function LiveOrdersClient(props: any) {
       </div>
     </div>
   );
-}
-
-export async function signInWithGoogle() {
-  // Compute redirect URL based on env or browser origin.
-  const redirectTo = process.env.NEXT_PUBLIC_SITE_URL
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-    : typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/callback`
-      : 'https://servio-production.up.railway.app/auth/callback';
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo,
-      queryParams: { access_type: 'offline', prompt: 'consent' },
-    },
-  });
-
-  if (error) throw error;
-  return data;
 }

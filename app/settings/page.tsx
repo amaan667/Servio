@@ -5,7 +5,8 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { log } from '@/lib/debug';
-import SettingsClient from './SettingsClient';
+import NavBar from '@/components/NavBar';
+import SettingsClient from './SettingsClient.client';
 
 export default async function SettingsPage() {
   const jar = await cookies();
@@ -25,5 +26,10 @@ export default async function SettingsPage() {
     .select('venue_id, name')
     .eq('owner_id', user.id);
 
-  return <SettingsClient user={user} venues={venues || []} />;
+  return (
+    <>
+      <NavBar venueId={venues?.[0]?.venue_id} />
+      <SettingsClient user={user} venues={venues || []} />
+    </>
+  );
 }

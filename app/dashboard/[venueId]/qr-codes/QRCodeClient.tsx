@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QrCode, Download, Plus } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
-import NavBar from "@/components/NavBar";
+import ClientNavBar from "@/components/ClientNavBar";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
@@ -117,7 +117,7 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar venueId={venueId} />
+      <ClientNavBar venueId={venueId} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" />
         
