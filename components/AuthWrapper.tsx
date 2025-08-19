@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 import { Loader2 } from "lucide-react";
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {

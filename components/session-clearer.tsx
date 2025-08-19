@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/sb-client";
 
 export default function SessionClearer() {
   const searchParams = useSearchParams();
