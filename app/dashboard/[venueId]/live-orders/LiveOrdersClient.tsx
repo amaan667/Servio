@@ -33,9 +33,7 @@ interface GroupedHistoryOrders {
 }
 
 
-export default function LiveOrdersClient(props: any) {
-  const { params, searchParams } = props;
-
+export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
@@ -53,7 +51,7 @@ export default function LiveOrdersClient(props: any) {
       const { data: venueData } = await supabase
         .from('venues')
         .select('name, timezone')
-        .eq('venue_id', params.venueId)
+        .eq('venue_id', venueId)
         .single();
 
       setVenueName(venueData?.name || '');
@@ -66,7 +64,7 @@ export default function LiveOrdersClient(props: any) {
       const { data: liveData, error: liveError } = await supabase
         .from('orders')
         .select('*')
-        .eq('venue_id', params.venueId)
+        .eq('venue_id', venueId)
         .in('status', ['pending', 'preparing'])
         .gte('created_at', window.startUtcISO)
         .lt('created_at', window.endUtcISO)
@@ -76,7 +74,7 @@ export default function LiveOrdersClient(props: any) {
       const { data: allData, error: allError } = await supabase
         .from('orders')
         .select('*')
-        .eq('venue_id', params.venueId)
+        .eq('venue_id', venueId)
         .gte('created_at', window.startUtcISO)
         .lt('created_at', window.endUtcISO)
         .order('created_at', { ascending: false });
@@ -85,7 +83,7 @@ export default function LiveOrdersClient(props: any) {
       const { data: historyData, error: historyError } = await supabase
         .from('orders')
         .select('*')
-        .eq('venue_id', params.venueId)
+        .eq('venue_id', venueId)
         .lt('created_at', window.startUtcISO)
         .order('created_at', { ascending: false })
         .limit(100); // Limit to last 100 orders
@@ -128,7 +126,7 @@ export default function LiveOrdersClient(props: any) {
           event: '*', 
           schema: 'public', 
           table: 'orders',
-          filter: `venue_id=eq.${params.venueId}`
+          filter: `venue_id=eq.${venueId}`
         }, 
         (payload) => {
           console.log('Order change:', payload);
@@ -184,14 +182,14 @@ export default function LiveOrdersClient(props: any) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [params.venueId]);
+  }, [venueId]);
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
     const { error } = await supabase
       .from('orders')
       .update({ status })
       .eq('id', orderId)
-      .eq('venue_id', params.venueId);
+      .eq('venue_id', venueId);
 
     if (!error) {
       setOrders(prev => prev.map(order => 
@@ -329,7 +327,7 @@ export default function LiveOrdersClient(props: any) {
         {/* Header */}
         <div className="mb-8">
           <Button asChild variant="outline">
-            <Link href={`/dashboard/${params.venueId}`} className="inline-flex items-center gap-2">
+            <Link href={`/dashboard/${venueId}`} className="inline-flex items-center gap-2">
               Back to Dashboard
             </Link>
           </Button>
