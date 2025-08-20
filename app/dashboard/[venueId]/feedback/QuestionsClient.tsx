@@ -68,6 +68,9 @@ export default function QuestionsClient({ venueId, initialQuestions }: Questions
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('[FEEDBACK DEBUG] handleSubmit called');
+    console.log('[FEEDBACK DEBUG] formData:', formData);
+    
     if (!formData.prompt.trim()) {
       toast({
         title: "Error",
@@ -97,13 +100,21 @@ export default function QuestionsClient({ venueId, initialQuestions }: Questions
         is_active: formData.is_active
       };
 
+      console.log('[FEEDBACK DEBUG] Sending payload:', payload);
+
       const response = await fetch('/api/feedback/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
+      console.log('[FEEDBACK DEBUG] Response status:', response.status);
+      console.log('[FEEDBACK DEBUG] Response ok:', response.ok);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('[FEEDBACK DEBUG] Success result:', result);
+        
         toast({
           title: "Success",
           description: "Question added successfully"
@@ -112,6 +123,8 @@ export default function QuestionsClient({ venueId, initialQuestions }: Questions
         fetchQuestions();
       } else {
         const error = await response.json();
+        console.log('[FEEDBACK DEBUG] Error result:', error);
+        
         toast({
           title: "Error",
           description: error.error || "Couldn't save question",
@@ -119,6 +132,8 @@ export default function QuestionsClient({ venueId, initialQuestions }: Questions
         });
       }
     } catch (error) {
+      console.log('[FEEDBACK DEBUG] Exception:', error);
+      
       toast({
         title: "Error",
         description: "Couldn't save question",
