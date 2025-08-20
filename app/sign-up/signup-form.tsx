@@ -76,37 +76,9 @@ export default function SignUpForm() {
       );
 
       if (result.success) {
-        console.log('[AUTH] Sign-up successful, checking session');
-        
-        // Wait for session to be established
-        let attempts = 0;
-        const maxAttempts = 10;
-        const checkSession = async (): Promise<boolean> => {
-          const { data: { session } } = await supabase.auth.getSession();
-          console.log('[AUTH] Session check attempt', attempts + 1, { hasSession: !!session });
-          return !!session;
-        };
-
-        while (attempts < maxAttempts) {
-          if (await checkSession()) {
-            console.log('[AUTH] Session confirmed after sign-up, redirecting to dashboard');
-            router.replace('/dashboard');
-            return;
-          }
-          await new Promise(resolve => setTimeout(resolve, 300));
-          attempts++;
-        }
-
-        // If no session after attempts, try to sign in manually
-        console.log('[AUTH] No session after sign-up, attempting manual sign-in');
-        const signInResult = await signInUser(formData.email.trim(), formData.password);
-        if (signInResult.success) {
-          console.log('[AUTH] Manual sign-in successful, redirecting to dashboard');
-          router.replace('/dashboard');
-        } else {
-          console.log('[AUTH] Manual sign-in failed, showing message');
-          setError("Account created successfully! Please check your email to confirm your account before signing in.");
-        }
+        console.log('[AUTH] Sign-up successful, redirecting immediately');
+        // Redirect immediately after successful sign-up
+        router.replace('/dashboard');
       } else {
         console.log('[AUTH] Sign-up failed', { message: result.message });
         setError(result.message || "Unknown error");

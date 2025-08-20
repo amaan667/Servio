@@ -107,6 +107,9 @@ function HomePageContent() {
     }
   };
 
+  // Don't redirect automatically - let users view the features page even when logged in
+  // The buttons above will handle navigation appropriately
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -134,7 +137,7 @@ function HomePageContent() {
                   onClick={handleGetStarted}
                   className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
                 >
-                  Start Free Trial
+                  {session ? 'Go to Dashboard' : 'Start Free Trial'}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
                 <Button

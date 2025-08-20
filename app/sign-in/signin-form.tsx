@@ -70,28 +70,8 @@ export default function SignInForm() {
       const result = await signInUser(formData.email.trim(), formData.password);
 
       if (result.success) {
-        console.log('[AUTH] SignInForm sign-in success, waiting for session');
-        
-        // Wait for session to be established with longer timeout
-        let attempts = 0;
-        const maxAttempts = 15; // Increased from 10
-        const checkSession = async (): Promise<boolean> => {
-          const { data: { session } } = await supabase.auth.getSession();
-          console.log('[AUTH] Session check attempt', attempts + 1, { hasSession: !!session });
-          return !!session;
-        };
-
-        while (attempts < maxAttempts) {
-          if (await checkSession()) {
-            console.log('[AUTH] Session confirmed, redirecting to dashboard');
-            router.replace('/dashboard');
-            return;
-          }
-          await new Promise(resolve => setTimeout(resolve, 400)); // Increased from 300ms
-          attempts++;
-        }
-
-        console.log('[AUTH] Session not confirmed after attempts, redirecting anyway');
+        console.log('[AUTH] SignInForm sign-in success, redirecting immediately');
+        // Redirect immediately after successful sign-in
         router.replace('/dashboard');
       } else {
         console.log('[AUTH] SignInForm sign-in failed', { message: result.message });
