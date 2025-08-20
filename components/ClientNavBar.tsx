@@ -46,7 +46,6 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
   }, [venueId]);
 
   const resolvedVenueId = venueId ?? primaryVenueId;
-  const homeHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
 
   if (loading) {
     return (
@@ -61,7 +60,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
-        <Link href={homeHref} className="flex items-center">
+        <Link href="/" className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
@@ -72,8 +71,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-  {/* Home goes to venue-specific dashboard */}
-  <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Home</Link>
+        {/* Home goes to main features page */}
+        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
         {showActions && (
           <>
             <Link href={`/dashboard/${resolvedVenueId}/settings`} className="text-gray-600 hover:text-gray-900">
