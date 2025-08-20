@@ -11,20 +11,13 @@ function SignInPageContent() {
 
   useEffect(() => {
     const run = async () => {
-      // If we just signed out BUT already have a session (e.g., auth cookies restored), still route
-
-      // If already signed in, route based on venues
+      // Check if user is already signed in
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return; // show form
 
-      const { data: venue } = await supabase
-        .from('venues')
-        .select('venue_id')
-        .eq('owner_id', session.user.id)
-        .maybeSingle();
-
-      if (venue?.venue_id) router.replace(`/dashboard/${venue.venue_id}`);
-      else router.replace('/complete-profile');
+      // If already signed in, redirect to dashboard
+      console.log('[SIGN-IN] User already signed in, redirecting to dashboard');
+      router.replace('/dashboard');
     };
     run();
   }, [router, sp]);
