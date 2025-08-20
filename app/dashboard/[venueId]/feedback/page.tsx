@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { venuePath } from '@/lib/path';
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import QuestionsClient from './QuestionsClient';
 import type { FeedbackQuestion } from '@/types/feedback';
 
@@ -57,17 +58,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      {/* Navigation */}
-      <nav className="mb-6">
-        <Link 
-          href={venuePath(params.venueId)} 
-          className="text-blue-600 hover:text-blue-800 transition-colors"
-        >
-          Home
-        </Link>
-        <span className="mx-2 text-gray-500">/</span>
-        <span className="text-gray-900">Feedback</span>
-      </nav>
+      <NavigationBreadcrumb venueId={params.venueId} />
 
       <h1 className="text-3xl font-bold mb-8">Feedback</h1>
       <h2 className="text-2xl font-semibold mb-6">Feedback Questions</h2>
