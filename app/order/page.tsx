@@ -12,6 +12,7 @@ import { Loader2, ShoppingCart, Plus, Minus, X } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
+import OrderFeedbackForm from "@/components/OrderFeedbackForm";
 
 interface MenuItem {
   id: string;
@@ -342,7 +343,7 @@ export default function CustomerOrderPage() {
               ) : null}
 
               {submittedOrder?.id ? (
-                <FeedbackSection orderId={submittedOrder.id} />
+                <OrderFeedbackForm venueId={submittedOrder.venue_id} orderId={submittedOrder.id} />
               ) : null}
 
               <div className="pt-2">
@@ -776,188 +777,4 @@ export default function CustomerOrderPage() {
   );
 }
 
-// FeedbackSection component definition
-function FeedbackSection({ orderId }: { orderId?: string }) {
-  const searchParams = useSearchParams();
-  const venueSlug = searchParams?.get("venue") || "";
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [customQuestions, setCustomQuestions] = useState<any[]>([]);
-  const [responses, setResponses] = useState<{[key: string]: any}>({});
-  const [customerName, setCustomerName] = useState("");
-  const [comments, setComments] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [loadingQuestions, setLoadingQuestions] = useState(false);
 
-  useEffect(() => {
-    if (orderId && venueSlug) {
-      setLoadingQuestions(true);
-      // Fetch custom feedback questions
-      fetch('/api/feedback/questions?venue_id=' + venueSlug)
-        .then(r => r.json())
-        .then(data => {
-          if (data.ok && data.questions) {
-            setCustomQuestions(data.questions);
-          }
-        })
-        .catch(console.error)
-        .finally(() => setLoadingQuestions(false));
-    }
-  }, [orderId, venueSlug]);
-
-  const submitCustomFeedback = async () => {
-    if (customQuestions.length === 0) return;
-    
-    setSubmitting(true);
-    try {
-      const responseData = customQuestions.map(q => ({
-        question_id: q.id,
-        response: responses[q.id] || '',
-        rating: q.question_type === 'rating' ? responses[q.id] : null
-      }));
-
-      const r = await fetch('/api/feedback/submit', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          venue_id: venueSlug,
-          order_id: orderId,
-          customer_name: customerName,
-          comments: comments,
-          responses: responseData
-        })
-      });
-
-      if (r.ok) {
-        setShowFeedback(false);
-        alert('Thank you for your feedback!');
-      } else {
-        alert('Failed to submit feedback');
-      }
-    } catch (e) {
-      console.error('Feedback submission error:', e);
-      alert('Failed to submit feedback');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loadingQuestions) {
-    return (
-      <div className="space-y-4">
-        <h3 className="font-semibold">Loading Feedback Questions...</h3>
-        <div className="animate-pulse space-y-2">
-          <div className="h-4 bg-gray-200 rounded"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (customQuestions.length === 0) return null;
-
-  return (
-    <div className="space-y-4">
-      <h3 className="font-semibold">Additional Feedback</h3>
-      {!showFeedback ? (
-        <Button onClick={() => setShowFeedback(true)} variant="outline" className="w-full">
-          Answer Feedback Questions ({customQuestions.length})
-        </Button>
-      ) : (
-        <div className="space-y-4">
-          {/* Customer Name */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Your Name (Optional)</label>
-            <Input
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Enter your name"
-            />
-          </div>
-
-          {/* Feedback Questions */}
-          {customQuestions.map((question) => (
-            <div key={question.id} className="space-y-2">
-              <label className="block text-sm font-medium">{question.question}</label>
-              
-              {question.question_type === 'rating' && (
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setResponses(prev => ({ ...prev, [question.id]: rating }))}
-                      className={`p-2 rounded ${
-                        responses[question.id] === rating 
-                          ? 'bg-yellow-100 text-yellow-600' 
-                          : 'bg-gray-100 text-gray-400'
-                      }`}
-                    >
-                      ★ {rating}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {question.question_type === 'text' && (
-                <textarea
-                  value={responses[question.id] || ''}
-                  onChange={(e) => setResponses(prev => ({ ...prev, [question.id]: e.target.value }))}
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  rows={3}
-                  placeholder="Your feedback..."
-                />
-              )}
-              
-              {question.question_type === 'multiple_choice' && question.options && (
-                <div className="space-y-2">
-                  {question.options.map((option: string, index: number) => (
-                    <label key={index} className="flex items-center">
-                      <input
-                        type="radio"
-                        name={question.id}
-                        value={option}
-                        checked={responses[question.id] === option}
-                        onChange={(e) => setResponses(prev => ({ ...prev, [question.id]: e.target.value }))}
-                        className="mr-2"
-                      />
-                      {option}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Additional Comments */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Additional Comments (Optional)</label>
-            <textarea
-              value={comments}
-              onChange={(e) => setComments(e.target.value)}
-              className="w-full border rounded-md px-3 py-2 text-sm"
-              rows={3}
-              placeholder="Any additional comments or suggestions..."
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Button 
-              onClick={submitCustomFeedback} 
-              disabled={submitting}
-              className="flex-1"
-            >
-              {submitting ? 'Submitting...' : 'Submit Feedback'}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowFeedback(false)}
-              disabled={submitting}
-            >
-              Skip
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
