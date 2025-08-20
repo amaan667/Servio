@@ -72,44 +72,32 @@ export async function GET(req: Request) {
 // POST - Create new question
 export async function POST(req: Request) {
   try {
-    console.log('[FEEDBACK:Q] POST request received');
-    
-    const body = await req.json();
-    console.log('[FEEDBACK:Q] Request body:', body);
-    
-    const { venue_id, prompt, type, choices, is_active = true } = body;
+    const { venue_id, prompt, type, choices, is_active = true } = await req.json();
 
     // Validate inputs
     if (!venue_id || !prompt || !type) {
-      console.log('[FEEDBACK:Q] Validation failed - missing required fields');
       return NextResponse.json({ error: 'venue_id, prompt, and type required' }, { status: 400 });
     }
 
     if (prompt.length < 4 || prompt.length > 160) {
-      console.log('[FEEDBACK:Q] Validation failed - prompt length');
       return NextResponse.json({ error: 'Prompt must be 4-160 characters' }, { status: 400 });
     }
 
     if (!['stars', 'multiple_choice', 'paragraph'].includes(type)) {
-      console.log('[FEEDBACK:Q] Validation failed - invalid type');
       return NextResponse.json({ error: 'Invalid question type' }, { status: 400 });
     }
 
     if (type === 'multiple_choice') {
       if (!choices || !Array.isArray(choices) || choices.length < 2 || choices.length > 6) {
-        console.log('[FEEDBACK:Q] Validation failed - multiple choice choices');
         return NextResponse.json({ error: 'Multiple choice questions require 2-6 choices' }, { status: 400 });
       }
       
       for (const choice of choices) {
         if (!choice || typeof choice !== 'string' || choice.length === 0 || choice.length > 40) {
-          console.log('[FEEDBACK:Q] Validation failed - choice length');
           return NextResponse.json({ error: 'Each choice must be 1-40 characters' }, { status: 400 });
         }
       }
     }
-
-    console.log('[FEEDBACK:Q] Validation passed, checking auth...');
 
     // Auth check
     const jar = await cookies();
@@ -121,11 +109,8 @@ export async function POST(req: Request) {
 
     const { data: { user } } = await supa.auth.getUser();
     if (!user) {
-      console.log('[FEEDBACK:Q] Auth failed - no user');
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-
-    console.log('[FEEDBACK:Q] User authenticated:', user.id);
 
     const { data: venue } = await supa
       .from('venues')
@@ -135,11 +120,8 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (!venue) {
-      console.log('[FEEDBACK:Q] Venue ownership check failed');
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
-
-    console.log('[FEEDBACK:Q] Venue ownership verified, getting max sort_index...');
 
     // Get max sort_index for this venue
     const serviceClient = getServiceClient();
@@ -152,7 +134,6 @@ export async function POST(req: Request) {
       .single();
 
     const sort_index = (maxSort?.sort_index || 0) + 1;
-    console.log('[FEEDBACK:Q] New sort_index:', sort_index);
 
     // Create question
     const questionData = {
@@ -164,8 +145,6 @@ export async function POST(req: Request) {
       sort_index
     };
 
-    console.log('[FEEDBACK:Q] Inserting question data:', questionData);
-
     const { data: question, error } = await serviceClient
       .from('feedback_questions')
       .insert(questionData)
@@ -173,15 +152,15 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      console.error('[FEEDBACK:Q] Database insert error:', error.message);
+      console.error('[FEEDBACK:Q] add error:', error.message);
       return NextResponse.json({ error: 'Failed to create question' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:Q] Question created successfully:`, question);
+    console.log(`[FEEDBACK:Q] add venue=${venue_id} type=${type} id=${question.id}`);
     return NextResponse.json({ question });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:Q] Exception in POST:', error.message);
+    console.error('[FEEDBACK:Q] add exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
