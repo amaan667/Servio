@@ -9,13 +9,47 @@ export async function POST(req: Request) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const admin = createClient(url, key, { auth: { persistSession:false }});
-    if (!order_id || !rating) {
-      return NextResponse.json({ ok:false, error:'order_id and rating required' }, { status:400 });
+    
+    // Validate required fields
+    if (!rating || rating < 1 || rating > 5) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Valid rating (1-5) is required' 
+      }, { status: 400 });
     }
-    const { error } = await admin.from('order_feedback').insert({ order_id, rating, comment: (comment||'').slice(0, 500) });
-    if (error) return NextResponse.json({ ok:false, error: error.message }, { status:500 });
-    return NextResponse.json({ ok:true });
-  } catch (e:any) {
-    return NextResponse.json({ ok:false, error:e.message }, { status:500 });
+
+    // Validate comment length
+    const trimmedComment = comment ? comment.trim().slice(0, 500) : null;
+    
+    // Prepare data for insertion
+    const feedbackData = {
+      order_id: order_id || null,
+      rating,
+      comment: trimmedComment
+    };
+
+    console.log('[AUTH DEBUG] Submitting feedback:', feedbackData);
+
+    const { error } = await admin
+      .from('order_feedback')
+      .insert(feedbackData);
+
+    if (error) {
+      console.error('[AUTH DEBUG] Feedback submission error:', error);
+      return NextResponse.json({ 
+        ok: false, 
+        error: error.message 
+      }, { status: 500 });
+    }
+
+    console.log('[AUTH DEBUG] Feedback submitted successfully');
+    return NextResponse.json({ ok: true });
+    
+  } catch (e: any) {
+    console.error('[AUTH DEBUG] Feedback submission exception:', e);
+    return NextResponse.json({ 
+      ok: false, 
+      error: e.message 
+    }, { status: 500 });
   }
 }
