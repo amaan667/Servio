@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,14 +12,14 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import type { FeedbackQuestion, FeedbackType } from '@/types/feedback';
 
-interface FeedbackBuilderClientProps {
+interface QuestionsClientProps {
   venueId: string;
+  initialQuestions: FeedbackQuestion[];
 }
 
-export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClientProps) {
-  const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+export default function QuestionsClient({ venueId, initialQuestions }: QuestionsClientProps) {
+  const [questions, setQuestions] = useState<FeedbackQuestion[]>(initialQuestions);
+  const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -32,13 +32,20 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
     is_active: true
   });
 
-  useEffect(() => {
-    fetchQuestions();
-  }, []);
+  const resetForm = () => {
+    setFormData({
+      prompt: '',
+      type: 'stars',
+      choices: ['', ''],
+      is_active: true
+    });
+    setEditingId(null);
+    setShowAddForm(false);
+  };
 
   const fetchQuestions = async () => {
     try {
-      const response = await fetch(`/api/feedback-questions?venueId=${venueId}`);
+      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
       if (response.ok) {
         const data = await response.json();
         setQuestions(data.questions || []);
@@ -55,20 +62,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
         description: "Couldn't load questions",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      prompt: '',
-      type: 'stars',
-      choices: ['', ''],
-      is_active: true
-    });
-    setEditingId(null);
-    setShowAddForm(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,7 +86,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
       return;
     }
 
-    setSaving(true);
+    setLoading(true);
 
     try {
       const payload = {
@@ -103,19 +97,13 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
         is_active: formData.is_active
       };
 
-      console.log('[FEEDBACK] Submitting question:', payload);
-
-      const response = await fetch('/api/feedback-questions', {
+      const response = await fetch('/api/feedback/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      console.log('[FEEDBACK] Response status:', response.status);
-
       if (response.ok) {
-        const result = await response.json();
-        console.log('[FEEDBACK] Success response:', result);
         toast({
           title: "Success",
           description: "Question added successfully"
@@ -124,7 +112,6 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
         fetchQuestions();
       } else {
         const error = await response.json();
-        console.error('[FEEDBACK] Error response:', error);
         toast({
           title: "Error",
           description: error.error || "Couldn't save question",
@@ -132,14 +119,13 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
         });
       }
     } catch (error) {
-      console.error('[FEEDBACK] Exception:', error);
       toast({
         title: "Error",
         description: "Couldn't save question",
         variant: "destructive"
       });
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
@@ -153,17 +139,18 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
       return;
     }
 
-    setSaving(true);
+    setLoading(true);
 
     try {
       const payload = {
         id,
+        venue_id: venueId,
         prompt: formData.prompt.trim(),
         type: formData.type,
         choices: formData.type === 'multiple_choice' ? formData.choices.filter(c => c.trim()) : undefined
       };
 
-      const response = await fetch('/api/feedback-questions', {
+      const response = await fetch('/api/feedback/questions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -191,16 +178,16 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
         variant: "destructive"
       });
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
-      const response = await fetch('/api/feedback-questions', {
+      const response = await fetch('/api/feedback/questions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, is_active: !isActive })
+        body: JSON.stringify({ id, venue_id: venueId, is_active: !isActive })
       });
 
       if (response.ok) {
@@ -227,10 +214,10 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
     if (!confirm('Are you sure you want to delete this question?')) return;
 
     try {
-      const response = await fetch('/api/feedback-questions', {
+      const response = await fetch('/api/feedback/questions', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ id, venue_id: venueId })
       });
 
       if (response.ok) {
@@ -262,16 +249,18 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0 || newIndex >= questions.length) return;
 
-    const updates = [
-      { id, order_index: questions[newIndex].order_index },
-      { id: questions[newIndex].id, order_index: questions[currentIndex].order_index }
-    ];
+    const currentQuestion = questions[currentIndex];
+    const targetQuestion = questions[newIndex];
 
     try {
-      const response = await fetch('/api/feedback-questions', {
+      const response = await fetch('/api/feedback/questions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates })
+        body: JSON.stringify({
+          id: currentQuestion.id,
+          venue_id: venueId,
+          sort_index: targetQuestion.sort_index
+        })
       });
 
       if (response.ok) {
@@ -304,6 +293,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
   };
 
   const addChoice = () => {
+    if (formData.choices.length >= 6) return;
     setFormData(prev => ({
       ...prev,
       choices: [...prev.choices, '']
@@ -325,20 +315,6 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
     }));
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Add Question Form */}
@@ -351,7 +327,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
               size="sm"
               onClick={() => setShowAddForm(!showAddForm)}
             >
-              {showAddForm ? 'Cancel' : <Plus className="h-4 w-4" />}
+              {showAddForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             </Button>
           </CardTitle>
         </CardHeader>
@@ -385,14 +361,14 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
                   <SelectContent>
                     <SelectItem value="stars">Star Rating (1-5)</SelectItem>
                     <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
-                    <SelectItem value="paragraph">Text Response</SelectItem>
+                    <SelectItem value="paragraph">Paragraph</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {formData.type === 'multiple_choice' && (
                 <div className="space-y-2">
-                  <Label>Choices *</Label>
+                  <Label>Choices * (2-6 options, max 40 chars each)</Label>
                   <div className="space-y-2">
                     {formData.choices.map((choice, index) => (
                       <div key={index} className="flex gap-2">
@@ -400,6 +376,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
                           value={choice}
                           onChange={(e) => updateChoice(index, e.target.value)}
                           placeholder={`Choice ${index + 1}`}
+                          maxLength={40}
                         />
                         {formData.choices.length > 2 && (
                           <Button
@@ -413,15 +390,17 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
                         )}
                       </div>
                     ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addChoice}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Choice
-                    </Button>
+                    {formData.choices.length < 6 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addChoice}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Choice
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
@@ -436,8 +415,8 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
               </div>
 
               <div className="flex gap-2">
-                <Button type="submit" disabled={saving}>
-                  {saving ? 'Saving...' : (editingId ? 'Update Question' : 'Add Question')}
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Saving...' : (editingId ? 'Update Question' : 'Add Question')}
                 </Button>
                 {editingId && (
                   <Button type="button" variant="outline" onClick={resetForm}>
@@ -466,6 +445,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
                 <div key={question.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
+                      <GripVertical className="h-4 w-4 text-gray-400" />
                       <span className="text-sm font-medium text-gray-500">
                         {index + 1}.
                       </span>
@@ -486,7 +466,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
                         onClick={() => handleReorder(question.id, 'up')}
                         disabled={index === 0}
                       >
-                        <ChevronUp className="h-4 w-4" />
+                        ↑
                       </Button>
                       <Button
                         variant="outline"
@@ -494,7 +474,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
                         onClick={() => handleReorder(question.id, 'down')}
                         disabled={index === questions.length - 1}
                       >
-                        <ChevronDown className="h-4 w-4" />
+                        ↓
                       </Button>
                       <Button
                         variant="outline"
