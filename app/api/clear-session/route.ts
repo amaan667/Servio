@@ -1,41 +1,46 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/server/supabase';
 
 export async function POST() {
   try {
-    const cookieStore = cookies();
+    const supabase = createServerSupabaseClient();
     
-    // Clear all Supabase auth cookies
-    const authCookies = [
-      'sb-cpwemmofzjfzbmqcgjrq-auth-token',
-      'sb-cpwemmofzjfzbmqcgjrq-auth-token.0',
-      'sb-cpwemmofzjfzbmqcgjrq-auth-token.1',
-      'supabase-auth-token',
-      'supabase.auth.token',
-    ];
+    // Sign out the user
+    const { error } = await supabase.auth.signOut();
     
-    authCookies.forEach(name => {
-      cookieStore.set(name, '', { 
-        expires: new Date(0),
-        path: '/',
-        domain: '.up.railway.app',
-        secure: true,
-        httpOnly: true,
-        sameSite: 'lax'
+    if (error) {
+      console.error('[CLEAR SESSION] Error signing out:', error);
+      return NextResponse.json({ 
+        success: false, 
+        error: error.message 
       });
-      
-      // Also clear without domain
-      cookieStore.set(name, '', { 
-        expires: new Date(0),
-        path: '/',
-        secure: true,
-        httpOnly: true,
-        sameSite: 'lax'
-      });
+    }
+    
+    console.log('[CLEAR SESSION] Session cleared successfully');
+    
+    const response = NextResponse.json({ success: true });
+    
+    // Clear cookies
+    response.cookies.set('sb-access-token', '', { 
+      path: '/', 
+      expires: new Date(0),
+      secure: true,
+      sameSite: 'lax'
+    });
+    response.cookies.set('sb-refresh-token', '', { 
+      path: '/', 
+      expires: new Date(0),
+      secure: true,
+      sameSite: 'lax'
     });
     
-    return NextResponse.json({ success: true, message: 'Session cleared' });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message });
+    return response;
+    
+  } catch (error) {
+    console.error('[CLEAR SESSION] Unexpected error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Unexpected error occurred' 
+    });
   }
 }
