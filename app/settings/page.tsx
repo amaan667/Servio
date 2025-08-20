@@ -5,23 +5,19 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { log } from '@/lib/debug';
-import NavBarClient from '@/components/NavBarClient';
+import ClientNavBar from '@/components/ClientNavBar';
 import SettingsClient from './SettingsClient.client';
 import { createServerSupabaseClient } from '@/lib/server/supabase';
 
 export default async function SettingsPage() {
-  const jar = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
-  );
+  // [AUTH] Use proper server Supabase client with cookie handling
+  const supabase = createServerSupabaseClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   log('SETTINGS SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 
-  // Get user's venues
+  // Get user's venues for the settings component
   const { data: venues } = await supabase
     .from('venues')
     .select('venue_id, name')
@@ -29,7 +25,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <NavBarClient />
+      <ClientNavBar venueId={venues?.[0]?.venue_id} />
       <SettingsClient user={user} venues={venues || []} />
     </>
   );

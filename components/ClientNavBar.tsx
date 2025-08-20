@@ -43,7 +43,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
       setPrimaryVenueId(venueId);
       setLoading(false);
     }
-  }, [venueId]);
+  }, [venueId, user]);
 
   const resolvedVenueId = venueId ?? primaryVenueId;
 
@@ -57,11 +57,17 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
     );
   }
 
+  // Fallback to dashboard if no venueId is available
+  const homeHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
+  const settingsHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/dashboard';
+
+  console.log('[NAV] ClientNavBar', { venueId, resolvedVenueId, homeHref, settingsHref });
+
   return (
     <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
         {/* [NAV] Use relative link to venue dashboard */}
-        <Link href={`/dashboard/${resolvedVenueId}`} className="flex items-center">
+        <Link href={homeHref} className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
@@ -74,10 +80,10 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
       </div>
       <div className="flex items-center space-x-4">
         {/* [NAV] Home goes to venue dashboard */}
-        <Link href={`/dashboard/${resolvedVenueId}`} className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
+        <Link href={homeHref} className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
         {showActions && (
           <>
-            <Link href={`/dashboard/${resolvedVenueId}/settings`} className="text-gray-600 hover:text-gray-900">
+            <Link href={settingsHref} className="text-gray-600 hover:text-gray-900">
               <Button variant="outline" className="flex items-center">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
