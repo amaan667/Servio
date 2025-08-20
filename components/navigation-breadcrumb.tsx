@@ -1,9 +1,10 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft } from "lucide-react";
 import Link from 'next/link';
+import { useMemo } from 'react';
 
 interface NavigationBreadcrumbProps {
   customBackPath?: string;
@@ -12,18 +13,33 @@ interface NavigationBreadcrumbProps {
   venueId?: string; // Add venueId prop
 }
 
+function extractVenueId(pathname: string | null) {
+  if (!pathname) return undefined;
+  const m = pathname.match(/\/dashboard\/([^/]+)/);
+  return m?.[1];
+}
+
 export default function NavigationBreadcrumb({
   customBackPath,
   customBackLabel,
   showBackButton = true,
-  venueId,
+  venueId: propVenueId,
 }: NavigationBreadcrumbProps) {
   const pathnameRaw = usePathname();
   const pathname = pathnameRaw || '';
+  const params = useParams() as { venueId?: string };
+  
+  // [NAV] Extract venueId from params or pathname, fallback to prop
+  const venueId = useMemo(
+    () => params?.venueId ?? extractVenueId(pathname) ?? propVenueId,
+    [params?.venueId, pathname, propVenueId]
+  );
   
   // [NAV] Determine dashboard link based on venueId - use relative links
   const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
   const homeLink = venueId ? `/dashboard/${venueId}` : '/';
+
+  console.log('[NAV] NavigationBreadcrumb', { venueId, homeLink, pathname });
 
   const getPageTitle = () => {
     if (pathname.includes("/dashboard")) {

@@ -7,6 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import ClientNavBar from '@/components/ClientNavBar';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+import NavBarClient from '@/components/NavBarClient';
+import { useAuth } from "@/app/authenticated-client-provider";
+import { Plus, Trash2, Clock, User } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 type Staff = { id: string; name: string; role: string; active: boolean; area?: string | null };
 type Shift = { id: string; staff_id: string; start_time: string; end_time: string; area?: string | null };
@@ -118,7 +122,7 @@ export default function StaffClient({ venueId }: { venueId: string }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ClientNavBar venueId={venueId} />
+      <NavBarClient />
       <div className="max-w-5xl mx-auto p-6">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
         <h1 className="text-2xl font-semibold mb-4">Staff Management</h1>

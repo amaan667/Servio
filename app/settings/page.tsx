@@ -5,8 +5,9 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { log } from '@/lib/debug';
-import ClientNavBar from '@/components/ClientNavBar';
+import NavBarClient from '@/components/NavBarClient';
 import SettingsClient from './SettingsClient.client';
+import { createServerSupabaseClient } from '@/lib/server/supabase';
 
 export default async function SettingsPage() {
   const jar = await cookies();
@@ -28,7 +29,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <ClientNavBar venueId={venues?.[0]?.venue_id} />
+      <NavBarClient />
       <SettingsClient user={user} venues={venues || []} />
     </>
   );
