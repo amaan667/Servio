@@ -24,6 +24,13 @@ export default function QuestionsClient({ venueId, initialQuestions }: Questions
   const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Clear editing state if the edited question no longer exists
+  useEffect(() => {
+    if (editingId && !questions.find(q => q.id === editingId)) {
+      resetForm();
+    }
+  }, [questions, editingId]);
+
   // Form state
   const [formData, setFormData] = useState({
     prompt: '',
@@ -225,6 +232,12 @@ export default function QuestionsClient({ venueId, initialQuestions }: Questions
           title: "Success",
           description: "Question deleted successfully"
         });
+        
+        // Clear editing state if the deleted question was being edited
+        if (editingId === id) {
+          resetForm();
+        }
+        
         fetchQuestions();
       } else {
         toast({
@@ -325,7 +338,13 @@ export default function QuestionsClient({ venueId, initialQuestions }: Questions
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowAddForm(!showAddForm)}
+              onClick={() => {
+                if (editingId) {
+                  resetForm();
+                } else {
+                  setShowAddForm(!showAddForm);
+                }
+              }}
             >
               {showAddForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             </Button>
@@ -420,7 +439,7 @@ export default function QuestionsClient({ venueId, initialQuestions }: Questions
                 </Button>
                 {editingId && (
                   <Button type="button" variant="outline" onClick={resetForm}>
-                    Cancel
+                    Cancel Edit
                   </Button>
                 )}
               </div>
