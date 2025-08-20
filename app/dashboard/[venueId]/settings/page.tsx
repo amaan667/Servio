@@ -6,8 +6,8 @@ import { notFound } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { log } from '@/lib/debug';
 import { createServerSupabaseClient } from '@/lib/server/supabase';
-import SettingsClient from '@/app/settings/SettingsClient.client';
-import NavBarClient from '@/components/NavBarClient';
+import ClientNavBar from '@/components/ClientNavBar';
+import VenueSettingsClient from './VenueSettingsClient';
 
 export default async function VenueSettingsPage({
   params,
@@ -26,7 +26,7 @@ export default async function VenueSettingsPage({
   // Verify user owns this venue
   const { data: venue } = await supabase
     .from('venues')
-    .select('venue_id, name')
+    .select('venue_id, name, email, phone, address')
     .eq('venue_id', params.venueId)
     .eq('owner_id', user.id)
     .maybeSingle();
@@ -41,8 +41,8 @@ export default async function VenueSettingsPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBarClient />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ClientNavBar venueId={params.venueId} />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
             Settings for {venue.name}
@@ -52,7 +52,7 @@ export default async function VenueSettingsPage({
           </p>
         </div>
         
-        <SettingsClient user={user} venues={venues || []} />
+        <VenueSettingsClient user={user} venue={venue} venues={venues || []} />
       </div>
     </div>
   );
