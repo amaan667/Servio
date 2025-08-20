@@ -19,25 +19,34 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
   useEffect(() => {
     const loadVenueAndStats = async () => {
-      // Load venue data and stats (userId already verified by SSR)
-      const { data: venueData, error } = await supabase
-        .from("venues")
-        .select("*")
-        .eq("venue_id", venueId)
-        .single();
-      
-      if (!error && venueData) {
-        setVenue(venueData);
-        const window = todayWindowForTZ(venueData.timezone);
-        setTodayWindow(window);
-        await loadStats(venueData.venue_id, window);
+      try {
+        console.log('[DASHBOARD] Loading venue and stats for venueId:', venueId);
+        // Load venue data and stats (userId already verified by SSR)
+        const { data: venueData, error } = await supabase
+          .from("venues")
+          .select("*")
+          .eq("venue_id", venueId)
+          .single();
+        
+        console.log('[DASHBOARD] Venue query result:', { hasData: !!venueData, error: error?.message });
+        
+        if (!error && venueData) {
+          setVenue(venueData);
+          const window = todayWindowForTZ(venueData.timezone);
+          setTodayWindow(window);
+          await loadStats(venueData.venue_id, window);
+        } else {
+          console.error('[DASHBOARD] Failed to load venue:', error);
+        }
+      } catch (error) {
+        console.error('[DASHBOARD] Unexpected error loading venue:', error);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     loadVenueAndStats();
-  }, [venueId, venue]);
+  }, [venueId]); // Remove venue from dependency array to prevent infinite loop
 
   // Set up real-time subscription for orders (separate useEffect to avoid dependency issues)
   useEffect(() => {
@@ -92,7 +101,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       console.log('[DASHBOARD] Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [venueId, venue, todayWindow]);
+  }, [venueId, venue?.venue_id, todayWindow?.startUtcISO]); // Use specific properties instead of objects to prevent unnecessary re-runs
 
   const loadStats = async (vId: string, window: any) => {
     try {
