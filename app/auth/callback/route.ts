@@ -21,6 +21,15 @@ export async function GET(req: NextRequest) {
   const code = url.searchParams.get('code');
   const error = url.searchParams.get('error');
   const errorDescription = url.searchParams.get('error_description');
+  const state = url.searchParams.get('state');
+  
+  console.log('[AUTH] Callback parameters:', { 
+    hasCode: !!code, 
+    hasError: !!error, 
+    hasState: !!state,
+    error,
+    errorDescription 
+  });
   
   // Handle OAuth errors
   if (error) {
@@ -43,6 +52,12 @@ export async function GET(req: NextRequest) {
         set: (n, v, o) => jar.set({ name: n, value: v, ...o, path: '/', secure: true, sameSite: 'lax' }),
         remove: (n, o) => jar.set({ name: n, value: '', ...o, path: '/', secure: true, sameSite: 'lax' }),
       },
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
     }
   );
 
@@ -59,9 +74,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.redirect(new URL('/sign-in?error=token_reused&signedOut=true', base));
       }
       
-      if (exErr.message?.includes('validation_failed')) {
-        console.log('[AUTH] Validation failed, redirecting to sign-in');
-        return NextResponse.redirect(new URL('/sign-in?error=validation_failed', base));
+      if (exErr.message?.includes('validation_failed') || exErr.message?.includes('both auth code and code verifier should be non-empty')) {
+        console.log('[AUTH] PKCE validation failed, redirecting to sign-in');
+        return NextResponse.redirect(new URL('/sign-in?error=validation_failed&message=PKCE flow failed', base));
       }
       
       return NextResponse.redirect(new URL(`/sign-in?error=exchange_failed&message=${encodeURIComponent(exErr.message)}`, base));

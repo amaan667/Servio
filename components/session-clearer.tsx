@@ -7,26 +7,37 @@ import { supabase } from "@/lib/sb-client";
 export default function SessionClearer() {
   const searchParams = useSearchParams();
   const signedOut = searchParams?.get('signedOut');
+  const error = searchParams?.get('error');
 
   useEffect(() => {
-    if (signedOut === 'true') {
+    // Clear session if signedOut=true or if there's an OAuth error
+    if (signedOut === 'true' || error) {
       // Force clear any remaining client-side session
       const clearSession = async () => {
         try {
+          console.log('[AUTH DEBUG] SessionClearer: Clearing session due to', { signedOut, error });
+          
           // Sign out from Supabase client
           await supabase.auth.signOut();
           
           // Clear localStorage
           if (typeof window !== 'undefined') {
-            localStorage.clear();
-            sessionStorage.clear();
-            
-            // Remove any Supabase-related items
+            // Clear all Supabase-related items
             Object.keys(localStorage).forEach(key => {
-              if (key.includes('supabase') || key.includes('sb-')) {
+              if (key.includes('supabase') || key.includes('sb-') || key.includes('auth')) {
                 localStorage.removeItem(key);
+                console.log('[AUTH DEBUG] SessionClearer: Removed localStorage item:', key);
               }
             });
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            // Clear any URL parameters that might cause issues
+            if (window.history.replaceState) {
+              const cleanUrl = window.location.pathname;
+              window.history.replaceState({}, document.title, cleanUrl);
+            }
           }
           
           console.log('[AUTH DEBUG] SessionClearer: Cleared all session data');
@@ -37,7 +48,7 @@ export default function SessionClearer() {
       
       clearSession();
     }
-  }, [signedOut]);
+  }, [signedOut, error]);
 
   return null; // This component doesn't render anything
 }
