@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { toMoney } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,10 @@ type Order = {
 };
 
 export default function LiveOrdersClient({ venueId }: { venueId: string }) {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [orders, setOrders] = useState<Order[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all'|'preparing'|'served'|'paid'>('preparing');
   const cacheRef = useRef<Record<string, { orders: Order[]; meta?: any }>>({});

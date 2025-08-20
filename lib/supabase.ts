@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import { logger } from "./logger";
 
 // Environment variables
@@ -23,15 +23,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create single Supabase client instance with proper configuration
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-    debug: process.env.NODE_ENV === 'development'
-  }
-});
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 console.log("Supabase client created successfully");
 
