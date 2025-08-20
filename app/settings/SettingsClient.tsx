@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import ClientNavBar from "@/components/ClientNavBar";
+import NavBarClient from "@/components/NavBarClient";
 import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, Save, User, Building, Mail, Phone } from "lucide-react";
 
@@ -101,7 +101,7 @@ export default function SettingsClient({ user, venues }: { user: User; venues: V
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ClientNavBar />
+      <NavBarClient />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
