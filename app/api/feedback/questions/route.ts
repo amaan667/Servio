@@ -125,13 +125,20 @@ export async function POST(req: Request) {
 
     // Get max sort_index for this venue
     const serviceClient = getServiceClient();
-    const { data: maxSort } = await serviceClient
+    const { data: maxSort, error: maxSortError } = await serviceClient
       .from('feedback_questions')
       .select('sort_index')
       .eq('venue_id', venue_id)
       .order('sort_index', { ascending: false })
       .limit(1)
       .single();
+
+    if (maxSortError && maxSortError.message.includes('sort_index')) {
+      console.error('[FEEDBACK:Q] Database schema error - sort_index column missing');
+      return NextResponse.json({ 
+        error: 'Database schema not set up. Please contact support to apply the feedback questions schema.' 
+      }, { status: 500 });
+    }
 
     const sort_index = (maxSort?.sort_index || 0) + 1;
 

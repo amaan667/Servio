@@ -1,5 +1,9 @@
+-- Drop existing table if it has wrong structure (safe to recreate since it's new)
+drop table if exists public.feedback_responses;
+drop table if exists public.feedback_questions;
+
 -- Create a dedicated table for owner-defined questions and a simple order of appearance
-create table if not exists public.feedback_questions (
+create table public.feedback_questions (
   id uuid primary key default gen_random_uuid(),
   venue_id text not null,
   prompt text not null check (char_length(prompt) between 4 and 160),
@@ -11,10 +15,10 @@ create table if not exists public.feedback_questions (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists idx_feedback_questions_venue on public.feedback_questions (venue_id, is_active, sort_index);
+create index idx_feedback_questions_venue on public.feedback_questions (venue_id, is_active, sort_index);
 
 -- Responses captured from customers
-create table if not exists public.feedback_responses (
+create table public.feedback_responses (
   id uuid primary key default gen_random_uuid(),
   venue_id text not null,
   order_id uuid null references public.orders(id) on delete set null,
@@ -23,28 +27,38 @@ create table if not exists public.feedback_responses (
   answer_choice text null,
   answer_text text null,
   created_at timestamptz not null default now()
-  
 );
 
-create index if not exists idx_feedback_responses_venue on public.feedback_responses (venue_id, created_at desc);
+create index idx_feedback_responses_venue on public.feedback_responses (venue_id, created_at desc);
 
 -- RLS
 alter table public.feedback_questions enable row level security;
 alter table public.feedback_responses enable row level security;
 
+-- Drop existing policies if they exist
+drop policy if exists "owner can select questions" on public.feedback_questions;
+drop policy if exists "owner can modify questions" on public.feedback_questions;
+drop policy if exists "anon/any can insert responses" on public.feedback_responses;
+drop policy if exists "owner can read responses" on public.feedback_responses;
+
 -- Policies: only venue owner can manage/read their questions
-do $$
-begin
-  create policy "owner can select questions" on public.feedback_questions
+create policy "owner can select questions" on public.feedback_questions
   for select using (
     exists(select 1 from public.venues v where v.venue_id = feedback_questions.venue_id and v.owner_id = auth.uid())
   );
 
-  create policy "owner can modify questions" on public.feedback_questions
+create policy "owner can modify questions" on public.feedback_questions
   for all using (
     exists(select 1 from public.venues v where v.venue_id = feedback_questions.venue_id and v.owner_id = auth.uid())
   ) with check (
     exists(select 1 from public.venues v where v.venue_id = feedback_questions.venue_id and v.owner_id = auth.uid())
   );
-exception when others then null;
-end $$;
+
+-- Policies for responses
+create policy "anon/any can insert responses" on public.feedback_responses
+  for insert with check (true);
+
+create policy "owner can read responses" on public.feedback_responses
+  for select using (
+    exists(select 1 from public.venues v where v.venue_id = feedback_responses.venue_id and v.owner_id = auth.uid())
+  );
