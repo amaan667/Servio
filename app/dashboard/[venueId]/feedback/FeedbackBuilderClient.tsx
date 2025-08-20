@@ -103,13 +103,19 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
         is_active: formData.is_active
       };
 
+      console.log('[FEEDBACK] Submitting question:', payload);
+
       const response = await fetch('/api/feedback-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
+      console.log('[FEEDBACK] Response status:', response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('[FEEDBACK] Success response:', result);
         toast({
           title: "Success",
           description: "Question added successfully"
@@ -118,6 +124,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
         fetchQuestions();
       } else {
         const error = await response.json();
+        console.error('[FEEDBACK] Error response:', error);
         toast({
           title: "Error",
           description: error.error || "Couldn't save question",
@@ -125,6 +132,7 @@ export default function FeedbackBuilderClient({ venueId }: FeedbackBuilderClient
         });
       }
     } catch (error) {
+      console.error('[FEEDBACK] Exception:', error);
       toast({
         title: "Error",
         description: "Couldn't save question",
