@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { QrCode, Download, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/sb-client";
-import NavBarClient from "@/components/NavBarClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Edit, Trash2, QrCode, Download } from "lucide-react";
+import ClientNavBar from "@/components/ClientNavBar";
+import { useAuth } from "@/app/authenticated-client-provider";
+import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
@@ -115,10 +122,10 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
     );
   }
 
-      return (
-      <div className="min-h-screen bg-gray-50">
-        <NavBarClient />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              return (
+        <div className="min-h-screen bg-gray-50">
+          <ClientNavBar venueId={venueId} />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
         
         <div className="mb-8 flex justify-between items-center">
