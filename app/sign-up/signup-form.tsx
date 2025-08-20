@@ -116,21 +116,13 @@ export default function SignUpForm() {
                 setError(null);
                 
                 try {
-                  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
-                  console.log('[AUTH] Google OAuth sign-up initiated', {
-                    redirectTo,
-                    env_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-                    env_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-                    nodeEnv: process.env.NODE_ENV,
-                  });
+                  const APP_URL = process.env.NEXT_PUBLIC_APP_URL!;
+                  console.log('[AUTH] starting oauth');
                   const { data, error } = await supabase.auth.signInWithOAuth({
-                    provider: "google",
-                    options: { 
-                      redirectTo,
-                      queryParams: {
-                        access_type: 'offline',
-                        prompt: 'consent'
-                      }
+                    provider: 'google',
+                    options: {
+                      redirectTo: `${APP_URL}/auth/callback`, // must be EXACT and allowed in Supabase dashboard
+                      queryParams: { access_type: 'offline', prompt: 'consent' }, // ensures refresh token
                     },
                   });
                   if (error) {

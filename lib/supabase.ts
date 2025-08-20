@@ -207,18 +207,14 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  // Compute redirect URL based on env or browser origin.
-  const redirectTo = process.env.NEXT_PUBLIC_SITE_URL
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-    : typeof window !== "undefined"
-      ? `${window.location.origin}/auth/callback`
-      : "https://servio-production.up.railway.app/auth/callback";
-
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL!;
+  console.log('[AUTH] starting oauth');
+  
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo,
-      queryParams: { access_type: "offline", prompt: "consent" },
+      redirectTo: `${APP_URL}/auth/callback`, // must be EXACT and allowed in Supabase dashboard
+      queryParams: { access_type: "offline", prompt: "consent" }, // ensures refresh token
     },
   });
 
