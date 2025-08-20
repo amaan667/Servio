@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { MessageSquareMore, BarChart3 } from 'lucide-react';
+import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import QuestionsClient from './QuestionsClient';
 
 export default async function FeedbackPage({
@@ -48,6 +49,13 @@ export default async function FeedbackPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Navigation Breadcrumb */}
+      <NavigationBreadcrumb 
+        customBackPath={`/dashboard/${venue.venue_id}`} 
+        customBackLabel="Dashboard" 
+        venueId={venue.venue_id} 
+      />
+
       {/* Header Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
