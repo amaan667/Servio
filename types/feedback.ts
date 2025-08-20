@@ -1,4 +1,4 @@
-export type FeedbackType = 'stars' | 'multiple_choice' | 'paragraph';
+export type FeedbackType = 'stars'|'multiple_choice'|'paragraph';
 
 export interface FeedbackQuestion {
   id: string;
@@ -7,7 +7,7 @@ export interface FeedbackQuestion {
   type: FeedbackType;
   choices: string[] | null;
   is_active: boolean;
-  order_index: number;
+  sort_index: number;
   created_at: string;
   updated_at: string;
 }
