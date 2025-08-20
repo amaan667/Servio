@@ -49,30 +49,31 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
 
   if (loading) {
     return (
-      <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+      <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
         <div className="flex items-center">
-          <div className="w-[160px] h-[40px] bg-gray-200 animate-pulse rounded"></div>
+          <div className="w-[200px] h-[50px] bg-gray-200 animate-pulse rounded"></div>
         </div>
       </nav>
     );
   }
 
   return (
-    <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
         <Link href="/" className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
-            width={160}
-            height={40}
+            width={200}
+            height={50}
             priority
+            className="hover:opacity-80 transition-opacity"
           />
         </Link>
       </div>
       <div className="flex items-center space-x-4">
         {/* Home goes to main features page */}
-        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
+        <Link href="/" className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
         {showActions && (
           <>
             <Link href={`/dashboard/${resolvedVenueId}/settings`} className="text-gray-600 hover:text-gray-900">
