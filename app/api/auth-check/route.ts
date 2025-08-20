@@ -1,54 +1,51 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerSupabaseClient } from '@/lib/server/supabase';
 
-export const runtime = 'nodejs';
 export async function GET() {
   try {
-    const cookieStore = await cookies();
+    const supabase = createServerSupabaseClient();
     
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll(); },
-          setAll(all) { all.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); }
-        }
-      }
-    );
-
-    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (userErr || !user) {
-      return NextResponse.json({
-        authenticated: false,
-        user: null,
-        error: userErr?.message || 'No user found'
+    if (userError) {
+      console.log('[AUTH CHECK] User error:', userError);
+      return NextResponse.json({ 
+        authenticated: false, 
+        error: userError.message 
       });
     }
-
-    // Check if user has a venue
-    const { data: venue } = await supabase
+    
+    if (!user) {
+      console.log('[AUTH CHECK] No user found');
+      return NextResponse.json({ 
+        authenticated: false, 
+        message: 'No user found' 
+      });
+    }
+    
+    console.log('[AUTH CHECK] User authenticated:', { userId: user.id, email: user.email });
+    
+    // Get user's venues
+    const { data: venues, error: venueError } = await supabase
       .from('venues')
       .select('venue_id, name')
-      .eq('owner_id', user.id)
-      .maybeSingle();
-
+      .eq('owner_id', user.id);
+    
     return NextResponse.json({
       authenticated: true,
       user: {
         id: user.id,
-        email: user.email,
-        hasProfile: !!venue,
-        venue: venue || null
-      }
+        email: user.email
+      },
+      venues: venues || [],
+      venueError: venueError?.message
     });
-  } catch (error: any) {
-    return NextResponse.json({
-      authenticated: false,
-      user: null,
-      error: error.message
+    
+  } catch (error) {
+    console.error('[AUTH CHECK] Unexpected error:', error);
+    return NextResponse.json({ 
+      authenticated: false, 
+      error: 'Unexpected error occurred' 
     });
   }
 }

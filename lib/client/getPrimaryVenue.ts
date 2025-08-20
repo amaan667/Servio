@@ -1,9 +1,11 @@
 'use client';
+import { createBrowserClient } from '@supabase/ssr';
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-
-export const getPrimaryVenueIdClient = async (): Promise<string | null> => {
-  const supabase = createClientComponentClient();
+export async function getPrimaryVenue() {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;

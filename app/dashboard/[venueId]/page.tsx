@@ -34,7 +34,7 @@ export default async function VenuePage({ params, searchParams }: { params: { ve
 
   console.log('[DASHBOARD VENUE] Querying venue:', params.venueId);
   const { data: venue, error: vErr } = await supabase
-    .from('venues').select('venue_id,name').eq('venue_id', params.venueId).eq('owner_id', user.id).maybeSingle();
+    .from('venues').select('*').eq('venue_id', params.venueId).eq('owner_id', user.id).maybeSingle();
 
   console.log('[DASHBOARD VENUE] Venue query result:', { 
     hasVenue: !!venue, 
@@ -42,7 +42,8 @@ export default async function VenuePage({ params, searchParams }: { params: { ve
     venueName: venue?.name,
     error: vErr?.message,
     userId: user.id,
-    requestedVenueId: params.venueId
+    requestedVenueId: params.venueId,
+    venueData: venue // Log full venue data for debugging
   });
 
   log('DASH SSR venue', { ok: !!venue, err: vErr?.message });
@@ -95,6 +96,11 @@ export default async function VenuePage({ params, searchParams }: { params: { ve
   });
 
   return (
-    <DashboardClient venueId={params.venueId} userId={user.id} activeTables={uniqueActiveTables} />
+    <DashboardClient 
+      venueId={params.venueId} 
+      userId={user.id} 
+      activeTables={uniqueActiveTables}
+      venue={venue}
+    />
   );
 }
