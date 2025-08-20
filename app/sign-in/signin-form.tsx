@@ -34,16 +34,35 @@ export default function SignInForm() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlError = urlParams.get('error');
+    const errorMessage = urlParams.get('message');
     const signedOut = urlParams.get('signedOut');
     
     if (urlError) {
-      setError(`Authentication error: ${urlError}`);
+      let errorText = `Authentication error: ${urlError}`;
+      
+      // Handle specific error cases
+      if (urlError === 'token_reused') {
+        errorText = 'Your session has expired. Please sign in again.';
+      } else if (urlError === 'validation_failed') {
+        errorText = 'Authentication validation failed. Please try again.';
+      } else if (urlError === 'oauth_error') {
+        errorText = errorMessage ? `OAuth error: ${errorMessage}` : 'OAuth authentication failed.';
+      } else if (urlError === 'exchange_failed') {
+        errorText = errorMessage ? `Authentication failed: ${errorMessage}` : 'Authentication exchange failed.';
+      }
+      
+      setError(errorText);
     }
     
     if (signedOut === 'true') {
       // Clear any remaining form data when coming from sign-out
       setFormData({ email: "", password: "" });
       setError(null);
+      
+      // Clear any existing sessions
+      supabase.auth.signOut().then(() => {
+        console.log('[AUTH] Cleared existing session due to signedOut parameter');
+      });
     }
   }, []);
 
@@ -123,7 +142,13 @@ export default function SignInForm() {
                   });
                   const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: "google",
-                    options: { redirectTo },
+                    options: { 
+                      redirectTo,
+                      queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent'
+                      }
+                    },
                   });
                   if (error) {
                     console.error('[AUTH] OAuth start error', { message: error.message });
@@ -200,7 +225,7 @@ export default function SignInForm() {
               <Button type="submit" disabled={loading} className="w-full">Sign In</Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
                 Don't have an account?{" "}
                 <Link
@@ -210,6 +235,25 @@ export default function SignInForm() {
                   Sign up here
                 </Link>
               </p>
+              
+              {error && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await fetch('/api/clear-session', { method: 'POST' });
+                        window.location.href = '/sign-in?signedOut=true';
+                      } catch (err) {
+                        console.error('Failed to clear session:', err);
+                      }
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700 underline"
+                  >
+                    Clear session and try again
+                  </button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

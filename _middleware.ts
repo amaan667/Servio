@@ -9,8 +9,11 @@ export async function middleware(req: NextRequest) {
   // Never intercept the auth callback
   if (p.startsWith('/auth/')) return NextResponse.next();
 
-  // Skip auto-redirect for /sign-in if signedOut=true
-  if (p === '/sign-in' && req.nextUrl.searchParams.get('signedOut') === 'true') {
+  // Skip auto-redirect for /sign-in if signedOut=true or has error params
+  if (p === '/sign-in' && (
+    req.nextUrl.searchParams.get('signedOut') === 'true' ||
+    req.nextUrl.searchParams.get('error')
+  )) {
     return NextResponse.next();
   }
 
