@@ -116,10 +116,40 @@ export default function SignUpForm() {
                 setError(null);
                 
                 try {
-                  await signInWithGoogle();
+                  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+                  console.log('[AUTH] Google OAuth sign-up initiated', {
+                    redirectTo,
+                    env_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+                    env_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+                    nodeEnv: process.env.NODE_ENV,
+                  });
+                  const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: "google",
+                    options: { 
+                      redirectTo,
+                      queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent'
+                      }
+                    },
+                  });
+                  if (error) {
+                    console.error('[AUTH] OAuth start error', { message: error.message });
+                    setError(error.message);
+                    setLoading(false);
+                    return;
+                  }
+                  if (data?.url) {
+                    console.log('[AUTH] Redirecting to Google OAuth', { url: data.url });
+                    window.location.href = data.url; // force navigation
+                  } else {
+                    console.log('[AUTH] No OAuth URL returned');
+                    setError('Failed to start Google sign-up');
+                    setLoading(false);
+                  }
                 } catch (err: any) {
-                  console.error("Google sign-up error on sign-up page:", err);
-                  setError("Google sign-up failed. Please try again.");
+                  console.error('[AUTH] Google sign-up error', { message: err?.message });
+                  setError(`Google sign-up failed: ${err.message || "Please try again."}`);
                   setLoading(false);
                 }
               }}
