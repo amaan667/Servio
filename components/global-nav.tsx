@@ -13,11 +13,6 @@ export default function GlobalNav() {
   // Use our central auth context instead of local state
   const { session } = useAuth();
 
-  const handleSignOut = async () => {
-    // Prefer server route to sign out to keep cookies consistent
-    window.location.href = '/auth/sign-out';
-  };
-
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -65,14 +60,16 @@ export default function GlobalNav() {
                   >
                     Dashboard
                   </Link>
-                  <Button
-                    onClick={handleSignOut}
-                    variant="destructive"
-                    size="sm"
-                    className="ml-2"
-                  >
-                    Sign Out
-                  </Button>
+                  {/* [NAV] Use server sign-out route only */}
+                  <Link href="/auth/sign-out">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="ml-2"
+                    >
+                      Sign Out
+                    </Button>
+                  </Link>
                 </>
               ) : (
                 <>
@@ -143,14 +140,16 @@ export default function GlobalNav() {
                 >
                   Dashboard
                 </Link>
-                <Button
-                  onClick={handleSignOut}
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-2"
-                >
-                  Sign Out
-                </Button>
+                {/* [NAV] Use server sign-out route only */}
+                <Link href="/auth/sign-out" onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                  >
+                    Sign Out
+                  </Button>
+                </Link>
               </>
             ) : (
               <>

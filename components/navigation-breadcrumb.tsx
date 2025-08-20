@@ -21,8 +21,9 @@ export default function NavigationBreadcrumb({
   const pathnameRaw = usePathname();
   const pathname = pathnameRaw || '';
   
-  // Determine dashboard link based on venueId
+  // [NAV] Determine dashboard link based on venueId - use relative links
   const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
+  const homeLink = venueId ? `/dashboard/${venueId}` : '/';
 
   const getPageTitle = () => {
     if (pathname.includes("/dashboard")) {
@@ -80,7 +81,7 @@ export default function NavigationBreadcrumb({
         <ol className="flex items-center gap-2 text-sm">
           <li>
             <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href="/">
+              <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
                   <span className="hidden sm:inline">Home</span>
@@ -101,7 +102,7 @@ export default function NavigationBreadcrumb({
       <ol className="flex items-center gap-2 text-sm">
         <li>
           <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-            <Link href="/">
+            <Link href={homeLink}>
               <>
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Home</span>
