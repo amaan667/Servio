@@ -60,7 +60,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
   return (
     <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
-        <Link href="/" className="flex items-center">
+        {/* [NAV] Use relative link to venue dashboard */}
+        <Link href={`/dashboard/${resolvedVenueId}`} className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
@@ -72,8 +73,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-        {/* Home goes to main features page */}
-        <Link href="/" className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
+        {/* [NAV] Home goes to venue dashboard */}
+        <Link href={`/dashboard/${resolvedVenueId}`} className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
         {showActions && (
           <>
             <Link href={`/dashboard/${resolvedVenueId}/settings`} className="text-gray-600 hover:text-gray-900">
@@ -82,26 +83,12 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
                 Settings
               </Button>
             </Link>
-            <Button
-              variant="destructive"
-              onClick={async () => {
-                console.log('[AUTH] Sign-out button clicked');
-                try {
-                  // First sign out from Supabase client
-                  await supabase.auth.signOut();
-                  console.log("[AUTH] Client sign-out successful");
-                  
-                  // Then redirect to server sign-out route for proper cookie clearing
-                  window.location.href = '/auth/sign-out';
-                } catch (error) {
-                  console.error('[AUTH] Sign-out error:', error);
-                  // Fallback to direct redirect
-                  window.location.href = '/auth/sign-out';
-                }
-              }}
-            >
-              Sign Out
-            </Button>
+            {/* [NAV] Use server sign-out route only */}
+            <Link href="/auth/sign-out">
+              <Button variant="destructive">
+                Sign Out
+              </Button>
+            </Link>
           </>
         )}
       </div>

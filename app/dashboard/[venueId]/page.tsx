@@ -8,20 +8,15 @@ import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { log, error } from '@/lib/debug';
 import { todayWindowForTZ } from '@/lib/time';
+import { createServerSupabaseClient } from '@/lib/server/supabase';
 import DashboardClient from './page.client';
 
 export default async function VenuePage({ params, searchParams }: { params: { venueId: string }, searchParams: any }) {
   console.log('[VENUE PAGE] params.venueId =', params.venueId);
   
-  const jar = await cookies();
-  console.log('[DASHBOARD VENUE] Cookies jar created');
-  
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
-  );
-  console.log('[DASHBOARD VENUE] Supabase client created');
+  // [AUTH] Use proper server Supabase client with cookie handling
+  const supabase = createServerSupabaseClient();
+  console.log('[DASHBOARD VENUE] Supabase client created with proper cookies');
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   console.log('[DASHBOARD VENUE] Auth getUser result:', { 
