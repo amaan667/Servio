@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { log } from '@/lib/debug';
 import ClientNavBar from '@/components/ClientNavBar';
-import QRCodeClient from './QRCodeClient';
+import QRCodeClient from '../qr-codes/QRCodeClient';
 
 export default async function QRPage({
   params,
