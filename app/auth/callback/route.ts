@@ -1,9 +1,30 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { NextResponse, NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+
+function cookieAdapter(jar: ReturnType<typeof cookies>) {
+  return {
+    get: (name: string) => jar.get(name)?.value,
+    set: (name: string, value: string, options?: any) =>
+      jar.set(name, value, {
+        ...options,
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+      }),
+    remove: (name: string, options?: any) =>
+      jar.set(name, '', {
+        ...options,
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+        maxAge: 0,
+      }),
+  };
+}
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -28,21 +49,14 @@ export async function GET(req: NextRequest) {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get: (n) => jar.get(n)?.value,
-        set: (n, v, o) => jar.set(n, v, { ...o, httpOnly: true, sameSite: 'lax', secure: true }),
-        remove: (n, o) => jar.set(n, '', { ...o, httpOnly: true, sameSite: 'lax', secure: true, maxAge: 0 }),
-      },
-    }
+    { cookies: cookieAdapter(jar) }
   );
 
-  // 🚫 Call this exactly once. Do NOT exchange in middleware or anywhere else.
+  // Only exchange here. Do not exchange anywhere else (middleware, other routes, etc.).
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
   if (exchangeError) {
     console.error('[AUTH] exchange failed:', exchangeError);
-    // PKCE/state/cookie mismatch or domain mismatch will end here.
     return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange_failed', req.url));
   }
 
