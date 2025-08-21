@@ -1,7 +1,13 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
+const PROD_BASE = 'https://servio-production.up.railway.app';
 const BASE = process.env.NEXT_PUBLIC_APP_URL!;
+if (process.env.NODE_ENV === 'production') {
+  if (!BASE || BASE !== PROD_BASE) {
+    throw new Error('NEXT_PUBLIC_APP_URL must be https://servio-production.up.railway.app in production');
+  }
+}
 const PROD_HOST = new URL(BASE).hostname;
 const COOKIE_DOMAIN = PROD_HOST;
 
@@ -27,43 +33,29 @@ export const supabaseServer = () => {
           return cookieStore.get(name)?.value;
         },
         set(name, value, options) {
-          // Only allow cookie modification in route handlers
-          if (!isRouteHandler()) {
-            console.warn('[SUPABASE SERVER] Cookie set blocked - not in route handler');
-            return;
-          }
-          try {
-            cookieStore.set({
-              name,
-              value,
-              ...options,
-              domain: COOKIE_DOMAIN,
-              secure: true,
-              sameSite: 'lax',
-            });
-          } catch (error) {
-            console.warn('[SUPABASE SERVER] Cookie set failed:', error);
-          }
+          // Only set cookies in a Route Handler; silently no-op otherwise to avoid log noise
+          if (!isRouteHandler()) return;
+          cookieStore.set({
+            name,
+            value,
+            ...options,
+            domain: COOKIE_DOMAIN,
+            secure: true,
+            sameSite: 'lax',
+          });
         },
         remove(name, options) {
-          // Only allow cookie modification in route handlers
-          if (!isRouteHandler()) {
-            console.warn('[SUPABASE SERVER] Cookie remove blocked - not in route handler');
-            return;
-          }
-          try {
-            cookieStore.set({
-              name,
-              value: '',
-              ...options,
-              domain: COOKIE_DOMAIN,
-              secure: true,
-              sameSite: 'lax',
-              maxAge: 0,
-            });
-          } catch (error) {
-            console.warn('[SUPABASE SERVER] Cookie remove failed:', error);
-          }
+          // Only remove cookies in a Route Handler; silently no-op otherwise
+          if (!isRouteHandler()) return;
+          cookieStore.set({
+            name,
+            value: '',
+            ...options,
+            domain: COOKIE_DOMAIN,
+            secure: true,
+            sameSite: 'lax',
+            maxAge: 0,
+          });
         },
       },
     }

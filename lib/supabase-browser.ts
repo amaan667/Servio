@@ -1,10 +1,16 @@
 'use client';
 import { createBrowserClient } from '@supabase/ssr';
 
+const PROD_BASE = 'https://servio-production.up.railway.app';
 const BASE = process.env.NEXT_PUBLIC_APP_URL!;
-if (!BASE || BASE.includes('localhost')) {
-  // Hard fail if someone tries to boot the app with localhost base
-  throw new Error('NEXT_PUBLIC_APP_URL must be your production URL.');
+const APP_URL = process.env.APP_URL || BASE;
+
+if (!BASE || BASE.includes('localhost') || BASE !== PROD_BASE) {
+  throw new Error('NEXT_PUBLIC_APP_URL must be set to https://servio-production.up.railway.app');
+}
+
+if (!APP_URL || APP_URL.includes('localhost') || APP_URL !== PROD_BASE) {
+  throw new Error('APP_URL must be set to https://servio-production.up.railway.app');
 }
 
 export const supabaseBrowser = () =>

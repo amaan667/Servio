@@ -6,10 +6,11 @@ export const APP_URL = (() => {
     return 'https://servio-production.up.railway.app';
   }
   
-  // In development, use localhost
+  // In development, prefer APP_URL/NEXT_PUBLIC_APP_URL; avoid defaulting to localhost
   const devUrl = process.env.NEXT_PUBLIC_APP_URL || 
                  process.env.NEXT_PUBLIC_SITE_URL || 
-                 'http://localhost:3000';
+                 process.env.APP_URL ||
+                 'https://servio-production.up.railway.app';
   
   // Clean up any semicolons or extra characters
   return devUrl.replace(/[;,\s]+$/, '');
