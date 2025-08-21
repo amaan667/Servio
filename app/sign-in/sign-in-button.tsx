@@ -1,18 +1,18 @@
 'use client';
-import { supabase } from '@/lib/sb-client';
-import { getAuthRedirectUrl } from '@/lib/auth';
+
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 export default function SignInButton() {
   
   const onGoogle = async () => {
-    // Always use production URL for OAuth to prevent localhost issues
-    const redirectUrl = 'https://servio-production.up.railway.app/auth/callback';
-    console.log('[AUTH] starting oauth with redirect:', redirectUrl);
+    const supabase = supabaseBrowser();
+    const base = process.env.NEXT_PUBLIC_APP_URL!;
+    console.log('[AUTH] starting oauth with redirect:', `${base}/auth/callback`);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl, // must be EXACT and allowed in Supabase dashboard
-        queryParams: { access_type: 'offline', prompt: 'consent' }, // ensures refresh token
+        redirectTo: `${base}/auth/callback`, // must be EXACT and allowed in Supabase dashboard
+        queryParams: { prompt: 'select_account' },
       },
     });
     if (error) return alert(error.message);

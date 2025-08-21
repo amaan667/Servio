@@ -2,15 +2,25 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-export function middleware(_req: NextRequest) {
-  // Keep middleware as a pass-through to avoid double-exchange/refresh on edge
+const PROD_BASE = process.env.NEXT_PUBLIC_APP_URL!;
+const PROD_URL = new URL(PROD_BASE);
+const PROD_HOST = PROD_URL.host;
+
+export function middleware(req: NextRequest) {
+  // Force https and the exact production host
+  const isHttps = req.nextUrl.protocol === 'https:';
+  const host = req.headers.get('host');
+
+  if (!isHttps || host !== PROD_HOST) {
+    const redirectUrl = new URL(req.nextUrl);
+    redirectUrl.protocol = 'https:';
+    redirectUrl.host = PROD_HOST;
+    return NextResponse.redirect(redirectUrl, 308);
+  }
+
   return NextResponse.next();
 }
 
-// Exclude auth callback & static
 export const config = {
-  matcher: [
-    // apply to everything except:
-    '/((?!_next/static|_next/image|favicon.ico|auth/callback|api/test-openai|api/health).*)',
-  ],
+  matcher: ['/((?!_next|favicon.ico|robots.txt|sitemap.xml).*)'],
 };
