@@ -1,12 +1,30 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 
 export async function POST() {
-  const supabase = createServerSupabase();
-  await supabase.auth.signOut();
-  return NextResponse.json({ ok: true });
+  try {
+    // Simply return success - let the client handle the actual sign-out
+    const response = NextResponse.json({ ok: true });
+    
+    // Clear auth cookies by setting them to expire immediately
+    const cookieOptions = {
+      maxAge: 0,
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const
+    };
+    
+    response.cookies.set('sb-access-token', '', cookieOptions);
+    response.cookies.set('sb-refresh-token', '', cookieOptions);
+    response.cookies.set('supabase-auth-token', '', cookieOptions);
+    
+    return response;
+  } catch (error) {
+    console.error('[AUTH] Sign-out error:', error);
+    return NextResponse.json({ ok: true }); // Always return success to avoid client errors
+  }
 }
 
 

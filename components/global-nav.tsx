@@ -43,7 +43,14 @@ export default function GlobalNav() {
 
   const handleSignOut = async () => {
     try {
+      // First, sign out on the client side
+      const supabase = supabaseBrowser();
+      await supabase.auth.signOut();
+      
+      // Then call the API to clear server cookies
       await fetch('/api/auth/sign-out', { method: 'POST' });
+    } catch (error) {
+      console.error('[AUTH] Sign-out error:', error);
     } finally {
       window.location.href = '/sign-in';
     }
