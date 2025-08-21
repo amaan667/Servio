@@ -1,20 +1,8 @@
 export const runtime = 'nodejs';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { createServerSupabaseClient } from './supabase';
 
 export async function getPrimaryVenueId(): Promise<string | null> {
-  const jar = await cookies();
-  const supa = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get: n => jar.get(n)?.value,
-        set: (n, v, o) => jar.set({ name: n, value: v, ...o, path: '/', secure: true, sameSite: 'lax' }),
-        remove: (n, o) => jar.set({ name: n, value: '', ...o, path: '/', secure: true, sameSite: 'lax' }),
-      }
-    }
-  );
+  const supa = createServerSupabaseClient();
 
   const { data: { user } } = await supa.auth.getUser();
   if (!user) return null;

@@ -10,8 +10,8 @@ export default function SessionClearer() {
   const error = searchParams?.get('error');
 
   useEffect(() => {
-    // Clear session if signedOut=true or if there's an OAuth error
-    if (signedOut === 'true' || error) {
+  // Only clear when explicitly signedOut=true to avoid accidental clears during OAuth errors
+  if (signedOut === 'true') {
       // Force clear any remaining client-side session
       const clearSession = async () => {
         try {

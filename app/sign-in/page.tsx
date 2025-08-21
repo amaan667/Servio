@@ -29,7 +29,7 @@ function SignInPageContent() {
       provider: 'google',
       options: {
         redirectTo: `${APP_URL}/auth/callback`,
-        queryParams: { access_type: 'offline', prompt: 'consent' }, // get refresh token
+        queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
   };
