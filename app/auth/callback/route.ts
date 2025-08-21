@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { handleGoogleSignUp } from '@/lib/supabase';
 
 function cookieAdapter(jar: ReturnType<typeof cookies>) {
   return {
@@ -58,6 +59,39 @@ export async function GET(req: NextRequest) {
   if (exchangeError) {
     console.error('[AUTH] exchange failed:', exchangeError);
     return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange_failed', req.url));
+  }
+
+  // Handle Google OAuth user setup
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      console.log('[AUTH] Google OAuth user authenticated:', user.id);
+      
+      // Check if this is a new Google user (no venues yet)
+      const { data: existingVenues } = await supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('owner_id', user.id)
+        .limit(1);
+      
+      if (!existingVenues || existingVenues.length === 0) {
+        console.log('[AUTH] New Google user, creating venue');
+        const fullName = user.user_metadata?.full_name || user.user_metadata?.name;
+        const result = await handleGoogleSignUp(user.id, user.email!, fullName);
+        
+        if (!result.success) {
+          console.error('[AUTH] Failed to create venue for Google user:', result.error);
+          return NextResponse.redirect(new URL('/complete-profile', req.url));
+        }
+        
+        console.log('[AUTH] Venue created for Google user:', result.venue?.venue_id);
+      } else {
+        console.log('[AUTH] Existing Google user, has venues');
+      }
+    }
+  } catch (error) {
+    console.error('[AUTH] Error handling Google OAuth user setup:', error);
+    // Continue with redirect even if venue creation fails
   }
 
   return NextResponse.redirect(new URL(next, req.url));
