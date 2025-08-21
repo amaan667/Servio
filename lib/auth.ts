@@ -1,10 +1,9 @@
 // Determine the app URL based on environment
 export const APP_URL = (() => {
-  // In production, prioritize environment variables, then fallback to Railway domain
+  // Always use the production URL in production to avoid localhost issues
   if (process.env.NODE_ENV === 'production') {
-    return process.env.NEXT_PUBLIC_APP_URL || 
-           process.env.NEXT_PUBLIC_SITE_URL || 
-           'https://servio-production.up.railway.app';
+    // Force Railway production URL to prevent any localhost redirects
+    return 'https://servio-production.up.railway.app';
   }
   
   // In development, use localhost
@@ -22,26 +21,16 @@ console.log('🔧 AUTH CONFIG:', {
 });
 
 export const getAuthRedirectUrl = (path: string = '/auth/callback') => {
-  const url = `${APP_URL}${path}`;
-  console.log('🔗 Auth redirect URL:', url);
-  
-  // Extra safety check - never allow localhost in production
-  if (process.env.NODE_ENV === 'production' && url.includes('localhost')) {
-    const fallbackUrl = `https://servio-production.up.railway.app${path}`;
-    console.warn('⚠️ Prevented localhost in production, using fallback:', fallbackUrl);
-    return fallbackUrl;
-  }
-  
-  // Additional validation for production URLs
+  // In production, always use the Railway URL to prevent localhost issues
   if (process.env.NODE_ENV === 'production') {
-    if (!url.startsWith('https://')) {
-      console.warn('⚠️ Non-HTTPS URL in production:', url);
-    }
-    if (!url.includes('servio-production.up.railway.app')) {
-      console.warn('⚠️ Unexpected domain in production:', url);
-    }
+    const productionUrl = `https://servio-production.up.railway.app${path}`;
+    console.log('🔗 Auth redirect URL (production):', productionUrl);
+    return productionUrl;
   }
   
+  // Only use APP_URL in development
+  const url = `${APP_URL}${path}`;
+  console.log('🔗 Auth redirect URL (development):', url);
   return url;
 };
 

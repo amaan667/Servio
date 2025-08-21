@@ -3,9 +3,8 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/sb-client';
+import { getAuthRedirectUrl } from '@/lib/auth';
 import SignInForm from './signin-form';
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL!; // e.g. https://servio-production.up.railway.app
 
 function SignInPageContent() {
   const router = useRouter();
@@ -28,7 +27,7 @@ function SignInPageContent() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${APP_URL}/auth/callback`,
+  redirectTo: getAuthRedirectUrl('/auth/callback'),
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });

@@ -53,11 +53,29 @@ export async function GET(req: NextRequest) {
   );
 
   // Only exchange here. Do not exchange anywhere else (middleware, other routes, etc.).
-  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  try {
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-  if (exchangeError) {
-    console.error('[AUTH] exchange failed:', exchangeError);
-    return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange_failed', req.url));
+    if (exchangeError) {
+      console.error('[AUTH] exchange failed:', exchangeError);
+      
+      // Handle refresh token issues specially
+      if (exchangeError.message?.includes('Invalid Refresh Token') || 
+          exchangeError.message?.includes('Already Used') ||
+          exchangeError.message?.includes('token_already_used')) {
+        console.log('[AUTH] Detected refresh token already used. Proceeding safely.');
+        // Best-effort: try to continue to app; if not authenticated, guards will redirect
+        const base = process.env.NODE_ENV === 'production'
+          ? (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app')
+          : url.origin;
+        return NextResponse.redirect(new URL(next, base));
+      }
+      
+      return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange_failed', url.origin));
+    }
+  } catch (error) {
+    console.error('[AUTH] Unexpected error during code exchange:', error);
+    return NextResponse.redirect(new URL('/sign-in?error=unexpected_error', url.origin));
   }
   // Try to fetch user and their first venue to deep-link if possible
   try {
@@ -71,10 +89,18 @@ export async function GET(req: NextRequest) {
         .limit(1);
       const venueId = venues?.[0]?.venue_id as string | undefined;
       const dest = venueId ? `/dashboard/${venueId}` : next;
-      return NextResponse.redirect(new URL(dest, req.url));
+      const base = process.env.NODE_ENV === 'production'
+        ? (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app')
+        : url.origin;
+      return NextResponse.redirect(new URL(dest, base));
     }
   } catch (e) {
     console.warn('[AUTH] callback post-exchange redirect fallback', e);
   }
-  return NextResponse.redirect(new URL(next, req.url));
+  {
+    const base = process.env.NODE_ENV === 'production'
+      ? (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app')
+      : url.origin;
+    return NextResponse.redirect(new URL(next, base));
+  }
 }
