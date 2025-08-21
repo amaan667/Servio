@@ -7,13 +7,13 @@ import SignInForm from './signin-form';
 function SignInPageContent() {
   const signInWithGoogle = async () => {
     const supabase = supabaseBrowser();
-    const base = process.env.NEXT_PUBLIC_APP_URL!;
-    console.log('[AUTH] Starting OAuth with redirect:', `${base}/auth/callback`);
+    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
+    console.log('[AUTH] Starting OAuth with redirect:', redirectTo);
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${base}/auth/callback`,
+        redirectTo,
         queryParams: { 
           prompt: 'select_account',
           access_type: 'offline'

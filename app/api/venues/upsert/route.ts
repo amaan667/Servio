@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookieAdapter } from '@/lib/server/supabase';
+import { createServerSupabase } from '@/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 
 export const runtime = 'nodejs';
 
@@ -13,12 +11,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'name and business_type are required' }, { status: 400 });
     }
 
-    const jar = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: cookieAdapter(jar) }
-    );
+    const supabase = createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
 

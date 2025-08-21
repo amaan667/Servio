@@ -92,8 +92,8 @@ export default function SignInForm({ onGoogleSignIn }: SignInFormProps) {
       const result = await signInUser(formData.email.trim(), formData.password);
 
       if (result.success) {
-        console.log('[AUTH] SignInForm sign-in success, redirecting immediately');
-        // Redirect immediately after successful sign-in
+        console.log('[AUTH] SignInForm sign-in success, redirecting to dashboard');
+        // Redirect to dashboard (will route to venue or complete-profile as needed)
         router.replace('/dashboard');
       } else {
         console.log('[AUTH] SignInForm sign-in failed', { message: result.message });

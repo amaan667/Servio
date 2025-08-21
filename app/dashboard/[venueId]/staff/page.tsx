@@ -2,47 +2,51 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { cookies } from 'next/headers';
-import { redirect, notFound } from 'next/navigation';
-import { createServerClient } from '@supabase/ssr';
+import { redirect } from 'next/navigation';
+import { createServerSupabase } from '@/lib/supabase-server';
+import { log } from '@/lib/debug';
+import ClientNavBar from '@/components/ClientNavBar';
 import StaffClient from './staff-client';
-import { cookieAdapter } from '@/lib/server/supabase';
 
-export default async function StaffPage({ params }: { params: { venueId: string } }) {
-  const jar = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieAdapter(jar) }
-  );
+export default async function StaffPage({
+  params,
+}: {
+  params: { venueId: string };
+}) {
+  console.log('[STAFF] Page mounted for venue', params.venueId);
+  
+  const supabase = createServerSupabase();
 
-  // Require auth
   const { data: { user } } = await supabase.auth.getUser();
+  log('STAFF SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 
-  // Confirm venue ownership
+  // Verify user owns this venue
   const { data: venue } = await supabase
     .from('venues')
-    .select('venue_id, name, owner_id')
+    .select('venue_id, name')
     .eq('venue_id', params.venueId)
     .eq('owner_id', user.id)
     .maybeSingle();
 
-  if (!venue) return notFound();
-
-  // Load staff (SSR fetch; RLS ensures only owner sees their staff)
-  const { data: staff = [] } = await supabase
-    .from('staff')
-    .select('id, name, role, active, created_at')
-    .eq('venue_id', params.venueId)
-    .order('created_at', { ascending: true });
+  if (!venue) redirect('/dashboard');
 
   return (
-    <StaffClient
-      venueId={params.venueId}
-      venueName={venue.name}
-      initialStaff={staff as any}
-    />
+    <div className="min-h-screen bg-gray-50">
+      <ClientNavBar venueId={params.venueId} />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            Staff Management for {venue.name}
+          </h1>
+          <p className="text-lg text-muted-foreground mt-2">
+            Manage your team and staff permissions
+          </p>
+        </div>
+        
+        <StaffClient venueId={params.venueId} />
+      </div>
+    </div>
   );
 }
 

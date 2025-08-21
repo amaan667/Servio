@@ -6,12 +6,12 @@ import SignUpForm from './signup-form';
 export default function SignUpPage() {
   const signInWithGoogle = async () => {
     const supabase = supabaseBrowser();
-    const base = process.env.NEXT_PUBLIC_APP_URL!;
+    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
     // Force production callback target
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${base}/auth/callback`,
+        redirectTo,
         queryParams: { prompt: 'select_account' },
       },
     });

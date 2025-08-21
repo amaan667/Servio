@@ -6,7 +6,7 @@ export const revalidate = 0;
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 
-export default async function DashboardPage() {
+export default async function DashboardIndex() {
   console.log('[DASHBOARD] Main dashboard page loading');
   
   try {
