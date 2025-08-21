@@ -1,33 +1,36 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookieAdapter } from '@/lib/server/supabase';
-import { cookies } from 'next/headers';
+import { createServerSupabase } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
-  const { orderId, status } = await req.json().catch(() => ({}));
-  if (!orderId || !['pending', 'preparing', 'served'].includes(status)) {
-    return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
+  try {
+    const { orderId, status } = await req.json();
+    
+    if (!orderId || !status) {
+      return NextResponse.json({ ok: false, error: 'orderId and status required' }, { status: 400 });
+    }
+
+    const supabase = createServerSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
+
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
+      .select();
+
+    if (error) {
+      console.error('[UPDATE STATUS] Error:', error);
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, order: data?.[0] });
+  } catch (error) {
+    console.error('[UPDATE STATUS] Unexpected error:', error);
+    return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
-
-  const jar = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieAdapter(jar) }
-  );
-
-  // Map to DB domain values (served -> delivered)
-  const dbStatus = status === 'served' ? 'delivered' : status;
-  const { data, error } = await supabase
-    .from('orders')
-    .update({ status: dbStatus as any })
-    .eq('id', orderId)
-    .select('id,status,venue_id');
-
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true, order: data?.[0] ?? null });
 }
 
 
