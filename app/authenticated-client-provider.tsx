@@ -1,75 +1,47 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { supabase } from "@/lib/sb-client";
+import { createContext, useContext, useEffect, useState } from 'react';
+import { supabaseBrowser } from '@/lib/supabase-browser';
+import { Session } from '@supabase/supabase-js';
 
-// Create a context for authenticated state
-export interface AuthState {
-  session: any;
-  isLoading: boolean;
-  user: any;
+interface AuthContextType {
+  session: Session | null;
+  loading: boolean;
 }
 
-const AuthContext = createContext<AuthState>({
-  session: null,
-  isLoading: true,
-  user: null
-});
+const AuthContext = createContext<AuthContextType>({ session: null, loading: true });
 
-// Custom hook to use the auth context
-export const useAuth = () => useContext(AuthContext);
-
-export function AuthenticatedClientProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>({
-    session: null,
-    isLoading: true,
-    user: null
-  });
+export function AuthenticatedClientProvider({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Function to fetch session
-    const fetchSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setAuthState({
-          session,
-          isLoading: false,
-          user: session?.user || null
-        });
-      } catch (error) {
-        console.error("Error fetching session:", error);
-        setAuthState({
-          session: null,
-          isLoading: false,
-          user: null
-        });
-      }
-    };
-
-    // Fetch the session initially
-    fetchSession();
+    const supabase = supabaseBrowser();
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        console.log("[AUTH_CONTEXT] Auth state changed:", _event, !!session);
-        setAuthState({
-          session,
-          isLoading: false,
-          user: session?.user || null
-        });
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
 
-    // Cleanup
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={authState}>
+    <AuthContext.Provider value={{ session, loading }}>
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
 }
