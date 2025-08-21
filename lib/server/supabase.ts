@@ -11,6 +11,7 @@ function cookieAdapter(jar: any) {
         httpOnly: true,
         sameSite: 'lax',
         secure: true,
+        path: '/',
       }),
     remove: (name: string, options: any) =>
       jar.set(name, '', {
@@ -19,6 +20,7 @@ function cookieAdapter(jar: any) {
         maxAge: 0,
         sameSite: 'lax',
         secure: true,
+        path: '/',
       }),
   };
 }
