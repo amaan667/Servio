@@ -1,66 +1,29 @@
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase-server';
 import { handleGoogleSignUp } from '@/lib/supabase';
 
-function cookieAdapter(jar: ReturnType<typeof cookies>) {
-  return {
-    get: (name: string) => jar.get(name)?.value,
-    set: (name: string, value: string, options?: any) =>
-      jar.set(name, value, {
-        ...options,
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: true,
-        path: '/',
-      }),
-    remove: (name: string, options?: any) =>
-      jar.set(name, '', {
-        ...options,
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: true,
-        path: '/',
-        maxAge: 0,
-      }),
-  };
-}
+export const runtime = 'nodejs';
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
-  const error = url.searchParams.get('error');
-  const next = url.searchParams.get('next') ?? '/dashboard';
+  const oauthError = url.searchParams.get('error');
+  const base = process.env.NEXT_PUBLIC_APP_URL!;
 
-  console.log('[AUTH] callback starting', {
-    hasCode: !!code,
-    hasError: !!error,
-    base: process.env.NEXT_PUBLIC_APP_URL,
-  });
-
-  if (error) {
-    return NextResponse.redirect(new URL('/sign-in?error=oauth_error', req.url));
+  if (oauthError) {
+    return NextResponse.redirect(`${base}/sign-in?error=${oauthError}`);
   }
   if (!code) {
-    return NextResponse.redirect(new URL('/sign-in?error=missing_code', req.url));
+    return NextResponse.redirect(`${base}/sign-in?error=missing_code`);
   }
 
-  const jar = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieAdapter(jar) }
-  );
-
-  // Only exchange here. Do not exchange anywhere else (middleware, other routes, etc.).
+  const supabase = supabaseServer();
+  // This reads the PKCE verifier cookie set by the browser client on YOUR domain
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
   if (exchangeError) {
-    console.error('[AUTH] exchange failed:', exchangeError);
-    return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange_failed', req.url));
+    console.error('[AUTH] PKCE exchange failed:', exchangeError);
+    return NextResponse.redirect(`${base}/sign-in?error=pkce_failed`);
   }
 
   // Handle Google OAuth user setup
@@ -83,7 +46,7 @@ export async function GET(req: NextRequest) {
         
         if (!result.success) {
           console.error('[AUTH] Failed to create venue for Google user:', result.error);
-          return NextResponse.redirect(new URL('/complete-profile', req.url));
+          return NextResponse.redirect(`${base}/complete-profile`);
         }
         
         console.log('[AUTH] Venue created for Google user:', result.venue?.venue_id);
@@ -96,5 +59,5 @@ export async function GET(req: NextRequest) {
     // Continue with redirect even if venue creation fails
   }
 
-  return NextResponse.redirect(new URL(next, req.url));
+  return NextResponse.redirect(`${base}/dashboard`);
 }

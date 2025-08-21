@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { supabase } from "@/lib/sb-client";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import SessionClearer from "@/components/session-clearer";
 
@@ -55,6 +55,8 @@ export default function SignInForm({ onGoogleSignIn }: SignInFormProps) {
         errorText = errorMessage ? `Authentication failed: ${errorMessage}` : 'Authentication exchange failed.';
       } else if (urlError === 'missing_code') {
         errorText = 'Authentication code missing. Please try signing in again.';
+      } else if (urlError === 'pkce_failed') {
+        errorText = 'Authentication failed. Please try signing in again.';
       }
       
       setError(errorText);
@@ -64,14 +66,6 @@ export default function SignInForm({ onGoogleSignIn }: SignInFormProps) {
       // Clear any remaining form data when coming from sign-out
       setFormData({ email: "", password: "" });
       setError(null);
-      
-      // Don't clear sessions during OAuth process to avoid breaking PKCE flow
-      // Only clear if we're not in the middle of an OAuth flow
-      if (!window.location.search.includes('code=')) {
-        supabase.auth.signOut().then(() => {
-          console.log('[AUTH] Cleared existing session due to signedOut parameter');
-        });
-      }
     }
   }, []);
 
@@ -213,25 +207,6 @@ export default function SignInForm({ onGoogleSignIn }: SignInFormProps) {
                   Sign up here
                 </Link>
               </p>
-              
-              {error && (
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await fetch('/api/clear-session', { method: 'POST' });
-                        window.location.href = '/sign-in?signedOut=true';
-                      } catch (err) {
-                        console.error('Failed to clear session:', err);
-                      }
-                    }}
-                    className="text-xs text-gray-500 hover:text-gray-700 underline"
-                  >
-                    Clear session and try again
-                  </button>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
