@@ -10,7 +10,7 @@ function SignInPageContent() {
     const base = process.env.NEXT_PUBLIC_APP_URL!;
     console.log('[AUTH] Starting OAuth with redirect:', `${base}/auth/callback`);
     
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${base}/auth/callback`,
@@ -18,6 +18,7 @@ function SignInPageContent() {
           prompt: 'select_account',
           access_type: 'offline'
         },
+        skipBrowserRedirect: false
       },
     });
     if (error) console.error('[AUTH] Sign-in error:', error);
