@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     const supabase = createServerSupabase();
     console.log('[AUTH] Exchanging code for session');
     
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
       console.error('[AUTH] PKCE exchange failed:', exchangeError);
