@@ -4,7 +4,10 @@ import { supabase } from '@/lib/sb-client';
 export default function SignInButton() {
   
   const onGoogle = async () => {
-    const APP_URL = process.env.NEXT_PUBLIC_APP_URL!;
+    // Use localhost for development, production URL for production
+    const APP_URL = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:3001' 
+      : process.env.NEXT_PUBLIC_APP_URL!;
     console.log('[AUTH] starting oauth');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

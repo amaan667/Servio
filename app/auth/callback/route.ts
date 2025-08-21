@@ -5,9 +5,15 @@ import { NextResponse, NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { cookieAdapter } from '@/lib/server/supabase';
+import { headers } from 'next/headers';
 
 export async function GET(req: NextRequest) {
   console.log('[AUTH] starting oauth callback');
+  
+  const h = headers();
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const host = h.get('x-forwarded-host') ?? h.get('host')!;
+  const base = `${proto}://${host}`;
   
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
@@ -16,7 +22,7 @@ export async function GET(req: NextRequest) {
   // If no code, bounce back to sign-in
   if (!code) {
     console.log('[AUTH] missing code, redirecting to sign-in');
-    return NextResponse.redirect(new URL('/sign-in?error=missing_code', req.url));
+    return NextResponse.redirect(new URL('/sign-in?error=missing_code', base));
   }
 
   const jar = cookies();
@@ -33,12 +39,12 @@ export async function GET(req: NextRequest) {
   if (error) {
     console.error('[AUTH] exchange failed:', error.message);
     // Most common: PKCE state/cookie mismatch or double-exchange
-    return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange', req.url));
+    return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange', base));
   }
 
   if (!data.user) {
     console.log('[AUTH] no user after exchange');
-    return NextResponse.redirect(new URL('/sign-in?error=no_user', req.url));
+    return NextResponse.redirect(new URL('/sign-in?error=no_user', base));
   }
 
   console.log('[AUTH] exchange ok, user:', data.user.id);
@@ -52,16 +58,16 @@ export async function GET(req: NextRequest) {
 
   if (vErr) {
     console.error('[AUTH] venues query error:', vErr);
-    return NextResponse.redirect(new URL('/complete-profile?error=venues', req.url));
+    return NextResponse.redirect(new URL('/complete-profile?error=venues', base));
   }
 
   if (!venues?.length) {
     console.log('[AUTH] no venues found, redirecting to complete profile');
-    return NextResponse.redirect(new URL('/complete-profile', req.url));
+    return NextResponse.redirect(new URL('/complete-profile', base));
   }
 
   // Success: user session cookies are now set
-  const redirectUrl = new URL(`/dashboard/${venues[0].venue_id}`, req.url);
+  const redirectUrl = new URL(`/dashboard/${venues[0].venue_id}`, base);
   console.log('[AUTH] redirecting to dashboard:', venues[0].venue_id);
   
   return NextResponse.redirect(redirectUrl);
