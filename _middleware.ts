@@ -1,7 +1,9 @@
+// middleware.ts
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 export function middleware(_req: NextRequest) {
+  // Keep middleware as a pass-through to avoid double-exchange/refresh on edge
   return NextResponse.next();
 }
 

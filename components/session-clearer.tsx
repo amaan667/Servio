@@ -10,15 +10,15 @@ export default function SessionClearer() {
   const error = searchParams?.get('error');
 
   useEffect(() => {
-  // Only clear when explicitly signedOut=true to avoid accidental clears during OAuth errors
-  if (signedOut === 'true') {
+  // Clear on explicit signOut OR on auth errors to prevent token reuse
+  if (signedOut === 'true' || error === 'session_expired' || error === 'oauth_exchange_failed') {
       // Force clear any remaining client-side session
       const clearSession = async () => {
         try {
           console.log('[AUTH DEBUG] SessionClearer: Clearing session due to', { signedOut, error });
           
-          // Sign out from Supabase client
-          await supabase.auth.signOut();
+          // Sign out from Supabase client - use global scope to clear on all devices
+          await supabase.auth.signOut({ scope: 'global' });
           
           // Clear localStorage
           if (typeof window !== 'undefined') {
