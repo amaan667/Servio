@@ -58,27 +58,41 @@ function AuthCallbackContent() {
         setStatus('Checking venues...');
         console.log('[AUTH CALLBACK] Checking venues for user:', user.id);
         
-        const { data: venues, error: venueErr } = await supabase
-          .from('venues')
-          .select('venue_id')
-          .eq('owner_id', user.id)
-          .limit(1);
+        try {
+          const { data: venues, error: venueErr } = await Promise.race([
+            supabase
+              .from('venues')
+              .select('venue_id')
+              .eq('owner_id', user.id)
+              .limit(1),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Venue query timeout')), 5000)
+            )
+          ]);
 
-        if (venueErr) {
-          console.error('[AUTH CALLBACK] Venue lookup failed:', venueErr);
-          setStatus('Venue lookup failed');
-          setError(venueErr.message);
-          router.replace('/sign-in?error=venue_lookup_failed');
-          return;
+          if (venueErr) {
+            console.error('[AUTH CALLBACK] Venue lookup failed:', venueErr);
+            setStatus('Venue lookup failed');
+            setError(venueErr.message);
+            // Still redirect to complete-profile instead of failing completely
+            console.log('[AUTH CALLBACK] Redirecting to complete-profile due to venue error');
+            router.replace('/complete-profile');
+            return;
+          }
+
+          setStatus('Redirecting...');
+          console.log('[AUTH CALLBACK] Venues found:', venues?.length);
+          
+          const redirectPath = venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile';
+          console.log('[AUTH CALLBACK] Redirecting to:', redirectPath);
+          
+          router.replace(redirectPath);
+        } catch (venueTimeout) {
+          console.error('[AUTH CALLBACK] Venue lookup timed out:', venueTimeout);
+          setStatus('Venue lookup timed out, going to profile setup');
+          // Fallback to complete-profile if venue lookup times out
+          router.replace('/complete-profile');
         }
-
-        setStatus('Redirecting...');
-        console.log('[AUTH CALLBACK] Venues found:', venues?.length);
-        
-        const redirectPath = venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile';
-        console.log('[AUTH CALLBACK] Redirecting to:', redirectPath);
-        
-        router.replace(redirectPath);
       } catch (err: any) {
         console.error('[AUTH CALLBACK] Unexpected error:', err);
         setStatus('Unexpected error');
@@ -91,9 +105,9 @@ function AuthCallbackContent() {
     const timeout = setTimeout(() => {
       console.log('[AUTH CALLBACK] Timeout reached, redirecting to sign-in');
       setStatus('Timeout reached');
-      setError('Callback timed out');
+      setError('Callback timed out - please try signing in again');
       router.replace('/sign-in?error=timeout');
-    }, 10000); // 10 second timeout
+    }, 15000); // 15 second timeout
 
     return () => clearTimeout(timeout);
   }, [params, router]);
