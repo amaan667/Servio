@@ -5,7 +5,8 @@ import { getAuthRedirectUrl } from '@/lib/auth';
 export default function SignInButton() {
   
   const onGoogle = async () => {
-    const redirectUrl = getAuthRedirectUrl('/auth/callback');
+    // Always use production URL for OAuth to prevent localhost issues
+    const redirectUrl = 'https://servio-production.up.railway.app/auth/callback';
     console.log('[AUTH] starting oauth with redirect:', redirectUrl);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
