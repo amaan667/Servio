@@ -14,12 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw } from "lucide-react";
+// Removed RefreshCw icon import for Clean Refresh button cleanup
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import SessionClearer from "@/components/session-clearer";
+// Removed SessionClearer from production to avoid redundant client-side sign-out
 
 interface SignInFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -109,7 +109,6 @@ export default function SignInForm({ onGoogleSignIn }: SignInFormProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SessionClearer />
       <div className="max-w-md w-full mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <NavigationBreadcrumb showBackButton={false} />
         
