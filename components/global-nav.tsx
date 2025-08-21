@@ -11,7 +11,7 @@ import { useAuth } from "@/app/authenticated-client-provider";
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Use our central auth context instead of local state
-  const { session } = useAuth();
+  const { session, loading } = useAuth();
 
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
@@ -68,22 +68,10 @@ export default function GlobalNav() {
                   </Link>
                   <Button
                     variant="outline"
-                    onClick={async () => {
-                      try {
-                        const supabase = supabaseBrowser();
-                        console.log('[AUTH] Signing out user');
-                        const { error } = await supabase.auth.signOut();
-                        if (error) {
-                          console.error('[AUTH] Sign out error:', error);
-                        } else {
-                          console.log('[AUTH] Sign out successful');
-                          window.location.href = '/sign-in';
-                        }
-                      } catch (err) {
-                        console.error('[AUTH] Sign out failed:', err);
-                        // Force redirect even if sign out fails
-                        window.location.href = '/sign-in';
-                      }
+                    onClick={() => {
+                      console.log('[AUTH] Signing out user');
+                      // Use the sign-out route which properly clears all cookies and sessions
+                      window.location.href = '/auth/sign-out';
                     }}
                     className="text-gray-600 hover:text-gray-900"
                   >
@@ -161,22 +149,10 @@ export default function GlobalNav() {
                 </Link>
                 <Button
                   variant="outline"
-                  onClick={async () => {
-                    try {
-                      const supabase = supabaseBrowser();
-                      console.log('[AUTH] Signing out user (mobile)');
-                      const { error } = await supabase.auth.signOut();
-                      if (error) {
-                        console.error('[AUTH] Sign out error:', error);
-                      } else {
-                        console.log('[AUTH] Sign out successful');
-                        window.location.href = '/sign-in';
-                      }
-                    } catch (err) {
-                      console.error('[AUTH] Sign out failed:', err);
-                      // Force redirect even if sign out fails
-                      window.location.href = '/sign-in';
-                    }
+                  onClick={() => {
+                    console.log('[AUTH] Signing out user (mobile)');
+                    // Use the sign-out route which properly clears all cookies and sessions
+                    window.location.href = '/auth/sign-out';
                   }}
                   className="w-full text-left text-gray-600 hover:text-gray-900"
                 >
