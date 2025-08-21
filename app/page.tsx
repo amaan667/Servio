@@ -75,7 +75,7 @@ function HomePageContent() {
   const router = useRouter();
   
   // Use our central auth context instead of duplicating logic
-  const { session, isLoading } = useAuth();
+  const { session, loading } = useAuth();
 
   const handleGetStarted = () => {
     console.log('[HOME] handleGetStarted called', { hasSession: !!session, sessionId: session?.user?.id });
