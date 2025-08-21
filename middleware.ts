@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|assets/|api/auth/callback).*)',
+    '/((?!_next/static|_next/image|favicon.ico|assets/|api/auth/callback|auth/callback).*)',
   ],
 };
 
