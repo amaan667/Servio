@@ -5,7 +5,7 @@ export async function POST() {
   try {
     const supabase = createServerSupabaseClient();
     
-    // Sign out the user
+    // Sign out the user - this will handle cookie clearing automatically
     const { error } = await supabase.auth.signOut();
     
     if (error) {
@@ -17,24 +17,7 @@ export async function POST() {
     }
     
     console.log('[CLEAR SESSION] Session cleared successfully');
-    
-    const response = NextResponse.json({ success: true });
-    
-    // Clear cookies
-    response.cookies.set('sb-access-token', '', { 
-      path: '/', 
-      expires: new Date(0),
-      secure: true,
-      sameSite: 'lax'
-    });
-    response.cookies.set('sb-refresh-token', '', { 
-      path: '/', 
-      expires: new Date(0),
-      secure: true,
-      sameSite: 'lax'
-    });
-    
-    return response;
+    return NextResponse.json({ success: true });
     
   } catch (error) {
     console.error('[CLEAR SESSION] Unexpected error:', error);
