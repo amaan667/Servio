@@ -14,7 +14,10 @@ function SignInPageContent() {
       provider: 'google',
       options: {
         redirectTo: `${base}/auth/callback`,
-        queryParams: { prompt: 'select_account' },
+        queryParams: { 
+          prompt: 'select_account',
+          access_type: 'offline'
+        },
       },
     });
     if (error) console.error('[AUTH] Sign-in error:', error);

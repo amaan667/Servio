@@ -5,23 +5,24 @@ import { Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/lib/sb-client";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useAuth } from "@/app/authenticated-client-provider";
 
 export default function ClientNavBar({ showActions = true, venueId }: { showActions?: boolean; venueId?: string }) {
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   // Use our central auth context
-  const { user } = useAuth();
+  const { session } = useAuth();
 
   useEffect(() => {
     const fetchPrimaryVenue = async () => {
       try {
-        if (user) {
+        if (session?.user) {
+          const supabase = supabaseBrowser();
           const { data, error } = await supabase
             .from('venues')
             .select('venue_id')
-            .eq('owner_id', user.id)
+            .eq('owner_id', session.user.id)
             .order('created_at', { ascending: true })
             .limit(1);
 
@@ -43,7 +44,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
       setPrimaryVenueId(venueId);
       setLoading(false);
     }
-  }, [venueId, user]);
+  }, [venueId, session]);
 
   const resolvedVenueId = venueId ?? primaryVenueId;
 
@@ -59,9 +60,27 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
 
   // Fallback to dashboard if no venueId is available
   const homeHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
-  const settingsHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/dashboard';
+  const settingsHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/settings';
 
   console.log('[NAV] ClientNavBar', { venueId, resolvedVenueId, homeHref, settingsHref });
+
+  const handleSignOut = async () => {
+    try {
+      const supabase = supabaseBrowser();
+      console.log('[AUTH] Signing out user from ClientNavBar');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('[AUTH] Sign out error:', error);
+      } else {
+        console.log('[AUTH] Sign out successful');
+        window.location.href = '/sign-in';
+      }
+    } catch (err) {
+      console.error('[AUTH] Sign out failed:', err);
+      // Force redirect even if sign out fails
+      window.location.href = '/sign-in';
+    }
+  };
 
   return (
     <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
@@ -89,12 +108,10 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
                 Settings
               </Button>
             </Link>
-            {/* [NAV] Use server sign-out route only */}
-            <Link href="/auth/sign-out">
-              <Button variant="destructive">
-                Sign Out
-              </Button>
-            </Link>
+            {/* [NAV] Use client-side sign-out */}
+            <Button variant="destructive" onClick={handleSignOut}>
+              Sign Out
+            </Button>
           </>
         )}
       </div>

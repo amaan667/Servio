@@ -19,15 +19,31 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     const supabase = supabaseBrowser();
     
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('[AUTH] Error getting initial session:', error);
+          setSession(null);
+        } else {
+          console.log('[AUTH] Initial session:', { hasSession: !!session, userId: session?.user?.id });
+          setSession(session);
+        }
+      } catch (err) {
+        console.error('[AUTH] Failed to get initial session:', err);
+        setSession(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AUTH] Auth state change:', { event, hasSession: !!session, userId: session?.user?.id });
       setSession(session);
       setLoading(false);
     });
