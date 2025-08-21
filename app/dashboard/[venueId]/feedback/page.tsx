@@ -1,28 +1,21 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { createServerClient } from '@supabase/ssr';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { MessageSquareMore, BarChart3 } from 'lucide-react';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import QuestionsClient from './QuestionsClient';
-import { cookieAdapter } from '@/lib/server/supabase';
+import { createServerSupabaseClient } from '@/lib/server/supabase';
 
 export default async function FeedbackPage({
   params,
 }: {
   params: { venueId: string };
 }) {
-  const jar = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieAdapter(jar) }
-  );
+  const supabase = createServerSupabaseClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return notFound();
