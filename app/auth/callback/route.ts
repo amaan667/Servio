@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const oauthError = url.searchParams.get('error');
-  const base = process.env.NEXT_PUBLIC_APP_URL!;
+  const base = 'https://servio-production.up.railway.app';
 
   console.log('[AUTH] Callback start:', { hasCode: !!code, hasError: !!oauthError });
 
