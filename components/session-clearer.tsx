@@ -11,7 +11,8 @@ export default function SessionClearer() {
 
   useEffect(() => {
   // Clear on explicit signOut OR on auth errors to prevent token reuse
-  if (signedOut === 'true' || error === 'session_expired' || error === 'oauth_exchange_failed') {
+  // But don't clear during OAuth process to avoid breaking PKCE flow
+  if (signedOut === 'true' || error === 'session_expired') {
       // Force clear any remaining client-side session
       const clearSession = async () => {
         try {

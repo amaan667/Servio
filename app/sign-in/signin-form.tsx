@@ -65,10 +65,13 @@ export default function SignInForm({ onGoogleSignIn }: SignInFormProps) {
       setFormData({ email: "", password: "" });
       setError(null);
       
-      // Clear any existing sessions
-      supabase.auth.signOut().then(() => {
-        console.log('[AUTH] Cleared existing session due to signedOut parameter');
-      });
+      // Don't clear sessions during OAuth process to avoid breaking PKCE flow
+      // Only clear if we're not in the middle of an OAuth flow
+      if (!window.location.search.includes('code=')) {
+        supabase.auth.signOut().then(() => {
+          console.log('[AUTH] Cleared existing session due to signedOut parameter');
+        });
+      }
     }
   }, []);
 
