@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/server/supabase';
+import { createServerSupabase } from '@/lib/supabase-server';
 import { handleGoogleSignUp } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const oauthError = url.searchParams.get('error');
-  const base = 'https://servio-production.up.railway.app';
+  const base = process.env.NEXT_PUBLIC_APP_URL!;
 
   console.log('[AUTH] Callback start:', { hasCode: !!code, hasError: !!oauthError });
 
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const supabase = supabaseServer();
+    const supabase = createServerSupabase();
     console.log('[AUTH] Exchanging code for session');
     
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);

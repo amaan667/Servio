@@ -66,18 +66,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
 
   const handleSignOut = async () => {
     try {
-      const supabase = supabaseBrowser();
-      console.log('[AUTH] Signing out user from ClientNavBar');
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('[AUTH] Sign out error:', error);
-      } else {
-        console.log('[AUTH] Sign out successful');
-        window.location.href = '/sign-in';
-      }
-    } catch (err) {
-      console.error('[AUTH] Sign out failed:', err);
-      // Force redirect even if sign out fails
+      await fetch('/api/auth/sign-out', { method: 'POST' });
+    } finally {
       window.location.href = '/sign-in';
     }
   };
