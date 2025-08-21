@@ -17,7 +17,25 @@ export async function GET(req: NextRequest) {
   
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
+  const oauthError = url.searchParams.get('error');
+  const errorDescription = url.searchParams.get('error_description');
+  const state = url.searchParams.get('state');
   const next = url.searchParams.get('next') ?? '/dashboard';
+  
+  console.log('[AUTH] callback params:', { 
+    hasCode: !!code, 
+    codeLength: code?.length, 
+    oauthError, 
+    errorDescription,
+    hasState: !!state,
+    base 
+  });
+
+  // Handle OAuth errors from provider
+  if (oauthError) {
+    console.log('[AUTH] OAuth error from provider:', oauthError, errorDescription);
+    return NextResponse.redirect(new URL(`/sign-in?error=oauth_error&message=${encodeURIComponent(errorDescription || oauthError)}`, base));
+  }
 
   // If no code, bounce back to sign-in
   if (!code) {
@@ -33,13 +51,25 @@ export async function GET(req: NextRequest) {
   );
 
   // IMPORTANT: Only call this ONCE per callback
-  console.log('[AUTH] callback exchanging');
+  console.log('[AUTH] callback exchanging with code length:', code.length);
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     console.error('[AUTH] exchange failed:', error.message);
+    
+    // Handle specific error cases
+    if (error.message.includes('refresh_token_already_used') || error.message.includes('Invalid Refresh Token')) {
+      console.log('[AUTH] Refresh token already used, redirecting to sign-in');
+      return NextResponse.redirect(new URL('/sign-in?error=token_reused', base));
+    }
+    
+    if (error.message.includes('both auth code and code verifier should be non-empty')) {
+      console.log('[AUTH] Missing auth code or code verifier');
+      return NextResponse.redirect(new URL('/sign-in?error=validation_failed', base));
+    }
+    
     // Most common: PKCE state/cookie mismatch or double-exchange
-    return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange', base));
+    return NextResponse.redirect(new URL(`/sign-in?error=exchange_failed&message=${encodeURIComponent(error.message)}`, base));
   }
 
   if (!data.user) {

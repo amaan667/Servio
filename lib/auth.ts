@@ -32,6 +32,16 @@ export const getAuthRedirectUrl = (path: string = '/auth/callback') => {
     return fallbackUrl;
   }
   
+  // Additional validation for production URLs
+  if (process.env.NODE_ENV === 'production') {
+    if (!url.startsWith('https://')) {
+      console.warn('⚠️ Non-HTTPS URL in production:', url);
+    }
+    if (!url.includes('servio-production.up.railway.app')) {
+      console.warn('⚠️ Unexpected domain in production:', url);
+    }
+  }
+  
   return url;
 };
 
