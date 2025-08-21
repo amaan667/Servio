@@ -17,9 +17,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 import { signUpUser, signInWithGoogle, signInUser } from "@/lib/supabase";
 import { supabase } from "@/lib/sb-client";
-import { getAuthRedirectUrl } from "@/lib/auth";
 
-export default function SignUpForm() {
+interface SignUpFormProps {
+  onGoogleSignIn: () => Promise<void>;
+}
+
+export default function SignUpForm({ onGoogleSignIn }: SignUpFormProps) {
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
@@ -115,31 +118,8 @@ export default function SignUpForm() {
               onClick={async () => {
                 setLoading(true);
                 setError(null);
-                
                 try {
-                  const redirectUrl = getAuthRedirectUrl('/auth/callback');
-                  console.log('[AUTH] starting oauth with redirect:', redirectUrl);
-                  const { data, error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                      redirectTo: redirectUrl, // must be EXACT and allowed in Supabase dashboard
-                      queryParams: { access_type: 'offline', prompt: 'consent' }, // ensures refresh token
-                    },
-                  });
-                  if (error) {
-                    console.error('[AUTH] OAuth start error', { message: error.message });
-                    setError(error.message);
-                    setLoading(false);
-                    return;
-                  }
-                  if (data?.url) {
-                    console.log('[AUTH] Redirecting to Google OAuth', { url: data.url });
-                    window.location.href = data.url; // force navigation
-                  } else {
-                    console.log('[AUTH] No OAuth URL returned');
-                    setError('Failed to start Google sign-up');
-                    setLoading(false);
-                  }
+                  await onGoogleSignIn();
                 } catch (err: any) {
                   console.error('[AUTH] Google sign-up error', { message: err?.message });
                   setError(`Google sign-up failed: ${err.message || "Please try again."}`);

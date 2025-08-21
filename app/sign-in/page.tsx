@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/sb-client';
 import SignInForm from './signin-form';
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL!; // e.g. https://servio-production.up.railway.app
+
 function SignInPageContent() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -22,7 +24,18 @@ function SignInPageContent() {
     run();
   }, [router, sp]);
 
-  return <SignInForm />;
+  async function signInWithGoogle() {
+    // Must be client-side; this sets the PKCE verifier + state on the same origin
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${APP_URL}/auth/callback`, // MUST match Supabase redirect URL
+        queryParams: { access_type: 'offline', prompt: 'consent' }, // get refresh token
+      },
+    });
+  }
+
+  return <SignInForm onGoogleSignIn={signInWithGoogle} />;
 }
 
 export default function SignInPage() {
