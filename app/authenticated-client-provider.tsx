@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabase-browser';
+import { supabase } from '@/lib/sb-client';
 import { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -16,8 +16,6 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    
     // Get initial session
     const getInitialSession = async () => {
       try {
@@ -40,9 +38,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     getInitialSession();
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[AUTH] Auth state change:', { event, hasSession: !!session, userId: session?.user?.id });
       setSession(session);
       setLoading(false);

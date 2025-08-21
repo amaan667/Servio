@@ -32,16 +32,22 @@ function AuthCallbackContent() {
           return;
         }
 
-        setStatus('Exchanging code for session...');
-        console.log('[AUTH CALLBACK] Exchanging code for session');
-        
-        const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
-        if (exErr) {
-          console.error('[AUTH CALLBACK] Exchange failed:', exErr);
-          setStatus('Exchange failed');
-          setError(exErr.message);
-          router.replace('/sign-in?error=exchange_failed');
-          return;
+        // If a session already exists (detectSessionInUrl may have run), skip manual exchange
+        setStatus('Checking existing session...');
+        const { data: init } = await supabase.auth.getSession();
+        if (init.session?.user) {
+          console.log('[AUTH CALLBACK] Session already present, skipping exchange');
+        } else {
+          setStatus('Exchanging code for session...');
+          console.log('[AUTH CALLBACK] Exchanging code for session');
+          const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+          if (exErr) {
+            console.error('[AUTH CALLBACK] Exchange failed:', exErr);
+            setStatus('Exchange failed');
+            setError(exErr.message);
+            router.replace('/sign-in?error=exchange_failed');
+            return;
+          }
         }
 
         setStatus('Getting user data...');
@@ -68,29 +74,33 @@ function AuthCallbackContent() {
             new Promise((_, reject) => 
               setTimeout(() => reject(new Error('Venue query timeout')), 5000)
             )
-          ]);
+          ] as any);
 
-          if (venueErr) {
+          if ((venues as any)?.error || (venues as any)?.status === 'rejected') {
+            console.error('[AUTH CALLBACK] Venue lookup reported error-like result:', venues);
+            setStatus('Venue lookup failed');
+            router.replace('/complete-profile');
+            return;
+          }
+
+          if ((venueErr as any)) {
             console.error('[AUTH CALLBACK] Venue lookup failed:', venueErr);
             setStatus('Venue lookup failed');
-            setError(venueErr.message);
-            // Still redirect to complete-profile instead of failing completely
-            console.log('[AUTH CALLBACK] Redirecting to complete-profile due to venue error');
+            setError((venueErr as any).message);
             router.replace('/complete-profile');
             return;
           }
 
           setStatus('Redirecting...');
-          console.log('[AUTH CALLBACK] Venues found:', venues?.length);
+          console.log('[AUTH CALLBACK] Venues found:', (venues as any)?.length);
           
-          const redirectPath = venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile';
+          const redirectPath = (venues as any)?.length ? `/dashboard/${(venues as any)[0].venue_id}` : '/complete-profile';
           console.log('[AUTH CALLBACK] Redirecting to:', redirectPath);
           
           router.replace(redirectPath);
         } catch (venueTimeout) {
           console.error('[AUTH CALLBACK] Venue lookup timed out:', venueTimeout);
           setStatus('Venue lookup timed out, going to profile setup');
-          // Fallback to complete-profile if venue lookup times out
           router.replace('/complete-profile');
         }
       } catch (err: any) {
@@ -107,7 +117,7 @@ function AuthCallbackContent() {
       setStatus('Timeout reached');
       setError('Callback timed out - please try signing in again');
       router.replace('/sign-in?error=timeout');
-    }, 15000); // 15 second timeout
+    }, 15000);
 
     return () => clearTimeout(timeout);
   }, [params, router]);
