@@ -1,6 +1,7 @@
 'use client';
 
 import { supabase } from '@/lib/sb-client';
+import SignUpForm from './signup-form';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL!; // e.g. https://servio-production.up.railway.app
 
@@ -15,14 +16,5 @@ export default function SignUpPage() {
     });
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <button
-        className="px-4 py-2 rounded bg-black text-white"
-        onClick={signInWithGoogle}
-      >
-        Continue with Google
-      </button>
-    </div>
-  );
+  return <SignUpForm onGoogleSignIn={signInWithGoogle} />;
 }
