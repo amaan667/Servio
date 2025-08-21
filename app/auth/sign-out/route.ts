@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
   console.log('[AUTH] Redirecting to clear session page');
   // Redirect to client-side clear page to handle localStorage/sessionStorage
   const clearUrl = new URL('/auth/clear-session', base);
-  clearUrl.searchParams.set('redirect', '/sign-in?signedOut=true');
+  clearUrl.searchParams.set('redirect', '/?signedOut=true');
   
   const response = NextResponse.redirect(clearUrl);
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
