@@ -4,22 +4,23 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { supabase } from "@/lib/sb-client";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
+import { useRouter } from "next/navigation";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
   // Use our central auth context instead of local state
   const { session, loading } = useAuth();
+  const router = useRouter();
 
   // Fetch primary venue when user is signed in
   useEffect(() => {
     const fetchPrimaryVenue = async () => {
       if (session?.user) {
         try {
-          const supabase = supabaseBrowser();
           const { data, error } = await supabase
             .from('venues')
             .select('venue_id')
@@ -42,18 +43,8 @@ export default function GlobalNav() {
   }, [session]);
 
   const handleSignOut = async () => {
-    try {
-      // First, sign out on the client side
-      const supabase = supabaseBrowser();
-      await supabase.auth.signOut();
-      
-      // Then call the API to clear server cookies
-      await fetch('/api/auth/sign-out', { method: 'POST' });
-    } catch (error) {
-      console.error('[AUTH] Sign-out error:', error);
-    } finally {
-      window.location.href = '/sign-in';
-    }
+    await supabase.auth.signOut();
+    router.replace('/sign-in');
   };
 
   return (

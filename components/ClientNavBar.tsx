@@ -1,24 +1,25 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import React, { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase-browser";
-import { useAuth } from "@/app/authenticated-client-provider";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Settings } from 'lucide-react';
+import { supabase } from '@/lib/sb-client';
+import { useAuth } from '@/app/authenticated-client-provider';
+import { useRouter } from "next/navigation";
 
 export default function ClientNavBar({ showActions = true, venueId }: { showActions?: boolean; venueId?: string }) {
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   // Use our central auth context
   const { session } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchPrimaryVenue = async () => {
       try {
         if (session?.user) {
-          const supabase = supabaseBrowser();
           const { data, error } = await supabase
             .from('venues')
             .select('venue_id')
@@ -65,18 +66,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
   console.log('[NAV] ClientNavBar', { venueId, resolvedVenueId, homeHref, settingsHref });
 
   const handleSignOut = async () => {
-    try {
-      // First, sign out on the client side
-      const supabase = supabaseBrowser();
-      await supabase.auth.signOut();
-      
-      // Then call the API to clear server cookies
-      await fetch('/api/auth/sign-out', { method: 'POST' });
-    } catch (error) {
-      console.error('[AUTH] Sign-out error:', error);
-    } finally {
-      window.location.href = '/sign-in';
-    }
+    await supabase.auth.signOut();
+    router.replace('/sign-in');
   };
 
   return (
