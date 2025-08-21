@@ -9,19 +9,8 @@ function SignInPageContent() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  useEffect(() => {
-    const run = async () => {
-      // Check if user is already signed in
-      const supabase = supabaseBrowser();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return; // show form
-
-      // If already signed in, redirect to dashboard
-      console.log('[SIGN-IN] User already signed in, redirecting to dashboard');
-      router.replace('/dashboard');
-    };
-    run();
-  }, [router, sp]);
+  // Remove automatic redirect to prevent loops
+  // Let users stay on sign-in page even if they have a session
 
   const signInWithGoogle = async () => {
     const supabase = supabaseBrowser();

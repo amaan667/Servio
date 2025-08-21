@@ -23,7 +23,9 @@ export default async function DashboardPage() {
     
     if (!user) {
       console.log('[DASHBOARD] No user found, redirecting to sign-in');
-      redirect('/sign-in');
+      // Use absolute URL to prevent redirect loops
+      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
+      redirect(`${base}/sign-in`);
     }
 
     console.log('[DASHBOARD] Getting primary venue for user:', user.id);
@@ -38,19 +40,23 @@ export default async function DashboardPage() {
     
     if (venueError) {
       console.error('[DASHBOARD] Error fetching venues:', venueError);
-      redirect('/complete-profile');
+      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
+      redirect(`${base}/complete-profile`);
     }
     
     if (venues && venues.length > 0) {
       const primaryVenueId = venues[0].venue_id;
       console.log('[DASHBOARD] Redirecting to primary venue:', primaryVenueId);
-      redirect(`/dashboard/${primaryVenueId}`);
+      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
+      redirect(`${base}/dashboard/${primaryVenueId}`);
     } else {
       console.log('[DASHBOARD] No primary venue found, redirecting to complete profile');
-      redirect('/complete-profile');
+      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
+      redirect(`${base}/complete-profile`);
     }
   } catch (error) {
     console.error('[DASHBOARD] Error in dashboard page:', error);
-    redirect('/sign-in');
+    const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
+    redirect(`${base}/sign-in`);
   }
 }
