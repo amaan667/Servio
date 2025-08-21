@@ -5,13 +5,14 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import GenerateQRClient from './GenerateQRClient';
+import { cookieAdapter } from '@/lib/server/supabase';
 
 export default async function GenerateQRPage() {
-  const jar = await cookies();
+  const jar = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+    { cookies: cookieAdapter(jar) }
   );
 
   const { data: { user } } = await supabase.auth.getUser();

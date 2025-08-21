@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 // Proper cookie adapter for PKCE flow
-function cookieAdapter(jar: ReturnType<typeof cookies>) {
+function cookieAdapter(jar: any) {
   return {
     get: (name: string) => jar.get(name)?.value,
     set: (name: string, value: string, options: any) =>

@@ -6,13 +6,14 @@ import { cookies } from 'next/headers';
 import { redirect, notFound } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import StaffClient from './staff-client';
+import { cookieAdapter } from '@/lib/server/supabase';
 
 export default async function StaffPage({ params }: { params: { venueId: string } }) {
-  const jar = await cookies();
+  const jar = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: n => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+    { cookies: cookieAdapter(jar) }
   );
 
   // Require auth

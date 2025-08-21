@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { todayWindowForTZ } from '@/lib/time';
+import { cookieAdapter } from '@/lib/server/supabase';
 
 type OrderRow = {
   id: string;
@@ -29,11 +30,11 @@ export async function GET(req: Request) {
     }
 
     // SSR supabase client (uses user cookies for RLS)
-    const jar = await cookies();
+    const jar = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { get: n => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+      { cookies: cookieAdapter(jar) }
     );
 
     // find venue tz
