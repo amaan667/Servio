@@ -69,9 +69,21 @@ export default function GlobalNav() {
                   <Button
                     variant="outline"
                     onClick={async () => {
-                      const supabase = supabaseBrowser();
-                      await supabase.auth.signOut();
-                      window.location.href = '/sign-in';
+                      try {
+                        const supabase = supabaseBrowser();
+                        console.log('[AUTH] Signing out user');
+                        const { error } = await supabase.auth.signOut();
+                        if (error) {
+                          console.error('[AUTH] Sign out error:', error);
+                        } else {
+                          console.log('[AUTH] Sign out successful');
+                          window.location.href = '/sign-in';
+                        }
+                      } catch (err) {
+                        console.error('[AUTH] Sign out failed:', err);
+                        // Force redirect even if sign out fails
+                        window.location.href = '/sign-in';
+                      }
                     }}
                     className="text-gray-600 hover:text-gray-900"
                   >
@@ -150,9 +162,21 @@ export default function GlobalNav() {
                 <Button
                   variant="outline"
                   onClick={async () => {
-                    const supabase = supabaseBrowser();
-                    await supabase.auth.signOut();
-                    window.location.href = '/sign-in';
+                    try {
+                      const supabase = supabaseBrowser();
+                      console.log('[AUTH] Signing out user (mobile)');
+                      const { error } = await supabase.auth.signOut();
+                      if (error) {
+                        console.error('[AUTH] Sign out error:', error);
+                      } else {
+                        console.log('[AUTH] Sign out successful');
+                        window.location.href = '/sign-in';
+                      }
+                    } catch (err) {
+                      console.error('[AUTH] Sign out failed:', err);
+                      // Force redirect even if sign out fails
+                      window.location.href = '/sign-in';
+                    }
                   }}
                   className="w-full text-left text-gray-600 hover:text-gray-900"
                 >
