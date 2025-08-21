@@ -207,25 +207,6 @@ export default function SignInForm({ onGoogleSignIn }: SignInFormProps) {
                   Sign up here
                 </Link>
               </p>
-              
-              {/* Add clear session option for users stuck in loops */}
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const supabase = supabaseBrowser();
-                      await supabase.auth.signOut();
-                      window.location.href = '/sign-in?signedOut=true';
-                    } catch (err) {
-                      console.error('Failed to clear session:', err);
-                    }
-                  }}
-                  className="text-xs text-gray-500 hover:text-gray-700 underline"
-                >
-                  Clear session and start fresh
-                </button>
-              </div>
             </div>
           </CardContent>
         </Card>

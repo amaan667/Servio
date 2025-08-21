@@ -7,6 +7,11 @@ const PROD_URL = new URL(PROD_BASE);
 const PROD_HOST = PROD_URL.host;
 
 export function middleware(req: NextRequest) {
+  // Never intercept the auth callback
+  if (req.nextUrl.pathname.startsWith('/auth/')) {
+    return NextResponse.next();
+  }
+
   // Force https and the exact production host
   const isHttps = req.nextUrl.protocol === 'https:';
   const host = req.headers.get('host');
