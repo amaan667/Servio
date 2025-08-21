@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/sb-client";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 
@@ -60,31 +60,31 @@ export default function GlobalNav() {
                   >
                     Dashboard
                   </Link>
-                  {/* [NAV] Use server sign-out route only */}
-                  <Link href="/auth/sign-out">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="ml-2"
-                    >
-                      Sign Out
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
                   <Link
-                    href="/sign-in"
+                    href="/settings"
                     className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                   >
-                    Sign In
+                    Settings
                   </Link>
-                  <Link href="/sign-up">
-                    <Button size="sm" className="ml-2">
-                      Get Started
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      const supabase = supabaseBrowser();
+                      await supabase.auth.signOut();
+                      window.location.href = '/sign-in';
+                    }}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    Sign Out
+                  </Button>
                 </>
+              ) : (
+                <Link
+                  href="/sign-in"
+                  className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90"
+                >
+                  Sign In
+                </Link>
               )}
             </div>
           </div>
@@ -93,8 +93,8 @@ export default function GlobalNav() {
           <div className="md:hidden">
             <Button
               variant="ghost"
-              size="sm"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2"
             >
               {mobileMenuOpen ? (
                 <X className="h-6 w-6" />
@@ -140,32 +140,33 @@ export default function GlobalNav() {
                 >
                   Dashboard
                 </Link>
-                {/* [NAV] Use server sign-out route only */}
-                <Link href="/auth/sign-out" onClick={() => setMobileMenuOpen(false)}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-2"
-                  >
-                    Sign Out
-                  </Button>
-                </Link>
-              </>
-            ) : (
-              <>
                 <Link
-                  href="/sign-in"
+                  href="/settings"
                   className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Sign In
+                  Settings
                 </Link>
-                <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
-                  <Button size="sm" className="w-full mt-2">
-                    Get Started
-                  </Button>
-                </Link>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    const supabase = supabaseBrowser();
+                    await supabase.auth.signOut();
+                    window.location.href = '/sign-in';
+                  }}
+                  className="w-full text-left text-gray-600 hover:text-gray-900"
+                >
+                  Sign Out
+                </Button>
               </>
+            ) : (
+              <Link
+                href="/sign-in"
+                className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign In
+              </Link>
             )}
           </div>
         </div>

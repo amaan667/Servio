@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase-server';
+import { supabaseServer } from '@/lib/server/supabase';
 import { handleGoogleSignUp } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
