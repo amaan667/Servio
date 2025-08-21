@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/sb-client';
 import { toMoney } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,10 +33,6 @@ type Order = {
 };
 
 export default function LiveOrdersClient({ venueId }: { venueId: string }) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   const [orders, setOrders] = useState<Order[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all'|'preparing'|'served'|'paid'>('preparing');
   const cacheRef = useRef<Record<string, { orders: Order[]; meta?: any }>>({});
@@ -50,7 +46,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const tick = useTick();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { session } = useAuth();
 
   // fetch with cache for seamless tab switching
   useEffect(() => {

@@ -1,25 +1,11 @@
 'use client';
 
 import { Suspense } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/sb-client';
 import SignInForm from './signin-form';
 
 function SignInPageContent() {
   const signInWithGoogle = async () => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-          storageKey: 'supabase.auth.token',
-        },
-      }
-    );
-    
     const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
     console.log('[AUTH] Starting OAuth with redirect:', redirectTo);
     

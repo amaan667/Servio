@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookieAdapter } from '@/lib/server/supabase';
-import { cookies } from 'next/headers';
+import { createServerSupabase } from '@/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
@@ -15,12 +13,7 @@ export async function GET(req: Request) {
   if (!venueId) return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
 
   // Auth check
-  const jar = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieAdapter(jar) }
-  );
+  const supabase = createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   console.log("[LIVE ORDERS GET] user from cookie:", user?.id);
   if (!user) return NextResponse.json({ ok:false, error:'Not authenticated' }, { status:401 });

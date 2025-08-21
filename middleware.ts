@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|assets/).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|assets/|api/auth/callback).*)',
+  ],
 };
 
 export function middleware(req: Request) {
