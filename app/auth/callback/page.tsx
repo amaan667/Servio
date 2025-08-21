@@ -107,12 +107,6 @@ function AuthCallbackContent() {
           Error: {error}
         </div>
       )}
-      <button
-        onClick={() => router.replace('/sign-in?error=manual_fallback')}
-        className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-      >
-        Continue to Sign In
-      </button>
     </div>
   );
 }
