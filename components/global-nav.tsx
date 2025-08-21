@@ -10,8 +10,44 @@ import { useAuth } from "@/app/authenticated-client-provider";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
   // Use our central auth context instead of local state
   const { session, loading } = useAuth();
+
+  // Fetch primary venue when user is signed in
+  useEffect(() => {
+    const fetchPrimaryVenue = async () => {
+      if (session?.user) {
+        try {
+          const supabase = supabaseBrowser();
+          const { data, error } = await supabase
+            .from('venues')
+            .select('venue_id')
+            .eq('owner_id', session.user.id)
+            .order('created_at', { ascending: true })
+            .limit(1);
+
+          if (!error && data?.length) {
+            setPrimaryVenueId(data[0].venue_id);
+          }
+        } catch (err) {
+          console.error('Error fetching primary venue:', err);
+        }
+      } else {
+        setPrimaryVenueId(null);
+      }
+    };
+
+    fetchPrimaryVenue();
+  }, [session]);
+
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/auth/sign-out', { method: 'POST' });
+    } finally {
+      window.location.href = '/sign-in';
+    }
+  };
 
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
@@ -19,7 +55,7 @@ export default function GlobalNav() {
         <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href="/dashboard" className="flex items-center group">
+            <Link href={session ? "/dashboard" : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
@@ -34,57 +70,65 @@ export default function GlobalNav() {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
-              <Link
-                href="/dashboard"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Home
-              </Link>
-              <Link
-                href="#features"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Features
-              </Link>
-              <Link
-                href="#pricing"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Pricing
-              </Link>
               {session ? (
+                // Signed in navigation
                 <>
+                  <Link
+                    href="/"
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Home
+                  </Link>
                   <Link
                     href="/dashboard"
                     className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                   >
                     Dashboard
                   </Link>
-                  <Link
-                    href="/settings"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Settings
-                  </Link>
+                  {primaryVenueId && (
+                    <Link
+                      href={`/dashboard/${primaryVenueId}/settings`}
+                      className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Settings
+                    </Link>
+                  )}
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      fetch('/api/auth/sign-out', { method: 'POST' }).finally(() => {
-                        window.location.href = '/sign-in';
-                      });
-                    }}
+                    onClick={handleSignOut}
                     className="text-gray-600 hover:text-gray-900"
                   >
                     Sign Out
                   </Button>
                 </>
               ) : (
-                <Link
-                  href="/sign-in"
-                  className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90"
-                >
-                  Sign In
-                </Link>
+                // Not signed in navigation
+                <>
+                  <Link
+                    href="/"
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    href="#features"
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Features
+                  </Link>
+                  <Link
+                    href="#pricing"
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Pricing
+                  </Link>
+                  <Link
+                    href="/sign-in"
+                    className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90"
+                  >
+                    Sign In
+                  </Link>
+                </>
               )}
             </div>
           </div>
@@ -110,29 +154,16 @@ export default function GlobalNav() {
       {mobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
-            <Link
-              href="/dashboard"
-              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="#features"
-              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Features
-            </Link>
-            <Link
-              href="#pricing"
-              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Pricing
-            </Link>
             {session ? (
+              // Signed in mobile navigation
               <>
+                <Link
+                  href="/"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Home
+                </Link>
                 <Link
                   href="/dashboard"
                   className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
@@ -140,19 +171,20 @@ export default function GlobalNav() {
                 >
                   Dashboard
                 </Link>
-                <Link
-                  href="/settings"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Settings
-                </Link>
+                {primaryVenueId && (
+                  <Link
+                    href={`/dashboard/${primaryVenueId}/settings`}
+                    className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Settings
+                  </Link>
+                )}
                 <Button
                   variant="outline"
                   onClick={() => {
-                    fetch('/api/auth/sign-out', { method: 'POST' }).finally(() => {
-                      window.location.href = '/sign-in';
-                    });
+                    handleSignOut();
+                    setMobileMenuOpen(false);
                   }}
                   className="w-full text-left text-gray-600 hover:text-gray-900"
                 >
@@ -160,13 +192,37 @@ export default function GlobalNav() {
                 </Button>
               </>
             ) : (
-              <Link
-                href="/sign-in"
-                className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign In
-              </Link>
+              // Not signed in mobile navigation
+              <>
+                <Link
+                  href="/"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link
+                  href="#features"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Features
+                </Link>
+                <Link
+                  href="#pricing"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Pricing
+                </Link>
+                <Link
+                  href="/sign-in"
+                  className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+              </>
             )}
           </div>
         </div>

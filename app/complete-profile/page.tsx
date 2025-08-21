@@ -3,23 +3,14 @@ export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 export const revalidate = 0;
 
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { createServerClient } from '@supabase/ssr';
+import { createServerSupabase } from '@/lib/supabase-server';
 import CompleteProfileForm from './form';
-import { cookieAdapter } from '@/lib/server/supabase';
 
 export default async function CompleteProfilePage() {
   console.log('[COMPLETE-PROFILE] CompleteProfilePage function called');
   
-  const jar = await cookies();
-  console.log('[COMPLETE-PROFILE] Cookies jar created');
-  
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieAdapter(jar) }
-  );
+  const supabase = createServerSupabase();
   console.log('[COMPLETE-PROFILE] Supabase client created');
 
   const { data: { user }, error: userErr } = await supabase.auth.getUser();

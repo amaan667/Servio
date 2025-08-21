@@ -1,19 +1,12 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { createServerClient } from '@supabase/ssr';
+import { createServerSupabase } from '@/lib/supabase-server';
 import GenerateQRClient from './GenerateQRClient';
-import { cookieAdapter } from '@/lib/server/supabase';
 
 export default async function GenerateQRPage() {
-  const jar = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieAdapter(jar) }
-  );
+  const supabase = createServerSupabase();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/sign-in');

@@ -106,9 +106,9 @@ export default function SettingsClient({ user, venues }: { user: User; venues: V
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Button 
+          <Button
             variant="outline" 
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push(`/dashboard/${venues?.[0]?.venue_id}`)}
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

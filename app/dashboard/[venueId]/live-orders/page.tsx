@@ -1,25 +1,50 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
-export const revalidate = 0;
 
 import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/server/supabase';
+import { createServerSupabase } from '@/lib/supabase-server';
+import { log } from '@/lib/debug';
+import ClientNavBar from '@/components/ClientNavBar';
 import LiveOrdersClient from './LiveOrdersClient';
 
-export default async function LiveOrdersPage({ params }: { params: { venueId: string } }) {
-  const venueId = params.venueId;
-  const supabase = createServerSupabaseClient();
+export default async function LiveOrdersPage({
+  params,
+}: {
+  params: { venueId: string };
+}) {
+  console.log('[LIVE-ORDERS] Page mounted for venue', params.venueId);
+  
+  const supabase = createServerSupabase();
+
   const { data: { user } } = await supabase.auth.getUser();
+  log('LIVE-ORDERS SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 
-  const { data: venue, error } = await supabase
+  // Verify user owns this venue
+  const { data: venue } = await supabase
     .from('venues')
     .select('venue_id, name')
-    .eq('venue_id', venueId)
+    .eq('venue_id', params.venueId)
     .eq('owner_id', user.id)
     .maybeSingle();
-  if (error || !venue) redirect('/sign-in');
 
-  return <LiveOrdersClient venueId={venueId} venueName={venue.name} />;
+  if (!venue) redirect('/dashboard');
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <ClientNavBar venueId={params.venueId} />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            Live Orders for {venue.name}
+          </h1>
+          <p className="text-lg text-muted-foreground mt-2">
+            Monitor and manage real-time orders
+          </p>
+        </div>
+        
+        <LiveOrdersClient venueId={params.venueId} />
+      </div>
+    </div>
+  );
 }

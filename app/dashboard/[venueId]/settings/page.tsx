@@ -1,11 +1,9 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { cookies } from 'next/headers';
-import { notFound } from 'next/navigation';
-import { createServerClient } from '@supabase/ssr';
+import { redirect } from 'next/navigation';
+import { createServerSupabase } from '@/lib/supabase-server';
 import { log } from '@/lib/debug';
-import { createServerSupabaseClient } from '@/lib/server/supabase';
 import ClientNavBar from '@/components/ClientNavBar';
 import VenueSettingsClient from './VenueSettingsClient';
 
@@ -17,11 +15,11 @@ export default async function VenueSettingsPage({
   console.log('[SETTINGS] Page mounted for venue', params.venueId);
   
   // [AUTH] Use proper server Supabase client with cookie handling
-  const supabase = createServerSupabaseClient();
+  const supabase = createServerSupabase();
 
   const { data: { user } } = await supabase.auth.getUser();
   log('VENUE SETTINGS SSR user', { hasUser: !!user });
-  if (!user) return notFound();
+  if (!user) redirect('/sign-in');
 
   // Verify user owns this venue
   const { data: venue } = await supabase
@@ -31,7 +29,7 @@ export default async function VenueSettingsPage({
     .eq('owner_id', user.id)
     .maybeSingle();
 
-  if (!venue) return notFound();
+  if (!venue) redirect('/dashboard');
 
   // Get user's venues for the settings component
   const { data: venues } = await supabase

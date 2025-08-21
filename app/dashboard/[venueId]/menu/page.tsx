@@ -1,30 +1,50 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { cookies } from 'next/headers';
-import { redirect, notFound } from 'next/navigation';
-import { createServerClient } from '@supabase/ssr';
+import { redirect } from 'next/navigation';
+import { createServerSupabase } from '@/lib/supabase-server';
 import { log } from '@/lib/debug';
+import ClientNavBar from '@/components/ClientNavBar';
 import MenuClient from './MenuClient';
-import { cookieAdapter } from '@/lib/server/supabase';
 
-export default async function MenuPage({ params }: { params: { venueId: string } }) {
-  const jar = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieAdapter(jar) }
-  );
+export default async function MenuPage({
+  params,
+}: {
+  params: { venueId: string };
+}) {
+  console.log('[MENU] Page mounted for venue', params.venueId);
+  
+  const supabase = createServerSupabase();
 
   const { data: { user } } = await supabase.auth.getUser();
   log('MENU SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 
-  const { data: venue, error: vErr } = await supabase
-    .from('venues').select('venue_id,name').eq('venue_id', params.venueId).eq('owner_id', user.id).maybeSingle();
+  // Verify user owns this venue
+  const { data: venue } = await supabase
+    .from('venues')
+    .select('venue_id, name')
+    .eq('venue_id', params.venueId)
+    .eq('owner_id', user.id)
+    .maybeSingle();
 
-  log('MENU SSR venue', { ok: !!venue, err: vErr?.message });
-  if (vErr || !venue) return notFound();
+  if (!venue) redirect('/dashboard');
 
-  return <MenuClient venueId={params.venueId} venueName={venue.name} />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <ClientNavBar venueId={params.venueId} />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            Menu for {venue.name}
+          </h1>
+          <p className="text-lg text-muted-foreground mt-2">
+            Manage your menu items and categories
+          </p>
+        </div>
+        
+        <MenuClient venueId={params.venueId} />
+      </div>
+    </div>
+  );
 }
