@@ -5,17 +5,13 @@ import { supabase } from '@/lib/sb-client';
 export default function SignInButton() {
   
   const onGoogle = async () => {
-    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
-    console.log('[AUTH] starting oauth with redirect:', redirectTo);
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo, // must be EXACT and allowed in Supabase dashboard
-        queryParams: { prompt: 'select_account' },
-      },
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+        queryParams: { prompt: 'select_account' }
+      }
     });
-    if (error) return alert(error.message);
-    if (data?.url) window.location.href = data.url; // force navigation
   };
 
   return (

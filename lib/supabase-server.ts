@@ -8,13 +8,26 @@ export function createServerSupabase() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => jar.get(name)?.value,
-        set: (name, value, options) => {
-          jar.set(name, value, options);
-        },
-        remove: (name, options) => {
-          jar.set(name, '', { ...options, maxAge: 0 });
-        },
+        get: (n) => jar.get(n)?.value,
+        // Do NOT call set/remove from server components.
+        // Only route handlers should pass working set/remove fns.
+        set: () => {},
+        remove: () => {},
+      },
+    }
+  );
+}
+
+export function createRouteSupabase() {
+  const jar = cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (n) => jar.get(n)?.value,
+        set: (n, v, opts) => jar.set(n, v, opts),
+        remove: (n, opts) => jar.set(n, '', { ...opts, maxAge: 0 }),
       },
     }
   );
