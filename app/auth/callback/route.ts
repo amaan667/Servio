@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
-function cookieAdapter(jar: ReturnType<typeof cookies>) {
+function cookieAdapter(jar: any) {
   return {
     get: (name: string) => jar.get(name)?.value,
     set: (name: string, value: string, options?: any) =>
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/sign-in?error=missing_code', req.url));
   }
 
-  const jar = cookies();
+  const jar = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -59,6 +59,22 @@ export async function GET(req: NextRequest) {
     console.error('[AUTH] exchange failed:', exchangeError);
     return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange_failed', req.url));
   }
-
+  // Try to fetch user and their first venue to deep-link if possible
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: venues } = await supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      const venueId = venues?.[0]?.venue_id as string | undefined;
+      const dest = venueId ? `/dashboard/${venueId}` : next;
+      return NextResponse.redirect(new URL(dest, req.url));
+    }
+  } catch (e) {
+    console.warn('[AUTH] callback post-exchange redirect fallback', e);
+  }
   return NextResponse.redirect(new URL(next, req.url));
 }
