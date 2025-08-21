@@ -5,7 +5,7 @@ import { supabase } from '@/lib/sb-client';
 export default function SignInButton() {
   
   const onGoogle = async () => {
-    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
+    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
     console.log('[AUTH] starting oauth with redirect:', redirectTo);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
