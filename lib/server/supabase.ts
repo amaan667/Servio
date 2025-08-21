@@ -17,25 +17,33 @@ export const supabaseServer = () => {
           return cookieStore.get(name)?.value;
         },
         set(name, value, options) {
-          cookieStore.set({
-            name,
-            value,
-            ...options,
-            domain: COOKIE_DOMAIN,
-            secure: true,
-            sameSite: 'lax',
-          });
+          try {
+            cookieStore.set({
+              name,
+              value,
+              ...options,
+              domain: COOKIE_DOMAIN,
+              secure: true,
+              sameSite: 'lax',
+            });
+          } catch (error) {
+            console.warn('[SUPABASE SERVER] Cookie set failed:', error);
+          }
         },
         remove(name, options) {
-          cookieStore.set({
-            name,
-            value: '',
-            ...options,
-            domain: COOKIE_DOMAIN,
-            secure: true,
-            sameSite: 'lax',
-            maxAge: 0,
-          });
+          try {
+            cookieStore.set({
+              name,
+              value: '',
+              ...options,
+              domain: COOKIE_DOMAIN,
+              secure: true,
+              sameSite: 'lax',
+              maxAge: 0,
+            });
+          } catch (error) {
+            console.warn('[SUPABASE SERVER] Cookie remove failed:', error);
+          }
         },
       },
     }
