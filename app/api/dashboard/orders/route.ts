@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { todayWindowForTZ } from '@/lib/dates';
 import { ENV } from '@/lib/env';
+import { cookieAdapter } from '@/lib/server/supabase';
 
 export const runtime = 'nodejs';
 
@@ -21,11 +22,11 @@ export async function GET(req: Request) {
 
   // Auth check (optional, fallback to service role)
   try {
-    const jar = await cookies();
+    const jar = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+      { cookies: cookieAdapter(jar) }
     );
 
     const { data: { user } } = await supabase.auth.getUser();

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { cookieAdapter } from '@/lib/server/supabase';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
@@ -14,11 +15,11 @@ export async function GET(req: Request) {
   if (!venueId) return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
 
   // Auth check
-  const jar = await cookies();
+  const jar = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (n) => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+    { cookies: cookieAdapter(jar) }
   );
   const { data: { user } } = await supabase.auth.getUser();
   console.log("[LIVE ORDERS GET] user from cookie:", user?.id);

@@ -7,6 +7,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import CompleteProfileForm from './form';
+import { cookieAdapter } from '@/lib/server/supabase';
 
 export default async function CompleteProfilePage() {
   console.log('[COMPLETE-PROFILE] CompleteProfilePage function called');
@@ -17,13 +18,7 @@ export default async function CompleteProfilePage() {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get: (n) => jar.get(n)?.value,
-        set: (n, v, o) => jar.set({ name: n, value: v, ...o }),
-        remove: (n, o) => jar.set({ name: n, value: '', ...o }),
-      },
-    }
+    { cookies: cookieAdapter(jar) }
   );
   console.log('[COMPLETE-PROFILE] Supabase client created');
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { cookieAdapter } from '@/lib/server/supabase';
 import { createClient } from '@supabase/supabase-js';
 import type { FeedbackQuestion } from '@/types/feedback';
 
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
     const supa = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { get: n => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+      { cookies: cookieAdapter(jar) }
     );
 
     const { data: { user } } = await supa.auth.getUser();
@@ -104,7 +105,7 @@ export async function POST(req: Request) {
     const supa = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { get: n => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+      { cookies: cookieAdapter(jar) }
     );
 
     const { data: { user } } = await supa.auth.getUser();
@@ -186,7 +187,7 @@ export async function PATCH(req: Request) {
     const supa = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { get: n => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+      { cookies: cookieAdapter(jar) }
     );
 
     const { data: { user } } = await supa.auth.getUser();
@@ -279,7 +280,7 @@ export async function DELETE(req: Request) {
     const supa = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { get: n => jar.get(n)?.value, set: () => {}, remove: () => {} } }
+      { cookies: cookieAdapter(jar) }
     );
 
     const { data: { user } } = await supa.auth.getUser();
