@@ -19,7 +19,7 @@ export default function GlobalNav() {
         <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center group">
+            <Link href="/dashboard" className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
@@ -35,7 +35,7 @@ export default function GlobalNav() {
           <div className="hidden md:block">
             <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
               <Link
-                href="/"
+                href="/dashboard"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Home
@@ -69,9 +69,9 @@ export default function GlobalNav() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      console.log('[AUTH] Signing out user');
-                      // Use the sign-out route which properly clears all cookies and sessions
-                      window.location.href = '/auth/sign-out';
+                      fetch('/api/auth/sign-out', { method: 'POST' }).finally(() => {
+                        window.location.href = '/sign-in';
+                      });
                     }}
                     className="text-gray-600 hover:text-gray-900"
                   >
@@ -111,7 +111,7 @@ export default function GlobalNav() {
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
             <Link
-              href="/"
+              href="/dashboard"
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
@@ -150,9 +150,9 @@ export default function GlobalNav() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    console.log('[AUTH] Signing out user (mobile)');
-                    // Use the sign-out route which properly clears all cookies and sessions
-                    window.location.href = '/auth/sign-out';
+                    fetch('/api/auth/sign-out', { method: 'POST' }).finally(() => {
+                      window.location.href = '/sign-in';
+                    });
                   }}
                   className="w-full text-left text-gray-600 hover:text-gray-900"
                 >

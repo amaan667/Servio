@@ -53,12 +53,17 @@ export default function NavBarClient() {
           </Button>
         </Link>
 
-        {/* Sign Out stays explicit */}
-        <Link href="/auth/sign-out">
-          <Button variant="destructive">
-            Sign Out
-          </Button>
-        </Link>
+        {/* Sign Out via API to clear cookies reliably */}
+        <Button
+          variant="destructive"
+          onClick={() => {
+            fetch('/api/auth/sign-out', { method: 'POST' }).finally(() => {
+              window.location.href = '/sign-in';
+            });
+          }}
+        >
+          Sign Out
+        </Button>
       </div>
     </nav>
   );

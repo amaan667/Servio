@@ -4,13 +4,13 @@ export const fetchCache = 'force-no-store';
 export const revalidate = 0;
 
 import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/server/supabase';
+import { createServerSupabase } from '@/lib/supabase-server';
 
 export default async function DashboardPage() {
   console.log('[DASHBOARD] Main dashboard page loading');
   
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabase();
     console.log('[DASHBOARD] Supabase client created');
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();

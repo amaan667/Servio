@@ -7,7 +7,7 @@ import { getPrimaryVenueId } from '@/lib/server/getPrimaryVenue';
 
 export default async function NavBar({ showActions = true, venueId }: { showActions?: boolean; venueId?: string }) {
   const resolvedVenueId = venueId ?? (await getPrimaryVenueId());
-  const homeHref = '/';
+  const homeHref = '/dashboard';
   // Avoid dumping cookies in production logs and mutating them here
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
@@ -33,7 +33,6 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
                 Settings
               </Button>
             </Link>
-            {/* Server-side sign out route */}
             <Link href="/auth/sign-out">
               <Button variant="destructive" size="sm">Sign Out</Button>
             </Link>

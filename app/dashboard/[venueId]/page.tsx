@@ -5,14 +5,14 @@ export const revalidate = 0;
 
 import { redirect } from 'next/navigation';
 import { todayWindowForTZ } from '@/lib/time';
-import { createServerSupabaseClient } from '@/lib/server/supabase';
+import { createServerSupabase } from '@/lib/supabase-server';
 import DashboardClient from './page.client';
 
 export default async function VenuePage({ params, searchParams }: { params: { venueId: string }, searchParams: any }) {
   console.log('[VENUE PAGE] params.venueId =', params.venueId);
   
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabase();
     console.log('[DASHBOARD VENUE] Supabase client created');
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
