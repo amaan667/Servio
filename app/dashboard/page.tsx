@@ -10,9 +10,8 @@ export default async function DashboardPage() {
   console.log('[DASHBOARD] Main dashboard page loading');
   
   try {
-    // [AUTH] Use proper server Supabase client with cookie handling
     const supabase = createServerSupabaseClient();
-    console.log('[DASHBOARD] Supabase client created with proper cookies');
+    console.log('[DASHBOARD] Supabase client created');
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     console.log('[DASHBOARD] Auth getUser result:', { 
@@ -23,9 +22,7 @@ export default async function DashboardPage() {
     
     if (!user) {
       console.log('[DASHBOARD] No user found, redirecting to sign-in');
-      // Use absolute URL to prevent redirect loops
-      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
-      redirect(`${base}/sign-in`);
+      redirect('/sign-in');
     }
 
     console.log('[DASHBOARD] Getting primary venue for user:', user.id);
@@ -40,23 +37,19 @@ export default async function DashboardPage() {
     
     if (venueError) {
       console.error('[DASHBOARD] Error fetching venues:', venueError);
-      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
-      redirect(`${base}/complete-profile`);
+      redirect('/complete-profile');
     }
     
     if (venues && venues.length > 0) {
       const primaryVenueId = venues[0].venue_id;
       console.log('[DASHBOARD] Redirecting to primary venue:', primaryVenueId);
-      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
-      redirect(`${base}/dashboard/${primaryVenueId}`);
+      redirect(`/dashboard/${primaryVenueId}`);
     } else {
       console.log('[DASHBOARD] No primary venue found, redirecting to complete profile');
-      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
-      redirect(`${base}/complete-profile`);
+      redirect('/complete-profile');
     }
   } catch (error) {
     console.error('[DASHBOARD] Error in dashboard page:', error);
-    const base = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
-    redirect(`${base}/sign-in`);
+    redirect('/sign-in');
   }
 }

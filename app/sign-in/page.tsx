@@ -1,21 +1,15 @@
 'use client';
 
-import { useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import SignInForm from './signin-form';
 
 function SignInPageContent() {
-  const router = useRouter();
-  const sp = useSearchParams();
-
-  // Remove automatic redirect to prevent loops
-  // Let users stay on sign-in page even if they have a session
-
   const signInWithGoogle = async () => {
     const supabase = supabaseBrowser();
     const base = process.env.NEXT_PUBLIC_APP_URL!;
-    // Force production callback target
+    console.log('[AUTH] Starting OAuth with redirect:', `${base}/auth/callback`);
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

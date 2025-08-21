@@ -3,8 +3,18 @@ import { createServerClient } from '@supabase/ssr';
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL!;
 const PROD_HOST = new URL(BASE).hostname;
-// For Railway subdomain, cookie should be host-only; for custom domain use `.servio.app`
-const COOKIE_DOMAIN = PROD_HOST; // or `.servio.app` when you switch
+const COOKIE_DOMAIN = PROD_HOST;
+
+// Check if we're in a route handler context
+const isRouteHandler = () => {
+  try {
+    // This will throw if we're not in a route handler
+    const { headers } = require('next/headers');
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 export const supabaseServer = () => {
   const cookieStore = cookies();
@@ -17,6 +27,11 @@ export const supabaseServer = () => {
           return cookieStore.get(name)?.value;
         },
         set(name, value, options) {
+          // Only allow cookie modification in route handlers
+          if (!isRouteHandler()) {
+            console.warn('[SUPABASE SERVER] Cookie set blocked - not in route handler');
+            return;
+          }
           try {
             cookieStore.set({
               name,
@@ -31,6 +46,11 @@ export const supabaseServer = () => {
           }
         },
         remove(name, options) {
+          // Only allow cookie modification in route handlers
+          if (!isRouteHandler()) {
+            console.warn('[SUPABASE SERVER] Cookie remove blocked - not in route handler');
+            return;
+          }
           try {
             cookieStore.set({
               name,

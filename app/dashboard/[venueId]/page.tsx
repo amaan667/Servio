@@ -12,9 +12,8 @@ export default async function VenuePage({ params, searchParams }: { params: { ve
   console.log('[VENUE PAGE] params.venueId =', params.venueId);
   
   try {
-    // [AUTH] Use proper server Supabase client with cookie handling
     const supabase = createServerSupabaseClient();
-    console.log('[DASHBOARD VENUE] Supabase client created with proper cookies');
+    console.log('[DASHBOARD VENUE] Supabase client created');
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     console.log('[DASHBOARD VENUE] Auth getUser result:', { 
@@ -38,8 +37,7 @@ export default async function VenuePage({ params, searchParams }: { params: { ve
       venueName: venue?.name,
       error: vErr?.message,
       userId: user.id,
-      requestedVenueId: params.venueId,
-      venueData: venue // Log full venue data for debugging
+      requestedVenueId: params.venueId
     });
 
     if (vErr) {
