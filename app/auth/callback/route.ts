@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
-function cookieAdapter(jar: any) {
+function cookieAdapter(jar: ReturnType<typeof cookies>) {
   return {
     get: (name: string) => jar.get(name)?.value,
     set: (name: string, value: string, options?: any) =>
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/sign-in?error=missing_code', req.url));
   }
 
-  const jar = await cookies();
+  const jar = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -53,54 +53,12 @@ export async function GET(req: NextRequest) {
   );
 
   // Only exchange here. Do not exchange anywhere else (middleware, other routes, etc.).
-  try {
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (exchangeError) {
-      console.error('[AUTH] exchange failed:', exchangeError);
-      
-      // Handle refresh token issues specially
-      if (exchangeError.message?.includes('Invalid Refresh Token') || 
-          exchangeError.message?.includes('Already Used') ||
-          exchangeError.message?.includes('token_already_used')) {
-        console.log('[AUTH] Detected refresh token already used. Proceeding safely.');
-        // Best-effort: try to continue to app; if not authenticated, guards will redirect
-        const base = process.env.NODE_ENV === 'production'
-          ? (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app')
-          : url.origin;
-        return NextResponse.redirect(new URL(next, base));
-      }
-      
-      return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange_failed', url.origin));
-    }
-  } catch (error) {
-    console.error('[AUTH] Unexpected error during code exchange:', error);
-    return NextResponse.redirect(new URL('/sign-in?error=unexpected_error', url.origin));
+  if (exchangeError) {
+    console.error('[AUTH] exchange failed:', exchangeError);
+    return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange_failed', req.url));
   }
-  // Try to fetch user and their first venue to deep-link if possible
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: venues } = await supabase
-        .from('venues')
-        .select('venue_id')
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(1);
-      const venueId = venues?.[0]?.venue_id as string | undefined;
-      const dest = venueId ? `/dashboard/${venueId}` : next;
-      const base = process.env.NODE_ENV === 'production'
-        ? (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app')
-        : url.origin;
-      return NextResponse.redirect(new URL(dest, base));
-    }
-  } catch (e) {
-    console.warn('[AUTH] callback post-exchange redirect fallback', e);
-  }
-  {
-    const base = process.env.NODE_ENV === 'production'
-      ? (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app')
-      : url.origin;
-    return NextResponse.redirect(new URL(next, base));
-  }
+
+  return NextResponse.redirect(new URL(next, req.url));
 }
