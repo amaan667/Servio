@@ -18,6 +18,7 @@ import { RefreshCw } from "lucide-react";
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { supabase } from "@/lib/sb-client";
+import { getAuthRedirectUrl } from "@/lib/auth";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import SessionClearer from "@/components/session-clearer";
 
@@ -49,6 +50,8 @@ export default function SignInForm() {
         errorText = errorMessage ? `OAuth error: ${errorMessage}` : 'OAuth authentication failed.';
       } else if (urlError === 'exchange_failed') {
         errorText = errorMessage ? `Authentication failed: ${errorMessage}` : 'Authentication exchange failed.';
+      } else if (urlError === 'missing_code') {
+        errorText = 'Authentication code missing. Please try signing in again.';
       }
       
       setError(errorText);
@@ -133,15 +136,12 @@ export default function SignInForm() {
                 setError(null);
 
                 try {
-                  // Use localhost for development, production URL for production
-                  const APP_URL = process.env.NODE_ENV === 'development' 
-                    ? 'http://localhost:3001' 
-                    : process.env.NEXT_PUBLIC_APP_URL!;
-                  console.log('[AUTH] starting oauth');
+                  const redirectUrl = getAuthRedirectUrl('/auth/callback');
+                  console.log('[AUTH] starting oauth with redirect:', redirectUrl);
                   const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                      redirectTo: `${APP_URL}/auth/callback`, // must be EXACT and allowed in Supabase dashboard
+                      redirectTo: redirectUrl, // must be EXACT and allowed in Supabase dashboard
                       queryParams: { access_type: 'offline', prompt: 'consent' }, // ensures refresh token
                     },
                   });

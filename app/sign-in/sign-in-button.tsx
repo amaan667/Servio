@@ -1,18 +1,16 @@
 'use client';
 import { supabase } from '@/lib/sb-client';
+import { getAuthRedirectUrl } from '@/lib/auth';
 
 export default function SignInButton() {
   
   const onGoogle = async () => {
-    // Use localhost for development, production URL for production
-    const APP_URL = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:3001' 
-      : process.env.NEXT_PUBLIC_APP_URL!;
-    console.log('[AUTH] starting oauth');
+    const redirectUrl = getAuthRedirectUrl('/auth/callback');
+    console.log('[AUTH] starting oauth with redirect:', redirectUrl);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${APP_URL}/auth/callback`, // must be EXACT and allowed in Supabase dashboard
+        redirectTo: redirectUrl, // must be EXACT and allowed in Supabase dashboard
         queryParams: { access_type: 'offline', prompt: 'consent' }, // ensures refresh token
       },
     });
