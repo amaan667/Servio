@@ -4,6 +4,10 @@ import { useEffect, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/sb-client';
 
+function now() {
+  return new Date().toISOString();
+}
+
 function AuthCallbackContent() {
   const router = useRouter();
   const params = useSearchParams();
@@ -14,106 +18,87 @@ function AuthCallbackContent() {
     const code = params.get('code');
     const error = params.get('error');
 
-    console.log('[AUTH CALLBACK] Starting callback process', { hasCode: !!code, hasError: !!error });
+    console.log('[AUTH DEBUG] callback:start', { t: now(), hasCode: !!code, hasError: !!error });
 
     (async () => {
       try {
         if (error) {
-          console.log('[AUTH CALLBACK] OAuth error received:', error);
+          console.log('[AUTH DEBUG] callback:oauth_error', { t: now(), error });
           setStatus('OAuth error received');
           router.replace(`/sign-in?error=${encodeURIComponent(error)}`);
           return;
         }
         
         if (!code) {
-          console.log('[AUTH CALLBACK] No code received');
+          console.log('[AUTH DEBUG] callback:missing_code', { t: now() });
           setStatus('No code received');
           router.replace('/sign-in?error=missing_code');
           return;
         }
 
-        // If a session already exists (detectSessionInUrl may have run), skip manual exchange
         setStatus('Checking existing session...');
-        const { data: init } = await supabase.auth.getSession();
-        if (init.session?.user) {
-          console.log('[AUTH CALLBACK] Session already present, skipping exchange');
-        } else {
+        console.log('[AUTH DEBUG] callback:getSession:begin', { t: now() });
+        const { data: init, error: initErr } = await supabase.auth.getSession();
+        console.log('[AUTH DEBUG] callback:getSession:done', { t: now(), hasSession: !!init?.session, userId: init?.session?.user?.id, err: initErr?.message });
+
+        if (!init?.session?.user) {
           setStatus('Exchanging code for session...');
-          console.log('[AUTH CALLBACK] Exchanging code for session');
+          console.log('[AUTH DEBUG] callback:exchange:begin', { t: now() });
           const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+          console.log('[AUTH DEBUG] callback:exchange:done', { t: now(), ok: !exErr, err: exErr?.message });
           if (exErr) {
-            console.error('[AUTH CALLBACK] Exchange failed:', exErr);
             setStatus('Exchange failed');
             setError(exErr.message);
             router.replace('/sign-in?error=exchange_failed');
             return;
           }
+        } else {
+          console.log('[AUTH DEBUG] callback:exchange:skipped_existing_session', { t: now(), userId: init.session.user.id });
         }
 
         setStatus('Getting user data...');
-        console.log('[AUTH CALLBACK] Getting user data');
-        
-        const { data: { user } } = await supabase.auth.getUser();
+        console.log('[AUTH DEBUG] callback:getUser:begin', { t: now() });
+        const { data: { user }, error: userErr } = await supabase.auth.getUser();
+        console.log('[AUTH DEBUG] callback:getUser:done', { t: now(), hasUser: !!user, userId: user?.id, err: userErr?.message });
         if (!user) {
-          console.log('[AUTH CALLBACK] No user after exchange');
           setStatus('No user found');
           router.replace('/sign-in?error=no_user');
           return;
         }
 
         setStatus('Checking venues...');
-        console.log('[AUTH CALLBACK] Checking venues for user:', user.id);
-        
+        console.log('[AUTH DEBUG] callback:venues:begin', { t: now(), userId: user.id });
         try {
-          const { data: venues, error: venueErr } = await Promise.race([
-            supabase
-              .from('venues')
-              .select('venue_id')
-              .eq('owner_id', user.id)
-              .limit(1),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Venue query timeout')), 5000)
-            )
-          ] as any);
-
-          if ((venues as any)?.error || (venues as any)?.status === 'rejected') {
-            console.error('[AUTH CALLBACK] Venue lookup reported error-like result:', venues);
-            setStatus('Venue lookup failed');
-            router.replace('/complete-profile');
-            return;
-          }
-
-          if ((venueErr as any)) {
-            console.error('[AUTH CALLBACK] Venue lookup failed:', venueErr);
-            setStatus('Venue lookup failed');
-            setError((venueErr as any).message);
-            router.replace('/complete-profile');
-            return;
-          }
+          const venuePromise = supabase
+            .from('venues')
+            .select('venue_id')
+            .eq('owner_id', user.id)
+            .limit(1);
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Venue query timeout')), 5000));
+          const result: any = await Promise.race([venuePromise, timeoutPromise]);
+          const venues = result?.data as any[] | undefined;
+          const venueErr = result?.error as any | undefined;
+          console.log('[AUTH DEBUG] callback:venues:done', { t: now(), count: venues?.length ?? 0, err: venueErr?.message });
 
           setStatus('Redirecting...');
-          console.log('[AUTH CALLBACK] Venues found:', (venues as any)?.length);
-          
-          const redirectPath = (venues as any)?.length ? `/dashboard/${(venues as any)[0].venue_id}` : '/complete-profile';
-          console.log('[AUTH CALLBACK] Redirecting to:', redirectPath);
-          
+          const redirectPath = venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile';
+          console.log('[AUTH DEBUG] callback:redirect', { t: now(), redirectPath });
           router.replace(redirectPath);
         } catch (venueTimeout) {
-          console.error('[AUTH CALLBACK] Venue lookup timed out:', venueTimeout);
+          console.log('[AUTH DEBUG] callback:venues:timeout', { t: now(), message: (venueTimeout as Error).message });
           setStatus('Venue lookup timed out, going to profile setup');
           router.replace('/complete-profile');
         }
       } catch (err: any) {
-        console.error('[AUTH CALLBACK] Unexpected error:', err);
+        console.log('[AUTH DEBUG] callback:unexpected', { t: now(), message: err?.message });
         setStatus('Unexpected error');
         setError(err.message);
         router.replace('/sign-in?error=unexpected_error');
       }
     })();
 
-    // Add timeout to prevent infinite loading
     const timeout = setTimeout(() => {
-      console.log('[AUTH CALLBACK] Timeout reached, redirecting to sign-in');
+      console.log('[AUTH DEBUG] callback:overall_timeout', { t: now() });
       setStatus('Timeout reached');
       setError('Callback timed out - please try signing in again');
       router.replace('/sign-in?error=timeout');

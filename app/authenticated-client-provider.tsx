@@ -4,6 +4,10 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/sb-client';
 import { Session } from '@supabase/supabase-js';
 
+function now() {
+  return new Date().toISOString();
+}
+
 interface AuthContextType {
   session: Session | null;
   loading: boolean;
@@ -16,19 +20,20 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
+    console.log('[AUTH DEBUG] provider:mount', { t: now() });
+
     const getInitialSession = async () => {
       try {
+        console.log('[AUTH DEBUG] provider:getSession:begin', { t: now() });
         const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
         if (error) {
-          console.error('[AUTH] Error getting initial session:', error);
           setSession(null);
         } else {
-          console.log('[AUTH] Initial session:', { hasSession: !!session, userId: session?.user?.id });
           setSession(session);
         }
-      } catch (err) {
-        console.error('[AUTH] Failed to get initial session:', err);
+      } catch (err: any) {
+        console.log('[AUTH DEBUG] provider:getSession:unexpected', { t: now(), message: err?.message });
         setSession(null);
       } finally {
         setLoading(false);
@@ -37,14 +42,16 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     getInitialSession();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AUTH] Auth state change:', { event, hasSession: !!session, userId: session?.user?.id });
+      console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
       setSession(session);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('[AUTH DEBUG] provider:unmount', { t: now() });
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
