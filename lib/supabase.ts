@@ -2,31 +2,103 @@ import { createBrowserClient } from "@supabase/ssr";
 import { logger } from "./logger";
 import { supabaseBrowser } from "./supabase-browser";
 
-// Environment variables
+console.log('🔄 Initializing Supabase client...');
+
+// Environment variables with safe access
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Debug environment variables
+// Debug environment variables with detailed logging
 console.log("Supabase environment check:", {
   hasUrl: !!supabaseUrl,
   hasKey: !!supabaseAnonKey,
   url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : "undefined",
-  key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : "undefined"
+  key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : "undefined",
+  nodeEnv: process.env.NODE_ENV,
+  timestamp: new Date().toISOString()
 });
 
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ Missing Supabase environment variables:", {
-    NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
-  });
-  throw new Error("Missing Supabase environment variables");
+// Function to create Supabase client with error handling
+function createSupabaseClient() {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    const missingVars = {
+      NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
+    };
+    
+    console.error("❌ Missing Supabase environment variables:", {
+      ...missingVars,
+      availableVars: Object.keys(process.env).filter(key => key.includes('SUPABASE')),
+      nodeEnv: process.env.NODE_ENV,
+      timestamp: new Date().toISOString(),
+      processId: process.pid
+    });
+    
+    const missingVarNames = Object.entries(missingVars)
+      .filter(([_, present]) => !present)
+      .map(([name]) => name);
+      
+    const errorMessage = `Missing Supabase environment variables: ${missingVarNames.join(', ')}`;
+    console.error('💥 SUPABASE INITIALIZATION FAILED:', errorMessage);
+    
+    // During build time, return a mock client to prevent build failures
+    // Check if we're in a build context by looking for missing Railway environment
+    const isProduction = process.env.NODE_ENV === 'production';
+    const hasRailwayEnv = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_SERVICE_ID);
+    const isBuildTime = isProduction && !hasRailwayEnv;
+    
+    if (isBuildTime) {
+      console.warn('⚠️ Detected build-time context - returning mock client to prevent build failures');
+      console.warn('   Production environment detected but no Railway environment variables present');
+      return createMockSupabaseClient();
+    }
+    
+    throw new Error(errorMessage);
+  }
+
+  try {
+    // Create single Supabase client instance with proper configuration
+    const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    console.log("✅ Supabase client created successfully");
+    return client;
+  } catch (error) {
+    console.error('💥 Failed to create Supabase client:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined',
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
 }
 
-// Create single Supabase client instance with proper configuration
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+// Mock client for build time
+function createMockSupabaseClient() {
+  return {
+    auth: {
+      signUp: () => Promise.resolve({ data: null, error: new Error('Mock client - not available during build') }),
+      signInWithOAuth: () => Promise.resolve({ data: null, error: new Error('Mock client - not available during build') }),
+      signOut: () => Promise.resolve({ error: null }),
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+    },
+    from: () => ({
+      select: () => Promise.resolve({ data: [], error: null }),
+      insert: () => Promise.resolve({ data: [], error: null }),
+      update: () => Promise.resolve({ data: [], error: null }),
+      delete: () => Promise.resolve({ data: [], error: null }),
+      upsert: () => Promise.resolve({ data: [], error: null }),
+      eq: function() { return this; },
+      in: function() { return this; },
+      filter: function() { return this; },
+      order: function() { return this; },
+      limit: function() { return this; },
+    }),
+    rpc: () => Promise.resolve({ data: null, error: null }),
+  } as any;
+}
 
-console.log("Supabase client created successfully");
+export const supabase = createSupabaseClient();
 
 // Types
 export interface User {

@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supa = createClient(supabaseUrl, supabaseServiceKey);
+import { getSupabaseServiceClient } from '@/lib/supabase-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +10,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[AUTH DEBUG] Clearing menu items for venue:', venue_id);
+
+    // Get Supabase client safely
+    const supa = getSupabaseServiceClient();
 
     // Delete all menu items for the venue
     const { error } = await supa
@@ -41,7 +39,7 @@ export async function POST(request: NextRequest) {
     console.error('[AUTH DEBUG] Clear menu error:', error);
     return NextResponse.json({ 
       ok: false, 
-      error: `Clear menu failed: ${error.message}` 
+      error: `Clear menu failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
     }, { status: 500 });
   }
 }
