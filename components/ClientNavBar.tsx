@@ -4,7 +4,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Settings, Home, LogOut, User, ChevronDown } from 'lucide-react';
 import { supabase } from '@/lib/sb-client';
 import { useAuth } from '@/app/authenticated-client-provider';
 import { useRouter } from "next/navigation";
@@ -51,9 +58,9 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
 
   if (loading) {
     return (
-      <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+      <nav className="flex items-center justify-between h-16 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
         <div className="flex items-center">
-          <div className="w-[200px] h-[50px] bg-gray-200 animate-pulse rounded"></div>
+          <div className="w-[160px] h-[40px] bg-gray-200 animate-pulse rounded"></div>
         </div>
       </nav>
     );
@@ -68,55 +75,119 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.replace('/sign-in');
+    router.replace('/');
   };
 
   return (
-    <nav className="flex items-center justify-between h-20 sm:h-24 lg:h-28 px-4 sm:px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-16 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
       <div className="flex items-center">
-        {/* [NAV] Logo links to main home page */}
+        {/* Logo links to main home page */}
         <Link href={homeHref} className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
-            width={200}
-            height={50}
+            width={160}
+            height={40}
             priority
-            className="h-12 sm:h-14 lg:h-16 w-auto hover:opacity-80 transition-opacity"
+            className="h-8 w-auto hover:opacity-80 transition-opacity"
           />
         </Link>
       </div>
       
       {/* Desktop Navigation */}
       <div className="hidden md:flex items-center space-x-4">
-        {/* [NAV] Home goes to main home page */}
-        <Link href={homeHref} className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
+        {/* Home goes to main home page */}
+        <Link 
+          href={homeHref} 
+          className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
+        >
+          Home
+        </Link>
         {showActions && (
           <>
-            <Link href={settingsHref} className="text-gray-600 hover:text-gray-900 font-medium">Settings</Link>
-            {/* [NAV] Use client-side sign-out */}
-            <Button variant="destructive" onClick={handleSignOut}>
-              Sign Out
-            </Button>
+            <Link 
+              href={settingsHref} 
+              className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
+            >
+              Settings
+            </Link>
+            {/* Modern dropdown menu for user actions */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                >
+                  <User className="h-4 w-4" />
+                  <span className="text-sm font-medium">Account</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link href={homeHref} className="flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    Home
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={settingsHref} className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         )}
       </div>
 
       {/* Mobile Navigation */}
-      <div className="md:hidden flex items-center space-x-2">
+      <div className="md:hidden flex items-center">
         {showActions && (
-          <>
-            <Link href={settingsHref} className="text-gray-600 hover:text-gray-900">
-              <Button variant="outline" size="sm" className="flex items-center p-2">
-                <Settings className="h-4 w-4" />
-                <span className="sr-only">Settings</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="flex items-center gap-2 p-2"
+              >
+                <User className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
               </Button>
-            </Link>
-            <Button variant="destructive" size="sm" onClick={handleSignOut} className="px-3">
-              <span className="sr-only">Sign Out</span>
-              <span className="text-xs">Out</span>
-            </Button>
-          </>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem asChild>
+                <Link href={homeHref} className="flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  Home
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={settingsHref} className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleSignOut}
+                className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </nav>

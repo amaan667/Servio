@@ -4,8 +4,15 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/lib/sb-client";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, Home, Settings, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter } from "next/navigation";
 
@@ -44,13 +51,15 @@ export default function GlobalNav() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.replace('/sign-in');
+    router.replace('/');
   };
+
+  const settingsHref = primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/settings';
 
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20 sm:h-24 lg:h-28 xl:h-32">
+        <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href={session ? "/dashboard" : "/"} className="flex items-center group">
@@ -59,7 +68,7 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-12 sm:h-16 lg:h-20 xl:h-24 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-8 sm:h-10 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
@@ -73,56 +82,84 @@ export default function GlobalNav() {
                 <>
                   <Link
                     href="/"
-                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Home
                   </Link>
                   <Link
                     href="/dashboard"
-                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Dashboard
                   </Link>
-                  {primaryVenueId && (
-                    <Link
-                      href={`/dashboard/${primaryVenueId}/settings`}
-                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
-                    >
-                      Settings
-                    </Link>
-                  )}
-                  <Button
-                    variant="outline"
-                    onClick={handleSignOut}
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    Sign Out
-                  </Button>
+                  {/* Modern dropdown menu for user actions */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      >
+                        <User className="h-4 w-4" />
+                        <span className="text-sm font-medium">Account</span>
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem asChild>
+                        <Link href="/" className="flex items-center gap-2">
+                          <Home className="h-4 w-4" />
+                          Home
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard" className="flex items-center gap-2">
+                          <span>Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      {primaryVenueId && (
+                        <DropdownMenuItem asChild>
+                          <Link href={settingsHref} className="flex items-center gap-2">
+                            <Settings className="h-4 w-4" />
+                            Settings
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </>
               ) : (
                 // Not signed in navigation
                 <>
                   <Link
                     href="/"
-                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Home
                   </Link>
                   <Link
                     href="#features"
-                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Features
                   </Link>
                   <Link
                     href="#pricing"
-                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Pricing
                   </Link>
                   <Link
                     href="/sign-in"
-                    className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90"
+                    className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
                   >
                     Sign In
                   </Link>
@@ -171,7 +208,7 @@ export default function GlobalNav() {
                 </Link>
                 {primaryVenueId && (
                   <Link
-                    href={`/dashboard/${primaryVenueId}/settings`}
+                    href={settingsHref}
                     className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >

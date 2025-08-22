@@ -11,7 +11,6 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
-import Breadcrumbs from '@/components/Breadcrumbs';
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { useToast } from "@/hooks/use-toast";
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
