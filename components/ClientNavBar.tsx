@@ -91,15 +91,9 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
       <div className="hidden md:flex items-center space-x-4">
         {/* [NAV] Home goes to main home page */}
         <Link href={homeHref} className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
-        <Link href={dashboardHref} className="text-gray-600 hover:text-gray-900 font-medium">Dashboard</Link>
         {showActions && (
           <>
-            <Link href={settingsHref} className="text-gray-600 hover:text-gray-900">
-              <Button variant="outline" className="flex items-center">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </Button>
-            </Link>
+            <Link href={settingsHref} className="text-gray-600 hover:text-gray-900 font-medium">Settings</Link>
             {/* [NAV] Use client-side sign-out */}
             <Button variant="destructive" onClick={handleSignOut}>
               Sign Out
