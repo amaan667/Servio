@@ -112,7 +112,7 @@ export default function NavigationBreadcrumb({
     );
   }
 
-  // Subpages: Home → Dashboard (Back) → Current Page
+  // Subpages: Home → Dashboard → Current Page
   return (
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-wrap">
@@ -128,21 +128,11 @@ export default function NavigationBreadcrumb({
         </li>
         <li className="text-gray-400 hidden sm:inline">→</li>
         <li>
-          {customBackPath ? (
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
-              <Link href={customBackPath}>
-                <>
-                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden xs:inline">{customBackLabel || "Dashboard"}</span>
-                </>
-              </Link>
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={() => window.history.back()} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
-              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">{customBackLabel || "Dashboard"}</span>
-            </Button>
-          )}
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
+            <Link href={dashboardLink}>
+              <span className="hidden xs:inline">Dashboard</span>
+            </Link>
+          </Button>
         </li>
         <li className="text-gray-400 hidden sm:inline">→</li>
         <li className="text-gray-700 font-medium">{pageTitle}</li>
