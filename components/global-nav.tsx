@@ -50,7 +50,7 @@ export default function GlobalNav() {
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
+        <div className="flex justify-between items-center h-20 sm:h-24 lg:h-28 xl:h-32">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href={session ? "/dashboard" : "/"} className="flex items-center group">
@@ -59,7 +59,7 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-20 sm:h-24 lg:h-28 xl:h-32 2xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-12 sm:h-16 lg:h-20 xl:h-24 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                 priority
               />
             </Link>
@@ -67,26 +67,26 @@ export default function GlobalNav() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
-            <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
+            <div className="ml-4 lg:ml-6 flex items-center space-x-3 lg:space-x-4">
               {session ? (
                 // Signed in navigation
                 <>
                   <Link
                     href="/"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
                   >
                     Home
                   </Link>
                   <Link
                     href="/dashboard"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
                   >
                     Dashboard
                   </Link>
                   {primaryVenueId && (
                     <Link
                       href={`/dashboard/${primaryVenueId}/settings`}
-                      className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
                     >
                       Settings
                     </Link>
@@ -104,25 +104,25 @@ export default function GlobalNav() {
                 <>
                   <Link
                     href="/"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
                   >
                     Home
                   </Link>
                   <Link
                     href="#features"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
                   >
                     Features
                   </Link>
                   <Link
                     href="#pricing"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium"
                   >
                     Pricing
                   </Link>
                   <Link
                     href="/sign-in"
-                    className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90"
+                    className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90"
                   >
                     Sign In
                   </Link>

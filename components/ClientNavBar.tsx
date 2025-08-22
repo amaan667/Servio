@@ -59,8 +59,9 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
     );
   }
 
-  // Fallback to dashboard if no venueId is available
-  const homeHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
+  // Home should link to main home page, dashboard link for navigation
+  const homeHref = '/';
+  const dashboardHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
   const settingsHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/settings';
 
   console.log('[NAV] ClientNavBar', { venueId, resolvedVenueId, homeHref, settingsHref });
@@ -71,9 +72,9 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
   };
 
   return (
-    <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-20 sm:h-24 lg:h-28 px-4 sm:px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
-        {/* [NAV] Use relative link to venue dashboard */}
+        {/* [NAV] Logo links to main home page */}
         <Link href={homeHref} className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
@@ -81,13 +82,16 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
             width={200}
             height={50}
             priority
-            className="hover:opacity-80 transition-opacity"
+            className="h-12 sm:h-14 lg:h-16 w-auto hover:opacity-80 transition-opacity"
           />
         </Link>
       </div>
-      <div className="flex items-center space-x-4">
-        {/* [NAV] Home goes to venue dashboard */}
+      
+      {/* Desktop Navigation */}
+      <div className="hidden md:flex items-center space-x-4">
+        {/* [NAV] Home goes to main home page */}
         <Link href={homeHref} className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
+        <Link href={dashboardHref} className="text-gray-600 hover:text-gray-900 font-medium">Dashboard</Link>
         {showActions && (
           <>
             <Link href={settingsHref} className="text-gray-600 hover:text-gray-900">
@@ -99,6 +103,24 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
             {/* [NAV] Use client-side sign-out */}
             <Button variant="destructive" onClick={handleSignOut}>
               Sign Out
+            </Button>
+          </>
+        )}
+      </div>
+
+      {/* Mobile Navigation */}
+      <div className="md:hidden flex items-center space-x-2">
+        {showActions && (
+          <>
+            <Link href={settingsHref} className="text-gray-600 hover:text-gray-900">
+              <Button variant="outline" size="sm" className="flex items-center p-2">
+                <Settings className="h-4 w-4" />
+                <span className="sr-only">Settings</span>
+              </Button>
+            </Link>
+            <Button variant="destructive" size="sm" onClick={handleSignOut} className="px-3">
+              <span className="sr-only">Sign Out</span>
+              <span className="text-xs">Out</span>
             </Button>
           </>
         )}
