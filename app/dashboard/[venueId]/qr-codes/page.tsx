@@ -8,11 +8,11 @@ export default async function QrCodesPage({ params }: { params: { venueId: strin
   const v = params.venueId;
   return (
     <>
-      <nav className="mb-4 flex items-center gap-2 text-sm breadcrumbs">
-  <Link href={venuePath(v)} className="text-gray-600 hover:text-gray-900">Home</Link>
-        <span className="text-gray-400">/</span>
+      <nav className="mb-4 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm breadcrumbs flex-wrap">
+        <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
+        <span className="text-gray-400 hidden sm:inline">/</span>
         <Link href={venuePath(v)} className="text-gray-600 hover:text-gray-900">Dashboard</Link>
-        <span className="text-gray-400">/</span>
+        <span className="text-gray-400 hidden sm:inline">/</span>
         <span className="text-gray-700 font-medium">QR Codes</span>
       </nav>
   <QRCodeClientWrapper venueId={v} venueName={''} />

@@ -35,8 +35,9 @@ export default function NavigationBreadcrumb({
     [params?.venueId, pathname, propVenueId]
   );
   
-  // [NAV] Determine dashboard link based on venueId - use relative links
-  const homeLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
+  // [NAV] Home should always link to main home page, dashboard link for breadcrumb navigation
+  const homeLink = '/';
+  const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
 
   console.log('[NAV] NavigationBreadcrumb', { venueId, homeLink, pathname });
 
@@ -71,18 +72,18 @@ export default function NavigationBreadcrumb({
   if ((isSignInPage || isSignUpPage) && !showBackButton) {
     return (
       <nav aria-label="Breadcrumb" className="mb-4">
-        <ol className="flex items-center gap-2 text-sm">
+        <ol className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-wrap">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href="/dashboard">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
+              <Link href={homeLink}>
                 <>
-                  <Home className="h-4 w-4" />
-                  <span className="hidden sm:inline">Home</span>
+                  <Home className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Home</span>
                 </>
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">→</li>
+          <li className="text-gray-400 hidden sm:inline">→</li>
           <li className="text-gray-700 font-medium">{pageTitle}</li>
         </ol>
       </nav>
@@ -93,18 +94,18 @@ export default function NavigationBreadcrumb({
   if (isDashboardRoot) {
     return (
       <nav aria-label="Breadcrumb" className="mb-4">
-        <ol className="flex items-center gap-2 text-sm">
+        <ol className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-wrap">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
               <Link href={homeLink}>
                 <>
-                  <Home className="h-4 w-4" />
-                  <span className="hidden sm:inline">Home</span>
+                  <Home className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Home</span>
                 </>
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">→</li>
+          <li className="text-gray-400 hidden sm:inline">→</li>
           <li className="text-gray-700 font-medium">Dashboard</li>
         </ol>
       </nav>
@@ -114,36 +115,36 @@ export default function NavigationBreadcrumb({
   // Subpages: Home → Dashboard (Back) → Current Page
   return (
     <nav aria-label="Breadcrumb" className="mb-4">
-      <ol className="flex items-center gap-2 text-sm">
+      <ol className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-wrap">
         <li>
-          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
             <Link href={homeLink}>
               <>
-                <Home className="h-4 w-4" />
-                <span className="hidden sm:inline">Home</span>
+                <Home className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Home</span>
               </>
             </Link>
           </Button>
         </li>
-        <li className="text-gray-400">→</li>
+        <li className="text-gray-400 hidden sm:inline">→</li>
         <li>
           {customBackPath ? (
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
               <Link href={customBackPath}>
                 <>
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">{customBackLabel || "Dashboard"}</span>
                 </>
               </Link>
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" onClick={() => window.history.back()} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
+            <Button variant="ghost" size="sm" onClick={() => window.history.back()} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
+              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">{customBackLabel || "Dashboard"}</span>
             </Button>
           )}
         </li>
-        <li className="text-gray-400">→</li>
+        <li className="text-gray-400 hidden sm:inline">→</li>
         <li className="text-gray-700 font-medium">{pageTitle}</li>
       </ol>
     </nav>

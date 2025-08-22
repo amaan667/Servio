@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import ClientNavBar from "@/components/ClientNavBar";
+
 import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -198,28 +198,21 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <ClientNavBar venueId={venueId} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ClientNavBar venueId={venueId} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-6">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
         
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
-            <p className="text-gray-600 mt-2">Manage menu items for {venueName} • {menuItems.length} total items</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Menu Management</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-2">Manage menu items for {venueName} • {menuItems.length} total items</p>
           </div>
         </div>
 
@@ -229,12 +222,13 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         </div>
 
         {/* Action Buttons - Positioned between upload and menu items */}
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               onClick={loadMenuItems}
               disabled={loading}
+              size="sm"
             >
               Refresh
             </Button>
@@ -243,6 +237,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 variant="destructive" 
                 onClick={handleClearMenu}
                 disabled={isClearing}
+                size="sm"
               >
                 <Trash className="h-4 w-4 mr-2" />
                 {isClearing ? 'Clearing...' : 'Clear Menu'}
@@ -251,7 +246,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
           </div>
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
-              <Button onClick={resetForm}>
+              <Button onClick={resetForm} size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Item
               </Button>
@@ -381,23 +376,23 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               return sortedCategories.map(([category, items]) => (
                 <div key={category} className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">{category}</h2>
-                    <span className="text-sm text-gray-500">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{category}</h2>
+                    <span className="text-xs sm:text-sm text-gray-500">{items.length} item{items.length !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="grid gap-4">
                     {items.map((item) => (
                       <Card key={item.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <h3 className="text-lg font-semibold">{item.name}</h3>
-                                <span className="text-lg font-bold text-green-600">
+                        <CardContent className="p-4 sm:p-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                <h3 className="text-base sm:text-lg font-semibold truncate">{item.name}</h3>
+                                <span className="text-base sm:text-lg font-bold text-green-600">
                                   £{item.price.toFixed(2)}
                                 </span>
                               </div>
                               {item.description && (
-                                <p className="text-gray-600 text-sm mb-2">{item.description}</p>
+                                <p className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-2">{item.description}</p>
                               )}
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center space-x-2">
@@ -405,17 +400,18 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                                     checked={item.available}
                                     onCheckedChange={(checked) => handleToggleAvailable(item.id, checked)}
                                   />
-                                  <span className="text-sm text-gray-600">
+                                  <span className="text-xs sm:text-sm text-gray-600">
                                     {item.available ? 'Available' : 'Unavailable'}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex space-x-2">
+                            <div className="flex space-x-2 self-end sm:self-auto">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => openEditModal(item)}
+                                className="p-2"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -423,6 +419,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleDelete(item.id)}
+                                className="p-2"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
