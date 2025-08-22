@@ -12,7 +12,7 @@ function SignInPageContent() {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
-      const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+      const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
       console.log('[AUTH] Starting Google OAuth redirect to:', redirectTo);
       
       const { error } = await supabase.auth.signInWithOAuth({

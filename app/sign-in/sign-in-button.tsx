@@ -8,7 +8,7 @@ export default function SignInButton() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+        redirectTo: 'https://servio-production.up.railway.app/auth/callback',
         queryParams: { prompt: 'select_account' }
       }
     });
