@@ -370,7 +370,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 if (priorityB >= 0) return 1;
                 
                 // If neither has priority, sort alphabetically
-                return catA.localeCompare(catB);
+                return catA.toLowerCase() < catB.toLowerCase() ? -1 : 1;
               });
 
               return sortedCategories.map(([category, items]) => (
