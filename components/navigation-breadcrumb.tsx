@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home, ChevronRight } from "lucide-react";
 import Link from 'next/link';
 import { useMemo } from 'react';
 
@@ -10,7 +10,7 @@ interface NavigationBreadcrumbProps {
   customBackPath?: string;
   customBackLabel?: string;
   showBackButton?: boolean;
-  venueId?: string; // Add venueId prop
+  venueId?: string;
 }
 
 function extractVenueId(pathname: string | null) {
@@ -29,13 +29,13 @@ export default function NavigationBreadcrumb({
   const pathname = pathnameRaw || '';
   const params = useParams() as { venueId?: string };
   
-  // [NAV] Extract venueId from params or pathname, fallback to prop
+  // Extract venueId from params or pathname, fallback to prop
   const venueId = useMemo(
     () => params?.venueId ?? extractVenueId(pathname) ?? propVenueId,
     [params?.venueId, pathname, propVenueId]
   );
   
-  // [NAV] Home should always link to main home page, dashboard link for breadcrumb navigation
+  // Home should always link to main home page, dashboard link for breadcrumb navigation
   const homeLink = '/';
   const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
 
@@ -67,24 +67,30 @@ export default function NavigationBreadcrumb({
   const isDashboardRoot = /^\/dashboard\/(?:[^/]+)\/?$/.test(pathname);
   const isSignInPage = pathname.includes("/sign-in");
   const isSignUpPage = pathname.includes("/sign-up");
+  const isHomePage = pathname === "/";
+
+  // Don't show breadcrumbs on home page
+  if (isHomePage) {
+    return null;
+  }
 
   // For sign-in/sign-up pages: Home → Sign In/Sign Up (current)
   if ((isSignInPage || isSignUpPage) && !showBackButton) {
     return (
-      <nav aria-label="Breadcrumb" className="mb-4">
-        <ol className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-wrap">
+      <nav aria-label="Breadcrumb" className="mb-6">
+        <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
               <Link href={homeLink}>
-                <>
-                  <Home className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden xs:inline">Home</span>
-                </>
+                <Home className="h-4 w-4" />
+                <span>Home</span>
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400 hidden sm:inline">→</li>
-          <li className="text-gray-700 font-medium">{pageTitle}</li>
+          <li className="text-gray-400">
+            <ChevronRight className="h-4 w-4" />
+          </li>
+          <li className="text-gray-900 font-medium">{pageTitle}</li>
         </ol>
       </nav>
     );
@@ -93,20 +99,20 @@ export default function NavigationBreadcrumb({
   // Dashboard root: Home → Dashboard (current)
   if (isDashboardRoot) {
     return (
-      <nav aria-label="Breadcrumb" className="mb-4">
-        <ol className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-wrap">
+      <nav aria-label="Breadcrumb" className="mb-6">
+        <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
               <Link href={homeLink}>
-                <>
-                  <Home className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden xs:inline">Home</span>
-                </>
+                <Home className="h-4 w-4" />
+                <span>Home</span>
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400 hidden sm:inline">→</li>
-          <li className="text-gray-700 font-medium">Dashboard</li>
+          <li className="text-gray-400">
+            <ChevronRight className="h-4 w-4" />
+          </li>
+          <li className="text-gray-900 font-medium">Dashboard</li>
         </ol>
       </nav>
     );
@@ -114,28 +120,30 @@ export default function NavigationBreadcrumb({
 
   // Subpages: Home → Dashboard → Current Page
   return (
-    <nav aria-label="Breadcrumb" className="mb-4">
-      <ol className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-wrap">
+    <nav aria-label="Breadcrumb" className="mb-6">
+      <ol className="flex items-center gap-2 text-sm">
         <li>
-          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
             <Link href={homeLink}>
-              <>
-                <Home className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden xs:inline">Home</span>
-              </>
+              <Home className="h-4 w-4" />
+              <span>Home</span>
             </Link>
           </Button>
         </li>
-        <li className="text-gray-400 hidden sm:inline">→</li>
+        <li className="text-gray-400">
+          <ChevronRight className="h-4 w-4" />
+        </li>
         <li>
-          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900 h-8 px-2">
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
             <Link href={dashboardLink}>
-              <span className="hidden xs:inline">Dashboard</span>
+              <span>Dashboard</span>
             </Link>
           </Button>
         </li>
-        <li className="text-gray-400 hidden sm:inline">→</li>
-        <li className="text-gray-700 font-medium">{pageTitle}</li>
+        <li className="text-gray-400">
+          <ChevronRight className="h-4 w-4" />
+        </li>
+        <li className="text-gray-900 font-medium">{pageTitle}</li>
       </ol>
     </nav>
   );
