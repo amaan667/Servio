@@ -209,13 +209,13 @@ export async function signInUser(email: string, password: string) {
 
 export async function signInWithGoogle() {
   const supabase = supabaseBrowser();
-  const base = process.env.NEXT_PUBLIC_APP_URL!;
-  console.log('[AUTH] starting oauth with redirect:', `${base}/auth/callback`);
+  const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
+  console.log('[AUTH] starting oauth with redirect:', redirectTo);
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${base}/auth/callback`, // must be EXACT and allowed in Supabase dashboard
+      redirectTo, // must be EXACT and allowed in Supabase dashboard
       queryParams: { prompt: 'select_account' },
     },
   });
