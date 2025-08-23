@@ -75,7 +75,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       // Check Supabase configuration first
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        throw new Error('Supabase configuration is missing');
+        setError('Supabase configuration is missing');
+        setLoading(false);
+        return;
       }
       
       if (!venueNameProp) {
@@ -92,7 +94,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           return;
         }
         
-        setVenueName(venueData?.name || '');
+        if (!venueData) {
+          setError('Venue not found');
+          setLoading(false);
+          return;
+        }
+        
+        setVenueName(venueData.name || '');
       }
       
       // Use simple date-based window instead of timezone-aware
@@ -154,12 +162,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         return;
       }
 
-      if (liveData) {
-        setOrders(liveData as Order[]);
-      }
-      if (allData) {
-        setAllOrders(allData as Order[]);
-      }
+      // Set orders with null checks
+      setOrders((liveData || []) as Order[]);
+      setAllOrders((allData || []) as Order[]);
+      
       if (historyData) {
         const history = historyData as Order[];
         setHistoryOrders(history);
@@ -174,6 +180,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           return acc;
         }, {});
         setGroupedHistoryOrders(grouped);
+      } else {
+        setHistoryOrders([]);
+        setGroupedHistoryOrders({});
       }
       
       setLoading(false);
@@ -291,13 +300,34 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error updating order status:', errorData);
-        setError(`Failed to update order status: ${errorData.error || 'Unknown error'}`);
+        let errorMessage = 'Unknown error';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || 'Unknown error';
+        } catch (parseError) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        console.error('Error updating order status:', errorMessage);
+        setError(`Failed to update order status: ${errorMessage}`);
         return;
       }
 
-      const { order } = await response.json();
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        console.error('Error parsing response:', parseError);
+        setError('Failed to parse server response');
+        return;
+      }
+
+      const { order } = responseData;
+      
+      if (!order) {
+        console.error('No order data in response');
+        setError('No order data received from server');
+        return;
+      }
       
       // Update local state with the returned order data
       setOrders(prev => prev.map(o => 
