@@ -45,6 +45,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       // Don't set hasError for temporary errors, let them resolve
       return;
     }
+
+    // For Supabase configuration errors, we want to show the error state
+    // so the user can see the configuration screen
+    if (error.message.includes('Supabase') || error.message.includes('environment variables')) {
+      console.log('[ERROR_BOUNDARY] Setting error state for Supabase configuration issue');
+      this.setState({ hasError: true, error });
+      return;
+    }
   }
 
   render() {
