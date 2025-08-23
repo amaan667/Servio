@@ -1,8 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { logger } from "./logger";
-import { supabaseBrowser } from "./supabase-browser";
 
-// Environment variables
+// Environment variables - ALWAYS use these exact names
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -14,17 +13,40 @@ console.log("Supabase environment check:", {
   key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : "undefined"
 });
 
-// Validate environment variables
+// Create a mock client that will show a helpful error message
+const createMockClient = () => ({
+  auth: {
+    getSession: async () => ({ data: { session: null }, error: new Error("Supabase not configured") }),
+    signInWithOAuth: async () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+    signUp: async () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+    signOut: async () => ({ error: new Error("Please configure Supabase environment variables") })
+  },
+  from: () => ({
+    select: () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+    insert: () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+    update: () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+    delete: () => ({ data: null, error: new Error("Please configure Supabase environment variables") })
+  })
+});
+
+// Validate environment variables and create appropriate client
+let supabaseClient: any;
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error("❌ Missing Supabase environment variables:", {
     NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
   });
-  throw new Error("Missing Supabase environment variables");
+  
+  console.warn("⚠️ Using mock Supabase client - please configure environment variables");
+  supabaseClient = createMockClient();
+} else {
+  // Create single Supabase client instance with proper configuration
+  supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
 }
 
-// Create single Supabase client instance with proper configuration
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+// Export the standardized client
+export const supabase = supabaseClient;
 
 console.log("Supabase client created successfully");
 
@@ -208,14 +230,14 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  const supabase = supabaseBrowser();
-  const base = process.env.NEXT_PUBLIC_APP_URL!;
-  console.log('[AUTH] starting oauth with redirect:', `${base}/auth/callback`);
+  const supabase = supabaseClient;
+  const redirectTo = 'https://servio-production.up.railway.app';
+  console.log('[AUTH] starting oauth with redirect:', redirectTo);
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${base}/auth/callback`, // must be EXACT and allowed in Supabase dashboard
+      redirectTo, // must be EXACT and allowed in Supabase dashboard
       queryParams: { prompt: 'select_account' },
     },
   });

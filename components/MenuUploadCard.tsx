@@ -80,37 +80,8 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         }
         
       } else {
-        // For text files, read and send directly
-        const text = await file.text();
-        
-        const response = await fetch('/api/menu/process-text', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            venue_id: venueId,
-            filename: file.name,
-            text: text
-          })
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Text processing failed: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.ok) {
-          toast({
-            title: 'Menu imported successfully',
-            description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
-          });
-          onSuccess?.();
-        } else {
-          throw new Error(`Text processing failed: ${result.error}`);
-        }
+        // For text files, temporarily disabled due to build issues
+        throw new Error('Text file processing is temporarily unavailable. Please use PDF files or add menu items manually.');
       }
       
     } catch (error: any) {

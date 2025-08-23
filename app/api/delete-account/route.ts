@@ -1,36 +1,55 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
-export async function POST(req: NextRequest) {
-  const { userId, venueId } = await req.json();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+export const runtime = 'nodejs';
 
-  if (!serviceRoleKey || !supabaseUrl) {
-    return NextResponse.json(
-      { success: false, message: "Missing Supabase config" },
-      { status: 500 },
-    );
-  }
-
-  const admin = createClient(supabaseUrl, serviceRoleKey);
-
+export async function POST(req: Request) {
   try {
-    // Delete venue and related data
-    if (venueId) {
-      await admin.from("venues").delete().eq("venue_id", venueId);
-      // Optionally: delete related menu_items, orders, etc.
+    const { userId } = await req.json();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: "User ID required" },
+        { status: 400 }
+      );
     }
-    // Delete user from Auth
-    if (userId) {
-      const { error } = await admin.auth.admin.deleteUser(userId);
-      if (error) throw error;
+
+    // Delete user data from all related tables
+    const tables = [
+      'order_items',
+      'orders', 
+      'menu_items',
+      'venues',
+      'menu_uploads'
+    ];
+
+    for (const table of tables) {
+      const { error } = await supabaseAdmin
+        .from(table)
+        .delete()
+        .eq('owner_id', userId);
+      
+      if (error) {
+        console.error(`Error deleting from ${table}:`, error);
+      }
     }
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
+
+    // Delete the user account
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    
+    if (deleteError) {
+      console.error('Error deleting user:', deleteError);
+      return NextResponse.json(
+        { success: false, message: "Failed to delete user account" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, message: "Account deleted successfully" });
+  } catch (error) {
+    console.error('Delete account error:', error);
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to delete account" },
-      { status: 500 },
+      { success: false, message: "An unexpected error occurred" },
+      { status: 500 }
     );
   }
 }

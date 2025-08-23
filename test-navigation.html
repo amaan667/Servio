@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servio Navigation System Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9fafb;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .breadcrumb a {
+            color: #6b7280;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .breadcrumb a:hover {
+            color: #374151;
+        }
+        .breadcrumb .current {
+            font-weight: 600;
+            color: #111827;
+        }
+        .breadcrumb .separator {
+            color: #9ca3af;
+            transform: rotate(180deg);
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 4px;
+        }
+        .nav-button {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #6b7280;
+        }
+        .nav-button:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+        .page-description {
+            color: #6b7280;
+            margin: 4px 0 0 0;
+        }
+        .demo-section {
+            margin: 32px 0;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+        .demo-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #111827;
+        }
+        .page-example {
+            background: white;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 12px 0;
+            border: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Servio Navigation System - Modern SaaS Standards</h1>
+        
+        <div class="demo-section">
+            <div class="demo-title">1. Universal Breadcrumbs with ← Separators</div>
+            
+            <div class="page-example">
+                <div class="breadcrumb">
+                    <a href="#"><span>🏠</span> Home</a>
+                    <span class="separator">←</span>
+                    <a href="#">Dashboard</a>
+                    <span class="separator">←</span>
+                    <span class="current">Live Orders</span>
+                </div>
+                <div class="header">
+                    <div class="nav-buttons">
+                        <button class="nav-button" title="Go back">←</button>
+                        <button class="nav-button" title="Go forward" disabled>→</button>
+                    </div>
+                    <div>
+                        <h2 class="page-title">Live Orders</h2>
+                        <p class="page-description">Monitor and manage real-time orders</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-example">
+                <div class="breadcrumb">
+                    <a href="#"><span>🏠</span> Home</a>
+                    <span class="separator">←</span>
+                    <a href="#">Dashboard</a>
+                    <span class="separator">←</span>
+                    <span class="current">Settings</span>
+                </div>
+                <div class="header">
+                    <div class="nav-buttons">
+                        <button class="nav-button" title="Go back">←</button>
+                        <button class="nav-button" title="Go forward" disabled>→</button>
+                    </div>
+                    <div>
+                        <h2 class="page-title">Settings</h2>
+                        <p class="page-description">Manage your account and venue settings</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-example">
+                <div class="breadcrumb">
+                    <a href="#"><span>🏠</span> Home</a>
+                    <span class="separator">←</span>
+                    <a href="#">Dashboard</a>
+                    <span class="separator">←</span>
+                    <span class="current">Analytics</span>
+                </div>
+                <div class="header">
+                    <div class="nav-buttons">
+                        <button class="nav-button" title="Go back">←</button>
+                        <button class="nav-button" title="Go forward" disabled>→</button>
+                    </div>
+                    <div>
+                        <h2 class="page-title">Analytics</h2>
+                        <p class="page-description">View insights and performance metrics</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">2. Back & Forward Navigation</div>
+            <p>The back (←) and forward (→) buttons are positioned in the top-left of each page header, next to the page title. They provide browser-like navigation with the following behavior:</p>
+            <ul>
+                <li><strong>Back button:</strong> Navigates to the previous page in history, or defaults to Dashboard if no history exists</li>
+                <li><strong>Forward button:</strong> Navigates to the next page in history if available, otherwise remains disabled/greyed out</li>
+                <li><strong>Styling:</strong> Subtle, clean design that matches modern SaaS UI standards</li>
+                <li><strong>Consistency:</strong> Appears across all pages with consistent positioning and behavior</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">3. Implementation Details</div>
+            <p><strong>Components Created:</strong></p>
+            <ul>
+                <li><code>UniversalBreadcrumbs.tsx</code> - Dynamic breadcrumb system with ← separators</li>
+                <li><code>BackForwardNav.tsx</code> - Browser-like navigation with history management</li>
+                <li><code>PageHeader.tsx</code> - Combined header component with breadcrumbs and navigation</li>
+            </ul>
+            
+            <p><strong>Pages Updated:</strong></p>
+            <ul>
+                <li>Dashboard (main)</li>
+                <li>Live Orders</li>
+                <li>Settings</li>
+                <li>Analytics</li>
+                <li>Feedback</li>
+                <li>Staff Management</li>
+                <li>QR Codes</li>
+                <li>Menu Management</li>
+                <li>Menu</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">4. Key Features</div>
+            <ul>
+                <li>✅ Universal breadcrumb trail with backward arrows (←) instead of traditional separators</li>
+                <li>✅ Current page highlighted (bold/distinct color)</li>
+                <li>✅ Applied across all pages (Dashboard, Live Orders, History, Feedback, Settings, etc.)</li>
+                <li>✅ Back & Forward buttons in top-left of page header</li>
+                <li>✅ Dynamic button states based on navigation history</li>
+                <li>✅ Consistent styling matching modern SaaS standards</li>
+                <li>✅ Seamless user experience with proper fallbacks</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

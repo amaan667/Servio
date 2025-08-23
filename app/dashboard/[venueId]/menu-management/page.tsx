@@ -1,12 +1,18 @@
-import ClientNavBar from '@/components/ClientNavBar';
 import MenuManagementClient from './MenuManagementClient';
+import PageHeader from '@/components/PageHeader';
 
 export default function MenuManagementPage({ params }: { params: { venueId: string } }) {
   const venueId = params.venueId;
   return (
-    <>
-      <ClientNavBar venueId={venueId} />
-      <MenuManagementClient venueId={venueId} />
-    </>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageHeader
+          title="Menu Management"
+          description="Upload and manage your menu files"
+          venueId={venueId}
+        />
+        <MenuManagementClient venueId={venueId} />
+      </div>
+    </div>
   );
 }

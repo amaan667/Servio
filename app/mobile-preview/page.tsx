@@ -30,7 +30,7 @@ export default function MobilePreview() {
                   alt="Servio Logo"
                   width={6144}
                   height={2304}
-                  className="h-[384px] w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-md"
+                  className="h-[480px] w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-lg"
                   priority
                 />
               </a>

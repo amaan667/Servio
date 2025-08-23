@@ -5,8 +5,8 @@ export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { log } from '@/lib/debug';
-import ClientNavBar from '@/components/ClientNavBar';
 import StaffClient from './staff-client';
+import PageHeader from '@/components/PageHeader';
 
 export default async function StaffPage({
   params,
@@ -33,16 +33,12 @@ export default async function StaffPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ClientNavBar venueId={params.venueId} />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Staff Management for {venue.name}
-          </h1>
-          <p className="text-lg text-muted-foreground mt-2">
-            Manage your team and staff permissions
-          </p>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageHeader
+          title={`Staff Management for ${venue.name}`}
+          description="Manage your team and staff permissions"
+          venueId={params.venueId}
+        />
         
         <StaffClient venueId={params.venueId} />
       </div>

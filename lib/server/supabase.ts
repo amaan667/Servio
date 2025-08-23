@@ -1,6 +1,19 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
+// Environment variables - ALWAYS use these exact names
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("❌ Missing Supabase server environment variables:", {
+    NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
+  });
+  throw new Error("Missing Supabase server configuration. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.");
+}
+
 // Avoid throwing at import-time to keep webpack builds stable. We rely on
 // runtime environment correctness and server route handlers for validation.
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
@@ -20,8 +33,8 @@ const isRouteHandler = () => {
 export const supabaseServer = () => {
   const cookieStore = cookies();
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name) {

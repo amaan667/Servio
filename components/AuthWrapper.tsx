@@ -1,12 +1,13 @@
-use client;
+'use client';
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { session, isLoading: loading } = useAuth();
@@ -20,18 +21,31 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     : false;
 
   const isAuthCallback = pathname === "/auth/callback";
+  const isDashboardIndex = pathname === "/dashboard";
 
   useEffect(() => {
-    if (loading) return; // Wait for auth state
+    if (loading || isChecking) return; // Wait for auth state and prevent concurrent checks
+
+    console.log('[AUTH_WRAPPER] Auth state changed:', { 
+      hasSession: !!session, 
+      pathname, 
+      isPublicRoute, 
+      isAuthCallback,
+      isDashboardIndex 
+    });
 
     // If unauthenticated and attempting to access a protected route -> redirect
     if (!session && !isPublicRoute && !isAuthCallback) {
+      console.log('[AUTH_WRAPPER] No session, redirecting to sign-in');
       router.replace("/sign-in");
       return;
     }
 
     // If authenticated, verify venue/profile unless already on completion or callback page
-    if (session && !isAuthCallback && pathname !== "/complete-profile") {
+    if (session && !isAuthCallback && pathname !== "/complete-profile" && !isDashboardIndex) {
+      console.log('[AUTH_WRAPPER] Checking profile completion for user:', session.user.id);
+      setIsChecking(true);
+      
       const checkProfile = async () => {
         try {
           const { data, error } = await supabase
@@ -41,29 +55,48 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
             .maybeSingle();
 
           if (error || !data) {
+            console.log('[AUTH_WRAPPER] No venue found, profile incomplete');
             setProfileComplete(false);
             if (pathname !== "/complete-profile") {
               router.replace("/complete-profile");
             }
           } else {
+            console.log('[AUTH_WRAPPER] Venue found, profile complete');
             setProfileComplete(true);
           }
-        } catch {
+        } catch (error) {
+          console.error('[AUTH_WRAPPER] Error checking profile:', error);
           setProfileComplete(false);
           if (pathname !== "/complete-profile") {
             router.replace("/complete-profile");
           }
+        } finally {
+          setIsChecking(false);
         }
       };
       checkProfile();
+    } else if (session && isDashboardIndex) {
+      // For dashboard index, let the dashboard page handle the routing
+      console.log('[AUTH_WRAPPER] Dashboard index detected, letting dashboard page handle routing');
+      setProfileComplete(true);
     }
-  }, [session, loading, pathname, isPublicRoute, isAuthCallback, router]);
+  }, [session, loading, pathname, isPublicRoute, isAuthCallback, isDashboardIndex, router, isChecking]);
 
   // Immediately allow rendering for public routes & the auth callback route
-  if (isPublicRoute || isAuthCallback) return <>{children}</>;
+  if (isPublicRoute || isAuthCallback) {
+    console.log('[AUTH_WRAPPER] Rendering public route or auth callback');
+    return <>{children}</>;
+  }
+
+  // For dashboard index, let it handle its own loading state
+  if (isDashboardIndex) {
+    console.log('[AUTH_WRAPPER] Rendering dashboard index');
+    return <>{children}</>;
+  }
 
   // Show loading state while determining auth or profile status
-  if (loading || !session) {
+  if (loading || !session || isChecking) {
+    console.log('[AUTH_WRAPPER] Showing loading state:', { loading, hasSession: !!session, isChecking });
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
@@ -72,6 +105,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   }
 
   if (profileComplete === false && pathname !== "/complete-profile") {
+    console.log('[AUTH_WRAPPER] Profile incomplete, showing loading');
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
@@ -79,5 +113,6 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     );
   }
 
+  console.log('[AUTH_WRAPPER] Rendering protected content');
   return <>{children}</>;
 }

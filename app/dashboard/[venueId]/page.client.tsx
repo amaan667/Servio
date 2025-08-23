@@ -5,16 +5,17 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
-import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { todayWindowForTZ } from "@/lib/time";
+import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, AlertCircle, RefreshCw } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import PageHeader from "@/components/PageHeader";
+
 
 export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0, venue: initialVenue }: { venueId: string; userId: string; activeTables?: number; venue?: any }) {
   const [venue, setVenue] = useState<any>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue); // Start with loading false if we have initial venue data
   const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, activeTables: activeTablesFromSSR, menuItems: 0, unpaid: 0 });
   const [todayWindow, setTodayWindow] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -22,10 +23,23 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       try {
         console.log('[DASHBOARD] Loading venue and stats for venueId:', venueId);
         
+        // Check Supabase configuration first
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          setError('Supabase configuration is missing');
+          setLoading(false);
+          return;
+        }
+        
         // Check if we already have venue data from SSR
         if (venue && !loading) {
           console.log('[DASHBOARD] Venue already loaded from SSR, setting up time window and stats');
-          const window = todayWindowForTZ(venue.timezone || 'Europe/London');
+          const now = new Date();
+          const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+          const window = {
+            startUtcISO: startOfDay.toISOString(),
+            endUtcISO: endOfDay.toISOString(),
+          };
           setTodayWindow(window);
           await loadStats(venue.venue_id, window);
           return;
@@ -40,19 +54,33 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         
         console.log('[DASHBOARD] Venue query result:', { hasData: !!venueData, error: error?.message });
         
-        if (!error && venueData) {
-          setVenue(venueData);
-          const window = todayWindowForTZ(venueData.timezone || 'Europe/London');
-          setTodayWindow(window);
-          await loadStats(venueData.venue_id, window);
-        } else {
+        if (error) {
           console.error('[DASHBOARD] Failed to load venue:', error);
-          // Set loading to false even on error to prevent infinite loading
+          setError(`Failed to load venue: ${error.message}`);
           setLoading(false);
+          return;
         }
+        
+        if (!venueData) {
+          console.error('[DASHBOARD] No venue data returned');
+          setError('Venue not found');
+          setLoading(false);
+          return;
+        }
+        
+        setVenue(venueData);
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+        const window = {
+          startUtcISO: startOfDay.toISOString(),
+          endUtcISO: endOfDay.toISOString(),
+        };
+        setTodayWindow(window);
+        await loadStats(venueData.venue_id, window);
       } catch (error) {
         console.error('[DASHBOARD] Unexpected error loading venue:', error);
-        // Set loading to false even on error to prevent infinite loading
+        setError(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         setLoading(false);
       }
     };
@@ -61,7 +89,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     const timeoutId = setTimeout(() => {
       console.warn('[DASHBOARD] Loading timeout reached, forcing loading to false');
       setLoading(false);
-    }, 10000); // 10 second timeout
+    }, 15000); // 15 second timeout
 
     loadVenueAndStats();
 
@@ -81,7 +109,13 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
   useEffect(() => {
     if (venue && !todayWindow) {
       console.log('[DASHBOARD] Setting up time window for venue');
-      const window = todayWindowForTZ(venue.timezone || 'Europe/London');
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+      const window = {
+        startUtcISO: startOfDay.toISOString(),
+        endUtcISO: endOfDay.toISOString(),
+      };
       setTodayWindow(window);
       loadStats(venue.venue_id, window);
     }
@@ -96,49 +130,67 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
     console.log('[DASHBOARD] Setting up real-time subscription with window:', todayWindow);
     
-    const channel = supabase
-      .channel('dashboard-orders')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'orders',
-          filter: `venue_id=eq.${venueId}`
-        }, 
-        (payload) => {
-          console.log('Dashboard order change:', payload);
-          
-          // Get the order date from the payload with proper type checking
-          const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
-          if (!orderCreatedAt) {
-            console.log('No created_at found in payload, ignoring');
-            return;
+    let channel: any = null;
+    
+    try {
+      channel = supabase
+        .channel(`dashboard-orders-${venueId}`)
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'orders',
+            filter: `venue_id=eq.${venueId}`
+          }, 
+          (payload) => {
+            try {
+              console.log('Dashboard order change:', payload);
+              
+              // Get the order date from the payload with proper type checking
+              const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
+              if (!orderCreatedAt) {
+                console.log('No created_at found in payload, ignoring');
+                return;
+              }
+              
+              // Only refresh stats if the order is within today's window
+              const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
+              
+              console.log('[DASHBOARD] Order change analysis:', {
+                orderCreatedAt,
+                windowStart: todayWindow.startUtcISO,
+                windowEnd: todayWindow.endUtcISO,
+                isInTodayWindow,
+                orderId: (payload.new as any)?.id || (payload.old as any)?.id
+              });
+              
+              if (isInTodayWindow) {
+                console.log('Refreshing stats for today\'s order change');
+                loadStats(venue.venue_id, todayWindow);
+              } else {
+                console.log('Ignoring historical order change, not refreshing stats');
+              }
+            } catch (error) {
+              console.error('[DASHBOARD] Error in subscription callback:', error);
+            }
           }
-          
-          // Only refresh stats if the order is within today's window
-          const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
-          
-          console.log('[DASHBOARD] Order change analysis:', {
-            orderCreatedAt,
-            windowStart: todayWindow.startUtcISO,
-            windowEnd: todayWindow.endUtcISO,
-            isInTodayWindow,
-            orderId: (payload.new as any)?.id || (payload.old as any)?.id
-          });
-          
-          if (isInTodayWindow) {
-            console.log('Refreshing stats for today\'s order change');
-            loadStats(venue.venue_id, todayWindow);
-          } else {
-            console.log('Ignoring historical order change, not refreshing stats');
-          }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe((status) => {
+          console.log('[DASHBOARD] Subscription status:', status);
+        });
+    } catch (error) {
+      console.error('[DASHBOARD] Error setting up subscription:', error);
+    }
 
     return () => {
-      console.log('[DASHBOARD] Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
+      if (channel) {
+        console.log('[DASHBOARD] Cleaning up real-time subscription');
+        try {
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.error('[DASHBOARD] Error removing channel:', error);
+        }
+      }
     };
   }, [venueId, venue?.venue_id, todayWindow?.startUtcISO]); // Use specific properties instead of objects to prevent unnecessary re-runs
 
@@ -146,20 +198,32 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     try {
       console.log('[DASHBOARD] Loading stats for today:', window.startUtcISO, 'to', window.endUtcISO);
 
-      const { data: orders } = await supabase
+      // Load orders with error handling
+      const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select("total_amount, table_number, status, payment_status, created_at, items")
         .eq("venue_id", vId)
         .gte("created_at", window.startUtcISO)
         .lt("created_at", window.endUtcISO);
 
+      if (ordersError) {
+        console.error('[DASHBOARD] Error loading orders:', ordersError);
+        // Continue with empty orders array
+      }
+
       console.log('[DASHBOARD] Found orders for today:', orders?.length || 0);
 
-      const { data: menuItems } = await supabase
+      // Load menu items with error handling
+      const { data: menuItems, error: menuError } = await supabase
         .from("menu_items")
         .select("id")
         .eq("venue_id", vId)
         .eq("available", true);
+
+      if (menuError) {
+        console.error('[DASHBOARD] Error loading menu items:', menuError);
+        // Continue with empty menu items array
+      }
 
       // Calculate active tables (orders that are not served or paid AND created today)
       const todayOrders = (orders ?? []).filter((o: any) => {
@@ -182,19 +246,24 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       // Calculate revenue from today's paid orders only (robust amount fallback)
       const todayRevenue = (orders ?? []).reduce((sum: number, order: any) => {
-        let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
-        if (!Number.isFinite(amount) || amount <= 0) {
-          if (Array.isArray(order.items)) {
-            amount = order.items.reduce((s: number, it: any) => {
-              const unit = Number(it.unit_price ?? it.price ?? 0);
-              const qty = Number(it.quantity ?? it.qty ?? 0);
-              return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
-            }, 0);
+        try {
+          let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
+          if (!Number.isFinite(amount) || amount <= 0) {
+            if (Array.isArray(order.items)) {
+              amount = order.items.reduce((s: number, it: any) => {
+                const unit = Number(it.unit_price ?? it.price ?? 0);
+                const qty = Number(it.quantity ?? it.qty ?? 0);
+                return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
+              }, 0);
+            }
           }
+          const ps = String(order.payment_status ?? '').toLowerCase();
+          const st = String(order.status ?? '').toLowerCase();
+          return (ps === 'paid' || st === 'paid') ? sum + amount : sum;
+        } catch (error) {
+          console.error('[DASHBOARD] Error calculating order amount:', error, order);
+          return sum;
         }
-        const ps = String(order.payment_status ?? '').toLowerCase();
-        const st = String(order.status ?? '').toLowerCase();
-        return (ps === 'paid' || st === 'paid') ? sum + amount : sum;
       }, 0);
 
       setStats({
@@ -206,6 +275,14 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       });
     } catch (error) {
       console.error("Error loading stats:", error);
+      // Set default stats on error to prevent UI from breaking
+      setStats({
+        todayOrders: 0,
+        revenue: 0,
+        activeTables: 0,
+        menuItems: 0,
+        unpaid: 0,
+      });
     }
   };
 
@@ -217,6 +294,29 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
           <p className="mt-2 text-muted-foreground">Loading venue dashboard...</p>
           <p className="mt-1 text-xs text-gray-500">Venue ID: {venueId}</p>
           {venue && <p className="mt-1 text-xs text-gray-500">Venue: {venue.name}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Dashboard</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button 
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              window.location.reload();
+            }}
+            className="flex items-center space-x-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Try Again</span>
+          </Button>
         </div>
       </div>
     );
@@ -249,15 +349,12 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Simple breadcrumb for main dashboard */}
-        <NavigationBreadcrumb venueId={venueId} />
-        
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            Welcome back, Manager!
-          </h2>
-          <p className="text-muted-foreground">Here's what's happening at {venue?.name || "your venue"} today</p>
-        </div>
+        <PageHeader
+          title="Welcome back, Manager!"
+          description={`Here's what's happening at ${venue?.name || "your venue"} today`}
+          venueId={venueId}
+          showBackForward={false}
+        />
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

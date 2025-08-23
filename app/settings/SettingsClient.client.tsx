@@ -14,8 +14,6 @@ interface Venue {
   name: string;
 }
 
-
-
 interface User {
   id: string;
   email?: string;
@@ -25,7 +23,6 @@ interface SettingsClientProps {
   user: User;
   venues: Venue[];
 }
-
 
 export default function SettingsClient({ user, venues }: SettingsClientProps) {
   const [loading, setLoading] = useState(false);
@@ -73,10 +70,18 @@ export default function SettingsClient({ user, venues }: SettingsClientProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* NavBar will be rendered in the server page */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* ...existing code for settings UI... */}
+    <div className="space-y-6">
+      {/* Settings content will be rendered here */}
+      <div className="grid gap-6">
+        {/* Placeholder for settings content */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">Settings content will be displayed here.</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
