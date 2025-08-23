@@ -1,4 +1,4 @@
-import ClientNavBar from '@/components/ClientNavBar';
+import UniversalHeader from '@/components/UniversalHeader';
 
 export default function VenueDashboardLayout({
   children,
@@ -9,7 +9,7 @@ export default function VenueDashboardLayout({
 }) {
   return (
     <>
-      <ClientNavBar venueId={params.venueId} />
+      <UniversalHeader venueId={params.venueId} />
       {children}
     </>
   );
