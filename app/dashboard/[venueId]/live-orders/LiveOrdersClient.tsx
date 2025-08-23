@@ -277,23 +277,29 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status })
-        .eq('id', orderId)
-        .eq('venue_id', venueId);
+      const response = await fetch(`/api/dashboard/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
 
-      if (error) {
-        console.error('Error updating order status:', error);
-        setError(`Failed to update order status: ${error.message}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error updating order status:', errorData);
+        setError(`Failed to update order status: ${errorData.error || 'Unknown error'}`);
         return;
       }
 
-      setOrders(prev => prev.map(order => 
-        order.id === orderId ? { ...order, status } : order
+      const { order } = await response.json();
+      
+      // Update local state with the returned order data
+      setOrders(prev => prev.map(o => 
+        o.id === orderId ? { ...o, status: order.status, payment_status: order.payment_status } : o
       ));
-      setAllOrders(prev => prev.map(order => 
-        order.id === orderId ? { ...order, status } : order
+      setAllOrders(prev => prev.map(o => 
+        o.id === orderId ? { ...o, status: order.status, payment_status: order.payment_status } : o
       ));
     } catch (err) {
       console.error('Unexpected error updating order status:', err);
@@ -345,7 +351,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'preparing': return 'bg-blue-100 text-blue-800';
-      case 'served': return 'bg-green-100 text-green-800';
+      case 'served': 
+      case 'delivered': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -355,6 +362,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       case 'paid': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Pending';
+      case 'preparing': return 'Preparing';
+      case 'served': 
+      case 'delivered': return 'Served';
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -384,7 +401,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           </div>
           <div className="flex items-center space-x-2">
             <Badge className={getStatusColor(order.status)}>
-              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              {getStatusDisplay(order.status)}
             </Badge>
             {order.payment_status && (
               <Badge className={getPaymentStatusColor(order.payment_status)}>
@@ -418,7 +435,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 Start Preparing
               </Button>
             )}
-            {order.status === 'preparing' && (
+            {(order.status === 'preparing' || order.status === 'confirmed') && (
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'served')}
