@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import OpenAI from 'openai';
 import { Storage } from '@google-cloud/storage';
+import { errorLogger } from '@/lib/error-logger';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const startTime = Date.now();
   console.log('[DEBUG-ALL] Starting comprehensive system check...');
   
   const results = {

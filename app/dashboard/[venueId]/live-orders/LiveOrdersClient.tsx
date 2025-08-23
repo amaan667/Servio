@@ -12,6 +12,7 @@ import { Clock, ArrowLeft, User, AlertCircle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 
 import ConfigurationDiagnostic from "@/components/ConfigurationDiagnostic";
+import { EnvironmentError } from "@/components/EnvironmentError";
 
 
 interface Order {
@@ -101,7 +102,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Check Supabase configuration first
       if (!isSupabaseConfigured()) {
         console.error('[LIVE-ORDERS] Supabase not configured');
-        setError('Supabase configuration is missing. Please check your environment variables.');
+        setError('ENVIRONMENT_CONFIG_ERROR');
         setLoading(false);
         setIsRetrying(false);
         return;
@@ -662,6 +663,18 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   }
 
   if (error) {
+    // Show environment error component for configuration issues
+    if (error === 'ENVIRONMENT_CONFIG_ERROR') {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <EnvironmentError 
+            title="Database Configuration Missing"
+            message="The live orders page cannot connect to the database because required environment variables are not set."
+          />
+        </div>
+      );
+    }
+    
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center max-w-md">

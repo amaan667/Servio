@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { EnvironmentError } from '@/components/EnvironmentError';
 
 export default function DashboardIndex() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function DashboardIndex() {
         // Check Supabase configuration first
         if (!isSupabaseConfigured()) {
           console.error('[DASHBOARD] Missing Supabase environment variables');
-          setError('Database configuration is missing. Please check your environment setup.');
+          setError('ENVIRONMENT_CONFIG_ERROR');
           setIsProcessing(false);
           return;
         }
@@ -103,6 +104,17 @@ export default function DashboardIndex() {
 
   // Show error state if something went wrong
   if (error) {
+    if (error === 'ENVIRONMENT_CONFIG_ERROR') {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <EnvironmentError 
+            title="Database Configuration Missing"
+            message="The application cannot connect to the database because required environment variables are not set."
+          />
+        </div>
+      );
+    }
+    
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md">
