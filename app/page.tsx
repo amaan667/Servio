@@ -71,7 +71,6 @@ function PricingQuickCompare() {
 }
 
 function HomePageContent() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   
   // Use our central auth context instead of duplicating logic
