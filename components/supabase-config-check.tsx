@@ -21,10 +21,14 @@ export function SupabaseConfigCheck() {
       const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
       const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       
+      // Also check if the values are not just placeholders
+      const hasValidUrl = hasUrl && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://your-project.supabase.co';
+      const hasValidKey = hasKey && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== 'your_supabase_anon_key_here';
+      
       setConfigStatus({
-        hasUrl,
-        hasKey,
-        isConfigured: hasUrl && hasKey
+        hasUrl: hasValidUrl,
+        hasKey: hasValidKey,
+        isConfigured: hasValidUrl && hasValidKey
       });
     };
 
