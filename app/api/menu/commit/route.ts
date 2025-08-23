@@ -1,20 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 
-function admin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-
 export async function POST(req: Request) {
-  const supa = admin();
   try {
     const { upload_id } = await req.json();
     if (!upload_id) return NextResponse.json({ ok: false, error: 'upload_id required' }, { status: 400 });
-    const { data: row, error } = await supa.from('menu_uploads').select('*').eq('id', upload_id).maybeSingle();
+    const { data: row, error } = await supabaseAdmin.from('menu_uploads').select('*').eq('id', upload_id).maybeSingle();
     if (error || !row) { console.error('[MENU_COMMIT] fetch upload error', error); return NextResponse.json({ ok: false, error: error?.message || 'upload not found' }, { status: 404 }); }
 
     const parsed = row.parsed_json as any;
@@ -34,16 +27,16 @@ export async function POST(req: Request) {
     if (!items.length) return NextResponse.json({ ok: false, error: 'no items to import' }, { status: 400 });
 
     // Insert while avoiding duplicates without relying on DB constraint
-    const { data: existing } = await supa.from('menu_items').select('name').eq('venue_id', row.venue_id);
+    const { data: existing } = await supabaseAdmin.from('menu_items').select('name').eq('venue_id', row.venue_id);
     const existingNames = new Set((existing||[]).map((r:any)=>String(r.name||'').toLowerCase()));
     const toInsert = items.filter(i=>!existingNames.has(String(i.name).toLowerCase()));
-    const { data: inserted, error: insErr } = await supa
+    const { data: inserted, error: insErr } = await supabaseAdmin
       .from('menu_items')
       .insert(toInsert)
       .select('id');
     if (insErr) { console.error('[MENU_COMMIT] insert error', insErr); return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 }); }
 
-    await supa.from('menu_uploads').update({ status: 'committed' }).eq('id', upload_id);
+    await supabaseAdmin.from('menu_uploads').update({ status: 'committed' }).eq('id', upload_id);
     return NextResponse.json({ ok: true, count: inserted?.length || 0 });
   } catch (e: any) {
     console.error('[MENU_COMMIT] fatal', e);

@@ -1,21 +1,21 @@
 import { NextResponse } from 'next/server';
-import { errorLogger } from '@/lib/error-logger';
-import { createClient } from '@supabase/supabase-js';
-import { Storage } from '@google-cloud/storage';
+import { supabase } from '@/lib/supabase';
 import OpenAI from 'openai';
+import { Storage } from '@google-cloud/storage';
 
-export async function GET(request: Request) {
-  const startTime = Date.now();
+export const runtime = 'nodejs';
+
+export async function GET() {
+  console.log('[DEBUG-ALL] Starting comprehensive system check...');
+  
   const results = {
     timestamp: new Date().toISOString(),
-    environment: {},
-    services: {},
-    errors: [],
-    warnings: [],
-    summary: {}
+    environment: {} as any,
+    services: {} as any,
+    errors: [] as string[],
+    warnings: [] as string[],
+    summary: {} as any
   };
-
-  console.log('[DEBUG-ALL] Starting comprehensive environment and service test...');
 
   try {
     // 1. Environment Variables Check
@@ -51,34 +51,50 @@ export async function GET(request: Request) {
       },
       GOOGLE_APPLICATION_CREDENTIALS: {
         exists: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
-        value: process.env.GOOGLE_APPLICATION_CREDENTIALS ? '***HIDDEN***' : 'MISSING',
+        value: process.env.GOOGLE_APPLICATION_CREDENTIALS || 'MISSING',
         length: process.env.GOOGLE_APPLICATION_CREDENTIALS?.length || 0
       },
       GOOGLE_PROJECT_ID: {
         exists: !!process.env.GOOGLE_PROJECT_ID,
-        value: process.env.GOOGLE_PROJECT_ID || 'MISSING'
+        value: process.env.GOOGLE_PROJECT_ID || 'MISSING',
+        length: process.env.GOOGLE_PROJECT_ID?.length || 0
       },
       GCS_BUCKET_NAME: {
         exists: !!process.env.GCS_BUCKET_NAME,
-        value: process.env.GCS_BUCKET_NAME || 'MISSING'
+        value: process.env.GCS_BUCKET_NAME || 'MISSING',
+        length: process.env.GCS_BUCKET_NAME?.length || 0
+      },
+      // Stripe
+      STRIPE_SECRET_KEY: {
+        exists: !!process.env.STRIPE_SECRET_KEY,
+        value: process.env.STRIPE_SECRET_KEY ? '***HIDDEN***' : 'MISSING',
+        length: process.env.STRIPE_SECRET_KEY?.length || 0
+      },
+      STRIPE_WEBHOOK_SECRET: {
+        exists: !!process.env.STRIPE_WEBHOOK_SECRET,
+        value: process.env.STRIPE_WEBHOOK_SECRET ? '***HIDDEN***' : 'MISSING',
+        length: process.env.STRIPE_WEBHOOK_SECRET?.length || 0
+      },
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: {
+        exists: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+        value: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'MISSING',
+        length: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.length || 0
       },
       // App URLs
       NEXT_PUBLIC_APP_URL: {
         exists: !!process.env.NEXT_PUBLIC_APP_URL,
-        value: process.env.NEXT_PUBLIC_APP_URL || 'MISSING'
+        value: process.env.NEXT_PUBLIC_APP_URL || 'MISSING',
+        length: process.env.NEXT_PUBLIC_APP_URL?.length || 0
       },
       NEXT_PUBLIC_SITE_URL: {
         exists: !!process.env.NEXT_PUBLIC_SITE_URL,
-        value: process.env.NEXT_PUBLIC_SITE_URL || 'MISSING'
+        value: process.env.NEXT_PUBLIC_SITE_URL || 'MISSING',
+        length: process.env.NEXT_PUBLIC_SITE_URL?.length || 0
       },
       APP_URL: {
         exists: !!process.env.APP_URL,
-        value: process.env.APP_URL || 'MISSING'
-      },
-      // Environment
-      NODE_ENV: {
-        exists: !!process.env.NODE_ENV,
-        value: process.env.NODE_ENV || 'MISSING'
+        value: process.env.APP_URL || 'MISSING',
+        length: process.env.APP_URL?.length || 0
       }
     };
 
@@ -88,26 +104,16 @@ export async function GET(request: Request) {
     // 2. Supabase Connection Test
     console.log('[DEBUG-ALL] Testing Supabase connection...');
     try {
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        );
-        
-        const { data, error } = await supabase.from('venues').select('count').limit(1);
-        
-        if (error) {
-          results.errors.push(`Supabase connection failed: ${error.message}`);
-          console.log('[DEBUG-ALL] ❌ Supabase connection failed:', error.message);
-        } else {
-          results.services.supabase = { status: 'connected', data: 'Query successful' };
-          console.log('[DEBUG-ALL] ✅ Supabase connection successful');
-        }
+      const { data, error } = await supabase.from('venues').select('count').limit(1);
+      
+      if (error) {
+        results.errors.push(`Supabase connection failed: ${error.message}`);
+        console.log('[DEBUG-ALL] ❌ Supabase connection failed:', error.message);
       } else {
-        results.warnings.push('Supabase credentials missing - skipping connection test');
-        console.log('[DEBUG-ALL] ⚠️ Supabase credentials missing');
+        results.services.supabase = { status: 'connected', data: 'Query successful' };
+        console.log('[DEBUG-ALL] ✅ Supabase connection successful');
       }
-    } catch (error) {
+    } catch (error: any) {
       results.errors.push(`Supabase test failed: ${error.message}`);
       console.log('[DEBUG-ALL] ❌ Supabase test failed:', error.message);
     }

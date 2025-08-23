@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 
@@ -11,7 +11,6 @@ export async function POST(req: Request) {
     if (!orderData) return NextResponse.json({ ok:false, error:'orderData required' }, { status:400 });
 
     const stripe = new Stripe(ENV.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
-    const admin = createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession:false }});
 
     const amount = Math.round(Number(orderData.total_amount) * 100) || 0;
     if (amount <= 0) return NextResponse.json({ ok:false, error:'Order total must be > 0' }, { status:400 });
