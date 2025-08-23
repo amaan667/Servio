@@ -7,6 +7,7 @@ import AppHeader from "@/components/AppHeader";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { SupabaseConfigCheck } from "@/components/supabase-config-check";
+import HealthCheck from "@/components/HealthCheck";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,6 +31,7 @@ export default function RootLayout({
             <AppHeader />
             {children}
             <ThemeToggleFloat />
+            <HealthCheck />
           </Providers>
         </ErrorBoundary>
       </body>
