@@ -1,51 +1,50 @@
-import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    const { name, business_type, address, phone } = await req.json().catch(() => ({}));
-    if (!name || !business_type) {
-      return NextResponse.json({ ok: false, error: 'name and business_type are required' }, { status: 400 });
-    }
-
     const supabase = createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
-
-    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
-
-    // Check if a venue already exists for this owner
-    const { data: existing, error: checkErr } = await admin
-      .from('venues')
-      .select('venue_id')
-      .eq('owner_id', user.id)
-      .maybeSingle();
-    if (checkErr) return NextResponse.json({ ok: false, error: checkErr.message }, { status: 400 });
-
-    if (existing) {
-      const { data: updated, error: updErr } = await admin
-        .from('venues')
-        .update({ name, business_type, address: address || null, phone: phone || null })
-        .eq('venue_id', existing.venue_id)
-        .select('venue_id')
-        .maybeSingle();
-      if (updErr) return NextResponse.json({ ok: false, error: updErr.message }, { status: 400 });
-      return NextResponse.json({ ok: true, venue_id: updated?.venue_id || existing.venue_id });
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const venue_id = `venue-${user.id.slice(0, 8)}-${Math.random().toString(36).slice(2, 6)}`;
-    const { data: inserted, error: insErr } = await admin
+    const { venue_id, name, business_type, address, phone, email } = await req.json();
+
+    if (!venue_id || !name) {
+      return NextResponse.json({ error: 'venue_id and name are required' }, { status: 400 });
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('venues')
-      .insert({ venue_id, name, business_type, address: address || null, phone: phone || null, owner_id: user.id })
-      .select('venue_id')
-      .maybeSingle();
-    if (insErr) return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 });
-    return NextResponse.json({ ok: true, venue_id: inserted?.venue_id || venue_id });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || 'Server error' }, { status: 500 });
+      .upsert({
+        venue_id,
+        name,
+        business_type: business_type || 'Restaurant',
+        address,
+        phone,
+        email,
+        owner_id: user.id,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'venue_id'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Venue upsert error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, venue: data });
+  } catch (error) {
+    console.error('Venue upsert error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
