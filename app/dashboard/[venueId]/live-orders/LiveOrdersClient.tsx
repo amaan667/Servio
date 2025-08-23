@@ -64,6 +64,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       console.log('[LIVE-ORDERS] Loading orders for venue:', venueId);
       console.log('[LIVE-ORDERS] Auth state:', { authLoading, hasSession: !!session, userId: session?.user?.id });
+      console.log('[LIVE-ORDERS] Supabase config:', { 
+        isConfigured: isSupabaseConfigured(), 
+        hasClient: !!supabase,
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing',
+        key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing'
+      });
       
       // Check authentication first
       if (authLoading) {
@@ -82,12 +88,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       // Check Supabase configuration first
       if (!isSupabaseConfigured()) {
+        console.error('[LIVE-ORDERS] Supabase not configured');
         setError('Supabase configuration is missing. Please check your environment variables.');
         setLoading(false);
         return;
       }
 
       if (!supabase) {
+        console.error('[LIVE-ORDERS] Supabase client is null');
         setError('Unable to connect to database');
         setLoading(false);
         return;
@@ -255,9 +263,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
     // Only set up real-time subscription if Supabase is configured
     if (!isSupabaseConfigured() || !supabase) {
+      console.log('[LIVE-ORDERS] Skipping real-time subscription - Supabase not configured');
       return;
     }
 
+    console.log('[LIVE-ORDERS] Setting up real-time subscription for venue:', venueId);
+    
     // Set up real-time subscription with error handling
     const channel = supabase
       .channel('orders')
@@ -612,6 +623,18 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Orders</h3>
           <p className="text-muted-foreground mb-4">{error}</p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 text-left">
+            <h4 className="text-sm font-medium text-gray-800 mb-2">Debug Information:</h4>
+            <div className="text-xs text-gray-600 space-y-1">
+              <p>Venue ID: {venueId}</p>
+              <p>Auth Loading: {authLoading ? 'Yes' : 'No'}</p>
+              <p>Has Session: {session ? 'Yes' : 'No'}</p>
+              <p>Supabase Configured: {isSupabaseConfigured() ? 'Yes' : 'No'}</p>
+              <p>Supabase Client: {supabase ? 'Available' : 'Null'}</p>
+              <p>Environment URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing'}</p>
+              <p>Environment Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing'}</p>
+            </div>
+          </div>
           <Button 
             onClick={loadVenueAndOrders}
             className="flex items-center space-x-2"
