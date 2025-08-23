@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -54,13 +54,23 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(null);
   const [activeTab, setActiveTab] = useState("live");
-  // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'disconnected' | 'error'>('connected');
 
-  const loadVenueAndOrders = async () => {
+  // Clear error when component mounts or when retrying
+  const clearError = useCallback(() => {
+    setError(null);
+    setIsRetrying(false);
+  }, []);
+
+  const loadVenueAndOrders = useCallback(async () => {
+    let isMounted = true;
     try {
-      setError(null);
+      clearError();
       setLoading(true);
+      setIsRetrying(true);
       
       console.log('[LIVE-ORDERS] Loading orders for venue:', venueId);
       console.log('[LIVE-ORDERS] Auth state:', { authLoading, hasSession: !!session, userId: session?.user?.id });
@@ -75,6 +85,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       if (authLoading) {
         console.log('[LIVE-ORDERS] Still loading authentication, skipping...');
         setLoading(false);
+        setIsRetrying(false);
         return;
       }
       
@@ -82,6 +93,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         console.log('[LIVE-ORDERS] No session found, redirecting to sign-in');
         setError('Authentication required. Please sign in to view live orders.');
         setLoading(false);
+        setIsRetrying(false);
         router.push('/sign-in');
         return;
       }
@@ -91,6 +103,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         console.error('[LIVE-ORDERS] Supabase not configured');
         setError('Supabase configuration is missing. Please check your environment variables.');
         setLoading(false);
+        setIsRetrying(false);
         return;
       }
 
@@ -98,6 +111,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         console.error('[LIVE-ORDERS] Supabase client is null');
         setError('Unable to connect to database');
         setLoading(false);
+        setIsRetrying(false);
         return;
       }
       
@@ -112,12 +126,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         console.error('Error fetching venue data:', venueError);
         setError(`Failed to load venue data: ${venueError.message}`);
         setLoading(false);
+        setIsRetrying(false);
         return;
       }
       
       if (!venueData) {
         setError('Venue not found');
         setLoading(false);
+        setIsRetrying(false);
         return;
       }
       
@@ -132,6 +148,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         console.log('[LIVE-ORDERS] User does not own venue, redirecting to dashboard');
         setError('You do not have permission to view orders for this venue');
         setLoading(false);
+        setIsRetrying(false);
         router.push('/dashboard');
         return;
       }
@@ -166,6 +183,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         console.error('[LIVE-ORDERS] Error fetching live orders:', liveError);
         setError(`Failed to load live orders: ${liveError.message}`);
         setLoading(false);
+        setIsRetrying(false);
         return;
       }
       
@@ -185,6 +203,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         console.error('[LIVE-ORDERS] Error fetching all orders:', allError);
         setError(`Failed to load all orders: ${allError.message}`);
         setLoading(false);
+        setIsRetrying(false);
         return;
       }
       
@@ -236,15 +255,29 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         historyOrders: historyData?.length || 0
       });
       
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+        setIsRetrying(false);
+        setRetryCount(0); // Reset retry count on success
+      }
     } catch (err) {
       console.error('[LIVE-ORDERS] Unexpected error in loadVenueAndOrders:', err);
-      setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      setLoading(false);
+      if (isMounted) {
+        setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setLoading(false);
+        setIsRetrying(false);
+      }
     }
-  };
+  }, [venueId, session, authLoading, router, clearError, venueNameProp]);
+
+  const handleRetry = useCallback(() => {
+    setRetryCount(prev => prev + 1);
+    loadVenueAndOrders();
+  }, [loadVenueAndOrders]);
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Don't load orders if still loading authentication
     if (authLoading) {
       return;
@@ -252,8 +285,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     
     // Don't load orders if not authenticated
     if (!session) {
-      setError('Authentication required. Please sign in to view live orders.');
-      setLoading(false);
+      if (isMounted) {
+        setError('Authentication required. Please sign in to view live orders.');
+        setLoading(false);
+      }
       router.push('/sign-in');
       return;
     }
@@ -350,16 +385,21 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       .subscribe((status, error) => {
         if (error) {
           console.error('Real-time subscription error:', error);
-          setError(`Real-time connection failed: ${error.message}`);
+          // Don't set error for real-time subscription failures - just log them
+          // This prevents the "try again" issue from real-time connection problems
+          console.warn('Real-time connection failed, but continuing with manual refresh capability');
+          setRealtimeStatus('error');
         } else {
           console.log('Real-time subscription status:', status);
+          setRealtimeStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
         }
       });
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [venueId, todayWindow, session, authLoading]); // Added authentication dependencies
+  }, [venueId, todayWindow, session, authLoading, loadVenueAndOrders]); // Added loadVenueAndOrders dependency
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
     try {
@@ -577,7 +617,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">
+            {isRetrying ? 'Refreshing orders...' : 'Loading orders...'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -621,8 +666,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       <div className="flex items-center justify-center h-64">
         <div className="text-center max-w-md">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Orders</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            {isRetrying ? 'Retrying...' : 'Error Loading Orders'}
+          </h3>
           <p className="text-muted-foreground mb-4">{error}</p>
+          {retryCount > 0 && (
+            <p className="text-sm text-muted-foreground mb-4">
+              Retry attempt: {retryCount}
+            </p>
+          )}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 text-left">
             <h4 className="text-sm font-medium text-gray-800 mb-2">Debug Information:</h4>
             <div className="text-xs text-gray-600 space-y-1">
@@ -633,15 +685,25 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <p>Supabase Client: {supabase ? 'Available' : 'Null'}</p>
               <p>Environment URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing'}</p>
               <p>Environment Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing'}</p>
+              <p>Retry Count: {retryCount}</p>
+              <p>Is Retrying: {isRetrying ? 'Yes' : 'No'}</p>
             </div>
           </div>
           <Button 
-            onClick={loadVenueAndOrders}
+            onClick={handleRetry}
+            disabled={isRetrying}
             className="flex items-center space-x-2"
           >
-            <RefreshCw className="h-4 w-4" />
-            <span>Try Again</span>
+            <RefreshCw className={`h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
+            <span>{isRetrying ? 'Retrying...' : 'Try Again'}</span>
           </Button>
+          {retryCount >= 3 && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                Having trouble? Try refreshing the page or check your internet connection.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -683,10 +745,32 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   return (
     <div>
       {/* Real-time order feed description */}
-      <div className="mb-6">
-        <p className="text-sm text-muted-foreground">
-          Real-time order feed for {venueName} • {currentTime.dateStr} • {currentTime.timeStr}
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <p className="text-sm text-muted-foreground">
+            Real-time order feed for {venueName} • {currentTime.dateStr} • {currentTime.timeStr}
+          </p>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${
+              realtimeStatus === 'connected' ? 'bg-green-500' : 
+              realtimeStatus === 'disconnected' ? 'bg-yellow-500' : 'bg-red-500'
+            }`}></div>
+            <span className="text-xs text-muted-foreground">
+              {realtimeStatus === 'connected' ? 'Live' : 
+               realtimeStatus === 'disconnected' ? 'Manual' : 'Offline'}
+            </span>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRetry}
+          disabled={isRetrying || loading}
+          className="flex items-center space-x-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
+          <span>{isRetrying ? 'Refreshing...' : 'Refresh'}</span>
+        </Button>
       </div>
 
         {/* Tabs */}
