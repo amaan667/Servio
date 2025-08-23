@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import UniversalHeader from "@/components/UniversalHeader";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 import { ArrowLeft, Save, User, Building, Mail, Phone } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 

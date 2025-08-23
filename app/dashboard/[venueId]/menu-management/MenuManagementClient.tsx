@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Plus, Trash2, RefreshCw } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 import { MenuManagement } from "@/components/menu-management";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { venuePath } from '@/lib/path';

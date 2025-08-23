@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 import { signUpUser, signInWithGoogle, signInUser } from "@/lib/supabase";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 
 interface SignUpFormProps {
   onGoogleSignIn: () => Promise<void>;
