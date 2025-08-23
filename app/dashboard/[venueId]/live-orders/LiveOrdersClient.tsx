@@ -52,6 +52,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [activeTab, setActiveTab] = useState("live");
   // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
+  // State to hold the venue timezone
+  const [venueTimezone, setVenueTimezone] = useState<string>('UTC');
 
   useEffect(() => {
     const loadVenueAndOrders = async () => {
@@ -64,6 +66,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           .single();
         setVenueName(venueData?.name || '');
         venueTimezone = venueData?.timezone;
+        setVenueTimezone(venueData?.timezone || 'UTC');
       }
       const window = todayWindowForTZ(venueTimezone);
       setTodayWindow(window);
@@ -241,24 +244,24 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   };
 
   const renderOrderCard = (order: Order, showActions: boolean = true) => (
-    <Card key={order.id} className="hover:shadow-md transition-shadow">
+    <Card key={order.id} className="hover:shadow-md transition-shadow border-border">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               {formatTime(order.created_at)}
             </div>
-            <div className="font-medium">
+            <div className="font-medium text-foreground">
               Table {order.table_number || 'Takeaway'}
             </div>
             {order.customer_name && (
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <User className="h-4 w-4 mr-1" />
                 {order.customer_name}
               </div>
             )}
             {!order.customer_name && (
-              <div className="flex items-center text-sm text-gray-500">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <User className="h-4 w-4 mr-1" />
                 Guest
               </div>
@@ -273,7 +276,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 {order.payment_status.toUpperCase()}
               </Badge>
             )}
-            <div className="text-lg font-bold">
+            <div className="text-lg font-bold text-foreground">
               £{order.total_amount.toFixed(2)}
             </div>
           </div>
@@ -283,8 +286,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         <div className="space-y-2 mb-4">
           {order.items.map((item, index) => (
             <div key={index} className="flex justify-between text-sm">
-              <span>{item.quantity}x {item.name}</span>
-              <span>£{(item.quantity * item.price).toFixed(2)}</span>
+              <span className="text-foreground">{item.quantity}x {item.name}</span>
+              <span className="text-muted-foreground">£{(item.quantity * item.price).toFixed(2)}</span>
             </div>
           ))}
         </div>
@@ -322,12 +325,47 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     );
   }
 
+  // Get current date and time in venue timezone
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    
+    const dateStr = now.toLocaleDateString('en-GB', {
+      timeZone: venueTimezone,
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    
+    const timeStr = now.toLocaleTimeString('en-GB', {
+      timeZone: venueTimezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    return { dateStr, timeStr };
+  };
+
+  const { dateStr, timeStr } = getCurrentDateTime();
+
+  // Update time every minute
+  const [currentTime, setCurrentTime] = useState(getCurrentDateTime());
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(getCurrentDateTime());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [venueTimezone]);
+
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Live Orders</h1>
-        <p className="text-gray-600 mt-2">Real-time order feed for {venueName} • Today • Local time</p>
+      {/* Real-time order feed description */}
+      <div className="mb-6">
+        <p className="text-sm text-muted-foreground">
+          Real-time order feed for {venueName} • {currentTime.dateStr} • {currentTime.timeStr}
+        </p>
       </div>
 
         {/* Tabs */}
@@ -341,11 +379,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <TabsContent value="live" className="mt-6">
             <div className="grid gap-6">
               {orders.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Orders</h3>
-                    <p className="text-gray-500">New orders will appear here in real-time</p>
+                <Card className="border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Active Orders</h3>
+                    <p className="text-muted-foreground">New orders will appear here in real-time</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -357,11 +395,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <TabsContent value="all" className="mt-6">
             <div className="grid gap-6">
               {allOrders.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Orders Today</h3>
-                    <p className="text-gray-500">All orders from today will appear here</p>
+                <Card className="border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Orders Today</h3>
+                    <p className="text-muted-foreground">All orders from today will appear here</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -373,17 +411,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <TabsContent value="history" className="mt-6">
             <div className="space-y-8">
               {Object.keys(groupedHistoryOrders).length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Historical Orders</h3>
-                    <p className="text-gray-500">Previous orders will appear here</p>
+                <Card className="border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Historical Orders</h3>
+                    <p className="text-muted-foreground">Previous orders will appear here</p>
                   </CardContent>
                 </Card>
               ) : (
                 Object.entries(groupedHistoryOrders).map(([date, orders]) => (
                   <div key={date}>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{date}</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-4 border-b pb-2">{date}</h3>
                     <div className="grid gap-6">
                       {orders.map((order) => renderOrderCard(order, false))}
                     </div>
