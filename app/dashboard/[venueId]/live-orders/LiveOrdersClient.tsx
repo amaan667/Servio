@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { Clock, ArrowLeft, User, AlertCircle, RefreshCw } from "lucide-react";
+import { useAuth } from "@/app/authenticated-client-provider";
 
 import ConfigurationDiagnostic from "@/components/ConfigurationDiagnostic";
 
@@ -42,6 +43,8 @@ interface GroupedHistoryOrders {
 
 
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
+  const { session, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
@@ -59,6 +62,24 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setError(null);
       setLoading(true);
       
+      console.log('[LIVE-ORDERS] Loading orders for venue:', venueId);
+      console.log('[LIVE-ORDERS] Auth state:', { authLoading, hasSession: !!session, userId: session?.user?.id });
+      
+      // Check authentication first
+      if (authLoading) {
+        console.log('[LIVE-ORDERS] Still loading authentication, skipping...');
+        setLoading(false);
+        return;
+      }
+      
+      if (!session) {
+        console.log('[LIVE-ORDERS] No session found, redirecting to sign-in');
+        setError('Authentication required. Please sign in to view live orders.');
+        setLoading(false);
+        router.push('/sign-in');
+        return;
+      }
+      
       // Check Supabase configuration first
       if (!isSupabaseConfigured()) {
         setError('Supabase configuration is missing. Please check your environment variables.');
@@ -72,26 +93,43 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         return;
       }
       
+      // Always verify venue ownership, even if venueNameProp is provided
+      const { data: venueData, error: venueError } = await supabase
+        .from('venues')
+        .select('name, owner_id')
+        .eq('venue_id', venueId)
+        .single();
+        
+      if (venueError) {
+        console.error('Error fetching venue data:', venueError);
+        setError(`Failed to load venue data: ${venueError.message}`);
+        setLoading(false);
+        return;
+      }
+      
+      if (!venueData) {
+        setError('Venue not found');
+        setLoading(false);
+        return;
+      }
+      
+      // Check if the current user owns this venue
+      console.log('[LIVE-ORDERS] Venue ownership check:', { 
+        venueOwnerId: venueData.owner_id, 
+        currentUserId: session.user.id,
+        isOwner: venueData.owner_id === session.user.id 
+      });
+      
+      if (venueData.owner_id !== session.user.id) {
+        console.log('[LIVE-ORDERS] User does not own venue, redirecting to dashboard');
+        setError('You do not have permission to view orders for this venue');
+        setLoading(false);
+        router.push('/dashboard');
+        return;
+      }
+      
+      // Set venue name if not provided
       if (!venueNameProp) {
-        const { data: venueData, error: venueError } = await supabase
-          .from('venues')
-          .select('name')
-          .eq('venue_id', venueId)
-          .single();
-          
-        if (venueError) {
-          console.error('Error fetching venue data:', venueError);
-          setError(`Failed to load venue data: ${venueError.message}`);
-          setLoading(false);
-          return;
-        }
-        
-        if (!venueData) {
-          setError('Venue not found');
-          setLoading(false);
-          return;
-        }
-        
         setVenueName(venueData.name || '');
       }
       
@@ -106,6 +144,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setTodayWindow(window);
       
       // Load live orders (pending/preparing from today)
+      console.log('[LIVE-ORDERS] Fetching live orders for window:', window);
       const { data: liveData, error: liveError } = await supabase
         .from('orders')
         .select('*')
@@ -116,13 +155,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false });
 
       if (liveError) {
-        console.error('Error fetching live orders:', liveError);
+        console.error('[LIVE-ORDERS] Error fetching live orders:', liveError);
         setError(`Failed to load live orders: ${liveError.message}`);
         setLoading(false);
         return;
       }
+      
+      console.log('[LIVE-ORDERS] Live orders loaded:', liveData?.length || 0);
 
       // Load all orders from today
+      console.log('[LIVE-ORDERS] Fetching all orders for today');
       const { data: allData, error: allError } = await supabase
         .from('orders')
         .select('*')
@@ -132,13 +174,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false });
 
       if (allError) {
-        console.error('Error fetching all orders:', allError);
+        console.error('[LIVE-ORDERS] Error fetching all orders:', allError);
         setError(`Failed to load all orders: ${allError.message}`);
         setLoading(false);
         return;
       }
+      
+      console.log('[LIVE-ORDERS] All orders loaded:', allData?.length || 0);
 
       // Load history orders (not from today)
+      console.log('[LIVE-ORDERS] Fetching history orders');
       const { data: historyData, error: historyError } = await supabase
         .from('orders')
         .select('*')
@@ -148,7 +193,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .limit(100); // Limit to last 100 orders
 
       if (historyError) {
-        console.error('Error fetching history orders:', historyError);
+        console.error('[LIVE-ORDERS] Error fetching history orders:', historyError);
         // Don't fail completely if history fails
         setHistoryOrders([]);
         setGroupedHistoryOrders({});
@@ -177,15 +222,34 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setOrders((liveData || []) as Order[]);
       setAllOrders((allData || []) as Order[]);
       
+      console.log('[LIVE-ORDERS] Successfully loaded all data:', {
+        liveOrders: liveData?.length || 0,
+        allOrders: allData?.length || 0,
+        historyOrders: historyData?.length || 0
+      });
+      
       setLoading(false);
     } catch (err) {
-      console.error('Unexpected error in loadVenueAndOrders:', err);
+      console.error('[LIVE-ORDERS] Unexpected error in loadVenueAndOrders:', err);
       setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Don't load orders if still loading authentication
+    if (authLoading) {
+      return;
+    }
+    
+    // Don't load orders if not authenticated
+    if (!session) {
+      setError('Authentication required. Please sign in to view live orders.');
+      setLoading(false);
+      router.push('/sign-in');
+      return;
+    }
+    
     // Load orders when component mounts
     loadVenueAndOrders();
 
@@ -194,7 +258,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       return;
     }
 
-    // Set up real-time subscription
+    // Set up real-time subscription with error handling
     const channel = supabase
       .channel('orders')
       .on('postgres_changes', 
@@ -272,15 +336,29 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           }
         }
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        if (error) {
+          console.error('Real-time subscription error:', error);
+          setError(`Real-time connection failed: ${error.message}`);
+        } else {
+          console.log('Real-time subscription status:', status);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [venueId, todayWindow]); // Removed supabaseConfigured dependency
+  }, [venueId, todayWindow, session, authLoading]); // Added authentication dependencies
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
     try {
+      // Check authentication before making the request
+      if (!session) {
+        setError('Authentication required. Please sign in to update orders.');
+        router.push('/sign-in');
+        return;
+      }
+      
       const response = await fetch(`/api/dashboard/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
@@ -474,6 +552,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     </Card>
   );
 
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -494,6 +583,24 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           </p>
         </div>
         <ConfigurationDiagnostic />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">Authentication Required</h3>
+          <p className="text-muted-foreground mb-4">Please sign in to view live orders.</p>
+          <Button 
+            onClick={() => router.push('/sign-in')}
+            className="flex items-center space-x-2"
+          >
+            <span>Sign In</span>
+          </Button>
+        </div>
       </div>
     );
   }
