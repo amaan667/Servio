@@ -171,6 +171,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       // Load live orders (pending/preparing from today)
       console.log('[LIVE-ORDERS] Fetching live orders for window:', window);
+      console.log('[LIVE-ORDERS] Query params:', { venueId, statuses: ['pending', 'preparing'], start: window.startUtcISO, end: window.endUtcISO });
+      
       const { data: liveData, error: liveError } = await supabase
         .from('orders')
         .select('*')
@@ -182,6 +184,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
       if (liveError) {
         console.error('[LIVE-ORDERS] Error fetching live orders:', liveError);
+        console.error('[LIVE-ORDERS] Error details:', {
+          message: liveError.message,
+          code: liveError.code,
+          details: liveError.details,
+          hint: liveError.hint
+        });
         setError(`Failed to load live orders: ${liveError.message}`);
         setLoading(false);
         setIsRetrying(false);
@@ -202,6 +210,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
       if (allError) {
         console.error('[LIVE-ORDERS] Error fetching all orders:', allError);
+        console.error('[LIVE-ORDERS] All orders error details:', {
+          message: allError.message,
+          code: allError.code,
+          details: allError.details,
+          hint: allError.hint
+        });
         setError(`Failed to load all orders: ${allError.message}`);
         setLoading(false);
         setIsRetrying(false);
@@ -246,9 +260,18 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         }
       }
 
-      // Set orders with null checks
-      setOrders((liveData || []) as Order[]);
-      setAllOrders((allData || []) as Order[]);
+      // Set orders with null checks and debug logging
+      console.log('[LIVE-ORDERS] Raw live data:', liveData);
+      console.log('[LIVE-ORDERS] Raw all data:', allData);
+      
+      const processedLiveOrders = (liveData || []) as Order[];
+      const processedAllOrders = (allData || []) as Order[];
+      
+      console.log('[LIVE-ORDERS] Processed live orders:', processedLiveOrders);
+      console.log('[LIVE-ORDERS] Processed all orders:', processedAllOrders);
+      
+      setOrders(processedLiveOrders);
+      setAllOrders(processedAllOrders);
       
       console.log('[LIVE-ORDERS] Successfully loaded all data:', {
         liveOrders: liveData?.length || 0,
@@ -264,7 +287,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     } catch (err) {
       console.error('[LIVE-ORDERS] Unexpected error in loadVenueAndOrders:', err);
       if (isMounted) {
-        setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error('[LIVE-ORDERS] Error details:', {
+          message: errorMessage,
+          stack: err instanceof Error ? err.stack : undefined,
+          venueId,
+          hasSession: !!session,
+          authLoading
+        });
+        setError(`An unexpected error occurred: ${errorMessage}`);
         setLoading(false);
         setIsRetrying(false);
       }
@@ -297,9 +328,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     // Load orders when component mounts
     loadVenueAndOrders();
 
-    // Only set up real-time subscription if Supabase is configured
+    // Only set up real-time subscription if Supabase is configured and todayWindow is set
     if (!isSupabaseConfigured() || !supabase) {
       console.log('[LIVE-ORDERS] Skipping real-time subscription - Supabase not configured');
+      return;
+    }
+
+    if (!todayWindow) {
+      console.log('[LIVE-ORDERS] Skipping real-time subscription - todayWindow not set yet');
       return;
     }
 
@@ -400,7 +436,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [venueId, todayWindow, session, authLoading, loadVenueAndOrders]); // Added loadVenueAndOrders dependency
+  }, [venueId, todayWindow, session, authLoading]); // Removed loadVenueAndOrders to prevent infinite re-renders
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
     try {
