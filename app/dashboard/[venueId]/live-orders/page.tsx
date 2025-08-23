@@ -20,6 +20,9 @@ export default async function LiveOrdersPage({
     // Check if environment variables are set
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('[LIVE-ORDERS] Missing Supabase environment variables');
+      console.error('[LIVE-ORDERS] NEXT_PUBLIC_SUPABASE_URL:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+      console.error('[LIVE-ORDERS] NEXT_PUBLIC_SUPABASE_ANON_KEY:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+      
       // Return a client-side component that will handle the missing config
       return (
         <div className="min-h-screen bg-background">
@@ -29,6 +32,16 @@ export default async function LiveOrdersPage({
               description="Monitor and manage real-time orders"
               venueId={params.venueId}
             />
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-medium text-red-800 mb-2">Configuration Error</h3>
+              <p className="text-red-700 mb-4">
+                Missing Supabase environment variables. Please check your configuration.
+              </p>
+              <div className="text-sm text-red-600">
+                <p>NEXT_PUBLIC_SUPABASE_URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing'}</p>
+                <p>NEXT_PUBLIC_SUPABASE_ANON_KEY: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing'}</p>
+              </div>
+            </div>
             <GlobalErrorBoundary>
               <LiveOrdersClient venueId={params.venueId} />
             </GlobalErrorBoundary>
@@ -52,6 +65,15 @@ export default async function LiveOrdersPage({
               description="Monitor and manage real-time orders"
               venueId={params.venueId}
             />
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-medium text-yellow-800 mb-2">Authentication Error</h3>
+              <p className="text-yellow-700 mb-4">
+                Unable to verify authentication. Please try refreshing the page.
+              </p>
+              <div className="text-sm text-yellow-600">
+                <p>Error: {authError.message}</p>
+              </div>
+            </div>
             <GlobalErrorBoundary>
               <LiveOrdersClient venueId={params.venueId} />
             </GlobalErrorBoundary>
@@ -82,6 +104,15 @@ export default async function LiveOrdersPage({
               description="Monitor and manage real-time orders"
               venueId={params.venueId}
             />
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-medium text-red-800 mb-2">Database Error</h3>
+              <p className="text-red-700 mb-4">
+                Unable to load venue information. Please try again.
+              </p>
+              <div className="text-sm text-red-600">
+                <p>Error: {venueError.message}</p>
+              </div>
+            </div>
             <GlobalErrorBoundary>
               <LiveOrdersClient venueId={params.venueId} />
             </GlobalErrorBoundary>
@@ -124,6 +155,15 @@ export default async function LiveOrdersPage({
             description="Monitor and manage real-time orders"
             venueId={params.venueId}
           />
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-medium text-red-800 mb-2">Unexpected Error</h3>
+            <p className="text-red-700 mb-4">
+              An unexpected error occurred while loading the page.
+            </p>
+            <div className="text-sm text-red-600">
+              <p>Error: {error instanceof Error ? error.message : 'Unknown error'}</p>
+            </div>
+          </div>
           <GlobalErrorBoundary>
             <LiveOrdersClient venueId={params.venueId} />
           </GlobalErrorBoundary>
