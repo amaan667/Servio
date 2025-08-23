@@ -200,45 +200,70 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             filter: `venue_id=eq.${venueId}`
           }, 
           (payload) => {
-            const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
-            const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
-            
-            if (payload.eventType === 'INSERT') {
-              const newOrder = payload.new as Order;
-              if (isInTodayWindow) {
-                setOrders(prev => [newOrder, ...prev]);
-                setAllOrders(prev => [newOrder, ...prev]);
-              } else {
-                setHistoryOrders(prev => [newOrder, ...prev]);
-                // Update grouped history
-                const date = formatDate(newOrder.created_at);
-                setGroupedHistoryOrders(prev => ({
-                  ...prev,
-                  [date]: [newOrder, ...(prev[date] || [])]
-                }));
+            try {
+              // Add null checks to prevent crashes
+              if (!payload || !payload.new && !payload.old) {
+                console.warn('Received invalid payload in real-time subscription');
+                return;
               }
-            } else if (payload.eventType === 'UPDATE') {
-              const updatedOrder = payload.new as Order;
-              if (isInTodayWindow) {
-                setOrders(prev => prev.map(order => 
-                  order.id === updatedOrder.id ? updatedOrder : order
-                ));
-                setAllOrders(prev => prev.map(order => 
-                  order.id === updatedOrder.id ? updatedOrder : order
-                ));
-              } else {
-                setHistoryOrders(prev => prev.map(order => 
-                  order.id === updatedOrder.id ? updatedOrder : order
-                ));
+
+              const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
+              const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
+              
+              if (payload.eventType === 'INSERT') {
+                const newOrder = payload.new as Order;
+                if (!newOrder) {
+                  console.warn('Received INSERT event but no new order data');
+                  return;
+                }
+                
+                if (isInTodayWindow) {
+                  setOrders(prev => [newOrder, ...prev]);
+                  setAllOrders(prev => [newOrder, ...prev]);
+                } else {
+                  setHistoryOrders(prev => [newOrder, ...prev]);
+                  // Update grouped history
+                  const date = formatDate(newOrder.created_at);
+                  setGroupedHistoryOrders(prev => ({
+                    ...prev,
+                    [date]: [newOrder, ...(prev[date] || [])]
+                  }));
+                }
+              } else if (payload.eventType === 'UPDATE') {
+                const updatedOrder = payload.new as Order;
+                if (!updatedOrder) {
+                  console.warn('Received UPDATE event but no updated order data');
+                  return;
+                }
+                
+                if (isInTodayWindow) {
+                  setOrders(prev => prev.map(order => 
+                    order.id === updatedOrder.id ? updatedOrder : order
+                  ));
+                  setAllOrders(prev => prev.map(order => 
+                    order.id === updatedOrder.id ? updatedOrder : order
+                  ));
+                } else {
+                  setHistoryOrders(prev => prev.map(order => 
+                    order.id === updatedOrder.id ? updatedOrder : order
+                  ));
+                }
+              } else if (payload.eventType === 'DELETE') {
+                const deletedOrder = payload.old as Order;
+                if (!deletedOrder) {
+                  console.warn('Received DELETE event but no deleted order data');
+                  return;
+                }
+                
+                if (isInTodayWindow) {
+                  setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+                  setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+                } else {
+                  setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+                }
               }
-            } else if (payload.eventType === 'DELETE') {
-              const deletedOrder = payload.old as Order;
-              if (isInTodayWindow) {
-                setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-                setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-              } else {
-                setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-              }
+            } catch (error) {
+              console.error('Error handling real-time subscription update:', error);
             }
           }
         )
@@ -248,7 +273,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         supabase.removeChannel(channel);
       };
     }
-  }, [venueId, supabaseConfigured]);
+  }, [venueId, supabaseConfigured, todayWindow]); // Added todayWindow to dependencies
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
     try {
@@ -277,29 +302,43 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-GB', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+    try {
+      return new Date(dateString).toLocaleTimeString('en-GB', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return 'Invalid time';
+    }
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-GB', { month: 'long' });
-    
-    // Add ordinal suffix to day
-    const getOrdinalSuffix = (day: number) => {
-      if (day > 3 && day < 21) return 'th';
-      switch (day % 10) {
-        case 1: return 'st';
-        case 2: return 'nd';
-        case 3: return 'rd';
-        default: return 'th';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid date');
       }
-    };
-    
-    return `${day}${getOrdinalSuffix(day)} ${month}`;
+      
+      const day = date.getDate();
+      const month = date.toLocaleDateString('en-GB', { month: 'long' });
+      
+      // Add ordinal suffix to day
+      const getOrdinalSuffix = (day: number) => {
+        if (day > 3 && day < 21) return 'th';
+        switch (day % 10) {
+          case 1: return 'st';
+          case 2: return 'nd';
+          case 3: return 'rd';
+          default: return 'th';
+        }
+      };
+      
+      return `${day}${getOrdinalSuffix(day)} ${month}`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -360,7 +399,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
         {/* Order Items */}
         <div className="space-y-2 mb-4">
-          {order.items.map((item, index) => (
+          {order.items && order.items.map((item, index) => (
             <div key={index} className="flex justify-between text-sm">
               <span className="text-foreground">{item.quantity}x {item.name}</span>
               <span className="text-muted-foreground">£{(item.quantity * item.price).toFixed(2)}</span>
@@ -438,17 +477,22 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   // Get current date and time
   const getCurrentDateTime = () => {
-    const now = new Date();
-    
-    const dateStr = formatDate(now.toISOString());
-    
-    const timeStr = now.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-    
-    return { dateStr, timeStr };
+    try {
+      const now = new Date();
+      
+      const dateStr = formatDate(now.toISOString());
+      
+      const timeStr = now.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      
+      return { dateStr, timeStr };
+    } catch (error) {
+      console.error('Error getting current date time:', error);
+      return { dateStr: 'Error', timeStr: 'Error' };
+    }
   };
 
   const { dateStr, timeStr } = getCurrentDateTime();
