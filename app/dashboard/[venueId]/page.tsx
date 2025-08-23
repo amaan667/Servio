@@ -69,7 +69,7 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
           }
         }
 
-        // Get timezone-aware today window (default to Europe/London until migration is run)
+        // Get today's date window in UTC
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);

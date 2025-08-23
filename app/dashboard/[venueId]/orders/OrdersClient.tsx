@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Clock } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
-import { todayWindowForTZ } from "@/lib/time";
 
 type OrdersClientProps = {
   venueId: string;
@@ -26,6 +25,18 @@ interface Order {
   payment_status?: string;
 }
 
+// Simple function to get today's date range in UTC
+function getTodayWindow() {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  
+  return {
+    startUtcISO: startOfDay.toISOString(),
+    endUtcISO: endOfDay.toISOString(),
+  };
+}
+
 const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
   const [stats, setStats] = useState({
     todayOrders: 0,
@@ -37,14 +48,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Get venue timezone
-        const { data: venueData } = await supabase
-          .from('venues')
-          .select('timezone')
-          .eq('venue_id', venueId)
-          .single();
-
-        const window = todayWindowForTZ(venueData?.timezone);
+        const window = getTodayWindow();
         
         // Fetch today's orders
         const { data: ordersData } = await supabase

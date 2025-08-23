@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/sb-client";
 import { Clock, ArrowLeft, User, AlertCircle, RefreshCw } from "lucide-react";
-import { todayWindowForTZ } from "@/lib/dates";
 import ConfigurationDiagnostic from "@/components/ConfigurationDiagnostic";
 
 
@@ -39,7 +38,17 @@ interface GroupedHistoryOrders {
   [date: string]: Order[];
 }
 
-
+// Simple function to get today's date range in UTC
+function getTodayWindow() {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  
+  return {
+    startUtcISO: startOfDay.toISOString(),
+    endUtcISO: endOfDay.toISOString(),
+  };
+}
 
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -53,10 +62,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [activeTab, setActiveTab] = useState("live");
   // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
-  // State to hold the venue timezone
-  const [venueTimezone, setVenueTimezone] = useState<string>('UTC');
   // State to track if Supabase is configured
   const [supabaseConfigured, setSupabaseConfigured] = useState<boolean | null>(null);
+  // State for real-time clock
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Check if Supabase is configured
   useEffect(() => {
@@ -69,16 +78,24 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     checkSupabaseConfig();
   }, []);
 
+  // Update time every second for real-time display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const loadVenueAndOrders = async () => {
     try {
       setError(null);
       setLoading(true);
       
-      let venueTimezone = 'UTC';
       if (!venueNameProp) {
         const { data: venueData, error: venueError } = await supabase
           .from('venues')
-          .select('name, timezone')
+          .select('name')
           .eq('venue_id', venueId)
           .single();
           
@@ -90,11 +107,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         }
         
         setVenueName(venueData?.name || '');
-        venueTimezone = venueData?.timezone || 'UTC';
-        setVenueTimezone(venueData?.timezone || 'UTC');
       }
       
-      const window = todayWindowForTZ(venueTimezone);
+      const window = getTodayWindow();
       setTodayWindow(window);
       
       // Load live orders (pending/preparing from today)
@@ -430,47 +445,41 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     );
   }
 
-  // Get current date and time in venue timezone
-  const getCurrentDateTime = () => {
-    const now = new Date();
-    
-    const dateStr = now.toLocaleDateString('en-GB', {
-      timeZone: venueTimezone,
-      day: '2-digit',
-      month: 'short',
+  // Format current date and time
+  const formatCurrentDateTime = () => {
+    const dateStr = currentTime.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
       year: 'numeric'
     });
     
-    const timeStr = now.toLocaleTimeString('en-GB', {
-      timeZone: venueTimezone,
+    const timeStr = currentTime.toLocaleTimeString('en-GB', {
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
       hour12: false
     });
     
     return { dateStr, timeStr };
   };
 
-  const { dateStr, timeStr } = getCurrentDateTime();
-
-  // Update time every minute
-  const [currentTime, setCurrentTime] = useState(getCurrentDateTime());
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(getCurrentDateTime());
-    }, 60000); // Update every minute
-
-    return () => clearInterval(interval);
-  }, [venueTimezone]);
+  const { dateStr, timeStr } = formatCurrentDateTime();
 
   return (
     <div>
-      {/* Real-time order feed description */}
-      <div className="mb-6">
-        <p className="text-sm text-muted-foreground">
-          Real-time order feed for {venueName} • {currentTime.dateStr} • {currentTime.timeStr}
-        </p>
+      {/* Real-time order feed description with live clock */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">
+              Real-time order feed for {venueName}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-semibold text-purple-700">{timeStr}</div>
+            <div className="text-sm text-muted-foreground">{dateStr}</div>
+          </div>
+        </div>
       </div>
 
         {/* Tabs */}

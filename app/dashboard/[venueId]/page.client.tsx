@@ -8,7 +8,18 @@ import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
 import PageHeader from "@/components/PageHeader";
-import { todayWindowForTZ } from "@/lib/time";
+
+// Simple function to get today's date range in UTC
+function getTodayWindow() {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  
+  return {
+    startUtcISO: startOfDay.toISOString(),
+    endUtcISO: endOfDay.toISOString(),
+  };
+}
 
 export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0, venue: initialVenue }: { venueId: string; userId: string; activeTables?: number; venue?: any }) {
   const [venue, setVenue] = useState<any>(initialVenue);
@@ -25,7 +36,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         // Check if we already have venue data from SSR
         if (venue && !loading) {
           console.log('[DASHBOARD] Venue already loaded from SSR, setting up time window and stats');
-          const window = todayWindowForTZ(venue.timezone || 'Europe/London');
+          const window = getTodayWindow();
           setTodayWindow(window);
           await loadStats(venue.venue_id, window);
           return;
@@ -42,7 +53,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         
         if (!error && venueData) {
           setVenue(venueData);
-          const window = todayWindowForTZ(venueData.timezone || 'Europe/London');
+          const window = getTodayWindow();
           setTodayWindow(window);
           await loadStats(venueData.venue_id, window);
         } else {
@@ -81,7 +92,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
   useEffect(() => {
     if (venue && !todayWindow) {
       console.log('[DASHBOARD] Setting up time window for venue');
-      const window = todayWindowForTZ(venue.timezone || 'Europe/London');
+      const window = getTodayWindow();
       setTodayWindow(window);
       loadStats(venue.venue_id, window);
     }
