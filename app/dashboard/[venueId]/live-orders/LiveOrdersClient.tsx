@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/sb-client";
 import { Clock, ArrowLeft, User, AlertCircle, RefreshCw } from "lucide-react";
-import { todayWindowForTZ } from "@/lib/dates";
+
 import ConfigurationDiagnostic from "@/components/ConfigurationDiagnostic";
 
 
@@ -53,8 +53,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [activeTab, setActiveTab] = useState("live");
   // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
-  // State to hold the venue timezone
-  const [venueTimezone, setVenueTimezone] = useState<string>('UTC');
+
   // State to track if Supabase is configured
   const [supabaseConfigured, setSupabaseConfigured] = useState<boolean | null>(null);
 
@@ -74,11 +73,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setError(null);
       setLoading(true);
       
-      let venueTimezone = 'UTC';
       if (!venueNameProp) {
         const { data: venueData, error: venueError } = await supabase
           .from('venues')
-          .select('name, timezone')
+          .select('name')
           .eq('venue_id', venueId)
           .single();
           
@@ -90,11 +88,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         }
         
         setVenueName(venueData?.name || '');
-        venueTimezone = venueData?.timezone || 'UTC';
-        setVenueTimezone(venueData?.timezone || 'UTC');
       }
       
-      const window = todayWindowForTZ(venueTimezone);
+      // Use simple date-based window instead of timezone-aware
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+      const window = {
+        startUtcISO: startOfDay.toISOString(),
+        endUtcISO: endOfDay.toISOString(),
+      };
       setTodayWindow(window);
       
       // Load live orders (pending/preparing from today)
@@ -158,11 +161,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         
         // Group history orders by date
         const grouped = history.reduce((acc: GroupedHistoryOrders, order) => {
-          const date = new Date(order.created_at).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-          });
+          const date = formatDate(order.created_at);
           if (!acc[date]) {
             acc[date] = [];
           }
@@ -212,11 +211,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               } else {
                 setHistoryOrders(prev => [newOrder, ...prev]);
                 // Update grouped history
-                const date = new Date(newOrder.created_at).toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric'
-                });
+                const date = formatDate(newOrder.created_at);
                 setGroupedHistoryOrders(prev => ({
                   ...prev,
                   [date]: [newOrder, ...(prev[date] || [])]
@@ -289,11 +284,22 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleDateString('en-GB', { month: 'long' });
+    
+    // Add ordinal suffix to day
+    const getOrdinalSuffix = (day: number) => {
+      if (day > 3 && day < 21) return 'th';
+      switch (day % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+      }
+    };
+    
+    return `${day}${getOrdinalSuffix(day)} ${month}`;
   };
 
   const getStatusColor = (status: string) => {
@@ -430,19 +436,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     );
   }
 
-  // Get current date and time in venue timezone
+  // Get current date and time
   const getCurrentDateTime = () => {
     const now = new Date();
     
-    const dateStr = now.toLocaleDateString('en-GB', {
-      timeZone: venueTimezone,
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    const dateStr = formatDate(now.toISOString());
     
     const timeStr = now.toLocaleTimeString('en-GB', {
-      timeZone: venueTimezone,
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
@@ -462,7 +462,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, [venueTimezone]);
+  }, []);
 
   return (
     <div>

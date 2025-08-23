@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { todayWindowForTZ } from '@/lib/time';
+
 import { cookieAdapter } from '@/lib/server/supabase';
 
 type OrderRow = {
@@ -37,18 +37,12 @@ export async function GET(req: Request) {
       { cookies: cookieAdapter(jar) }
     );
 
-    // find venue tz
-    const { data: venue, error: vErr } = await supabase
-      .from('venues')
-      .select('timezone')
-      .eq('venue_id', venueId)
-      .maybeSingle();
-
-    if (vErr) {
-      return NextResponse.json({ ok: false, error: vErr.message }, { status: 500 });
-    }
-
-    const { startUtcISO, endUtcISO, zone } = todayWindowForTZ(venue?.timezone);
+    // Use simple date-based window instead of timezone-aware
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+    const startUtcISO = startOfDay.toISOString();
+    const endUtcISO = endOfDay.toISOString();
 
     // base query: always sort by created_at DESC  ✅ (Requirement #2)
     let q = supabase
@@ -80,7 +74,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      meta: { scope, zone, startUtcISO, endUtcISO, count: data?.length ?? 0 },
+      meta: { scope, startUtcISO, endUtcISO, count: data?.length ?? 0 },
       orders: (data || []) as OrderRow[],
     });
   } catch (e: any) {
