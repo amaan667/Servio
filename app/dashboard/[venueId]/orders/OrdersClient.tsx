@@ -80,73 +80,66 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Orders</h2>
-          <p className="text-gray-600">Monitor and manage orders</p>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Today's Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Orders List */}
+    <div>
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">Recent Orders</h3>
-          </CardHeader>
-          <CardContent>
-            {orders.length === 0 ? (
-              <p>No orders for today</p>
-            ) : (
-              <div className="space-y-4">
-                {orders.map(order => (
-                  <div key={order.id} className="p-4 border rounded-lg">
-                    <div className="flex justify-between">
-                      <div>
-                        <p className="font-medium">Table {order.table_number || 'Takeaway'}</p>
-                        <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleTimeString()}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">£{order.total_amount.toFixed(2)}</p>
-                        <p className="text-sm">{order.status}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Today's Orders</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
               </div>
-            )}
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Clock className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <Clock className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Orders List */}
+      <Card>
+        <CardHeader>
+          <h3 className="text-lg font-semibold">Recent Orders</h3>
+        </CardHeader>
+        <CardContent>
+          {orders.length === 0 ? (
+            <p>No orders for today</p>
+          ) : (
+            <div className="space-y-4">
+              {orders.map(order => (
+                <div key={order.id} className="p-4 border rounded-lg">
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="font-medium">Table {order.table_number || 'Takeaway'}</p>
+                      <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleTimeString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">£{order.total_amount.toFixed(2)}</p>
+                      <p className="text-sm">{order.status}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
