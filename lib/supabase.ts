@@ -1,8 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { logger } from "./logger";
-import { supabaseBrowser } from "./supabase-browser";
 
-// Environment variables
+// Environment variables - ALWAYS use these exact names
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -46,6 +45,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
 }
 
+// Export the standardized client
 export const supabase = supabaseClient;
 
 console.log("Supabase client created successfully");
@@ -230,7 +230,7 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  const supabase = supabaseBrowser();
+  const supabase = supabaseClient;
   const redirectTo = 'https://servio-production.up.railway.app';
   console.log('[AUTH] starting oauth with redirect:', redirectTo);
   
