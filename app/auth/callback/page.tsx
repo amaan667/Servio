@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -17,6 +17,13 @@ function AuthCallbackContent() {
       try {
         console.log('[AUTH_CALLBACK] Starting callback processing');
         setIsProcessing(true);
+        
+        // Check if Supabase is configured
+        if (!isSupabaseConfigured()) {
+          console.error('[AUTH_CALLBACK] Supabase not configured');
+          router.replace('/sign-in?error=service_unavailable');
+          return;
+        }
         
         if (error) {
           console.error('[AUTH_CALLBACK] OAuth callback error:', error);
