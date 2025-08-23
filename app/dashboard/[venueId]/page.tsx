@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 import DashboardClient from './page.client';
 import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
 
@@ -16,11 +16,20 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
     const checkVenueAccess = async () => {
       try {
         console.log('[VENUE PAGE] Checking venue access for:', params.venueId);
+        setLoading(true);
+        setError(null);
         
         // Check Supabase configuration first
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        if (!isSupabaseConfigured()) {
           console.error('[DASHBOARD VENUE] Missing Supabase environment variables');
-          setError('Supabase configuration is missing');
+          setError('Database configuration is missing. Please check your environment setup.');
+          setLoading(false);
+          return;
+        }
+
+        if (!supabase) {
+          console.error('[DASHBOARD VENUE] Supabase client is null');
+          setError('Unable to connect to database');
           setLoading(false);
           return;
         }
@@ -138,17 +147,19 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
     checkVenueAccess();
   }, [params.venueId, router]);
 
+  // Always show loading state while checking access
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading venue...</p>
+          <p className="text-gray-600">Loading venue dashboard...</p>
         </div>
       </div>
     );
   }
 
+  // Show error state if something went wrong
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -166,8 +177,16 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
     );
   }
 
+  // Only render the client component if we have valid venue data
   if (!venueData) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Preparing dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 
 // This component will check for authentication and redirect appropriately
 export default function HomePage() {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, AlertCircle, RefreshCw } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 import PageHeader from "@/components/PageHeader";
 
 

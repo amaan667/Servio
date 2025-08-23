@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 

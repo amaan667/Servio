@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabaseClient';
 import SignUpForm from './signup-form';
 
 export default function SignUpPage() {

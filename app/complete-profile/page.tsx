@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabaseClient';
 import CompleteProfileForm from './form';
 
 export default function CompleteProfilePage() {

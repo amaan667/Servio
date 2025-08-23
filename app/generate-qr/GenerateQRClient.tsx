@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Printer, Copy, Check } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 
 interface Props {
   venueId: string;
