@@ -209,6 +209,16 @@ export async function signUpUser(
 export async function signInUser(email: string, password: string) {
   try {
     logger.info("Attempting sign in", { email });
+    
+    // Check if Supabase is configured
+    if (!supabase) {
+      logger.error("Supabase client not configured");
+      return {
+        success: false,
+        message: "Authentication service not available. Please check your environment configuration.",
+      };
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,

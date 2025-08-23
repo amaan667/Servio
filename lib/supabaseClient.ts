@@ -10,19 +10,27 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 let supabaseClient: ReturnType<typeof createBrowserClient> | null = null;
 
 if (supabaseUrl && supabaseAnonKey) {
-  supabaseClient = createBrowserClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    }
-  );
+  try {
+    supabaseClient = createBrowserClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+        },
+      }
+    );
+    console.log('[SUPABASE-CLIENT] ✅ Client initialized successfully');
+  } catch (error) {
+    console.error('[SUPABASE-CLIENT] ❌ Failed to initialize client:', error);
+    supabaseClient = null;
+  }
 } else {
-  console.warn('[SUPABASE-CLIENT] Missing environment variables - client not initialized');
+  console.error('[SUPABASE-CLIENT] ❌ Missing environment variables - client not initialized');
+  console.error('[SUPABASE-CLIENT] URL:', supabaseUrl ? 'SET' : 'MISSING');
+  console.error('[SUPABASE-CLIENT] KEY:', supabaseAnonKey ? 'SET' : 'MISSING');
 }
 
 // Export a wrapper that handles the null case
