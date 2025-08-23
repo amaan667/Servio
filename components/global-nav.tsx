@@ -58,25 +58,24 @@ export default function GlobalNav() {
 
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-32 sm:h-36">
-          {/* Logo - Left aligned on desktop, centered on mobile */}
-          <div className="flex-shrink-0 md:flex-shrink-0 md:order-1 order-2 md:justify-start justify-center flex-1 md:flex-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex justify-between items-center h-32">
+          {/* Logo - Centered on mobile, left aligned on desktop */}
+          <div className="flex items-center justify-center md:justify-start flex-1 md:flex-none order-2 md:order-1">
             <Link href={session ? "/dashboard" : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
-                width={800}
-                height={250}
-                className="h-48 sm:h-56 w-auto transition-all duration-300 group-hover:scale-105"
+                width={240}
+                height={60}
+                className="h-48 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
           </div>
 
           {/* Desktop Navigation - Right side */}
-          <div className="hidden md:block md:order-2">
-            <div className="ml-4 lg:ml-6 flex items-center space-x-3 lg:space-x-4">
+          <div className="hidden md:flex items-center space-x-4 order-3">
               {session ? (
                 // Signed in navigation
                 <>
@@ -165,11 +164,10 @@ export default function GlobalNav() {
                   </Link>
                 </>
               )}
-            </div>
           </div>
 
-          {/* Mobile menu button - Right side */}
-          <div className="md:hidden md:order-3 order-1">
+          {/* Mobile Navigation - Left side (hamburger menu) */}
+          <div className="md:hidden flex items-center order-1">
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -188,7 +186,7 @@ export default function GlobalNav() {
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
         <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
             {session ? (
               // Signed in mobile navigation
               <>
