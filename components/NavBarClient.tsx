@@ -28,7 +28,7 @@ export default function NavBarClient() {
   console.log('[NAV] NavBarClient mounted', { venueId, homeHref, settingsHref, pathname });
 
   return (
-    <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-36 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       {/* Left (Logo + Home) */}
       <div className="flex items-center">
         <Link href={homeHref} className="flex items-center group" aria-label="Home">
@@ -38,7 +38,7 @@ export default function NavBarClient() {
             width={280}
             height={70}
             priority
-            className="h-14 w-auto transition-all duration-300 group-hover:scale-105"
+            className="h-56 w-auto transition-all duration-300 group-hover:scale-105"
           />
         </Link>
       </div>
