@@ -5,17 +5,14 @@ import { createServerClient } from '@supabase/ssr';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ Missing Supabase server utilities environment variables:", {
-    NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
-  });
-  throw new Error("Missing Supabase server utilities configuration. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.");
-}
+// Validate at runtime inside factories to avoid import-time throws
+const hasServerEnv = !!supabaseUrl && !!supabaseAnonKey;
 
 export function createServerSupabase() {
   const jar = cookies();
+  if (!hasServerEnv) {
+    throw new Error("Missing Supabase server utilities configuration. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.");
+  }
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
@@ -33,6 +30,9 @@ export function createServerSupabase() {
 
 export function createRouteSupabase() {
   const jar = cookies();
+  if (!hasServerEnv) {
+    throw new Error("Missing Supabase server utilities configuration. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.");
+  }
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
