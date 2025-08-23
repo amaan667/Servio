@@ -11,6 +11,7 @@ interface BackForwardNavProps {
   venueId?: string;
 }
 
+// Back navigation component - handles browser back functionality
 export default function BackForwardNav({ className, venueId }: BackForwardNavProps) {
   const router = useRouter();
   const [canGoBack, setCanGoBack] = useState(false);
