@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 // Removed RefreshCw icon import for Clean Refresh button cleanup
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 // Removed SessionClearer from production to avoid redundant client-side sign-out
 

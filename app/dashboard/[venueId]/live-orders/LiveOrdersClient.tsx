@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/lib/sb-client";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { Clock, ArrowLeft, User, AlertCircle, RefreshCw } from "lucide-react";
 
 import ConfigurationDiagnostic from "@/components/ConfigurationDiagnostic";
@@ -54,28 +54,20 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
 
-  // State to track if Supabase is configured
-  const [supabaseConfigured, setSupabaseConfigured] = useState<boolean | null>(null);
-
-  // Check if Supabase is configured
-  useEffect(() => {
-    const checkSupabaseConfig = () => {
-      const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      setSupabaseConfigured(hasUrl && hasKey);
-    };
-    
-    checkSupabaseConfig();
-  }, []);
-
   const loadVenueAndOrders = async () => {
     try {
       setError(null);
       setLoading(true);
       
       // Check Supabase configuration first
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        setError('Supabase configuration is missing');
+      if (!isSupabaseConfigured()) {
+        setError('Supabase configuration is missing. Please check your environment variables.');
+        setLoading(false);
+        return;
+      }
+
+      if (!supabase) {
+        setError('Unable to connect to database');
         setLoading(false);
         return;
       }
@@ -157,33 +149,33 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
       if (historyError) {
         console.error('Error fetching history orders:', historyError);
-        setError(`Failed to load history orders: ${historyError.message}`);
-        setLoading(false);
-        return;
+        // Don't fail completely if history fails
+        setHistoryOrders([]);
+        setGroupedHistoryOrders({});
+      } else {
+        if (historyData) {
+          const history = historyData as Order[];
+          setHistoryOrders(history);
+          
+          // Group history orders by date
+          const grouped = history.reduce((acc: GroupedHistoryOrders, order) => {
+            const date = formatDate(order.created_at);
+            if (!acc[date]) {
+              acc[date] = [];
+            }
+            acc[date].push(order);
+            return acc;
+          }, {});
+          setGroupedHistoryOrders(grouped);
+        } else {
+          setHistoryOrders([]);
+          setGroupedHistoryOrders({});
+        }
       }
 
       // Set orders with null checks
       setOrders((liveData || []) as Order[]);
       setAllOrders((allData || []) as Order[]);
-      
-      if (historyData) {
-        const history = historyData as Order[];
-        setHistoryOrders(history);
-        
-        // Group history orders by date
-        const grouped = history.reduce((acc: GroupedHistoryOrders, order) => {
-          const date = formatDate(order.created_at);
-          if (!acc[date]) {
-            acc[date] = [];
-          }
-          acc[date].push(order);
-          return acc;
-        }, {});
-        setGroupedHistoryOrders(grouped);
-      } else {
-        setHistoryOrders([]);
-        setGroupedHistoryOrders({});
-      }
       
       setLoading(false);
     } catch (err) {
@@ -194,100 +186,98 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   };
 
   useEffect(() => {
-    // Only load orders if Supabase is configured
-    if (supabaseConfigured === false) {
-      setLoading(false);
+    // Load orders when component mounts
+    loadVenueAndOrders();
+
+    // Only set up real-time subscription if Supabase is configured
+    if (!isSupabaseConfigured() || !supabase) {
       return;
     }
-    
-    if (supabaseConfigured === true) {
-      loadVenueAndOrders();
 
-      // Set up real-time subscription
-      const channel = supabase
-        .channel('orders')
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'orders',
-            filter: `venue_id=eq.${venueId}`
-          }, 
-          (payload) => {
-            try {
-              // Add null checks to prevent crashes
-              if (!payload || !payload.new && !payload.old) {
-                console.warn('Received invalid payload in real-time subscription');
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('orders')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders',
+          filter: `venue_id=eq.${venueId}`
+        }, 
+        (payload) => {
+          try {
+            // Add null checks to prevent crashes
+            if (!payload || !payload.new && !payload.old) {
+              console.warn('Received invalid payload in real-time subscription');
+              return;
+            }
+
+            const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
+            const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
+            
+            if (payload.eventType === 'INSERT') {
+              const newOrder = payload.new as Order;
+              if (!newOrder) {
+                console.warn('Received INSERT event but no new order data');
                 return;
               }
-
-              const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
-              const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
               
-              if (payload.eventType === 'INSERT') {
-                const newOrder = payload.new as Order;
-                if (!newOrder) {
-                  console.warn('Received INSERT event but no new order data');
-                  return;
-                }
-                
-                if (isInTodayWindow) {
-                  setOrders(prev => [newOrder, ...prev]);
-                  setAllOrders(prev => [newOrder, ...prev]);
-                } else {
-                  setHistoryOrders(prev => [newOrder, ...prev]);
-                  // Update grouped history
-                  const date = formatDate(newOrder.created_at);
-                  setGroupedHistoryOrders(prev => ({
-                    ...prev,
-                    [date]: [newOrder, ...(prev[date] || [])]
-                  }));
-                }
-              } else if (payload.eventType === 'UPDATE') {
-                const updatedOrder = payload.new as Order;
-                if (!updatedOrder) {
-                  console.warn('Received UPDATE event but no updated order data');
-                  return;
-                }
-                
-                if (isInTodayWindow) {
-                  setOrders(prev => prev.map(order => 
-                    order.id === updatedOrder.id ? updatedOrder : order
-                  ));
-                  setAllOrders(prev => prev.map(order => 
-                    order.id === updatedOrder.id ? updatedOrder : order
-                  ));
-                } else {
-                  setHistoryOrders(prev => prev.map(order => 
-                    order.id === updatedOrder.id ? updatedOrder : order
-                  ));
-                }
-              } else if (payload.eventType === 'DELETE') {
-                const deletedOrder = payload.old as Order;
-                if (!deletedOrder) {
-                  console.warn('Received DELETE event but no deleted order data');
-                  return;
-                }
-                
-                if (isInTodayWindow) {
-                  setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-                  setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-                } else {
-                  setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-                }
+              if (isInTodayWindow) {
+                setOrders(prev => [newOrder, ...prev]);
+                setAllOrders(prev => [newOrder, ...prev]);
+              } else {
+                setHistoryOrders(prev => [newOrder, ...prev]);
+                // Update grouped history
+                const date = formatDate(newOrder.created_at);
+                setGroupedHistoryOrders(prev => ({
+                  ...prev,
+                  [date]: [newOrder, ...(prev[date] || [])]
+                }));
               }
-            } catch (error) {
-              console.error('Error handling real-time subscription update:', error);
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedOrder = payload.new as Order;
+              if (!updatedOrder) {
+                console.warn('Received UPDATE event but no updated order data');
+                return;
+              }
+              
+              if (isInTodayWindow) {
+                setOrders(prev => prev.map(order => 
+                  order.id === updatedOrder.id ? updatedOrder : order
+                ));
+                setAllOrders(prev => prev.map(order => 
+                  order.id === updatedOrder.id ? updatedOrder : order
+                ));
+              } else {
+                setHistoryOrders(prev => prev.map(order => 
+                  order.id === updatedOrder.id ? updatedOrder : order
+                ));
+              }
+            } else if (payload.eventType === 'DELETE') {
+              const deletedOrder = payload.old as Order;
+              if (!deletedOrder) {
+                console.warn('Received DELETE event but no deleted order data');
+                return;
+              }
+              
+              if (isInTodayWindow) {
+                setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+                setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+              } else {
+                setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+              }
             }
+          } catch (error) {
+            console.error('Error handling real-time subscription update:', error);
           }
-        )
-        .subscribe();
+        }
+      )
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [venueId, supabaseConfigured, todayWindow]); // Added todayWindow to dependencies
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [venueId, todayWindow]); // Removed supabaseConfigured dependency
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
     try {
@@ -493,7 +483,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   }
 
   // Show configuration diagnostic if Supabase is not configured
-  if (supabaseConfigured === false) {
+  if (!isSupabaseConfigured()) {
     return (
       <div className="space-y-6">
         <div className="text-center">

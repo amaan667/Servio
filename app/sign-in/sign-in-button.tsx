@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function SignInButton() {
   

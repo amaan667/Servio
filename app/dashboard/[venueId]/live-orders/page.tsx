@@ -7,6 +7,7 @@ import { log } from '@/lib/debug';
 import LiveOrdersClient from './LiveOrdersClient';
 import PageHeader from '@/components/PageHeader';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import GlobalErrorBoundary from '@/components/GlobalErrorBoundary';
 
 export default async function LiveOrdersPage({
   params,
@@ -19,7 +20,21 @@ export default async function LiveOrdersPage({
     // Check if environment variables are set
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('[LIVE-ORDERS] Missing Supabase environment variables');
-      throw new Error('Supabase configuration is missing');
+      // Return a client-side component that will handle the missing config
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <PageHeader
+              title="Live Orders"
+              description="Monitor and manage real-time orders"
+              venueId={params.venueId}
+            />
+            <GlobalErrorBoundary>
+              <LiveOrdersClient venueId={params.venueId} />
+            </GlobalErrorBoundary>
+          </div>
+        </div>
+      );
     }
 
     const supabase = createServerSupabase();
@@ -28,7 +43,21 @@ export default async function LiveOrdersPage({
     
     if (authError) {
       console.error('[LIVE-ORDERS] Auth error:', authError);
-      throw new Error(`Authentication error: ${authError.message}`);
+      // Don't throw, let the client handle it
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <PageHeader
+              title="Live Orders"
+              description="Monitor and manage real-time orders"
+              venueId={params.venueId}
+            />
+            <GlobalErrorBoundary>
+              <LiveOrdersClient venueId={params.venueId} />
+            </GlobalErrorBoundary>
+          </div>
+        </div>
+      );
     }
     
     log('LIVE-ORDERS SSR user', { hasUser: !!user });
@@ -44,7 +73,21 @@ export default async function LiveOrdersPage({
 
     if (venueError) {
       console.error('[LIVE-ORDERS] Venue query error:', venueError);
-      throw new Error(`Database error: ${venueError.message}`);
+      // Don't throw, let the client handle it
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <PageHeader
+              title="Live Orders"
+              description="Monitor and manage real-time orders"
+              venueId={params.venueId}
+            />
+            <GlobalErrorBoundary>
+              <LiveOrdersClient venueId={params.venueId} />
+            </GlobalErrorBoundary>
+          </div>
+        </div>
+      );
     }
 
     if (!venue) {
@@ -61,29 +104,29 @@ export default async function LiveOrdersPage({
             venueId={params.venueId}
           />
           
-          <ErrorBoundary>
-            <LiveOrdersClient venueId={params.venueId} />
-          </ErrorBoundary>
+          <GlobalErrorBoundary>
+            <ErrorBoundary>
+              <LiveOrdersClient venueId={params.venueId} venueName={venue.name} />
+            </ErrorBoundary>
+          </GlobalErrorBoundary>
         </div>
       </div>
     );
   } catch (error) {
     console.error('[LIVE-ORDERS] Server-side error:', error);
     
-    // Return an error page instead of throwing
+    // Return a client-side component that will handle errors gracefully
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <h2 className="text-2xl font-bold text-foreground mb-4">Something went wrong</h2>
-          <p className="text-muted-foreground mb-4">
-            {error instanceof Error ? error.message : 'An unexpected error occurred'}
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-servio-purple text-white px-4 py-2 rounded-md hover:bg-servio-purple/90"
-          >
-            Refresh Page
-          </button>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <PageHeader
+            title="Live Orders"
+            description="Monitor and manage real-time orders"
+            venueId={params.venueId}
+          />
+          <GlobalErrorBoundary>
+            <LiveOrdersClient venueId={params.venueId} />
+          </GlobalErrorBoundary>
         </div>
       </div>
     );
