@@ -8,7 +8,8 @@ export default function SettingsLayout({
 }) {
   return (
     <>
-      <UniversalHeader />
+      {/* Settings: show only profile menu (blue circle) */}
+      <UniversalHeader showHamburgerMenu={false} showProfileMenu={true} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <NavigationBreadcrumb showBackButton={false} />
         {children}

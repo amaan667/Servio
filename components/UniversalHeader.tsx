@@ -19,9 +19,16 @@ import { useRouter } from "next/navigation";
 interface UniversalHeaderProps {
   showActions?: boolean;
   venueId?: string;
+  showHamburgerMenu?: boolean;
+  showProfileMenu?: boolean;
 }
 
-export default function UniversalHeader({ showActions = true, venueId }: UniversalHeaderProps) {
+export default function UniversalHeader({ 
+  showActions = true, 
+  venueId, 
+  showHamburgerMenu = true, 
+  showProfileMenu = true 
+}: UniversalHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -91,22 +98,24 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center h-32">
           {/* Mobile Navigation - Left side (hamburger menu) */}
-          <div className="md:hidden flex items-center order-1">
-            <Button
-              variant="ghost"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2"
-            >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </Button>
-          </div>
+          {showHamburgerMenu && (
+            <div className="md:hidden flex items-center order-1">
+              <Button
+                variant="ghost"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </Button>
+            </div>
+          )}
 
           {/* Logo - Centered on mobile, left aligned on desktop */}
-          <div className="flex items-center justify-center md:justify-start flex-1 md:flex-none order-2 md:order-1">
+          <div className={`flex items-center ${showHamburgerMenu ? 'justify-center md:justify-start flex-1 md:flex-none order-2 md:order-1' : 'justify-start flex-1 order-1'}`}>
             <Link href={session ? dashboardHref : homeHref} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
@@ -222,49 +231,51 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
           </div>
 
           {/* Mobile Navigation - Right side (profile menu) */}
-          <div className="md:hidden flex items-center order-3">
-            {session && showActions && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="flex items-center gap-2 p-2"
-                  >
-                    <User className="h-4 w-4" />
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem asChild>
-                    <Link href={homeHref} className="flex items-center gap-2">
-                      <Home className="h-4 w-4" />
-                      Home
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={dashboardHref} className="flex items-center gap-2">
-                      <span>Dashboard</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={settingsHref} className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleSignOut}
-                    className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
+          {showProfileMenu && (
+            <div className={`md:hidden flex items-center ${showHamburgerMenu ? 'order-3' : 'order-2'}`}>
+              {session && showActions && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex items-center gap-2 p-2"
+                    >
+                      <User className="h-4 w-4" />
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link href={homeHref} className="flex items-center gap-2">
+                        <Home className="h-4 w-4" />
+                        Home
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={dashboardHref} className="flex items-center gap-2">
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={settingsHref} className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

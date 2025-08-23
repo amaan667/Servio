@@ -9,7 +9,8 @@ export default function VenueDashboardLayout({
 }) {
   return (
     <>
-      <UniversalHeader venueId={params.venueId} />
+      {/* Dashboard: show only profile menu (blue circle) */}
+      <UniversalHeader venueId={params.venueId} showHamburgerMenu={false} showProfileMenu={true} />
       {children}
     </>
   );

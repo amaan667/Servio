@@ -10,5 +10,6 @@ export default function AppHeader() {
   
   if (hideOnDashboard || hideOnSettings) return null;
   
-  return <UniversalHeader />;
+  // Home page: show only hamburger menu (red circle)
+  return <UniversalHeader showHamburgerMenu={true} showProfileMenu={false} />;
 }
