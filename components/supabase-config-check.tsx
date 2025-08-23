@@ -17,15 +17,32 @@ export function SupabaseConfigCheck() {
   });
 
   useEffect(() => {
-    const checkConfig = () => {
-      const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      
-      setConfigStatus({
-        hasUrl,
-        hasKey,
-        isConfigured: hasUrl && hasKey
-      });
+    const checkConfig = async () => {
+      try {
+        // Check environment variables by making a request to our env debug endpoint
+        const response = await fetch('/api/env');
+        const envData = await response.json();
+        
+        const hasUrl = !!envData.NEXT_PUBLIC_SUPABASE_URL;
+        const hasKey = envData.HAS_SUPABASE_ANON;
+        
+        setConfigStatus({
+          hasUrl,
+          hasKey,
+          isConfigured: hasUrl && hasKey
+        });
+      } catch (error) {
+        console.error('Error checking environment configuration:', error);
+        // Fallback to client-side check
+        const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        setConfigStatus({
+          hasUrl,
+          hasKey,
+          isConfigured: hasUrl && hasKey
+        });
+      }
     };
 
     checkConfig();
