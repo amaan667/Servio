@@ -10,7 +10,16 @@ export default function SignUpPage() {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
-      const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+      
+      // Check if Supabase is configured
+      if (!supabase) {
+        console.error('[AUTH] Supabase client not configured');
+        alert('Authentication service not available. Please try again later.');
+        setLoading(false);
+        return;
+      }
+      
+      const redirectTo = 'https://servio-production.up.railway.app';
       console.log('[AUTH] Starting Google OAuth redirect to:', redirectTo);
       
       const { error } = await supabase.auth.signInWithOAuth({
