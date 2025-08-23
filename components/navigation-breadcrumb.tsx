@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Home, ChevronRight } from "lucide-react";
+import { Home } from "lucide-react";
 import Link from 'next/link';
 import { useMemo } from 'react';
 
@@ -74,7 +74,7 @@ export default function NavigationBreadcrumb({
     return null;
   }
 
-  // For sign-in/sign-up pages: Home → Sign In/Sign Up (current)
+  // For sign-in/sign-up pages: Home ← Sign In/Sign Up (current)
   if ((isSignInPage || isSignUpPage) && !showBackButton) {
     return (
       <nav aria-label="Breadcrumb" className="mb-6">
@@ -87,16 +87,16 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">
-            <ChevronRight className="h-4 w-4" />
+          <li className="text-gray-400 font-medium">
+            ←
           </li>
-          <li className="text-gray-900 font-medium">{pageTitle}</li>
+          <li className="text-gray-900 font-semibold">{pageTitle}</li>
         </ol>
       </nav>
     );
   }
 
-  // Dashboard root: Home → Dashboard (current)
+  // Dashboard root: Home ← Dashboard (current)
   if (isDashboardRoot) {
     return (
       <nav aria-label="Breadcrumb" className="mb-6">
@@ -109,16 +109,16 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">
-            <ChevronRight className="h-4 w-4" />
+          <li className="text-gray-400 font-medium">
+            ←
           </li>
-          <li className="text-gray-900 font-medium">Dashboard</li>
+          <li className="text-gray-900 font-semibold">Dashboard</li>
         </ol>
       </nav>
     );
   }
 
-  // Subpages: Home → Dashboard → Current Page
+  // Subpages: Home ← Dashboard ← Current Page
   return (
     <nav aria-label="Breadcrumb" className="mb-6">
       <ol className="flex items-center gap-2 text-sm">
@@ -130,8 +130,8 @@ export default function NavigationBreadcrumb({
             </Link>
           </Button>
         </li>
-        <li className="text-gray-400">
-          <ChevronRight className="h-4 w-4" />
+        <li className="text-gray-400 font-medium">
+          ←
         </li>
         <li>
           <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
@@ -140,10 +140,10 @@ export default function NavigationBreadcrumb({
             </Link>
           </Button>
         </li>
-        <li className="text-gray-400">
-          <ChevronRight className="h-4 w-4" />
+        <li className="text-gray-400 font-medium">
+          ←
         </li>
-        <li className="text-gray-900 font-medium">{pageTitle}</li>
+        <li className="text-gray-900 font-semibold">{pageTitle}</li>
       </ol>
     </nav>
   );

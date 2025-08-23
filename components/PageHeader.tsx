@@ -26,25 +26,22 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className={cn("mb-6 sm:mb-8", className)}>
-      {/* Top row with back button on the right */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex-1" />
-        {showBackForward && (
-          <BackForwardNav venueId={venueId} />
-        )}
-      </div>
-      
       {/* Breadcrumbs */}
       {showBreadcrumbs && <UniversalBreadcrumbs />}
       
-      {/* Header with title and description */}
+      {/* Header with title, description, and navigation */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            {title}
-          </h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+              {title}
+            </h1>
+            {showBackForward && (
+              <BackForwardNav venueId={venueId} />
+            )}
+          </div>
           {description && (
-            <p className="text-sm sm:text-lg text-muted-foreground mt-2">
+            <p className="text-sm sm:text-lg text-muted-foreground">
               {description}
             </p>
           )}

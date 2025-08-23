@@ -28,11 +28,11 @@ export default function Breadcrumbs() {
         {crumbs.map((c, i) => (
           <li key={i} className="flex items-center gap-2">
             {'current' in c && c.current ? (
-              <span className="font-medium text-foreground">{c.label}</span>
+              <span className="font-semibold text-foreground">{c.label}</span>
             ) : (
               <Link href={(c as any).href} className="hover:underline">{c.label}</Link>
             )}
-            {i < crumbs.length - 1 && <span>→</span>}
+            {i < crumbs.length - 1 && <span className="text-gray-400 font-medium">←</span>}
           </li>
         ))}
       </ol>
