@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
-import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import PageHeader from "@/components/PageHeader";
 import { todayWindowForTZ } from "@/lib/time";
 
 export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0, venue: initialVenue }: { venueId: string; userId: string; activeTables?: number; venue?: any }) {
@@ -249,15 +249,12 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Simple breadcrumb for main dashboard */}
-        <NavigationBreadcrumb venueId={venueId} />
-        
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            Welcome back, Manager!
-          </h2>
-          <p className="text-muted-foreground">Here's what's happening at {venue?.name || "your venue"} today</p>
-        </div>
+        <PageHeader
+          title="Welcome back, Manager!"
+          description={`Here's what's happening at ${venue?.name || "your venue"} today`}
+          venueId={venueId}
+          showBackForward={false}
+        />
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

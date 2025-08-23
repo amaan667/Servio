@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { log } from '@/lib/debug';
 import VenueSettingsClient from './VenueSettingsClient';
+import PageHeader from '@/components/PageHeader';
 
 export default async function VenueSettingsPage({
   params,
@@ -39,14 +40,11 @@ export default async function VenueSettingsPage({
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Settings for {venue.name}
-          </h1>
-          <p className="text-sm sm:text-lg text-muted-foreground mt-2">
-            Manage your account and venue settings
-          </p>
-        </div>
+        <PageHeader
+          title={`Settings for ${venue.name}`}
+          description="Manage your account and venue settings"
+          venueId={params.venueId}
+        />
         
         <VenueSettingsClient user={user} venue={venue} venues={venues || []} />
       </div>
