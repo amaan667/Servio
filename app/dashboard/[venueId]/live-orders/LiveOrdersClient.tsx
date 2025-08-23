@@ -72,7 +72,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     const checkSupabaseConfig = () => {
       const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
       const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      setSupabaseConfigured(hasUrl && hasKey);
+      const isConfigured = hasUrl && hasKey && 
+        process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://your-project.supabase.co' &&
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== 'your_supabase_anon_key';
+      setSupabaseConfigured(isConfigured);
     };
     
     checkSupabaseConfig();
@@ -420,8 +423,169 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <p className="text-muted-foreground mb-6">
             The live orders page requires Supabase configuration to function properly.
           </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="font-medium text-blue-800 mb-2">Quick Setup Guide:</h3>
+            <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+              <li>Edit the <code className="bg-blue-100 px-1 rounded">.env.local</code> file in your project root</li>
+              <li>Replace the placeholder values with your actual Supabase URL and anon key</li>
+              <li>Restart the development server</li>
+              <li>Refresh this page</li>
+            </ol>
+          </div>
         </div>
         <ConfigurationDiagnostic />
+        
+        {/* Demo Mode */}
+        <div className="mt-8">
+          <div className="text-center mb-6">
+            <h3 className="text-lg font-medium text-foreground mb-2">Demo Mode</h3>
+            <p className="text-sm text-muted-foreground">Preview the live orders interface with sample data</p>
+          </div>
+          
+          {/* Real-time order feed description with live clock */}
+          <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Real-time order feed for Demo Cafe
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-semibold text-purple-700">{formatCurrentDateTime().timeStr}</div>
+                <div className="text-sm text-muted-foreground">{formatCurrentDateTime().dateStr}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="live">Live Orders (2)</TabsTrigger>
+              <TabsTrigger value="all">All Today (5)</TabsTrigger>
+              <TabsTrigger value="history">History (12)</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="live" className="mt-6">
+              <div className="grid gap-6">
+                <Card className="hover:shadow-md transition-shadow border-border">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="text-sm text-muted-foreground">
+                          {formatCurrentDateTime().timeStr}
+                        </div>
+                        <div className="font-medium text-foreground">
+                          Table 3
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <User className="h-4 w-4 mr-1" />
+                          John Smith
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge className="bg-yellow-100 text-yellow-800">
+                          Pending
+                        </Badge>
+                        <div className="text-lg font-bold text-foreground">
+                          £24.50
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-foreground">2x Margherita Pizza</span>
+                        <span className="text-muted-foreground">£18.00</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-foreground">1x Coke</span>
+                        <span className="text-muted-foreground">£3.50</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-foreground">1x Garlic Bread</span>
+                        <span className="text-muted-foreground">£3.00</span>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button size="sm" disabled>
+                        Start Preparing
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-md transition-shadow border-border">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="text-sm text-muted-foreground">
+                          {formatCurrentDateTime().timeStr}
+                        </div>
+                        <div className="font-medium text-foreground">
+                          Takeaway
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <User className="h-4 w-4 mr-1" />
+                          Guest
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge className="bg-blue-100 text-blue-800">
+                          Preparing
+                        </Badge>
+                        <div className="text-lg font-bold text-foreground">
+                          £12.75
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-foreground">1x Chicken Burger</span>
+                        <span className="text-muted-foreground">£8.50</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-foreground">1x Fries</span>
+                        <span className="text-muted-foreground">£2.75</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-foreground">1x Milkshake</span>
+                        <span className="text-muted-foreground">£1.50</span>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button size="sm" disabled>
+                        Mark Served
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="all" className="mt-6">
+              <div className="grid gap-6">
+                <Card className="border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">Demo Mode</h3>
+                    <p className="text-muted-foreground">Configure Supabase to see real data</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="history" className="mt-6">
+              <div className="space-y-8">
+                <Card className="border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">Demo Mode</h3>
+                    <p className="text-muted-foreground">Configure Supabase to see historical orders</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     );
   }
