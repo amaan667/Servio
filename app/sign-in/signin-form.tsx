@@ -143,17 +143,21 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
                 setError(null);
+                console.log('[AUTH] Google sign-in button clicked');
                 
                 // Check if Supabase is configured
                 if (!isSupabaseConfigured()) {
+                  console.error('[AUTH] Supabase not configured');
                   setError("Authentication service not available. Please check your environment configuration.");
                   return;
                 }
                 
+                console.log('[AUTH] Supabase is configured, starting Google sign-in');
                 try {
                   await onGoogleSignIn();
+                  console.log('[AUTH] Google sign-in initiated successfully');
                 } catch (err: any) {
-                  console.error('[AUTH] Google sign-in error', { message: err?.message });
+                  console.error('[AUTH] Google sign-in error', { message: err?.message, error: err });
                   setError(`Google sign-in failed: ${err.message || "Please try again."}`);
                 }
               }}
