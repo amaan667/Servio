@@ -20,11 +20,29 @@ if (!supabaseUrl || !supabaseAnonKey) {
     NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
   });
-  throw new Error("Missing Supabase environment variables");
+  
+  // Create a mock client that will show a helpful error message
+  const mockClient = {
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: new Error("Supabase not configured") }),
+      signInWithOAuth: async () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+      signUp: async () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+      signOut: async () => ({ error: new Error("Please configure Supabase environment variables") })
+    },
+    from: () => ({
+      select: () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+      insert: () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+      update: () => ({ data: null, error: new Error("Please configure Supabase environment variables") }),
+      delete: () => ({ data: null, error: new Error("Please configure Supabase environment variables") })
+    })
+  };
+  
+  console.warn("⚠️ Using mock Supabase client - please configure environment variables");
+  export const supabase = mockClient as any;
+} else {
+  // Create single Supabase client instance with proper configuration
+  export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 }
-
-// Create single Supabase client instance with proper configuration
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 console.log("Supabase client created successfully");
 

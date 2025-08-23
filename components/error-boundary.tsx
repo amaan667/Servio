@@ -40,20 +40,37 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         return this.props.fallback;
       }
 
+      // Check if this is a Supabase configuration error
+      const isSupabaseError = this.state.error?.message?.includes('Supabase') || 
+                             this.state.error?.message?.includes('environment variables');
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="max-w-md w-full space-y-8">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Something went wrong
+                {isSupabaseError ? 'Configuration Required' : 'Something went wrong'}
               </h2>
               <p className="text-gray-600 mb-6">
-                We're sorry, but something unexpected happened. Please try refreshing the page.
+                {isSupabaseError 
+                  ? 'This application requires Supabase configuration. Please set up your environment variables and try again.'
+                  : 'We\'re sorry, but something unexpected happened. Please try refreshing the page.'
+                }
               </p>
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-left">
                   <p className="text-sm font-medium text-red-800">Error Details:</p>
                   <p className="text-xs text-red-600 mt-1">{this.state.error.message}</p>
+                  {isSupabaseError && (
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                      <p className="text-xs text-blue-800">
+                        <strong>Setup Instructions:</strong><br/>
+                        1. Create a .env.local file in the project root<br/>
+                        2. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY<br/>
+                        3. Restart the development server
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
               <button
