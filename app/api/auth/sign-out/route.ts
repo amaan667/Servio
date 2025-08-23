@@ -1,30 +1,15 @@
-import { NextResponse } from 'next/server';
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
-export const runtime = 'nodejs';
+import { NextResponse } from 'next/server'
+import { getSupabaseForRoute } from '@/lib/supabase-server'
 
 export async function POST() {
-  try {
-    // Simply return success - let the client handle the actual sign-out
-    const response = NextResponse.json({ ok: true });
-    
-    // Clear auth cookies by setting them to expire immediately
-    const cookieOptions = {
-      maxAge: 0,
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const
-    };
-    
-    response.cookies.set('sb-access-token', '', cookieOptions);
-    response.cookies.set('sb-refresh-token', '', cookieOptions);
-    response.cookies.set('supabase-auth-token', '', cookieOptions);
-    
-    return response;
-  } catch (error) {
-    console.error('[AUTH] Sign-out error:', error);
-    return NextResponse.json({ ok: true }); // Always return success to avoid client errors
-  }
+  const base = process.env.NEXT_PUBLIC_APP_URL!
+  const res = NextResponse.redirect(`${base}/`, { status: 307 })
+  const supabase = getSupabaseForRoute(res)
+  await supabase.auth.signOut()
+  return res
 }
 
 

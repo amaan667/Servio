@@ -68,8 +68,13 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   const resolvedVenueId = venueId ?? primaryVenueId;
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.replace('/');
+    try {
+      await fetch('/api/auth/sign-out', { method: 'POST' });
+    } catch (e) {
+      // no-op; still navigate home
+    } finally {
+      router.replace('/');
+    }
   };
 
   // Navigation links

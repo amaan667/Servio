@@ -242,7 +242,7 @@ export async function signInUser(email: string, password: string) {
 export async function signInWithGoogle() {
   const supabase = supabaseClient;
   // Use a consistent redirect URL that matches the Supabase configuration
-  const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
   console.log('[AUTH] starting oauth with redirect:', redirectTo);
   
   const { data, error } = await supabase.auth.signInWithOAuth({
