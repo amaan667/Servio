@@ -5,14 +5,8 @@ import { createServerClient } from '@supabase/ssr';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ Missing Supabase server environment variables:", {
-    NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
-  });
-  throw new Error("Missing Supabase server configuration. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.");
-}
+// Validate at runtime inside factory to avoid import-time throws
+const hasServerEnv = !!supabaseUrl && !!supabaseAnonKey;
 
 // Avoid throwing at import-time to keep webpack builds stable. We rely on
 // runtime environment correctness and server route handlers for validation.
@@ -32,6 +26,9 @@ const isRouteHandler = () => {
 
 export const supabaseServer = () => {
   const cookieStore = cookies();
+  if (!hasServerEnv) {
+    throw new Error("Missing Supabase server configuration. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.");
+  }
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
