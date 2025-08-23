@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, ChevronLeft } from "lucide-react";
+import { Home, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BreadcrumbItem {
@@ -117,7 +117,7 @@ export default function UniversalBreadcrumbs() {
               </Link>
             )}
             {index < breadcrumbs.length - 1 && (
-              <ChevronLeft className="h-4 w-4 text-gray-400 rotate-180" />
+              <ChevronRight className="h-4 w-4 text-gray-400" />
             )}
           </li>
         ))}
