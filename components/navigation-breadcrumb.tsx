@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home } from "lucide-react";
 import Link from 'next/link';
 import { useMemo } from 'react';
 
@@ -10,7 +10,7 @@ interface NavigationBreadcrumbProps {
   customBackPath?: string;
   customBackLabel?: string;
   showBackButton?: boolean;
-  venueId?: string; // Add venueId prop
+  venueId?: string;
 }
 
 function extractVenueId(pathname: string | null) {
@@ -29,14 +29,15 @@ export default function NavigationBreadcrumb({
   const pathname = pathnameRaw || '';
   const params = useParams() as { venueId?: string };
   
-  // [NAV] Extract venueId from params or pathname, fallback to prop
+  // Extract venueId from params or pathname, fallback to prop
   const venueId = useMemo(
     () => params?.venueId ?? extractVenueId(pathname) ?? propVenueId,
     [params?.venueId, pathname, propVenueId]
   );
   
-  // [NAV] Determine dashboard link based on venueId - use relative links
-  const homeLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
+  // Home should always link to main home page, dashboard link for breadcrumb navigation
+  const homeLink = '/';
+  const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
 
   console.log('[NAV] NavigationBreadcrumb', { venueId, homeLink, pathname });
 
@@ -66,85 +67,83 @@ export default function NavigationBreadcrumb({
   const isDashboardRoot = /^\/dashboard\/(?:[^/]+)\/?$/.test(pathname);
   const isSignInPage = pathname.includes("/sign-in");
   const isSignUpPage = pathname.includes("/sign-up");
+  const isHomePage = pathname === "/";
 
-  // For sign-in/sign-up pages: Home → Sign In/Sign Up (current)
+  // Don't show breadcrumbs on home page
+  if (isHomePage) {
+    return null;
+  }
+
+  // For sign-in/sign-up pages: Home ← Sign In/Sign Up (current)
   if ((isSignInPage || isSignUpPage) && !showBackButton) {
     return (
-      <nav aria-label="Breadcrumb" className="mb-4">
+      <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href="/dashboard">
-                <>
-                  <Home className="h-4 w-4" />
-                  <span className="hidden sm:inline">Home</span>
-                </>
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
+              <Link href={homeLink}>
+                <Home className="h-4 w-4" />
+                <span>Home</span>
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">→</li>
-          <li className="text-gray-700 font-medium">{pageTitle}</li>
+          <li className="text-gray-400 font-medium">
+            ←
+          </li>
+          <li className="text-gray-900 font-semibold">{pageTitle}</li>
         </ol>
       </nav>
     );
   }
 
-  // Dashboard root: Home → Dashboard (current)
+  // Dashboard root: Home ← Dashboard (current)
   if (isDashboardRoot) {
     return (
-      <nav aria-label="Breadcrumb" className="mb-4">
+      <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
               <Link href={homeLink}>
-                <>
-                  <Home className="h-4 w-4" />
-                  <span className="hidden sm:inline">Home</span>
-                </>
+                <Home className="h-4 w-4" />
+                <span>Home</span>
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">→</li>
-          <li className="text-gray-700 font-medium">Dashboard</li>
+          <li className="text-gray-400 font-medium">
+            ←
+          </li>
+          <li className="text-gray-900 font-semibold">Dashboard</li>
         </ol>
       </nav>
     );
   }
 
-  // Subpages: Home → Dashboard (Back) → Current Page
+  // Subpages: Home ← Dashboard ← Current Page
   return (
-    <nav aria-label="Breadcrumb" className="mb-4">
+    <nav aria-label="Breadcrumb" className="mb-6">
       <ol className="flex items-center gap-2 text-sm">
         <li>
-          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
             <Link href={homeLink}>
-              <>
-                <Home className="h-4 w-4" />
-                <span className="hidden sm:inline">Home</span>
-              </>
+              <Home className="h-4 w-4" />
+              <span>Home</span>
             </Link>
           </Button>
         </li>
-        <li className="text-gray-400">→</li>
-        <li>
-          {customBackPath ? (
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href={customBackPath}>
-                <>
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
-                </>
-              </Link>
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={() => window.history.back()} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
-            </Button>
-          )}
+        <li className="text-gray-400 font-medium">
+          ←
         </li>
-        <li className="text-gray-400">→</li>
-        <li className="text-gray-700 font-medium">{pageTitle}</li>
+        <li>
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
+            <Link href={dashboardLink}>
+              <span>Dashboard</span>
+            </Link>
+          </Button>
+        </li>
+        <li className="text-gray-400 font-medium">
+          ←
+        </li>
+        <li className="text-gray-900 font-semibold">{pageTitle}</li>
       </ol>
     </nav>
   );

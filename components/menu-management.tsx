@@ -25,7 +25,7 @@ import {
   Link,
   FileText,
 } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 import { logger } from "@/lib/logger";
 import {
   Dialog,

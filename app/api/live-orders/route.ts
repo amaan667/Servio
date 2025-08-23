@@ -36,8 +36,7 @@ export async function GET(req: Request) {
 
   let q = admin.from('orders')
     .select(`
-      id, venue_id, table_number, customer_name, customer_phone, total_amount, status, payment_status, notes, created_at, items,
-      order_items ( id, item_name, name, menu_item_name, unit_price, price, quantity, special_instructions )
+      id, venue_id, table_number, customer_name, customer_phone, total_amount, status, payment_status, notes, created_at, items
     `)
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false })
@@ -51,21 +50,43 @@ export async function GET(req: Request) {
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
   const hydrated = (data ?? []).map((o: any) => {
-    let items = (o.order_items ?? []).map((it: any) => {
-      const price = Number(it.unit_price ?? it.price ?? 0);
-      const qty = Number(it.quantity ?? 0);
-      const item_name = (it.item_name ?? it.name ?? it.menu_item_name ?? 'Item') as string;
-      return { id: it.id, item_name, price, quantity: qty, special_instructions: it.special_instructions, line_total: price * qty };
-    });
-    if (!items.length && Array.isArray(o.items)) {
+    let items: any[] = [];
+    
+    // Handle embedded items from the JSONB field
+    if (Array.isArray(o.items)) {
       items = (o.items as any[]).map((it: any, idx: number) => {
-        const price = Number(it.unit_price ?? it.price ?? it.unitPrice ?? 0);
+        const price = Number(it.price ?? it.unit_price ?? it.unitPrice ?? 0);
         const qty = Number(it.quantity ?? it.qty ?? 0);
         const item_name = (it.item_name ?? it.name ?? it.menu_item_name ?? it.title ?? 'Item') as string;
         const special_instructions = (it.special_instructions ?? it.specialInstructions ?? null) as string | null;
-        return { id: it.id ?? `embedded-${idx}`, item_name, price, quantity: qty, special_instructions, line_total: price * qty };
+        return { 
+          id: it.id ?? `embedded-${idx}`, 
+          item_name, 
+          price, 
+          quantity: qty, 
+          special_instructions, 
+          line_total: price * qty 
+        };
       });
     }
+    
+    // Fallback to order_items if embedded items are not available
+    if (!items.length && o.order_items) {
+      items = (o.order_items ?? []).map((it: any) => {
+        const price = Number(it.unit_price ?? it.price ?? 0);
+        const qty = Number(it.quantity ?? 0);
+        const item_name = (it.item_name ?? it.name ?? it.menu_item_name ?? 'Item') as string;
+        return { 
+          id: it.id, 
+          item_name, 
+          price, 
+          quantity: qty, 
+          special_instructions: it.special_instructions, 
+          line_total: price * qty 
+        };
+      });
+    }
+    
     const computed_total = items.reduce((sum: number, it: any) => sum + it.line_total, 0);
     return { ...o, items, computed_total };
   });

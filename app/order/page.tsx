@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ShoppingCart, Plus, Minus, X } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabaseClient";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 import OrderFeedbackForm from "@/components/OrderFeedbackForm";
