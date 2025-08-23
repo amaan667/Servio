@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 import SignUpForm from './signup-form';
 
 export default function SignUpPage() {
@@ -10,6 +10,15 @@ export default function SignUpPage() {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
+      
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured() || !supabase) {
+        console.error('[AUTH] Supabase client not configured');
+        alert('Authentication service not available. Please try again later.');
+        setLoading(false);
+        return;
+      }
+      
       const redirectTo = 'https://servio-production.up.railway.app';
       console.log('[AUTH] Starting Google OAuth redirect to:', redirectTo);
       
