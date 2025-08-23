@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, clearInvalidSession } from '@/lib/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 
 function now() {
@@ -36,14 +36,31 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
+        
         if (error) {
           console.error('[AUTH DEBUG] provider:getSession:error', { t: now(), error: error.message });
+          
+          // Handle refresh token errors specifically
+          if (error.message?.includes('refresh_token_not_found') || 
+              error.message?.includes('Invalid Refresh Token')) {
+            console.warn('[AUTH DEBUG] provider:refresh_token_error - clearing invalid session');
+            await clearInvalidSession();
+          }
+          
           setSession(null);
         } else {
           setSession(session);
         }
       } catch (err: any) {
         console.error('[AUTH DEBUG] provider:getSession:unexpected', { t: now(), message: err?.message, stack: err?.stack });
+        
+        // Handle refresh token errors in catch block too
+        if (err?.message?.includes('refresh_token_not_found') || 
+            err?.message?.includes('Invalid Refresh Token')) {
+          console.warn('[AUTH DEBUG] provider:refresh_token_error_catch - clearing invalid session');
+          await clearInvalidSession();
+        }
+        
         setSession(null);
       } finally {
         setLoading(false);
@@ -58,8 +75,15 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       return;
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
+      
+      // Handle token refresh errors
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.warn('[AUTH DEBUG] provider:token_refresh_failed - clearing invalid session');
+        await clearInvalidSession();
+      }
+      
       setSession(session);
       setLoading(false);
     });
