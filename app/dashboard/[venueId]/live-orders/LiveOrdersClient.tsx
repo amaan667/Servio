@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/sb-client";
-import { Clock, ArrowLeft, User } from "lucide-react";
+import { Clock, ArrowLeft, User, AlertCircle, RefreshCw } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/dates";
-
+import ConfigurationDiagnostic from "@/components/ConfigurationDiagnostic";
 
 
 interface Order {
@@ -47,6 +47,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
   const [groupedHistoryOrders, setGroupedHistoryOrders] = useState<GroupedHistoryOrders>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(null);
   const [activeTab, setActiveTab] = useState("live");
@@ -54,24 +55,48 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
   // State to hold the venue timezone
   const [venueTimezone, setVenueTimezone] = useState<string>('UTC');
+  // State to track if Supabase is configured
+  const [supabaseConfigured, setSupabaseConfigured] = useState<boolean | null>(null);
 
+  // Check if Supabase is configured
   useEffect(() => {
-    const loadVenueAndOrders = async () => {
-      let venueTimezone;
+    const checkSupabaseConfig = () => {
+      const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      setSupabaseConfigured(hasUrl && hasKey);
+    };
+    
+    checkSupabaseConfig();
+  }, []);
+
+  const loadVenueAndOrders = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      
+      let venueTimezone = 'UTC';
       if (!venueNameProp) {
-        const { data: venueData } = await supabase
+        const { data: venueData, error: venueError } = await supabase
           .from('venues')
           .select('name, timezone')
           .eq('venue_id', venueId)
           .single();
+          
+        if (venueError) {
+          console.error('Error fetching venue data:', venueError);
+          setError(`Failed to load venue data: ${venueError.message}`);
+          setLoading(false);
+          return;
+        }
+        
         setVenueName(venueData?.name || '');
-        venueTimezone = venueData?.timezone;
+        venueTimezone = venueData?.timezone || 'UTC';
         setVenueTimezone(venueData?.timezone || 'UTC');
       }
+      
       const window = todayWindowForTZ(venueTimezone);
       setTodayWindow(window);
       
-      // Load live orders (pending/preparing from today)
       // Load live orders (pending/preparing from today)
       const { data: liveData, error: liveError } = await supabase
         .from('orders')
@@ -82,6 +107,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .lt('created_at', window.endUtcISO)
         .order('created_at', { ascending: false });
 
+      if (liveError) {
+        console.error('Error fetching live orders:', liveError);
+        setError(`Failed to load live orders: ${liveError.message}`);
+        setLoading(false);
+        return;
+      }
+
       // Load all orders from today
       const { data: allData, error: allError } = await supabase
         .from('orders')
@@ -90,6 +122,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .gte('created_at', window.startUtcISO)
         .lt('created_at', window.endUtcISO)
         .order('created_at', { ascending: false });
+
+      if (allError) {
+        console.error('Error fetching all orders:', allError);
+        setError(`Failed to load all orders: ${allError.message}`);
+        setLoading(false);
+        return;
+      }
 
       // Load history orders (not from today)
       const { data: historyData, error: historyError } = await supabase
@@ -100,13 +139,20 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false })
         .limit(100); // Limit to last 100 orders
 
-      if (!liveError && liveData) {
+      if (historyError) {
+        console.error('Error fetching history orders:', historyError);
+        setError(`Failed to load history orders: ${historyError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      if (liveData) {
         setOrders(liveData as Order[]);
       }
-      if (!allError && allData) {
+      if (allData) {
         setAllOrders(allData as Order[]);
       }
-      if (!historyError && historyData) {
+      if (historyData) {
         const history = historyData as Order[];
         setHistoryOrders(history);
         
@@ -125,89 +171,113 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         }, {});
         setGroupedHistoryOrders(grouped);
       }
+      
       setLoading(false);
-    };
+    } catch (err) {
+      console.error('Unexpected error in loadVenueAndOrders:', err);
+      setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setLoading(false);
+    }
+  };
 
-    loadVenueAndOrders();
+  useEffect(() => {
+    // Only load orders if Supabase is configured
+    if (supabaseConfigured === false) {
+      setLoading(false);
+      return;
+    }
+    
+    if (supabaseConfigured === true) {
+      loadVenueAndOrders();
 
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('orders')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'orders',
-          filter: `venue_id=eq.${venueId}`
-        }, 
-        (payload) => {
-          const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
-          const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
-          
-          if (payload.eventType === 'INSERT') {
-            const newOrder = payload.new as Order;
-            if (isInTodayWindow) {
-              setOrders(prev => [newOrder, ...prev]);
-              setAllOrders(prev => [newOrder, ...prev]);
-            } else {
-              setHistoryOrders(prev => [newOrder, ...prev]);
-              // Update grouped history
-              const date = new Date(newOrder.created_at).toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-              });
-              setGroupedHistoryOrders(prev => ({
-                ...prev,
-                [date]: [newOrder, ...(prev[date] || [])]
-              }));
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedOrder = payload.new as Order;
-            if (isInTodayWindow) {
-              setOrders(prev => prev.map(order => 
-                order.id === updatedOrder.id ? updatedOrder : order
-              ));
-              setAllOrders(prev => prev.map(order => 
-                order.id === updatedOrder.id ? updatedOrder : order
-              ));
-            } else {
-              setHistoryOrders(prev => prev.map(order => 
-                order.id === updatedOrder.id ? updatedOrder : order
-              ));
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const deletedOrder = payload.old as Order;
-            if (isInTodayWindow) {
-              setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-              setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-            } else {
-              setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+      // Set up real-time subscription
+      const channel = supabase
+        .channel('orders')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'orders',
+            filter: `venue_id=eq.${venueId}`
+          }, 
+          (payload) => {
+            const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
+            const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
+            
+            if (payload.eventType === 'INSERT') {
+              const newOrder = payload.new as Order;
+              if (isInTodayWindow) {
+                setOrders(prev => [newOrder, ...prev]);
+                setAllOrders(prev => [newOrder, ...prev]);
+              } else {
+                setHistoryOrders(prev => [newOrder, ...prev]);
+                // Update grouped history
+                const date = new Date(newOrder.created_at).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                });
+                setGroupedHistoryOrders(prev => ({
+                  ...prev,
+                  [date]: [newOrder, ...(prev[date] || [])]
+                }));
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedOrder = payload.new as Order;
+              if (isInTodayWindow) {
+                setOrders(prev => prev.map(order => 
+                  order.id === updatedOrder.id ? updatedOrder : order
+                ));
+                setAllOrders(prev => prev.map(order => 
+                  order.id === updatedOrder.id ? updatedOrder : order
+                ));
+              } else {
+                setHistoryOrders(prev => prev.map(order => 
+                  order.id === updatedOrder.id ? updatedOrder : order
+                ));
+              }
+            } else if (payload.eventType === 'DELETE') {
+              const deletedOrder = payload.old as Order;
+              if (isInTodayWindow) {
+                setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+                setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+              } else {
+                setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+              }
             }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [venueId]);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [venueId, supabaseConfigured]);
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
-    const { error } = await supabase
-      .from('orders')
-      .update({ status })
-      .eq('id', orderId)
-      .eq('venue_id', venueId);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', orderId)
+        .eq('venue_id', venueId);
 
-    if (!error) {
+      if (error) {
+        console.error('Error updating order status:', error);
+        setError(`Failed to update order status: ${error.message}`);
+        return;
+      }
+
       setOrders(prev => prev.map(order => 
         order.id === orderId ? { ...order, status } : order
       ));
       setAllOrders(prev => prev.map(order => 
         order.id === orderId ? { ...order, status } : order
       ));
+    } catch (err) {
+      console.error('Unexpected error updating order status:', err);
+      setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -321,6 +391,41 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  // Show configuration diagnostic if Supabase is not configured
+  if (supabaseConfigured === false) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-foreground mb-2">Configuration Required</h2>
+          <p className="text-muted-foreground mb-6">
+            The live orders page requires Supabase configuration to function properly.
+          </p>
+        </div>
+        <ConfigurationDiagnostic />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Orders</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button 
+            onClick={loadVenueAndOrders}
+            className="flex items-center space-x-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Try Again</span>
+          </Button>
+        </div>
       </div>
     );
   }
