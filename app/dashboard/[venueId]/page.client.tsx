@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
+import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, AlertCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/sb-client";
 import PageHeader from "@/components/PageHeader";
 
@@ -15,6 +15,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
   const [loading, setLoading] = useState(!initialVenue); // Start with loading false if we have initial venue data
   const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, activeTables: activeTablesFromSSR, menuItems: 0, unpaid: 0 });
   const [todayWindow, setTodayWindow] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,7 +25,9 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         
         // Check Supabase configuration first
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-          throw new Error('Supabase configuration is missing');
+          setError('Supabase configuration is missing');
+          setLoading(false);
+          return;
         }
         
         // Check if we already have venue data from SSR
@@ -51,25 +54,33 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         
         console.log('[DASHBOARD] Venue query result:', { hasData: !!venueData, error: error?.message });
         
-        if (!error && venueData) {
-          setVenue(venueData);
-          const now = new Date();
-          const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-          const window = {
-            startUtcISO: startOfDay.toISOString(),
-            endUtcISO: endOfDay.toISOString(),
-          };
-          setTodayWindow(window);
-          await loadStats(venueData.venue_id, window);
-        } else {
+        if (error) {
           console.error('[DASHBOARD] Failed to load venue:', error);
-          // Set loading to false even on error to prevent infinite loading
+          setError(`Failed to load venue: ${error.message}`);
           setLoading(false);
+          return;
         }
+        
+        if (!venueData) {
+          console.error('[DASHBOARD] No venue data returned');
+          setError('Venue not found');
+          setLoading(false);
+          return;
+        }
+        
+        setVenue(venueData);
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+        const window = {
+          startUtcISO: startOfDay.toISOString(),
+          endUtcISO: endOfDay.toISOString(),
+        };
+        setTodayWindow(window);
+        await loadStats(venueData.venue_id, window);
       } catch (error) {
         console.error('[DASHBOARD] Unexpected error loading venue:', error);
-        // Set loading to false even on error to prevent infinite loading
+        setError(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         setLoading(false);
       }
     };
@@ -283,6 +294,29 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
           <p className="mt-2 text-muted-foreground">Loading venue dashboard...</p>
           <p className="mt-1 text-xs text-gray-500">Venue ID: {venueId}</p>
           {venue && <p className="mt-1 text-xs text-gray-500">Venue: {venue.name}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Dashboard</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button 
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              window.location.reload();
+            }}
+            className="flex items-center space-x-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Try Again</span>
+          </Button>
         </div>
       </div>
     );
