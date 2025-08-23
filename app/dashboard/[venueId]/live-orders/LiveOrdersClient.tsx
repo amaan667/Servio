@@ -57,12 +57,38 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // State to track if Supabase is configured
   const [supabaseConfigured, setSupabaseConfigured] = useState<boolean | null>(null);
 
-  // Check if Supabase is configured
+  // Check if Supabase is configured - improved check
   useEffect(() => {
-    const checkSupabaseConfig = () => {
-      const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      setSupabaseConfigured(hasUrl && hasKey);
+    const checkSupabaseConfig = async () => {
+      try {
+        // Check if environment variables are available
+        const hasUrl = typeof window !== 'undefined' ? 
+          !!window.__NEXT_DATA__?.props?.pageProps?.supabaseUrl || 
+          !!process.env.NEXT_PUBLIC_SUPABASE_URL : 
+          !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+        
+        const hasKey = typeof window !== 'undefined' ? 
+          !!window.__NEXT_DATA__?.props?.pageProps?.supabaseKey || 
+          !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY : 
+          !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!hasUrl || !hasKey) {
+          setSupabaseConfigured(false);
+          return;
+        }
+
+        // Test the connection by making a simple query
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Supabase connection test failed:', error);
+          setSupabaseConfigured(false);
+        } else {
+          setSupabaseConfigured(true);
+        }
+      } catch (err) {
+        console.error('Error checking Supabase configuration:', err);
+        setSupabaseConfigured(false);
+      }
     };
     
     checkSupabaseConfig();
@@ -72,6 +98,21 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     try {
       setError(null);
       setLoading(true);
+      
+      // First, check if user is authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        setError(`Authentication error: ${sessionError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      if (!session) {
+        setError('You must be logged in to view live orders');
+        setLoading(false);
+        return;
+      }
       
       if (!venueNameProp) {
         const { data: venueData, error: venueError } = await supabase
@@ -424,13 +465,21 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Orders</h3>
           <p className="text-muted-foreground mb-4">{error}</p>
-          <Button 
-            onClick={loadVenueAndOrders}
-            className="flex items-center space-x-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>Try Again</span>
-          </Button>
+          <div className="flex space-x-2 justify-center">
+            <Button 
+              onClick={loadVenueAndOrders}
+              className="flex items-center space-x-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Try Again</span>
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Page
+            </Button>
+          </div>
         </div>
       </div>
     );

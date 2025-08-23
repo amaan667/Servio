@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, RefreshCw, Info } from "lucide-react";
 
 interface ConfigStatus {
   name: string;
@@ -22,7 +22,12 @@ export default function ConfigurationDiagnostic() {
     const status: ConfigStatus[] = [];
 
     // Check Supabase URL
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    const hasUrl = typeof window !== 'undefined' ? 
+      !!window.__NEXT_DATA__?.props?.pageProps?.supabaseUrl || 
+      !!process.env.NEXT_PUBLIC_SUPABASE_URL : 
+      !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+    
+    if (hasUrl) {
       status.push({
         name: 'Supabase URL',
         status: 'ok',
@@ -39,7 +44,12 @@ export default function ConfigurationDiagnostic() {
     }
 
     // Check Supabase Anon Key
-    if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    const hasKey = typeof window !== 'undefined' ? 
+      !!window.__NEXT_DATA__?.props?.pageProps?.supabaseKey || 
+      !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY : 
+      !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (hasKey) {
       status.push({
         name: 'Supabase Anon Key',
         status: 'ok',
@@ -62,16 +72,16 @@ export default function ConfigurationDiagnostic() {
         const data = await response.json();
         if (data.NEXT_PUBLIC_SUPABASE_URL) {
           status.push({
-            name: 'Supabase Connection',
+            name: 'API Connection',
             status: 'ok',
             message: 'Connection successful',
             required: true
           });
         } else {
           status.push({
-            name: 'Supabase Connection',
+            name: 'API Connection',
             status: 'error',
-            message: 'Environment variables not accessible',
+            message: 'Environment variables not accessible via API',
             required: true
           });
         }
@@ -79,7 +89,7 @@ export default function ConfigurationDiagnostic() {
         status.push({
           name: 'API Connection',
           status: 'error',
-          message: 'Cannot connect to API endpoints',
+          message: `HTTP ${response.status}: Cannot connect to API endpoints`,
           required: true
         });
       }
@@ -88,6 +98,36 @@ export default function ConfigurationDiagnostic() {
         name: 'API Connection',
         status: 'error',
         message: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        required: true
+      });
+    }
+
+    // Test network connectivity
+    try {
+      const networkResponse = await fetch('/api/env-debug', { 
+        method: 'HEAD',
+        cache: 'no-cache'
+      });
+      if (networkResponse.ok) {
+        status.push({
+          name: 'Network Connectivity',
+          status: 'ok',
+          message: 'Network connection working',
+          required: true
+        });
+      } else {
+        status.push({
+          name: 'Network Connectivity',
+          status: 'error',
+          message: 'Network connection issues detected',
+          required: true
+        });
+      }
+    } catch (error) {
+      status.push({
+        name: 'Network Connectivity',
+        status: 'error',
+        message: 'No network connection available',
         required: true
       });
     }
@@ -132,7 +172,7 @@ export default function ConfigurationDiagnostic() {
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
-          <AlertCircle className="h-5 w-5" />
+          <Info className="h-5 w-5" />
           <span>Configuration Diagnostic</span>
         </CardTitle>
       </CardHeader>
@@ -168,8 +208,14 @@ export default function ConfigurationDiagnostic() {
                   <p>To fix this:</p>
                   <ol className="list-decimal list-inside space-y-1 ml-4">
                     <li>Create a <code className="bg-red-100 px-1 rounded">.env.local</code> file in the project root</li>
-                    <li>Add your Supabase URL and anon key (see <code className="bg-red-100 px-1 rounded">.env.local.example</code>)</li>
+                    <li>Add your Supabase URL and anon key:
+                      <pre className="bg-red-100 p-2 rounded mt-1 text-xs">
+{`NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key`}
+                      </pre>
+                    </li>
                     <li>Restart the development server</li>
+                    <li>Check that you're logged in to the application</li>
                   </ol>
                 </div>
               </div>

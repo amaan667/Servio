@@ -18,7 +18,7 @@ export default async function LiveOrdersPage({
     // Check if environment variables are set
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('[LIVE-ORDERS] Missing Supabase environment variables');
-      throw new Error('Supabase configuration is missing');
+      throw new Error('Supabase configuration is missing. Please check your environment variables.');
     }
 
     const supabase = createServerSupabase();
@@ -31,7 +31,10 @@ export default async function LiveOrdersPage({
     }
     
     log('LIVE-ORDERS SSR user', { hasUser: !!user });
-    if (!user) redirect('/sign-in');
+    if (!user) {
+      console.log('[LIVE-ORDERS] No user found, redirecting to sign-in');
+      redirect('/sign-in');
+    }
 
     // Verify user owns this venue
     const { data: venue, error: venueError } = await supabase
@@ -60,7 +63,7 @@ export default async function LiveOrdersPage({
             venueId={params.venueId}
           />
           
-          <LiveOrdersClient venueId={params.venueId} />
+          <LiveOrdersClient venueId={params.venueId} venueName={venue.name} />
         </div>
       </div>
     );
@@ -75,12 +78,20 @@ export default async function LiveOrdersPage({
           <p className="text-muted-foreground mb-4">
             {error instanceof Error ? error.message : 'An unexpected error occurred'}
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-servio-purple text-white px-4 py-2 rounded-md hover:bg-servio-purple/90"
-          >
-            Refresh Page
-          </button>
+          <div className="flex space-x-2 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-servio-purple text-white px-4 py-2 rounded-md hover:bg-servio-purple/90"
+            >
+              Refresh Page
+            </button>
+            <button
+              onClick={() => window.location.href = '/dashboard'}
+              className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+            >
+              Go to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
