@@ -6,6 +6,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { log } from '@/lib/debug';
 import LiveOrdersClient from './LiveOrdersClient';
 import PageHeader from '@/components/PageHeader';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default async function LiveOrdersPage({
   params,
@@ -60,7 +61,9 @@ export default async function LiveOrdersPage({
             venueId={params.venueId}
           />
           
-          <LiveOrdersClient venueId={params.venueId} />
+          <ErrorBoundary>
+            <LiveOrdersClient venueId={params.venueId} />
+          </ErrorBoundary>
         </div>
       </div>
     );
