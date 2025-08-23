@@ -22,6 +22,11 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       try {
         console.log('[DASHBOARD] Loading venue and stats for venueId:', venueId);
         
+        // Check Supabase configuration first
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          throw new Error('Supabase configuration is missing');
+        }
+        
         // Check if we already have venue data from SSR
         if (venue && !loading) {
           console.log('[DASHBOARD] Venue already loaded from SSR, setting up time window and stats');
@@ -73,7 +78,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     const timeoutId = setTimeout(() => {
       console.warn('[DASHBOARD] Loading timeout reached, forcing loading to false');
       setLoading(false);
-    }, 10000); // 10 second timeout
+    }, 15000); // 15 second timeout
 
     loadVenueAndStats();
 
@@ -114,49 +119,67 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
     console.log('[DASHBOARD] Setting up real-time subscription with window:', todayWindow);
     
-    const channel = supabase
-      .channel('dashboard-orders')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'orders',
-          filter: `venue_id=eq.${venueId}`
-        }, 
-        (payload) => {
-          console.log('Dashboard order change:', payload);
-          
-          // Get the order date from the payload with proper type checking
-          const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
-          if (!orderCreatedAt) {
-            console.log('No created_at found in payload, ignoring');
-            return;
+    let channel: any = null;
+    
+    try {
+      channel = supabase
+        .channel(`dashboard-orders-${venueId}`)
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'orders',
+            filter: `venue_id=eq.${venueId}`
+          }, 
+          (payload) => {
+            try {
+              console.log('Dashboard order change:', payload);
+              
+              // Get the order date from the payload with proper type checking
+              const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
+              if (!orderCreatedAt) {
+                console.log('No created_at found in payload, ignoring');
+                return;
+              }
+              
+              // Only refresh stats if the order is within today's window
+              const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
+              
+              console.log('[DASHBOARD] Order change analysis:', {
+                orderCreatedAt,
+                windowStart: todayWindow.startUtcISO,
+                windowEnd: todayWindow.endUtcISO,
+                isInTodayWindow,
+                orderId: (payload.new as any)?.id || (payload.old as any)?.id
+              });
+              
+              if (isInTodayWindow) {
+                console.log('Refreshing stats for today\'s order change');
+                loadStats(venue.venue_id, todayWindow);
+              } else {
+                console.log('Ignoring historical order change, not refreshing stats');
+              }
+            } catch (error) {
+              console.error('[DASHBOARD] Error in subscription callback:', error);
+            }
           }
-          
-          // Only refresh stats if the order is within today's window
-          const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
-          
-          console.log('[DASHBOARD] Order change analysis:', {
-            orderCreatedAt,
-            windowStart: todayWindow.startUtcISO,
-            windowEnd: todayWindow.endUtcISO,
-            isInTodayWindow,
-            orderId: (payload.new as any)?.id || (payload.old as any)?.id
-          });
-          
-          if (isInTodayWindow) {
-            console.log('Refreshing stats for today\'s order change');
-            loadStats(venue.venue_id, todayWindow);
-          } else {
-            console.log('Ignoring historical order change, not refreshing stats');
-          }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe((status) => {
+          console.log('[DASHBOARD] Subscription status:', status);
+        });
+    } catch (error) {
+      console.error('[DASHBOARD] Error setting up subscription:', error);
+    }
 
     return () => {
-      console.log('[DASHBOARD] Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
+      if (channel) {
+        console.log('[DASHBOARD] Cleaning up real-time subscription');
+        try {
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.error('[DASHBOARD] Error removing channel:', error);
+        }
+      }
     };
   }, [venueId, venue?.venue_id, todayWindow?.startUtcISO]); // Use specific properties instead of objects to prevent unnecessary re-runs
 
@@ -164,20 +187,32 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     try {
       console.log('[DASHBOARD] Loading stats for today:', window.startUtcISO, 'to', window.endUtcISO);
 
-      const { data: orders } = await supabase
+      // Load orders with error handling
+      const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select("total_amount, table_number, status, payment_status, created_at, items")
         .eq("venue_id", vId)
         .gte("created_at", window.startUtcISO)
         .lt("created_at", window.endUtcISO);
 
+      if (ordersError) {
+        console.error('[DASHBOARD] Error loading orders:', ordersError);
+        // Continue with empty orders array
+      }
+
       console.log('[DASHBOARD] Found orders for today:', orders?.length || 0);
 
-      const { data: menuItems } = await supabase
+      // Load menu items with error handling
+      const { data: menuItems, error: menuError } = await supabase
         .from("menu_items")
         .select("id")
         .eq("venue_id", vId)
         .eq("available", true);
+
+      if (menuError) {
+        console.error('[DASHBOARD] Error loading menu items:', menuError);
+        // Continue with empty menu items array
+      }
 
       // Calculate active tables (orders that are not served or paid AND created today)
       const todayOrders = (orders ?? []).filter((o: any) => {
@@ -200,19 +235,24 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       // Calculate revenue from today's paid orders only (robust amount fallback)
       const todayRevenue = (orders ?? []).reduce((sum: number, order: any) => {
-        let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
-        if (!Number.isFinite(amount) || amount <= 0) {
-          if (Array.isArray(order.items)) {
-            amount = order.items.reduce((s: number, it: any) => {
-              const unit = Number(it.unit_price ?? it.price ?? 0);
-              const qty = Number(it.quantity ?? it.qty ?? 0);
-              return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
-            }, 0);
+        try {
+          let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
+          if (!Number.isFinite(amount) || amount <= 0) {
+            if (Array.isArray(order.items)) {
+              amount = order.items.reduce((s: number, it: any) => {
+                const unit = Number(it.unit_price ?? it.price ?? 0);
+                const qty = Number(it.quantity ?? it.qty ?? 0);
+                return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
+              }, 0);
+            }
           }
+          const ps = String(order.payment_status ?? '').toLowerCase();
+          const st = String(order.status ?? '').toLowerCase();
+          return (ps === 'paid' || st === 'paid') ? sum + amount : sum;
+        } catch (error) {
+          console.error('[DASHBOARD] Error calculating order amount:', error, order);
+          return sum;
         }
-        const ps = String(order.payment_status ?? '').toLowerCase();
-        const st = String(order.status ?? '').toLowerCase();
-        return (ps === 'paid' || st === 'paid') ? sum + amount : sum;
       }, 0);
 
       setStats({
@@ -224,6 +264,14 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
       });
     } catch (error) {
       console.error("Error loading stats:", error);
+      // Set default stats on error to prevent UI from breaking
+      setStats({
+        todayOrders: 0,
+        revenue: 0,
+        activeTables: 0,
+        menuItems: 0,
+        unpaid: 0,
+      });
     }
   };
 

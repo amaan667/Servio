@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/sb-client';
 import DashboardClient from './page.client';
+import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
 
 export default function VenuePage({ params, searchParams }: { params: { venueId: string }, searchParams: any }) {
   const router = useRouter();
@@ -15,12 +16,23 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
       try {
         console.log('[VENUE PAGE] Checking venue access for:', params.venueId);
         
+        // Check Supabase configuration first
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          console.error('[DASHBOARD VENUE] Missing Supabase environment variables');
+          throw new Error('Supabase configuration is missing');
+        }
+        
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         console.log('[DASHBOARD VENUE] Auth getUser result:', { 
           hasUser: !!user, 
           userId: user?.id, 
           userError: userError?.message 
         });
+        
+        if (userError) {
+          console.error('[DASHBOARD VENUE] Auth error:', userError);
+          throw new Error(`Authentication error: ${userError.message}`);
+        }
         
         if (!user) {
           console.log('[DASHBOARD VENUE] No user found, redirecting to sign-in');
@@ -76,13 +88,19 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
         tomorrow.setDate(tomorrow.getDate() + 1);
         
         // Compute unique active tables today (open tickets): status != 'served' and != 'paid' AND created today
-        const { data: activeRows } = await supabase
+        const { data: activeRows, error: activeError } = await supabase
           .from('orders')
           .select('table_number, status, payment_status, created_at')
           .eq('venue_id', params.venueId)
           .not('status', 'in', '(served,paid)')
           .gte('created_at', today.toISOString())
           .lt('created_at', tomorrow.toISOString());
+          
+        if (activeError) {
+          console.error('[DASHBOARD VENUE] Error fetching active orders:', activeError);
+          // Continue with 0 active tables instead of failing
+        }
+        
         const uniqueActiveTables = new Set((activeRows ?? []).map((r: any) => r.table_number).filter((t: any) => t != null)).size;
 
         console.log('[DASHBOARD VENUE] Active tables:', { 
@@ -99,7 +117,10 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
         setLoading(false);
       } catch (error) {
         console.error('[DASHBOARD VENUE] Error in venue page:', error);
-        router.replace('/sign-in');
+        // Set loading to false to prevent infinite loading
+        setLoading(false);
+        // Don't redirect immediately, let the error boundary handle it
+        throw error;
       }
     };
 
@@ -122,11 +143,17 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
   }
 
   return (
-    <DashboardClient 
-      venueId={venueData.venueId} 
-      userId={venueData.userId}
-      activeTables={venueData.activeTables}
-      venue={venueData.venue}
-    />
+    <AsyncErrorBoundary
+      onError={(error, errorInfo) => {
+        console.error('[DASHBOARD] Error caught by boundary:', error, errorInfo);
+      }}
+    >
+      <DashboardClient 
+        venueId={venueData.venueId} 
+        userId={venueData.userId}
+        activeTables={venueData.activeTables}
+        venue={venueData.venue}
+      />
+    </AsyncErrorBoundary>
   );
 }

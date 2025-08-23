@@ -73,6 +73,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setError(null);
       setLoading(true);
       
+      // Check Supabase configuration first
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error('Supabase configuration is missing');
+      }
+      
       if (!venueNameProp) {
         const { data: venueData, error: venueError } = await supabase
           .from('venues')
