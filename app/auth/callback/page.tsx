@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { supabase, isSupabaseConfigured, clearInvalidSession } from '@/lib/supabaseClient';
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -34,9 +34,18 @@ function AuthCallbackContent() {
         // If a session already exists (possibly auto-exchanged elsewhere), skip exchange
         const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
         console.log('[AUTH_CALLBACK] Existing session check:', { hasSession: !!sessionData?.session, err: sessionErr?.message });
+        
         if (sessionErr) {
           console.warn('[AUTH_CALLBACK] getSession error (non-fatal):', sessionErr.message);
+          
+          // Handle refresh token errors
+          if (sessionErr.message?.includes('refresh_token_not_found') || 
+              sessionErr.message?.includes('Invalid Refresh Token')) {
+            console.warn('[AUTH_CALLBACK] refresh_token_error - clearing invalid session');
+            await clearInvalidSession();
+          }
         }
+        
         if (sessionData?.session?.user) {
           const userId = sessionData.session.user.id;
           console.log('[AUTH_CALLBACK] Session already present, checking venues for:', userId);
@@ -61,6 +70,16 @@ function AuthCallbackContent() {
         const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
         if (exErr) {
           console.error('[AUTH_CALLBACK] exchangeCodeForSession failed:', exErr);
+          
+          // Handle refresh token errors during exchange
+          if (exErr.message?.includes('refresh_token_not_found') || 
+              exErr.message?.includes('Invalid Refresh Token')) {
+            console.warn('[AUTH_CALLBACK] refresh_token_error_during_exchange - clearing invalid session');
+            await clearInvalidSession();
+            router.replace('/sign-in?error=invalid_session');
+            return;
+          }
+          
           router.replace(`/sign-in?error=exchange_failed&message=${encodeURIComponent(exErr.message)}`);
           return;
         }
@@ -86,6 +105,16 @@ function AuthCallbackContent() {
         router.replace(targetRoute);
       } catch (e: any) {
         console.error('[AUTH_CALLBACK] Callback fatal:', e);
+        
+        // Handle refresh token errors in catch block
+        if (e?.message?.includes('refresh_token_not_found') || 
+            e?.message?.includes('Invalid Refresh Token')) {
+          console.warn('[AUTH_CALLBACK] refresh_token_error_catch - clearing invalid session');
+          await clearInvalidSession();
+          router.replace('/sign-in?error=invalid_session');
+          return;
+        }
+        
         setIsProcessing(false);
         // Don't redirect immediately, let the user see the error
       }

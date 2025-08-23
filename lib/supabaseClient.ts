@@ -19,6 +19,13 @@ if (supabaseUrl && supabaseAnonKey) {
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: false,
+          storageKey: 'servio-auth-token',
+          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        },
+        global: {
+          headers: {
+            'X-Client-Info': 'servio-web',
+          },
         },
       }
     );
@@ -39,4 +46,36 @@ export const supabase = supabaseClient;
 // Helper function to check if Supabase is configured
 export const isSupabaseConfigured = () => {
   return supabaseClient !== null;
+};
+
+// Helper function to clear invalid sessions
+export const clearInvalidSession = async () => {
+  if (!supabaseClient) return;
+  
+  try {
+    // Clear any stored session data
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('servio-auth-token');
+      localStorage.removeItem('supabase.auth.token');
+    }
+    
+    // Sign out to clear any server-side session
+    await supabaseClient.auth.signOut();
+    
+    // Also call the API route to clear server-side session
+    try {
+      await fetch('/api/auth/clear-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (apiError) {
+      console.warn('[SUPABASE-CLIENT] API session clear failed (non-fatal):', apiError);
+    }
+    
+    console.log('[SUPABASE-CLIENT] Cleared invalid session');
+  } catch (error) {
+    console.error('[SUPABASE-CLIENT] Error clearing session:', error);
+  }
 };
