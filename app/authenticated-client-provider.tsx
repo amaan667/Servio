@@ -25,15 +25,25 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     const getInitialSession = async () => {
       try {
         console.log('[AUTH DEBUG] provider:getSession:begin', { t: now() });
+        
+        // Check if supabase is available
+        if (!supabase) {
+          console.error('[AUTH DEBUG] provider:getSession:no-client', { t: now() });
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+        
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
         if (error) {
+          console.error('[AUTH DEBUG] provider:getSession:error', { t: now(), error: error.message });
           setSession(null);
         } else {
           setSession(session);
         }
       } catch (err: any) {
-        console.log('[AUTH DEBUG] provider:getSession:unexpected', { t: now(), message: err?.message });
+        console.error('[AUTH DEBUG] provider:getSession:unexpected', { t: now(), message: err?.message, stack: err?.stack });
         setSession(null);
       } finally {
         setLoading(false);
@@ -41,6 +51,12 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     };
 
     getInitialSession();
+
+    // Only set up auth state listener if supabase is available
+    if (!supabase) {
+      console.error('[AUTH DEBUG] provider:no-client-for-listener', { t: now() });
+      return;
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
