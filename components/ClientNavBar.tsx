@@ -80,8 +80,13 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
 
   return (
     <nav className="flex items-center justify-between h-32 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-      {/* Logo - Left aligned on desktop, centered on mobile */}
-      <div className="flex-shrink-0 md:flex-shrink-0 md:order-1 order-2 md:justify-start justify-center flex-1 md:flex-none">
+      {/* Mobile Navigation - Left side (hamburger menu) */}
+      <div className="md:hidden flex items-center order-1">
+        {/* Placeholder for hamburger menu if needed */}
+      </div>
+      
+      {/* Logo - Centered on mobile, left aligned on desktop */}
+      <div className="flex items-center justify-center md:justify-start flex-1 md:flex-none order-2 md:order-1">
         <Link href={homeHref} className="flex items-center group">
           <Image
             src="/assets/servio-logo-updated.png"
@@ -95,7 +100,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
       </div>
       
       {/* Desktop Navigation - Right side */}
-      <div className="hidden md:flex items-center space-x-4 md:order-2">
+      <div className="hidden md:flex items-center space-x-4 order-3">
         {/* Home goes to main home page */}
         <Link 
           href={homeHref} 
@@ -151,8 +156,8 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
         )}
       </div>
 
-      {/* Mobile Navigation - Right side */}
-      <div className="md:hidden flex items-center md:order-3 order-1">
+      {/* Mobile Navigation - Right side (profile menu) */}
+      <div className="md:hidden flex items-center order-3">
         {showActions && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
