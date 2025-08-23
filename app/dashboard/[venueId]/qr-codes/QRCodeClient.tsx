@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, QrCode, Download } from "lucide-react";
-import ClientNavBar from "@/components/ClientNavBar";
+import UniversalHeader from "@/components/UniversalHeader";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
