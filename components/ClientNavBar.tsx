@@ -58,9 +58,9 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
 
   if (loading) {
     return (
-      <nav className="flex items-center justify-between h-16 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <nav className="flex items-center justify-between h-20 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
         <div className="flex items-center">
-          <div className="w-[160px] h-[40px] bg-gray-200 animate-pulse rounded"></div>
+          <div className="w-[240px] h-[48px] bg-gray-200 animate-pulse rounded"></div>
         </div>
       </nav>
     );
@@ -79,17 +79,17 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
   };
 
   return (
-    <nav className="flex items-center justify-between h-16 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+    <nav className="flex items-center justify-between h-20 px-4 sm:px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
       <div className="flex items-center">
         {/* Logo links to main home page */}
-        <Link href={homeHref} className="flex items-center">
+        <Link href={homeHref} className="flex items-center group">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
-            width={160}
-            height={40}
+            width={240}
+            height={60}
             priority
-            className="h-8 w-auto hover:opacity-80 transition-opacity"
+            className="h-12 w-auto transition-all duration-300 group-hover:scale-105"
           />
         </Link>
       </div>

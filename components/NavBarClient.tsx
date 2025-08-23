@@ -31,14 +31,14 @@ export default function NavBarClient() {
     <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       {/* Left (Logo + Home) */}
       <div className="flex items-center">
-        <Link href={homeHref} className="flex items-center" aria-label="Home">
+        <Link href={homeHref} className="flex items-center group" aria-label="Home">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
-            width={200}
-            height={50}
+            width={280}
+            height={70}
             priority
-            className="hover:opacity-80 transition-opacity"
+            className="h-14 w-auto transition-all duration-300 group-hover:scale-105"
           />
         </Link>
       </div>
