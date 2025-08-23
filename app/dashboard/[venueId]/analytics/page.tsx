@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { log } from '@/lib/debug';
 import AnalyticsClient from './AnalyticsClient';
+import PageHeader from '@/components/PageHeader';
 
 export default async function AnalyticsPage({
   params,
@@ -32,14 +33,11 @@ export default async function AnalyticsPage({
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Analytics for {venue.name}
-          </h1>
-          <p className="text-sm sm:text-lg text-muted-foreground mt-2">
-            View insights and performance metrics
-          </p>
-        </div>
+        <PageHeader
+          title={`Analytics for ${venue.name}`}
+          description="View insights and performance metrics"
+          venueId={params.venueId}
+        />
         
         <AnalyticsClient venueId={params.venueId} />
       </div>

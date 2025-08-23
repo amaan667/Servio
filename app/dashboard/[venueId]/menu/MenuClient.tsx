@@ -13,7 +13,7 @@ import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { useToast } from "@/hooks/use-toast";
-import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+
 
 interface MenuItem {
   id: string;
@@ -209,8 +209,6 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
   return (
     <div className="space-y-6">
-      <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
-      
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div>

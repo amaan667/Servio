@@ -15,7 +15,7 @@ import { useAuth } from "@/app/authenticated-client-provider";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+
 
 interface Table {
   id: string;
@@ -123,12 +123,8 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
   }
 
               return (
-        <div className="min-h-screen bg-gray-50">
-          <ClientNavBar venueId={venueId} />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
-        
-        <div className="mb-8 flex justify-between items-center">
+        <div>
+          <div className="mb-8 flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">QR Code Management</h2>
             <p className="text-gray-600">Generate and manage QR codes for your tables</p>
@@ -233,7 +229,6 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
             </Card>
           ))}
         </div>
-      </div>
     </div>
   );
 }

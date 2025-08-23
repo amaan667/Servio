@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+
 import { supabase } from "@/lib/sb-client";
 import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag } from "lucide-react";
 
@@ -31,24 +31,18 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-gray-600 mt-2">Business insights for {venueName}</p>
-        </div>
+    <div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+        <p className="text-gray-600 mt-2">Business insights for {venueName}</p>
+      </div>
 
         {!hasData ? (
           <Card>
@@ -162,7 +156,6 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }

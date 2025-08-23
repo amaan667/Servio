@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/sb-client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/dates";
-import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+
 
 
 interface Order {
@@ -316,31 +316,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-  {/* NavBar is rendered by the server component */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-  {/* NavBar is rendered by the server component */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <NavigationBreadcrumb 
-            customBackPath={`/dashboard/${venueId}`} 
-            customBackLabel="Dashboard"
-            venueId={venueId}
-          />
-          <h1 className="text-3xl font-bold text-gray-900">Live Orders</h1>
-          <p className="text-gray-600 mt-2">Real-time order feed for {venueName} • Today • Local time</p>
-        </div>
+    <div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Live Orders</h1>
+        <p className="text-gray-600 mt-2">Real-time order feed for {venueName} • Today • Local time</p>
+      </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -405,7 +393,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </div>
           </TabsContent>
         </Tabs>
-      </div>
     </div>
   );
 }
