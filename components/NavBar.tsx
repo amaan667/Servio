@@ -12,13 +12,14 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
   return (
     <nav className="flex items-center justify-between h-24 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
       <div className="flex items-center">
-        <Link href={homeHref} className="flex items-center">
+        <Link href={homeHref} className="flex items-center group">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
-            width={160}
-            height={40}
+            width={240}
+            height={60}
             priority
+            className="h-12 w-auto transition-all duration-300 group-hover:scale-105"
           />
         </Link>
       </div>
