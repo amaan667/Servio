@@ -3,3 +3,6 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "pnpm start"
+
+[variables]
+NODE_ENV = "production"
