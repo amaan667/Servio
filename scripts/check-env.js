@@ -71,7 +71,7 @@ if (allConfigured) {
 console.log('\n🚀 Next steps:');
 if (allConfigured) {
   console.log('   - Run "npm run dev" to start the development server');
-  console.log('   - Visit http://localhost:3000 to test the application');
+  console.log('   - Visit https://servio-production.up.railway.app to test the application');
 } else {
   console.log('   - Configure the missing environment variables');
   console.log('   - Then run "npm run dev" to start the development server');
