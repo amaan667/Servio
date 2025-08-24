@@ -22,30 +22,30 @@ export default function NavBar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Client-safe dashboard navigation - let server handle auth checks
+  // Client-safe navigation - let server handle all auth decisions
   const handleDashboardClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!session) {
-      router.push('/sign-in');
-      return;
-    }
+    // Always navigate to /dashboard - let server page decide auth/redirect
     router.push('/dashboard');
   };
 
   const handleSignOut = async () => {
     try {
       setSigningOut(true);
-      // Clear client session so UI reacts immediately
-      const { supabase } = await import('@/lib/supabaseClient');
-      if (supabase) {
-        await supabase.auth.signOut();
+      console.log('[NAV] Sign-out initiated');
+      
+      // Call sign-out route handler
+      const response = await fetch('/api/auth/sign-out', { method: 'POST' });
+      if (!response.ok) {
+        throw new Error('Sign-out failed');
       }
-      // Clear server cookies/session
-      await fetch('/api/auth/sign-out', { method: 'POST' });
-      router.replace('/sign-in?signedOut=true');
+      
+      // Navigate to home after successful sign-out
+      router.replace('/');
     } catch (e) {
       console.error('[NAV] Sign-out error:', e);
-      router.replace('/sign-in?signedOut=true');
+      // Still navigate to home even if sign-out fails
+      router.replace('/');
     } finally {
       setSigningOut(false);
       setMobileMenuOpen(false);
@@ -92,7 +92,7 @@ export default function NavBar() {
                   Home
                 </Link>
                 <a 
-                  href={session ? '/dashboard' : '/sign-in'} 
+                  href="/dashboard" 
                   onClick={handleDashboardClick}
                   className={linkClass('/dashboard')}
                 >
@@ -157,7 +157,7 @@ export default function NavBar() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <a 
-                      href={session ? '/dashboard' : '/sign-in'} 
+                      href="/dashboard" 
                       onClick={handleDashboardClick}
                       className="flex items-center gap-2"
                     >

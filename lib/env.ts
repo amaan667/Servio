@@ -22,4 +22,7 @@ export const ENV = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
 };
 
+// Expose BASE URL for consistent redirects
+export const BASE = process.env.NEXT_PUBLIC_APP_URL!;
+
 
