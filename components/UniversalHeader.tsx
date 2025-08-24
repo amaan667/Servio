@@ -32,6 +32,15 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   // Determine if we're on home page or dashboard page
   const isHomePage = pathname === '/' || pathname === '/home';
   const isDashboardPage = pathname?.startsWith('/dashboard') || pathname?.startsWith('/settings');
+  
+  // Debug logging for mobile navigation
+  console.log('[UNIVERSAL_HEADER] Navigation state:', {
+    pathname,
+    isHomePage,
+    isDashboardPage,
+    hasSession: !!session,
+    mobileMenuOpen
+  });
 
   // Fetch primary venue when user is signed in
   useEffect(() => {
@@ -99,7 +108,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex justify-between items-center h-32">
+        <div className="flex justify-between items-center h-16">
           {/* Logo - Centered on mobile, left aligned on desktop */}
           <div className="flex items-center justify-center md:justify-start flex-1 md:flex-none order-2 md:order-1">
             <Link href={session ? dashboardHref : homeHref} className="flex items-center group">
@@ -159,11 +168,6 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                             Home
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={dashboardHref} className="flex items-center gap-2">
-                            <span>Dashboard</span>
-                          </Link>
-                        </DropdownMenuItem>
                         {showActions && (
                           <DropdownMenuItem asChild>
                             <Link href={settingsHref} className="flex items-center gap-2">
@@ -218,8 +222,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
           {/* Mobile Navigation - Right side */}
           <div className="md:hidden flex items-center order-3">
-            {/* Show hamburger menu only on home page */}
-            {isHomePage && (
+            {/* Show hamburger menu only on home page when authenticated */}
+            {isHomePage && session && (
               <Button
                 variant="ghost"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -254,11 +258,6 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href={dashboardHref} className="flex items-center gap-2">
-                      <span>Dashboard</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
                     <Link href={settingsHref} className="flex items-center gap-2">
                       <Settings className="h-4 w-4" />
                       Settings
@@ -279,8 +278,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
         </div>
       </div>
 
-      {/* Mobile Navigation Menu - Only show on home page */}
-      {mobileMenuOpen && isHomePage && (
+      {/* Mobile Navigation Menu - Show only on home page when authenticated */}
+      {mobileMenuOpen && isHomePage && session && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
             {session ? (

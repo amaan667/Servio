@@ -48,7 +48,18 @@ function AuthCallbackContent() {
         
         if (sessionData?.session?.user) {
           const userId = sessionData.session.user.id;
-          console.log('[AUTH_CALLBACK] Session already present, checking venues for:', userId);
+          console.log('[AUTH_CALLBACK] Session already present, syncing server cookies for:', userId);
+          try {
+            const { access_token, refresh_token } = sessionData.session
+            await fetch('/api/auth/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ access_token, refresh_token })
+            })
+          } catch (e) {
+            console.warn('[AUTH_CALLBACK] Cookie sync failed (non-fatal):', (e as any)?.message)
+          }
+          console.log('[AUTH_CALLBACK] Checking venues for:', userId);
           const { data: venues, error: vErr } = await supabase
             .from('venues').select('venue_id').eq('owner_id', userId).limit(1);
           if (vErr) {
@@ -67,7 +78,7 @@ function AuthCallbackContent() {
         }
 
         console.log('[AUTH_CALLBACK] Exchanging code for session');
-        const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+        const { data: afterExchange, error: exErr } = await supabase.auth.exchangeCodeForSession(code);
         if (exErr) {
           console.error('[AUTH_CALLBACK] exchangeCodeForSession failed:', exErr);
           
@@ -82,6 +93,19 @@ function AuthCallbackContent() {
           
           router.replace(`/sign-in?error=exchange_failed&message=${encodeURIComponent(exErr.message)}`);
           return;
+        }
+
+        try {
+          const { session } = afterExchange || {} as any
+          if (session?.access_token && session?.refresh_token) {
+            await fetch('/api/auth/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
+            })
+          }
+        } catch (e) {
+          console.warn('[AUTH_CALLBACK] Cookie sync after exchange failed (non-fatal):', (e as any)?.message)
         }
 
         console.log('[AUTH_CALLBACK] Getting user after session exchange');
