@@ -8,6 +8,7 @@ import LiveOrdersClient from './LiveOrdersClient';
 import PageHeader from '@/components/PageHeader';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import GlobalErrorBoundary from '@/components/GlobalErrorBoundary';
+import SessionClearer from '@/components/session-clearer';
 
 // Simple diagnostic component
 function DiagnosticInfo({ error, venueId }: { error?: string; venueId: string }) {
@@ -71,6 +72,11 @@ export default async function LiveOrdersPage({
     
     if (authError) {
       console.error('[LIVE-ORDERS] Auth error:', authError);
+      
+      // Check if it's a refresh token error
+      const isRefreshTokenError = authError.message.includes('Invalid Refresh Token') || 
+                                 authError.message.includes('Refresh Token Not Found');
+      
       return (
         <div className="min-h-screen bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -79,7 +85,11 @@ export default async function LiveOrdersPage({
               description="Monitor and manage real-time orders"
               venueId={params.venueId}
             />
-            <DiagnosticInfo error={`Authentication error: ${authError.message}`} venueId={params.venueId} />
+            {isRefreshTokenError ? (
+              <SessionClearer error={authError.message} />
+            ) : (
+              <DiagnosticInfo error={`Authentication error: ${authError.message}`} venueId={params.venueId} />
+            )}
           </div>
         </div>
       );

@@ -36,14 +36,21 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
+        
         if (error) {
           console.error('[AUTH DEBUG] provider:getSession:error', { t: now(), error: error.message });
+          // Clear invalid session on error
+          await supabase.auth.signOut();
           setSession(null);
         } else {
           setSession(session);
         }
       } catch (err: any) {
         console.error('[AUTH DEBUG] provider:getSession:unexpected', { t: now(), message: err?.message, stack: err?.stack });
+        // Clear session on unexpected errors
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
         setSession(null);
       } finally {
         setLoading(false);
@@ -58,9 +65,23 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       return;
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
-      setSession(session);
+      
+      // Handle specific auth events
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('[AUTH DEBUG] provider:token-refreshed', { t: now() });
+        setSession(session);
+      } else if (event === 'SIGNED_OUT') {
+        console.log('[AUTH DEBUG] provider:signed-out', { t: now() });
+        setSession(null);
+      } else if (event === 'SIGNED_IN') {
+        console.log('[AUTH DEBUG] provider:signed-in', { t: now() });
+        setSession(session);
+      } else {
+        setSession(session);
+      }
+      
       setLoading(false);
     });
 

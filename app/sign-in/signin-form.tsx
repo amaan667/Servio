@@ -20,6 +20,7 @@ import { logger } from "@/lib/logger";
 import { supabase } from "@/lib/supabaseClient";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 // Removed SessionClearer from production to avoid redundant client-side sign-out
+import { AlertTriangle, ExternalLink } from 'lucide-react';
 
 interface SignInFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -208,6 +209,18 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
             </div>
           </CardContent>
         </Card>
+        </div>
+      </div>
+      <div className="border-t pt-4">
+        <div className="text-center text-xs text-gray-500">
+          <p>Having trouble signing in?</p>
+          <Link 
+            href="/clear-session" 
+            className="inline-flex items-center text-purple-600 hover:text-purple-700 mt-1"
+          >
+            Clear session data
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </Link>
         </div>
       </div>
     </div>

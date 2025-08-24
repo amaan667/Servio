@@ -10,7 +10,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const [isChecking, setIsChecking] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { session, isLoading: loading } = useAuth();
+  const { session, loading } = useAuth();
 
   // Strict public routes (accessible without auth)
   const publicRoutes = ["/", "/sign-in", "/sign-up", "/order"];
@@ -48,13 +48,33 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       
       const checkProfile = async () => {
         try {
+          // First verify the session is still valid
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          if (userError || !user) {
+            console.error('[AUTH_WRAPPER] Session validation failed:', userError);
+            // Clear invalid session and redirect to sign-in
+            await supabase.auth.signOut();
+            router.replace('/sign-in');
+            return;
+          }
+
           const { data, error } = await supabase
             .from("venues")
             .select("venue_id")
             .eq("owner_id", session.user.id)
             .maybeSingle();
 
-          if (error || !data) {
+          if (error) {
+            console.error('[AUTH_WRAPPER] Database error checking profile:', error);
+            // Don't redirect on database errors, just show incomplete profile
+            setProfileComplete(false);
+            if (pathname !== "/complete-profile") {
+              router.replace("/complete-profile");
+            }
+            return;
+          }
+
+          if (!data) {
             console.log('[AUTH_WRAPPER] No venue found, profile incomplete');
             setProfileComplete(false);
             if (pathname !== "/complete-profile") {

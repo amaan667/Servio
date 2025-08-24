@@ -18,6 +18,18 @@ if (supabaseUrl && supabaseAnonKey) {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        flowType: 'pkce',
+        onAuthStateChange: (event, session) => {
+          console.log('[AUTH DEBUG] client:onAuthStateChange', { event, hasSession: !!session });
+          
+          // Handle refresh token errors
+          if (event === 'TOKEN_REFRESHED' && !session) {
+            console.log('[AUTH DEBUG] client:token-refresh-failed, clearing session');
+            // Clear any invalid session data
+            localStorage.removeItem('supabase.auth.token');
+            sessionStorage.removeItem('supabase.auth.token');
+          }
+        },
       },
     }
   );
