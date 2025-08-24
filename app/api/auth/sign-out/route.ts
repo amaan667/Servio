@@ -1,15 +1,13 @@
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
-
 import { NextResponse } from 'next/server'
 import { getSupabaseForRoute } from '@/lib/supabase-server'
 
+export const runtime = 'nodejs'
+
 export async function POST() {
-  const base = process.env.NEXT_PUBLIC_APP_URL!
-  const res = NextResponse.redirect(`${base}/`, { status: 307 })
-  const supabase = getSupabaseForRoute(res)
+  const response = NextResponse.json({ ok: true })
+  const supabase = getSupabaseForRoute(response)
   await supabase.auth.signOut()
-  return res
+  return response
 }
 
 
