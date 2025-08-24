@@ -25,11 +25,11 @@ export default function NavBar() {
   // Client-safe dashboard navigation - let server handle auth checks
   const handleDashboardClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (session) {
-      router.push('/dashboard');
-    } else {
+    if (!session) {
       router.push('/sign-in');
+      return;
     }
+    router.push('/dashboard');
   };
 
   const handleSignOut = async () => {
@@ -92,7 +92,7 @@ export default function NavBar() {
                   Home
                 </Link>
                 <a 
-                  href="/dashboard" 
+                  href={session ? '/dashboard' : '/sign-in'} 
                   onClick={handleDashboardClick}
                   className={linkClass('/dashboard')}
                 >
@@ -157,7 +157,7 @@ export default function NavBar() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <a 
-                      href="/dashboard" 
+                      href={session ? '/dashboard' : '/sign-in'} 
                       onClick={handleDashboardClick}
                       className="flex items-center gap-2"
                     >
