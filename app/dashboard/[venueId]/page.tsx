@@ -84,22 +84,4 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     console.error('[DASH] unexpected error on venue page:', e);
     redirect(`${BASE}/sign-in`);
   }
-<<<<<<< Current (Your changes)
-
-  return (
-    <AsyncErrorBoundary
-      onError={(error, errorInfo) => {
-        console.error('[DASHBOARD] Error caught by boundary:', error, errorInfo);
-      }}
-    >
-      <DashboardClient 
-        venueId={venueData.venueId} 
-        userId={venueData.userId}
-        activeTables={venueData.activeTables}
-        venue={venueData.venue}
-      />
-    </AsyncErrorBoundary>
-  );
-=======
->>>>>>> Incoming (Background Agent changes)
 }
