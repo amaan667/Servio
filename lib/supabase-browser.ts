@@ -7,11 +7,24 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ Missing Supabase browser environment variables:", {
+  console.warn("⚠️ Missing Supabase browser environment variables:", {
     NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
   });
-  throw new Error("Missing Supabase browser configuration. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.");
+  console.warn("⚠️ Supabase features will be disabled until configuration is complete.");
+  
+  // Return a mock client that won't crash the app
+  return createBrowserClient(
+    'https://placeholder.supabase.co',
+    'placeholder-key',
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    }
+  );
 }
 
 // Create a browser client with PKCE support and session persistence

@@ -33,59 +33,33 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000`;
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <AlertTriangle className="h-6 w-6 text-red-500" />
-          <h2 className="text-xl font-semibold text-gray-900">Configuration Required</h2>
-        </div>
-        
-        <div className="space-y-3 mb-6">
-          <p className="text-gray-600">
-            The dashboard requires Supabase configuration to work properly. Please set up your environment variables.
+    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="h-5 w-5 text-yellow-400" />
+        <div className="flex-1">
+          <h3 className="text-sm font-medium text-yellow-800">Configuration Required</h3>
+          <p className="text-sm text-yellow-700 mt-1">
+            Supabase configuration is missing. Some features may not work properly.
           </p>
-          
-          <div className="bg-gray-50 rounded-md p-3 text-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">Missing Configuration:</span>
-            </div>
-            <ul className="space-y-1 text-gray-600">
-              {!configStatus.url && (
-                <li>• NEXT_PUBLIC_SUPABASE_URL</li>
-              )}
-              {!configStatus.key && (
-                <li>• NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
-              )}
-            </ul>
-          </div>
         </div>
-
-        <div className="space-y-3">
+        <div className="flex gap-2">
           <Button
             onClick={copyToClipboard}
             variant="outline"
-            className="w-full flex items-center justify-center gap-2"
+            size="sm"
+            className="flex items-center gap-1"
           >
-            <Copy className="h-4 w-4" />
-            {copied ? 'Copied!' : 'Copy .env.local template'}
+            <Copy className="h-3 w-3" />
+            {copied ? 'Copied!' : 'Copy Config'}
           </Button>
-          
           <Button
             onClick={() => window.open('https://supabase.com/dashboard', '_blank')}
-            className="w-full flex items-center justify-center gap-2"
+            size="sm"
+            className="flex items-center gap-1"
           >
-            <ExternalLink className="h-4 w-4" />
-            Go to Supabase Dashboard
+            <ExternalLink className="h-3 w-3" />
+            Setup
           </Button>
-          
-          <div className="text-center">
-            <button
-              onClick={() => window.location.reload()}
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
-            >
-              Reload after configuration
-            </button>
-          </div>
         </div>
       </div>
     </div>
