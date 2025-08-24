@@ -69,6 +69,10 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
           setSession(null);
         } else {
           setSession(session);
+          // Ensure SSR cookies are in sync on initial load when a session already exists
+          if (session) {
+            await syncServerCookies(session);
+          }
         }
       } catch (err: any) {
         console.error('[AUTH DEBUG] provider:getSession:unexpected', { t: now(), message: err?.message, stack: err?.stack });
