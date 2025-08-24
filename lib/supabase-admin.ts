@@ -4,26 +4,29 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Validate environment variables
-if (!supabaseUrl || !serviceRoleKey) {
-  console.error("❌ Missing Supabase admin environment variables:", {
-    NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
-    SUPABASE_SERVICE_ROLE_KEY: !!serviceRoleKey
+let adminClient: ReturnType<typeof createClient> | null = null;
+
+function ensureAdminClient() {
+  if (adminClient) return adminClient;
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase admin configuration. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.");
+  }
+  adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
   });
-  throw new Error("Missing Supabase admin configuration. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.");
+  return adminClient;
 }
 
-// Create admin client with service role key for server-side operations
-export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false
+export const supabaseAdmin = new Proxy({}, {
+  get(_target, prop) {
+    const client = ensureAdminClient() as any;
+    return client[prop as any];
   }
-});
+}) as unknown as ReturnType<typeof createClient>;
 
-console.log("Supabase admin client created successfully");
-
-// Export a function to get the admin client (for backward compatibility)
 export function createAdminClient() {
-  return supabaseAdmin;
+  return ensureAdminClient();
 }

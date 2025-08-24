@@ -19,7 +19,8 @@ export default function SignUpPage() {
         return;
       }
       
-      const redirectTo = 'https://servio-production.up.railway.app';
+      // Use a consistent redirect URL that matches the Supabase configuration
+      const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
       console.log('[AUTH] Starting Google OAuth redirect to:', redirectTo);
       
       const { error } = await supabase.auth.signInWithOAuth({

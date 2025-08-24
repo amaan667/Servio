@@ -1,65 +1,78 @@
 #!/usr/bin/env node
 
-// Simple script to check environment variables
-console.log('🔧 Environment Variable Check');
-console.log('============================');
+const fs = require('fs');
+const path = require('path');
 
+console.log('🔍 Checking Servio environment configuration...\n');
+
+// Check for .env.local file
+const envLocalPath = path.join(process.cwd(), '.env.local');
+const envLocalExists = fs.existsSync(envLocalPath);
+
+console.log('📁 Environment files:');
+console.log(`   .env.local: ${envLocalExists ? '✅ Found' : '❌ Not found'}`);
+
+// Check environment variables
 const requiredVars = [
   'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'APP_URL',
-  'NEXT_PUBLIC_APP_URL',
-  'NEXT_PUBLIC_SITE_URL'
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY'
 ];
 
-const optionalVars = [
-  'NODE_ENV',
-  'IS_PRODUCTION'
-];
+console.log('\n🔑 Required environment variables:');
 
-console.log('\n📋 Required Variables:');
+let allConfigured = true;
+
 requiredVars.forEach(varName => {
   const value = process.env[varName];
-  if (value) {
-    console.log(`✅ ${varName}: ${value.substring(0, 20)}...`);
-  } else {
-    console.log(`❌ ${varName}: MISSING`);
+  const isSet = !!value;
+  const status = isSet ? '✅ Set' : '❌ Missing';
+  const preview = isSet ? `${value.substring(0, 20)}...` : '';
+  
+  console.log(`   ${varName}: ${status} ${preview}`);
+  
+  if (!isSet) {
+    allConfigured = false;
   }
 });
 
-console.log('\n📋 Optional Variables:');
+// Check optional variables
+const optionalVars = [
+  'NEXT_PUBLIC_SITE_URL',
+  'GOOGLE_CREDENTIALS_B64',
+  'GCS_BUCKET_NAME',
+  'OPENAI_API_KEY'
+];
+
+console.log('\n🔧 Optional environment variables:');
 optionalVars.forEach(varName => {
   const value = process.env[varName];
-  if (value) {
-    console.log(`✅ ${varName}: ${value}`);
-  } else {
-    console.log(`⚠️  ${varName}: Not set`);
-  }
+  const isSet = !!value;
+  const status = isSet ? '✅ Set' : '⚪ Not set';
+  const preview = isSet ? `${value.substring(0, 20)}...` : '';
+  
+  console.log(`   ${varName}: ${status} ${preview}`);
 });
 
-console.log('\n🔍 Environment Analysis:');
-console.log(`Node.js Version: ${process.version}`);
-console.log(`Platform: ${process.platform}`);
-console.log(`Architecture: ${process.arch}`);
-console.log(`Current Directory: ${process.cwd()}`);
-
-// Check for common issues
-console.log('\n🚨 Potential Issues:');
-
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  console.log('❌ Missing Supabase URL - Dashboard will crash');
+console.log('\n📋 Summary:');
+if (allConfigured) {
+  console.log('✅ All required environment variables are configured!');
+  console.log('   Your application should be able to authenticate users.');
+} else {
+  console.log('❌ Some required environment variables are missing.');
+  console.log('\n🔧 To fix this:');
+  console.log('   1. Create a .env.local file in your project root');
+  console.log('   2. Add the missing environment variables:');
+  console.log('      NEXT_PUBLIC_SUPABASE_URL=your_supabase_url');
+  console.log('      NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key');
+  console.log('   3. Restart your development server');
+  console.log('\n📚 For more help, see TROUBLESHOOTING.md');
 }
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  console.log('❌ Missing Supabase Anon Key - Dashboard will crash');
+console.log('\n🚀 Next steps:');
+if (allConfigured) {
+  console.log('   - Run "npm run dev" to start the development server');
+  console.log('   - Visit http://localhost:3000 to test the application');
+} else {
+  console.log('   - Configure the missing environment variables');
+  console.log('   - Then run "npm run dev" to start the development server');
 }
-
-if (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.startsWith('https://')) {
-  console.log('⚠️  Supabase URL should use HTTPS');
-}
-
-if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length < 100) {
-  console.log('⚠️  Supabase Anon Key seems too short');
-}
-
-console.log('\n✅ Check complete!');

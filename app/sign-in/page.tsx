@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabaseClient';
 import SignInForm from './signin-form';
 
 function SignInPageContent() {
@@ -16,12 +16,16 @@ function SignInPageContent() {
       // Check if Supabase is configured
       if (!supabase) {
         console.error('[AUTH] Supabase client not configured');
-        alert('Authentication service not available. Please try again later.');
+        console.error('[AUTH] Supabase client state:', { supabase: !!supabase });
+        alert('Authentication service not available. Please check your environment configuration.');
         setLoading(false);
         return;
       }
       
-      const redirectTo = 'https://servio-production.up.railway.app';
+      console.log('[AUTH] Supabase client is configured, proceeding with OAuth');
+      
+      // Use client-side callback to ensure PKCE code_verifier is available
+      const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
       console.log('[AUTH] Starting Google OAuth redirect to:', redirectTo);
       
       const { error } = await supabase.auth.signInWithOAuth({
@@ -35,7 +39,13 @@ function SignInPageContent() {
       
       if (error) {
         console.error('[AUTH] Google redirect start failed:', error);
-        alert('Could not start Google sign-in. Please try again.');
+        console.error('[AUTH] Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+          stack: error.stack
+        });
+        alert(`Could not start Google sign-in: ${error.message || 'Please try again.'}`);
         setLoading(false);
         return;
       }

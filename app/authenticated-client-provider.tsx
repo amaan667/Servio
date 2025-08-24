@@ -39,18 +39,40 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         
         if (error) {
           console.error('[AUTH DEBUG] provider:getSession:error', { t: now(), error: error.message });
-          // Clear invalid session on error
-          await supabase.auth.signOut();
+          
+          // Handle refresh token errors specifically
+          if (error.message?.includes('refresh_token_not_found') || 
+              error.message?.includes('Invalid Refresh Token') ||
+              error.message?.includes('Refresh Token Not Found')) {
+            console.warn('[AUTH DEBUG] provider:refresh_token_error - clearing invalid session');
+            await supabase.auth.signOut();
+          } else {
+            // Clear invalid session on other errors
+            await supabase.auth.signOut();
+          }
+          
           setSession(null);
         } else {
           setSession(session);
         }
       } catch (err: any) {
         console.error('[AUTH DEBUG] provider:getSession:unexpected', { t: now(), message: err?.message, stack: err?.stack });
-        // Clear session on unexpected errors
-        if (supabase) {
-          await supabase.auth.signOut();
+        
+        // Handle refresh token errors in catch block too
+        if (err?.message?.includes('refresh_token_not_found') || 
+            err?.message?.includes('Invalid Refresh Token') ||
+            err?.message?.includes('Refresh Token Not Found')) {
+          console.warn('[AUTH DEBUG] provider:refresh_token_error_catch - clearing invalid session');
+          if (supabase) {
+            await supabase.auth.signOut();
+          }
+        } else {
+          // Clear session on other unexpected errors
+          if (supabase) {
+            await supabase.auth.signOut();
+          }
         }
+        
         setSession(null);
       } finally {
         setLoading(false);
@@ -71,6 +93,10 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       // Handle specific auth events
       if (event === 'TOKEN_REFRESHED') {
         console.log('[AUTH DEBUG] provider:token-refreshed', { t: now() });
+        if (!session) {
+          console.warn('[AUTH DEBUG] provider:token_refresh_failed - clearing invalid session');
+          await supabase.auth.signOut();
+        }
         setSession(session);
       } else if (event === 'SIGNED_OUT') {
         console.log('[AUTH DEBUG] provider:signed-out', { t: now() });
