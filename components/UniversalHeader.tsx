@@ -117,7 +117,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 alt="Servio"
                 width={240}
                 height={60}
-                className="h-12 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-48 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
