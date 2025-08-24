@@ -14,6 +14,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Railway deployment configuration
+  distDir: '.next',
+  generateEtags: false,
   // Remove legacy PDF/OCR externals
   serverExternalPackages: [],
   webpack: (config, { isServer }) => {
