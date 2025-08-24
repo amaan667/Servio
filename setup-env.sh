@@ -4,13 +4,31 @@ echo "🚀 Servio Environment Setup"
 echo "=========================="
 echo ""
 
+# [FIX] Writing file to .env.local in project root
+echo "📝 [FIX] Writing file to .env.local in project root"
+
+# Ensure we're in the project root directory
+if [ ! -f "package.json" ]; then
+    echo "❌ Error: Please run this script from the project root directory"
+    exit 1
+fi
+
 # Check if .env.local exists
 if [ -f ".env.local" ]; then
     echo "✅ .env.local file found"
 else
     echo "❌ .env.local file not found"
-    echo "Please create a .env.local file with your Supabase credentials"
-    exit 1
+    echo "Creating .env.local from template..."
+    
+    # Create .env.local from example if it exists
+    if [ -f ".env.local.example" ]; then
+        cp .env.local.example .env.local
+        echo "✅ Created .env.local from .env.local.example"
+    else
+        echo "❌ .env.local.example not found"
+        echo "Please create a .env.local file with your Supabase credentials"
+        exit 1
+    fi
 fi
 
 # Check Supabase environment variables
