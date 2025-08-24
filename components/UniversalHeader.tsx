@@ -32,6 +32,15 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   // Determine if we're on home page or dashboard page
   const isHomePage = pathname === '/' || pathname === '/home';
   const isDashboardPage = pathname?.startsWith('/dashboard') || pathname?.startsWith('/settings');
+  
+  // Debug logging for mobile navigation
+  console.log('[UNIVERSAL_HEADER] Navigation state:', {
+    pathname,
+    isHomePage,
+    isDashboardPage,
+    hasSession: !!session,
+    mobileMenuOpen
+  });
 
   // Fetch primary venue when user is signed in
   useEffect(() => {
@@ -213,8 +222,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
           {/* Mobile Navigation - Right side */}
           <div className="md:hidden flex items-center order-3">
-            {/* Show hamburger menu only on home page */}
-            {isHomePage && (
+            {/* Show hamburger menu on home page or dashboard page when authenticated */}
+            {(isHomePage || (isDashboardPage && session)) && (
               <Button
                 variant="ghost"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -228,8 +237,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
               </Button>
             )}
             
-            {/* Show profile dropdown only on dashboard page */}
-            {isDashboardPage && session && showActions && (
+            {/* Show profile dropdown only on dashboard page when no hamburger menu */}
+            {isDashboardPage && session && showActions && !mobileMenuOpen && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -269,8 +278,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
         </div>
       </div>
 
-      {/* Mobile Navigation Menu - Only show on home page */}
-      {mobileMenuOpen && isHomePage && (
+      {/* Mobile Navigation Menu - Show on home page or dashboard page when authenticated */}
+      {mobileMenuOpen && (isHomePage || (isDashboardPage && session)) && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
             {session ? (
