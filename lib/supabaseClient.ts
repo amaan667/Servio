@@ -18,9 +18,10 @@ if (supabaseUrl && supabaseAnonKey) {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
-          detectSessionInUrl: false,
+          detectSessionInUrl: false, // We handle the callback manually
           storageKey: 'servio-auth-token',
           storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+          flowType: 'pkce', // Explicitly set PKCE flow
         },
         global: {
           headers: {

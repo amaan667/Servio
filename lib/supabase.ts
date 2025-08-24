@@ -49,6 +49,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
       detectSessionInUrl: false,
       storageKey: 'servio-auth-token',
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      flowType: 'pkce', // Explicitly set PKCE flow
     },
     global: {
       headers: {

@@ -8,10 +8,12 @@ function AuthCallbackContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const code = params.get('code');
     const errorParam = params.get('error');
+    const errorDescription = params.get('error_description');
 
     (async () => {
       try {
@@ -25,98 +27,123 @@ function AuthCallbackContent() {
           return;
         }
         
+        // Handle OAuth errors
         if (errorParam) {
-          console.error('[AUTH_CALLBACK] OAuth callback error:', errorParam);
-          router.replace(`/sign-in?error=${encodeURIComponent(errorParam)}`);
-          return;
-        }
-
-        // If a session already exists (possibly auto-exchanged elsewhere), skip exchange
-        const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-        console.log('[AUTH_CALLBACK] Existing session check:', { hasSession: !!sessionData?.session, err: sessionErr?.message });
-        
-        if (sessionErr) {
-          console.warn('[AUTH_CALLBACK] getSession error (non-fatal):', sessionErr.message);
+          console.error('[AUTH_CALLBACK] OAuth callback error:', errorParam, errorDescription);
           
-          // Handle refresh token errors
-          if (sessionErr.message?.includes('refresh_token_not_found') || 
-              sessionErr.message?.includes('Invalid Refresh Token')) {
-            console.warn('[AUTH_CALLBACK] refresh_token_error - clearing invalid session');
-            await clearInvalidSession();
-          }
-        }
-        
-        if (sessionData?.session?.user) {
-          const userId = sessionData.session.user.id;
-          console.log('[AUTH_CALLBACK] Session already present, checking venues for:', userId);
-          const { data: venues, error: vErr } = await supabase
-            .from('venues').select('venue_id').eq('owner_id', userId).limit(1);
-          if (vErr) {
-            console.warn('[AUTH_CALLBACK] venue check error (non-fatal):', vErr.message);
-          }
-          const targetRoute = venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile';
-          console.log('[AUTH_CALLBACK] Redirecting to:', targetRoute);
-          router.replace(targetRoute);
+          // Clear any invalid sessions
+          await clearInvalidSession();
+          
+          router.replace(`/sign-in?error=${encodeURIComponent(errorParam)}&message=${encodeURIComponent(errorDescription || '')}`);
           return;
         }
 
+        // If no code, check if we already have a session
         if (!code) {
-          console.error('[AUTH_CALLBACK] OAuth callback missing code and no session present');
+          console.log('[AUTH_CALLBACK] No code in URL, checking for existing session');
+          
+          try {
+            const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+            
+            if (sessionErr) {
+              console.warn('[AUTH_CALLBACK] getSession error:', sessionErr.message);
+              
+              // Handle refresh token errors
+              if (sessionErr.message?.includes('refresh_token_not_found') || 
+                  sessionErr.message?.includes('Invalid Refresh Token')) {
+                console.warn('[AUTH_CALLBACK] Clearing invalid session');
+                await clearInvalidSession();
+                router.replace('/sign-in?error=invalid_session');
+                return;
+              }
+            }
+            
+            if (sessionData?.session?.user) {
+              const userId = sessionData.session.user.id;
+              console.log('[AUTH_CALLBACK] Session found, checking venues for:', userId);
+              
+              const { data: venues, error: vErr } = await supabase
+                .from('venues')
+                .select('venue_id')
+                .eq('owner_id', userId)
+                .limit(1);
+                
+              if (vErr) {
+                console.warn('[AUTH_CALLBACK] Venue check error:', vErr.message);
+              }
+              
+              const targetRoute = venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile';
+              console.log('[AUTH_CALLBACK] Redirecting to:', targetRoute);
+              router.replace(targetRoute);
+              return;
+            }
+          } catch (e) {
+            console.error('[AUTH_CALLBACK] Session check error:', e);
+          }
+          
+          // No code and no session
+          console.error('[AUTH_CALLBACK] No code and no session');
           router.replace('/sign-in?error=missing_code');
           return;
         }
 
-        console.log('[AUTH_CALLBACK] Exchanging code for session');
-        const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
-        if (exErr) {
-          console.error('[AUTH_CALLBACK] exchangeCodeForSession failed:', exErr);
+        // We have a code - the server-side API route should handle the exchange
+        // We should NOT try to exchange it client-side in PKCE flow
+        console.log('[AUTH_CALLBACK] Code present, waiting for session from server exchange');
+        
+        // Give the server-side exchange a moment to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Check if session was created by server-side exchange
+        const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+        
+        if (sessionErr) {
+          console.error('[AUTH_CALLBACK] Session error after server exchange:', sessionErr.message);
           
-          // Handle refresh token errors during exchange
-          if (exErr.message?.includes('refresh_token_not_found') || 
-              exErr.message?.includes('Invalid Refresh Token')) {
-            console.warn('[AUTH_CALLBACK] refresh_token_error_during_exchange - clearing invalid session');
+          if (sessionErr.message?.includes('refresh_token_not_found') || 
+              sessionErr.message?.includes('Invalid Refresh Token')) {
             await clearInvalidSession();
-            router.replace('/sign-in?error=invalid_session');
-            return;
           }
           
-          router.replace(`/sign-in?error=exchange_failed&message=${encodeURIComponent(exErr.message)}`);
-          return;
-        }
-
-        console.log('[AUTH_CALLBACK] Getting user after session exchange');
-        // Route based on whether venue exists
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.error('[AUTH_CALLBACK] No user found after session exchange');
-          router.replace('/sign-in?error=no_user');
+          router.replace('/sign-in?error=exchange_failed');
           return;
         }
         
-        console.log('[AUTH_CALLBACK] Checking venues for user:', user.id);
+        if (!sessionData?.session?.user) {
+          console.error('[AUTH_CALLBACK] No session after server exchange');
+          router.replace('/sign-in?error=no_session');
+          return;
+        }
+        
+        // Session established, check venues
+        const userId = sessionData.session.user.id;
+        console.log('[AUTH_CALLBACK] Session established, checking venues for:', userId);
+        
         const { data: venues, error: vErr } = await supabase
-          .from('venues').select('venue_id').eq('owner_id', user.id).limit(1);
+          .from('venues')
+          .select('venue_id')
+          .eq('owner_id', userId)
+          .limit(1);
+          
         if (vErr) {
-          console.warn('[AUTH_CALLBACK] venue check error (non-fatal):', vErr.message);
+          console.warn('[AUTH_CALLBACK] Venue check error:', vErr.message);
         }
         
         const targetRoute = venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile';
         console.log('[AUTH_CALLBACK] Redirecting to:', targetRoute);
         router.replace(targetRoute);
-      } catch (e: any) {
-        console.error('[AUTH_CALLBACK] Callback fatal:', e);
         
-        // Handle refresh token errors in catch block
+      } catch (e: any) {
+        console.error('[AUTH_CALLBACK] Fatal error:', e);
+        setError(e?.message || 'An unexpected error occurred');
+        setIsProcessing(false);
+        
+        // Handle refresh token errors
         if (e?.message?.includes('refresh_token_not_found') || 
             e?.message?.includes('Invalid Refresh Token')) {
-          console.warn('[AUTH_CALLBACK] refresh_token_error_catch - clearing invalid session');
           await clearInvalidSession();
           router.replace('/sign-in?error=invalid_session');
-          return;
         }
-        
-        setIsProcessing(false);
-        // Don't redirect immediately, let the user see the error
       }
     })();
   }, [params, router]);

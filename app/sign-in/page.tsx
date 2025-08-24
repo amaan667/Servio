@@ -24,16 +24,19 @@ function SignInPageContent() {
       
       console.log('[AUTH] Supabase client is configured, proceeding with OAuth');
       
-      // Use a consistent redirect URL that matches the Supabase configuration
+      // Use the server-side API route for the callback to handle PKCE properly
       const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
       console.log('[AUTH] Starting Google OAuth redirect to:', redirectTo);
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
-          // Force Google account chooser and avoid cached flows that can hang.
-          queryParams: { prompt: 'select_account' },
+          // Force Google account chooser
+          queryParams: { 
+            prompt: 'select_account',
+            access_type: 'offline'
+          }
         },
       });
       
@@ -51,7 +54,7 @@ function SignInPageContent() {
       }
       
       console.log('[AUTH] Google OAuth redirect initiated successfully');
-      // No else branch: in redirect flow, the browser navigates away.
+      // The browser will navigate to Google OAuth
     } catch (e: any) {
       console.error('[AUTH] Google sign-in threw:', e);
       alert('Sign-in failed to start. Please try again.');
