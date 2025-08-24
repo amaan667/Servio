@@ -1,51 +1,77 @@
-import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/server/supabase';
+import { NextRequest, NextResponse } from 'next/server';
+import { createRouteSupabase } from '@/lib/supabase-server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = createRouteSupabase();
     
+    // Get the current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('[AUTH_CHECK] Session error:', sessionError);
+      
+      // If it's a refresh token error, clear the session
+      if (sessionError.message.includes('Invalid Refresh Token') || 
+          sessionError.message.includes('Refresh Token Not Found')) {
+        console.log('[AUTH_CHECK] Clearing invalid session due to refresh token error');
+        await supabase.auth.signOut();
+        return NextResponse.json({ 
+          authenticated: false, 
+          error: 'Invalid session, please sign in again',
+          shouldRedirect: true 
+        });
+      }
+      
+      return NextResponse.json({ 
+        authenticated: false, 
+        error: sessionError.message 
+      });
+    }
+
+    if (!session) {
+      return NextResponse.json({ 
+        authenticated: false, 
+        error: 'No session found' 
+      });
+    }
+
+    // Verify the user still exists and is valid
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (userError) {
-      console.log('[AUTH CHECK] User error:', userError);
+    if (userError || !user) {
+      console.error('[AUTH_CHECK] User validation failed:', userError);
+      await supabase.auth.signOut();
       return NextResponse.json({ 
         authenticated: false, 
-        error: userError.message 
+        error: 'User validation failed',
+        shouldRedirect: true 
       });
     }
-    
-    if (!user) {
-      console.log('[AUTH CHECK] No user found');
-      return NextResponse.json({ 
-        authenticated: false, 
-        message: 'No user found' 
-      });
-    }
-    
-    console.log('[AUTH CHECK] User authenticated:', { userId: user.id, email: user.email });
-    
-    // Get user's venues
-    const { data: venues, error: venueError } = await supabase
+
+    // Check if user has a venue
+    const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('venue_id, name')
-      .eq('owner_id', user.id);
-    
+      .eq('owner_id', user.id)
+      .maybeSingle();
+
     return NextResponse.json({
       authenticated: true,
       user: {
         id: user.id,
-        email: user.email
-      },
-      venues: venues || [],
-      venueError: venueError?.message
+        email: user.email,
+        hasVenue: !!venue,
+        venueId: venue?.venue_id,
+        venueName: venue?.name
+      }
     });
-    
+
   } catch (error) {
-    console.error('[AUTH CHECK] Unexpected error:', error);
+    console.error('[AUTH_CHECK] Unexpected error:', error);
     return NextResponse.json({ 
       authenticated: false, 
-      error: 'Unexpected error occurred' 
-    });
+      error: 'Authentication check failed' 
+    }, { status: 500 });
   }
 }
