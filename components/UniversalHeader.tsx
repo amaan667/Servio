@@ -78,11 +78,16 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
   const handleSignOut = async () => {
     try {
+      // Clear client session first so UI updates instantly
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+      // Clear server cookies/session
       await fetch('/api/auth/sign-out', { method: 'POST' });
     } catch (e) {
-      // no-op; still navigate home
+      // non-fatal
     } finally {
-      router.replace('/');
+      router.replace('/sign-in?signedOut=true');
     }
   };
 
@@ -94,11 +99,11 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   // Handle dashboard navigation
   const handleDashboardClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (session) {
-      router.push(dashboardHref);
-    } else {
+    if (!session) {
       router.push('/sign-in');
+      return;
     }
+    router.push(dashboardHref);
   };
 
   if (loading) {
@@ -144,8 +149,9 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 >
                   Home
                 </Link>
+                {/* Dashboard link visible only when authenticated */}
                 <a
-                  href={dashboardHref}
+                  href={session ? dashboardHref : '/sign-in'}
                   onClick={handleDashboardClick}
                   className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                 >
@@ -179,8 +185,9 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                             Home
                           </Link>
                         </DropdownMenuItem>
+                        {/* Dashboard item visible only when authenticated */}
                         <DropdownMenuItem asChild>
-                          <a href={dashboardHref} onClick={handleDashboardClick} className="flex items-center gap-2">
+                          <a href={session ? dashboardHref : '/sign-in'} onClick={handleDashboardClick} className="flex items-center gap-2">
                             Dashboard
                           </a>
                         </DropdownMenuItem>
@@ -214,18 +221,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 >
                   Home
                 </Link>
-                <Link
-                  href="#features"
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Features
-                </Link>
-                <Link
-                  href="#pricing"
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Pricing
-                </Link>
+                {/* Hide Dashboard when not authenticated; show Sign In */}
                 <Link
                   href="/sign-in"
                   className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"

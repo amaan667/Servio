@@ -4,6 +4,7 @@ import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Home } from "lucide-react";
 import Link from 'next/link';
+import { useAuth } from '@/app/authenticated-client-provider';
 import { useMemo } from 'react';
 
 interface NavigationBreadcrumbProps {
@@ -28,6 +29,7 @@ export default function NavigationBreadcrumb({
   const pathnameRaw = usePathname();
   const pathname = pathnameRaw || '';
   const params = useParams() as { venueId?: string };
+  const { session } = useAuth();
   
   // Extract venueId from params or pathname, fallback to prop
   const venueId = useMemo(
@@ -37,7 +39,7 @@ export default function NavigationBreadcrumb({
   
   // Home should always link to main home page, dashboard link for breadcrumb navigation
   const homeLink = '/';
-  const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
+  const dashboardLink = session ? (venueId ? `/dashboard/${venueId}` : '/dashboard') : '/sign-in';
 
   console.log('[NAV] NavigationBreadcrumb', { venueId, homeLink, pathname });
 
@@ -133,13 +135,15 @@ export default function NavigationBreadcrumb({
         <li className="text-gray-400 font-medium">
           ←
         </li>
-        <li>
-          <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
-            <Link href={dashboardLink}>
-              <span>Dashboard</span>
-            </Link>
-          </Button>
-        </li>
+        {session && (
+          <li>
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 h-8 px-3">
+              <Link href={dashboardLink}>
+                <span>Dashboard</span>
+              </Link>
+            </Button>
+          </li>
+        )}
         <li className="text-gray-400 font-medium">
           ←
         </li>

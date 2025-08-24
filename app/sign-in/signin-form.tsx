@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 // Removed RefreshCw icon import for Clean Refresh button cleanup
-import { signInUser } from "@/lib/supabase";
+// Use client Supabase directly to ensure provider and UI get updated immediately
 import { logger } from "@/lib/logger";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
@@ -99,20 +99,47 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
     setLoading(true);
 
     try {
-      console.log('[AUTH] SignInForm calling signInUser');
-      const result = await signInUser(formData.email.trim(), formData.password);
+      console.log('[AUTH] SignInForm calling supabase.auth.signInWithPassword');
 
-      if (result.success) {
-        console.log('[AUTH] SignInForm sign-in success, redirecting to dashboard');
-        // Redirect to dashboard (will route to venue or complete-profile as needed)
-        router.replace('/dashboard');
-      } else {
-        console.log('[AUTH] SignInForm sign-in failed', { message: result.message });
-        setError(result.message || "Invalid email or password");
+      if (!supabase) {
+        console.error('[AUTH] Supabase client not available in SignInForm');
+        setError('Authentication service not available. Please try again later.');
+        setLoading(false);
+        return;
       }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+
+      if (error) {
+        console.log('[AUTH] SignInForm sign-in failed', { message: error.message });
+        setError(error.message || 'Invalid email or password');
+        setLoading(false);
+        return;
+      }
+
+      // Proactively sync server cookies to avoid a race with middleware
+      try {
+        const access_token = data.session?.access_token;
+        const refresh_token = data.session?.refresh_token as string | undefined;
+        if (access_token && refresh_token) {
+          await fetch('/api/auth/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token, refresh_token })
+          });
+        }
+      } catch (syncErr) {
+        console.warn('[AUTH] Cookie sync failed (non-fatal):', (syncErr as any)?.message);
+      }
+
+      console.log('[AUTH] SignInForm sign-in success, redirecting to dashboard');
+      router.replace('/dashboard');
     } catch (error: any) {
       console.log('[AUTH] SignInForm unexpected error', { message: error?.message });
-      setError("An unexpected error occurred. Please try again.");
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
