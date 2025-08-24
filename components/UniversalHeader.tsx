@@ -78,11 +78,16 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
   const handleSignOut = async () => {
     try {
+      // Clear client session first so UI updates instantly
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+      // Clear server cookies/session
       await fetch('/api/auth/sign-out', { method: 'POST' });
     } catch (e) {
-      // no-op; still navigate home
+      // non-fatal
     } finally {
-      router.replace('/');
+      router.replace('/sign-in?signedOut=true');
     }
   };
 
