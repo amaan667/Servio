@@ -159,11 +159,6 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                             Home
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={dashboardHref} className="flex items-center gap-2">
-                            <span>Dashboard</span>
-                          </Link>
-                        </DropdownMenuItem>
                         {showActions && (
                           <DropdownMenuItem asChild>
                             <Link href={settingsHref} className="flex items-center gap-2">
@@ -251,11 +246,6 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                     <Link href={homeHref} className="flex items-center gap-2">
                       <Home className="h-4 w-4" />
                       Home
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={dashboardHref} className="flex items-center gap-2">
-                      <span>Dashboard</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
