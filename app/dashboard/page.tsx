@@ -1,29 +1,30 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabase } from '@/lib/supabase-server'
+import { BASE } from '@/lib/env'
 
 export default async function DashboardIndex() {
   const supabase = createServerSupabase()
   
-  console.log('[DASHBOARD] Dashboard index page loading')
+  console.log('[DASH] Dashboard index page loading')
   
   try {
     const { data: { user }, error } = await supabase.auth.getUser()
     
-    console.log('[DASHBOARD] Auth check result:', { hasUser: !!user, error: error?.message })
+    console.log('[DASH] Auth check result:', { hasUser: !!user, error: error?.message })
     
     if (error) {
-      console.error('[DASHBOARD] Auth error:', error.message)
+      console.error('[DASH] Auth error:', error.message)
       // If it's a refresh token error, redirect to clear sessions
       if (error.message?.includes('refresh_token_not_found') || 
           error.message?.includes('Invalid Refresh Token')) {
         redirect('/clear-sessions')
       }
-      redirect('/sign-in')
+      redirect(`${BASE}/sign-in`)
     }
     
     if (!user) {
-      console.log('[DASHBOARD] No user found, redirecting to sign-in')
-      redirect('/sign-in')
+      console.log('[DASH] no session → /sign-in')
+      redirect(`${BASE}/sign-in`)
     }
 
     const { data: venues, error: venueError } = await supabase
@@ -34,18 +35,19 @@ export default async function DashboardIndex() {
       .limit(1)
 
     if (venueError) {
-      console.error('[DASHBOARD] Venue query error:', venueError.message)
-      redirect('/sign-in')
+      console.error('[DASH] Venue query error:', venueError.message)
+      redirect(`${BASE}/sign-in`)
     }
 
     if (!venues || venues.length === 0) {
-      redirect('/complete-profile')
+      redirect(`${BASE}/complete-profile`)
     }
 
     const venueId = venues[0].venue_id as string
-    redirect(`/dashboard/${venueId}`)
+    console.log('[DASH] session → /dashboard/:venueId')
+    redirect(`${BASE}/dashboard/${venueId}`)
   } catch (error) {
-    console.error('[DASHBOARD] Unexpected error:', error)
-    redirect('/sign-in')
+    console.error('[DASH] Unexpected error:', error)
+    redirect(`${BASE}/sign-in`)
   }
 }

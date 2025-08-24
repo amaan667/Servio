@@ -96,14 +96,11 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   const dashboardHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
   const settingsHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/settings';
 
-  // Handle dashboard navigation
+  // Handle dashboard navigation - let server handle auth decisions
   const handleDashboardClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!session) {
-      router.push('/sign-in');
-      return;
-    }
-    router.push(dashboardHref);
+    // Always navigate to /dashboard - let server page decide auth/redirect
+    router.push('/dashboard');
   };
 
   if (loading) {
@@ -151,7 +148,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 </Link>
                 {/* Dashboard link visible only when authenticated */}
                 <a
-                  href={session ? dashboardHref : '/sign-in'}
+                  href="/dashboard"
                   onClick={handleDashboardClick}
                   className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                 >
@@ -185,9 +182,9 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                             Home
                           </Link>
                         </DropdownMenuItem>
-                        {/* Dashboard item visible only when authenticated */}
+                        {/* Dashboard item - let server handle auth decisions */}
                         <DropdownMenuItem asChild>
-                          <a href={session ? dashboardHref : '/sign-in'} onClick={handleDashboardClick} className="flex items-center gap-2">
+                          <a href="/dashboard" onClick={handleDashboardClick} className="flex items-center gap-2">
                             Dashboard
                           </a>
                         </DropdownMenuItem>
