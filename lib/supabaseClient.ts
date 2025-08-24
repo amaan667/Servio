@@ -61,6 +61,15 @@ export const isSupabaseConfigured = () => {
   return supabaseClient !== null;
 };
 
+// Helper function to get configuration status
+export const getSupabaseConfigStatus = () => {
+  return {
+    url: !!supabaseUrl,
+    key: !!supabaseAnonKey,
+    client: !!supabaseClient,
+  };
+};
+
 // Helper function to clear invalid sessions
 export const clearInvalidSession = async () => {
   if (!supabaseClient) return;

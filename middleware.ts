@@ -14,9 +14,31 @@ export async function middleware(req: NextRequest) {
     },
   });
 
+  // Check if Supabase environment variables are configured
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('[MIDDLEWARE] Supabase environment variables not configured');
+    console.error('[MIDDLEWARE] NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
+    console.error('[MIDDLEWARE] NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET' : 'MISSING');
+    
+    // For protected routes, redirect to a configuration error page or show error
+    const isProtectedRoute = req.nextUrl.pathname.startsWith('/dashboard') || 
+                            req.nextUrl.pathname.startsWith('/settings') ||
+                            req.nextUrl.pathname.startsWith('/generate-qr');
+    
+    if (isProtectedRoute) {
+      console.log('[MIDDLEWARE] Redirecting to home due to missing Supabase configuration');
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+    
+    return response;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
