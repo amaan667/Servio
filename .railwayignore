@@ -9,4 +9,9 @@ node_modules/
 docs/
 scripts/
 test-navigation.html
-trivial-change.txt 
+trivial-change.txt
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+node_modules copy/
+.next/
+.next/* 
