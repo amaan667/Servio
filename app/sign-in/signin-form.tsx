@@ -17,8 +17,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 // Removed RefreshCw icon import for Clean Refresh button cleanup
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import EnvironmentCheck from "@/components/environment-check";
 // Removed SessionClearer from production to avoid redundant client-side sign-out
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 
@@ -59,6 +60,8 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
         errorText = 'Authentication code missing. Please try signing in again.';
       } else if (urlError === 'pkce_failed') {
         errorText = 'Authentication failed. Please try signing in again.';
+      } else if (urlError === 'service_unavailable') {
+        errorText = 'Authentication service is currently unavailable. Please check your configuration.';
       }
       
       setError(errorText);
@@ -76,6 +79,12 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
     console.log('[AUTH] SignInForm submit start', { email: formData.email });
 
     setError(null);
+
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      setError("Authentication service not available. Please check your environment configuration.");
+      return;
+    }
 
     if (!formData.email.trim()) {
       setError("Please enter your email address.");
@@ -122,6 +131,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
         </div>
 
         <div className="mt-8">
+          <EnvironmentCheck />
           <Card>
           <CardHeader>
             <CardTitle>Sign In</CardTitle>
@@ -134,10 +144,21 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
                 setError(null);
+                console.log('[AUTH] Google sign-in button clicked');
+                
+                // Check if Supabase is configured
+                if (!isSupabaseConfigured()) {
+                  console.error('[AUTH] Supabase not configured');
+                  setError("Authentication service not available. Please check your environment configuration.");
+                  return;
+                }
+                
+                console.log('[AUTH] Supabase is configured, starting Google sign-in');
                 try {
                   await onGoogleSignIn();
+                  console.log('[AUTH] Google sign-in initiated successfully');
                 } catch (err: any) {
-                  console.error('[AUTH] Google sign-in error', { message: err?.message });
+                  console.error('[AUTH] Google sign-in error', { message: err?.message, error: err });
                   setError(`Google sign-in failed: ${err.message || "Please try again."}`);
                 }
               }}

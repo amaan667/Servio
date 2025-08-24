@@ -42,13 +42,63 @@ if (!supabaseUrl || !supabaseAnonKey) {
   supabaseClient = createMockClient();
 } else {
   // Create single Supabase client instance with proper configuration
-  supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
+  supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+      storageKey: 'servio-auth-token',
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'servio-web',
+      },
+    },
+  });
 }
 
 // Export the standardized client
 export const supabase = supabaseClient;
 
 console.log("Supabase client created successfully");
+
+// Utility function to clear invalid sessions
+export const clearInvalidSession = async () => {
+  try {
+    // Clear any stored session data
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('servio-auth-token');
+      localStorage.removeItem('supabase.auth.token');
+      // Clear any other potential session storage keys
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('supabase') || key.includes('auth')) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+    
+    // Sign out to clear any server-side session
+    if (supabaseClient?.auth) {
+      await supabaseClient.auth.signOut();
+    }
+    
+    console.log('[SUPABASE] Cleared invalid session');
+  } catch (error) {
+    console.error('[SUPABASE] Error clearing session:', error);
+  }
+};
+
+// Utility function to handle refresh token errors
+export const handleRefreshTokenError = async (error: any) => {
+  if (error?.message?.includes('refresh_token_not_found') || 
+      error?.message?.includes('Invalid Refresh Token')) {
+    console.warn('[SUPABASE] Refresh token error detected, clearing invalid session');
+    await clearInvalidSession();
+    return true; // Indicates that the error was handled
+  }
+  return false; // Indicates that the error was not handled
+};
 
 // Types
 export interface User {
@@ -209,6 +259,16 @@ export async function signUpUser(
 export async function signInUser(email: string, password: string) {
   try {
     logger.info("Attempting sign in", { email });
+    
+    // Check if Supabase is configured
+    if (!supabase) {
+      logger.error("Supabase client not configured");
+      return {
+        success: false,
+        message: "Authentication service not available. Please check your environment configuration.",
+      };
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -231,7 +291,8 @@ export async function signInUser(email: string, password: string) {
 
 export async function signInWithGoogle() {
   const supabase = supabaseClient;
-  const redirectTo = 'https://servio-production.up.railway.app';
+  // Use a consistent redirect URL that matches the Supabase configuration
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
   console.log('[AUTH] starting oauth with redirect:', redirectTo);
   
   const { data, error } = await supabase.auth.signInWithOAuth({
