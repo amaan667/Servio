@@ -5,6 +5,9 @@ const path = require('path');
 
 console.log('🔍 Checking Servio environment configuration...\n');
 
+// [FIX] Writing file to .env.local in project root
+console.log('📝 [FIX] Writing file to .env.local in project root');
+
 // Check for .env.local file
 const envLocalPath = path.join(process.cwd(), '.env.local');
 const envLocalExists = fs.existsSync(envLocalPath);
@@ -60,12 +63,40 @@ if (allConfigured) {
 } else {
   console.log('❌ Some required environment variables are missing.');
   console.log('\n🔧 To fix this:');
-  console.log('   1. Create a .env.local file in your project root');
-  console.log('   2. Add the missing environment variables:');
-  console.log('      NEXT_PUBLIC_SUPABASE_URL=your_supabase_url');
-  console.log('      NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key');
-  console.log('   3. Restart your development server');
-  console.log('\n📚 For more help, see TROUBLESHOOTING.md');
+console.log('   1. Create a .env.local file in your project root');
+console.log('   2. Add the missing environment variables:');
+console.log('      NEXT_PUBLIC_SUPABASE_URL=your_supabase_url');
+console.log('      NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key');
+console.log('   3. Restart your development server');
+console.log('\n📚 For more help, see TROUBLESHOOTING.md');
+
+// Helper function to safely write environment file
+function createEnvFile() {
+  try {
+    const envLocalPath = path.join(process.cwd(), '.env.local');
+    const envExamplePath = path.join(process.cwd(), '.env.local.example');
+    
+    // Ensure parent directory exists
+    const envDir = path.dirname(envLocalPath);
+    if (!fs.existsSync(envDir)) {
+      fs.mkdirSync(envDir, { recursive: true });
+      console.log('📁 Created directory:', envDir);
+    }
+    
+    // Copy from example if it exists
+    if (fs.existsSync(envExamplePath)) {
+      fs.copyFileSync(envExamplePath, envLocalPath);
+      console.log('✅ Created .env.local from .env.local.example');
+      return true;
+    } else {
+      console.log('❌ .env.local.example not found');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error creating .env.local:', error.message);
+    return false;
+  }
+}
 }
 
 console.log('\n🚀 Next steps:');
