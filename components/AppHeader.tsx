@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import UniversalHeader from "@/components/UniversalHeader";
+import NavBar from "@/components/NavBar";
 
 export default function AppHeader() {
   const pathname = usePathname();
@@ -10,5 +10,5 @@ export default function AppHeader() {
   
   if (hideOnDashboard || hideOnSettings) return null;
   
-  return <UniversalHeader />;
+  return <NavBar />;
 }

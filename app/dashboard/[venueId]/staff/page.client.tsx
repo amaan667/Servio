@@ -222,7 +222,6 @@ export default function StaffClient({ venueId }: { venueId: string }) {
           )}
         </div>
       </div>
-    </div>
   );
 }
 
