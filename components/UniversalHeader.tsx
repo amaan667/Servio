@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/lib/supabaseClient";
 import { Menu, X, User, Home, Settings, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
@@ -23,8 +22,6 @@ interface UniversalHeaderProps {
 
 export default function UniversalHeader({ showActions = true, venueId }: UniversalHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const { session } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -33,61 +30,18 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   const isHomePage = pathname === '/' || pathname === '/home';
   const isDashboardPage = pathname?.startsWith('/dashboard') || pathname?.startsWith('/settings');
   
-  // Debug logging for mobile navigation
-  console.log('[UNIVERSAL_HEADER] Navigation state:', {
-    pathname,
-    isHomePage,
-    isDashboardPage,
-    hasSession: !!session,
-    mobileMenuOpen
-  });
-
-  // Fetch primary venue when user is signed in
-  useEffect(() => {
-    const fetchPrimaryVenue = async () => {
-      try {
-        if (session?.user) {
-          const { data, error } = await supabase
-            .from('venues')
-            .select('venue_id')
-            .eq('owner_id', session.user.id)
-            .order('created_at', { ascending: true })
-            .limit(1);
-
-          if (!error && data?.length) {
-            setPrimaryVenueId(data[0].venue_id);
-          }
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching primary venue:', err);
-        setLoading(false);
-      }
-    };
-
-    if (!venueId) {
-      fetchPrimaryVenue();
-    } else {
-      setPrimaryVenueId(venueId);
-      setLoading(false);
-    }
-  }, [venueId, session]);
-
-  const resolvedVenueId = venueId ?? primaryVenueId;
+  // Keep nav dumb: do not fetch Supabase on the client
+  console.log('[NAV] header', { path: pathname, hasSession: !!session });
+  const resolvedVenueId = venueId ?? null;
 
   const handleSignOut = async () => {
     try {
-      // Clear client session first so UI updates instantly
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
-      // Clear server cookies/session
+      console.log('[NAV] Sign-out initiated');
       await fetch('/api/auth/sign-out', { method: 'POST' });
     } catch (e) {
-      // non-fatal
+      console.error('[NAV] Sign-out error:', e);
     } finally {
-      router.replace('/sign-in?signedOut=true');
+      router.replace('/');
     }
   };
 
@@ -103,19 +57,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
     router.push('/dashboard');
   };
 
-  if (loading) {
-    return (
-      <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex justify-between items-center h-32">
-            <div className="flex items-center">
-              <div className="w-[240px] h-[48px] bg-gray-200 animate-pulse rounded"></div>
-            </div>
-          </div>
-        </div>
-      </nav>
-    );
-  }
+  // No loading state – nav renders immediately without client auth fetches
 
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">

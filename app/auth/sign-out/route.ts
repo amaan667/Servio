@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/server/supabase';
 
 export async function GET(req: NextRequest) {
+<<<<<<< Current (Your changes)
   console.log('[AUTH] Sign-out route called');
   
   try {
@@ -38,4 +39,9 @@ export async function GET(req: NextRequest) {
     const base = process.env.NEXT_PUBLIC_APP_URL!;
     return NextResponse.redirect(new URL('/sign-in?signedOut=true', base));
   }
+=======
+  // Legacy endpoint retained for backward compatibility – redirect to home
+  const base = process.env.NEXT_PUBLIC_APP_URL!;
+  return NextResponse.redirect(new URL('/', base));
+>>>>>>> Incoming (Background Agent changes)
 }
