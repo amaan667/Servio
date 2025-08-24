@@ -262,13 +262,38 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
       <div className="border-t pt-4">
         <div className="text-center text-xs text-gray-500">
           <p>Having trouble signing in?</p>
-          <Link 
-            href="/clear-session" 
-            className="inline-flex items-center text-purple-600 hover:text-purple-700 mt-1"
+          <Button
+            variant="link"
+            size="sm"
+            className="text-purple-600 hover:text-purple-700 p-0 h-auto"
+            onClick={async () => {
+              try {
+                console.log('[AUTH DEBUG] Clearing session data...');
+                const res = await fetch('/api/auth/clear-session', { 
+                  method: 'POST',
+                  credentials: 'include'
+                });
+                
+                if (res.ok) {
+                  console.log('[AUTH DEBUG] Session cleared successfully');
+                  // Clear local storage
+                  if (typeof window !== 'undefined') {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                  }
+                  // Reload page to clear any cached state
+                  window.location.reload();
+                } else {
+                  console.error('[AUTH DEBUG] Failed to clear session');
+                }
+              } catch (error) {
+                console.error('[AUTH DEBUG] Error clearing session:', error);
+              }
+            }}
           >
             Clear session data
             <ExternalLink className="h-3 w-3 ml-1" />
-          </Link>
+          </Button>
         </div>
       </div>
     </div>

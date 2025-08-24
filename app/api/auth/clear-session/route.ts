@@ -1,21 +1,54 @@
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
+import { NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase-server';
 
-import { NextResponse } from 'next/server'
-import { getSupabaseForRoute } from '@/lib/supabase-server'
+export const runtime = 'nodejs';
 
 export async function POST() {
+  const supa = supabaseServer();
   try {
-    const res = NextResponse.json({ success: true })
-    const supabase = getSupabaseForRoute(res)
+    console.log('[AUTH DEBUG] Clear session initiated');
     
-    // Sign out to clear any server-side session
-    await supabase.auth.signOut()
+    // Clear server-side session
+    const { error } = await supa.auth.signOut();
     
-    console.log('[API] Session cleared successfully')
-    return res
-  } catch (error) {
-    console.error('[API] Error clearing session:', error)
-    return NextResponse.json({ success: false, error: 'Failed to clear session' }, { status: 500 })
+    if (error) {
+      console.error('[AUTH DEBUG] Server session clear error:', error);
+    } else {
+      console.log('[AUTH DEBUG] Server session cleared successfully');
+    }
+    
+    // Create response with cleared cookies
+    const response = NextResponse.json({ 
+      ok: true, 
+      message: 'Session cleared successfully',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Clear all possible auth-related cookies
+    response.cookies.delete('sb-access-token');
+    response.cookies.delete('sb-refresh-token');
+    response.cookies.delete('supabase-auth-token');
+    response.cookies.delete('supabase-auth-token');
+    response.cookies.delete('servio-auth-token');
+    
+    // Also clear any other potential cookie names
+    const cookieNames = [
+      'sb-access-token',
+      'sb-refresh-token', 
+      'supabase-auth-token',
+      'servio-auth-token',
+      'auth-token',
+      'session-token'
+    ];
+    
+    cookieNames.forEach(name => {
+      response.cookies.delete(name);
+    });
+    
+    console.log('[AUTH DEBUG] Session clear completed with cookie cleanup');
+    return response;
+  } catch (e: any) {
+    console.error('[AUTH DEBUG] clear session failed', e?.message || e);
+    return NextResponse.json({ ok: false, error: 'clear_session_failed' }, { status: 500 });
   }
 }

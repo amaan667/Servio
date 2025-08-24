@@ -25,14 +25,32 @@ export default function NavBar() {
   const handleSignOut = async () => {
     try {
       setSigningOut(true);
-      console.log('[NAV] Sign-out initiated');
+      console.log('[NAV DEBUG] Sign-out initiated');
       
-      const res = await fetch('/api/auth/sign-out', { method: 'POST' });
-      if (!res.ok) throw new Error('Sign out failed');
+      // Clear client-side session first
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('servio-auth-token');
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.removeItem('supabase.auth.token');
+      }
+      
+      // Call server-side sign-out
+      const res = await fetch('/api/auth/sign-out', { 
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (!res.ok) {
+        console.error('[NAV DEBUG] Server sign-out failed:', res.status);
+        throw new Error('Sign out failed');
+      }
+      
+      console.log('[NAV DEBUG] Sign-out successful');
     } catch (e) {
-      console.error('[NAV] sign out error', e);
+      console.error('[NAV DEBUG] sign out error', e);
     } finally {
-      router.replace('/');
+      // Force page reload to clear any cached state
+      window.location.href = '/';
     }
   };
 
@@ -59,9 +77,9 @@ export default function NavBar() {
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
-                width={120}
-                height={32}
-                className="h-10 w-auto transition-all duration-300 group-hover:scale-105"
+                width={6144}
+                height={2304}
+                className="h-16 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-lg"
                 priority
               />
             </Link>
