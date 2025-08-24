@@ -108,7 +108,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex justify-between items-center h-32">
+        <div className="flex justify-between items-center h-16">
           {/* Logo - Centered on mobile, left aligned on desktop */}
           <div className="flex items-center justify-center md:justify-start flex-1 md:flex-none order-2 md:order-1">
             <Link href={session ? dashboardHref : homeHref} className="flex items-center group">
@@ -117,7 +117,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 alt="Servio"
                 width={240}
                 height={60}
-                className="h-48 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-12 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
@@ -222,8 +222,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
           {/* Mobile Navigation - Right side */}
           <div className="md:hidden flex items-center order-3">
-            {/* Show hamburger menu on home page or dashboard page when authenticated */}
-            {(isHomePage || (isDashboardPage && session)) && (
+            {/* Show hamburger menu only on home page when authenticated */}
+            {isHomePage && session && (
               <Button
                 variant="ghost"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -237,8 +237,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
               </Button>
             )}
             
-            {/* Show profile dropdown only on dashboard page when no hamburger menu */}
-            {isDashboardPage && session && showActions && !mobileMenuOpen && (
+            {/* Show profile dropdown only on dashboard page */}
+            {isDashboardPage && session && showActions && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -278,8 +278,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
         </div>
       </div>
 
-      {/* Mobile Navigation Menu - Show on home page or dashboard page when authenticated */}
-      {mobileMenuOpen && (isHomePage || (isDashboardPage && session)) && (
+      {/* Mobile Navigation Menu - Show only on home page when authenticated */}
+      {mobileMenuOpen && isHomePage && session && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
             {session ? (
