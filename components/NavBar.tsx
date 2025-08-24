@@ -22,33 +22,17 @@ export default function NavBar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Client-safe navigation - let server handle all auth decisions
-  const handleDashboardClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    // Always navigate to /dashboard - let server page decide auth/redirect
-    router.push('/dashboard');
-  };
-
   const handleSignOut = async () => {
     try {
       setSigningOut(true);
       console.log('[NAV] Sign-out initiated');
       
-      // Call sign-out route handler
-      const response = await fetch('/api/auth/sign-out', { method: 'POST' });
-      if (!response.ok) {
-        throw new Error('Sign-out failed');
-      }
-      
-      // Navigate to home after successful sign-out
-      router.replace('/');
+      const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+      if (!res.ok) throw new Error('Sign out failed');
     } catch (e) {
-      console.error('[NAV] Sign-out error:', e);
-      // Still navigate to home even if sign-out fails
-      router.replace('/');
+      console.error('[NAV] sign out error', e);
     } finally {
-      setSigningOut(false);
-      setMobileMenuOpen(false);
+      router.replace('/');
     }
   };
 
@@ -91,13 +75,9 @@ export default function NavBar() {
                 <Link href="/" className={linkClass('/')}>
                   Home
                 </Link>
-                <a 
-                  href="/dashboard" 
-                  onClick={handleDashboardClick}
-                  className={linkClass('/dashboard')}
-                >
+                <Link href="/dashboard" className={linkClass('/dashboard')}>
                   Dashboard
-                </a>
+                </Link>
                 <Link href="/settings" className={linkClass('/settings')}>
                   Settings
                 </Link>
@@ -156,13 +136,9 @@ export default function NavBar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <a 
-                      href="/dashboard" 
-                      onClick={handleDashboardClick}
-                      className="flex items-center gap-2"
-                    >
+                    <Link href="/dashboard" className="flex items-center gap-2">
                       Dashboard
-                    </a>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/settings" className="flex items-center gap-2">
