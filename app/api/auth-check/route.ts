@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteSupabase } from '@/lib/supabase-server';
+import { getSupabaseForRoute } from '@/lib/supabase-server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteSupabase();
+    const supabase = getSupabaseForRoute(new NextResponse());
     
     // Get the current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
