@@ -8,6 +8,7 @@ import AuthWrapper from "@/components/AuthWrapper";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { SupabaseConfigCheck } from "@/components/supabase-config-check";
 import HealthCheck from "@/components/HealthCheck";
+import SupabaseConfigError from "@/components/SupabaseConfigError";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,6 +29,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <SupabaseConfigCheck />
+            <SupabaseConfigError />
             <AppHeader />
             {children}
             <ThemeToggleFloat />

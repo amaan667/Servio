@@ -5,6 +5,9 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { log } from '@/lib/debug';
 import QRCodeClient from '../qr-codes/QRCodeClient';
+import PageHeader from '@/components/PageHeader';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import GlobalErrorBoundary from '@/components/GlobalErrorBoundary';
 
 export default async function QRPage({
   params,
@@ -30,18 +33,19 @@ export default async function QRPage({
   if (!venue) redirect('/dashboard');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            QR Codes for {venue.name}
-          </h1>
-          <p className="text-sm sm:text-lg text-muted-foreground mt-2">
-            Generate and manage QR codes for your tables
-          </p>
-        </div>
+        <PageHeader
+          title={`QR Codes for ${venue.name}`}
+          description="Generate and manage QR codes for your tables"
+          venueId={params.venueId}
+        />
         
-        <QRCodeClient venueId={params.venueId} />
+        <GlobalErrorBoundary>
+          <ErrorBoundary>
+            <QRCodeClient venueId={params.venueId} venueName={venue.name} />
+          </ErrorBoundary>
+        </GlobalErrorBoundary>
       </div>
     </div>
   );

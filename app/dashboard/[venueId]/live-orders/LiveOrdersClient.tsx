@@ -41,7 +41,24 @@ interface GroupedHistoryOrders {
   [date: string]: Order[];
 }
 
-
+// Helper function to safely format dates
+const formatDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+    return date.toLocaleDateString('en-GB', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid Date';
+  }
+};
 
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
   const { session, loading: authLoading } = useAuth();
@@ -510,34 +527,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        throw new Error('Invalid date');
-      }
-      
-      const day = date.getDate();
-      const month = date.toLocaleDateString('en-GB', { month: 'long' });
-      
-      // Add ordinal suffix to day
-      const getOrdinalSuffix = (day: number) => {
-        if (day > 3 && day < 21) return 'th';
-        switch (day % 10) {
-          case 1: return 'st';
-          case 2: return 'nd';
-          case 3: return 'rd';
-          default: return 'th';
-        }
-      };
-      
-      return `${day}${getOrdinalSuffix(day)} ${month}`;
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Invalid date';
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -566,79 +555,96 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     }
   };
 
-  const renderOrderCard = (order: Order, showActions: boolean = true) => (
-    <Card key={order.id} className="hover:shadow-md transition-shadow border-border">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-muted-foreground">
-              {formatTime(order.created_at)}
+  const renderOrderCard = (order: Order, showActions: boolean = true) => {
+    try {
+      return (
+        <Card key={order.id} className="hover:shadow-md transition-shadow border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-4">
+                <div className="text-sm text-muted-foreground">
+                  {formatTime(order.created_at)}
+                </div>
+                <div className="font-medium text-foreground">
+                  Table {order.table_number || 'Takeaway'}
+                </div>
+                {order.customer_name && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <User className="h-4 w-4 mr-1" />
+                    {order.customer_name}
+                  </div>
+                )}
+                {!order.customer_name && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <User className="h-4 w-4 mr-1" />
+                    Guest
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Badge className={getStatusColor(order.status)}>
+                  {getStatusDisplay(order.status)}
+                </Badge>
+                {order.payment_status && (
+                  <Badge className={getPaymentStatusColor(order.payment_status)}>
+                    {order.payment_status.toUpperCase()}
+                  </Badge>
+                )}
+                <div className="text-lg font-bold text-foreground">
+                  £{(order.total_amount || 0).toFixed(2)}
+                </div>
+              </div>
             </div>
-            <div className="font-medium text-foreground">
-              Table {order.table_number || 'Takeaway'}
+
+            {/* Order Items */}
+            <div className="space-y-2 mb-4">
+              {order.items && Array.isArray(order.items) && order.items.map((item, index) => (
+                <div key={index} className="flex justify-between text-sm">
+                  <span className="text-foreground">{item.quantity}x {item.name}</span>
+                  <span className="text-muted-foreground">£{((item.quantity || 0) * (item.price || 0)).toFixed(2)}</span>
+                </div>
+              ))}
             </div>
-            {order.customer_name && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <User className="h-4 w-4 mr-1" />
-                {order.customer_name}
+
+            {/* Action Buttons */}
+            {showActions && (
+              <div className="flex space-x-2">
+                {order.status === 'pending' && (
+                  <Button 
+                    size="sm"
+                    onClick={() => updateOrderStatus(order.id, 'preparing')}
+                  >
+                    Start Preparing
+                  </Button>
+                )}
+                {(order.status === 'preparing' || order.status === 'confirmed') && (
+                  <Button 
+                    size="sm"
+                    onClick={() => updateOrderStatus(order.id, 'served')}
+                  >
+                    Mark Served
+                  </Button>
+                )}
               </div>
             )}
-            {!order.customer_name && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <User className="h-4 w-4 mr-1" />
-                Guest
-              </div>
-            )}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge className={getStatusColor(order.status)}>
-              {getStatusDisplay(order.status)}
-            </Badge>
-            {order.payment_status && (
-              <Badge className={getPaymentStatusColor(order.payment_status)}>
-                {order.payment_status.toUpperCase()}
-              </Badge>
-            )}
-            <div className="text-lg font-bold text-foreground">
-              £{order.total_amount.toFixed(2)}
+          </CardContent>
+        </Card>
+      );
+    } catch (error) {
+      console.error('Error rendering order card:', error);
+      return (
+        <Card key={order.id} className="border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+              <p className="text-red-700">Error displaying order</p>
+              <p className="text-sm text-red-600">Order ID: {order.id}</p>
             </div>
-          </div>
-        </div>
-
-        {/* Order Items */}
-        <div className="space-y-2 mb-4">
-          {order.items && order.items.map((item, index) => (
-            <div key={index} className="flex justify-between text-sm">
-              <span className="text-foreground">{item.quantity}x {item.name}</span>
-              <span className="text-muted-foreground">£{(item.quantity * item.price).toFixed(2)}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Action Buttons */}
-        {showActions && (
-          <div className="flex space-x-2">
-            {order.status === 'pending' && (
-              <Button 
-                size="sm"
-                onClick={() => updateOrderStatus(order.id, 'preparing')}
-              >
-                Start Preparing
-              </Button>
-            )}
-            {(order.status === 'preparing' || order.status === 'confirmed') && (
-              <Button 
-                size="sm"
-                onClick={() => updateOrderStatus(order.id, 'served')}
-              >
-                Mark Served
-              </Button>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+          </CardContent>
+        </Card>
+      );
+    }
+  };
 
   if (authLoading) {
     return (
@@ -797,7 +803,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <p className="text-sm text-muted-foreground">
-            Real-time order feed for {venueName} • {currentTime.dateStr} • {currentTime.timeStr}
+            Real-time order feed for {venueName || 'Venue'} • {currentTime.dateStr} • {currentTime.timeStr}
           </p>
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${
@@ -825,14 +831,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="live">Live Orders ({orders.length})</TabsTrigger>
-            <TabsTrigger value="all">All Today ({allOrders.length})</TabsTrigger>
-            <TabsTrigger value="history">History ({historyOrders.length})</TabsTrigger>
+            <TabsTrigger value="live">Live Orders ({orders.length || 0})</TabsTrigger>
+            <TabsTrigger value="all">All Today ({allOrders.length || 0})</TabsTrigger>
+            <TabsTrigger value="history">History ({historyOrders.length || 0})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="live" className="mt-6">
             <div className="grid gap-6">
-              {orders.length === 0 ? (
+              {!orders || orders.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="p-12 text-center">
                     <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -841,14 +847,21 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   </CardContent>
                 </Card>
               ) : (
-                orders.map((order) => renderOrderCard(order, true))
+                orders.map((order) => {
+                  try {
+                    return renderOrderCard(order, true);
+                  } catch (error) {
+                    console.error('Error rendering order in live tab:', error);
+                    return null;
+                  }
+                }).filter(Boolean)
               )}
             </div>
           </TabsContent>
 
           <TabsContent value="all" className="mt-6">
             <div className="grid gap-6">
-              {allOrders.length === 0 ? (
+              {!allOrders || allOrders.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="p-12 text-center">
                     <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -857,14 +870,21 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   </CardContent>
                 </Card>
               ) : (
-                allOrders.map((order) => renderOrderCard(order, false))
+                allOrders.map((order) => {
+                  try {
+                    return renderOrderCard(order, false);
+                  } catch (error) {
+                    console.error('Error rendering order in all tab:', error);
+                    return null;
+                  }
+                }).filter(Boolean)
               )}
             </div>
           </TabsContent>
 
           <TabsContent value="history" className="mt-6">
             <div className="space-y-8">
-              {Object.keys(groupedHistoryOrders).length === 0 ? (
+              {!groupedHistoryOrders || Object.keys(groupedHistoryOrders).length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="p-12 text-center">
                     <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -873,14 +893,28 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   </CardContent>
                 </Card>
               ) : (
-                Object.entries(groupedHistoryOrders).map(([date, orders]) => (
-                  <div key={date}>
-                    <h3 className="text-lg font-semibold text-foreground mb-4 border-b pb-2">{date}</h3>
-                    <div className="grid gap-6">
-                      {orders.map((order) => renderOrderCard(order, false))}
-                    </div>
-                  </div>
-                ))
+                Object.entries(groupedHistoryOrders).map(([date, orders]) => {
+                  try {
+                    return (
+                      <div key={date}>
+                        <h3 className="text-lg font-semibold text-foreground mb-4 border-b pb-2">{date}</h3>
+                        <div className="grid gap-6">
+                          {orders.map((order) => {
+                            try {
+                              return renderOrderCard(order, false);
+                            } catch (error) {
+                              console.error('Error rendering order in history tab:', error);
+                              return null;
+                            }
+                          }).filter(Boolean)}
+                        </div>
+                      </div>
+                    );
+                  } catch (error) {
+                    console.error('Error rendering history group:', error);
+                    return null;
+                  }
+                }).filter(Boolean)
               )}
             </div>
           </TabsContent>
