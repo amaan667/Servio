@@ -66,8 +66,18 @@ if (appDirExists) {
 const conflictFiles = ['app', 'App', 'APP'];
 conflictFiles.forEach(fileName => {
   const filePath = path.join(process.cwd(), fileName);
-  if (fs.existsSync(filePath) && !fs.statSync(filePath).isDirectory()) {
-    console.log(`⚠️  WARNING: Found file named '${fileName}' that could conflict with app/ directory`);
+  if (fs.existsSync(filePath)) {
+    const stats = fs.statSync(filePath);
+    const type = stats.isDirectory() ? 'directory' : 'file';
+    console.log(`⚠️  WARNING: Found ${type} named '${fileName}' at root level`);
+    if (stats.isDirectory()) {
+      try {
+        const contents = fs.readdirSync(filePath);
+        console.log(`   Contents: ${contents.slice(0, 5).join(', ')}${contents.length > 5 ? '...' : ''}`);
+      } catch (error) {
+        console.log(`   Cannot read contents: ${error.message}`);
+      }
+    }
   }
 });
 
