@@ -168,8 +168,8 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         throw new Error(error.message);
       }
 
-      // Sign out and redirect to home
-      await supabase.auth.signOut();
+      // Sign out on server to clear cookies and redirect to home
+      try { await fetch('/api/auth/sign-out', { method: 'POST' }); } catch {}
       router.push('/');
       
       toast({
