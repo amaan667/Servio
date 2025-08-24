@@ -25,7 +25,11 @@ export default function NavBar() {
   // Client-safe dashboard navigation - let server handle auth checks
   const handleDashboardClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    router.push('/dashboard');
+    if (session) {
+      router.push('/dashboard');
+    } else {
+      router.push('/sign-in');
+    }
   };
 
   const handleSignOut = async () => {
@@ -68,7 +72,7 @@ export default function NavBar() {
                 alt="Servio"
                 width={120}
                 height={32}
-                className="h-8 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-10 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
