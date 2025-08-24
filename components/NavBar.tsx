@@ -25,22 +25,27 @@ export default function NavBar() {
   // Client-safe dashboard navigation - let server handle auth checks
   const handleDashboardClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (session) {
-      router.push('/dashboard');
-    } else {
+    if (!session) {
       router.push('/sign-in');
+      return;
     }
+    router.push('/dashboard');
   };
 
   const handleSignOut = async () => {
     try {
       setSigningOut(true);
+      // Clear client session so UI reacts immediately
+      const { supabase } = await import('@/lib/supabaseClient');
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+      // Clear server cookies/session
       await fetch('/api/auth/sign-out', { method: 'POST' });
-      router.replace('/');
+      router.replace('/sign-in?signedOut=true');
     } catch (e) {
       console.error('[NAV] Sign-out error:', e);
-      // Still navigate home even if sign-out fails
-      router.replace('/');
+      router.replace('/sign-in?signedOut=true');
     } finally {
       setSigningOut(false);
       setMobileMenuOpen(false);
@@ -87,7 +92,7 @@ export default function NavBar() {
                   Home
                 </Link>
                 <a 
-                  href="/dashboard" 
+                  href={session ? '/dashboard' : '/sign-in'} 
                   onClick={handleDashboardClick}
                   className={linkClass('/dashboard')}
                 >
@@ -152,7 +157,7 @@ export default function NavBar() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <a 
-                      href="/dashboard" 
+                      href={session ? '/dashboard' : '/sign-in'} 
                       onClick={handleDashboardClick}
                       className="flex items-center gap-2"
                     >
