@@ -1,20 +1,17 @@
-import { NextResponse } from 'next/server'
-import { getSupabaseForRoute } from '@/lib/supabase-server'
+import { NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase-server';
 
-export const runtime = 'nodejs'
+export const runtime = 'nodejs';
 
 export async function POST() {
-  console.log('[AUTH] sign-out:begin')
-  const res = NextResponse.json({ ok: true })
+  const supa = supabaseServer();
   try {
-    const supabase = getSupabaseForRoute(res)
-    await supabase.auth.signOut()
-    console.log('[AUTH] sign-out:done')
-  } catch (e) {
-    console.error('[AUTH] sign-out:error', e)
+    await supa.auth.signOut(); // clears session + auth cookies via SSR jar
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    console.error('[AUTH] sign-out failed', e?.message || e);
+    return NextResponse.json({ ok: false, error: 'sign_out_failed' }, { status: 500 });
   }
-  res.headers.set('Cache-Control', 'no-store')
-  return res
 }
 
 
