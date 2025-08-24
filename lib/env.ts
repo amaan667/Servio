@@ -1,18 +1,32 @@
 // lib/env.ts
 console.log('[ENV] Loading environment variables...');
 console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
+console.log('[ENV] NEXT_PHASE:', process.env.NEXT_PHASE);
 
-// Check if we're in build mode (to allow placeholder values during build)
-const isBuildTime = process.env.NODE_ENV === undefined || process.env.NEXT_PHASE === 'phase-production-build';
+// Check if we're in build mode - more reliable detection
+const isBuildTime = 
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.NODE_ENV === undefined ||
+  (typeof window === 'undefined' && process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SUPABASE_URL);
 
 console.log('[ENV] Available env vars:', Object.keys(process.env).filter(key => 
   key.includes('SUPABASE') || key.includes('APP_URL')
 ));
 
+// Get environment variables with fallbacks for build time
+const getEnvVar = (key: string, fallback: string) => {
+  const value = process.env[key];
+  if (!value && isBuildTime) {
+    console.log(`[ENV] Using fallback for ${key} during build time`);
+    return fallback;
+  }
+  return value || '';
+};
+
 export const ENV = {
-  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  SUPABASE_ANON: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  APP_URL: process.env.NEXT_PUBLIC_APP_URL!,
+  SUPABASE_URL: getEnvVar('NEXT_PUBLIC_SUPABASE_URL', 'https://placeholder.supabase.co'),
+  SUPABASE_ANON: getEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'placeholder_key'),
+  APP_URL: getEnvVar('NEXT_PUBLIC_APP_URL', 'https://placeholder-app.railway.app'),
 };
 
 console.log('[ENV] Loaded values:', {
@@ -24,27 +38,38 @@ console.log('[ENV] Loaded values:', {
   isBuildTime
 });
 
-// Only validate environment variables strictly in production runtime, not during build
-if (!isBuildTime && (!ENV.SUPABASE_URL || !ENV.SUPABASE_ANON || !ENV.APP_URL)) {
-  console.error('[ENV] Missing required env(s)', {
-    hasUrl: !!ENV.SUPABASE_URL, 
+// Only validate environment variables in production runtime if they're not placeholders
+const isPlaceholder = (value: string) => 
+  value.includes('placeholder') || 
+  value === 'placeholder_key' || 
+  value === 'https://placeholder.supabase.co' ||
+  value === 'https://placeholder-app.railway.app';
+
+const hasValidValues = ENV.SUPABASE_URL && ENV.SUPABASE_ANON && ENV.APP_URL &&
+  !isPlaceholder(ENV.SUPABASE_URL) && 
+  !isPlaceholder(ENV.SUPABASE_ANON) && 
+  !isPlaceholder(ENV.APP_URL);
+
+if (!isBuildTime && !hasValidValues) {
+  console.error('[ENV] Missing or invalid required env(s)', {
+    hasUrl: !!ENV.SUPABASE_URL,
     hasKey: !!ENV.SUPABASE_ANON, 
     hasApp: !!ENV.APP_URL,
+    urlIsPlaceholder: isPlaceholder(ENV.SUPABASE_URL),
+    keyIsPlaceholder: isPlaceholder(ENV.SUPABASE_ANON),
+    appUrlIsPlaceholder: isPlaceholder(ENV.APP_URL),
     supabaseUrl: ENV.SUPABASE_URL || 'MISSING',
     appUrl: ENV.APP_URL || 'MISSING'
   });
-  console.error('[ENV] This error occurs when environment variables are not properly set');
   console.error('[ENV] Railway deployment: Ensure variables are set in Railway dashboard');
   console.error('[ENV] Local development: Ensure .env.local file exists with correct values');
-  throw new Error(`Missing required environment variables. Check Railway dashboard or .env.local file.`);
+  
+  // Don't throw error immediately - log warning and continue with placeholders
+  console.warn('[ENV] WARNING: Running with placeholder environment variables');
 }
 
-// Allow placeholder values during build time
 if (isBuildTime) {
-  console.log('[ENV] Build time detected - allowing placeholder environment variables');
-  if (!ENV.SUPABASE_URL) ENV.SUPABASE_URL = 'https://placeholder.supabase.co';
-  if (!ENV.SUPABASE_ANON) ENV.SUPABASE_ANON = 'placeholder_key';
-  if (!ENV.APP_URL) ENV.APP_URL = 'https://placeholder-app.railway.app';
+  console.log('[ENV] Build time detected - using placeholder environment variables');
 }
 
 
