@@ -5,7 +5,7 @@ nixPkgs = ["nodejs_20", "pnpm"]
 cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["rm -rf .next", "pnpm build"]
+cmds = ["rm -rf .next", "rm -f tsconfig.tsbuildinfo", "find . -name '.DS_Store' -delete", "pnpm build"]
 
 [start]
 cmd = "pnpm start"
