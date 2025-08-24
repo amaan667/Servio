@@ -4,6 +4,21 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 
+async function syncServerCookies(session: Session | null) {
+	try {
+		if (!session) return;
+		const { access_token, refresh_token } = session;
+		if (!access_token || !refresh_token) return;
+		await fetch('/api/auth/sync', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ access_token, refresh_token })
+		});
+	} catch (e) {
+		console.warn('[AUTH DEBUG] provider:cookie-sync-failed (non-fatal):', (e as any)?.message);
+	}
+}
+
 function now() {
   return new Date().toISOString();
 }
@@ -98,12 +113,14 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
           await supabase.auth.signOut();
         }
         setSession(session);
+        await syncServerCookies(session || null);
       } else if (event === 'SIGNED_OUT') {
         console.log('[AUTH DEBUG] provider:signed-out', { t: now() });
         setSession(null);
       } else if (event === 'SIGNED_IN') {
         console.log('[AUTH DEBUG] provider:signed-in', { t: now() });
         setSession(session);
+        await syncServerCookies(session || null);
       } else {
         setSession(session);
       }
