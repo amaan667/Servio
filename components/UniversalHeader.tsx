@@ -91,6 +91,16 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   const dashboardHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
   const settingsHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/settings';
 
+  // Handle dashboard navigation
+  const handleDashboardClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (session) {
+      router.push(dashboardHref);
+    } else {
+      router.push('/sign-in');
+    }
+  };
+
   if (loading) {
     return (
       <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
@@ -108,16 +118,16 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center py-3 md:py-4">
           {/* Logo - Centered on mobile, left aligned on desktop */}
           <div className="flex items-center justify-center md:justify-start flex-1 md:flex-none order-2 md:order-1">
             <Link href={session ? dashboardHref : homeHref} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
-                width={240}
-                height={60}
-                className="h-48 w-auto transition-all duration-300 group-hover:scale-105"
+                width={120}
+                height={32}
+                className="h-8 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
@@ -134,12 +144,13 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 >
                   Home
                 </Link>
-                <Link
+                <a
                   href={dashboardHref}
+                  onClick={handleDashboardClick}
                   className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                   Dashboard
-                </Link>
+                </a>
                 {showActions && (
                   <>
                     <Link
@@ -167,6 +178,11 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                             <Home className="h-4 w-4" />
                             Home
                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href={dashboardHref} onClick={handleDashboardClick} className="flex items-center gap-2">
+                            Dashboard
+                          </a>
                         </DropdownMenuItem>
                         {showActions && (
                           <DropdownMenuItem asChild>
@@ -258,6 +274,11 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <a href={dashboardHref} onClick={handleDashboardClick} className="flex items-center gap-2">
+                      Dashboard
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href={settingsHref} className="flex items-center gap-2">
                       <Settings className="h-4 w-4" />
                       Settings
@@ -292,13 +313,16 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 >
                   Home
                 </Link>
-                <Link
+                <a
                   href={dashboardHref}
+                  onClick={(e) => {
+                    handleDashboardClick(e);
+                    setMobileMenuOpen(false);
+                  }}
                   className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Dashboard
-                </Link>
+                </a>
                 {showActions && (
                   <Link
                     href={settingsHref}
