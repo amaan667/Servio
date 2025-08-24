@@ -29,6 +29,12 @@ RUN echo "Building with placeholder environment variables..." && \
     echo "NEXT_PHASE: $NEXT_PHASE" && \
     pnpm build
 
+# Clear build-time environment variables to allow Railway's runtime variables
+ENV NEXT_PUBLIC_SUPABASE_URL=""
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=""
+ENV NEXT_PUBLIC_APP_URL=""
+ENV NEXT_PHASE=""
+
 # Expose the port your app runs on (Railway will override this)
 EXPOSE 8080
 

@@ -4,23 +4,28 @@ console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
 console.log('[ENV] NEXT_PHASE:', process.env.NEXT_PHASE);
 
 // Check if we're in build mode - more reliable detection
-const isBuildTime = 
-  process.env.NEXT_PHASE === 'phase-production-build' ||
-  process.env.NODE_ENV === undefined ||
-  (typeof window === 'undefined' && process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SUPABASE_URL);
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
 
 console.log('[ENV] Available env vars:', Object.keys(process.env).filter(key => 
   key.includes('SUPABASE') || key.includes('APP_URL')
 ));
 
-// Get environment variables with fallbacks for build time
+// Get environment variables with fallbacks for build time only
 const getEnvVar = (key: string, fallback: string) => {
   const value = process.env[key];
-  if (!value && isBuildTime) {
-    console.log(`[ENV] Using fallback for ${key} during build time`);
+  
+  // Only use fallbacks during build time
+  if (isBuildTime && !value) {
+    console.log(`[ENV] Using build-time fallback for ${key}`);
     return fallback;
   }
-  return value || '';
+  
+  // At runtime, always use the actual environment variable
+  if (!isBuildTime && !value) {
+    console.error(`[ENV] CRITICAL: Missing required environment variable ${key} at runtime`);
+  }
+  
+  return value || (isBuildTime ? fallback : '');
 };
 
 export const ENV = {
