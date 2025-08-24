@@ -7,7 +7,6 @@ node_modules/
 .DS_Store
 *.md
 docs/
-scripts/
 test-navigation.html
 trivial-change.txt
 tsconfig.tsbuildinfo
