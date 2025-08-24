@@ -13,4 +13,9 @@ export function supabaseServer() {
   });
 }
 
+// Export the missing functions that are being imported by other files
+export const getSupabaseForRoute = supabaseServer;
+export const createServerSupabase = supabaseServer;
+export const getSupabaseServerReadOnly = supabaseServer;
+
 
