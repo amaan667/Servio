@@ -16,20 +16,17 @@ RUN pnpm install --frozen-lockfile
 # Copy the rest of your application code
 COPY . .
 
-# Set build-time environment variables with default values
-# These will be overridden by Railway's actual environment variables at runtime
-ARG NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder_key
-ARG NEXT_PUBLIC_APP_URL=https://placeholder-app.railway.app
-
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+# Set placeholder environment variables for build time
+ENV NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder_key
+ENV NEXT_PUBLIC_APP_URL=https://placeholder-app.railway.app
+ENV NEXT_PHASE=phase-production-build
 
 # Build the application (with debug output)
-RUN echo "Building with environment variables..." && \
+RUN echo "Building with placeholder environment variables..." && \
     echo "NEXT_PUBLIC_SUPABASE_URL: $NEXT_PUBLIC_SUPABASE_URL" && \
     echo "NEXT_PUBLIC_APP_URL: $NEXT_PUBLIC_APP_URL" && \
+    echo "NEXT_PHASE: $NEXT_PHASE" && \
     pnpm build
 
 # Expose the port your app runs on (Railway will override this)
