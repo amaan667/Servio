@@ -5,18 +5,27 @@ import DashboardClient from './page.client';
 import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
 
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
+  if (!params?.venueId) {
+    console.error('[DASH] No venueId provided');
+    redirect('/sign-in');
+  }
+
   const supabase = createServerSupabase();
 
   try {
+    console.log('[DASH] Checking auth for venue:', params.venueId);
+    
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError) {
       console.error('[DASH] auth error on venue page:', authError.message);
-      redirect(`${BASE}/sign-in`);
+      redirect('/sign-in');
     }
     if (!user) {
       console.log('[DASH] no session → /sign-in');
-      redirect(`${BASE}/sign-in`);
+      redirect('/sign-in');
     }
+
+    console.log('[DASH] User authenticated:', user.id);
 
     const { data: venue, error: venueErr } = await supabase
       .from('venues')
@@ -27,10 +36,11 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
     if (venueErr) {
       console.error('[DASH] venue query error:', venueErr.message);
-      redirect(`${BASE}/sign-in`);
+      redirect('/sign-in');
     }
 
     if (!venue) {
+      console.log('[DASH] Venue not found, checking user venues');
       const { data: userVenues } = await supabase
         .from('venues')
         .select('venue_id')
@@ -39,11 +49,15 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         .limit(1);
 
       if (userVenues && userVenues.length > 0) {
-        redirect(`${BASE}/dashboard/${userVenues[0].venue_id}`);
+        console.log('[DASH] Redirecting to first venue:', userVenues[0].venue_id);
+        redirect(`/dashboard/${userVenues[0].venue_id}`);
       } else {
-        redirect(`${BASE}/complete-profile`);
+        console.log('[DASH] No venues found, redirecting to complete profile');
+        redirect('/complete-profile');
       }
     }
+
+    console.log('[DASH] Venue found:', venue.name);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -64,7 +78,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         .filter((t: any) => t != null)
     ).size;
 
-    console.log('[DASH] session → /dashboard/:venueId', { venueId: params.venueId });
+    console.log('[DASH] session → /dashboard/:venueId', { venueId: params.venueId, activeTables: uniqueActiveTables });
 
     return (
       <AsyncErrorBoundary
@@ -82,6 +96,6 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     );
   } catch (e) {
     console.error('[DASH] unexpected error on venue page:', e);
-    redirect(`${BASE}/sign-in`);
+    redirect('/sign-in');
   }
 }
