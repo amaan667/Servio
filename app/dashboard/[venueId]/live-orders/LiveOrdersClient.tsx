@@ -155,14 +155,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         return;
       }
       
+      // Type assertion for venue data
+      const venue = venueData as { name: string; owner_id: string };
+      
       // Check if the current user owns this venue
       console.log('[LIVE-ORDERS] Venue ownership check:', { 
-        venueOwnerId: venueData.owner_id, 
+        venueOwnerId: venue.owner_id, 
         currentUserId: session.user.id,
-        isOwner: venueData.owner_id === session.user.id 
+        isOwner: venue.owner_id === session.user.id 
       });
       
-      if (venueData.owner_id !== session.user.id) {
+      if (venue.owner_id !== session.user.id) {
         console.log('[LIVE-ORDERS] User does not own venue, redirecting to dashboard');
         setError('You do not have permission to view orders for this venue');
         setLoading(false);
@@ -173,7 +176,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       // Set venue name if not provided
       if (!venueNameProp) {
-        setVenueName(venueData.name || '');
+        setVenueName(venue.name || '');
       }
       
       // Use simple date-based window instead of timezone-aware
@@ -327,23 +330,42 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   useEffect(() => {
     let isMounted = true;
     
-    // Don't load orders if still loading authentication
+    // Always prioritize loading state during auth resolution
     if (authLoading) {
+      console.log('[LIVE-ORDERS] Auth loading, maintaining loading state');
       return;
     }
     
-    // Don't load orders if not authenticated
+    // Handle authentication gracefully without immediate error
     if (!session) {
+      console.log('[LIVE-ORDERS] No session, will redirect after brief delay');
       if (isMounted) {
-        setError('Authentication required. Please sign in to view live orders.');
-        setLoading(false);
+        // Use a brief timeout to prevent flash of error before redirect
+        setTimeout(() => {
+          if (isMounted) {
+            setError('Authentication required. Please sign in to view live orders.');
+            setLoading(false);
+            router.push('/sign-in');
+          }
+        }, 100);
       }
-      router.push('/sign-in');
       return;
     }
     
-    // Load orders when component mounts
-    loadVenueAndOrders();
+    // Load orders when component mounts - wrap in try/catch for safety
+    const safeLoadOrders = async () => {
+      try {
+        await loadVenueAndOrders();
+      } catch (error) {
+        console.error('[LIVE-ORDERS] Error in safeLoadOrders:', error);
+        if (isMounted) {
+          setError(`Failed to load orders: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setLoading(false);
+        }
+      }
+    };
+    
+    safeLoadOrders();
 
     // Only set up real-time subscription if Supabase is configured and todayWindow is set
     if (!isSupabaseConfigured() || !supabase) {
@@ -358,101 +380,117 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
     console.log('[LIVE-ORDERS] Setting up real-time subscription for venue:', venueId);
     
-    // Set up real-time subscription with error handling
-    const channel = supabase
-      .channel('orders')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'orders',
-          filter: `venue_id=eq.${venueId}`
-        }, 
-        (payload) => {
-          try {
-            // Add null checks to prevent crashes
-            if (!payload || !payload.new && !payload.old) {
-              console.warn('Received invalid payload in real-time subscription');
-              return;
-            }
+    // Set up real-time subscription with comprehensive error handling
+    try {
+      const channel = supabase
+        .channel('orders')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'orders',
+            filter: `venue_id=eq.${venueId}`
+          }, 
+          (payload) => {
+            try {
+              // Add null checks to prevent crashes
+              if (!payload || !payload.new && !payload.old) {
+                console.warn('Received invalid payload in real-time subscription');
+                return;
+              }
 
-            const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
-            const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
-            
-            if (payload.eventType === 'INSERT') {
-              const newOrder = payload.new as Order;
-              if (!newOrder) {
-                console.warn('Received INSERT event but no new order data');
-                return;
-              }
+              const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
+              const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
               
-              if (isInTodayWindow) {
-                setOrders(prev => [newOrder, ...prev]);
-                setAllOrders(prev => [newOrder, ...prev]);
-              } else {
-                setHistoryOrders(prev => [newOrder, ...prev]);
-                // Update grouped history
-                const date = formatDate(newOrder.created_at);
-                setGroupedHistoryOrders(prev => ({
-                  ...prev,
-                  [date]: [newOrder, ...(prev[date] || [])]
-                }));
+              if (payload.eventType === 'INSERT') {
+                const newOrder = payload.new as Order;
+                if (!newOrder) {
+                  console.warn('Received INSERT event but no new order data');
+                  return;
+                }
+                
+                if (isInTodayWindow) {
+                  setOrders(prev => [newOrder, ...prev]);
+                  setAllOrders(prev => [newOrder, ...prev]);
+                } else {
+                  setHistoryOrders(prev => [newOrder, ...prev]);
+                  // Update grouped history
+                  const date = formatDate(newOrder.created_at);
+                  setGroupedHistoryOrders(prev => ({
+                    ...prev,
+                    [date]: [newOrder, ...(prev[date] || [])]
+                  }));
+                }
+              } else if (payload.eventType === 'UPDATE') {
+                const updatedOrder = payload.new as Order;
+                if (!updatedOrder) {
+                  console.warn('Received UPDATE event but no updated order data');
+                  return;
+                }
+                
+                if (isInTodayWindow) {
+                  setOrders(prev => prev.map(order => 
+                    order.id === updatedOrder.id ? updatedOrder : order
+                  ));
+                  setAllOrders(prev => prev.map(order => 
+                    order.id === updatedOrder.id ? updatedOrder : order
+                  ));
+                } else {
+                  setHistoryOrders(prev => prev.map(order => 
+                    order.id === updatedOrder.id ? updatedOrder : order
+                  ));
+                }
+              } else if (payload.eventType === 'DELETE') {
+                const deletedOrder = payload.old as Order;
+                if (!deletedOrder) {
+                  console.warn('Received DELETE event but no deleted order data');
+                  return;
+                }
+                
+                if (isInTodayWindow) {
+                  setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+                  setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+                } else {
+                  setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+                }
               }
-            } else if (payload.eventType === 'UPDATE') {
-              const updatedOrder = payload.new as Order;
-              if (!updatedOrder) {
-                console.warn('Received UPDATE event but no updated order data');
-                return;
-              }
-              
-              if (isInTodayWindow) {
-                setOrders(prev => prev.map(order => 
-                  order.id === updatedOrder.id ? updatedOrder : order
-                ));
-                setAllOrders(prev => prev.map(order => 
-                  order.id === updatedOrder.id ? updatedOrder : order
-                ));
-              } else {
-                setHistoryOrders(prev => prev.map(order => 
-                  order.id === updatedOrder.id ? updatedOrder : order
-                ));
-              }
-            } else if (payload.eventType === 'DELETE') {
-              const deletedOrder = payload.old as Order;
-              if (!deletedOrder) {
-                console.warn('Received DELETE event but no deleted order data');
-                return;
-              }
-              
-              if (isInTodayWindow) {
-                setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-                setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-              } else {
-                setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-              }
+            } catch (error) {
+              console.error('Error handling real-time subscription update:', error);
+              // Don't throw - just log the error to prevent crashes
             }
-          } catch (error) {
-            console.error('Error handling real-time subscription update:', error);
           }
-        }
-      )
-      .subscribe((status, error) => {
-        if (error) {
-          console.error('Real-time subscription error:', error);
-          // Don't set error for real-time subscription failures - just log them
-          // This prevents the "try again" issue from real-time connection problems
-          console.warn('Real-time connection failed, but continuing with manual refresh capability');
-          setRealtimeStatus('error');
-        } else {
-          console.log('Real-time subscription status:', status);
-          setRealtimeStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
-        }
-      });
+        )
+        .subscribe((status, error) => {
+          if (error) {
+            console.error('Real-time subscription error:', error);
+            // Don't set error for real-time subscription failures - just log them
+            // This prevents the "try again" issue from real-time connection problems
+            console.warn('Real-time connection failed, but continuing with manual refresh capability');
+            setRealtimeStatus('error');
+          } else {
+            console.log('Real-time subscription status:', status);
+            setRealtimeStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
+          }
+        });
 
-    return () => {
-      isMounted = false;
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        isMounted = false;
+        try {
+          if (supabase) {
+            supabase.removeChannel(channel);
+          }
+        } catch (error) {
+          console.error('Error removing real-time channel:', error);
+          // Don't throw - just log
+        }
+      };
+    } catch (error) {
+      console.error('Error setting up real-time subscription:', error);
+      // Don't throw - just log the error to prevent crashes
+      return () => {
+        isMounted = false;
+      };
+    }
   }, [venueId, todayWindow, session, authLoading]); // Removed loadVenueAndOrders to prevent infinite re-renders
 
   const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
@@ -617,7 +655,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     Start Preparing
                   </Button>
                 )}
-                {(order.status === 'preparing' || order.status === 'confirmed') && (
+                {(order.status === 'preparing') && (
                   <Button 
                     size="sm"
                     onClick={() => updateOrderStatus(order.id, 'served')}

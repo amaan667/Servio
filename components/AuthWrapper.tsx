@@ -48,6 +48,16 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       
       const checkProfile = async () => {
         try {
+          // Check if supabase is available before making calls
+          if (!supabase) {
+            console.error('[AUTH_WRAPPER] Supabase client not available');
+            setProfileComplete(false);
+            if (pathname !== "/complete-profile") {
+              router.replace("/complete-profile");
+            }
+            return;
+          }
+
           // First verify the session is still valid
           const { data: { user }, error: userError } = await supabase.auth.getUser();
           if (userError || !user) {
@@ -115,8 +125,19 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   }
 
   // Show loading state while determining auth or profile status
-  if (loading || !session || isChecking) {
+  // Prioritize loading state to prevent error flashes
+  if (loading || isChecking) {
     console.log('[AUTH_WRAPPER] Showing loading state:', { loading, hasSession: !!session, isChecking });
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
+      </div>
+    );
+  }
+
+  // Only show loading for missing session if not loading and not checking
+  if (!session && !loading && !isChecking) {
+    console.log('[AUTH_WRAPPER] No session after auth resolution, showing brief loading before redirect');
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
