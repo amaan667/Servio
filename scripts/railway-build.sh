@@ -28,6 +28,6 @@ else
   echo "[RAILWAY] skipping env file generation; required public supabase vars missing"
 fi
 
-echo "[RAILWAY] running pnpm build"
-pnpm run build
+echo "[RAILWAY] running next build"
+npx next build
 echo "[RAILWAY] build done"
