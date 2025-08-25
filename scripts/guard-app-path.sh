@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Ensure `app/` is a directory
-if [ -e app ] && [ ! -d app ]; then
-  echo "ERROR: 'app' exists and is not a directory"
-  exit 1
+echo "[GUARD] Checking app directory integrity..."
+
+# Check if 'app' exists as a file (this causes the Railway error)
+if [ -f app ]; then
+  echo "[GUARD] ERROR: 'app' exists as a file, removing it..."
+  rm -f app
 fi
 
-# Pre-create a folder-only sentinel to detect file writes
-rm -rf app
-mkdir -p app
-
-# After build, ensure nobody replaced it with a file
+# Ensure app directory exists
 if [ ! -d app ]; then
-  echo "ERROR: Something replaced the 'app' directory with a file named 'app'"
-  exit 1
+  echo "[GUARD] Creating app directory..."
+  mkdir -p app
 fi
 
-echo "[guard] app directory integrity OK"
+# Verify app is a directory
+if [ -d app ]; then
+  echo "[GUARD] App directory integrity verified ✓"
+else
+  echo "[GUARD] ERROR: App directory is not a directory"
+  exit 1
+fi

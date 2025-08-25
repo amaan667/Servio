@@ -6,11 +6,15 @@ echo "[DEPLOY] Starting deployment process..."
 # Ensure we're in the right directory
 cd "$(dirname "$0")/.."
 
-# Clean any existing build artifacts
-echo "[DEPLOY] Cleaning build artifacts..."
+# Aggressively clean any existing build artifacts and potential conflicts
+echo "[DEPLOY] Cleaning build artifacts and potential conflicts..."
 rm -rf .next
 rm -f .env.production
 rm -f .env.local
+
+# Run the guard script to handle directory conflicts
+echo "[DEPLOY] Running directory guard..."
+bash scripts/guard-app-path.sh
 
 # Create environment file
 echo "[DEPLOY] Setting up environment..."
@@ -34,8 +38,4 @@ else
   echo "[DEPLOY] Warning: Missing required environment variables"
 fi
 
-# Build the application
-echo "[DEPLOY] Building application..."
-pnpm run build
-
-echo "[DEPLOY] Deployment setup complete"
+echo "[DEPLOY] Environment setup complete"

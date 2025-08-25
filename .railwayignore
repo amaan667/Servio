@@ -14,4 +14,7 @@ node_modules copy/
 .env*
 .next/
 dist/
-build/ 
+build/
+*.tmp
+*.temp
+.cache/ 
