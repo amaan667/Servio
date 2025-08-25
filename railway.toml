@@ -1,7 +1,6 @@
 # Minimal Railway config: let Nixpacks auto-detect.
 [build]
-builder = "nixpacks"
-# No custom buildCommand; nixpacks.toml will drive phases.
+builder = "NIXPACKS"   # No custom buildCommand; nixpacks.toml controls phases
 
 [env]
 NODE_ENV = "production"
