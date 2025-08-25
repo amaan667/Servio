@@ -1,12 +1,9 @@
 [phases.setup]
-# Ensure a single Node version (22) and corepack available
-nixPkgs = ["nodejs_22", "corepack"]
+# Use Node 20 and pnpm directly (more stable for Railway)
+nixPkgs = ["nodejs_20", "pnpm"]
 
 [phases.install]
-cmds = [
-  "corepack enable",
-  "pnpm install --frozen-lockfile"
-]
+cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
 cmds = [

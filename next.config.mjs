@@ -8,7 +8,6 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: { forceSwcTransforms: true },
   distDir: 'dist',
-  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
