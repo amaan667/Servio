@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_18", "pnpm"]
+nixPkgs = ["nodejs", "pnpm"]
 
 [phases.install]
 cmds = ["pnpm install --frozen-lockfile"]
@@ -9,3 +9,7 @@ cmds = ["pnpm run build"]
 
 [start]
 cmd = "pnpm start"
+
+[variables]
+NODE_ENV = "production"
+PORT = "8080"
