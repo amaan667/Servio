@@ -1,14 +1,9 @@
 [phases.setup]
-nixPkgs = ["nodejs_22"]  # let corepack handle pnpm
+nixPkgs = ["nodejs_22", "pnpm-8_x"]
 
 [phases.install]
 cmds = [
-  # enable corepack and pnpm
-  "corepack enable",
-  "corepack prepare pnpm@8.15.4 --activate",
-  # clear any existing node_modules and lock files to avoid conflicts
-  "rm -rf node_modules package-lock.json",
-  # install dependencies with pnpm
+  "pnpm config set store-dir /root/.local/share/pnpm/store/v3",
   "pnpm install --frozen-lockfile"
 ]
 
