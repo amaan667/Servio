@@ -1,3 +1,6 @@
+# Railway Nixpacks Configuration
+# Simplified configuration to avoid build conflicts
+
 [phases.setup]
 nixPkgs = ["nodejs_20", "pnpm"]
 
@@ -5,10 +8,7 @@ nixPkgs = ["nodejs_20", "pnpm"]
 cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = [
-  "chmod +x scripts/railway-build.sh",
-  "./scripts/railway-build.sh"
-]
+cmds = ["pnpm run build"]
 
 [start]
 cmd = "pnpm start"
