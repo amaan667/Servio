@@ -1,18 +1,11 @@
 [phases.setup]
-# Use Node 20 and pnpm directly (more stable for Railway)
-nixPkgs = ["nodejs_20", "pnpm"]
+nixPkgs = ["nodejs_22", "corepack"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = ["corepack enable", "pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = [
-  "bash scripts/prevent-app-file.sh",
-  "pnpm run build"
-]
+cmds = ["pnpm run build"]
 
 [start]
 cmd = "pnpm start"
-
-# Explicitly set the output directory to 'dist' to match next.config.mjs
-outputDir = "dist"

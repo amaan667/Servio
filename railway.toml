@@ -1,15 +1,7 @@
+# Minimal Railway config: let Nixpacks auto-detect.
 [build]
-builder = "nixpacks"
-buildCommand = "pnpm run build"
+builder = "NIXPACKS"   # lets platform use default Nixpacks
+# No custom buildCommand; nixpacks.toml will drive phases.
 
-[deploy]
-startCommand = "pnpm start"
-healthcheckPath = "/"
-healthcheckTimeout = 100
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
-
-[deploy.variables]
+[env]
 NODE_ENV = "production"
-PORT = "8080"
-NEXT_TELEMETRY_DISABLED = "1"

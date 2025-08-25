@@ -11,6 +11,9 @@
 /build
 /dist
 
+# nixpacks
+.nixpacks/
+
 # railway
 .railway/
 
