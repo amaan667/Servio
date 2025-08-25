@@ -1,15 +1,1 @@
-[phases.setup]
-nixPkgs = ["nodejs_20", "pnpm"]
-
-[phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
-
-[phases.build]
-cmds = ["bash scripts/railway-build.sh"]
-
-[start]
-cmd = "pnpm start"
-
-[variables]
-NODE_ENV = "production"
-PORT = "8080"
+# Intentionally empty to let Railway/Nixpacks use default detection and commands
