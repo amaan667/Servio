@@ -5,10 +5,11 @@ nixPkgs = ["nodejs_20", "pnpm"]
 cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["pnpm run build"]
+cmds = ["bash scripts/railway-build.sh"]
 
 [start]
 cmd = "pnpm start"
 
 [variables]
 NODE_ENV = "production"
+PORT = "8080"
