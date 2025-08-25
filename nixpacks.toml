@@ -1,11 +1,13 @@
+name = "servio"
+
 [phases.setup]
-nixPkgs = ["nodejs_20", "pnpm"]
+nixPkgs = ["nodejs_22", "pnpm"]
 
 [phases.install]
 cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["bash scripts/deploy.sh"]
+cmds = ["pnpm run build"]
 
 [start]
 cmd = "pnpm start"

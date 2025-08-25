@@ -5,6 +5,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+  experimental: { forceSwcTransforms: true },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -14,15 +16,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Railway deployment configuration
-  distDir: '.next',
-  generateEtags: false,
-  // Remove legacy PDF/OCR externals
-  serverExternalPackages: [],
   webpack: (config, { isServer }) => {
     config.resolve = config.resolve || {};
     config.resolve.alias = config.resolve.alias || {};
-    config.resolve.alias['@'] = path.resolve(__dirname);
+    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
     
     // Suppress punycode deprecation warning
     if (isServer) {

@@ -3,17 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20 <=22",
+    "pnpm": ">=8"
   },
   "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "build": "bash scripts/deploy.sh && next build",
+    "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start -p 8080",
     "check-env": "node scripts/check-env.js",
     "railway-check": "node scripts/railway-env-check.js",
-    "postinstall": "echo 'Dependencies installed successfully'"
+    "postinstall": "corepack enable || true"
   },
   "dependencies": {
     "@azure/ai-form-recognizer": "^5.1.0",
