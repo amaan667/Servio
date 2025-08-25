@@ -1,10 +1,10 @@
 [phases.setup]
-nixPkgs = ["nodejs_22", "corepack"]
+nixPkgs = ["nodejs_22", "pnpm-8_x"]  # install pnpm from nix
 
 [phases.install]
 cmds = [
-  "corepack enable",
-  # Corepack will pick the pnpm version from package.json:packageManager
+  # ensure deterministic cache dir (optional)
+  "pnpm config set store-dir /root/.local/share/pnpm/store/v3",
   "pnpm install --frozen-lockfile"
 ]
 
