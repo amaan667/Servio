@@ -5,8 +5,12 @@ const path = require('path');
 
 console.log('🔍 Checking Servio environment configuration...\n');
 
-// [FIX] Writing file to .env.local in project root
-console.log('📝 [FIX] Writing file to .env.local in project root');
+// Skip file operations during Railway build to avoid write conflicts
+const isRailway = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
+if (isRailway && process.env.NODE_ENV === 'production') {
+  console.log('🚂 Railway production build detected - skipping file operations');
+  process.exit(0);
+}
 
 // Check for .env.local file
 const envLocalPath = path.join(process.cwd(), '.env.local');
@@ -74,7 +78,11 @@ if (allConfigured) {
 // Helper function to safely write environment file
 function createEnvFile() {
   try {
-    const envLocalPath = path.join(process.cwd(), '.env.local');
+    // Use /tmp for Railway deployment to avoid write conflicts
+    const isRailway = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
+    const baseDir = isRailway ? '/tmp' : process.cwd();
+    
+    const envLocalPath = path.join(baseDir, '.env.local');
     const envExamplePath = path.join(process.cwd(), '.env.local.example');
     
     // Ensure parent directory exists
@@ -87,7 +95,7 @@ function createEnvFile() {
     // Copy from example if it exists
     if (fs.existsSync(envExamplePath)) {
       fs.copyFileSync(envExamplePath, envLocalPath);
-      console.log('✅ Created .env.local from .env.local.example');
+      console.log(`✅ Created .env.local in ${isRailway ? '/tmp' : 'project root'}`);
       return true;
     } else {
       console.log('❌ .env.local.example not found');
