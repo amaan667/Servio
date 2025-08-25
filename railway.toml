@@ -1,6 +1,5 @@
 [build]
 builder = "nixpacks"
-buildCommand = "chmod +x scripts/railway-build.sh && ./scripts/railway-build.sh"
 
 [deploy]
 startCommand = "pnpm start"

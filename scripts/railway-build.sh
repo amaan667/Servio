@@ -2,6 +2,12 @@
 set -euo pipefail
 echo "[RAILWAY] build start"
 
+# Clean up any existing build artifacts
+echo "[RAILWAY] cleaning up previous build artifacts"
+rm -rf .next
+rm -rf out
+rm -rf dist
+
 ENV_OUT=".env.production"
 if [ -n "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && [ -n "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ]; then
   {
