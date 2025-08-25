@@ -7,7 +7,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   reactStrictMode: true,
   experimental: { forceSwcTransforms: true },
-  distDir: 'dist',
   eslint: {
     ignoreDuringBuilds: true,
   },

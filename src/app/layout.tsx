@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import '@/styles/globals.css'
 
 export const metadata: Metadata = {
   title: 'Servio - QR Code Ordering Made Simple',
@@ -12,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased">
+        {children}
+      </body>
     </html>
   )
 }
