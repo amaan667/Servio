@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
-echo "[RAILWAY] build start"
+echo "[RAILWAY] build start with enhanced debugging"
+
+# Set up comprehensive logging
+export NIXPACKS_LOG_LEVEL=debug
+export NPM_CONFIG_LOGLEVEL=verbose
+export PNPM_LOG_LEVEL=debug
 
 # Clean up any existing build artifacts
+echo "[RAILWAY] cleaning build artifacts"
 rm -rf .next
 rm -f .env.production
 
+# Environment file generation
 ENV_OUT=".env.production"
 if [ -n "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && [ -n "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ]; then
   {
