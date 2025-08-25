@@ -12,7 +12,3 @@ cmds = ["pnpm run build"]
 
 [start]
 cmd = "pnpm start"
-
-[variables]
-NODE_ENV = "production"
-PORT = "8080"

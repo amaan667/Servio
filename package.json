@@ -7,7 +7,7 @@
   },
   "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "build": "next build",
+    "build": "echo 'Building with Next.js...' && next build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start -p 8080",
