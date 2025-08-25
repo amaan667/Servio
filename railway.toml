@@ -1,5 +1,6 @@
 [build]
 builder = "nixpacks"
+buildCommand = "pnpm run build"
 
 [deploy]
 startCommand = "pnpm start"
@@ -11,3 +12,4 @@ restartPolicyMaxRetries = 10
 [deploy.variables]
 NODE_ENV = "production"
 PORT = "8080"
+NEXT_TELEMETRY_DISABLED = "1"

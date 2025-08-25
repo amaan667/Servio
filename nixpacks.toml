@@ -9,7 +9,13 @@ cmds = [
 ]
 
 [phases.build]
-cmds = ["pnpm run build"]
+cmds = [
+  "bash scripts/prevent-app-file.sh",
+  "pnpm run build"
+]
 
 [start]
 cmd = "pnpm start"
+
+# Explicitly set the output directory to 'dist' to match next.config.mjs
+outputDir = "dist"
