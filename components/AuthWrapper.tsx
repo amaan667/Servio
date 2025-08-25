@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/app/authenticated-client-provider";
+import { useAuth } from "@/src/app/authenticated-client-provider";
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);

@@ -4,7 +4,7 @@ import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Home } from "lucide-react";
 import Link from 'next/link';
-import { useAuth } from '@/app/authenticated-client-provider';
+import { useAuth } from '@/src/app/authenticated-client-provider';
 import { useMemo } from 'react';
 
 interface NavigationBreadcrumbProps {

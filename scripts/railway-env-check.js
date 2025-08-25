@@ -47,19 +47,19 @@ const path = require('path');
 console.log('\n📂 Directory Structure Check:');
 console.log('==============================');
 
-const appDirPath = path.join(process.cwd(), 'app');
+const appDirPath = path.join(process.cwd(), 'src', 'app');
 const appDirExists = fs.existsSync(appDirPath);
 const appDirIsDir = appDirExists && fs.statSync(appDirPath).isDirectory();
 
-console.log(`📁 app/ directory exists: ${appDirExists ? '✅' : '❌'}`);
-console.log(`📁 app/ is directory: ${appDirIsDir ? '✅' : '❌'}`);
+console.log(`📁 src/app/ directory exists: ${appDirExists ? '✅' : '❌'}`);
+console.log(`📁 src/app/ is directory: ${appDirIsDir ? '✅' : '❌'}`);
 
 if (appDirExists) {
   try {
     const appContents = fs.readdirSync(appDirPath);
-    console.log(`📋 app/ contents: ${appContents.slice(0, 5).join(', ')}${appContents.length > 5 ? '...' : ''}`);
+    console.log(`📋 src/app/ contents: ${appContents.slice(0, 5).join(', ')}${appContents.length > 5 ? '...' : ''}`);
   } catch (error) {
-    console.log(`❌ Cannot read app/ directory: ${error.message}`);
+    console.log(`❌ Cannot read src/app/ directory: ${error.message}`);
   }
 }
 
@@ -93,7 +93,7 @@ if (allGood && appDirIsDir) {
     console.log('   - Missing required environment variables');
   }
   if (!appDirIsDir) {
-    console.log('   - app/ directory issue detected');
+    console.log('   - src/app/ directory issue detected');
   }
 }
 
@@ -103,8 +103,8 @@ if (!allGood) {
   console.log('   2. Redeploy the application');
 }
 if (!appDirIsDir) {
-  console.log('   1. Check for files conflicting with app/ directory');
-  console.log('   2. Ensure app/ directory structure is correct');
+  console.log('   1. Check for files conflicting with src/app/ directory');
+console.log('   2. Ensure src/app/ directory structure is correct');
 }
 
 console.log('\n📞 Support:');

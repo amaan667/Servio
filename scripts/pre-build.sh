@@ -12,42 +12,19 @@ rm -rf .next
 rm -f .env.production
 rm -f .env.local
 
-# Run guard script to ensure app directory integrity
-echo "[PRE-BUILD] Running app directory guard..."
-if [ -f scripts/guard-app-path.sh ]; then
-  chmod +x scripts/guard-app-path.sh
-  scripts/guard-app-path.sh
-fi
+# Ensure src/app directory exists and has the correct structure
+echo "[PRE-BUILD] Ensuring src/app directory structure..."
 
-# Handle Railway Nixpacks directory setup
-echo "[PRE-BUILD] Setting up directory structure for Railway Nixpacks..."
-
-# Safely handle app directory - only remove if it's not the correct structure
-if [ -e app ]; then
-  if [ ! -d app ] || [ ! -f app/layout.tsx ]; then
-    echo "[PRE-BUILD] Removing invalid app directory..."
-    rm -rf app
-  else
-    echo "[PRE-BUILD] App directory already exists with correct structure"
-  fi
-fi
-
-# Create app directory if it doesn't exist
-if [ ! -d app ]; then
-  echo "[PRE-BUILD] Creating app directory..."
-  mkdir -p app
-fi
-
-# Copy all content from src/app to app
-if [ -d src/app ] && [ "$(ls -A src/app 2>/dev/null)" ]; then
-  echo "[PRE-BUILD] Copying content from src/app to app..."
-  cp -r src/app/* app/
+# Create src/app directory if it doesn't exist
+if [ ! -d src/app ]; then
+  echo "[PRE-BUILD] Creating src/app directory..."
+  mkdir -p src/app
 fi
 
 # Ensure we have the necessary files for Next.js
-if [ ! -f app/layout.tsx ]; then
+if [ ! -f src/app/layout.tsx ]; then
   echo "[PRE-BUILD] Creating layout.tsx..."
-  cat > app/layout.tsx << 'EOF'
+  cat > src/app/layout.tsx << 'EOF'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -69,9 +46,9 @@ export default function RootLayout({
 EOF
 fi
 
-if [ ! -f app/page.tsx ]; then
+if [ ! -f src/app/page.tsx ]; then
   echo "[PRE-BUILD] Creating page.tsx..."
-  cat > app/page.tsx << 'EOF'
+  cat > src/app/page.tsx << 'EOF'
 export default function HomePage() {
   return (
     <div>

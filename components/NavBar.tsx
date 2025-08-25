@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Menu, X, Settings, LogOut, ChevronDown } from "lucide-react";
-import { useAuth } from "@/app/authenticated-client-provider";
+import { useAuth } from "@/src/app/authenticated-client-provider";
 
 export default function NavBar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

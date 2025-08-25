@@ -11,7 +11,7 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start -p 8080",
+    "start": "next start -p $PORT",
     "check-env": "node scripts/check-env.js",
     "railway-check": "node scripts/railway-env-check.js",
     "postinstall": "corepack enable || true"

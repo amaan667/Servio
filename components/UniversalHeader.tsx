@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Menu, X, User, Home, Settings, LogOut, ChevronDown } from "lucide-react";
-import { useAuth } from "@/app/authenticated-client-provider";
+import { useAuth } from "@/src/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
 
 interface UniversalHeaderProps {

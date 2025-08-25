@@ -1,11 +1,15 @@
 [phases.setup]
-nixPkgs = ["nodejs_18", "pnpm"]
+# Ensure a single Node version (22) and corepack available
+nixPkgs = ["nodejs_22", "corepack"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = [
+  "corepack enable",
+  "pnpm install --frozen-lockfile"
+]
 
 [phases.build]
-cmds = ["bash scripts/railway-build-debug.sh"]
+cmds = ["pnpm run build"]
 
 [start]
 cmd = "pnpm start"
