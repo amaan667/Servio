@@ -25,8 +25,11 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         
         // Check Supabase configuration first
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-          setError('Supabase configuration is missing');
-          setLoading(false);
+          // Use setTimeout to prevent error flash
+          setTimeout(() => {
+            setError('Supabase configuration is missing');
+            setLoading(false);
+          }, 100);
           return;
         }
         
@@ -46,6 +49,14 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         }
         
         // Load venue data and stats (userId already verified by SSR)
+        if (!supabase) {
+          setTimeout(() => {
+            setError('Database connection not available');
+            setLoading(false);
+          }, 100);
+          return;
+        }
+
         const { data: venueData, error } = await supabase
           .from("venues")
           .select("*")
@@ -56,19 +67,26 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         
         if (error) {
           console.error('[DASHBOARD] Failed to load venue:', error);
-          setError(`Failed to load venue: ${error.message}`);
-          setLoading(false);
+          // Use setTimeout to prevent error flash
+          setTimeout(() => {
+            setError(`Failed to load venue: ${error.message}`);
+            setLoading(false);
+          }, 100);
           return;
         }
         
         if (!venueData) {
           console.error('[DASHBOARD] No venue data returned');
-          setError('Venue not found');
-          setLoading(false);
+          // Use setTimeout to prevent error flash
+          setTimeout(() => {
+            setError('Venue not found');
+            setLoading(false);
+          }, 100);
           return;
         }
         
         setVenue(venueData);
+        const venueInfo = venueData as { venue_id: string };
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
@@ -77,11 +95,14 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
           endUtcISO: endOfDay.toISOString(),
         };
         setTodayWindow(window);
-        await loadStats(venueData.venue_id, window);
+        await loadStats(venueInfo.venue_id, window);
       } catch (error) {
         console.error('[DASHBOARD] Unexpected error loading venue:', error);
-        setError(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        setLoading(false);
+        // Use setTimeout to prevent error flash
+        setTimeout(() => {
+          setError(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setLoading(false);
+        }, 100);
       }
     };
 
@@ -133,57 +154,59 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     let channel: any = null;
     
     try {
-      channel = supabase
-        .channel(`dashboard-orders-${venueId}`)
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'orders',
-            filter: `venue_id=eq.${venueId}`
-          }, 
-          (payload) => {
-            try {
-              console.log('Dashboard order change:', payload);
-              
-              // Get the order date from the payload with proper type checking
-              const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
-              if (!orderCreatedAt) {
-                console.log('No created_at found in payload, ignoring');
-                return;
+      if (supabase) {
+        channel = supabase
+          .channel(`dashboard-orders-${venueId}`)
+          .on('postgres_changes', 
+            { 
+              event: '*', 
+              schema: 'public', 
+              table: 'orders',
+              filter: `venue_id=eq.${venueId}`
+            }, 
+            (payload) => {
+              try {
+                console.log('Dashboard order change:', payload);
+                
+                // Get the order date from the payload with proper type checking
+                const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
+                if (!orderCreatedAt) {
+                  console.log('No created_at found in payload, ignoring');
+                  return;
+                }
+                
+                // Only refresh stats if the order is within today's window
+                const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
+                
+                console.log('[DASHBOARD] Order change analysis:', {
+                  orderCreatedAt,
+                  windowStart: todayWindow.startUtcISO,
+                  windowEnd: todayWindow.endUtcISO,
+                  isInTodayWindow,
+                  orderId: (payload.new as any)?.id || (payload.old as any)?.id
+                });
+                
+                if (isInTodayWindow) {
+                  console.log('Refreshing stats for today\'s order change');
+                  loadStats(venue.venue_id, todayWindow);
+                } else {
+                  console.log('Ignoring historical order change, not refreshing stats');
+                }
+              } catch (error) {
+                console.error('[DASHBOARD] Error in subscription callback:', error);
               }
-              
-              // Only refresh stats if the order is within today's window
-              const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
-              
-              console.log('[DASHBOARD] Order change analysis:', {
-                orderCreatedAt,
-                windowStart: todayWindow.startUtcISO,
-                windowEnd: todayWindow.endUtcISO,
-                isInTodayWindow,
-                orderId: (payload.new as any)?.id || (payload.old as any)?.id
-              });
-              
-              if (isInTodayWindow) {
-                console.log('Refreshing stats for today\'s order change');
-                loadStats(venue.venue_id, todayWindow);
-              } else {
-                console.log('Ignoring historical order change, not refreshing stats');
-              }
-            } catch (error) {
-              console.error('[DASHBOARD] Error in subscription callback:', error);
             }
-          }
-        )
-        .subscribe((status) => {
-          console.log('[DASHBOARD] Subscription status:', status);
-        });
+          )
+          .subscribe((status) => {
+            console.log('[DASHBOARD] Subscription status:', status);
+          });
+      }
     } catch (error) {
       console.error('[DASHBOARD] Error setting up subscription:', error);
     }
 
     return () => {
-      if (channel) {
+      if (channel && supabase) {
         console.log('[DASHBOARD] Cleaning up real-time subscription');
         try {
           supabase.removeChannel(channel);
@@ -197,6 +220,12 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
   const loadStats = async (vId: string, window: any) => {
     try {
       console.log('[DASHBOARD] Loading stats for today:', window.startUtcISO, 'to', window.endUtcISO);
+
+      // Check if supabase is available
+      if (!supabase) {
+        console.error('[DASHBOARD] Supabase client not available for stats loading');
+        return;
+      }
 
       // Load orders with error handling
       const { data: orders, error: ordersError } = await supabase
