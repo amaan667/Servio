@@ -1,5 +1,4 @@
 node_modules/
-.next/
 .env.local
 .env.local.backup
 .git/
@@ -12,7 +11,4 @@ trivial-change.txt
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 node_modules copy/
-.next/
-.next/*
-.env*
-*.tsbuildinfo 
+.env* 
