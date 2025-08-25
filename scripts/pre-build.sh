@@ -12,18 +12,31 @@ rm -rf .next
 rm -f .env.production
 rm -f .env.local
 
+# Run guard script to ensure app directory integrity
+echo "[PRE-BUILD] Running app directory guard..."
+if [ -f scripts/guard-app-path.sh ]; then
+  chmod +x scripts/guard-app-path.sh
+  scripts/guard-app-path.sh
+fi
+
 # Handle Railway Nixpacks directory setup
 echo "[PRE-BUILD] Setting up directory structure for Railway Nixpacks..."
 
-# Remove any existing app directory
+# Safely handle app directory - only remove if it's not the correct structure
 if [ -e app ]; then
-  echo "[PRE-BUILD] Removing existing app directory..."
-  rm -rf app
+  if [ ! -d app ] || [ ! -f app/layout.tsx ]; then
+    echo "[PRE-BUILD] Removing invalid app directory..."
+    rm -rf app
+  else
+    echo "[PRE-BUILD] App directory already exists with correct structure"
+  fi
 fi
 
-# Create app directory and copy content from src/app
-echo "[PRE-BUILD] Creating app directory with content from src/app..."
-mkdir -p app
+# Create app directory if it doesn't exist
+if [ ! -d app ]; then
+  echo "[PRE-BUILD] Creating app directory..."
+  mkdir -p app
+fi
 
 # Copy all content from src/app to app
 if [ -d src/app ] && [ "$(ls -A src/app 2>/dev/null)" ]; then

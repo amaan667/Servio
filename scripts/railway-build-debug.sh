@@ -8,8 +8,8 @@ export NIXPACKS_LOG_LEVEL=debug
 export NPM_CONFIG_LOGLEVEL=verbose
 export PNPM_LOG_LEVEL=debug
 
-# Enable corepack
-corepack enable
+# Enable corepack (with error handling)
+corepack enable || echo "[RAILWAY-DEBUG] Corepack enable failed, using pnpm directly"
 
 # Clean everything
 echo "[RAILWAY-DEBUG] Cleaning build environment"
