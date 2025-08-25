@@ -9,6 +9,10 @@
 
 # production
 /build
+/dist
+
+# railway
+.railway/
 
 # debug
 npm-debug.log*
