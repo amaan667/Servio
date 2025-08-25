@@ -1,7 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
-echo "[RAILWAY] build start"
+echo "[RAILWAY] build start with enhanced debugging"
 
+# Set up comprehensive logging
+export NIXPACKS_LOG_LEVEL=debug
+export NPM_CONFIG_LOGLEVEL=verbose
+export PNPM_LOG_LEVEL=debug
+
+# Clean build environment
+echo "[RAILWAY] cleaning build environment"
+rm -rf .next node_modules .pnpm-store
+
+# Enable corepack and install dependencies
+echo "[RAILWAY] enabling corepack and installing dependencies"
+corepack enable
+pnpm install --frozen-lockfile
+
+# Run guard before build
+echo "[RAILWAY] running app directory guard (pre-build)"
+if [ -f scripts/guard-app-path.sh ]; then
+  scripts/guard-app-path.sh
+else
+  echo "[RAILWAY] guard script not found, creating app directory manually"
+  rm -f app
+  mkdir -p app
+fi
+
+# Environment file generation
 ENV_OUT=".env.production"
 if [ -n "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && [ -n "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ]; then
   {
@@ -22,6 +47,21 @@ else
   echo "[RAILWAY] skipping env file generation; required public supabase vars missing"
 fi
 
-echo "[RAILWAY] running pnpm build"
+# Run the build with enhanced logging
+echo "[RAILWAY] running pnpm build with verbose logging"
 pnpm run build
-echo "[RAILWAY] build done"
+
+# Run guard after build
+echo "[RAILWAY] running app directory guard (post-build)"
+if [ -f scripts/guard-app-path.sh ]; then
+  scripts/guard-app-path.sh
+else
+  echo "[RAILWAY] guard script not found, checking app directory manually"
+  if [ ! -d app ]; then
+    echo "ERROR: Something replaced the 'app' directory with a file named 'app'"
+    exit 1
+  fi
+  echo "[RAILWAY] app directory integrity OK"
+fi
+
+echo "[RAILWAY] build completed successfully"
