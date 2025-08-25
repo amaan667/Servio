@@ -15,7 +15,11 @@ const nextConfig = {
     unoptimized: true,
   },
   // Railway deployment configuration
+<<<<<<< HEAD
   distDir: '.next',
+=======
+  output: 'standalone',
+>>>>>>> d86385a96a1264c9b2a31e4dcb478950b1048a27
   generateEtags: false,
   // Remove legacy PDF/OCR externals
   serverExternalPackages: [],

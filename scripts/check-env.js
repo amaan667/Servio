@@ -5,6 +5,7 @@ const path = require('path');
 
 console.log('🔍 Checking Servio environment configuration...\n');
 
+<<<<<<< HEAD
 // [FIX] Writing file to .env.local in project root
 console.log('📝 [FIX] Writing file to .env.local in project root');
 
@@ -74,6 +75,7 @@ if (allConfigured) {
 // Helper function to safely write environment file
 function createEnvFile() {
   try {
+<<<<<<< HEAD
     const envLocalPath = path.join(process.cwd(), '.env.local');
     const envExamplePath = path.join(process.cwd(), '.env.local.example');
     
@@ -87,6 +89,7 @@ function createEnvFile() {
     // Copy from example if it exists
     if (fs.existsSync(envExamplePath)) {
       fs.copyFileSync(envExamplePath, envLocalPath);
+<<<<<<< HEAD
       console.log('✅ Created .env.local from .env.local.example');
       return true;
     } else {

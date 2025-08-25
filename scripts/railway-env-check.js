@@ -15,6 +15,16 @@ if (isRailway) {
 console.log(`📁 Working Directory: ${process.cwd()}`);
 console.log(`🏗️  Node Environment: ${process.env.NODE_ENV || 'not set'}`);
 
+<<<<<<< HEAD
+=======
+// Skip file operations during Railway build to avoid write conflicts
+if (isRailway && process.env.RAILWAY_ENVIRONMENT === 'production') {
+  console.log('🚂 Railway production build detected - skipping file operations');
+  console.log('✅ Environment check complete for Railway deployment');
+  process.exit(0);
+}
+
+>>>>>>> d86385a96a1264c9b2a31e4dcb478950b1048a27
 // Check required environment variables
 const requiredVars = [
   'NEXT_PUBLIC_SUPABASE_URL',

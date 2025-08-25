@@ -4,6 +4,16 @@ echo "🚀 Servio Environment Setup"
 echo "=========================="
 echo ""
 
+<<<<<<< HEAD
+=======
+# Skip file operations during Railway build
+if [ -n "${RAILWAY_ENVIRONMENT}" ] && [ "${RAILWAY_ENVIRONMENT}" = "production" ]; then
+    echo "🚂 Railway production deployment detected - skipping file operations"
+    echo "✅ Environment setup complete for Railway deployment"
+    exit 0
+fi
+
+>>>>>>> d86385a96a1264c9b2a31e4dcb478950b1048a27
 # [FIX] Writing file to .env.local in project root
 echo "📝 [FIX] Writing file to .env.local in project root"
 
@@ -22,8 +32,19 @@ else
     
     # Create .env.local from example if it exists
     if [ -f ".env.local.example" ]; then
+<<<<<<< HEAD
         cp .env.local.example .env.local
         echo "✅ Created .env.local from .env.local.example"
+=======
+        # Use /tmp for Railway deployment to avoid write conflicts
+        if [ -n "${RAILWAY_ENVIRONMENT}" ]; then
+            cp .env.local.example /tmp/.env.local
+            echo "✅ Created .env.local in /tmp for Railway deployment"
+        else
+            cp .env.local.example .env.local
+            echo "✅ Created .env.local from .env.local.example"
+        fi
+>>>>>>> d86385a96a1264c9b2a31e4dcb478950b1048a27
     else
         echo "❌ .env.local.example not found"
         echo "Please create a .env.local file with your Supabase credentials"
