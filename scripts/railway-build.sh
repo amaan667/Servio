@@ -2,6 +2,12 @@
 set -euo pipefail
 echo "[RAILWAY] build start"
 
+# Debug: Print environment variable status
+echo "[RAILWAY] Debug: Checking environment variables"
+echo "[RAILWAY] NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-'NOT SET'}"
+echo "[RAILWAY] NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-'NOT SET'}"
+echo "[RAILWAY] SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-'NOT SET'}"
+
 ENV_OUT=".env.production"
 if [ -n "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && [ -n "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ]; then
   {

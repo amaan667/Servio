@@ -5,7 +5,10 @@ nixPkgs = ["nodejs_20", "pnpm"]
 cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["bash scripts/railway-build.sh"]
+cmds = [
+  "chmod +x scripts/railway-build.sh",
+  "./scripts/railway-build.sh"
+]
 
 [start]
 cmd = "pnpm start"

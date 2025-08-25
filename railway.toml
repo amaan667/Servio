@@ -1,8 +1,0 @@
-[build]
-builder = "nixpacks"
-buildCommand = "chmod +x scripts/railway-build.sh && ./scripts/railway-build.sh"
-
-[deploy]
-startCommand = "pnpm start"
-restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 10
