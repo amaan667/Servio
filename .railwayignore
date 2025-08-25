@@ -17,4 +17,8 @@ dist/
 build/
 *.tmp
 *.temp
-.cache/ 
+.cache/
+# Prevent Docker build interference
+Dockerfile*
+docker-compose*
+.dockerignore 

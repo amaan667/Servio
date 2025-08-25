@@ -3,7 +3,9 @@ nixPkgs = ["nodejs_22", "pnpm-8_x"]
 
 [phases.install]
 cmds = [
+  "export NPM_CONFIG_PACKAGE_MANAGER=pnpm",
   "pnpm config set store-dir /root/.local/share/pnpm/store/v3",
+  "rm -rf node_modules package-lock.json",
   "pnpm install --frozen-lockfile"
 ]
 
@@ -12,3 +14,6 @@ cmds = ["pnpm run build"]
 
 [start]
 cmd = "pnpm start"
+
+[variables]
+NPM_CONFIG_PACKAGE_MANAGER = "pnpm"
