@@ -63,12 +63,13 @@ if (allConfigured) {
 } else {
   console.log('❌ Some required environment variables are missing.');
   console.log('\n🔧 To fix this:');
-console.log('   1. Create a .env.local file in your project root');
-console.log('   2. Add the missing environment variables:');
-console.log('      NEXT_PUBLIC_SUPABASE_URL=your_supabase_url');
-console.log('      NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key');
-console.log('   3. Restart your development server');
-console.log('\n📚 For more help, see TROUBLESHOOTING.md');
+  console.log('   1. Create a .env.local file in your project root');
+  console.log('   2. Add the missing environment variables:');
+  console.log('      NEXT_PUBLIC_SUPABASE_URL=your_supabase_url');
+  console.log('      NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key');
+  console.log('   3. Restart your development server');
+  console.log('\n📚 For more help, see TROUBLESHOOTING.md');
+}
 
 // Helper function to safely write environment file
 function createEnvFile() {
@@ -96,7 +97,6 @@ function createEnvFile() {
     console.error('❌ Error creating .env.local:', error.message);
     return false;
   }
-}
 }
 
 console.log('\n🚀 Next steps:');

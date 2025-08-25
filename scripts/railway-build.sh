@@ -1,93 +1,27 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+echo "[RAILWAY] build start"
 
-echo "🚂 Railway Build Script Starting..."
-echo "=================================="
-
-# Set error handling
-set -e
-
-echo "📁 Current directory: $(pwd)"
-echo "📋 Directory contents:"
-ls -la
-
-echo "🧹 Cleaning build artifacts..."
-rm -rf .next
-rm -rf node_modules/.cache
-rm -rf .turbo
-
-echo "📦 Checking for conflicting files and directories..."
-# Check for any files that might conflict with directories
-if [ -f "app" ]; then
-    echo "❌ Found file named 'app' - removing it"
-    rm -f app
-fi
-
-if [ -f "App" ]; then
-    echo "❌ Found file named 'App' - removing it"
-    rm -f App
-fi
-
-if [ -f "APP" ]; then
-    echo "❌ Found file named 'APP' - removing it"
-    rm -f APP
-fi
-
-# Check for problematic directories
-if [ -d "App" ]; then
-    echo "⚠️ Found directory named 'App' - this might cause conflicts"
-    echo "📋 App directory contents:"
-    ls -la App/
-fi
-
-if [ -d "APP" ]; then
-    echo "⚠️ Found directory named 'APP' - this might cause conflicts"
-    echo "📋 APP directory contents:"
-    ls -la APP/
-fi
-
-echo "🔍 Checking app directory structure..."
-if [ -d "app" ]; then
-    echo "✅ app directory exists"
-    echo "📋 app directory contents:"
-    ls -la app/
-    
-    # Check if app is actually a directory and not a symlink
-    if [ -L "app" ]; then
-        echo "⚠️ app is a symlink - resolving..."
-        ls -la app
-    fi
+ENV_OUT=".env.production"
+if [ -n "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && [ -n "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ]; then
+  {
+    echo "NODE_ENV=production"
+    echo "NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}"
+    echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}"
+    [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ] && echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+    [ -n "${NEXT_PUBLIC_APP_URL:-}" ] && echo "NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}"
+    [ -n "${NEXT_PUBLIC_SITE_URL:-}" ] && echo "NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}"
+    [ -n "${STRIPE_SECRET_KEY:-}" ] && echo "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}"
+    [ -n "${STRIPE_WEBHOOK_SECRET:-}" ] && echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}"
+    [ -n "${GOOGLE_CREDENTIALS_B64:-}" ] && echo "GOOGLE_CREDENTIALS_B64=${GOOGLE_CREDENTIALS_B64}"
+    [ -n "${GCS_BUCKET_NAME:-}" ] && echo "GCS_BUCKET_NAME=${GCS_BUCKET_NAME}"
+    [ -n "${APP_URL:-}" ] && echo "APP_URL=${APP_URL}"
+  } > "$ENV_OUT"
+  echo "[RAILWAY] wrote $ENV_OUT"
 else
-    echo "❌ app directory missing!"
-    exit 1
+  echo "[RAILWAY] skipping env file generation; required public supabase vars missing"
 fi
 
-echo "🔧 Running environment check..."
-node scripts/railway-env-check.js
-
-echo "🏗️ Starting Next.js build..."
-echo "📊 Node version: $(node --version)"
-echo "📊 pnpm version: $(pnpm --version)"
-
-# Ensure we're in the correct directory
-if [ ! -f "package.json" ]; then
-    echo "❌ package.json not found in current directory!"
-    exit 1
-fi
-
-# Run the build with verbose output
-echo "📦 Installing dependencies..."
-pnpm install --frozen-lockfile
-
-echo "🏗️ Building application..."
-pnpm build
-
-echo "✅ Build completed successfully!"
-echo "📋 Final .next directory contents:"
-if [ -d ".next" ]; then
-    ls -la .next/
-else
-    echo "❌ .next directory not found after build!"
-    exit 1
-fi
-
-echo "🚀 Railway build script finished!"
+echo "[RAILWAY] running pnpm build"
+pnpm run build
+echo "[RAILWAY] build done"
