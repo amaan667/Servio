@@ -10,7 +10,6 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-<<<<<<< HEAD
     "start": "next start -p 8080",
     "check-env": "node scripts/check-env.js",
     "railway-check": "node scripts/railway-env-check.js",
