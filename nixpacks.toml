@@ -3,8 +3,13 @@ nixPkgs = ["nodejs_22", "pnpm-8_x"]  # install pnpm from nix
 
 [phases.install]
 cmds = [
-  # ensure deterministic cache dir (optional)
+  # ensure deterministic cache dir
   "pnpm config set store-dir /root/.local/share/pnpm/store/v3",
+  # clear any existing node_modules and lock files to avoid conflicts
+  "rm -rf node_modules package-lock.json",
+  # set environment to prevent npm from interfering
+  "export NPM_CONFIG_PACKAGE_MANAGER=pnpm",
+  # install dependencies with pnpm
   "pnpm install --frozen-lockfile"
 ]
 
