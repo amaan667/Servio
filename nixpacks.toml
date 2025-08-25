@@ -1,12 +1,8 @@
 [phases.setup]
-nixPkgs = ["nodejs_22", "corepack"]
+nixPkgs = ["nodejs_22", "pnpm"]
 
 [phases.install]
-cmds = [
-  "corepack enable",
-  "pnpm config set store-dir /root/.local/share/pnpm/store/v3",
-  "pnpm install --frozen-lockfile"
-]
+cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
 cmds = ["pnpm run build"]
