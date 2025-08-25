@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
-echo "[RAILWAY] build start"
 
-# Clean up any existing build artifacts
+echo "[DEPLOY] Starting deployment process..."
+
+# Ensure we're in the right directory
+cd "$(dirname "$0")/.."
+
+# Clean any existing build artifacts
+echo "[DEPLOY] Cleaning build artifacts..."
 rm -rf .next
 rm -f .env.production
+rm -f .env.local
 
+# Create environment file
+echo "[DEPLOY] Setting up environment..."
 ENV_OUT=".env.production"
 if [ -n "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && [ -n "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ]; then
   {
@@ -21,9 +29,13 @@ if [ -n "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && [ -n "${NEXT_PUBLIC_SUPABASE_ANON_K
     [ -n "${GCS_BUCKET_NAME:-}" ] && echo "GCS_BUCKET_NAME=${GCS_BUCKET_NAME}"
     [ -n "${APP_URL:-}" ] && echo "APP_URL=${APP_URL}"
   } > "$ENV_OUT"
-  echo "[RAILWAY] wrote $ENV_OUT"
+  echo "[DEPLOY] Environment file created"
 else
-  echo "[RAILWAY] skipping env file generation; required public supabase vars missing"
+  echo "[DEPLOY] Warning: Missing required environment variables"
 fi
 
-echo "[RAILWAY] environment setup complete"
+# Build the application
+echo "[DEPLOY] Building application..."
+pnpm run build
+
+echo "[DEPLOY] Deployment setup complete"

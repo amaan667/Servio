@@ -11,4 +11,7 @@ trivial-change.txt
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 node_modules copy/
-.env* 
+.env*
+.next/
+dist/
+build/ 
