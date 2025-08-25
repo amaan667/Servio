@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import ThemeToggleFloat from "@/components/ThemeToggleFloat";
@@ -10,7 +9,8 @@ import { SupabaseConfigCheck } from "@/components/supabase-config-check";
 import HealthCheck from "@/components/HealthCheck";
 import SupabaseConfigError from "@/components/SupabaseConfigError";
 
-const inter = Inter({ subsets: ["latin"] });
+// Temporary workaround for font loading in offline environment
+const inter = { className: "" };
 
 export const metadata: Metadata = {
   title: "Servio - QR Code Ordering Made Simple",
