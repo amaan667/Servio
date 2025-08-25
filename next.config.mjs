@@ -19,7 +19,7 @@ const nextConfig = {
   webpack: (config, { isServer }) => {
     config.resolve = config.resolve || {};
     config.resolve.alias = config.resolve.alias || {};
-    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
+    config.resolve.alias['@'] = path.resolve(__dirname);
     
     // Suppress punycode deprecation warning
     if (isServer) {
