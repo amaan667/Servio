@@ -5,7 +5,7 @@ nixPkgs = ["nodejs_18", "pnpm"]
 cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["pnpm run build"]
+cmds = ["bash scripts/pre-build.sh", "pnpm run build"]
 
 [start]
 cmd = "pnpm start"
