@@ -15,7 +15,6 @@ const nextConfig = {
     unoptimized: true,
   },
   // Railway deployment configuration
-  distDir: '.next',
   generateEtags: false,
   // Remove legacy PDF/OCR externals
   serverExternalPackages: [],
