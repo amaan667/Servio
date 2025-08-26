@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import '@/styles/globals.css'
+import NavBar from '@/components/NavBar'
+import { AuthProvider } from './authenticated-client-provider'
 
 export const metadata: Metadata = {
   title: 'Servio - QR Code Ordering Made Simple',
@@ -14,7 +16,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
+        <AuthProvider>
+          <NavBar />
+          <main>
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   )
