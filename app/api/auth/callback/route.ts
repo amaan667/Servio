@@ -19,9 +19,16 @@ export async function GET(request: NextRequest) {
       allParams: Object.fromEntries(searchParams.entries())
     });
 
+    // Check environment variables
+    console.log('[AUTH DEBUG] Server environment check:', {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    });
+
     if (error) {
       console.error('[AUTH DEBUG] Server callback error:', { error, errorDescription });
-      return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=oauth_error&description=${errorDescription || ''}`));
+      return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=oauth_error&description=${encodeURIComponent(errorDescription || '')}`));
     }
 
     if (!code) {
@@ -52,18 +59,34 @@ export async function GET(request: NextRequest) {
     exchangeParams.set('code', code);
     if (state) exchangeParams.set('state', state);
     
-    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession({
+    console.log('[AUTH DEBUG] Server exchange params:', Object.fromEntries(exchangeParams.entries()));
+    
+    // Add timeout to prevent hanging
+    const exchangePromise = supabase.auth.exchangeCodeForSession({
       queryParams: exchangeParams,
     });
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Server exchange timeout after 15 seconds')), 15000);
+    });
+    
+    const { data, error: exchangeError } = await Promise.race([exchangePromise, timeoutPromise]) as any;
 
     if (exchangeError) {
-      console.error('[AUTH DEBUG] Server exchange error:', exchangeError);
+      console.error('[AUTH DEBUG] Server exchange error:', {
+        message: exchangeError.message,
+        status: exchangeError.status,
+        name: exchangeError.name,
+        stack: exchangeError.stack
+      });
       return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`));
     }
 
     console.log('[AUTH DEBUG] Server exchange successful:', { 
       hasUser: !!data.user, 
-      userId: data.user?.id 
+      userId: data.user?.id,
+      hasSession: !!data.session,
+      sessionExpiresAt: data.session?.expires_at
     });
 
     // Redirect to dashboard with success - ALWAYS use production URL
@@ -91,7 +114,28 @@ export async function GET(request: NextRequest) {
     return response;
 
   } catch (error: any) {
-    console.error('[AUTH DEBUG] Server callback exception:', error);
-    return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=server_exception&message=${encodeURIComponent(error?.message || 'Unknown error')}`));
+    console.error('[AUTH DEBUG] Server callback exception:', {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack,
+      cause: error?.cause
+    });
+    
+    // Provide more specific error messages based on the error type
+    let userMessage = 'Server error during authentication';
+    let errorCode = 'server_exception';
+    
+    if (error?.message?.includes('timeout')) {
+      userMessage = 'Authentication timed out. Please try again.';
+      errorCode = 'server_timeout';
+    } else if (error?.message?.includes('network')) {
+      userMessage = 'Network error. Please check your connection and try again.';
+      errorCode = 'server_network_error';
+    } else if (error?.message?.includes('fetch')) {
+      userMessage = 'Connection error. Please try again.';
+      errorCode = 'server_fetch_error';
+    }
+    
+    return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=${errorCode}&message=${encodeURIComponent(userMessage)}`));
   }
 }

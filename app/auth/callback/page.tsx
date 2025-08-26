@@ -28,6 +28,13 @@ export default function OAuthCallback() {
           allParams: Object.fromEntries(url.searchParams.entries())
         });
 
+        // Check environment variables
+        console.log('[AUTH DEBUG] Environment check:', {
+          hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+          hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        });
+
         if (hasError) {
           console.error('[AUTH DEBUG] OAuth error in callback:', { hasError, errorDescription });
           setErrorMessage(errorDescription || 'Authentication failed');
@@ -44,28 +51,37 @@ export default function OAuthCallback() {
           exchangeParams.set('code', url.searchParams.get('code')!);
           if (state) exchangeParams.set('state', state);
           
+          console.log('[AUTH DEBUG] Exchange params:', Object.fromEntries(exchangeParams.entries()));
+          
           // Add timeout to prevent hanging
           const exchangePromise = supabase.auth.exchangeCodeForSession({ 
             queryParams: exchangeParams
           });
           
           const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Exchange timeout')), 10000); // 10 second timeout
+            setTimeout(() => reject(new Error('Exchange timeout after 15 seconds')), 15000); // Increased timeout
           });
           
           const { data, error } = await Promise.race([exchangePromise, timeoutPromise]) as any;
           
           if (error) {
-            console.error('[AUTH DEBUG] Exchange error:', error);
+            console.error('[AUTH DEBUG] Exchange error:', {
+              message: error.message,
+              status: error.status,
+              name: error.name,
+              stack: error.stack
+            });
             setErrorMessage(error.message || 'Failed to complete authentication');
             setStatus('error');
-            setTimeout(() => router.replace("/sign-in?error=exchange_failed"), 3000);
+            setTimeout(() => router.replace(`/sign-in?error=exchange_failed&message=${encodeURIComponent(error.message)}`), 3000);
             return;
           }
 
           console.log('[AUTH DEBUG] Session exchange successful:', { 
             hasUser: !!data?.user, 
-            userId: data?.user?.id 
+            userId: data?.user?.id,
+            hasSession: !!data?.session,
+            sessionExpiresAt: data?.session?.expires_at
           });
 
           // Clean up URL
@@ -82,10 +98,31 @@ export default function OAuthCallback() {
           setTimeout(() => router.replace("/sign-in?error=no_code"), 3000);
         }
       } catch (error: any) {
-        console.error('[AUTH DEBUG] Callback exception:', error);
-        setErrorMessage(error?.message || 'Unexpected error during authentication');
+        console.error('[AUTH DEBUG] Callback exception:', {
+          message: error?.message,
+          name: error?.name,
+          stack: error?.stack,
+          cause: error?.cause
+        });
+        
+        // Provide more specific error messages based on the error type
+        let userMessage = 'Unexpected error during authentication';
+        let errorCode = 'callback_exception';
+        
+        if (error?.message?.includes('timeout')) {
+          userMessage = 'Authentication timed out. Please try again.';
+          errorCode = 'timeout';
+        } else if (error?.message?.includes('network')) {
+          userMessage = 'Network error. Please check your connection and try again.';
+          errorCode = 'network_error';
+        } else if (error?.message?.includes('fetch')) {
+          userMessage = 'Connection error. Please try again.';
+          errorCode = 'fetch_error';
+        }
+        
+        setErrorMessage(userMessage);
         setStatus('error');
-        setTimeout(() => router.replace("/sign-in?error=callback_exception"), 3000);
+        setTimeout(() => router.replace(`/sign-in?error=${errorCode}&message=${encodeURIComponent(userMessage)}`), 3000);
       }
     })();
   }, [router]);

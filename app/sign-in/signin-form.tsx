@@ -70,6 +70,14 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
         errorText = errorMessage ? `OAuth error: ${errorMessage}` : 'OAuth authentication failed.';
       } else if (urlError === 'exchange_failed') {
         errorText = errorMessage ? `Authentication failed: ${errorMessage}` : 'Authentication exchange failed.';
+      } else if (urlError === 'callback_exception') {
+        errorText = errorMessage ? `Authentication error: ${errorMessage}` : 'Authentication process failed. Please try again.';
+      } else if (urlError === 'timeout') {
+        errorText = 'Authentication timed out. Please try again.';
+      } else if (urlError === 'network_error') {
+        errorText = 'Network error. Please check your connection and try again.';
+      } else if (urlError === 'server_exception') {
+        errorText = errorMessage ? `Server error: ${errorMessage}` : 'Server error during authentication. Please try again.';
       } else if (urlError === 'missing_code') {
         errorText = 'Authentication code missing. Please try signing in again.';
       } else if (urlError === 'pkce_failed') {

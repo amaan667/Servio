@@ -1,36 +1,36 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase-server';
 
 export async function GET() {
   try {
-    const supabase = createServerSupabase();
-    
-    // Test the OAuth configuration
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: 'https://servio-production.up.railway.app/auth/callback',
-        queryParams: { prompt: 'select_account' },
-      },
-    });
+    const envVars = {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      hasSiteUrl: !!process.env.NEXT_PUBLIC_SITE_URL,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+      nodeEnv: process.env.NODE_ENV,
+    };
 
-    if (error) {
-      return NextResponse.json({
-        success: false,
-        error: error.message,
-        code: error.status,
-      }, { status: 400 });
-    }
+    // Check if the OAuth redirect URLs are properly configured
+    const expectedRedirectUrl = 'https://servio-production.up.railway.app/api/auth/callback';
+    const clientRedirectUrl = 'https://servio-production.up.railway.app/auth/callback';
 
     return NextResponse.json({
       success: true,
-      data: {
-        url: data.url,
-        provider: data.provider,
+      environment: envVars,
+      oauth: {
+        expectedServerRedirectUrl: expectedRedirectUrl,
+        expectedClientRedirectUrl: clientRedirectUrl,
+        googleOAuthRedirectUrl: 'https://servio-production.up.railway.app/api/auth/callback',
       },
+      recommendations: [
+        'Ensure Google OAuth redirect URL is set to: https://servio-production.up.railway.app/api/auth/callback',
+        'Check that Supabase OAuth settings include the correct redirect URLs',
+        'Verify environment variables are set correctly in Railway',
+      ],
+      timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('[AUTH DEBUG] OAuth config test failed:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Unknown error',
