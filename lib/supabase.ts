@@ -1,32 +1,44 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { logger } from "./logger";
-import { supabaseBrowser } from "./supabase-browser";
 
-// Environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Lazy Supabase client creation to avoid build-time issues
+let supabaseClient: ReturnType<typeof createBrowserClient> | null = null;
 
-// Debug environment variables
-console.log("Supabase environment check:", {
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseAnonKey,
-  url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : "undefined",
-  key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : "undefined"
-});
+function getSupabaseClient() {
+  if (supabaseClient) {
+    return supabaseClient;
+  }
 
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ Missing Supabase environment variables:", {
-    NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
+  // Environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Debug environment variables
+  console.log("Supabase environment check:", {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : "undefined",
+    key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : "undefined"
   });
-  throw new Error("Missing Supabase environment variables");
+
+  // Validate environment variables
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("❌ Missing Supabase environment variables:", {
+      NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
+    });
+    throw new Error("Missing Supabase environment variables");
+  }
+
+  // Create browser client instance - consolidated to avoid PKCE conflicts
+  supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
+  console.log("Supabase client created successfully");
+  
+  return supabaseClient;
 }
 
-// Create single Supabase client instance with proper configuration
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
-
-console.log("Supabase client created successfully");
+// Export the client getter function
+export const supabase = getSupabaseClient;
 
 // Types
 export interface User {
@@ -102,14 +114,12 @@ export async function signUpUser(
   try {
     logger.info("Attempting sign up", { email, fullName });
 
-    // ALWAYS use Railway production URL - never localhost
-    const emailRedirectTo = process.env.NEXT_PUBLIC_SITE_URL 
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
-      : "https://servio-production.up.railway.app/dashboard";
+    // Use consistent URL resolution
+    const emailRedirectTo = `${window.location.origin}/auth/callback`;
     
-    console.log("✅ Using Railway domain for email redirect:", emailRedirectTo);
+    console.log("✅ Using consistent domain for email redirect:", emailRedirectTo);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase().auth.signUp({
       email,
       password,
       options: {
@@ -127,26 +137,55 @@ export async function signUpUser(
     }
 
     // Check for session (user is authenticated if session exists)
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await supabase().auth.getSession();
     if (!sessionData.session) {
       // No session means email confirmation is required
       return {
         success: true,
         message:
           "Check your email to confirm your account. You'll be able to set up your business after confirming.",
+        needsConfirmation: true,
       };
     }
 
-    // Create default venue for the user (as authenticated user)
-    const userId = data.user.id;
+    // User is authenticated, create venue
+    const venueResult = await createUserVenue(data.user.id, venueName, venueType);
+    if (!venueResult.success) {
+      return {
+        success: false,
+        message: "Account created but failed to set up venue. Please contact support.",
+      };
+    }
+
+    logger.info("User signed up successfully", { userId: data.user.id, venueId: venueResult.venue?.venue_id });
+    return {
+      success: true,
+      message: "Account created successfully! Welcome to Servio.",
+      data: { user: data.user, venue: venueResult.venue },
+    };
+  } catch (error) {
+    logger.error("Sign up error", { error });
+    return {
+      success: false,
+      message: "An unexpected error occurred. Please try again.",
+    };
+  }
+}
+
+// Helper function to create user venue
+async function createUserVenue(userId: string, venueName: string, venueType: string) {
+  try {
     const venueId = `venue-${userId.slice(0, 8)}`;
-    let { data: venueData, error: venueError } = await supabase
+    
+    // Check if venue already exists
+    let { data: venueData, error: venueError } = await supabase()
       .from("venues")
       .select("*")
       .eq("owner_id", userId)
       .single();
+      
     if (venueError || !venueData) {
-      const { data: newVenue, error: createVenueError } = await supabase
+      const { data: newVenue, error: createVenueError } = await supabase()
         .from("venues")
         .insert({
           venue_id: venueId,
@@ -161,33 +200,22 @@ export async function signUpUser(
 
       if (createVenueError) {
         logger.error("Failed to create venue", { error: createVenueError });
-        return {
-          success: false,
-          message: "Account created but failed to set up venue. Please contact support.",
-        };
+        return { success: false, error: createVenueError.message };
       }
       venueData = newVenue;
     }
 
-    logger.info("User signed up successfully", { userId, venueId });
-    return {
-      success: true,
-      message: "Account created successfully! Welcome to Servio.",
-      data: { user: data.user, venue: venueData },
-    };
+    return { success: true, venue: venueData };
   } catch (error) {
-    logger.error("Sign up error", { error });
-    return {
-      success: false,
-      message: "An unexpected error occurred. Please try again.",
-    };
+    logger.error("Venue creation error", { error });
+    return { success: false, error: "Failed to create venue" };
   }
 }
 
 export async function signInUser(email: string, password: string) {
   try {
     logger.info("Attempting sign in", { email });
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase().auth.signInWithPassword({
       email,
       password,
     });
@@ -202,7 +230,7 @@ export async function signInUser(email: string, password: string) {
     logger.info("Sign in successful", { userId: data.user.id });
     
     // Ensure session is properly set
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await supabase().auth.getSession();
     if (!sessionData.session) {
       logger.error("No session after sign in");
       return {
@@ -218,30 +246,7 @@ export async function signInUser(email: string, password: string) {
   }
 }
 
-export async function signInWithGoogle() {
-  const origin = typeof window !== "undefined"
-    ? window.location.origin
-    : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
 
-  try {
-    Object.keys(localStorage).forEach(k => {
-      if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k);
-    });
-  } catch {}
-
-  const supabase = supabaseBrowser();
-  
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { 
-      flowType: "pkce", 
-      redirectTo: `${origin}/auth/callback` 
-    },
-  });
-
-  if (error) throw error;
-  return data;
-}
 
 // Handle Google OAuth sign-up and create venue
 export async function handleGoogleSignUp(userId: string, userEmail: string, fullName?: string) {
@@ -249,7 +254,7 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
     console.log("Creating venue for Google sign-up user:", userId);
     
     // Check if user already has a venue
-    const { data: existingVenue, error: checkError } = await supabase
+    const { data: existingVenue, error: checkError } = await supabase()
       .from("venues")
       .select("*")
       .eq("owner_id", userId)
@@ -264,7 +269,7 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
     const venueId = `venue-${userId.slice(0, 8)}`;
     const venueName = fullName ? `${fullName}'s Business` : "My Business";
     
-    const { data: newVenue, error: createError } = await supabase
+    const { data: newVenue, error: createError } = await supabase()
       .from("venues")
       .insert({
         venue_id: venueId,
@@ -293,7 +298,7 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
 // Sign out function
 export async function signOutUser() {
   try {
-    await supabase.auth.signOut();
+    await supabase().auth.signOut();
     logger.info("User signed out");
   } catch (error) {
     logger.error("Sign out error", { error });

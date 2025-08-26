@@ -2,19 +2,13 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+
 import SignInForm from './signin-form';
 
 function SignInPageContent() {
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
-  const signInWithGoogle = async () => {
-    // This function is no longer used - OAuth is handled directly in the form
-    console.log('[AUTH] signInWithGoogle called but not used');
-  };
-
-  return <SignInForm onGoogleSignIn={signInWithGoogle} loading={loading} />;
+  return <SignInForm loading={loading} />;
 }
 
 export default function SignInPage() {

@@ -17,16 +17,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 // Removed RefreshCw icon import for Clean Refresh button cleanup
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { supabase } from "@/lib/sb-client";
+import { GoogleSignInButton } from "@/components/auth/google-signin-button";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 // Removed SessionClearer from production to avoid redundant client-side sign-out
 
 interface SignInFormProps {
-  onGoogleSignIn: () => Promise<void>;
   loading?: boolean;
 }
 
-export default function SignInForm({ onGoogleSignIn, loading: externalLoading }: SignInFormProps) {
+export default function SignInForm({ loading: externalLoading }: SignInFormProps) {
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
@@ -156,97 +155,11 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
           </CardHeader>
           <CardContent>
             {/* Google Sign In Button */}
-            <Button
-              type="button"
-              className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
-              onClick={async () => {
-                console.log('[AUTH DEBUG] ===== Google OAuth Sign In Started =====');
-                console.log('[AUTH DEBUG] Button clicked at:', new Date().toISOString());
-                console.log('[AUTH DEBUG] Current URL:', window.location.href);
-                console.log('[AUTH DEBUG] User agent:', navigator.userAgent);
-                
-                setError(null);
-                try {
-                  console.log('[AUTH DEBUG] 🔍 Step 1: Determining origin for redirect');
-                  
-                  // Use the same URL resolution logic as the callback
-                  const origin = typeof window !== "undefined" ? window.location.origin : "https://servio-production.up.railway.app";
-                  console.log('[AUTH DEBUG] Origin determined:', origin);
-                  console.log('[AUTH DEBUG] Redirect URL will be:', `${origin}/auth/callback`);
-                  
-                  // Clear any stale auth state
-                  console.log('[AUTH DEBUG] 🔄 Step 2: Clearing stale auth state');
-                  try {
-                    const keysToRemove = Object.keys(localStorage).filter(k => 
-                      k.startsWith("sb-") || k.includes("pkce")
-                    );
-                    console.log('[AUTH DEBUG] Found keys to remove:', keysToRemove);
-                    
-                    Object.keys(localStorage).forEach(k => { 
-                      if (k.startsWith("sb-") || k.includes("pkce")) {
-                        const value = localStorage.getItem(k);
-                        console.log('[AUTH DEBUG] Removing key:', k, 'with value length:', value?.length);
-                        localStorage.removeItem(k); 
-                      }
-                    });
-                    console.log('[AUTH DEBUG] ✅ Stale auth state cleared');
-                  } catch (clearError) {
-                    console.log('[AUTH DEBUG] ❌ ERROR: Failed to clear localStorage:', clearError);
-                  }
-                  
-                  console.log('[AUTH DEBUG] 🔄 Step 3: Calling supabase.auth.signInWithOAuth');
-                  console.log('[AUTH DEBUG] OAuth options:', {
-                    provider: "google",
-                    flowType: "pkce",
-                    redirectTo: `${origin}/auth/callback`,
-                    queryParams: { prompt: 'select_account' }
-                  });
-                  
-                  const startTime = Date.now();
-                  const { data, error } = await supabase.auth.signInWithOAuth({
-                    provider: "google",
-                    options: { 
-                      flowType: "pkce", 
-                      redirectTo: `${origin}/auth/callback`,
-                      queryParams: { prompt: 'select_account' }
-                    },
-                  });
-                  const oauthTime = Date.now() - startTime;
-                  
-                  console.log('[AUTH DEBUG] OAuth call completed in', oauthTime, 'ms');
-                  
-                  if (error) {
-                    console.log('[AUTH DEBUG] ❌ ERROR: OAuth initiation failed:', {
-                      error: error.message,
-                      errorCode: error.status,
-                      oauthTime
-                    });
-                    setError(`Google sign-in failed: ${error.message || "Please try again."}`);
-                  } else {
-                    console.log('[AUTH DEBUG] ✅ OAuth initiated successfully');
-                    console.log('[AUTH DEBUG] OAuth response data:', {
-                      hasUrl: !!data.url,
-                      urlLength: data.url?.length,
-                      hasProvider: !!data.provider,
-                      provider: data.provider
-                    });
-                    console.log('[AUTH DEBUG] Browser should now redirect to Google OAuth');
-                    console.log('[AUTH DEBUG] ===== Google OAuth Sign In Initiated Successfully =====');
-                  }
-                } catch (err: any) {
-                  console.log('[AUTH DEBUG] ❌ EXCEPTION: Google sign-in error:', { 
-                    message: err?.message,
-                    stack: err?.stack,
-                    timestamp: new Date().toISOString()
-                  });
-                  setError(`Google sign-in failed: ${err.message || "Please try again."}`);
-                }
-              }}
+            <GoogleSignInButton
+              onError={(error) => setError(error)}
               disabled={loading || externalLoading}
-            >
-              <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/><path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
-              {loading || externalLoading ? 'Redirecting…' : 'Sign in with Google'}
-            </Button>
+              className="w-full mb-4"
+            />
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

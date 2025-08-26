@@ -15,15 +15,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
-import { signUpUser, signInWithGoogle, signInUser } from "@/lib/supabase";
-import { supabase } from "@/lib/sb-client";
+import { signUpUser, signInUser } from "@/lib/supabase";
+import { GoogleSignInButton } from "@/components/auth/google-signin-button";
+
 
 interface SignUpFormProps {
-  onGoogleSignIn: () => Promise<void>;
   loading?: boolean;
 }
 
-export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }: SignUpFormProps) {
+export default function SignUpForm({ loading: externalLoading }: SignUpFormProps) {
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
@@ -34,6 +34,7 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,9 +82,14 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
       );
 
       if (result.success) {
-        console.log('[AUTH] Sign-up successful, redirecting immediately');
-        // Redirect immediately after successful sign-up
-        router.replace('/dashboard');
+        if (result.needsConfirmation) {
+          console.log('[AUTH] Email confirmation required');
+          setNeedsConfirmation(true);
+        } else {
+          console.log('[AUTH] Sign-up successful, redirecting immediately');
+          // Redirect immediately after successful sign-up
+          router.replace('/dashboard');
+        }
       } else {
         console.log('[AUTH] Sign-up failed', { message: result.message });
         setError(result.message || "Unknown error");
@@ -95,6 +101,31 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
       setLoading(false);
     }
   };
+
+  if (needsConfirmation) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-gray-900">Check your email</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              We've sent you a confirmation link to {formData.email}
+            </p>
+            <p className="mt-4 text-sm text-gray-500">
+              Click the link in your email to complete your account setup.
+            </p>
+            <Button
+              onClick={() => setNeedsConfirmation(false)}
+              variant="outline"
+              className="mt-6"
+            >
+              Back to sign up
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -113,30 +144,11 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
           </CardHeader>
           <CardContent>
             {/* Google Sign Up Button */}
-            <Button
-              type="button"
-              className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
-              onClick={async () => {
-                setError(null);
-                try {
-                  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
-                  try {
-                    Object.keys(localStorage).forEach(k => { if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k); });
-                  } catch {}
-                  await supabase.auth.signInWithOAuth({
-                    provider: "google",
-                    options: { flowType: "pkce", redirectTo: `${origin}/auth/callback` },
-                  });
-                } catch (err: any) {
-                  console.error('[AUTH] Google sign-up error', { message: err?.message });
-                  setError(`Google sign-up failed: ${err.message || "Please try again."}`);
-                }
-              }}
+            <GoogleSignInButton
+              onError={(error) => setError(error)}
               disabled={loading || externalLoading}
-            >
-              <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/><path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
-              {loading || externalLoading ? 'Redirecting…' : 'Sign up with Google'}
-            </Button>
+              className="w-full mb-4"
+            />
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

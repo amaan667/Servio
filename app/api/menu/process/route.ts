@@ -5,12 +5,38 @@ import { isMenuLike } from '@/lib/menuLike';
 import { tryParseMenuWithGPT } from '@/lib/safeParse';
 import { PDFDocument } from 'pdf-lib';
 
-const supa = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supa: ReturnType<typeof createClient> | null = null;
+let openaiClient: OpenAI | null = null;
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getSupabaseClient() {
+  if (supa) {
+    return supa;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error("Missing Supabase environment variables");
+  }
+
+  supa = createClient(supabaseUrl, supabaseServiceKey);
+  return supa;
+}
+
+function getOpenAIClient() {
+  if (openaiClient) {
+    return openaiClient;
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY environment variable is required");
+  }
+
+  openaiClient = new OpenAI({ apiKey });
+  return openaiClient;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +45,7 @@ export async function POST(req: NextRequest) {
     console.log('[AUTH DEBUG] Processing menu upload:', uploadId);
 
     // Get upload record
-    const { data: row, error: fetchErr } = await supa
+    const { data: row, error: fetchErr } = await getSupabaseClient()
       .from('menu_uploads')
       .select('*')
       .eq('id', uploadId)
@@ -36,7 +62,7 @@ export async function POST(req: NextRequest) {
     const storagePath = row.filename || `${row.venue_id}/${row.sha256}.pdf`;
     console.log('[AUTH DEBUG] Downloading from storage path:', storagePath);
     
-    const { data: file, error: dlErr } = await supa.storage.from('menus').download(storagePath);
+    const { data: file, error: dlErr } = await getSupabaseClient().storage.from('menus').download(storagePath);
     if (dlErr) {
       console.error('[AUTH DEBUG] Failed to download file:', dlErr);
       return NextResponse.json({ ok: false, error: 'Failed to download file' }, { status: 500 });
@@ -71,7 +97,7 @@ export async function POST(req: NextRequest) {
     let rawText = '';
     try {
       const firstPage = pdfPages[0];
-      const visionResponse = await openai.chat.completions.create({
+      const visionResponse = await getOpenAIClient().chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           {
@@ -125,7 +151,7 @@ export async function POST(req: NextRequest) {
 
     for (let i = 0; i < pdfPages.length; i++) {
       try {
-        const response = await openai.chat.completions.create({
+        const response = await getOpenAIClient().chat.completions.create({
           model: 'gpt-4o-mini',
           messages: [
             {

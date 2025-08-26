@@ -17,8 +17,12 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
   
-  // Always allow auth callback
-  if (pathname.startsWith('/auth/callback') || searchParams.has('code')) {
+  // Always allow auth-related routes
+  if (pathname.startsWith('/auth/') || 
+      pathname === '/sign-in' || 
+      pathname === '/sign-up' ||
+      searchParams.has('code') ||
+      searchParams.has('error')) {
     return NextResponse.next();
   }
   

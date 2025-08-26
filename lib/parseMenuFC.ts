@@ -6,7 +6,21 @@ import { sectionPrompt } from "./prompts";
 import { filterSectionItems } from "./sectionPost";
 import { reassignMoved } from "./reassign";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient() {
+  if (openaiClient) {
+    return openaiClient;
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY environment variable is required");
+  }
+
+  openaiClient = new OpenAI({ apiKey });
+  return openaiClient;
+}
 
 const menuFunction = {
   type: "function" as const,
@@ -67,7 +81,7 @@ async function callMenuTool(system: string, user: string) {
   console.log('[MENU PARSE] Calling menu tool with system prompt length:', system.length);
   console.log('[MENU PARSE] User prompt length:', user.length);
 
-  const resp = await openai.chat.completions.create({
+  const resp = await getOpenAIClient().chat.completions.create({
     model: "gpt-4o-mini",
     temperature: 0,
     max_tokens: 4000,
@@ -237,7 +251,7 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
 
   const user = `OCR TEXT:\n${sanitizeText(ocrText)}`;
 
-  const resp = await openai.chat.completions.create({
+  const resp = await getOpenAIClient().chat.completions.create({
     model: "gpt-4o-mini",
     response_format: { type: "json_object" },
     temperature: 0,
