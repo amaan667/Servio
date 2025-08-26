@@ -21,6 +21,60 @@ export const supabase = createBrowserClient(
   }
 );
 
+// Utility function to clear all authentication-related storage
+export function clearAuthStorage() {
+  try {
+    console.log('[AUTH DEBUG] Clearing all authentication storage');
+    
+    // Clear localStorage
+    const localStorageKeys = Object.keys(localStorage).filter(k => 
+      k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")
+    );
+    console.log('[AUTH DEBUG] Found localStorage keys to clear:', localStorageKeys);
+    localStorageKeys.forEach(k => {
+      const value = localStorage.getItem(k);
+      console.log('[AUTH DEBUG] Removing localStorage key:', k, 'with value length:', value?.length);
+      localStorage.removeItem(k);
+    });
+    
+    // Clear sessionStorage
+    const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
+      k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")
+    );
+    console.log('[AUTH DEBUG] Found sessionStorage keys to clear:', sessionStorageKeys);
+    sessionStorageKeys.forEach(k => {
+      const value = sessionStorage.getItem(k);
+      console.log('[AUTH DEBUG] Removing sessionStorage key:', k, 'with value length:', value?.length);
+      sessionStorage.removeItem(k);
+    });
+    
+    console.log('[AUTH DEBUG] ✅ Authentication storage cleared successfully');
+    return true;
+  } catch (error) {
+    console.log('[AUTH DEBUG] ❌ Failed to clear authentication storage:', error);
+    return false;
+  }
+}
+
+// Utility function to check authentication state
+export async function checkAuthState() {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    console.log('[AUTH DEBUG] Current auth state:', {
+      hasSession: !!data.session,
+      hasUser: !!data.session?.user,
+      userId: data.session?.user?.id,
+      userEmail: data.session?.user?.email,
+      sessionExpiresAt: data.session?.expires_at,
+      error: error?.message
+    });
+    return { data, error };
+  } catch (error) {
+    console.log('[AUTH DEBUG] ❌ Error checking auth state:', error);
+    return { data: null, error };
+  }
+}
+
 // Enhanced logger to spot state flips in dev
 if (typeof window !== 'undefined') {
   console.log('[AUTH DEBUG] Setting up auth state change listener');

@@ -2,6 +2,7 @@
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { clearAuthStorage } from "@/lib/sb-client";
 
 export const dynamic = "force-dynamic";
 
@@ -13,21 +14,33 @@ function OAuthCallbackContent() {
     let finished = false;
     const sb = createClient();
 
+    // Increased timeout to 45 seconds for better reliability
     const timeout = setTimeout(() => {
       if (!finished) {
-        console.log('[AUTH DEBUG] OAuth callback timeout');
-        router.replace("/sign-in?error=timeout");
+        console.log('[AUTH DEBUG] OAuth callback timeout after 45 seconds');
+        router.replace("/sign-in?error=timeout&message=Authentication timed out. Please try again.");
       }
-    }, 30000); // Increased timeout to 30 seconds
+    }, 45000);
 
     (async () => {
       try {
         console.log('[AUTH DEBUG] ===== OAuth Callback Started =====');
         console.log('[AUTH DEBUG] URL params:', Object.fromEntries(sp.entries()));
+        console.log('[AUTH DEBUG] Current URL:', window.location.href);
         
         const err = sp.get("error");
         const code = sp.get("code");
+        const state = sp.get("state");
         const next = sp.get("next") || "/dashboard";
+        
+        // Log all parameters for debugging
+        console.log('[AUTH DEBUG] Parsed parameters:', {
+          error: err,
+          hasCode: !!code,
+          codeLength: code?.length,
+          hasState: !!state,
+          next: next
+        });
         
         if (err) {
           console.log('[AUTH DEBUG] ❌ OAuth error from provider:', err);
@@ -36,48 +49,67 @@ function OAuthCallbackContent() {
         
         if (!code) {
           console.log('[AUTH DEBUG] ❌ No authentication code received');
-          return router.replace("/sign-in?error=missing_code");
+          console.log('[AUTH DEBUG] Available parameters:', Array.from(sp.entries()));
+          
+          // Check if we have any other auth-related parameters
+          const hasAuthParams = Array.from(sp.entries()).some(([key]) => 
+            key.includes('auth') || key.includes('token') || key.includes('session')
+          );
+          
+          if (hasAuthParams) {
+            console.log('[AUTH DEBUG] Found other auth parameters, attempting to process');
+            // Try to process with available parameters
+          } else {
+            return router.replace("/sign-in?error=missing_code&message=No authentication code received from provider");
+          }
         }
 
         console.log('[AUTH DEBUG] 🔄 Exchanging code for session...');
         
+        // Clear any stale auth state before exchange
+        clearAuthStorage();
+        
         // 1) Exchange PKCE code on the **client**
+        const exchangeStartTime = Date.now();
         const { data, error } = await sb.auth.exchangeCodeForSession({
           queryParams: new URLSearchParams(window.location.search),
         });
+        const exchangeTime = Date.now() - exchangeStartTime;
 
+        console.log('[AUTH DEBUG] Exchange completed in', exchangeTime, 'ms');
         console.log('[AUTH DEBUG] Exchange result:', {
           hasData: !!data,
           hasSession: !!data?.session,
           hasUser: !!data?.user,
-          error: error?.message
+          error: error?.message,
+          errorCode: error?.status
         });
 
         // 2) Clean URL so refresh/back doesn't retry
         const url = new URL(window.location.href);
         url.searchParams.delete("code");
         url.searchParams.delete("state");
+        url.searchParams.delete("error");
+        url.searchParams.delete("error_description");
         window.history.replaceState({}, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ""));
 
         if (error) {
-          console.log('[AUTH DEBUG] ❌ Exchange failed:', error.message);
+          console.log('[AUTH DEBUG] ❌ Exchange failed:', {
+            message: error.message,
+            status: error.status,
+            exchangeTime
+          });
           
-          // If we got a verifier mismatch, clear stale storage and restart once
-          if (error.message.includes('PKCE') || error.message.includes('verifier')) {
-            console.log('[AUTH DEBUG] 🔄 Clearing stale PKCE data and restarting OAuth');
-            try {
-              Object.keys(localStorage).forEach(k => {
-                if (k.startsWith("sb-") || k.includes("pkce")) {
-                  console.log('[AUTH DEBUG] Removing key:', k);
-                  localStorage.removeItem(k);
-                }
-              });
-            } catch (clearError) {
-              console.log('[AUTH DEBUG] ❌ Failed to clear localStorage:', clearError);
-            }
+          // Handle specific error cases
+          if (error.message.includes('PKCE') || error.message.includes('verifier') || error.message.includes('code_verifier')) {
+            console.log('[AUTH DEBUG] 🔄 PKCE/verifier mismatch detected, clearing stale data and restarting OAuth');
+            clearAuthStorage();
             
+            // Restart OAuth flow
             const origin = window.location.origin;
-            await sb.auth.signInWithOAuth({
+            console.log('[AUTH DEBUG] Restarting OAuth with origin:', origin);
+            
+            const { data: oauthData, error: oauthError } = await sb.auth.signInWithOAuth({
               provider: "google",
               options: { 
                 flowType: "pkce", 
@@ -85,6 +117,13 @@ function OAuthCallbackContent() {
                 queryParams: { prompt: 'select_account' }
               },
             });
+            
+            if (oauthError) {
+              console.log('[AUTH DEBUG] ❌ OAuth restart failed:', oauthError.message);
+              return router.replace(`/sign-in?error=oauth_restart_failed&message=${encodeURIComponent(oauthError.message)}`);
+            }
+            
+            console.log('[AUTH DEBUG] ✅ OAuth restart successful, redirecting to Google');
             return; // navigates away
           }
           
@@ -94,15 +133,32 @@ function OAuthCallbackContent() {
 
         if (!data?.session) {
           console.log('[AUTH DEBUG] ❌ No session after exchange');
-          return router.replace("/sign-in?error=no_session");
+          return router.replace("/sign-in?error=no_session&message=Authentication completed but no session was created");
         }
 
-        console.log('[AUTH DEBUG] ✅ OAuth successful, redirecting to:', next);
+        console.log('[AUTH DEBUG] ✅ OAuth successful, session created:', {
+          userId: data.session.user?.id,
+          userEmail: data.session.user?.email,
+          expiresAt: data.session.expires_at
+        });
+        
+        // Verify session is properly set
+        const { data: sessionData } = await sb.auth.getSession();
+        if (!sessionData.session) {
+          console.log('[AUTH DEBUG] ❌ Session verification failed');
+          return router.replace("/sign-in?error=session_verification_failed&message=Session was not properly established");
+        }
+        
+        console.log('[AUTH DEBUG] ✅ Session verified, redirecting to:', next);
         router.replace(next);
         
       } catch (error: any) {
-        console.log('[AUTH DEBUG] ❌ Unexpected error in OAuth callback:', error);
-        router.replace(`/sign-in?error=unexpected_error&message=${encodeURIComponent(error.message || 'Unknown error')}`);
+        console.log('[AUTH DEBUG] ❌ Unexpected error in OAuth callback:', {
+          message: error?.message,
+          stack: error?.stack,
+          name: error?.name
+        });
+        router.replace(`/sign-in?error=unexpected_error&message=${encodeURIComponent(error.message || 'Unknown error occurred during authentication')}`);
       } finally {
         finished = true;
         clearTimeout(timeout);
@@ -116,6 +172,7 @@ function OAuthCallbackContent() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
         <p className="mt-2 text-gray-600">Completing sign in...</p>
+        <p className="mt-1 text-xs text-gray-500">This may take a few moments</p>
       </div>
     </div>
   );
