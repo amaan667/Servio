@@ -24,7 +24,7 @@ function OAuthCallbackContent() {
       if (err) return router.replace("/sign-in?error=oauth_error");
       if (!code) return router.replace("/sign-in?error=missing_code");
 
-      // 1) Exchange PKCE on the client (has localStorage)
+      // 1) Exchange PKCE code on the **client**
       const { error } = await sb.auth.exchangeCodeForSession({
         queryParams: new URLSearchParams(window.location.search),
       });
@@ -36,7 +36,7 @@ function OAuthCallbackContent() {
       window.history.replaceState({}, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ""));
 
       if (error) {
-        // Clear stale PKCE and restart once
+        // If we got a verifier mismatch, clear stale storage and restart once
         try {
           Object.keys(localStorage).forEach(k => {
             if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k);
@@ -57,7 +57,7 @@ function OAuthCallbackContent() {
     });
   }, [router, sp]);
 
-  return null; // no UI
+  return null; // absolutely no UI here
 }
 
 export default function OAuthCallback() {

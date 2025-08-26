@@ -1,3 +1,4 @@
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>; // no header/nav
+  // No header/nav here—prevents flashing UI on callback
+  return <>{children}</>;
 }
