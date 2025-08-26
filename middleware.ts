@@ -1,84 +1,87 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { clearAuthTokens, isInvalidTokenError } from '@/lib/auth';
 
-const PUBLIC_PATHS = new Set([
-  "/", "/features", "/sign-in", "/auth/callback",
+const PUBLIC_PATHS = new Set<string>([
+	"/", "/features", "/sign-in", "/auth/callback",
 ]);
 
+const PROTECTED_PREFIXES = ["/dashboard"]; // add more if needed
+
 const isAsset = (p: string) =>
-  p.startsWith("/_next/") ||
-  p.startsWith("/favicon") ||
-  /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$/.test(p);
+	p.startsWith("/_next/") ||
+	p.startsWith("/favicon") ||
+	/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$/.test(p);
+
+function needsAuth(pathname: string) {
+	return PROTECTED_PREFIXES.some((pref) => pathname === pref || pathname.startsWith(pref + "/"));
+}
 
 export async function middleware(req: NextRequest) {
-  const url = new URL(req.url);
-  const pathname = url.pathname;
+	const url = new URL(req.url);
+	const pathname = url.pathname;
 
-  // Always allow callback and OAuth code roundtrips
-  if (pathname.startsWith("/auth/callback") || url.searchParams.has("code") || isAsset(pathname)) {
-    console.log('[AUTH DEBUG] Middleware: allowing public/asset request', { pathname });
-    return NextResponse.next();
-  }
+	// Always allow static, callback, and any request carrying OAuth code
+	if (isAsset(pathname) || pathname.startsWith("/auth/callback") || url.searchParams.has("code")) {
+		return NextResponse.next();
+	}
 
-  const res = NextResponse.next({ request: { headers: req.headers } });
+	// If route isn't protected, skip auth entirely
+	if (!needsAuth(pathname) || PUBLIC_PATHS.has(pathname)) {
+		return NextResponse.next();
+	}
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get: (name) => req.cookies.get(name)?.value,
-        set: (name, value, options) => res.cookies.set({ name, value, ...options }),
-        remove: (name, options) => res.cookies.set({ name, value: "", ...options, maxAge: 0 }),
-      },
-    }
-  );
+	// BEFORE hitting Supabase, check if a refresh token cookie even exists
+	const cookieNames = req.cookies.getAll().map((c) => c.name);
+	const hasRefresh = cookieNames.some((n) =>
+		/(^sb-.*-refresh-token$)|(^sb-refresh-token$)/i.test(n)
+	);
+	if (!hasRefresh) {
+		// No refresh token -> treat as signed-out, no Supabase call, no error
+		const to = new URL("/sign-in", req.url);
+		to.searchParams.set("next", pathname);
+		return NextResponse.redirect(to);
+	}
 
-  let user = null;
-  try {
-    const { data, error } = await supabase.auth.getUser();
-    if (!error) user = data.user ?? null;
-    
-    // Handle invalid refresh token errors gracefully
-    if (error && isInvalidTokenError(error)) {
-      console.log('[AUTH DEBUG] Middleware: clearing invalid refresh token');
-      clearAuthTokens(res);
-    }
-    
-    console.log('[AUTH DEBUG] Middleware: session check', { 
-      pathname, 
-      hasUser: !!user, 
-      userId: user?.id,
-      error: error?.message 
-    });
-    
-  } catch (e: any) {
-    console.error('[AUTH DEBUG] Middleware error:', e);
-    
-    // Handle invalid token errors
-    if (isInvalidTokenError(e)) {
-      console.log('[AUTH DEBUG] Middleware: clearing tokens due to error');
-      clearAuthTokens(res);
-    }
-  }
+	const res = NextResponse.next({ request: { headers: req.headers } });
+	const supabase = createServerClient(
+		process.env.NEXT_PUBLIC_SUPABASE_URL!,
+		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+		{
+			cookies: {
+				get: (name) => req.cookies.get(name)?.value,
+				set: (name, value, options) => res.cookies.set({ name, value, ...options }),
+				remove: (name, options) => res.cookies.set({ name, value: "", ...options, maxAge: 0 }),
+			},
+		}
+	);
 
-  const isPublic = PUBLIC_PATHS.has(pathname);
-  const isProtected = pathname.startsWith("/dashboard") || pathname.startsWith("/settings");
-
-  if (isProtected && !user) {
-    console.log('[AUTH DEBUG] Middleware: redirecting to sign-in for protected route', { pathname });
-    const to = new URL("/sign-in", req.url);
-    to.searchParams.set("next", pathname);
-    return NextResponse.redirect(to);
-  }
-
-  return res;
+	try {
+		const { data, error } = await supabase.auth.getUser();
+		if (error && (error as any).status === 400) {
+			// Bad/expired tokens: purge sb-* cookies silently and redirect to sign-in
+			req.cookies.getAll()
+				.filter((c) => c.name.startsWith("sb-"))
+				.forEach((c) => res.cookies.set({ name: c.name, value: "", maxAge: 0, path: "/" }));
+			return NextResponse.redirect(new URL("/sign-in", req.url));
+		}
+		if (!data?.user) {
+			return NextResponse.redirect(new URL("/sign-in", req.url));
+		}
+		return res;
+	} catch {
+		// Never crash middleware; purge cookies and redirect
+		req.cookies.getAll()
+			.filter((c) => c.name.startsWith("sb-"))
+			.forEach((c) => res.cookies.set({ name: c.name, value: "", maxAge: 0, path: "/" }));
+		return NextResponse.redirect(new URL("/sign-in", req.url));
+	}
 }
 
 // Exclude static assets from middleware
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$).*)"],
+	matcher: [
+		"/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$).*)",
+	],
 };
 
 
