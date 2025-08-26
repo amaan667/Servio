@@ -58,6 +58,10 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
         errorText = 'Authentication code missing. Please try signing in again.';
       } else if (urlError === 'pkce_failed') {
         errorText = 'Authentication failed. Please try signing in again.';
+      } else if (urlError === 'timeout') {
+        errorText = 'Authentication timed out. Please try signing in again.';
+      } else if (urlError === 'unexpected_error') {
+        errorText = 'An unexpected error occurred during authentication. Please try again.';
       }
       
       setError(errorText);
@@ -134,16 +138,39 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
               onClick={async () => {
                 setError(null);
                 try {
-                  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
+                  console.log('[AUTH DEBUG] Starting Google OAuth sign-in');
+                  
+                  // Use the same URL resolution logic as the callback
+                  const origin = typeof window !== "undefined" ? window.location.origin : "https://servio-production.up.railway.app";
+                  console.log('[AUTH DEBUG] Using origin for redirect:', origin);
+                  
+                  // Clear any stale auth state
                   try {
-                    Object.keys(localStorage).forEach(k => { if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k); });
-                  } catch {}
-                  await supabase.auth.signInWithOAuth({
+                    Object.keys(localStorage).forEach(k => { 
+                      if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k); 
+                    });
+                    console.log('[AUTH DEBUG] Cleared stale auth state');
+                  } catch (clearError) {
+                    console.log('[AUTH DEBUG] Error clearing localStorage:', clearError);
+                  }
+                  
+                  const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: "google",
-                    options: { flowType: "pkce", redirectTo: `${origin}/auth/callback` },
+                    options: { 
+                      flowType: "pkce", 
+                      redirectTo: `${origin}/auth/callback`,
+                      queryParams: { prompt: 'select_account' }
+                    },
                   });
+                  
+                  if (error) {
+                    console.error('[AUTH DEBUG] OAuth initiation error:', error);
+                    setError(`Google sign-in failed: ${error.message || "Please try again."}`);
+                  } else {
+                    console.log('[AUTH DEBUG] OAuth initiated successfully');
+                  }
                 } catch (err: any) {
-                  console.error('[AUTH] Google sign-in error', { message: err?.message });
+                  console.error('[AUTH DEBUG] Google sign-in error', { message: err?.message });
                   setError(`Google sign-in failed: ${err.message || "Please try again."}`);
                 }
               }}
