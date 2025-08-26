@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { Session } from '@supabase/supabase-js';
 
 function now() {
@@ -36,21 +36,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     async function bootstrap() {
       try {
-        // Check if Supabase is properly configured
-        const hasValidConfig = process.env.NEXT_PUBLIC_SUPABASE_URL && 
-          process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co' &&
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && 
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== 'placeholder-key';
-        
-        if (!hasValidConfig) {
-          console.log('[AUTH DEBUG] Supabase not properly configured, setting auth ready without session');
-          if (!cancelled) {
-            setSession(null);
-            setLoading(false);
-            setAuthReady(true);
-          }
-          return;
-        }
+        const supabase = createClient();
         
         // Wait for initial session fetch
         console.log('[AUTH DEBUG] Getting initial session', { t: now() });
@@ -87,6 +73,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     bootstrap();
 
+    const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[AUTH DEBUG] Auth state change in provider:', { 
         t: now(), 
@@ -101,23 +88,19 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         if (event === 'SIGNED_IN') {
           setTimeout(() => {
             if (!cancelled) {
-              console.log('[AUTH DEBUG] provider:delayed session update after sign-in');
               setSession(session);
               setLoading(false);
-              setAuthReady(true);
             }
-          }, 1000);
+          }, 100);
         } else {
           setSession(session);
           setLoading(false);
-          setAuthReady(true);
         }
       }
     });
 
     return () => {
       cancelled = true;
-      console.log('[AUTH DEBUG] AuthenticatedClientProvider unmounting', { t: now() });
       subscription.unsubscribe();
     };
   }, []);
@@ -130,5 +113,9 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthenticatedClientProvider');
+  }
+  return context;
 }
