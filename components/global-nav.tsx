@@ -16,10 +16,13 @@ export default function GlobalNav() {
   const { session, loading } = useAuth();
   const router = useRouter();
 
+  // Ensure we don't show authenticated navigation while loading
+  const isAuthenticated = !loading && !!session?.user;
+
   // Fetch primary venue when user is signed in
   useEffect(() => {
     const fetchPrimaryVenue = async () => {
-      if (session?.user) {
+      if (isAuthenticated) {
         try {
           const { data, error } = await supabase
             .from('venues')
@@ -40,7 +43,7 @@ export default function GlobalNav() {
     };
 
     fetchPrimaryVenue();
-  }, [session]);
+  }, [isAuthenticated]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -68,7 +71,7 @@ export default function GlobalNav() {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
-              {session ? (
+              {isAuthenticated ? (
                 // Signed in navigation
                 <>
                   <Link
@@ -152,7 +155,7 @@ export default function GlobalNav() {
       {mobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
-            {session ? (
+            {isAuthenticated ? (
               // Signed in mobile navigation
               <>
                 <Link
