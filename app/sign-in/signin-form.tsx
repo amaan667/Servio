@@ -35,6 +35,11 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if Supabase is properly configured
+  const isSupabaseConfigured = typeof window !== 'undefined' && 
+    process.env.NEXT_PUBLIC_SUPABASE_URL && 
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
   // Check for URL parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -108,6 +113,33 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
     }
   };
 
+  // Show configuration error if Supabase is not set up
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-md w-full mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-gray-900">Configuration Error</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Supabase is not properly configured. Please check your environment variables.
+            </p>
+          </div>
+          <div className="mt-8">
+            <Card>
+              <CardContent className="pt-6">
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    Missing environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-md w-full mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -133,11 +165,13 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
                 setError(null);
+                setLoading(true);
                 try {
                   await onGoogleSignIn();
                 } catch (err: any) {
                   console.error('[AUTH] Google sign-in error', { message: err?.message });
                   setError(`Google sign-in failed: ${err.message || "Please try again."}`);
+                  setLoading(false);
                 }
               }}
               disabled={loading || externalLoading}

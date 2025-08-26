@@ -12,7 +12,12 @@ function SignInPageContent() {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
-      const redirectTo = 'https://servio-production.up.railway.app';
+      
+      // Use the current origin for redirect, fallback to production
+      const redirectTo = typeof window !== 'undefined' 
+        ? `${window.location.origin}/dashboard`
+        : 'https://servio-production.up.railway.app/dashboard';
+        
       console.log('[AUTH] Starting Google OAuth redirect to:', redirectTo);
       
       const { error } = await supabase.auth.signInWithOAuth({
@@ -26,17 +31,15 @@ function SignInPageContent() {
       
       if (error) {
         console.error('[AUTH] Google redirect start failed:', error);
-        alert('Could not start Google sign-in. Please try again.');
-        setLoading(false);
-        return;
+        throw new Error(error.message || 'Could not start Google sign-in');
       }
       
       console.log('[AUTH] Google OAuth redirect initiated successfully');
-      // No else branch: in redirect flow, the browser navigates away.
+      // The browser will navigate away in the OAuth flow
     } catch (e: any) {
       console.error('[AUTH] Google sign-in threw:', e);
-      alert('Sign-in failed to start. Please try again.');
       setLoading(false);
+      throw e; // Re-throw to let the form handle the error
     }
   };
 

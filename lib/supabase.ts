@@ -14,17 +14,20 @@ console.log("Supabase environment check:", {
   key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : "undefined"
 });
 
-// Validate environment variables
+// Validate environment variables - don't throw during build
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ Missing Supabase environment variables:", {
+  console.warn("⚠️ Missing Supabase environment variables:", {
     NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
   });
-  throw new Error("Missing Supabase environment variables");
+  // Don't throw error during build - use placeholder values
 }
 
 // Create single Supabase client instance with proper configuration
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createBrowserClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key'
+);
 
 console.log("Supabase client created successfully");
 
