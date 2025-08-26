@@ -13,7 +13,7 @@ function SignInPageContent() {
     try {
       console.log('[AUTH DEBUG] Starting Google OAuth flow');
       setLoading(true);
-      const redirectTo = 'https://servio-production.up.railway.app';
+      const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
       console.log('[AUTH DEBUG] OAuth redirect URL:', redirectTo);
       
       console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');

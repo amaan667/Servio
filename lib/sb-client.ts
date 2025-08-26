@@ -14,34 +14,38 @@ console.log('[AUTH DEBUG] Supabase client configuration:', {
 });
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('[SUPABASE] Missing environment variables:', {
+  console.error('[AUTH DEBUG] Missing Supabase environment variables:', {
     hasUrl: !!supabaseUrl,
     hasKey: !!supabaseAnonKey
   });
+  
+  throw new Error('Supabase configuration is missing. Please check your environment variables.');
 }
 
 export const supabase = createBrowserClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
+  supabaseUrl,
+  supabaseAnonKey,
   {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true,
+      detectSessionInUrl: false, // We handle this manually in callback
+      flowType: 'pkce',
+      onAuthStateChange: (event, session) => {
+        console.log('[AUTH DEBUG] Auth state change:', { 
+          event, 
+          hasSession: !!session,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email
+        });
+      },
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'servio-web',
+      },
     },
   }
 );
 
 console.log('[AUTH DEBUG] Supabase client created successfully');
-
-// OPTIONAL: small logger to spot state flips in dev
-if (typeof window !== 'undefined') {
-  supabase.auth.onAuthStateChange((evt, sess) => {
-    console.log('[AUTH DEBUG] Auth state change:', {
-      event: evt,
-      hasSession: !!sess,
-      userId: sess?.user?.id,
-      userEmail: sess?.user?.email
-    });
-  });
-}
