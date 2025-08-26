@@ -5,10 +5,9 @@ import UniversalHeader from "@/components/UniversalHeader";
 
 export default function AppHeader() {
   const pathname = usePathname();
-  const hideOnDashboard = pathname?.startsWith("/dashboard");
-  const hideOnSettings = pathname?.startsWith("/settings");
-  
-  if (hideOnDashboard || hideOnSettings) return null;
-  
+  // Always show header; dashboard layouts inject their own header instance already
+  // Keep single header on non-dashboard pages
+  const isDashboardOrSettings = pathname?.startsWith("/dashboard") || pathname?.startsWith("/settings");
+  if (isDashboardOrSettings) return null;
   return <UniversalHeader />;
 }
