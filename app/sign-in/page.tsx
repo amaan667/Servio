@@ -19,7 +19,8 @@ function SignInPageContent() {
       setLoading(true);
       
       // Use the current domain for OAuth redirects to ensure PKCE works correctly
-      const redirectTo = `${window.location.origin}/auth/callback`;
+      const site = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
+      const redirectTo = `${site}/auth/callback`;
       console.log('[AUTH DEBUG] OAuth redirect URL:', redirectTo);
       
       console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
