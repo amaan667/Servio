@@ -17,13 +17,26 @@ export default function SignInClient() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    try { localStorage.removeItem("sb-pkce-code-verifier"); } catch {}
+    // Clean any stale PKCE artifacts that can break the next run
+    try {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k);
+      });
+    } catch {}
   }, []);
 
   async function signInWithGoogle() {
     try {
       setBusy(true);
       setErr(null);
+      
+      // Clean any stale PKCE artifacts that can break the next run
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k);
+        });
+      } catch {}
+      
       const site = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
       await supabase.auth.signInWithOAuth({
         provider: "google",
