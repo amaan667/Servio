@@ -79,6 +79,57 @@ export default function OAuthCallback() {
             sessionExpiresAt: data?.session?.expires_at
           });
 
+          // Handle Google OAuth user - create venue if needed
+          if (data?.user) {
+            const user = data.user;
+            const isGoogleUser = user.app_metadata?.provider === 'google' || 
+                               user.identities?.some(identity => identity.provider === 'google');
+            
+            if (isGoogleUser) {
+              console.log('[AUTH DEBUG] Google user detected, checking for venue');
+              try {
+                // Check if user already has a venue
+                const { data: venues, error: venueError } = await supabase
+                  .from('venues')
+                  .select('*')
+                  .eq('owner_id', user.id)
+                  .limit(1);
+
+                if (venueError) {
+                  console.error('[AUTH DEBUG] Error checking venues:', venueError);
+                } else if (!venues || venues.length === 0) {
+                  // Create default venue for Google user
+                  console.log('[AUTH DEBUG] Creating default venue for Google user');
+                  const venueId = `venue-${user.id.slice(0, 8)}`;
+                  const venueName = user.user_metadata?.full_name 
+                    ? `${user.user_metadata.full_name}'s Business` 
+                    : 'My Business';
+                  
+                  const { error: createError } = await supabase
+                    .from('venues')
+                    .insert({
+                      venue_id: venueId,
+                      name: venueName,
+                      business_type: 'Restaurant',
+                      owner_id: user.id,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString()
+                    });
+
+                  if (createError) {
+                    console.error('[AUTH DEBUG] Error creating venue:', createError);
+                  } else {
+                    console.log('[AUTH DEBUG] Default venue created for Google user');
+                  }
+                } else {
+                  console.log('[AUTH DEBUG] Google user already has venue:', venues[0].venue_id);
+                }
+              } catch (venueError) {
+                console.error('[AUTH DEBUG] Error handling Google user venue:', venueError);
+              }
+            }
+          }
+
           // Clean up URL
           url.searchParams.delete("code"); 
           url.searchParams.delete("state");

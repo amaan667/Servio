@@ -114,83 +114,98 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
             {session ? (
               // Signed in navigation
               <>
-                <Link
-                  href={homeHref}
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Home
-                </Link>
-                {!isDashboardPage && (
-                  <Link
-                    href={dashboardHref}
-                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Dashboard
-                  </Link>
-                )}
-                {showActions && (
+                {isHomePage ? (
+                  // On home page: Features, Pricing, Dashboard
                   <>
                     <Link
-                      href={settingsHref}
+                      href="#features"
                       className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                     >
-                      Settings
+                      Features
                     </Link>
-                    {isDashboardPage && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleSignOut}
-                        className="text-gray-600"
+                    <Link
+                      href="#pricing"
+                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Pricing
+                    </Link>
+                    <Link
+                      href={dashboardHref}
+                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                  </>
+                ) : (
+                  // On dashboard pages: Home, Settings, Sign Out
+                  <>
+                    <Link
+                      href={homeHref}
+                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Home
+                    </Link>
+                    {showActions && (
+                      <Link
+                        href={settingsHref}
+                        className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                       >
-                        Sign Out
-                      </Button>
+                        Settings
+                      </Link>
                     )}
-                    {/* Modern dropdown menu for user actions */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                        >
-                          <User className="h-4 w-4" />
-                          <span className="text-sm font-medium">Account</span>
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem asChild>
-                          <Link href={homeHref} className="flex items-center gap-2">
-                            <Home className="h-4 w-4" />
-                            Home
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={dashboardHref} className="flex items-center gap-2">
-                            <span>Dashboard</span>
-                          </Link>
-                        </DropdownMenuItem>
-                        {showActions && (
-                          <DropdownMenuItem asChild>
-                            <Link href={settingsHref} className="flex items-center gap-2">
-                              <Settings className="h-4 w-4" />
-                              Settings
-                            </Link>
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={handleSignOut}
-                          className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Sign Out
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSignOut}
+                      className="text-gray-600"
+                    >
+                      Sign Out
+                    </Button>
                   </>
                 )}
+                {/* Modern dropdown menu for user actions */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    >
+                      <User className="h-4 w-4" />
+                      <span className="text-sm font-medium">Account</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link href={homeHref} className="flex items-center gap-2">
+                        <Home className="h-4 w-4" />
+                        Home
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={dashboardHref} className="flex items-center gap-2">
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    {showActions && (
+                      <DropdownMenuItem asChild>
+                        <Link href={settingsHref} className="flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Settings
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               // Not signed in navigation
@@ -294,40 +309,26 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
               // Signed in mobile navigation
               <>
                 <Link
-                  href={homeHref}
+                  href="#features"
                   className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Home
+                  Features
                 </Link>
-                {!isDashboardPage && (
-                  <Link
-                    href={dashboardHref}
-                    className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                )}
-                {showActions && (
-                  <Link
-                    href={settingsHref}
-                    className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Settings
-                  </Link>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    handleSignOut();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left text-gray-600 hover:text-gray-900"
+                <Link
+                  href="#pricing"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  Sign Out
-                </Button>
+                  Pricing
+                </Link>
+                <Link
+                  href={dashboardHref}
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
               </>
             ) : (
               // Not signed in mobile navigation
