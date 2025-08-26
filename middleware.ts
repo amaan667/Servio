@@ -1,69 +1,73 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { clearAuthTokens, isInvalidTokenError } from '@/lib/auth';
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+
+const PUBLIC_PATHS = new Set([
+  "/", "/features", "/sign-in", "/auth/callback",
+]);
+
+const isAsset = (p: string) =>
+  p.startsWith("/_next/") ||
+  p.startsWith("/favicon") ||
+  /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$/.test(p);
 
 export async function middleware(req: NextRequest) {
   const url = new URL(req.url);
   const pathname = url.pathname;
-  const hasCode = url.searchParams.has("code");
 
-  // Always allow OAuth callback and any request that carries the code param
-  if (pathname.startsWith("/auth/callback") || hasCode) {
-    console.log('[AUTH DEBUG] Middleware: allowing OAuth callback/code request', { pathname, hasCode });
+  // Always allow callback and OAuth code roundtrips
+  if (pathname.startsWith("/auth/callback") || url.searchParams.has("code") || isAsset(pathname)) {
     return NextResponse.next();
   }
 
-  const res = NextResponse.next();
+  const res = NextResponse.next({ request: { headers: req.headers } });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => req.cookies.get(name)?.value,
+        set: (name, value, options) => res.cookies.set({ name, value, ...options }),
+        remove: (name, options) => res.cookies.set({ name, value: "", ...options, maxAge: 0 }),
+      },
+    }
+  );
+
+  let user = null;
   try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return req.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              req.cookies.set(name, value);
-              res.cookies.set(name, value, options);
-            });
-          },
-        },
-      }
-    );
-    
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    // Handle invalid refresh token errors gracefully
-    if (error && isInvalidTokenError(error)) {
-      console.log('[AUTH DEBUG] Middleware: clearing invalid refresh token');
-      clearAuthTokens(res);
+    const { data, error } = await supabase.auth.getUser();
+    if (!error) user = data.user ?? null;
+    // If Supabase returns 400 (no/invalid refresh token), treat as signed-out
+    if (error && (error as any).status === 400) {
+      // purge any existing sb-* auth cookies
+      req.cookies.getAll()
+        .filter(c => c.name.startsWith("sb-"))
+        .forEach(c => res.cookies.set({ name: c.name, value: "", maxAge: 0, path: "/" }));
     }
-    
-    console.log('[AUTH DEBUG] Middleware: session check', { 
-      pathname, 
-      hasSession: !!session, 
-      userId: session?.user?.id,
-      error: error?.message 
-    });
-    
-    // Only try to refresh if we have a valid session
-    if (session) {
-      await supabase.auth.getSession();
+  } catch (e: any) {
+    // Never crash middleware on auth errors
+    if (e?.status === 400 || e?.code === "refresh_token_not_found") {
+      req.cookies.getAll()
+        .filter(c => c.name.startsWith("sb-"))
+        .forEach(c => res.cookies.set({ name: c.name, value: "", maxAge: 0, path: "/" }));
     }
-  } catch (error) {
-    console.error('[AUTH DEBUG] Middleware error:', error);
-    // Don't let middleware errors break the request
   }
+
+  const isPublic = PUBLIC_PATHS.has(pathname);
+  const isProtected = pathname.startsWith("/dashboard");
+
+  if (isProtected && !user) {
+    const to = new URL("/sign-in", req.url);
+    to.searchParams.set("next", pathname);
+    return NextResponse.redirect(to);
+  }
+
   return res;
 }
 
+// Exclude static assets from middleware
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|assets/|api/auth/callback|auth/callback).*)',
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$).*)"],
 };
 
 
