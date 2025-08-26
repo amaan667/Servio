@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/sb-client';
 import SignInForm from './signin-form';
+import SignInDebug from './debug';
 
 function SignInPageContent() {
   const [loading, setLoading] = useState(false);
@@ -40,7 +41,12 @@ function SignInPageContent() {
     }
   };
 
-  return <SignInForm onGoogleSignIn={signInWithGoogle} loading={loading} />;
+  return (
+    <div>
+      <SignInForm onGoogleSignIn={signInWithGoogle} loading={loading} />
+      <SignInDebug />
+    </div>
+  );
 }
 
 export default function SignInPage() {

@@ -93,9 +93,20 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
       const result = await signInUser(formData.email.trim(), formData.password);
 
       if (result.success) {
-        console.log('[AUTH] SignInForm sign-in success, redirecting to dashboard');
-        // Redirect to dashboard (will route to venue or complete-profile as needed)
-        router.replace('/dashboard');
+        console.log('[AUTH] SignInForm sign-in success, waiting for session...');
+        
+        // Wait a moment for the session to be established
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verify session was established
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          console.log('[AUTH] SignInForm session verified, redirecting to dashboard');
+          router.replace('/dashboard');
+        } else {
+          console.log('[AUTH] SignInForm session not found after sign-in');
+          setError("Sign-in successful but session not established. Please try again.");
+        }
       } else {
         console.log('[AUTH] SignInForm sign-in failed', { message: result.message });
         setError(result.message || "Invalid email or password");
