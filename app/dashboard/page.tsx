@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/app/authenticated-client-provider';
 
 export default function DashboardIndex() {

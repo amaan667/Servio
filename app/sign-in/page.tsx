@@ -1,32 +1,36 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase';
 import SignInForm from './signin-form';
 
 function SignInPageContent() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    try { localStorage.removeItem('sb-pkce-code-verifier'); } catch {}
+  }, []);
+
   const signInWithGoogle = async () => {
     try {
       console.log('[AUTH DEBUG] Starting Google OAuth flow');
       setLoading(true);
       
-      // ALWAYS use production URL for OAuth redirects - use client callback for PKCE
-      const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
-      console.log('[AUTH DEBUG] OAuth redirect URL (production):', redirectTo);
+      // Use the current domain for OAuth redirects to ensure PKCE works correctly
+      const site = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
+      const redirectTo = `${site}/auth/callback`;
+      console.log('[AUTH DEBUG] OAuth redirect URL:', redirectTo);
       
       // Add timeout to the OAuth initiation
       const oauthPromise = supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
-          // Force Google account chooser and avoid cached flows that can hang.
+          flowType: 'pkce',
           queryParams: { 
-            prompt: 'select_account',
-            access_type: 'offline'
+            prompt: 'select_account'
           },
         },
       });

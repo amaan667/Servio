@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabase";
 import { Menu, X, User, Home, Settings, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
@@ -32,6 +32,9 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   // Determine if we're on home page or dashboard page
   const isHomePage = pathname === '/' || pathname === '/home';
   const isDashboardPage = pathname?.startsWith('/dashboard') || pathname?.startsWith('/settings');
+
+  // For development with placeholder Supabase config, always show sign-in button
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   // Fetch primary venue when user is signed in
   useEffect(() => {
@@ -74,6 +77,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
   // Navigation links
   const homeHref = '/';
+  const featuresHref = '/#features';
+  const pricingHref = '/#pricing';
   const dashboardHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
   const settingsHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/settings';
 
@@ -111,121 +116,48 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
           {/* Desktop Navigation - Right side */}
           <div className="hidden md:flex items-center space-x-4 order-3">
-            {session ? (
-              // Signed in navigation
-              <>
-                <Link
-                  href={homeHref}
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Home
-                </Link>
-                {!isDashboardPage && (
-                  <Link
-                    href={dashboardHref}
-                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Dashboard
-                  </Link>
-                )}
-                {showActions && (
-                  <>
-                    <Link
-                      href={settingsHref}
-                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                      Settings
-                    </Link>
-                    {isDashboardPage && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleSignOut}
-                        className="text-gray-600"
-                      >
-                        Sign Out
-                      </Button>
-                    )}
-                    {/* Modern dropdown menu for user actions */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                        >
-                          <User className="h-4 w-4" />
-                          <span className="text-sm font-medium">Account</span>
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem asChild>
-                          <Link href={homeHref} className="flex items-center gap-2">
-                            <Home className="h-4 w-4" />
-                            Home
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={dashboardHref} className="flex items-center gap-2">
-                            <span>Dashboard</span>
-                          </Link>
-                        </DropdownMenuItem>
-                        {showActions && (
-                          <DropdownMenuItem asChild>
-                            <Link href={settingsHref} className="flex items-center gap-2">
-                              <Settings className="h-4 w-4" />
-                              Settings
-                            </Link>
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={handleSignOut}
-                          className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Sign Out
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </>
-                )}
-              </>
+            {/* Always show basic navigation links */}
+            <Link
+              href={featuresHref}
+              className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Features
+            </Link>
+            <Link
+              href={pricingHref}
+              className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Pricing
+            </Link>
+            {!session ? (
+              <Link
+                href="/sign-in"
+                className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
+              >
+                Sign In
+              </Link>
             ) : (
-              // Not signed in navigation
               <>
                 <Link
-                  href={homeHref}
+                  href={dashboardHref}
                   className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  Home
+                  Dashboard
                 </Link>
-                <Link
-                  href="#features"
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+                <Button
+                  variant="ghost"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  onClick={handleSignOut}
                 >
-                  Features
-                </Link>
-                <Link
-                  href="#pricing"
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Pricing
-                </Link>
-                <Link
-                  href="/sign-in"
-                  className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
-                >
-                  Sign In
-                </Link>
+                  Sign Out
+                </Button>
               </>
             )}
           </div>
 
           {/* Mobile Navigation - Right side */}
           <div className="md:hidden flex items-center order-3">
-            {/* Show hamburger menu only on home page */}
+            {/* Show hamburger menu on home page */}
             {isHomePage && (
               <Button
                 variant="ghost"
@@ -290,76 +222,44 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
       {mobileMenuOpen && isHomePage && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-            {session ? (
-              // Signed in mobile navigation
+            {/* Always show basic navigation links */}
+            <Link
+              href={featuresHref}
+              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Features
+            </Link>
+            <Link
+              href={pricingHref}
+              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Pricing
+            </Link>
+            {!session ? (
+              <Link
+                href="/sign-in"
+                className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign In
+              </Link>
+            ) : (
               <>
                 <Link
-                  href={homeHref}
+                  href={dashboardHref}
                   className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Home
+                  Dashboard
                 </Link>
-                {!isDashboardPage && (
-                  <Link
-                    href={dashboardHref}
-                    className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                )}
-                {showActions && (
-                  <Link
-                    href={settingsHref}
-                    className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Settings
-                  </Link>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    handleSignOut();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left text-gray-600 hover:text-gray-900"
+                <button
+                  onClick={() => { setMobileMenuOpen(false); handleSignOut(); }}
+                  className="text-red-600 hover:text-red-700 block w-full text-left px-3 py-2 rounded-md text-base font-medium"
                 >
                   Sign Out
-                </Button>
-              </>
-            ) : (
-              // Not signed in mobile navigation
-              <>
-                <Link
-                  href={homeHref}
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Home
-                </Link>
-                <Link
-                  href="#features"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Features
-                </Link>
-                <Link
-                  href="#pricing"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Pricing
-                </Link>
-                <Link
-                  href="/sign-in"
-                  className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
+                </button>
               </>
             )}
           </div>

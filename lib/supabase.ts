@@ -26,7 +26,28 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create single Supabase client instance with proper configuration
 export const supabase = createBrowserClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false, // We handle this manually in callback
+      flowType: 'pkce',
+      onAuthStateChange: (event, session) => {
+        console.log('[AUTH DEBUG] Auth state change:', { 
+          event, 
+          hasSession: !!session,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email
+        });
+      },
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'servio-web',
+      },
+    },
+  }
 );
 
 console.log("Supabase client created successfully");
@@ -224,9 +245,22 @@ export async function signInUser(email: string, password: string) {
       });
       
       logger.error("Sign in failed", { error });
+      
+      // Provide more helpful error messages
+      let userMessage = error?.message || "Invalid email or password";
+      
+      if (error?.message?.includes('Invalid login credentials')) {
+        // This could be a Google user trying to sign in with email/password
+        userMessage = "Invalid email or password. If you signed up with Google, please use the 'Sign in with Google' button above.";
+      } else if (error?.message?.includes('Email not confirmed')) {
+        userMessage = "Please check your email and click the confirmation link before signing in.";
+      } else if (error?.message?.includes('Too many requests')) {
+        userMessage = "Too many sign-in attempts. Please wait a moment before trying again.";
+      }
+      
       return {
         success: false,
-        message: error?.message || "Invalid email or password",
+        message: userMessage,
       };
     }
     
@@ -254,7 +288,9 @@ export async function signInUser(email: string, password: string) {
 
 export async function signInWithGoogle() {
   const supabase = supabaseBrowser();
-  const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
+  const redirectTo = typeof window !== 'undefined' 
+    ? `${window.location.origin}/auth/callback`
+    : 'https://servio-production.up.railway.app/auth/callback';
   console.log('[AUTH] starting oauth with redirect:', redirectTo);
   
   const { data, error } = await supabase.auth.signInWithOAuth({

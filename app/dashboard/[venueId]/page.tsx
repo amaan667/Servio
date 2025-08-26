@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase';
 import DashboardClient from './page.client';
 
 export default function VenuePage({ params, searchParams }: { params: { venueId: string }, searchParams: any }) {

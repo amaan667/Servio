@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
 function now() {
@@ -36,6 +36,22 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     async function bootstrap() {
       try {
+        // Check if Supabase is properly configured
+        const hasValidConfig = process.env.NEXT_PUBLIC_SUPABASE_URL && 
+          process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co' &&
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && 
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== 'placeholder-key';
+        
+        if (!hasValidConfig) {
+          console.log('[AUTH DEBUG] Supabase not properly configured, setting auth ready without session');
+          if (!cancelled) {
+            setSession(null);
+            setLoading(false);
+            setAuthReady(true);
+          }
+          return;
+        }
+        
         // Wait for initial session fetch
         console.log('[AUTH DEBUG] Getting initial session', { t: now() });
         const { data: { session }, error } = await supabase.auth.getSession();

@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase';
 
 export default function SignInButton() {
   
@@ -10,6 +10,7 @@ export default function SignInButton() {
       provider: 'google',
       options: {
         redirectTo: `${site}/auth/callback`,
+        flowType: 'pkce',
         queryParams: { prompt: 'select_account' }
       }
     });
