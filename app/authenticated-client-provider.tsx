@@ -27,31 +27,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     async function bootstrap() {
       try {
-        // 1) If we came back from OAuth, exchange the code for a session
-        if (typeof window !== 'undefined') {
-          const url = new URL(window.location.href);
-          const hasCode = url.searchParams.has("code");
-          const hasError = url.searchParams.has("error");
-
-          if (hasCode && !hasError) {
-            console.log('[AUTH DEBUG] provider:exchanging code for session', { t: now() });
-            const { error } = await supabase.auth.exchangeCodeForSession({
-              queryParams: url.searchParams,
-            });
-            
-            // Clean the URL (remove code & state) so refreshes don't re-run exchange
-            url.searchParams.delete("code");
-            url.searchParams.delete("state");
-            const clean = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "");
-            window.history.replaceState({}, "", clean);
-
-            if (error) {
-              console.error('[AUTH DEBUG] provider:exchangeCodeForSession failed:', error);
-            }
-          }
-        }
-
-        // 2) Wait for initial session fetch
+        // Wait for initial session fetch
         console.log('[AUTH DEBUG] provider:getSession:begin', { t: now() });
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });

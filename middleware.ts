@@ -3,6 +3,16 @@ import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(req: NextRequest) {
+  const url = new URL(req.url);
+  const pathname = url.pathname;
+  const hasCode = url.searchParams.has("code");
+
+  // Always allow OAuth callback and any request that carries the code param
+  if (pathname.startsWith("/auth/callback") || hasCode) {
+    console.log('[AUTH DEBUG] Middleware: allowing OAuth callback/code request', { pathname, hasCode });
+    return NextResponse.next();
+  }
+
   const res = NextResponse.next();
   try {
     const supabase = createServerClient(
@@ -31,7 +41,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|assets/|api/auth/callback|auth/callback).*)',
+    '/((?!_next/static|_next/image|favicon.ico|assets/|api/auth/callback).*)',
   ],
 };
 
