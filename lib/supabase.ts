@@ -1,56 +1,19 @@
-import { createBrowserClient } from "@supabase/ssr";
 import { logger } from "./logger";
-import { supabaseBrowser } from "./supabase-browser";
+import { createClient } from "./supabase/client";
 
-// Environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Lazy client creation to avoid build-time execution
+let _supabase: ReturnType<typeof createClient> | null = null;
 
-// Debug environment variables
-console.log("Supabase environment check:", {
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseAnonKey,
-  url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : "undefined",
-  key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : "undefined"
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(target, prop) {
+    if (!_supabase) {
+      _supabase = createClient();
+    }
+    return (_supabase as any)[prop];
+  }
 });
 
-// Validate environment variables - don't throw during build
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("⚠️ Missing Supabase environment variables:", {
-    NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
-  });
-  // Don't throw error during build - use placeholder values
-}
-
-// Create single Supabase client instance with proper configuration
-export const supabase = createBrowserClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: false, // We handle this manually in callback
-      flowType: 'pkce',
-      onAuthStateChange: (event, session) => {
-        console.log('[AUTH DEBUG] Auth state change:', { 
-          event, 
-          hasSession: !!session,
-          userId: session?.user?.id,
-          userEmail: session?.user?.email
-        });
-      },
-    },
-    global: {
-      headers: {
-        'X-Client-Info': 'servio-web',
-      },
-    },
-  }
-);
-
-console.log("Supabase client created successfully");
+console.log("Supabase client proxy created successfully");
 
 // Types
 export interface User {

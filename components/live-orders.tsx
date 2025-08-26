@@ -19,7 +19,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabase";
 import type { AuthSession } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
