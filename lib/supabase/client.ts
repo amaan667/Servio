@@ -17,7 +17,7 @@ export function createClient() {
     throw new Error('Supabase configuration is missing. Please check your environment variables.');
   }
 
-  return createBrowserClient(
+  const client = createBrowserClient(
     supabaseUrl,
     supabaseAnonKey,
     {
@@ -25,7 +25,27 @@ export function createClient() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: false, // We handle this manually
+        flowType: 'pkce',
+        onAuthStateChange: (event, session) => {
+          console.log('[AUTH DEBUG] Auth state change:', { event, hasSession: !!session });
+        },
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'servio-web',
+        },
       },
     }
   );
+
+  // Add error handling for auth errors
+  client.auth.onAuthStateChange((event, session) => {
+    if (event === 'TOKEN_REFRESHED') {
+      console.log('[AUTH DEBUG] Token refreshed successfully');
+    } else if (event === 'SIGNED_OUT') {
+      console.log('[AUTH DEBUG] User signed out');
+    }
+  });
+
+  return client;
 }

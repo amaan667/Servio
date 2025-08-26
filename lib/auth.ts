@@ -49,3 +49,65 @@ export const getAuthRedirectUrl = (path: string = '/auth/callback') => {
 export const getAppUrl = (path: string = '') => {
   return `${APP_URL}${path}`;
 };
+
+// Utility function to clear invalid auth tokens
+export const clearAuthTokens = (response: any) => {
+  const authCookies = [
+    'sb-access-token',
+    'sb-refresh-token',
+    'supabase-auth-token',
+    'supabase-auth-refresh-token'
+  ];
+  
+  authCookies.forEach(cookieName => {
+    response.cookies.set(cookieName, '', {
+      maxAge: 0,
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+  });
+  
+  console.log('[AUTH DEBUG] Cleared invalid auth tokens');
+};
+
+// Check if an error is related to invalid refresh tokens
+export const isInvalidTokenError = (error: any): boolean => {
+  if (!error) return false;
+  
+  const errorMessage = error.message || '';
+  const errorCode = error.code || '';
+  
+  return (
+    errorMessage.includes('Refresh Token Not Found') ||
+    errorMessage.includes('Invalid Refresh Token') ||
+    errorCode === 'refresh_token_not_found' ||
+    errorCode === 'invalid_refresh_token'
+  );
+};
+
+// Handle auth errors in components
+export const handleAuthError = async (error: any, router?: any) => {
+  console.log('[AUTH DEBUG] Handling auth error:', error);
+  
+  if (isInvalidTokenError(error)) {
+    console.log('[AUTH DEBUG] Invalid token error detected, clearing tokens');
+    
+    // Try to clear tokens via API
+    try {
+      await fetch('/api/auth/clear-tokens', { method: 'POST' });
+    } catch (clearError) {
+      console.error('[AUTH DEBUG] Failed to clear tokens via API:', clearError);
+    }
+    
+    // Redirect to sign-in if router is provided
+    if (router) {
+      router.push('/sign-in?error=invalid_token');
+    }
+    
+    return true; // Error was handled
+  }
+  
+  return false; // Error was not handled
+};

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { clearAuthTokens, isInvalidTokenError } from '@/lib/auth';
 
 export async function middleware(req: NextRequest) {
   const url = new URL(req.url);
@@ -34,6 +35,13 @@ export async function middleware(req: NextRequest) {
     );
     
     const { data: { session }, error } = await supabase.auth.getSession();
+    
+    // Handle invalid refresh token errors gracefully
+    if (error && isInvalidTokenError(error)) {
+      console.log('[AUTH DEBUG] Middleware: clearing invalid refresh token');
+      clearAuthTokens(res);
+    }
+    
     console.log('[AUTH DEBUG] Middleware: session check', { 
       pathname, 
       hasSession: !!session, 
@@ -41,10 +49,13 @@ export async function middleware(req: NextRequest) {
       error: error?.message 
     });
     
-    // Propagate cookies to SSR
-    await supabase.auth.getSession();
+    // Only try to refresh if we have a valid session
+    if (session) {
+      await supabase.auth.getSession();
+    }
   } catch (error) {
     console.error('[AUTH DEBUG] Middleware error:', error);
+    // Don't let middleware errors break the request
   }
   return res;
 }

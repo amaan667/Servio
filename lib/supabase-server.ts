@@ -35,6 +35,11 @@ export function createClient() {
           }
         },
       },
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        persistSession: true,
+      },
     }
   );
 }
@@ -62,6 +67,11 @@ export function createClientAction() {
           }
         },
       },
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        persistSession: true,
+      },
     }
   );
 }
@@ -81,6 +91,11 @@ export function createServerSupabase() {
         set: () => {},
         remove: () => {},
       },
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        persistSession: true,
+      },
     }
   );
 }
@@ -96,6 +111,11 @@ export function createRouteSupabase() {
         get: (n) => jar.get(n)?.value,
         set: (n, v, opts) => jar.set(n, v, opts),
         remove: (n, opts) => jar.set(n, '', { ...opts, maxAge: 0 }),
+      },
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        persistSession: true,
       },
     }
   );
