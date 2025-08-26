@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabase";
 import { User, Building, Mail, Phone, MapPin, Lock, Trash2, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 

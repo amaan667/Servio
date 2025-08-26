@@ -23,11 +23,11 @@ function SignInPageContent() {
       console.log('[AUTH DEBUG] Starting Google OAuth flow');
       setLoading(true);
       
-      const site = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
+      const origin = typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL || "";
       
-      // Clean any stale PKCE artifacts that can break the next run
       try {
-        Object.keys(localStorage).forEach(k => {
+        // Clear stale PKCE artifacts that can cause verifier mismatch
+        Object.keys(localStorage).forEach((k) => {
           if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k);
         });
       } catch {}
@@ -35,8 +35,8 @@ function SignInPageContent() {
       await createClient().auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${site}/auth/callback`,
           flowType: "pkce",
+          redirectTo: `${origin}/auth/callback`,
         },
       });
       

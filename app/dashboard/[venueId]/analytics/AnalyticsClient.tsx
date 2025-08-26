@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabase";
 import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag } from "lucide-react";
 
 export default function AnalyticsClient({ venueId, venueName }: { venueId: string; venueName: string }) {

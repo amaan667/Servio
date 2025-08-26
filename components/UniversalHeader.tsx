@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { Menu, X, User, Home, Settings, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
@@ -41,6 +41,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
     const fetchPrimaryVenue = async () => {
       try {
         if (session?.user) {
+          const supabase = createClient();
           const { data, error } = await supabase
             .from('venues')
             .select('venue_id')
@@ -71,6 +72,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   const resolvedVenueId = venueId ?? primaryVenueId;
 
   const handleSignOut = async () => {
+    const supabase = createClient();
     await supabase.auth.signOut();
     router.replace('/');
   };
