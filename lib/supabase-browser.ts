@@ -10,9 +10,15 @@ export const supabaseBrowser = () =>
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
+        detectSessionInUrl: false, // We handle this manually in callback
+        flowType: 'pkce',
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         storageKey: 'supabase.auth.token',
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'servio-web',
+        },
       },
     }
   );

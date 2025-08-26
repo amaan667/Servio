@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase';
 import SignInForm from './signin-form';
 
 function SignInPageContent() {
@@ -14,16 +14,15 @@ function SignInPageContent() {
       console.log('[AUTH DEBUG] Starting Google OAuth flow');
       setLoading(true);
       
-      // Use production URL for OAuth redirects
-      const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
-      console.log('[AUTH DEBUG] OAuth redirect URL (production):', redirectTo);
+      // Use the current domain for OAuth redirects to ensure PKCE works correctly
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      console.log('[AUTH DEBUG] OAuth redirect URL:', redirectTo);
       
       console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
-          // Remove problematic query parameters that can interfere with PKCE
           queryParams: { 
             prompt: 'select_account'
           },

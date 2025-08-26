@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/app/authenticated-client-provider';
 
 export default function SignInDebug() {
