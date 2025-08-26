@@ -14,8 +14,8 @@ function SignInPageContent() {
       console.log('[AUTH DEBUG] Starting Google OAuth flow');
       setLoading(true);
       
-      // ALWAYS use production URL for OAuth redirects - never localhost
-      const redirectTo = 'https://servio-production.up.railway.app/api/auth/callback';
+      // ALWAYS use production URL for OAuth redirects - use client callback for PKCE
+      const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
       console.log('[AUTH DEBUG] OAuth redirect URL (production):', redirectTo);
       
       console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
