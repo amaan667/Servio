@@ -18,12 +18,12 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('[AUTH DEBUG] Server callback error:', { error, errorDescription });
-      return NextResponse.redirect(new URL(`/sign-in?error=oauth_error&description=${errorDescription || ''}`, request.url));
+      return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=oauth_error&description=${errorDescription || ''}`));
     }
 
     if (!code) {
       console.log('[AUTH DEBUG] No code in server callback');
-      return NextResponse.redirect(new URL('/sign-in?error=no_code', request.url));
+      return NextResponse.redirect(new URL('https://servio-production.up.railway.app/sign-in?error=no_code'));
     }
 
     const supabase = createServerClient(
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     if (exchangeError) {
       console.error('[AUTH DEBUG] Server exchange error:', exchangeError);
-      return NextResponse.redirect(new URL(`/sign-in?error=exchange_failed&message=${exchangeError.message}`, request.url));
+      return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=exchange_failed&message=${exchangeError.message}`));
     }
 
     console.log('[AUTH DEBUG] Server exchange successful:', { 
@@ -57,15 +57,15 @@ export async function GET(request: NextRequest) {
       userId: data.user?.id 
     });
 
-    // Redirect to dashboard with success
-    const response = NextResponse.redirect(new URL('/dashboard', request.url));
+    // Redirect to dashboard with success - ALWAYS use production URL
+    const response = NextResponse.redirect(new URL('https://servio-production.up.railway.app/dashboard'));
     
     // Set auth cookies
     if (data.session) {
       response.cookies.set('sb-access-token', data.session.access_token, {
         path: '/',
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true, // Always secure in production
         sameSite: 'lax',
         maxAge: data.session.expires_in
       });
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       response.cookies.set('sb-refresh-token', data.session.refresh_token, {
         path: '/',
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true, // Always secure in production
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 30 // 30 days
       });
@@ -83,6 +83,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('[AUTH DEBUG] Server callback exception:', error);
-    return NextResponse.redirect(new URL(`/sign-in?error=server_exception&message=${error?.message || 'Unknown error'}`, request.url));
+    return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=server_exception&message=${error?.message || 'Unknown error'}`));
   }
 }
