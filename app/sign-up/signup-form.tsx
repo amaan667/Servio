@@ -119,7 +119,14 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
               onClick={async () => {
                 setError(null);
                 try {
-                  await onGoogleSignIn();
+                  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
+                  try {
+                    Object.keys(localStorage).forEach(k => { if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k); });
+                  } catch {}
+                  await supabase.auth.signInWithOAuth({
+                    provider: "google",
+                    options: { flowType: "pkce", redirectTo: `${origin}/auth/callback` },
+                  });
                 } catch (err: any) {
                   console.error('[AUTH] Google sign-up error', { message: err?.message });
                   setError(`Google sign-up failed: ${err.message || "Please try again."}`);
