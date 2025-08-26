@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import SignInForm from './signin-form';
@@ -8,6 +8,10 @@ import SignInForm from './signin-form';
 function SignInPageContent() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    try { localStorage.removeItem('sb-pkce-code-verifier'); } catch {}
+  }, []);
 
   const signInWithGoogle = async () => {
     try {
@@ -23,6 +27,7 @@ function SignInPageContent() {
         provider: 'google',
         options: {
           redirectTo,
+          flowType: 'pkce',
           queryParams: { 
             prompt: 'select_account'
           },

@@ -10,6 +10,7 @@ export default function SignInButton() {
       provider: 'google',
       options: {
         redirectTo: `${site}/auth/callback`,
+        flowType: 'pkce',
         queryParams: { prompt: 'select_account' }
       }
     });

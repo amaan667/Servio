@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,6 +16,10 @@ export default function SignInClient() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  useEffect(() => {
+    try { localStorage.removeItem("sb-pkce-code-verifier"); } catch {}
+  }, []);
+
   async function signInWithGoogle() {
     try {
       setBusy(true);
@@ -23,7 +27,7 @@ export default function SignInClient() {
       const site = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
       await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${site}/auth/callback` },
+        options: { redirectTo: `${site}/auth/callback`, flowType: "pkce" },
       });
       // Supabase will redirect to Google's consent → back to /auth/callback
     } catch (e: any) {
