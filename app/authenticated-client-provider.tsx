@@ -12,6 +12,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   authReady: boolean;
+  error?: string;
 }
 
 const AuthContext = createContext<AuthContextType>({ session: null, loading: true, authReady: false });
@@ -20,6 +21,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   console.log('[AUTH DEBUG] AuthenticatedClientProvider state:', {
     hasSession: !!session,
@@ -27,6 +29,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     userEmail: session?.user?.email,
     loading,
     authReady,
+    error,
     timestamp: now()
   });
 
@@ -37,6 +40,17 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     async function bootstrap() {
       try {
         const supabase = createClient();
+        
+        // Check if we have valid environment variables
+        const hasValidConfig = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+        
+        if (!hasValidConfig) {
+          console.error('[AUTH DEBUG] Missing Supabase configuration');
+          setError('Supabase configuration is missing. Please check environment variables.');
+          setLoading(false);
+          setAuthReady(true);
+          return;
+        }
         
         // Wait for initial session fetch
         console.log('[AUTH DEBUG] Getting initial session', { t: now() });
@@ -53,9 +67,11 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         if (!cancelled) {
           if (error) {
             console.error('[AUTH DEBUG] Session fetch error:', error);
+            setError(`Session fetch error: ${error.message}`);
             setSession(null);
           } else {
             setSession(session);
+            setError(undefined);
           }
           setLoading(false);
           setAuthReady(true);
@@ -64,6 +80,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       } catch (err: any) {
         console.error('[AUTH DEBUG] Bootstrap error:', { t: now(), message: err?.message });
         if (!cancelled) {
+          setError(`Bootstrap error: ${err?.message || 'Unknown error'}`);
           setSession(null);
           setLoading(false);
           setAuthReady(true); // avoid infinite spinner on error
@@ -90,11 +107,13 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
             if (!cancelled) {
               setSession(session);
               setLoading(false);
+              setError(undefined);
             }
           }, 100);
         } else {
           setSession(session);
           setLoading(false);
+          setError(undefined);
         }
       }
     });
@@ -106,7 +125,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, loading, authReady }}>
+    <AuthContext.Provider value={{ session, loading, authReady, error }}>
       {children}
     </AuthContext.Provider>
   );

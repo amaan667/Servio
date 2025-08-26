@@ -5,6 +5,7 @@ import React from 'react';
 interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
+  errorInfo?: React.ErrorInfo;
 }
 
 interface ErrorBoundaryProps {
@@ -32,6 +33,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       name: error.name,
       errorInfo: errorInfo
     });
+
+    // Update state with error info for display
+    this.setState({ error, errorInfo });
   }
 
   render() {
@@ -50,18 +54,47 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <p className="text-gray-600 mb-6">
                 We're sorry, but something unexpected happened. Please try refreshing the page.
               </p>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              
+              {/* Always show error details for debugging */}
+              {this.state.error && (
                 <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-left">
                   <p className="text-sm font-medium text-red-800">Error Details:</p>
-                  <p className="text-xs text-red-600 mt-1">{this.state.error.message}</p>
+                  <p className="text-xs text-red-600 mt-1 font-mono">{this.state.error.message}</p>
+                  {this.state.error.stack && (
+                    <details className="mt-2">
+                      <summary className="text-xs text-red-600 cursor-pointer">Stack Trace</summary>
+                      <pre className="text-xs text-red-600 mt-1 whitespace-pre-wrap overflow-auto max-h-32">
+                        {this.state.error.stack}
+                      </pre>
+                    </details>
+                  )}
                 </div>
               )}
-              <button
-                onClick={() => window.location.reload()}
-                className="bg-servio-purple text-white px-4 py-2 rounded-md hover:bg-servio-purple/90"
-              >
-                Refresh Page
-              </button>
+
+              {/* Environment check */}
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-left">
+                <p className="text-sm font-medium text-blue-800">Environment Check:</p>
+                <div className="text-xs text-blue-600 mt-1 space-y-1">
+                  <div>NODE_ENV: {process.env.NODE_ENV}</div>
+                  <div>SUPABASE_URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Set' : '❌ Missing'}</div>
+                  <div>SUPABASE_KEY: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing'}</div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-servio-purple text-white px-4 py-2 rounded-md hover:bg-servio-purple/90"
+                >
+                  Refresh Page
+                </button>
+                <button
+                  onClick={() => window.location.href = '/'}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+                >
+                  Go Home
+                </button>
+              </div>
             </div>
           </div>
         </div>
