@@ -137,9 +137,10 @@ export default function StaffClient({ venueId }: { venueId: string }) {
               <Button className="ml-2" size="sm" variant="outline" onClick={async ()=>{ await fetch('/api/staff/init',{method:'POST'}); setNeedsInit(false); load(); }}>Init Now</Button>
             </div>
           )}
-        </CardContent></Card>
+        </CardContent>
+      </Card>
 
-        <div className="space-y-4">
+      <div className="space-y-4">
           {useMemo(() => {
             if (!staff.length) return <div className="text-gray-500">No staff yet.</div>;
             const groups: Record<string, Staff[]> = {};
@@ -195,14 +196,15 @@ export default function StaffClient({ venueId }: { venueId: string }) {
                             )}
                           </div>
                         </div>
-                      </CardContent></Card>
+                      </CardContent>
+                    </Card>
                     ))}
                   </div>
                 </div>
               );
             });
           }, [staff, openShiftFor, shiftStart, shiftEnd, shiftArea])}
-        </div>
+      </div>
 
         <div className="mt-8">
           <h2 className="text-sm font-semibold text-gray-700 mb-2">Today's Shifts</h2>

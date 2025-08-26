@@ -32,18 +32,8 @@ function AuthCallbackContent() {
           return;
         }
 
-        // Route based on whether venue exists
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          router.replace('/sign-in?error=no_user');
-          return;
-        }
-        const { data: venues, error: vErr } = await supabase
-          .from('venues').select('venue_id').eq('owner_id', user.id).limit(1);
-        if (vErr) {
-          console.warn('[AUTH] venue check error (non-fatal):', vErr.message);
-        }
-        router.replace(venues?.length ? `/dashboard/${venues[0].venue_id}` : '/complete-profile');
+        // Route to home page after successful auth
+        router.replace('/home');
       } catch (e: any) {
         console.error('[AUTH] Callback fatal:', e);
         router.replace('/sign-in?error=callback_failed');

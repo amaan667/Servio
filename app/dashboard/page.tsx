@@ -3,35 +3,24 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/sb-client';
+import { useAuth } from '@/app/authenticated-client-provider';
 
 export default function DashboardIndex() {
   const router = useRouter();
+  const { session } = useAuth();
 
   useEffect(() => {
-    const checkUserAndRedirect = async () => {
-      try {
-        console.log('[DASHBOARD] Checking user session');
-        
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        console.log('[DASHBOARD] Auth getUser result:', { 
-          hasUser: !!user, 
-          userId: user?.id, 
-          userError: userError?.message 
-        });
-        
-        if (!user) {
-          console.log('[DASHBOARD] No user found, redirecting to sign-in');
-          router.replace('/sign-in');
-          return;
-        }
+    if (!session?.user) return;
 
-        console.log('[DASHBOARD] Getting primary venue for user:', user.id);
+    const redirectToPrimaryVenue = async () => {
+      try {
+        console.log('[DASHBOARD] Getting primary venue for user:', session.user.id);
         
         // Get the user's first venue directly
         const { data: venues, error: venueError } = await supabase
           .from('venues')
           .select('venue_id')
-          .eq('owner_id', user.id)
+          .eq('owner_id', session.user.id)
           .order('created_at', { ascending: true })
           .limit(1);
         
@@ -51,12 +40,12 @@ export default function DashboardIndex() {
         }
       } catch (error) {
         console.error('[DASHBOARD] Error in dashboard page:', error);
-        router.replace('/sign-in');
+        router.replace('/complete-profile');
       }
     };
 
-    checkUserAndRedirect();
-  }, [router]);
+    redirectToPrimaryVenue();
+  }, [session, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

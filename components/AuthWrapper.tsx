@@ -1,4 +1,4 @@
-use client;
+'use client';
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/sb-client";
@@ -9,7 +9,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const { session, isLoading: loading } = useAuth();
+  const { session, loading, authReady } = useAuth();
 
   // Strict public routes (accessible without auth)
   const publicRoutes = ["/", "/sign-in", "/sign-up", "/order"];
@@ -22,7 +22,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const isAuthCallback = pathname === "/auth/callback";
 
   useEffect(() => {
-    if (loading) return; // Wait for auth state
+    if (!authReady) return; // Wait for auth to be ready
 
     // If unauthenticated and attempting to access a protected route -> redirect
     if (!session && !isPublicRoute && !isAuthCallback) {
@@ -57,13 +57,22 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       };
       checkProfile();
     }
-  }, [session, loading, pathname, isPublicRoute, isAuthCallback, router]);
+  }, [session, authReady, pathname, isPublicRoute, isAuthCallback, router]);
 
   // Immediately allow rendering for public routes & the auth callback route
   if (isPublicRoute || isAuthCallback) return <>{children}</>;
 
-  // Show loading state while determining auth or profile status
-  if (loading || !session) {
+  // Show loading state while auth is not ready
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />
+      </div>
+    );
+  }
+
+  // Show loading state while determining profile status for authenticated users
+  if (session && profileComplete === null) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-servio-purple" />

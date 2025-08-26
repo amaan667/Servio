@@ -1,9 +1,9 @@
 import AuthWrapper from '@/components/AuthWrapper';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function HomeLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthWrapper>
       {children}
     </AuthWrapper>
   );
-} 
+}
