@@ -5,13 +5,60 @@ import { createClient } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
 
+// Function to create venue for new user
+async function createUserVenue(supabase: any, userId: string, userEmail: string, fullName?: string) {
+  try {
+    console.log('[AUTH DEBUG] 🔄 Creating venue for user:', userId);
+    
+    // Check if user already has a venue
+    const { data: existingVenue, error: checkError } = await supabase
+      .from("venues")
+      .select("*")
+      .eq("owner_id", userId)
+      .single();
+
+    if (existingVenue && !checkError) {
+      console.log('[AUTH DEBUG] ✅ User already has venue:', existingVenue.venue_id);
+      return { success: true, venue: existingVenue };
+    }
+
+    // Create default venue for new user
+    const venueId = `venue-${userId.slice(0, 8)}`;
+    const venueName = fullName ? `${fullName}'s Business` : "My Business";
+    
+    const { data: newVenue, error: createError } = await supabase
+      .from("venues")
+      .insert({
+        venue_id: venueId,
+        name: venueName,
+        business_type: "Restaurant",
+        owner_id: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('[AUTH DEBUG] ❌ Failed to create venue:', createError);
+      return { success: false, error: createError.message };
+    }
+
+    console.log('[AUTH DEBUG] ✅ Created venue for user:', newVenue.venue_id);
+    return { success: true, venue: newVenue };
+  } catch (error) {
+    console.error('[AUTH DEBUG] ❌ Error in createUserVenue:', error);
+    return { success: false, error: "Failed to create venue" };
+  }
+}
+
 function OAuthCallbackContent() {
   const router = useRouter();
   const sp = useSearchParams();
 
   useEffect(() => {
     let finished = false;
-    const sb = createClient();
+    const supabase = createClient();
 
     const timeout = setTimeout(() => {
       if (!finished) {
@@ -42,7 +89,7 @@ function OAuthCallbackContent() {
         console.log('[AUTH DEBUG] 🔄 Exchanging code for session...');
         
         // 1) Exchange PKCE code on the **client**
-        const { data, error } = await sb.auth.exchangeCodeForSession({
+        const { data, error } = await supabase.auth.exchangeCodeForSession({
           queryParams: new URLSearchParams(window.location.search),
         });
 
@@ -77,7 +124,7 @@ function OAuthCallbackContent() {
             }
             
             const origin = window.location.origin;
-            await sb.auth.signInWithOAuth({
+            await supabase.auth.signInWithOAuth({
               provider: "google",
               options: { 
                 flowType: "pkce", 
@@ -95,6 +142,23 @@ function OAuthCallbackContent() {
         if (!data?.session) {
           console.log('[AUTH DEBUG] ❌ No session after exchange');
           return router.replace("/sign-in?error=no_session");
+        }
+
+        // 3) Create venue for new user if needed
+        if (data.user) {
+          console.log('[AUTH DEBUG] 🔄 Checking if venue creation is needed for user:', data.user.id);
+          
+          const venueResult = await createUserVenue(
+            supabase, 
+            data.user.id, 
+            data.user.email || '', 
+            data.user.user_metadata?.full_name
+          );
+          
+          if (!venueResult.success) {
+            console.log('[AUTH DEBUG] ⚠️ Venue creation failed, but continuing auth flow:', venueResult.error);
+            // Don't block the auth flow, but log the error
+          }
         }
 
         console.log('[AUTH DEBUG] ✅ OAuth successful, redirecting to:', next);

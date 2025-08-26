@@ -198,6 +198,14 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                     console.log('[AUTH DEBUG] ❌ ERROR: Failed to clear localStorage:', clearError);
                   }
                   
+                  // Check if user is already authenticated
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (session) {
+                    console.log('[AUTH DEBUG] ⚠️ User already authenticated, redirecting to dashboard');
+                    window.location.href = '/dashboard';
+                    return;
+                  }
+                  
                   console.log('[AUTH DEBUG] 🔄 Step 3: Calling supabase.auth.signInWithOAuth');
                   console.log('[AUTH DEBUG] OAuth options:', {
                     provider: "google",
@@ -226,6 +234,9 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                       oauthTime
                     });
                     setError(`Google sign-in failed: ${error.message || "Please try again."}`);
+                  } else if (!data.url) {
+                    console.log('[AUTH DEBUG] ❌ ERROR: No redirect URL received from OAuth');
+                    setError('Google sign-in failed: No redirect URL received. Please try again.');
                   } else {
                     console.log('[AUTH DEBUG] ✅ OAuth initiated successfully');
                     console.log('[AUTH DEBUG] OAuth response data:', {
