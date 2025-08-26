@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/sb-client";
 
 export default function OAuthCallback() {
   const router = useRouter();
@@ -12,7 +12,7 @@ export default function OAuthCallback() {
     (async () => {
       try {
         console.log('[AUTH DEBUG] OAuth callback started');
-        const supabase = createClient();
+        // Use the main Supabase client instance
         const url = new URL(window.location.href);
         const hasCode = url.searchParams.has("code");
         const hasError = url.searchParams.get("error");
@@ -46,17 +46,12 @@ export default function OAuthCallback() {
         if (hasCode) {
           console.log('[AUTH DEBUG] Exchanging code for session');
           
-          // Create proper query params for PKCE exchange
-          const exchangeParams = new URLSearchParams();
-          exchangeParams.set('code', url.searchParams.get('code')!);
-          if (state) exchangeParams.set('state', state);
-          
-          console.log('[AUTH DEBUG] Exchange params:', Object.fromEntries(exchangeParams.entries()));
+          // For client-side PKCE, pass the full URL to include all necessary parameters
+          console.log('[AUTH DEBUG] Using full URL for PKCE exchange:', window.location.href);
+          console.log('[AUTH DEBUG] URL search params:', Object.fromEntries(url.searchParams.entries()));
           
           // Add timeout to prevent hanging
-          const exchangePromise = supabase.auth.exchangeCodeForSession({ 
-            queryParams: exchangeParams
-          });
+          const exchangePromise = supabase.auth.exchangeCodeForSession(window.location.href);
           
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Exchange timeout after 15 seconds')), 15000); // Increased timeout
