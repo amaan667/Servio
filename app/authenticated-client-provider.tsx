@@ -81,9 +81,21 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       });
       
       if (!cancelled) {
-        setSession(session);
-        setLoading(false);
-        setAuthReady(true);
+        // Add a small delay for sign-in events to ensure session is fully established
+        if (event === 'SIGNED_IN') {
+          setTimeout(() => {
+            if (!cancelled) {
+              console.log('[AUTH DEBUG] provider:delayed session update after sign-in');
+              setSession(session);
+              setLoading(false);
+              setAuthReady(true);
+            }
+          }, 1000);
+        } else {
+          setSession(session);
+          setLoading(false);
+          setAuthReady(true);
+        }
       }
     });
 
