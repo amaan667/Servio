@@ -10,6 +10,21 @@ async function createUserVenue(supabase: any, userId: string, userEmail: string,
   try {
     console.log('[AUTH DEBUG] 🔄 Creating venue for user:', userId);
     
+    // Verify session exists and user is authenticated
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      console.error('[AUTH DEBUG] ❌ User not authenticated for venue creation:', sessionError);
+      return { success: false, error: 'User not authenticated for venue creation' };
+    }
+    
+    if (session.user.id !== userId) {
+      console.error('[AUTH DEBUG] ❌ User ID mismatch:', { sessionUserId: session.user.id, providedUserId: userId });
+      return { success: false, error: 'User ID mismatch' };
+    }
+    
+    console.log('[AUTH DEBUG] ✅ User authenticated, proceeding with venue creation');
+    
     // Check if user already has a venue
     const { data: existingVenue, error: checkError } = await supabase
       .from("venues")
@@ -26,6 +41,13 @@ async function createUserVenue(supabase: any, userId: string, userEmail: string,
     const venueId = `venue-${userId.slice(0, 8)}`;
     const venueName = fullName ? `${fullName}'s Business` : "My Business";
     
+    console.log('[AUTH DEBUG] 🔄 Inserting new venue:', {
+      venue_id: venueId,
+      name: venueName,
+      owner_id: userId,
+      business_type: "Restaurant"
+    });
+    
     const { data: newVenue, error: createError } = await supabase
       .from("venues")
       .insert({
@@ -41,6 +63,12 @@ async function createUserVenue(supabase: any, userId: string, userEmail: string,
 
     if (createError) {
       console.error('[AUTH DEBUG] ❌ Failed to create venue:', createError);
+      console.error('[AUTH DEBUG] ❌ Error details:', {
+        message: createError.message,
+        details: createError.details,
+        hint: createError.hint,
+        code: createError.code
+      });
       return { success: false, error: createError.message };
     }
 
