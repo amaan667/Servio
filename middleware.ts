@@ -32,7 +32,17 @@ export async function middleware(req: NextRequest) {
         },
       }
     );
-    await supabase.auth.getSession(); // propagates cookies to SSR
+    
+    const { data: { session }, error } = await supabase.auth.getSession();
+    console.log('[AUTH DEBUG] Middleware: session check', { 
+      pathname, 
+      hasSession: !!session, 
+      userId: session?.user?.id,
+      error: error?.message 
+    });
+    
+    // Propagate cookies to SSR
+    await supabase.auth.getSession();
   } catch (error) {
     console.error('[AUTH DEBUG] Middleware error:', error);
   }

@@ -26,6 +26,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
 
     // If unauthenticated and attempting to access a protected route -> redirect
     if (!session && !isPublicRoute && !isAuthCallback) {
+      console.log('[AUTH WRAPPER] No session, redirecting to sign-in');
       router.replace("/sign-in");
       return;
     }
@@ -34,28 +35,40 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     if (session && !isAuthCallback && pathname !== "/complete-profile") {
       const checkProfile = async () => {
         try {
+          console.log('[AUTH WRAPPER] Checking profile for user:', session.user.id);
           const { data, error } = await supabase
             .from("venues")
             .select("venue_id")
             .eq("owner_id", session.user.id)
             .maybeSingle();
 
-          if (error || !data) {
+          if (error) {
+            console.error('[AUTH WRAPPER] Error checking profile:', error);
+            setProfileComplete(false);
+            if (pathname !== "/complete-profile") {
+              router.replace("/complete-profile");
+            }
+          } else if (!data) {
+            console.log('[AUTH WRAPPER] No venue found, redirecting to complete profile');
             setProfileComplete(false);
             if (pathname !== "/complete-profile") {
               router.replace("/complete-profile");
             }
           } else {
+            console.log('[AUTH WRAPPER] Profile complete, venue found:', data.venue_id);
             setProfileComplete(true);
           }
-        } catch {
+        } catch (error) {
+          console.error('[AUTH WRAPPER] Exception checking profile:', error);
           setProfileComplete(false);
           if (pathname !== "/complete-profile") {
             router.replace("/complete-profile");
           }
         }
       };
-      checkProfile();
+      
+      // Add a small delay to ensure session is fully established
+      setTimeout(checkProfile, 500);
     }
   }, [session, authReady, pathname, isPublicRoute, isAuthCallback, router]);
 
