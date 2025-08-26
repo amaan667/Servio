@@ -24,7 +24,10 @@ function SignInPageContent() {
         options: {
           redirectTo,
           // Force Google account chooser and avoid cached flows that can hang.
-          queryParams: { prompt: 'select_account' },
+          queryParams: { 
+            prompt: 'select_account',
+            access_type: 'offline'
+          },
         },
       });
       

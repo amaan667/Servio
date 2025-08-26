@@ -17,12 +17,15 @@ export default function OAuthCallback() {
         const hasCode = url.searchParams.has("code");
         const hasError = url.searchParams.get("error");
         const errorDescription = url.searchParams.get("error_description");
+        const state = url.searchParams.get("state");
 
         console.log('[AUTH DEBUG] Callback params:', { 
           hasCode, 
           hasError, 
           errorDescription,
-          fullUrl: window.location.href 
+          hasState: !!state,
+          fullUrl: window.location.href,
+          allParams: Object.fromEntries(url.searchParams.entries())
         });
 
         if (hasError) {
@@ -36,9 +39,14 @@ export default function OAuthCallback() {
         if (hasCode) {
           console.log('[AUTH DEBUG] Exchanging code for session');
           
+          // Create proper query params for PKCE exchange
+          const exchangeParams = new URLSearchParams();
+          exchangeParams.set('code', url.searchParams.get('code')!);
+          if (state) exchangeParams.set('state', state);
+          
           // Add timeout to prevent hanging
           const exchangePromise = supabase.auth.exchangeCodeForSession({ 
-            queryParams: url.searchParams 
+            queryParams: exchangeParams
           });
           
           const timeoutPromise = new Promise((_, reject) => {

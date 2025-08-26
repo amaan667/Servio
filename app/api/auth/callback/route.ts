@@ -9,11 +9,14 @@ export async function GET(request: NextRequest) {
     const code = searchParams.get('code');
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
+    const state = searchParams.get('state');
 
     console.log('[AUTH DEBUG] Server callback params:', { 
       hasCode: !!code, 
       error, 
-      errorDescription 
+      errorDescription,
+      hasState: !!state,
+      allParams: Object.fromEntries(searchParams.entries())
     });
 
     if (error) {
@@ -43,13 +46,19 @@ export async function GET(request: NextRequest) {
     );
 
     console.log('[AUTH DEBUG] Exchanging code for session on server');
+    
+    // Create the proper query params object for PKCE exchange
+    const exchangeParams = new URLSearchParams();
+    exchangeParams.set('code', code);
+    if (state) exchangeParams.set('state', state);
+    
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession({
-      queryParams: searchParams,
+      queryParams: exchangeParams,
     });
 
     if (exchangeError) {
       console.error('[AUTH DEBUG] Server exchange error:', exchangeError);
-      return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=exchange_failed&message=${exchangeError.message}`));
+      return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`));
     }
 
     console.log('[AUTH DEBUG] Server exchange successful:', { 
@@ -83,6 +92,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('[AUTH DEBUG] Server callback exception:', error);
-    return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=server_exception&message=${error?.message || 'Unknown error'}`));
+    return NextResponse.redirect(new URL(`https://servio-production.up.railway.app/sign-in?error=server_exception&message=${encodeURIComponent(error?.message || 'Unknown error')}`));
   }
 }
