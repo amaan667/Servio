@@ -35,26 +35,21 @@ export async function GET(request: NextRequest) {
       {
         cookies: {
           get: (name) => request.cookies.get(name)?.value,
-          set: (name, value, options) => {
-            // This will be handled by the response
-          },
-          remove: (name, options) => {
-            // This will be handled by the response
-          },
+          set: () => {},
+          remove: () => {},
+        },
+        auth: {
+          flowType: 'pkce',
+          autoRefreshToken: true,
+          persistSession: true,
         },
       }
     );
 
     console.log('[AUTH DEBUG] Exchanging code for session on server');
     
-    // Create the proper query params object for PKCE exchange
-    const exchangeParams = new URLSearchParams();
-    exchangeParams.set('code', code);
-    if (state) exchangeParams.set('state', state);
-    
-    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession({
-      queryParams: exchangeParams,
-    });
+    // For server-side, pass the full URL for PKCE to include verifier via cookie
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(request.url);
 
     if (exchangeError) {
       console.error('[AUTH DEBUG] Server exchange error:', exchangeError);

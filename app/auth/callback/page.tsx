@@ -39,15 +39,8 @@ export default function OAuthCallback() {
         if (hasCode) {
           console.log('[AUTH DEBUG] Exchanging code for session');
           
-          // Create proper query params for PKCE exchange
-          const exchangeParams = new URLSearchParams();
-          exchangeParams.set('code', url.searchParams.get('code')!);
-          if (state) exchangeParams.set('state', state);
-          
           // Add timeout to prevent hanging
-          const exchangePromise = supabase.auth.exchangeCodeForSession({ 
-            queryParams: exchangeParams
-          });
+          const exchangePromise = supabase.auth.exchangeCodeForSession(window.location.href);
           
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Exchange timeout')), 10000); // 10 second timeout

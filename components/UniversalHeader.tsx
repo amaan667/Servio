@@ -120,12 +120,14 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 >
                   Home
                 </Link>
-                <Link
-                  href={dashboardHref}
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Dashboard
-                </Link>
+                {!isDashboardPage && (
+                  <Link
+                    href={dashboardHref}
+                    className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                )}
                 {showActions && (
                   <>
                     <Link
@@ -134,6 +136,16 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                     >
                       Settings
                     </Link>
+                    {isDashboardPage && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSignOut}
+                        className="text-gray-600"
+                      >
+                        Sign Out
+                      </Button>
+                    )}
                     {/* Modern dropdown menu for user actions */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -288,13 +300,15 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 >
                   Home
                 </Link>
-                <Link
-                  href={dashboardHref}
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
+                {!isDashboardPage && (
+                  <Link
+                    href={dashboardHref}
+                    className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                )}
                 {showActions && (
                   <Link
                     href={settingsHref}
