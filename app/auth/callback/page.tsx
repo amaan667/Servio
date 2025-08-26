@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/supabase/client';
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -15,27 +15,29 @@ function AuthCallbackContent() {
     (async () => {
       try {
         if (error) {
-          console.error('[AUTH] OAuth callback error:', error);
+          console.error('[AUTH DEBUG] OAuth callback error:', error);
           router.replace(`/sign-in?error=${encodeURIComponent(error)}`);
           return;
         }
         if (!code) {
-          console.error('[AUTH] OAuth callback missing code');
+          console.error('[AUTH DEBUG] OAuth callback missing code');
           router.replace('/sign-in?error=missing_code');
           return;
         }
 
+        const supabase = createClient();
         const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
         if (exErr) {
-          console.error('[AUTH] exchangeCodeForSession failed:', exErr);
+          console.error('[AUTH DEBUG] exchangeCodeForSession failed:', exErr);
           router.replace('/sign-in?error=exchange_failed');
           return;
         }
 
-        // Route to home page after successful auth
-        router.replace('/home');
+        // Route to dashboard after successful auth
+        console.log('[AUTH DEBUG] OAuth callback successful, redirecting to dashboard');
+        router.replace('/dashboard');
       } catch (e: any) {
-        console.error('[AUTH] Callback fatal:', e);
+        console.error('[AUTH DEBUG] Callback fatal:', e);
         router.replace('/sign-in?error=callback_failed');
       }
     })();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -14,26 +14,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-// Removed RefreshCw icon import for Clean Refresh button cleanup
-import { signInUser } from "@/lib/supabase";
-import { logger } from "@/lib/logger";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-// Removed SessionClearer from production to avoid redundant client-side sign-out
 
 interface SignInFormProps {
   onGoogleSignIn: () => Promise<void>;
   loading?: boolean;
+  error?: string | null;
+  setError?: (error: string | null) => void;
 }
 
-export default function SignInForm({ onGoogleSignIn, loading: externalLoading }: SignInFormProps) {
+export default function SignInForm({ 
+  onGoogleSignIn, 
+  loading: externalLoading, 
+  error: externalError,
+  setError: setExternalError 
+}: SignInFormProps) {
   const router = useRouter();
+  const sb = useMemo(() => createClient(), []);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Use external error if provided, otherwise use internal error
+  const displayError = externalError || error;
+  const setDisplayError = setExternalError || setError;
 
   // Check if Supabase is properly configured
   const isSupabaseConfigured = typeof window !== 'undefined' && 
@@ -65,49 +73,51 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
         errorText = 'Authentication failed. Please try signing in again.';
       }
       
-      setError(errorText);
+      setDisplayError(errorText);
     }
     
     if (signedOut === 'true') {
       // Clear any remaining form data when coming from sign-out
       setFormData({ email: "", password: "" });
-      setError(null);
+      setDisplayError(null);
     }
-  }, []);
+  }, [setDisplayError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[AUTH] SignInForm submit start', { email: formData.email });
+    console.log('[AUTH DEBUG] SignInForm submit start', { email: formData.email });
 
-    setError(null);
+    setDisplayError(null);
 
     if (!formData.email.trim()) {
-      setError("Please enter your email address.");
+      setDisplayError("Please enter your email address.");
       return;
     }
 
     if (!formData.password) {
-      setError("Please enter your password.");
+      setDisplayError("Please enter your password.");
       return;
     }
 
     setLoading(true);
 
     try {
-      console.log('[AUTH] SignInForm calling signInUser');
-      const result = await signInUser(formData.email.trim(), formData.password);
+      console.log('[AUTH DEBUG] SignInForm calling signInWithPassword');
+      const { data, error } = await sb.auth.signInWithPassword({ 
+        email: formData.email.trim(), 
+        password: formData.password 
+      });
 
-      if (result.success) {
-        console.log('[AUTH] SignInForm sign-in success, redirecting to dashboard');
-        // Redirect to dashboard (will route to venue or complete-profile as needed)
+      if (error) {
+        console.log('[AUTH DEBUG] SignInForm sign-in failed', { message: error.message });
+        setDisplayError(error.message || "Invalid email or password");
+      } else if (data.session) {
+        console.log('[AUTH DEBUG] SignInForm sign-in success, redirecting to dashboard');
         router.replace('/dashboard');
-      } else {
-        console.log('[AUTH] SignInForm sign-in failed', { message: result.message });
-        setError(result.message || "Invalid email or password");
       }
     } catch (error: any) {
-      console.log('[AUTH] SignInForm unexpected error', { message: error?.message });
-      setError("An unexpected error occurred. Please try again.");
+      console.log('[AUTH DEBUG] SignInForm unexpected error', { message: error?.message });
+      setDisplayError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -140,6 +150,8 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
     );
   }
 
+  const isBusy = loading || externalLoading;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-md w-full mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -164,20 +176,18 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
               type="button"
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
-                setError(null);
-                setLoading(true);
+                setDisplayError(null);
                 try {
                   await onGoogleSignIn();
                 } catch (err: any) {
-                  console.error('[AUTH] Google sign-in error', { message: err?.message });
-                  setError(`Google sign-in failed: ${err.message || "Please try again."}`);
-                  setLoading(false);
+                  console.error('[AUTH DEBUG] Google sign-in error', { message: err?.message });
+                  setDisplayError(`Google sign-in failed: ${err.message || "Please try again."}`);
                 }
               }}
-              disabled={loading || externalLoading}
+              disabled={isBusy}
             >
               <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/><path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
-              {loading || externalLoading ? 'Redirecting…' : 'Sign in with Google'}
+              {isBusy ? 'Signing in…' : 'Sign in with Google'}
             </Button>
 
             <div className="relative">
@@ -190,9 +200,9 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              {error && (
+              {displayError && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>{displayError}</AlertDescription>
                 </Alert>
               )}
 
@@ -206,7 +216,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                     setFormData({ ...formData, email: e.target.value })
                   }
                   placeholder="Enter your email"
-                  disabled={loading}
+                  disabled={isBusy}
                   required
                 />
               </div>
@@ -221,12 +231,14 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                     setFormData({ ...formData, password: e.target.value })
                   }
                   placeholder="Enter your password"
-                  disabled={loading}
+                  disabled={isBusy}
                   required
                 />
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full">Sign In</Button>
+              <Button type="submit" disabled={isBusy} className="w-full">
+                {isBusy ? 'Signing in…' : 'Sign In'}
+              </Button>
             </form>
 
             <div className="mt-6 text-center space-y-2">
