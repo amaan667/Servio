@@ -87,6 +87,40 @@ export const isInvalidTokenError = (error: any): boolean => {
   );
 };
 
+// Check if an error is related to timeout
+export const isTimeoutError = (error: any): boolean => {
+  if (!error) return false;
+  
+  const errorMessage = error.message || '';
+  const errorCode = error.code || '';
+  
+  return (
+    errorMessage.includes('timeout') ||
+    errorMessage.includes('Timeout') ||
+    errorCode === 'timeout' ||
+    errorCode === 'TIMEOUT'
+  );
+};
+
+// Check if an error is retryable
+export const isRetryableError = (error: any): boolean => {
+  if (!error) return false;
+  
+  const errorMessage = error.message || '';
+  const errorStatus = error.status || error.statusCode;
+  
+  return (
+    isTimeoutError(error) ||
+    errorMessage.includes('network') ||
+    errorMessage.includes('Network') ||
+    errorStatus === 408 || // Request Timeout
+    errorStatus === 500 || // Internal Server Error
+    errorStatus === 502 || // Bad Gateway
+    errorStatus === 503 || // Service Unavailable
+    errorStatus === 504    // Gateway Timeout
+  );
+};
+
 // Handle auth errors in components
 export const handleAuthError = async (error: any, router?: any) => {
   console.log('[AUTH DEBUG] Handling auth error:', error);
@@ -104,6 +138,17 @@ export const handleAuthError = async (error: any, router?: any) => {
     // Redirect to sign-in if router is provided
     if (router) {
       router.push('/sign-in?error=invalid_token');
+    }
+    
+    return true; // Error was handled
+  }
+  
+  if (isTimeoutError(error)) {
+    console.log('[AUTH DEBUG] Timeout error detected');
+    
+    // Redirect to sign-in with timeout error if router is provided
+    if (router) {
+      router.push('/sign-in?error=timeout&message=Authentication timed out. Please try again.');
     }
     
     return true; // Error was handled

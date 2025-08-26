@@ -18,8 +18,8 @@ function SignInPageContent() {
       const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
       console.log('[AUTH DEBUG] OAuth redirect URL (production):', redirectTo);
       
-      console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Add timeout to the OAuth initiation
+      const oauthPromise = supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
@@ -31,6 +31,12 @@ function SignInPageContent() {
         },
       });
       
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('OAuth initiation timeout')), 10000); // 10 second timeout
+      });
+      
+      const { error } = await Promise.race([oauthPromise, timeoutPromise]) as any;
+      
       if (error) {
         console.error('[AUTH DEBUG] Google OAuth error:', error);
         console.error('[AUTH DEBUG] Error details:', {
@@ -38,7 +44,16 @@ function SignInPageContent() {
           status: error.status,
           name: error.name
         });
-        alert('Could not start Google sign-in. Please try again.');
+        
+        // Provide more specific error messages
+        let userMessage = 'Could not start Google sign-in. Please try again.';
+        if (error.message?.includes('timeout')) {
+          userMessage = 'Sign-in request timed out. Please check your connection and try again.';
+        } else if (error.message?.includes('network')) {
+          userMessage = 'Network error. Please check your connection and try again.';
+        }
+        
+        alert(userMessage);
         setLoading(false);
         return;
       }
@@ -52,7 +67,15 @@ function SignInPageContent() {
         name: e?.name,
         stack: e?.stack
       });
-      alert('Sign-in failed to start. Please try again.');
+      
+      let userMessage = 'Sign-in failed to start. Please try again.';
+      if (e?.message?.includes('timeout')) {
+        userMessage = 'Sign-in request timed out. Please check your connection and try again.';
+      } else if (e?.message?.includes('network')) {
+        userMessage = 'Network error. Please check your connection and try again.';
+      }
+      
+      alert(userMessage);
       setLoading(false);
     }
   };

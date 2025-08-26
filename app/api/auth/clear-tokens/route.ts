@@ -1,16 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clearAuthTokens } from '@/lib/auth';
+import { createServerClient } from '@supabase/ssr';
 
 export async function POST(request: NextRequest) {
   try {
-    const response = NextResponse.json({ success: true });
-    clearAuthTokens(response);
+    console.log('[AUTH DEBUG] Clearing auth tokens via API');
     
-    console.log('[AUTH DEBUG] API: Cleared auth tokens via API endpoint');
+    const res = NextResponse.json({ success: true });
     
-    return response;
+    // Clear all Supabase auth cookies
+    const authCookies = [
+      'sb-access-token',
+      'sb-refresh-token',
+      'supabase-auth-token',
+      'supabase-auth-refresh-token'
+    ];
+    
+    authCookies.forEach(cookieName => {
+      res.cookies.set(cookieName, '', {
+        maxAge: 0,
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+    });
+    
+    console.log('[AUTH DEBUG] Auth tokens cleared successfully');
+    
+    return res;
   } catch (error) {
-    console.error('[AUTH DEBUG] API: Error clearing tokens:', error);
-    return NextResponse.json({ error: 'Failed to clear tokens' }, { status: 500 });
+    console.error('[AUTH DEBUG] Error clearing tokens:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to clear tokens' },
+      { status: 500 }
+    );
   }
 }

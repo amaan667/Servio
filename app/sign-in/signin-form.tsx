@@ -20,6 +20,8 @@ import { logger } from "@/lib/logger";
 import { supabase } from "@/lib/sb-client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 // Removed SessionClearer from production to avoid redundant client-side sign-out
+import { useSearchParams } from 'next/navigation';
+import { Chrome, Loader2 } from 'lucide-react';
 
 interface SignInFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -34,6 +36,8 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const searchParams = useSearchParams();
 
   console.log('[AUTH DEBUG] SignInForm rendered with props:', {
     externalLoading,
@@ -95,6 +99,43 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
       setError(null);
     }
   }, []);
+
+  useEffect(() => {
+    // Check for error parameters in URL
+    const error = searchParams.get('error');
+    const message = searchParams.get('message');
+    
+    if (error) {
+      let displayMessage = message || 'An error occurred during sign-in.';
+      
+      // Provide more user-friendly error messages
+      switch (error) {
+        case 'timeout':
+        case 'auth_timeout':
+          displayMessage = 'Authentication timed out. Please check your connection and try again.';
+          break;
+        case 'exchange_failed':
+          displayMessage = 'Failed to complete authentication. Please try again.';
+          break;
+        case 'oauth_error':
+          displayMessage = 'Google sign-in failed. Please try again.';
+          break;
+        case 'no_code':
+          displayMessage = 'No authorization received. Please try signing in again.';
+          break;
+        case 'invalid_token':
+          displayMessage = 'Your session has expired. Please sign in again.';
+          break;
+        case 'network_error':
+          displayMessage = 'Network error. Please check your connection and try again.';
+          break;
+        default:
+          displayMessage = message || 'An unexpected error occurred. Please try again.';
+      }
+      
+      setErrorMessage(displayMessage);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +203,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
   const handleGoogleSignIn = async () => {
     console.log('[AUTH DEBUG] Google sign-in button clicked');
     setError(null);
+    setErrorMessage(null); // Clear any previous errors
     try {
       console.log('[AUTH DEBUG] Calling onGoogleSignIn prop');
       await onGoogleSignIn();
@@ -174,6 +216,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
         stack: err?.stack
       });
       setError(`Google sign-in failed: ${err.message || "Please try again."}`);
+      setErrorMessage('Failed to start sign-in process. Please try again.');
     }
   };
 
@@ -230,6 +273,13 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {errorMessage && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {errorMessage}
+                  </AlertDescription>
                 </Alert>
               )}
 

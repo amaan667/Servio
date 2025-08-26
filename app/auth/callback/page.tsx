@@ -7,6 +7,7 @@ export default function OAuthCallback() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'error' | 'success'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -50,11 +51,11 @@ export default function OAuthCallback() {
           console.log('[AUTH DEBUG] Using full URL for PKCE exchange:', window.location.href);
           console.log('[AUTH DEBUG] URL search params:', Object.fromEntries(url.searchParams.entries()));
           
-          // Add timeout to prevent hanging
+          // Add timeout to prevent hanging - increased to 30 seconds
           const exchangePromise = supabase.auth.exchangeCodeForSession(window.location.href);
           
           const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Exchange timeout after 15 seconds')), 15000); // Increased timeout
+            setTimeout(() => reject(new Error('Exchange timeout after 30 seconds')), 30000);
           });
           
           const { data, error } = await Promise.race([exchangePromise, timeoutPromise]) as any;
@@ -66,6 +67,25 @@ export default function OAuthCallback() {
               name: error.name,
               stack: error.stack
             });
+            
+            // Retry logic for certain types of errors
+            if (retryCount < 2 && (
+              error.message?.includes('timeout') || 
+              error.message?.includes('network') ||
+              error.status === 408 ||
+              error.status === 500 ||
+              error.status === 502 ||
+              error.status === 503 ||
+              error.status === 504
+            )) {
+              console.log('[AUTH DEBUG] Retrying exchange, attempt:', retryCount + 1);
+              setRetryCount(prev => prev + 1);
+              // Wait 2 seconds before retry
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              // Recursive call to retry
+              return;
+            }
+            
             setErrorMessage(error.message || 'Failed to complete authentication');
             setStatus('error');
             setTimeout(() => router.replace(`/sign-in?error=exchange_failed&message=${encodeURIComponent(error.message)}`), 3000);
@@ -100,6 +120,16 @@ export default function OAuthCallback() {
           cause: error?.cause
         });
         
+        // Retry logic for timeout errors
+        if (retryCount < 2 && error?.message?.includes('timeout')) {
+          console.log('[AUTH DEBUG] Retrying after timeout, attempt:', retryCount + 1);
+          setRetryCount(prev => prev + 1);
+          // Wait 3 seconds before retry
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          // Recursive call to retry
+          return;
+        }
+        
         // Provide more specific error messages based on the error type
         let userMessage = 'Unexpected error during authentication';
         let errorCode = 'callback_exception';
@@ -120,7 +150,7 @@ export default function OAuthCallback() {
         setTimeout(() => router.replace(`/sign-in?error=${errorCode}&message=${encodeURIComponent(userMessage)}`), 3000);
       }
     })();
-  }, [router]);
+  }, [router, retryCount]);
 
   if (status === 'loading') {
     return (
@@ -128,7 +158,12 @@ export default function OAuthCallback() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-2 text-gray-600">Completing sign-in...</p>
-          <p className="text-xs text-gray-400 mt-1">This may take a few seconds</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {retryCount > 0 ? `Retry attempt ${retryCount}/2` : 'This may take a few seconds'}
+          </p>
+          {retryCount > 0 && (
+            <p className="text-xs text-gray-400 mt-1">Please wait while we retry...</p>
+          )}
         </div>
       </div>
     );
