@@ -54,9 +54,9 @@ OPENAI_API_KEY=sk-your-openai-api-key-here
 ### Payment Processing (Future Enhancement)
 
 ```bash
-# Stripe Configuration
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+# Stripe Configuration (Currently Removed)
+# STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+# STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 ```
 
 ### Additional Google Services (Future Enhancement)
@@ -112,9 +112,9 @@ GCS_BUCKET_NAME=your-gcs-bucket-name
 # OpenAI
 OPENAI_API_KEY=sk-your-openai-api-key
 
-# Optional: Stripe (for future payment features)
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+# Optional: Stripe (currently removed - for future payment features)
+# STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+# STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 ```
 
 ### Local Development Notes

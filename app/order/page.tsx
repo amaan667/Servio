@@ -315,30 +315,8 @@ export default function CustomerOrderPage() {
 
               {!submittedOrder?.id && submittedOrder?.pendingOrderData ? (
                 <div className="space-y-2">
-                  <h3 className="font-semibold">Payment Required</h3>
-                  <Button onClick={async()=>{
-                    try{
-                      const r=await fetch('/api/stripe/checkout',{
-                        method:'POST',
-                        headers:{'content-type':'application/json'},
-                        body:JSON.stringify({
-                          orderData: submittedOrder.pendingOrderData,
-                          returnUrl: window.location.href
-                        })
-                      });
-                      const j=await r.json();
-                      if(r.ok && j?.url){ 
-                        window.location.href=j.url; 
-                      } else { 
-                        alert(j?.error||'Failed to start checkout'); 
-                      }
-                    }catch(e){ 
-                      alert('Failed to start checkout'); 
-                    }
-                  }} className="w-full">
-                    Pay with card
-                  </Button>
-                  <p className="text-xs text-gray-500">Payment via Stripe Checkout. Order will be confirmed after payment.</p>
+                  <h3 className="font-semibold">Order Submitted</h3>
+                  <p className="text-sm text-gray-600">Your order has been submitted successfully. Payment will be handled at the venue.</p>
                 </div>
               ) : null}
 

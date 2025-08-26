@@ -1,7 +1,4 @@
 export const ENV = {
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY!,
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET!,
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
   // Never allow localhost in production; prefer explicit production URLs
   APP_URL:
     process.env.NODE_ENV === 'production'

@@ -23,25 +23,11 @@ export default function PaymentSuccessPage() {
       return;
     }
 
-    // Create the order after successful payment
+    // Simulate order confirmation (since Stripe is removed)
     const createOrderAfterPayment = async () => {
       try {
-        // Call the webhook or API to create the order
-        const response = await fetch('/api/stripe/webhook/confirm-order', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ sessionId }),
-        });
-
-        const result = await response.json();
-
-        if (result.ok) {
-          setOrderConfirmed(true);
-        } else {
-          setError(result.error || 'Failed to confirm order');
-        }
+        // For now, just simulate success since Stripe is removed
+        setOrderConfirmed(true);
       } catch (err) {
         console.error('Error confirming order:', err);
         setError('Failed to confirm order. Please contact support.');
