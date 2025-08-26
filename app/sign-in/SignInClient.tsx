@@ -20,12 +20,11 @@ export default function SignInClient() {
     try {
       setBusy(true);
       setErr(null);
-      const redirectTo = `${getSiteUrl()}/auth/callback`;
-      const { error } = await supabase.auth.signInWithOAuth({
+      const site = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
+      await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo },
+        options: { redirectTo: `${site}/auth/callback` },
       });
-      if (error) throw error;
       // Supabase will redirect to Google's consent → back to /auth/callback
     } catch (e: any) {
       setErr(e?.message ?? "Sign-in failed");
