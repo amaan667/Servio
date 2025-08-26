@@ -13,9 +13,11 @@ function SignInPageContent() {
     try {
       console.log('[AUTH DEBUG] Starting Google OAuth flow');
       setLoading(true);
+      
+      // Try server-side callback first, then fallback to client-side
       const site = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://servio-production.up.railway.app');
-      const redirectTo = `${site}/auth/callback`;
-      console.log('[AUTH DEBUG] OAuth redirect URL:', redirectTo);
+      const redirectTo = `${site}/api/auth/callback`;
+      console.log('[AUTH DEBUG] OAuth redirect URL (server-side):', redirectTo);
       
       console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
       const { error } = await supabase.auth.signInWithOAuth({

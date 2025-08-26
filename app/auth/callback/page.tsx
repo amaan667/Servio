@@ -35,21 +35,29 @@ export default function OAuthCallback() {
 
         if (hasCode) {
           console.log('[AUTH DEBUG] Exchanging code for session');
-          const { data, error } = await supabase.auth.exchangeCodeForSession({ 
+          
+          // Add timeout to prevent hanging
+          const exchangePromise = supabase.auth.exchangeCodeForSession({ 
             queryParams: url.searchParams 
           });
           
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Exchange timeout')), 10000); // 10 second timeout
+          });
+          
+          const { data, error } = await Promise.race([exchangePromise, timeoutPromise]) as any;
+          
           if (error) {
             console.error('[AUTH DEBUG] Exchange error:', error);
-            setErrorMessage('Failed to complete authentication');
+            setErrorMessage(error.message || 'Failed to complete authentication');
             setStatus('error');
             setTimeout(() => router.replace("/sign-in?error=exchange_failed"), 3000);
             return;
           }
 
           console.log('[AUTH DEBUG] Session exchange successful:', { 
-            hasUser: !!data.user, 
-            userId: data.user?.id 
+            hasUser: !!data?.user, 
+            userId: data?.user?.id 
           });
 
           // Clean up URL
@@ -61,11 +69,13 @@ export default function OAuthCallback() {
           setTimeout(() => router.replace("/dashboard"), 1000);
         } else {
           console.log('[AUTH DEBUG] No code found in callback, redirecting to sign-in');
-          router.replace("/sign-in?error=no_code");
+          setErrorMessage('No authorization code received');
+          setStatus('error');
+          setTimeout(() => router.replace("/sign-in?error=no_code"), 3000);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[AUTH DEBUG] Callback exception:', error);
-        setErrorMessage('Unexpected error during authentication');
+        setErrorMessage(error?.message || 'Unexpected error during authentication');
         setStatus('error');
         setTimeout(() => router.replace("/sign-in?error=callback_exception"), 3000);
       }
@@ -78,6 +88,7 @@ export default function OAuthCallback() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-2 text-gray-600">Completing sign-in...</p>
+          <p className="text-xs text-gray-400 mt-1">This may take a few seconds</p>
         </div>
       </div>
     );
