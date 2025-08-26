@@ -1,15 +1,25 @@
 import { NextResponse } from 'next/server';
-import { getAuthRedirectUrl } from '@/lib/auth';
 
 export async function GET() {
-  const debugInfo = {
-    authRedirectUrl: getAuthRedirectUrl('/auth/callback'),
-    nodeEnv: process.env.NODE_ENV,
-    appUrl: process.env.NEXT_PUBLIC_APP_URL,
-    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    timestamp: new Date().toISOString(),
-  };
+  try {
+    const envVars = {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      hasSiteUrl: !!process.env.NEXT_PUBLIC_SITE_URL,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+      debugAuth: process.env.NEXT_PUBLIC_DEBUG_AUTH,
+    };
 
-  return NextResponse.json(debugInfo);
+    return NextResponse.json({
+      success: true,
+      environment: envVars,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    return NextResponse.json({
+      success: false,
+      error: error.message || 'Unknown error',
+    }, { status: 500 });
+  }
 }

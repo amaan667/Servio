@@ -212,7 +212,7 @@ export async function signInUser(email: string, password: string) {
 
 export async function signInWithGoogle() {
   const supabase = supabaseBrowser();
-  const redirectTo = 'https://servio-production.up.railway.app';
+  const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
   console.log('[AUTH] starting oauth with redirect:', redirectTo);
   
   const { data, error } = await supabase.auth.signInWithOAuth({

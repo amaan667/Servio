@@ -15,7 +15,6 @@ export async function GET() {
     });
 
     if (error) {
-      console.error('[AUTH DEBUG] OAuth test failed:', error);
       return NextResponse.json({
         success: false,
         error: error.message,
@@ -23,19 +22,15 @@ export async function GET() {
       }, { status: 400 });
     }
 
-    console.log('[AUTH DEBUG] OAuth test successful:', { url: data.url, provider: data.provider });
-    
     return NextResponse.json({
       success: true,
       data: {
         url: data.url,
         provider: data.provider,
-        redirectTo: 'https://servio-production.up.railway.app/auth/callback',
       },
-      timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('[AUTH DEBUG] OAuth test exception:', error);
+    console.error('[AUTH DEBUG] OAuth config test failed:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Unknown error',

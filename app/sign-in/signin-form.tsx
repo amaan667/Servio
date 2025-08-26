@@ -220,6 +220,26 @@ export default function SignInForm({
               </div>
             )}
 
+            {/* Manual retry for stuck OAuth flows */}
+            {isBusy && (
+              <div className="mb-4 text-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDisplayError(null);
+                    setLoading(false);
+                    // Force a page reload to clear any stuck state
+                    window.location.reload();
+                  }}
+                  className="text-xs"
+                >
+                  Cancel & Try Again
+                </Button>
+              </div>
+            )}
+
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
