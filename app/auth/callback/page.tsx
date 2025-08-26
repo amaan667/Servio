@@ -25,17 +25,48 @@ function AuthCallbackContent() {
           return;
         }
 
+        console.log('[AUTH DEBUG] Auth callback processing code exchange');
         const supabase = createClient();
-        const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
-        if (exErr) {
-          console.error('[AUTH DEBUG] exchangeCodeForSession failed:', exErr);
-          router.replace('/sign-in?error=exchange_failed');
-          return;
+        
+        // Try the new exchangeCodeForSession method first
+        try {
+          const { data, error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+          if (exErr) {
+            console.error('[AUTH DEBUG] exchangeCodeForSession failed:', exErr);
+            throw exErr;
+          }
+          
+          if (data.session) {
+            console.log('[AUTH DEBUG] OAuth callback successful, redirecting to dashboard');
+            router.replace('/dashboard');
+            return;
+          } else {
+            throw new Error('No session returned from code exchange');
+          }
+        } catch (exErr: any) {
+          console.error('[AUTH DEBUG] exchangeCodeForSession failed, trying fallback:', exErr);
+          
+          // Fallback: try the old method with queryParams
+          const url = new URL(window.location.href);
+          const { data, error: fallbackErr } = await supabase.auth.exchangeCodeForSession({
+            queryParams: url.searchParams,
+          });
+          
+          if (fallbackErr) {
+            console.error('[AUTH DEBUG] Fallback exchangeCodeForSession also failed:', fallbackErr);
+            router.replace('/sign-in?error=exchange_failed');
+            return;
+          }
+          
+          if (data.session) {
+            console.log('[AUTH DEBUG] Fallback OAuth callback successful, redirecting to dashboard');
+            router.replace('/dashboard');
+            return;
+          } else {
+            router.replace('/sign-in?error=no_session');
+            return;
+          }
         }
-
-        // Route to dashboard after successful auth
-        console.log('[AUTH DEBUG] OAuth callback successful, redirecting to dashboard');
-        router.replace('/dashboard');
       } catch (e: any) {
         console.error('[AUTH DEBUG] Callback fatal:', e);
         router.replace('/sign-in?error=callback_failed');

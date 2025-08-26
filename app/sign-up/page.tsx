@@ -13,8 +13,8 @@ export default function SignUpPage() {
       
       // Use the current origin for redirect, fallback to production
       const redirectTo = typeof window !== 'undefined' 
-        ? `${window.location.origin}/dashboard`
-        : 'https://servio-production.up.railway.app/dashboard';
+        ? `${window.location.origin}/auth/callback`
+        : 'https://servio-production.up.railway.app/auth/callback';
         
       console.log('[AUTH] Starting Google OAuth redirect to:', redirectTo);
       

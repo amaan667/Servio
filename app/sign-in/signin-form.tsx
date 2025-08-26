@@ -66,20 +66,32 @@ export default function SignInForm({
       } else if (urlError === 'oauth_error') {
         errorText = errorMessage ? `OAuth error: ${errorMessage}` : 'OAuth authentication failed.';
       } else if (urlError === 'exchange_failed') {
-        errorText = errorMessage ? `Authentication failed: ${errorMessage}` : 'Authentication exchange failed.';
+        errorText = errorMessage ? `Authentication failed: ${errorMessage}` : 'Authentication exchange failed. Please try again.';
       } else if (urlError === 'missing_code') {
         errorText = 'Authentication code missing. Please try signing in again.';
       } else if (urlError === 'pkce_failed') {
         errorText = 'Authentication failed. Please try signing in again.';
+      } else if (urlError === 'callback_failed') {
+        errorText = 'Authentication callback failed. Please try signing in again.';
+      } else if (urlError === 'no_session') {
+        errorText = 'Authentication completed but no session was created. Please try again.';
       }
       
       setDisplayError(errorText);
+      
+      // Clean the URL after showing the error
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
     }
     
     if (signedOut === 'true') {
       // Clear any remaining form data when coming from sign-out
       setFormData({ email: "", password: "" });
       setDisplayError(null);
+      
+      // Clean the URL
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
     }
   }, [setDisplayError]);
 
@@ -189,6 +201,24 @@ export default function SignInForm({
               <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/><path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
               {isBusy ? 'Signing in…' : 'Sign in with Google'}
             </Button>
+
+            {displayError && displayError.includes('Google') && (
+              <div className="mb-4 text-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDisplayError(null);
+                    // Force a page reload to clear any stuck state
+                    window.location.reload();
+                  }}
+                  className="text-xs"
+                >
+                  Try Again
+                </Button>
+              </div>
+            )}
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
