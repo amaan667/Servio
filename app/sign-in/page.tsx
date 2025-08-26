@@ -14,7 +14,7 @@ function SignInPageContent() {
       console.log('[AUTH DEBUG] Starting Google OAuth flow');
       setLoading(true);
       
-      // ALWAYS use production URL for OAuth redirects - use client callback for PKCE
+      // Use production URL for OAuth redirects
       const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
       console.log('[AUTH DEBUG] OAuth redirect URL (production):', redirectTo);
       
@@ -23,10 +23,9 @@ function SignInPageContent() {
         provider: 'google',
         options: {
           redirectTo,
-          // Force Google account chooser and avoid cached flows that can hang.
+          // Remove problematic query parameters that can interfere with PKCE
           queryParams: { 
-            prompt: 'select_account',
-            access_type: 'offline'
+            prompt: 'select_account'
           },
         },
       });
