@@ -219,20 +219,53 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
+  console.log('[AUTH DEBUG] ===== signInWithGoogle Function Called =====');
+  console.log('[AUTH DEBUG] Environment variables:', {
+    hasAppUrl: !!process.env.NEXT_PUBLIC_APP_URL,
+    appUrl: process.env.NEXT_PUBLIC_APP_URL,
+    timestamp: new Date().toISOString()
+  });
+  
   const supabase = supabaseBrowser();
   const base = process.env.NEXT_PUBLIC_APP_URL!;
-  console.log('[AUTH] starting oauth with redirect:', `${base}/auth/callback`);
+  console.log('[AUTH DEBUG] Using base URL for redirect:', base);
+  console.log('[AUTH DEBUG] Full redirect URL:', `${base}/auth/callback`);
   
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${base}/auth/callback`, // must be EXACT and allowed in Supabase dashboard
-      queryParams: { prompt: 'select_account' },
-    },
-  });
+  try {
+    console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${base}/auth/callback`, // must be EXACT and allowed in Supabase dashboard
+        queryParams: { prompt: 'select_account' },
+      },
+    });
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      console.log('[AUTH DEBUG] ❌ ERROR: OAuth initiation failed:', {
+        error: error.message,
+        errorCode: error.status,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
+    
+    console.log('[AUTH DEBUG] ✅ OAuth initiation successful:', {
+      hasData: !!data,
+      hasUrl: !!data.url,
+      provider: data.provider,
+      timestamp: new Date().toISOString()
+    });
+    
+    return data;
+  } catch (error) {
+    console.log('[AUTH DEBUG] ❌ EXCEPTION: signInWithGoogle failed:', {
+      error: error?.message,
+      stack: error?.stack,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
 }
 
 // Handle Google OAuth sign-up and create venue

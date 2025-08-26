@@ -37,12 +37,24 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
 
   // Check for URL parameters
   useEffect(() => {
+    console.log('[AUTH DEBUG] ===== SignInForm Component Mounted =====');
+    console.log('[AUTH DEBUG] Current URL:', window.location.href);
+    console.log('[AUTH DEBUG] User agent:', navigator.userAgent);
+    console.log('[AUTH DEBUG] Timestamp:', new Date().toISOString());
+    
     const urlParams = new URLSearchParams(window.location.search);
     const urlError = urlParams.get('error');
     const errorMessage = urlParams.get('message');
     const signedOut = urlParams.get('signedOut');
     
+    console.log('[AUTH DEBUG] URL parameters found:', {
+      error: urlError,
+      message: errorMessage,
+      signedOut: signedOut
+    });
+    
     if (urlError) {
+      console.log('[AUTH DEBUG] ❌ ERROR: Processing URL error parameter:', urlError);
       let errorText = `Authentication error: ${urlError}`;
       
       // Handle specific error cases
@@ -62,53 +74,65 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
         errorText = 'Authentication timed out. Please try signing in again.';
       } else if (urlError === 'unexpected_error') {
         errorText = 'An unexpected error occurred during authentication. Please try again.';
+      } else if (urlError === 'oauth_restart_failed') {
+        errorText = 'OAuth restart failed. Please try signing in again.';
+      } else if (urlError === 'oauth_restart_exception') {
+        errorText = 'OAuth restart encountered an exception. Please try signing in again.';
       }
       
+      console.log('[AUTH DEBUG] Setting error message:', errorText);
       setError(errorText);
     }
     
     if (signedOut === 'true') {
+      console.log('[AUTH DEBUG] User signed out, clearing form data');
       // Clear any remaining form data when coming from sign-out
       setFormData({ email: "", password: "" });
       setError(null);
     }
+    
+    console.log('[AUTH DEBUG] ===== SignInForm Component Mounted =====');
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[AUTH] SignInForm submit start', { email: formData.email });
+    console.log('[AUTH DEBUG] ===== Email/Password Sign In Started =====');
+    console.log('[AUTH DEBUG] Form data:', { email: formData.email, hasPassword: !!formData.password });
 
     setError(null);
 
     if (!formData.email.trim()) {
+      console.log('[AUTH DEBUG] ❌ VALIDATION: Email is empty');
       setError("Please enter your email address.");
       return;
     }
 
     if (!formData.password) {
+      console.log('[AUTH DEBUG] ❌ VALIDATION: Password is empty');
       setError("Please enter your password.");
       return;
     }
 
     setLoading(true);
+    console.log('[AUTH DEBUG] 🔄 Calling signInUser function');
 
     try {
-      console.log('[AUTH] SignInForm calling signInUser');
       const result = await signInUser(formData.email.trim(), formData.password);
 
       if (result.success) {
-        console.log('[AUTH] SignInForm sign-in success, redirecting to dashboard');
+        console.log('[AUTH DEBUG] ✅ Email/password sign-in successful, redirecting to dashboard');
         // Force a page refresh to ensure auth state is updated
         window.location.href = '/dashboard';
       } else {
-        console.log('[AUTH] SignInForm sign-in failed', { message: result.message });
+        console.log('[AUTH DEBUG] ❌ Email/password sign-in failed:', { message: result.message });
         setError(result.message || "Invalid email or password");
       }
     } catch (error: any) {
-      console.log('[AUTH] SignInForm unexpected error', { message: error?.message });
+      console.log('[AUTH DEBUG] ❌ EXCEPTION: Email/password sign-in error:', { message: error?.message });
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
+      console.log('[AUTH DEBUG] ===== Email/Password Sign In Completed =====');
     }
   };
 
@@ -136,24 +160,49 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
               type="button"
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
+                console.log('[AUTH DEBUG] ===== Google OAuth Sign In Started =====');
+                console.log('[AUTH DEBUG] Button clicked at:', new Date().toISOString());
+                console.log('[AUTH DEBUG] Current URL:', window.location.href);
+                console.log('[AUTH DEBUG] User agent:', navigator.userAgent);
+                
                 setError(null);
                 try {
-                  console.log('[AUTH DEBUG] Starting Google OAuth sign-in');
+                  console.log('[AUTH DEBUG] 🔍 Step 1: Determining origin for redirect');
                   
                   // Use the same URL resolution logic as the callback
                   const origin = typeof window !== "undefined" ? window.location.origin : "https://servio-production.up.railway.app";
-                  console.log('[AUTH DEBUG] Using origin for redirect:', origin);
+                  console.log('[AUTH DEBUG] Origin determined:', origin);
+                  console.log('[AUTH DEBUG] Redirect URL will be:', `${origin}/auth/callback`);
                   
                   // Clear any stale auth state
+                  console.log('[AUTH DEBUG] 🔄 Step 2: Clearing stale auth state');
                   try {
+                    const keysToRemove = Object.keys(localStorage).filter(k => 
+                      k.startsWith("sb-") || k.includes("pkce")
+                    );
+                    console.log('[AUTH DEBUG] Found keys to remove:', keysToRemove);
+                    
                     Object.keys(localStorage).forEach(k => { 
-                      if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k); 
+                      if (k.startsWith("sb-") || k.includes("pkce")) {
+                        const value = localStorage.getItem(k);
+                        console.log('[AUTH DEBUG] Removing key:', k, 'with value length:', value?.length);
+                        localStorage.removeItem(k); 
+                      }
                     });
-                    console.log('[AUTH DEBUG] Cleared stale auth state');
+                    console.log('[AUTH DEBUG] ✅ Stale auth state cleared');
                   } catch (clearError) {
-                    console.log('[AUTH DEBUG] Error clearing localStorage:', clearError);
+                    console.log('[AUTH DEBUG] ❌ ERROR: Failed to clear localStorage:', clearError);
                   }
                   
+                  console.log('[AUTH DEBUG] 🔄 Step 3: Calling supabase.auth.signInWithOAuth');
+                  console.log('[AUTH DEBUG] OAuth options:', {
+                    provider: "google",
+                    flowType: "pkce",
+                    redirectTo: `${origin}/auth/callback`,
+                    queryParams: { prompt: 'select_account' }
+                  });
+                  
+                  const startTime = Date.now();
                   const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: "google",
                     options: { 
@@ -162,15 +211,34 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                       queryParams: { prompt: 'select_account' }
                     },
                   });
+                  const oauthTime = Date.now() - startTime;
+                  
+                  console.log('[AUTH DEBUG] OAuth call completed in', oauthTime, 'ms');
                   
                   if (error) {
-                    console.error('[AUTH DEBUG] OAuth initiation error:', error);
+                    console.log('[AUTH DEBUG] ❌ ERROR: OAuth initiation failed:', {
+                      error: error.message,
+                      errorCode: error.status,
+                      oauthTime
+                    });
                     setError(`Google sign-in failed: ${error.message || "Please try again."}`);
                   } else {
-                    console.log('[AUTH DEBUG] OAuth initiated successfully');
+                    console.log('[AUTH DEBUG] ✅ OAuth initiated successfully');
+                    console.log('[AUTH DEBUG] OAuth response data:', {
+                      hasUrl: !!data.url,
+                      urlLength: data.url?.length,
+                      hasProvider: !!data.provider,
+                      provider: data.provider
+                    });
+                    console.log('[AUTH DEBUG] Browser should now redirect to Google OAuth');
+                    console.log('[AUTH DEBUG] ===== Google OAuth Sign In Initiated Successfully =====');
                   }
                 } catch (err: any) {
-                  console.error('[AUTH DEBUG] Google sign-in error', { message: err?.message });
+                  console.log('[AUTH DEBUG] ❌ EXCEPTION: Google sign-in error:', { 
+                    message: err?.message,
+                    stack: err?.stack,
+                    timestamp: new Date().toISOString()
+                  });
                   setError(`Google sign-in failed: ${err.message || "Please try again."}`);
                 }
               }}
