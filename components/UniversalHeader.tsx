@@ -35,16 +35,12 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
   // For development with placeholder Supabase config, always show sign-in button
   const isDevelopment = process.env.NODE_ENV === 'development';
-  const hasValidSupabaseConfig = process.env.NEXT_PUBLIC_SUPABASE_URL && 
-    process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co' &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== 'placeholder-key';
 
   // Fetch primary venue when user is signed in
   useEffect(() => {
     const fetchPrimaryVenue = async () => {
       try {
-        if (session?.user && hasValidSupabaseConfig) {
+        if (session?.user) {
           const { data, error } = await supabase
             .from('venues')
             .select('venue_id')
@@ -70,7 +66,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
       setPrimaryVenueId(venueId);
       setLoading(false);
     }
-  }, [venueId, session, hasValidSupabaseConfig]);
+  }, [venueId, session]);
 
   const resolvedVenueId = venueId ?? primaryVenueId;
 
@@ -81,6 +77,8 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
   // Navigation links
   const homeHref = '/';
+  const featuresHref = '/#features';
+  const pricingHref = '/#pricing';
   const dashboardHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
   const settingsHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/settings';
 
@@ -120,34 +118,25 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
           <div className="hidden md:flex items-center space-x-4 order-3">
             {/* Always show basic navigation links */}
             <Link
-              href={homeHref}
-              className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Home
-            </Link>
-            <Link
-              href="#features"
+              href={featuresHref}
               className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Features
             </Link>
             <Link
-              href="#pricing"
+              href={pricingHref}
               className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Pricing
             </Link>
-            
-            {/* Show Sign In button always */}
-            <Link
-              href="/sign-in"
-              className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
-            >
-              Sign In
-            </Link>
-            
-            {/* Show additional navigation only when properly authenticated */}
-            {session && hasValidSupabaseConfig ? (
+            {!session ? (
+              <Link
+                href="/sign-in"
+                className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
+              >
+                Sign In
+              </Link>
+            ) : (
               <>
                 <Link
                   href={dashboardHref}
@@ -155,56 +144,20 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                 >
                   Dashboard
                 </Link>
-                {/* Modern dropdown menu for user actions */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    >
-                      <User className="h-4 w-4" />
-                      <span className="text-sm font-medium">Account</span>
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem asChild>
-                      <Link href={homeHref} className="flex items-center gap-2">
-                        <Home className="h-4 w-4" />
-                        Home
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={dashboardHref} className="flex items-center gap-2">
-                        <span>Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    {showActions && (
-                      <DropdownMenuItem asChild>
-                        <Link href={settingsHref} className="flex items-center gap-2">
-                          <Settings className="h-4 w-4" />
-                          Settings
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={handleSignOut}
-                      className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  onClick={handleSignOut}
+                >
+                  Sign Out
+                </Button>
               </>
-            ) : null}
+            )}
           </div>
 
           {/* Mobile Navigation - Right side */}
           <div className="md:hidden flex items-center order-3">
-            {/* Show hamburger menu only on home page */}
+            {/* Show hamburger menu on home page */}
             {isHomePage && (
               <Button
                 variant="ghost"
@@ -271,43 +224,43 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
             {/* Always show basic navigation links */}
             <Link
-              href={homeHref}
-              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="#features"
+              href={featuresHref}
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
               Features
             </Link>
             <Link
-              href="#pricing"
+              href={pricingHref}
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
             </Link>
-            <Link
-              href="/sign-in"
-              className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Sign In
-            </Link>
-            
-            {/* Show additional navigation only when properly authenticated */}
-            {session && hasValidSupabaseConfig && (
+            {!session ? (
               <Link
-                href={dashboardHref}
-                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                href="/sign-in"
+                className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Dashboard
+                Sign In
               </Link>
+            ) : (
+              <>
+                <Link
+                  href={dashboardHref}
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={() => { setMobileMenuOpen(false); handleSignOut(); }}
+                  className="text-red-600 hover:text-red-700 block w-full text-left px-3 py-2 rounded-md text-base font-medium"
+                >
+                  Sign Out
+                </button>
+              </>
             )}
           </div>
         </div>
