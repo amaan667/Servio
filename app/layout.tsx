@@ -5,6 +5,7 @@ import Providers from "./providers";
 import ThemeToggleFloat from "@/components/ThemeToggleFloat";
 import AppHeader from "@/components/AppHeader";
 import AuthWrapper from "@/components/AuthWrapper";
+import SessionStateFix from "@/components/SessionStateFix";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ErrorBoundary>
           <Providers>
+            <SessionStateFix />
             <AppHeader />
             {children}
             <ThemeToggleFloat />
