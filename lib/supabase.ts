@@ -219,50 +219,80 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
+  console.log('[AUTH DEBUG] signInWithGoogle called');
+  
   const origin = typeof window !== "undefined"
     ? window.location.origin
     : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
 
+  console.log('[AUTH DEBUG] Origin determined:', origin);
+  console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
+
   try {
+    console.log('[AUTH DEBUG] Clearing localStorage items');
     Object.keys(localStorage).forEach(k => {
-      if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k);
+      if (k.startsWith("sb-") || k.includes("pkce")) {
+        console.log('[AUTH DEBUG] Removing localStorage item:', k);
+        localStorage.removeItem(k);
+      }
     });
-  } catch {}
+  } catch (error) {
+    console.log('[AUTH DEBUG] Error clearing localStorage:', error);
+  }
 
   const supabase = supabaseBrowser();
+  console.log('[AUTH DEBUG] Supabase client created');
   
+  const redirectTo = `${origin}/auth/callback`;
+  console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
+  
+  console.log('[AUTH DEBUG] Calling signInWithOAuth with provider: google');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { 
       flowType: "pkce", 
-      redirectTo: `${origin}/auth/callback` 
+      redirectTo: redirectTo
     },
   });
 
-  if (error) throw error;
+  console.log('[AUTH DEBUG] signInWithOAuth response:', { data, error });
+
+  if (error) {
+    console.log('[AUTH DEBUG] OAuth error occurred:', error);
+    throw error;
+  }
+  
+  console.log('[AUTH DEBUG] OAuth initiated successfully, data:', data);
   return data;
 }
 
 // Handle Google OAuth sign-up and create venue
 export async function handleGoogleSignUp(userId: string, userEmail: string, fullName?: string) {
+  console.log('[AUTH DEBUG] handleGoogleSignUp called with:', { userId, userEmail, fullName });
+  
   try {
-    console.log("Creating venue for Google sign-up user:", userId);
+    console.log('[AUTH DEBUG] Creating venue for Google sign-up user:', userId);
     
     // Check if user already has a venue
+    console.log('[AUTH DEBUG] Checking for existing venue');
     const { data: existingVenue, error: checkError } = await supabase
       .from("venues")
       .select("*")
       .eq("owner_id", userId)
       .single();
 
+    console.log('[AUTH DEBUG] Existing venue check result:', { existingVenue, checkError });
+
     if (existingVenue && !checkError) {
-      console.log("User already has venue:", existingVenue.venue_id);
+      console.log('[AUTH DEBUG] User already has venue:', existingVenue.venue_id);
       return { success: true, venue: existingVenue };
     }
 
     // Create default venue for new Google user
     const venueId = `venue-${userId.slice(0, 8)}`;
     const venueName = fullName ? `${fullName}'s Business` : "My Business";
+    
+    console.log('[AUTH DEBUG] Creating new venue with:', { venueId, venueName, userId });
     
     const { data: newVenue, error: createError } = await supabase
       .from("venues")
@@ -277,15 +307,17 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
       .select()
       .single();
 
+    console.log('[AUTH DEBUG] Venue creation result:', { newVenue, createError });
+
     if (createError) {
-      console.error("Failed to create venue for Google user:", createError);
+      console.log('[AUTH DEBUG] Failed to create venue for Google user:', createError);
       return { success: false, error: createError.message };
     }
 
-    console.log("Created venue for Google user:", newVenue.venue_id);
+    console.log('[AUTH DEBUG] Created venue for Google user:', newVenue.venue_id);
     return { success: true, venue: newVenue };
   } catch (error) {
-    console.error("Error in handleGoogleSignUp:", error);
+    console.log('[AUTH DEBUG] Error in handleGoogleSignUp:', error);
     return { success: false, error: "Failed to create venue" };
   }
 }

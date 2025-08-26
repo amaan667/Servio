@@ -117,18 +117,46 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
               type="button"
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
+                console.log('[AUTH DEBUG] Google sign-up button clicked');
                 setError(null);
                 try {
+                  console.log('[AUTH DEBUG] Determining origin for OAuth');
                   const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
+                  console.log('[AUTH DEBUG] Origin determined:', origin);
+                  console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
+                  
+                  console.log('[AUTH DEBUG] Clearing localStorage before OAuth');
                   try {
-                    Object.keys(localStorage).forEach(k => { if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k); });
-                  } catch {}
-                  await supabase.auth.signInWithOAuth({
+                    Object.keys(localStorage).forEach(k => { 
+                      if (k.startsWith("sb-") || k.includes("pkce")) {
+                        console.log('[AUTH DEBUG] Removing localStorage item:', k);
+                        localStorage.removeItem(k); 
+                      }
+                    }); 
+                  } catch (storageError) {
+                    console.log('[AUTH DEBUG] Error clearing localStorage:', storageError);
+                  }
+                  
+                  console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
+                  const result = await supabase.auth.signInWithOAuth({
                     provider: "google",
                     options: { flowType: "pkce", redirectTo: `${origin}/auth/callback` },
                   });
+                  
+                  console.log('[AUTH DEBUG] OAuth initiation result:', result);
+                  
+                  if (result.error) {
+                    console.log('[AUTH DEBUG] OAuth initiation failed:', result.error);
+                    setError(`Google sign-up failed: ${result.error.message || "Please try again."}`);
+                  } else {
+                    console.log('[AUTH DEBUG] OAuth initiated successfully, should redirect to Google');
+                  }
                 } catch (err: any) {
-                  console.error('[AUTH] Google sign-up error', { message: err?.message });
+                  console.log('[AUTH DEBUG] Google sign-up error caught:', { 
+                    message: err?.message, 
+                    error: err,
+                    stack: err?.stack 
+                  });
                   setError(`Google sign-up failed: ${err.message || "Please try again."}`);
                 }
               }}
