@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -14,39 +14,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { createClient } from "@/lib/supabase/client";
+// Removed RefreshCw icon import for Clean Refresh button cleanup
+import { signInUser } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
+import { supabase } from "@/lib/sb-client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+// Removed SessionClearer from production to avoid redundant client-side sign-out
 
 interface SignInFormProps {
   onGoogleSignIn: () => Promise<void>;
   loading?: boolean;
-  error?: string | null;
-  setError?: (error: string | null) => void;
 }
 
-export default function SignInForm({ 
-  onGoogleSignIn, 
-  loading: externalLoading, 
-  error: externalError,
-  setError: setExternalError 
-}: SignInFormProps) {
+export default function SignInForm({ onGoogleSignIn, loading: externalLoading }: SignInFormProps) {
   const router = useRouter();
-  const sb = useMemo(() => createClient(), []);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Use external error if provided, otherwise use internal error
-  const displayError = externalError || error;
-  const setDisplayError = setExternalError || setError;
-
-  // Check if Supabase is properly configured
-  // Note: In production, we trust that the environment variables are set
-  // The actual Supabase client will handle connection errors gracefully
-  const isSupabaseConfigured = true; // Always assume configured in production
 
   // Check for URL parameters
   useEffect(() => {
@@ -66,103 +53,60 @@ export default function SignInForm({
       } else if (urlError === 'oauth_error') {
         errorText = errorMessage ? `OAuth error: ${errorMessage}` : 'OAuth authentication failed.';
       } else if (urlError === 'exchange_failed') {
-        errorText = errorMessage ? `Authentication failed: ${errorMessage}` : 'Authentication exchange failed. Please try again.';
+        errorText = errorMessage ? `Authentication failed: ${errorMessage}` : 'Authentication exchange failed.';
       } else if (urlError === 'missing_code') {
         errorText = 'Authentication code missing. Please try signing in again.';
       } else if (urlError === 'pkce_failed') {
         errorText = 'Authentication failed. Please try signing in again.';
-      } else if (urlError === 'callback_failed') {
-        errorText = 'Authentication callback failed. Please try signing in again.';
-      } else if (urlError === 'no_session') {
-        errorText = 'Authentication completed but no session was created. Please try again.';
       }
       
-      setDisplayError(errorText);
-      
-      // Clean the URL after showing the error
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, "", cleanUrl);
+      setError(errorText);
     }
     
     if (signedOut === 'true') {
       // Clear any remaining form data when coming from sign-out
       setFormData({ email: "", password: "" });
-      setDisplayError(null);
-      
-      // Clean the URL
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, "", cleanUrl);
+      setError(null);
     }
-  }, [setDisplayError]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[AUTH DEBUG] SignInForm submit start', { email: formData.email });
+    console.log('[AUTH] SignInForm submit start', { email: formData.email });
 
-    setDisplayError(null);
+    setError(null);
 
     if (!formData.email.trim()) {
-      setDisplayError("Please enter your email address.");
+      setError("Please enter your email address.");
       return;
     }
 
     if (!formData.password) {
-      setDisplayError("Please enter your password.");
+      setError("Please enter your password.");
       return;
     }
 
     setLoading(true);
 
     try {
-      console.log('[AUTH DEBUG] SignInForm calling signInWithPassword');
-      const { data, error } = await sb.auth.signInWithPassword({ 
-        email: formData.email.trim(), 
-        password: formData.password 
-      });
+      console.log('[AUTH] SignInForm calling signInUser');
+      const result = await signInUser(formData.email.trim(), formData.password);
 
-      if (error) {
-        console.log('[AUTH DEBUG] SignInForm sign-in failed', { message: error.message });
-        setDisplayError(error.message || "Invalid email or password");
-      } else if (data.session) {
-        console.log('[AUTH DEBUG] SignInForm sign-in success, redirecting to dashboard');
+      if (result.success) {
+        console.log('[AUTH] SignInForm sign-in success, redirecting to dashboard');
+        // Redirect to dashboard (will route to venue or complete-profile as needed)
         router.replace('/dashboard');
+      } else {
+        console.log('[AUTH] SignInForm sign-in failed', { message: result.message });
+        setError(result.message || "Invalid email or password");
       }
     } catch (error: any) {
-      console.log('[AUTH DEBUG] SignInForm unexpected error', { message: error?.message });
-      setDisplayError("An unexpected error occurred. Please try again.");
+      console.log('[AUTH] SignInForm unexpected error', { message: error?.message });
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
-  // Show configuration error if Supabase is not set up
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-md w-full mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Configuration Error</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Supabase is not properly configured. Please check your environment variables.
-            </p>
-          </div>
-          <div className="mt-8">
-            <Card>
-              <CardContent className="pt-6">
-                <Alert variant="destructive">
-                  <AlertDescription>
-                    Missing environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const isBusy = loading || externalLoading;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -188,57 +132,19 @@ export default function SignInForm({
               type="button"
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
-                setDisplayError(null);
+                setError(null);
                 try {
                   await onGoogleSignIn();
                 } catch (err: any) {
-                  console.error('[AUTH DEBUG] Google sign-in error', { message: err?.message });
-                  setDisplayError(`Google sign-in failed: ${err.message || "Please try again."}`);
+                  console.error('[AUTH] Google sign-in error', { message: err?.message });
+                  setError(`Google sign-in failed: ${err.message || "Please try again."}`);
                 }
               }}
-              disabled={isBusy}
+              disabled={loading || externalLoading}
             >
               <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/><path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
-              {isBusy ? 'Signing in…' : 'Sign in with Google'}
+              {loading || externalLoading ? 'Redirecting…' : 'Sign in with Google'}
             </Button>
-
-            {displayError && displayError.includes('Google') && (
-              <div className="mb-4 text-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setDisplayError(null);
-                    // Force a page reload to clear any stuck state
-                    window.location.reload();
-                  }}
-                  className="text-xs"
-                >
-                  Try Again
-                </Button>
-              </div>
-            )}
-
-            {/* Manual retry for stuck OAuth flows */}
-            {isBusy && (
-              <div className="mb-4 text-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setDisplayError(null);
-                    setLoading(false);
-                    // Force a page reload to clear any stuck state
-                    window.location.reload();
-                  }}
-                  className="text-xs"
-                >
-                  Cancel & Try Again
-                </Button>
-              </div>
-            )}
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -250,9 +156,9 @@ export default function SignInForm({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              {displayError && (
+              {error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{displayError}</AlertDescription>
+                  <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
@@ -266,7 +172,7 @@ export default function SignInForm({
                     setFormData({ ...formData, email: e.target.value })
                   }
                   placeholder="Enter your email"
-                  disabled={isBusy}
+                  disabled={loading}
                   required
                 />
               </div>
@@ -281,14 +187,12 @@ export default function SignInForm({
                     setFormData({ ...formData, password: e.target.value })
                   }
                   placeholder="Enter your password"
-                  disabled={isBusy}
+                  disabled={loading}
                   required
                 />
               </div>
 
-              <Button type="submit" disabled={isBusy} className="w-full">
-                {isBusy ? 'Signing in…' : 'Sign In'}
-              </Button>
+              <Button type="submit" disabled={loading} className="w-full">Sign In</Button>
             </form>
 
             <div className="mt-6 text-center space-y-2">
