@@ -1,46 +1,49 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabase = createClient();
     
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json({
-        error: 'Missing Supabase configuration',
-        hasUrl: !!supabaseUrl,
-        hasKey: !!supabaseKey
-      }, { status: 500 });
-    }
+    // Test environment variables
+    const envCheck = {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
+      nodeEnv: process.env.NODE_ENV,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    };
 
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
-
-    // Test basic connectivity
-    const { data, error } = await supabase.auth.getSession();
+    // Test Supabase connection
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
+    // Test database connection
+    const { data: testData, error: dbError } = await supabase
+      .from('venues')
+      .select('count')
+      .limit(1);
+
     return NextResponse.json({
-      success: true,
-      hasSession: !!data.session,
-      hasUser: !!data.session?.user,
-      error: error?.message,
+      ok: true,
+      envCheck,
+      session: {
+        hasSession: !!sessionData.session,
+        error: sessionError?.message,
+      },
+      database: {
+        connected: !dbError,
+        error: dbError?.message,
+      },
       timestamp: new Date().toISOString(),
-      config: {
-        hasUrl: !!supabaseUrl,
-        hasKey: !!supabaseKey,
-        urlPrefix: supabaseUrl.substring(0, 20) + '...'
-      }
     });
   } catch (error: any) {
     return NextResponse.json({
-      error: 'Authentication test failed',
-      message: error.message,
-      timestamp: new Date().toISOString()
+      ok: false,
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
     }, { status: 500 });
   }
 }
