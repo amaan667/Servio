@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 // Removed RefreshCw icon import for Clean Refresh button cleanup
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { supabase } from "@/lib/sb-client";
+import { supabase, clearAuthStorage } from "@/lib/sb-client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 // Removed SessionClearer from production to avoid redundant client-side sign-out
 
@@ -67,17 +67,19 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
       } else if (urlError === 'exchange_failed') {
         errorText = errorMessage ? `Authentication failed: ${errorMessage}` : 'Authentication exchange failed.';
       } else if (urlError === 'missing_code') {
-        errorText = 'Authentication code missing. Please try signing in again.';
+        errorText = errorMessage || 'Authentication code missing. Please try signing in again.';
       } else if (urlError === 'no_session') {
-        errorText = 'Authentication completed but no session was created. Please try signing in again.';
+        errorText = errorMessage || 'Authentication completed but no session was created. Please try signing in again.';
       } else if (urlError === 'pkce_failed') {
         errorText = 'Authentication failed. Please try signing in again.';
       } else if (urlError === 'timeout') {
-        errorText = 'Authentication timed out. Please try signing in again.';
+        errorText = errorMessage || 'Authentication timed out. Please try signing in again.';
+      } else if (urlError === 'session_verification_failed') {
+        errorText = errorMessage || 'Session verification failed. Please try signing in again.';
       } else if (urlError === 'unexpected_error') {
         errorText = errorMessage ? `An unexpected error occurred: ${errorMessage}` : 'An unexpected error occurred during authentication. Please try again.';
       } else if (urlError === 'oauth_restart_failed') {
-        errorText = 'OAuth restart failed. Please try signing in again.';
+        errorText = errorMessage || 'OAuth restart failed. Please try signing in again.';
       } else if (urlError === 'oauth_restart_exception') {
         errorText = 'OAuth restart encountered an exception. Please try signing in again.';
       }
@@ -180,23 +182,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   
                   // Clear any stale auth state
                   console.log('[AUTH DEBUG] 🔄 Step 2: Clearing stale auth state');
-                  try {
-                    const keysToRemove = Object.keys(localStorage).filter(k => 
-                      k.startsWith("sb-") || k.includes("pkce")
-                    );
-                    console.log('[AUTH DEBUG] Found keys to remove:', keysToRemove);
-                    
-                    Object.keys(localStorage).forEach(k => { 
-                      if (k.startsWith("sb-") || k.includes("pkce")) {
-                        const value = localStorage.getItem(k);
-                        console.log('[AUTH DEBUG] Removing key:', k, 'with value length:', value?.length);
-                        localStorage.removeItem(k); 
-                      }
-                    });
-                    console.log('[AUTH DEBUG] ✅ Stale auth state cleared');
-                  } catch (clearError) {
-                    console.log('[AUTH DEBUG] ❌ ERROR: Failed to clear localStorage:', clearError);
-                  }
+                  clearAuthStorage();
                   
                   console.log('[AUTH DEBUG] 🔄 Step 3: Calling supabase.auth.signInWithOAuth');
                   console.log('[AUTH DEBUG] OAuth options:', {
@@ -207,35 +193,84 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   });
                   
                   const startTime = Date.now();
-                  const { data, error } = await supabase.auth.signInWithOAuth({
-                    provider: "google",
-                    options: { 
-                      flowType: "pkce", 
-                      redirectTo: `${origin}/auth/callback`,
-                      queryParams: { prompt: 'select_account' }
-                    },
-                  });
-                  const oauthTime = Date.now() - startTime;
+                  // Add retry mechanism for OAuth initiation
+                  let retryCount = 0;
+                  const maxRetries = 2;
+                  let lastError = null;
                   
-                  console.log('[AUTH DEBUG] OAuth call completed in', oauthTime, 'ms');
+                  while (retryCount <= maxRetries) {
+                    try {
+                      console.log('[AUTH DEBUG] 🔄 OAuth attempt', retryCount + 1, 'of', maxRetries + 1);
+                      
+                      const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: "google",
+                        options: { 
+                          flowType: "pkce", 
+                          redirectTo: `${origin}/auth/callback`,
+                          queryParams: { prompt: 'select_account' }
+                        },
+                      });
+                      const oauthTime = Date.now() - startTime;
+                      
+                      console.log('[AUTH DEBUG] OAuth call completed in', oauthTime, 'ms');
+                      
+                      if (error) {
+                        lastError = error;
+                        console.log('[AUTH DEBUG] ❌ ERROR: OAuth initiation failed (attempt', retryCount + 1, '):', {
+                          error: error.message,
+                          errorCode: error.status,
+                          oauthTime
+                        });
+                        
+                        // If it's a network error or timeout, retry
+                        if (retryCount < maxRetries && (
+                          error.message.includes('network') || 
+                          error.message.includes('timeout') ||
+                          error.message.includes('fetch')
+                        )) {
+                          console.log('[AUTH DEBUG] 🔄 Retrying OAuth due to network/timeout error');
+                          retryCount++;
+                          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+                          continue;
+                        }
+                        
+                        setError(`Google sign-in failed: ${error.message || "Please try again."}`);
+                        break;
+                      } else {
+                        console.log('[AUTH DEBUG] ✅ OAuth initiated successfully');
+                        console.log('[AUTH DEBUG] OAuth response data:', {
+                          hasUrl: !!data.url,
+                          urlLength: data.url?.length,
+                          hasProvider: !!data.provider,
+                          provider: data.provider
+                        });
+                        console.log('[AUTH DEBUG] Browser should now redirect to Google OAuth');
+                        console.log('[AUTH DEBUG] ===== Google OAuth Sign In Initiated Successfully =====');
+                        break; // Success, exit retry loop
+                      }
+                    } catch (retryError: any) {
+                      lastError = retryError;
+                      console.log('[AUTH DEBUG] ❌ EXCEPTION: OAuth initiation error (attempt', retryCount + 1, '):', {
+                        message: retryError?.message,
+                        stack: retryError?.stack
+                      });
+                      
+                      if (retryCount < maxRetries) {
+                        console.log('[AUTH DEBUG] 🔄 Retrying OAuth due to exception');
+                        retryCount++;
+                        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+                        continue;
+                      }
+                      
+                      setError(`Google sign-in failed: ${retryError.message || "Please try again."}`);
+                      break;
+                    }
+                  }
                   
-                  if (error) {
-                    console.log('[AUTH DEBUG] ❌ ERROR: OAuth initiation failed:', {
-                      error: error.message,
-                      errorCode: error.status,
-                      oauthTime
-                    });
-                    setError(`Google sign-in failed: ${error.message || "Please try again."}`);
-                  } else {
-                    console.log('[AUTH DEBUG] ✅ OAuth initiated successfully');
-                    console.log('[AUTH DEBUG] OAuth response data:', {
-                      hasUrl: !!data.url,
-                      urlLength: data.url?.length,
-                      hasProvider: !!data.provider,
-                      provider: data.provider
-                    });
-                    console.log('[AUTH DEBUG] Browser should now redirect to Google OAuth');
-                    console.log('[AUTH DEBUG] ===== Google OAuth Sign In Initiated Successfully =====');
+                  // If we exhausted all retries
+                  if (retryCount > maxRetries && lastError) {
+                    console.log('[AUTH DEBUG] ❌ All OAuth retry attempts failed');
+                    setError(`Google sign-in failed after ${maxRetries + 1} attempts. Please try again.`);
                   }
                 } catch (err: any) {
                   console.log('[AUTH DEBUG] ❌ EXCEPTION: Google sign-in error:', { 
@@ -311,6 +346,15 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   className="font-medium text-servio-purple hover:text-servio-purple/80"
                 >
                   Sign up here
+                </Link>
+              </p>
+              <p className="text-xs text-gray-500">
+                Having trouble?{" "}
+                <Link
+                  href="/auth/debug"
+                  className="font-medium text-servio-purple hover:text-servio-purple/80"
+                >
+                  Debug authentication
                 </Link>
               </p>
             </div>
