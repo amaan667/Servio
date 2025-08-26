@@ -12,6 +12,8 @@ function AuthCallbackContent() {
     const code = params.get('code');
     const error = params.get('error');
 
+    console.log('[AUTH DEBUG] Callback received:', { code: code ? 'present' : 'missing', error });
+
     (async () => {
       try {
         if (error) {
@@ -25,12 +27,14 @@ function AuthCallbackContent() {
           return;
         }
 
+        console.log('[AUTH DEBUG] Attempting to exchange code for session...');
         const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
         if (exErr) {
           console.error('[AUTH] exchangeCodeForSession failed:', exErr);
           router.replace('/sign-in?error=exchange_failed');
           return;
         }
+        console.log('[AUTH DEBUG] Code exchange successful');
 
         // Route based on whether venue exists
         const { data: { user } } = await supabase.auth.getUser();
