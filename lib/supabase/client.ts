@@ -6,15 +6,20 @@ export function createClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('[AUTH DEBUG] Missing Supabase environment variables:', {
+    console.error('[AUTH DEBUG] Missing Supabase environment variables:', {
       hasUrl: !!supabaseUrl,
-      hasKey: !!supabaseAnonKey
+      hasKey: !!supabaseAnonKey,
+      url: supabaseUrl,
+      key: supabaseAnonKey?.substring(0, 10) + '...'
     });
+    
+    // In production, this should never happen if Railway variables are set correctly
+    throw new Error('Supabase configuration is missing. Please check your environment variables.');
   }
 
   return createBrowserClient(
-    supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseAnonKey || 'placeholder-key',
+    supabaseUrl,
+    supabaseAnonKey,
     {
       auth: {
         persistSession: true,

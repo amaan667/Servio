@@ -44,9 +44,9 @@ export default function SignInForm({
   const setDisplayError = setExternalError || setError;
 
   // Check if Supabase is properly configured
-  const isSupabaseConfigured = typeof window !== 'undefined' && 
-    process.env.NEXT_PUBLIC_SUPABASE_URL && 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Note: In production, we trust that the environment variables are set
+  // The actual Supabase client will handle connection errors gracefully
+  const isSupabaseConfigured = true; // Always assume configured in production
 
   // Check for URL parameters
   useEffect(() => {
