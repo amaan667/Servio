@@ -1,7 +1,7 @@
 // middleware.ts
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 
 const PROD_BASE = process.env.NEXT_PUBLIC_APP_URL!;
 const PROD_URL = new URL(PROD_BASE);
@@ -17,7 +17,21 @@ export async function middleware(req: NextRequest) {
 
   // Handle Supabase session propagation
   try {
-    const supabase = createMiddlewareClient({ req, res });
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get: (name) => req.cookies.get(name)?.value,
+          set: (name, value, options) => {
+            res.cookies.set(name, value, options);
+          },
+          remove: (name, options) => {
+            res.cookies.set(name, '', { ...options, maxAge: 0 });
+          },
+        },
+      }
+    );
     await supabase.auth.getSession(); // propagates cookies to SSR
   } catch (error) {
     console.log('[AUTH DEBUG] Middleware session error:', error);
