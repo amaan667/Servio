@@ -189,12 +189,40 @@ export async function signUpUser(
 
 export async function signInUser(email: string, password: string) {
   try {
+    console.log('[AUTH DEBUG] signInUser called with:', {
+      email,
+      hasPassword: !!password,
+      passwordLength: password.length
+    });
+    
     logger.info("Attempting sign in", { email });
+    
+    console.log('[AUTH DEBUG] Calling supabase.auth.signInWithPassword');
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    console.log('[AUTH DEBUG] signInWithPassword result:', {
+      hasData: !!data,
+      hasUser: !!data?.user,
+      userId: data?.user?.id,
+      hasSession: !!data?.session,
+      hasError: !!error,
+      errorMessage: error?.message,
+      errorStatus: error?.status,
+      errorName: error?.name
+    });
+    
     if (error || !data.user) {
+      console.error('[AUTH DEBUG] Authentication failed:', {
+        error: error?.message,
+        status: error?.status,
+        name: error?.name,
+        hasUser: !!data?.user,
+        hasSession: !!data?.session
+      });
+      
       logger.error("Sign in failed", { error });
       return {
         success: false,
@@ -202,9 +230,23 @@ export async function signInUser(email: string, password: string) {
       };
     }
     
+    console.log('[AUTH DEBUG] Authentication successful:', {
+      userId: data.user.id,
+      userEmail: data.user.email,
+      hasSession: !!data.session,
+      sessionExpiresAt: data.session?.expires_at
+    });
+    
     logger.info("Sign in successful", { userId: data.user.id });
     return { success: true };
   } catch (error) {
+    console.error('[AUTH DEBUG] signInUser exception:', error);
+    console.error('[AUTH DEBUG] Exception details:', {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack
+    });
+    
     logger.error("Sign in error", { error });
     return { success: false, message: "An unexpected error occurred" };
   }

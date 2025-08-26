@@ -11,10 +11,12 @@ function SignInPageContent() {
 
   const signInWithGoogle = async () => {
     try {
+      console.log('[AUTH DEBUG] Starting Google OAuth flow');
       setLoading(true);
       const redirectTo = 'https://servio-production.up.railway.app';
-      console.log('[AUTH] Starting Google OAuth redirect to:', redirectTo);
+      console.log('[AUTH DEBUG] OAuth redirect URL:', redirectTo);
       
+      console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -25,25 +27,39 @@ function SignInPageContent() {
       });
       
       if (error) {
-        console.error('[AUTH] Google redirect start failed:', error);
+        console.error('[AUTH DEBUG] Google OAuth error:', error);
+        console.error('[AUTH DEBUG] Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
         alert('Could not start Google sign-in. Please try again.');
         setLoading(false);
         return;
       }
       
-      console.log('[AUTH] Google OAuth redirect initiated successfully');
+      console.log('[AUTH DEBUG] Google OAuth initiated successfully - browser should redirect');
       // No else branch: in redirect flow, the browser navigates away.
     } catch (e: any) {
-      console.error('[AUTH] Google sign-in threw:', e);
+      console.error('[AUTH DEBUG] Google OAuth exception:', e);
+      console.error('[AUTH DEBUG] Exception details:', {
+        message: e?.message,
+        name: e?.name,
+        stack: e?.stack
+      });
       alert('Sign-in failed to start. Please try again.');
       setLoading(false);
     }
   };
 
+  console.log('[AUTH DEBUG] SignInPageContent rendered, loading state:', loading);
+
   return <SignInForm onGoogleSignIn={signInWithGoogle} loading={loading} />;
 }
 
 export default function SignInPage() {
+  console.log('[AUTH DEBUG] SignInPage component mounted');
+  
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

@@ -5,6 +5,14 @@ import { createBrowserClient } from '@supabase/ssr';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+console.log('[AUTH DEBUG] Supabase client configuration:', {
+  hasUrl: !!supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+  url: supabaseUrl,
+  keyPrefix: supabaseAnonKey?.substring(0, 20) + '...',
+  environment: process.env.NODE_ENV
+});
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('[SUPABASE] Missing environment variables:', {
     hasUrl: !!supabaseUrl,
@@ -24,9 +32,16 @@ export const supabase = createBrowserClient(
   }
 );
 
+console.log('[AUTH DEBUG] Supabase client created successfully');
+
 // OPTIONAL: small logger to spot state flips in dev
 if (typeof window !== 'undefined') {
   supabase.auth.onAuthStateChange((evt, sess) => {
-    console.log('[AUTH DEBUG] client', evt, { hasSession: !!sess, user: !!sess?.user });
+    console.log('[AUTH DEBUG] Auth state change:', {
+      event: evt,
+      hasSession: !!sess,
+      userId: sess?.user?.id,
+      userEmail: sess?.user?.email
+    });
   });
 }

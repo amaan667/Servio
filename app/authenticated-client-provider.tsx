@@ -21,28 +21,46 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
 
+  console.log('[AUTH DEBUG] AuthenticatedClientProvider state:', {
+    hasSession: !!session,
+    userId: session?.user?.id,
+    userEmail: session?.user?.email,
+    loading,
+    authReady,
+    timestamp: now()
+  });
+
   useEffect(() => {
     let cancelled = false;
-    console.log('[AUTH DEBUG] provider:mount', { t: now() });
+    console.log('[AUTH DEBUG] AuthenticatedClientProvider mounted', { t: now() });
 
     async function bootstrap() {
       try {
         // Wait for initial session fetch
-        console.log('[AUTH DEBUG] provider:getSession:begin', { t: now() });
+        console.log('[AUTH DEBUG] Getting initial session', { t: now() });
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
+        
+        console.log('[AUTH DEBUG] Initial session result:', { 
+          t: now(), 
+          hasSession: !!session, 
+          userId: session?.user?.id, 
+          userEmail: session?.user?.email,
+          error: error?.message 
+        });
         
         if (!cancelled) {
           if (error) {
+            console.error('[AUTH DEBUG] Session fetch error:', error);
             setSession(null);
           } else {
             setSession(session);
           }
           setLoading(false);
           setAuthReady(true);
+          console.log('[AUTH DEBUG] Auth provider ready', { t: now() });
         }
       } catch (err: any) {
-        console.log('[AUTH DEBUG] provider:bootstrap error:', { t: now(), message: err?.message });
+        console.error('[AUTH DEBUG] Bootstrap error:', { t: now(), message: err?.message });
         if (!cancelled) {
           setSession(null);
           setLoading(false);
@@ -54,7 +72,14 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     bootstrap();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
+      console.log('[AUTH DEBUG] Auth state change in provider:', { 
+        t: now(), 
+        event, 
+        hasSession: !!session, 
+        userId: session?.user?.id,
+        userEmail: session?.user?.email 
+      });
+      
       if (!cancelled) {
         setSession(session);
         setLoading(false);
@@ -64,7 +89,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     return () => {
       cancelled = true;
-      console.log('[AUTH DEBUG] provider:unmount', { t: now() });
+      console.log('[AUTH DEBUG] AuthenticatedClientProvider unmounting', { t: now() });
       subscription.unsubscribe();
     };
   }, []);

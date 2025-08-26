@@ -35,12 +35,28 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  console.log('[AUTH DEBUG] SignInForm rendered with props:', {
+    externalLoading,
+    hasEmail: !!formData.email,
+    hasPassword: !!formData.password,
+    loading,
+    error
+  });
+
   // Check for URL parameters
   useEffect(() => {
+    console.log('[AUTH DEBUG] SignInForm useEffect - checking URL parameters');
     const urlParams = new URLSearchParams(window.location.search);
     const urlError = urlParams.get('error');
     const errorMessage = urlParams.get('message');
     const signedOut = urlParams.get('signedOut');
+    
+    console.log('[AUTH DEBUG] URL parameters found:', {
+      urlError,
+      errorMessage,
+      signedOut,
+      fullUrl: window.location.href
+    });
     
     if (urlError) {
       let errorText = `Authentication error: ${urlError}`;
@@ -60,10 +76,12 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
         errorText = 'Authentication failed. Please try signing in again.';
       }
       
+      console.log('[AUTH DEBUG] Setting error from URL parameter:', errorText);
       setError(errorText);
     }
     
     if (signedOut === 'true') {
+      console.log('[AUTH DEBUG] User signed out, clearing form data');
       // Clear any remaining form data when coming from sign-out
       setFormData({ email: "", password: "" });
       setError(null);
@@ -72,41 +90,94 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[AUTH] SignInForm submit start', { email: formData.email });
+    console.log('[AUTH DEBUG] Form submit triggered');
+    console.log('[AUTH DEBUG] Form data:', {
+      email: formData.email,
+      hasPassword: !!formData.password,
+      passwordLength: formData.password.length
+    });
 
     setError(null);
 
     if (!formData.email.trim()) {
+      console.log('[AUTH DEBUG] Validation failed: missing email');
       setError("Please enter your email address.");
       return;
     }
 
     if (!formData.password) {
+      console.log('[AUTH DEBUG] Validation failed: missing password');
       setError("Please enter your password.");
       return;
     }
 
+    console.log('[AUTH DEBUG] Form validation passed, starting authentication');
     setLoading(true);
 
     try {
-      console.log('[AUTH] SignInForm calling signInUser');
+      console.log('[AUTH DEBUG] Calling signInUser function');
+      console.log('[AUTH DEBUG] signInUser parameters:', {
+        email: formData.email.trim(),
+        passwordLength: formData.password.length
+      });
+      
       const result = await signInUser(formData.email.trim(), formData.password);
+      
+      console.log('[AUTH DEBUG] signInUser result:', {
+        success: result.success,
+        message: result.message,
+        hasData: !!result.data
+      });
 
       if (result.success) {
-        console.log('[AUTH] SignInForm sign-in success, redirecting to dashboard');
+        console.log('[AUTH DEBUG] Authentication successful, redirecting to dashboard');
         // Redirect to dashboard (will route to venue or complete-profile as needed)
         router.replace('/dashboard');
       } else {
-        console.log('[AUTH] SignInForm sign-in failed', { message: result.message });
+        console.log('[AUTH DEBUG] Authentication failed:', result.message);
         setError(result.message || "Invalid email or password");
       }
     } catch (error: any) {
-      console.log('[AUTH] SignInForm unexpected error', { message: error?.message });
+      console.error('[AUTH DEBUG] Authentication exception:', error);
+      console.error('[AUTH DEBUG] Exception details:', {
+        message: error?.message,
+        name: error?.name,
+        stack: error?.stack
+      });
       setError("An unexpected error occurred. Please try again.");
     } finally {
+      console.log('[AUTH DEBUG] Authentication flow completed, setting loading to false');
       setLoading(false);
     }
   };
+
+  const handleGoogleSignIn = async () => {
+    console.log('[AUTH DEBUG] Google sign-in button clicked');
+    setError(null);
+    try {
+      console.log('[AUTH DEBUG] Calling onGoogleSignIn prop');
+      await onGoogleSignIn();
+      console.log('[AUTH DEBUG] onGoogleSignIn completed successfully');
+    } catch (err: any) {
+      console.error('[AUTH DEBUG] Google sign-in error:', err);
+      console.error('[AUTH DEBUG] Google sign-in error details:', {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack
+      });
+      setError(`Google sign-in failed: ${err.message || "Please try again."}`);
+    }
+  };
+
+  console.log('[AUTH DEBUG] SignInForm render state:', {
+    loading,
+    externalLoading,
+    error,
+    formData: {
+      hasEmail: !!formData.email,
+      hasPassword: !!formData.password
+    }
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -131,15 +202,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
             <Button
               type="button"
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
-              onClick={async () => {
-                setError(null);
-                try {
-                  await onGoogleSignIn();
-                } catch (err: any) {
-                  console.error('[AUTH] Google sign-in error', { message: err?.message });
-                  setError(`Google sign-in failed: ${err.message || "Please try again."}`);
-                }
-              }}
+              onClick={handleGoogleSignIn}
               disabled={loading || externalLoading}
             >
               <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/><path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
@@ -168,9 +231,10 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={(e) => {
+                    console.log('[AUTH DEBUG] Email input changed:', e.target.value);
+                    setFormData({ ...formData, email: e.target.value });
+                  }}
                   placeholder="Enter your email"
                   disabled={loading}
                   required
@@ -183,9 +247,10 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
+                  onChange={(e) => {
+                    console.log('[AUTH DEBUG] Password input changed, length:', e.target.value.length);
+                    setFormData({ ...formData, password: e.target.value });
+                  }}
                   placeholder="Enter your password"
                   disabled={loading}
                   required
