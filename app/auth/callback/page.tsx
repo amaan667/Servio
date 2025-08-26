@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabase";
 
 export default function OAuthCallback() {
   const router = useRouter();
@@ -49,6 +49,18 @@ export default function OAuthCallback() {
           // For client-side PKCE, pass the full URL to include all necessary parameters
           console.log('[AUTH DEBUG] Using full URL for PKCE exchange:', window.location.href);
           console.log('[AUTH DEBUG] URL search params:', Object.fromEntries(url.searchParams.entries()));
+          
+          // Ensure we have the code and state parameters for PKCE
+          const code = url.searchParams.get('code');
+          const state = url.searchParams.get('state');
+          
+          if (!code) {
+            console.error('[AUTH DEBUG] No code parameter found in URL');
+            setErrorMessage('Missing authorization code');
+            setStatus('error');
+            setTimeout(() => router.replace("/sign-in?error=no_code"), 3000);
+            return;
+          }
           
           // Add timeout to prevent hanging
           const exchangePromise = supabase.auth.exchangeCodeForSession(window.location.href);

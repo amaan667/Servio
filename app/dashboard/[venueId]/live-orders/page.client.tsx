@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase';
 import { toMoney } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

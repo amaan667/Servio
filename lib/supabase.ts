@@ -26,7 +26,28 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create single Supabase client instance with proper configuration
 export const supabase = createBrowserClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false, // We handle this manually in callback
+      flowType: 'pkce',
+      onAuthStateChange: (event, session) => {
+        console.log('[AUTH DEBUG] Auth state change:', { 
+          event, 
+          hasSession: !!session,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email
+        });
+      },
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'servio-web',
+      },
+    },
+  }
 );
 
 console.log("Supabase client created successfully");
@@ -267,7 +288,9 @@ export async function signInUser(email: string, password: string) {
 
 export async function signInWithGoogle() {
   const supabase = supabaseBrowser();
-  const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
+  const redirectTo = typeof window !== 'undefined' 
+    ? `${window.location.origin}/auth/callback`
+    : 'https://servio-production.up.railway.app/auth/callback';
   console.log('[AUTH] starting oauth with redirect:', redirectTo);
   
   const { data, error } = await supabase.auth.signInWithOAuth({

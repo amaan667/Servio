@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase';
 import { logger } from "@/lib/logger";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 

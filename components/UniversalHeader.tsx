@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/lib/sb-client";
+import { supabase } from "@/lib/supabase";
 import { Menu, X, User, Home, Settings, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
@@ -33,11 +33,18 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
   const isHomePage = pathname === '/' || pathname === '/home';
   const isDashboardPage = pathname?.startsWith('/dashboard') || pathname?.startsWith('/settings');
 
+  // For development with placeholder Supabase config, always show sign-in button
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const hasValidSupabaseConfig = process.env.NEXT_PUBLIC_SUPABASE_URL && 
+    process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co' &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && 
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== 'placeholder-key';
+
   // Fetch primary venue when user is signed in
   useEffect(() => {
     const fetchPrimaryVenue = async () => {
       try {
-        if (session?.user) {
+        if (session?.user && hasValidSupabaseConfig) {
           const { data, error } = await supabase
             .from('venues')
             .select('venue_id')
@@ -63,7 +70,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
       setPrimaryVenueId(venueId);
       setLoading(false);
     }
-  }, [venueId, session]);
+  }, [venueId, session, hasValidSupabaseConfig]);
 
   const resolvedVenueId = venueId ?? primaryVenueId;
 
@@ -111,58 +118,43 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
 
           {/* Desktop Navigation - Right side */}
           <div className="hidden md:flex items-center space-x-4 order-3">
-            {session ? (
-              // Signed in navigation
+            {/* Always show basic navigation links */}
+            <Link
+              href={homeHref}
+              className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Home
+            </Link>
+            <Link
+              href="#features"
+              className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Features
+            </Link>
+            <Link
+              href="#pricing"
+              className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Pricing
+            </Link>
+            
+            {/* Show Sign In button always */}
+            <Link
+              href="/sign-in"
+              className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
+            >
+              Sign In
+            </Link>
+            
+            {/* Show additional navigation only when properly authenticated */}
+            {session && hasValidSupabaseConfig ? (
               <>
-                {isHomePage ? (
-                  // On home page: Features, Pricing, Dashboard
-                  <>
-                    <Link
-                      href="#features"
-                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                      Features
-                    </Link>
-                    <Link
-                      href="#pricing"
-                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                      Pricing
-                    </Link>
-                    <Link
-                      href={dashboardHref}
-                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                      Dashboard
-                    </Link>
-                  </>
-                ) : (
-                  // On dashboard pages: Home, Settings, Sign Out
-                  <>
-                    <Link
-                      href={homeHref}
-                      className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                      Home
-                    </Link>
-                    {showActions && (
-                      <Link
-                        href={settingsHref}
-                        className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                      >
-                        Settings
-                      </Link>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSignOut}
-                      className="text-gray-600"
-                    >
-                      Sign Out
-                    </Button>
-                  </>
-                )}
+                <Link
+                  href={dashboardHref}
+                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Dashboard
+                </Link>
                 {/* Modern dropdown menu for user actions */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -207,35 +199,7 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
-            ) : (
-              // Not signed in navigation
-              <>
-                <Link
-                  href={homeHref}
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Home
-                </Link>
-                <Link
-                  href="#features"
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Features
-                </Link>
-                <Link
-                  href="#pricing"
-                  className="text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Pricing
-                </Link>
-                <Link
-                  href="/sign-in"
-                  className="bg-servio-purple text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
-                >
-                  Sign In
-                </Link>
-              </>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile Navigation - Right side */}
@@ -305,63 +269,45 @@ export default function UniversalHeader({ showActions = true, venueId }: Univers
       {mobileMenuOpen && isHomePage && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-            {session ? (
-              // Signed in mobile navigation
-              <>
-                <Link
-                  href="#features"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Features
-                </Link>
-                <Link
-                  href="#pricing"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Pricing
-                </Link>
-                <Link
-                  href={dashboardHref}
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-              </>
-            ) : (
-              // Not signed in mobile navigation
-              <>
-                <Link
-                  href={homeHref}
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Home
-                </Link>
-                <Link
-                  href="#features"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Features
-                </Link>
-                <Link
-                  href="#pricing"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Pricing
-                </Link>
-                <Link
-                  href="/sign-in"
-                  className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
-              </>
+            {/* Always show basic navigation links */}
+            <Link
+              href={homeHref}
+              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
+              href="#features"
+              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Features
+            </Link>
+            <Link
+              href="#pricing"
+              className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/sign-in"
+              className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Sign In
+            </Link>
+            
+            {/* Show additional navigation only when properly authenticated */}
+            {session && hasValidSupabaseConfig && (
+              <Link
+                href={dashboardHref}
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
             )}
           </div>
         </div>
