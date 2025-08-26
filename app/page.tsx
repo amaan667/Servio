@@ -99,6 +99,18 @@ function HomePageContent() {
     }
   };
 
+  // Show loading state while auth is being determined
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleDemo = () => {
     if (session) {
       router.push("/order?venue=demo-cafe&table=1");
@@ -140,6 +152,16 @@ function HomePageContent() {
                   {session ? 'Go to Dashboard' : 'Start Free Trial'}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
+                {!session && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                    onClick={handleSignIn}
+                  >
+                    Sign In
+                  </Button>
+                )}
                 <Button
                   size="lg"
                   variant="outline"
@@ -416,9 +438,19 @@ function HomePageContent() {
               onClick={handleGetStarted}
               className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
             >
-              Start Your Free Trial
+              {session ? 'Go to Dashboard' : 'Start Your Free Trial'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
+            {!session && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                onClick={handleSignIn}
+              >
+                Sign In
+              </Button>
+            )}
             <Button
               size="lg"
               variant="outline"

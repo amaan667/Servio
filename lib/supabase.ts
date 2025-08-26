@@ -200,6 +200,17 @@ export async function signInUser(email: string, password: string) {
     }
     
     logger.info("Sign in successful", { userId: data.user.id });
+    
+    // Ensure session is properly set
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      logger.error("No session after sign in");
+      return {
+        success: false,
+        message: "Authentication failed - no session created",
+      };
+    }
+    
     return { success: true };
   } catch (error) {
     logger.error("Sign in error", { error });

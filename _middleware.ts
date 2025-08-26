@@ -1,29 +1,42 @@
 // middleware.ts
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 const PROD_BASE = process.env.NEXT_PUBLIC_APP_URL!;
 const PROD_URL = new URL(PROD_BASE);
 const PROD_HOST = PROD_URL.host;
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next();
+  
   // Never intercept the auth callback
   if (req.nextUrl.pathname.startsWith('/auth/')) {
-    return NextResponse.next();
+    return res;
   }
 
-  // Force https and the exact production host
-  const isHttps = req.nextUrl.protocol === 'https:';
-  const host = req.headers.get('host');
-
-  if (!isHttps || host !== PROD_HOST) {
-    const redirectUrl = new URL(req.nextUrl);
-    redirectUrl.protocol = 'https:';
-    redirectUrl.host = PROD_HOST;
-    return NextResponse.redirect(redirectUrl, 308);
+  // Handle Supabase session propagation
+  try {
+    const supabase = createMiddlewareClient({ req, res });
+    await supabase.auth.getSession(); // propagates cookies to SSR
+  } catch (error) {
+    console.log('[AUTH DEBUG] Middleware session error:', error);
   }
 
-  return NextResponse.next();
+  // Force https and the exact production host (only in production)
+  if (process.env.NODE_ENV === 'production') {
+    const isHttps = req.nextUrl.protocol === 'https:';
+    const host = req.headers.get('host');
+
+    if (!isHttps || host !== PROD_HOST) {
+      const redirectUrl = new URL(req.nextUrl);
+      redirectUrl.protocol = 'https:';
+      redirectUrl.host = PROD_HOST;
+      return NextResponse.redirect(redirectUrl, 308);
+    }
+  }
+
+  return res;
 }
 
 export const config = {

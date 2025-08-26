@@ -94,8 +94,8 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
 
       if (result.success) {
         console.log('[AUTH] SignInForm sign-in success, redirecting to dashboard');
-        // Redirect to dashboard (will route to venue or complete-profile as needed)
-        router.replace('/dashboard');
+        // Force a page refresh to ensure auth state is updated
+        window.location.href = '/dashboard';
       } else {
         console.log('[AUTH] SignInForm sign-in failed', { message: result.message });
         setError(result.message || "Invalid email or password");

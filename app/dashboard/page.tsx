@@ -12,18 +12,20 @@ export default function DashboardIndex() {
       try {
         console.log('[DASHBOARD] Checking user session');
         
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        console.log('[DASHBOARD] Auth getUser result:', { 
-          hasUser: !!user, 
-          userId: user?.id, 
-          userError: userError?.message 
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('[DASHBOARD] Auth getSession result:', { 
+          hasSession: !!session, 
+          userId: session?.user?.id, 
+          sessionError: sessionError?.message 
         });
         
-        if (!user) {
-          console.log('[DASHBOARD] No user found, redirecting to sign-in');
+        if (!session || !session.user) {
+          console.log('[DASHBOARD] No session found, redirecting to sign-in');
           router.replace('/sign-in');
           return;
         }
+        
+        const user = session.user;
 
         console.log('[DASHBOARD] Getting primary venue for user:', user.id);
         
