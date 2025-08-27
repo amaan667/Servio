@@ -104,19 +104,25 @@ function AuthCallbackInner() {
           const elapsed = Date.now() - startTime;
           console.log(`[AUTH DEBUG] ❌ TIMEOUT REACHED after ${elapsed}ms`);
           setTimeoutReached(true);
-          setError('Authentication timed out. Please try signing in again.');
+          setError('Authentication timed out. The code may have expired or there was a network issue. Please try signing in again.');
           setTimeout(() => {
             router.push('/sign-in');
           }, 3000);
-        }, 15000); // 15 second timeout
+        }, 8000); // Reduced to 8 seconds for faster feedback
 
         console.log('[AUTH DEBUG] 🔄 Calling supabase.auth.exchangeCodeForSession...');
+        console.log('[AUTH DEBUG] - Full URL being sent:', window.location.href);
+        console.log('[AUTH DEBUG] - Code parameter:', code);
         const exchangeStartTime = Date.now();
         
+        // Create a promise with timeout
+        const exchangePromise = supabase.auth.exchangeCodeForSession(window.location.href);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Exchange timeout')), 7000); // 7 second timeout
+        });
+
         try {
-          const { error } = await supabase.auth.exchangeCodeForSession(
-            window.location.href
-          );
+          const { error } = await Promise.race([exchangePromise, timeoutPromise]);
 
           const exchangeTime = Date.now() - exchangeStartTime;
           console.log(`[AUTH DEBUG] ⏱️ exchangeCodeForSession completed in ${exchangeTime}ms`);
@@ -168,7 +174,11 @@ function AuthCallbackInner() {
           console.error('[AUTH DEBUG] - Exchange error message:', exchangeError?.message);
           console.error('[AUTH DEBUG] - Exchange error stack:', exchangeError?.stack);
           
-          setError('Network error during authentication. Please check your connection and try again.');
+          if (exchangeError?.message === 'Exchange timeout') {
+            setError('Authentication request timed out. The code may have expired. Please try signing in again.');
+          } else {
+            setError('Network error during authentication. Please check your connection and try again.');
+          }
           setTimeout(() => {
             router.push('/sign-in');
           }, 3000);
