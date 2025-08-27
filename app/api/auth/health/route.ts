@@ -8,6 +8,5 @@ export async function GET() {
     supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'configured' : 'missing',
     supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'configured' : 'missing',
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
-    appUrl: process.env.NEXT_PUBLIC_APP_URL,
   });
 }
