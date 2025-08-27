@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
+
+const supabase = createClient();
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
@@ -34,7 +36,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     if (session && !isAuthCallback && pathname !== "/complete-profile") {
       const checkProfile = async () => {
         try {
-          const { data, error } = await createClient()
+          const { data, error } = await supabase
             .from("venues")
             .select("venue_id")
             .eq("owner_id", session.user.id)

@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ShoppingCart, Plus, Minus, X } from "lucide-react";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 import OrderFeedbackForm from "@/components/OrderFeedbackForm";
+
+const supabase = createClient();
 
 interface MenuItem {
   id: string;

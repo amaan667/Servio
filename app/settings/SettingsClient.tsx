@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import ClientNavBar from "@/components/ClientNavBar";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Save, User, Building, Mail, Phone } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
+const supabase = createClient();
 
 interface Venue {
   venue_id: string;

@@ -14,12 +14,12 @@ export async function GET(req: Request) {
 
   // Auth check
   const supabase = createServerSupabase();
-  const { data: { user } } = await createClient().auth.getUser();
+  const { data: { user } } = await (await supabase).auth.getUser();
   console.log("[LIVE ORDERS GET] user from cookie:", user?.id);
   if (!user) return NextResponse.json({ ok:false, error:'Not authenticated' }, { status:401 });
 
   // Venue ownership check
-  const { data: v } = await supabase
+  const { data: v } = await (await supabase)
     .from('venues')
     .select('venue_id, owner_id')
     .eq('venue_id', venueId)

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/sb-client';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { useAuth } from "@/app/authenticated-client-provider";
 import { Plus, Trash2, Clock, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
+const supabase = createClient();
 
 type Staff = { id: string; name: string; role: string; active: boolean; area?: string | null };
 type Shift = { id: string; staff_id: string; start_time: string; end_time: string; area?: string | null };
@@ -81,24 +83,24 @@ export default function StaffClient({ venueId }: { venueId: string }) {
 
   const toggleActive = async (id: string, active: boolean) => {
     setError(null);
-    const { error } = await createClient().from('staff').update({ active: !active }).eq('id', id);
+    const { error } = await supabase.from('staff').update({ active: !active }).eq('id', id);
     if (error) { console.error('[STAFF] toggle error', error); setError(error.message); }
     else load();
   };
 
   async function updateRole(id: string, role: string) {
-    await createClient().from('staff').update({ role }).eq('id', id);
+    await supabase.from('staff').update({ role }).eq('id', id);
     load();
   }
 
   async function updateArea(id: string, area: string) {
-    await createClient().from('staff').update({ area }).eq('id', id);
+    await supabase.from('staff').update({ area }).eq('id', id);
     load();
   }
 
   async function addShift(staffId: string) {
     if (!shiftStart || !shiftEnd) return;
-    const { error } = await createClient().from('staff_shifts').insert({ staff_id: staffId, start_time: shiftStart, end_time: shiftEnd, area: shiftArea || null });
+    const { error } = await supabase.from('staff_shifts').insert({ staff_id: staffId, start_time: shiftStart, end_time: shiftEnd, area: shiftArea || null });
     if (!error) {
       setOpenShiftFor(null); setShiftStart(''); setShiftEnd(''); setShiftArea('');
       loadShifts();

@@ -10,9 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { User, Building, Mail, Phone, MapPin, Lock, Trash2, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
+const supabase = createClient();
 
 interface Venue {
   venue_id: string;

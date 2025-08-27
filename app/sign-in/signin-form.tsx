@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { signInUser, signInWithGoogle } from '@/lib/supabase';
+import { signInUser } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+import { siteOrigin } from '@/lib/site';
 
 export default function SignInForm() {
   const router = useRouter();
@@ -41,32 +43,35 @@ export default function SignInForm() {
 
   const handleGoogleSignIn = async () => {
     console.log('[AUTH DEBUG] Google sign-in button clicked');
-    
     setLoading(true);
     setError(null);
-    
+
     try {
-      await signInWithGoogle();
-      console.log('[AUTH DEBUG] Google sign-in initiated, redirect should happen automatically');
-      // The redirect will happen automatically
+      // Clear stale PKCE artifacts to avoid loops
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('sb-') || k.includes('pkce') || k.includes('token-code-verifier')) {
+            localStorage.removeItem(k);
+          }
+        });
+        sessionStorage.removeItem('sb_oauth_retry');
+      } catch {}
+
+      await createClient().auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          flowType: 'pkce',
+          redirectTo: `${siteOrigin()}/auth/callback`,
+        },
+      });
     } catch (err: any) {
       console.error('[AUTH DEBUG] Google sign-in failed:', err);
-      
-      // Provide more specific error messages
       let errorMessage = 'Google sign-in failed. Please try again.';
-      
-      if (err?.message?.includes('popup')) {
-        errorMessage = 'Pop-up blocked. Please allow pop-ups for this site and try again.';
-      } else if (err?.message?.includes('network')) {
-        errorMessage = 'Network error. Please check your connection and try again.';
-      } else if (err?.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Please try again.';
-      } else if (err?.message?.includes('cancelled')) {
-        errorMessage = 'Sign-in was cancelled. Please try again.';
-      } else if (err?.message) {
-        errorMessage = `Sign-in error: ${err.message}`;
-      }
-      
+      if (err?.message?.includes('popup')) errorMessage = 'Pop-up blocked. Please allow pop-ups for this site and try again.';
+      else if (err?.message?.includes('network')) errorMessage = 'Network error. Please check your connection and try again.';
+      else if (err?.message?.includes('timeout')) errorMessage = 'Request timed out. Please try again.';
+      else if (err?.message?.includes('cancelled')) errorMessage = 'Sign-in was cancelled. Please try again.';
+      else if (err?.message) errorMessage = `Sign-in error: ${err.message}`;
       setError(errorMessage);
       setLoading(false);
     }

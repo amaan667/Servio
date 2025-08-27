@@ -16,12 +16,12 @@ export default async function AnalyticsPage({
   
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await createClient().auth.getUser();
+  const { data: { user } } = await (await supabase).auth.getUser();
   log('ANALYTICS SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 
   // Verify user owns this venue
-  const { data: venue } = await supabase
+  const { data: venue } = await (await supabase)
     .from('venues')
     .select('venue_id, name')
     .eq('venue_id', params.venueId)
@@ -43,7 +43,7 @@ export default async function AnalyticsPage({
           </p>
         </div>
         
-        <AnalyticsClient venueId={params.venueId} />
+        <AnalyticsClient venueId={params.venueId} venueName={venue.name} />
       </div>
     </div>
   );

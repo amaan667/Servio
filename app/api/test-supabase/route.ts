@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/sb-client';
+import { createRouteSupabase } from '@/lib/supabase-server';
 
 export async function GET() {
   try {
     console.log('[AUTH DEBUG] Testing Supabase configuration...');
     
-    const supabase = createClient();
+    const supabase = createRouteSupabase();
     
     // Test basic connection
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    const { data: sessionData, error: sessionError } = await (await supabase).auth.getSession();
     
     // Test basic query
-    const { data: testData, error: testError } = await supabase
+    const { data: testData, error: testError } = await (await supabase)
       .from('venues')
       .select('count')
       .limit(1);
@@ -25,8 +25,6 @@ export async function GET() {
         NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET',
       },
       supabase: {
-        clientExists: !!supabase,
-        authExists: !!(supabase && supabase.auth),
         sessionTest: {
           success: !sessionError,
           error: sessionError?.message,

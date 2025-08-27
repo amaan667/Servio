@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -19,7 +19,7 @@ function ClearSessionContent() {
       sessionStorage.clear();
       
       // Clear any Supabase-related items specifically
-      const keysToRemove = [];
+      const keysToRemove = [] as string[];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && (key.includes('supabase') || key.includes('sb-'))) {

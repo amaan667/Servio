@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
+
+const supabase = createClient();
 
 export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0, venue: initialVenue }: { venueId: string; userId: string; activeTables?: number; venue?: any }) {
   const [venue, setVenue] = useState<any>(initialVenue);
@@ -202,7 +204,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         revenue: todayRevenue,
         activeTables: activeTableSet.size,
         menuItems: menuItems?.length || 0,
-        unpaid: (orders ?? []).filter((o: any) => String(o.payment_status ?? '').toLowerCase() !== 'paid' && String(o.status ?? '').toLowerCase() !== 'paid').length,
+        unpaid: (orders ?? []).filter((o: any) => String(order.payment_status ?? '').toLowerCase() !== 'paid' && String(order.status ?? '').toLowerCase() !== 'paid').length,
       });
     } catch (error) {
       console.error("Error loading stats:", error);

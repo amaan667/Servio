@@ -3,11 +3,11 @@
 import { createClient } from '@/lib/supabase/client';
 import { siteOrigin } from '@/lib/site';
 
+const sb = createClient();
+
 export default function SignInButton() {
   
   const onGoogle = async () => {
-    const supabase = createClient();
-    
     // Clean stale PKCE state before starting
     try {
       Object.keys(localStorage).forEach(k => {
@@ -18,17 +18,13 @@ export default function SignInButton() {
     } catch {}
     
     // Use the proper OAuth flow with PKCE
-    const { data, error } = await createClient().auth.signInWithOAuth({
+    await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
         flowType: "pkce",
         redirectTo: `${siteOrigin()}/auth/callback`
       }
     });
-    
-    if (error) {
-      console.error('[AUTH DEBUG] OAuth error:', error);
-    }
   };
 
   return (

@@ -10,12 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import ClientNavBar from "@/components/ClientNavBar";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { useToast } from "@/hooks/use-toast";
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+
+const supabase = createClient();
 
 interface MenuItem {
   id: string;
@@ -230,7 +232,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
         {/* Action Buttons - Positioned between upload and menu items */}
         <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items_center gap-2">
             <Button
               variant="outline"
               onClick={loadMenuItems}
@@ -328,7 +330,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
           {menuItems.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <ShoppingBag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <ShoppingBag className="h-12 w-12 text-gray-400 mx_auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Menu Items</h3>
                 <p className="text-gray-500 mb-4">Add your first menu item to get started</p>
                 <Button onClick={() => setIsAddModalOpen(true)}>
@@ -349,7 +351,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 return acc;
               }, {});
 
-                            // Define category priority order to match PDF structure
+              // Define category priority order to match PDF structure
               const categoryPriority = [
                 "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course", 
                 "mains", "main", "salads", "salad", "sides", "side dishes", "desserts", "dessert", 
@@ -405,7 +407,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                                     checked={item.available}
                                     onCheckedChange={(checked) => handleToggleAvailable(item.id, checked)}
                                   />
-                                  <span className="text-sm text-gray-600">
+                                  <span className="text_sm text-gray-600">
                                     {item.available ? 'Available' : 'Unavailable'}
                                   </span>
                                 </div>

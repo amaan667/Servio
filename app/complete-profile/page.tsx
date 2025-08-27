@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/sb-client';
+import { createClient } from '@/lib/supabase/client';
 import CompleteProfileForm from './form';
+
+const supabase = createClient();
 
 export default function CompleteProfilePage() {
   const router = useRouter();
