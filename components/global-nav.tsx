@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/sb-client";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -15,9 +15,13 @@ export default function GlobalNav() {
   // Use our central auth context instead of local state
   const { session, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   // Ensure we don't show authenticated navigation while loading
   const isAuthenticated = !loading && !!session?.user;
+
+  // Determine if we're on dashboard pages
+  const isOnDashboard = pathname?.startsWith('/dashboard');
 
   // Fetch primary venue when user is signed in
   useEffect(() => {
@@ -72,27 +76,44 @@ export default function GlobalNav() {
           <div className="hidden md:block">
             <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
               {isAuthenticated ? (
-                // Signed in navigation
+                // Signed in navigation - different based on current page
                 <>
-                  <Link
-                    href="/"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Home
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Dashboard
-                  </Link>
-                  {primaryVenueId && (
-                    <Link
-                      href={`/dashboard/${primaryVenueId}/settings`}
-                      className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Settings
-                    </Link>
+                  {isOnDashboard ? (
+                    // On dashboard pages: Home, Settings, Sign Out
+                    <>
+                      <Link
+                        href="/"
+                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                      >
+                        Home
+                      </Link>
+                      {primaryVenueId && (
+                        <Link
+                          href={`/dashboard/${primaryVenueId}/settings`}
+                          className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          Settings
+                        </Link>
+                      )}
+                    </>
+                  ) : (
+                    // On home page: Dashboard, Settings, Sign Out
+                    <>
+                      <Link
+                        href="/dashboard"
+                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                      >
+                        Dashboard
+                      </Link>
+                      {primaryVenueId && (
+                        <Link
+                          href={`/dashboard/${primaryVenueId}/settings`}
+                          className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          Settings
+                        </Link>
+                      )}
+                    </>
                   )}
                   <Button
                     variant="outline"
@@ -156,30 +177,48 @@ export default function GlobalNav() {
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
             {isAuthenticated ? (
-              // Signed in mobile navigation
+              // Signed in mobile navigation - different based on current page
               <>
-                <Link
-                  href="/"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Home
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                {primaryVenueId && (
-                  <Link
-                    href={`/dashboard/${primaryVenueId}/settings`}
-                    className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Settings
-                  </Link>
+                {isOnDashboard ? (
+                  // On dashboard pages: Home, Settings, Sign Out
+                  <>
+                    <Link
+                      href="/"
+                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Home
+                    </Link>
+                    {primaryVenueId && (
+                      <Link
+                        href={`/dashboard/${primaryVenueId}/settings`}
+                        className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Settings
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  // On home page: Dashboard, Settings, Sign Out
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    {primaryVenueId && (
+                      <Link
+                        href={`/dashboard/${primaryVenueId}/settings`}
+                        className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Settings
+                      </Link>
+                    )}
+                  </>
                 )}
                 <Button
                   variant="outline"

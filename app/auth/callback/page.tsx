@@ -73,9 +73,9 @@ function AuthCallbackContent() {
           return;
         }
         
-        console.log('[AUTH DEBUG] Client callback successful, redirecting to home page');
+        console.log('[AUTH DEBUG] Client callback successful, redirecting to dashboard');
         setStatus("Authentication successful! Redirecting...");
-        router.replace('/');
+        router.replace('/dashboard');
         
       } catch (error: any) {
         console.log('[AUTH DEBUG] Unexpected error in client callback:', error);
