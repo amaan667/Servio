@@ -1,14 +1,15 @@
 'use client';
 
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SignInButton() {
   
   const onGoogle = async () => {
+    const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `https://servio-production.up.railway.app/api/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: { prompt: 'select_account' }
       }
     });
