@@ -2,31 +2,23 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/sb-client';
+import { useAuth } from '../auth-provider';
+import { supabase } from '@/lib/supabase-client';
 
 export default function DashboardIndex() {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     const checkUserAndRedirect = async () => {
-      try {
-        console.log('[DASHBOARD] Checking user session');
-        
-        const { data: { session }, error: sessionError } = await createClient().auth.getSession();
-        console.log('[DASHBOARD] Auth getSession result:', { 
-          hasSession: !!session, 
-          userId: session?.user?.id, 
-          sessionError: sessionError?.message 
-        });
-        
-        if (!session || !session.user) {
-          console.log('[DASHBOARD] No session found, redirecting to sign-in');
-          router.replace('/sign-in');
-          return;
-        }
-        
-        const user = session.user;
+      if (loading) return;
+      
+      if (!user) {
+        router.replace('/sign-in');
+        return;
+      }
 
+      try {
         console.log('[DASHBOARD] Getting primary venue for user:', user.id);
         
         // Get the user's first venue directly
@@ -53,12 +45,23 @@ export default function DashboardIndex() {
         }
       } catch (error) {
         console.error('[DASHBOARD] Error in dashboard page:', error);
-        router.replace('/sign-in');
+        router.replace('/complete-profile');
       }
     };
 
     checkUserAndRedirect();
-  }, [router]);
+  }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center">
