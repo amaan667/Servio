@@ -77,12 +77,8 @@ export async function signUpUser(
   try {
     logger.info("Attempting sign up", { email, fullName });
 
-    // Use environment variable or fallback to Railway production URL
-    const emailRedirectTo = process.env.NEXT_PUBLIC_APP_URL 
-      ? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
-      : process.env.NEXT_PUBLIC_SITE_URL 
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
-      : "https://servio-production.up.railway.app/dashboard";
+    // Use normalized site origin
+    const emailRedirectTo = `${(process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app').replace(/[;\s]+$/g, '').replace(/\/+$/g, '')}/dashboard`;
     
     console.log("✅ Using Railway domain for email redirect:", emailRedirectTo);
 

@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import { getAuthRedirectUrl } from '@/lib/auth';
 
 export async function GET() {
-  const redirectUrl = getAuthRedirectUrl('/api/auth/callback');
+  const redirectUrl = getAuthRedirectUrl('/auth/callback');
   
   return NextResponse.json({
     authConfig: {
       redirectUrl,
       nodeEnv: process.env.NODE_ENV,
-      nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL,
+      nextPublicAppUrl: undefined,
       nextPublicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL,
     },
     timestamp: new Date().toISOString(),

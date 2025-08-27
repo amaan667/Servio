@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 
 // Avoid throwing at import-time to keep webpack builds stable. We rely on
 // runtime environment correctness and server route handlers for validation.
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
 const COOKIE_DOMAIN = new URL(baseUrl).hostname;
 
 // Check if we're in a route handler context
