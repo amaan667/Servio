@@ -47,7 +47,9 @@ function AuthCallbackContent() {
         console.log('[AUTH DEBUG] PKCE sessionStorage keys:', sessionStorageKeys);
         
         // Exchange the code for a session (client-side only)
-        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession({
+          queryParams: new URLSearchParams(window.location.search),
+        });
         
         if (exchangeError) {
           console.log('[AUTH DEBUG] Exchange error in client callback:', exchangeError);
@@ -63,7 +65,18 @@ function AuthCallbackContent() {
             return;
           }
           
-          router.replace(`/?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`);
+          // Clear stale PKCE and restart once
+          try {
+            Object.keys(localStorage).forEach(k => {
+              if (k.startsWith("sb-") || k.includes("pkce")) localStorage.removeItem(k);
+            });
+          } catch {}
+          
+          const origin = window.location.origin;
+          await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: { flowType: "pkce", redirectTo: `${origin}/auth/callback` },
+          });
           return;
         }
         
@@ -75,6 +88,13 @@ function AuthCallbackContent() {
         
         console.log('[AUTH DEBUG] Client callback successful, redirecting to dashboard');
         setStatus("Authentication successful! Redirecting...");
+        
+        // Clean query so refresh/back doesn't retry
+        const url = new URL(window.location.href);
+        url.searchParams.delete("code");
+        url.searchParams.delete("state");
+        window.history.replaceState({}, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ""));
+        
         router.replace('/dashboard');
         
       } catch (error: any) {

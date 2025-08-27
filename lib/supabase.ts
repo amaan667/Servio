@@ -240,7 +240,7 @@ export async function signInWithGoogle() {
 
   console.log('[AUTH DEBUG] Using configured Supabase client');
   
-  const redirectTo = `${origin}/api/auth/callback`;
+  const redirectTo = `${origin}/auth/callback`;
   console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
   
   console.log('[AUTH DEBUG] Calling signInWithOAuth with provider: google');

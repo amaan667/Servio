@@ -184,7 +184,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   // ALWAYS use production URL for OAuth redirects
                   const origin = "https://servio-production.up.railway.app";
                   console.log('[AUTH DEBUG] Using production origin:', origin);
-                  console.log('[AUTH DEBUG] Redirect URL will be:', `${origin}/api/auth/callback`);
+                  console.log('[AUTH DEBUG] Redirect URL will be:', `${origin}/auth/callback`);
                   
                   // Clear any stale auth state
                   console.log('[AUTH DEBUG] 🔄 Step 3: Clearing stale auth state');
@@ -218,7 +218,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                       const oauthPromise = supabase.auth.signInWithOAuth({
                         provider: "google",
                         options: { 
-                          redirectTo: `${origin}/api/auth/callback`,
+                          redirectTo: `${origin}/auth/callback`,
                           queryParams: { prompt: 'select_account' }
                         }
                       });
