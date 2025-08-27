@@ -22,24 +22,40 @@ function CallbackInner() {
       const err = sp.get("error");
       const code = sp.get("code");
       const next = sp.get("next") || "/dashboard";
+      
       if (err) return router.replace("/sign-in?error=oauth_error");
       if (!code) return router.replace("/sign-in?error=missing_code");
 
       // One-time retry if verifier is missing
       const retryKey = "sb_oauth_retry";
-      const retried = (() => { try { return sessionStorage.getItem(retryKey) === "1"; } catch { return false; } })();
+      const retried = (() => { 
+        try { 
+          return sessionStorage.getItem(retryKey) === "1"; 
+        } catch { 
+          return false; 
+        } 
+      })();
+      
       const hasVerifier = (() => {
         try {
-          return !!localStorage.getItem("createClient().auth.token-code-verifier") ||
+          return !!localStorage.getItem("sb-auth-token-code-verifier") ||
                  Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
-        } catch { return false; }
+        } catch { 
+          return false; 
+        }
       })();
 
       if (!hasVerifier && !retried) {
-        try { sessionStorage.setItem(retryKey, "1"); } catch {}
+        try { 
+          sessionStorage.setItem(retryKey, "1"); 
+        } catch {}
+        
         await sb.auth.signInWithOAuth({
           provider: "google",
-          options: { flowType: "pkce", redirectTo: `${siteOrigin()}/auth/callback` },
+          options: { 
+            flowType: "pkce", 
+            redirectTo: `${siteOrigin()}/auth/callback` 
+          },
         });
         return;
       }
@@ -52,7 +68,8 @@ function CallbackInner() {
       // Clean the URL so refresh/back won't re-exchange
       try {
         const url = new URL(window.location.href);
-        url.searchParams.delete("code"); url.searchParams.delete("state");
+        url.searchParams.delete("code"); 
+        url.searchParams.delete("state");
         window.history.replaceState({}, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ""));
       } catch {}
 
@@ -60,7 +77,8 @@ function CallbackInner() {
         // Stop loops and fail cleanly
         try {
           Object.keys(localStorage).forEach((k) => {
-            if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier")) localStorage.removeItem(k);
+            if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier")) 
+              localStorage.removeItem(k);
           });
           sessionStorage.removeItem(retryKey);
         } catch {}
@@ -72,9 +90,15 @@ function CallbackInner() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) return router.replace("/sign-in?error=no_session");
 
-      try { sessionStorage.removeItem(retryKey); } catch {}
+      try { 
+        sessionStorage.removeItem(retryKey); 
+      } catch {}
+      
       router.replace(next);
-    })().finally(() => { finished = true; clearTimeout(timeout); });
+    })().finally(() => { 
+      finished = true; 
+      clearTimeout(timeout); 
+    });
   }, [router, sp]);
 
   return null; // no UI
