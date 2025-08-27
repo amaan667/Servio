@@ -34,10 +34,10 @@ function AuthCallbackContent() {
         // Check for PKCE state before exchange
         console.log('[AUTH DEBUG] Checking PKCE state before exchange...');
         const localStorageKeys = Object.keys(localStorage).filter(k => 
-          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier")
+          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
         );
         const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier")
+          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
         );
         console.log('[AUTH DEBUG] PKCE localStorage keys:', localStorageKeys);
         console.log('[AUTH DEBUG] PKCE sessionStorage keys:', sessionStorageKeys);

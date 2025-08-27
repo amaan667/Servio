@@ -17,7 +17,6 @@ export const supabase = createBrowserClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      flowType: 'pkce',
       debug: true,
     },
     global: {
@@ -35,7 +34,7 @@ export function clearAuthStorage() {
     
     // Clear localStorage
     const localStorageKeys = Object.keys(localStorage).filter(k => 
-      k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")
+      k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth") || k.includes("code_verifier")
     );
     console.log('[AUTH DEBUG] Found localStorage keys to clear:', localStorageKeys);
     localStorageKeys.forEach(k => {
@@ -46,7 +45,7 @@ export function clearAuthStorage() {
     
     // Clear sessionStorage
     const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-      k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")
+      k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth") || k.includes("code_verifier")
     );
     console.log('[AUTH DEBUG] Found sessionStorage keys to clear:', sessionStorageKeys);
     sessionStorageKeys.forEach(k => {
@@ -70,13 +69,13 @@ export function checkPKCEState() {
     
     // Check localStorage for PKCE-related keys
     const localStorageKeys = Object.keys(localStorage).filter(k => 
-      k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier")
+      k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
     );
     console.log('[AUTH DEBUG] PKCE localStorage keys:', localStorageKeys);
     
     // Check sessionStorage for PKCE-related keys
     const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-      k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier")
+      k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
     );
     console.log('[AUTH DEBUG] PKCE sessionStorage keys:', sessionStorageKeys);
     

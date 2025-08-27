@@ -200,7 +200,6 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   console.log('[AUTH DEBUG] 🔄 Step 5: Calling supabase.auth.signInWithOAuth');
                   console.log('[AUTH DEBUG] OAuth options:', {
                     provider: "google",
-                    flowType: "pkce",
                     redirectTo: `${origin}/api/auth/callback`,
                     queryParams: { prompt: 'select_account' }
                   });

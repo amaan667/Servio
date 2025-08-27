@@ -73,6 +73,9 @@ export async function GET(request: NextRequest) {
     );
     console.log('[AUTH DEBUG] PKCE cookies found:', pkceCookies.length);
     
+    // Log all localStorage and sessionStorage keys for debugging
+    console.log('[AUTH DEBUG] Checking for PKCE state in cookies and storage...');
+    
     // Add timeout to the exchange process
     const exchangePromise = supabase.auth.exchangeCodeForSession(code);
     const { data, error: exchangeError } = await Promise.race([exchangePromise, timeoutPromise]) as any;

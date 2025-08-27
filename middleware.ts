@@ -13,9 +13,56 @@ export function middleware(req: NextRequest) {
   const hasCode = url.searchParams.has("code");
   const hasError = url.searchParams.has("error");
 
-  // Always pass static, callback, and any OAuth code/error roundtrip
-  if (isAsset(p) || p.startsWith("/auth/callback") || p.startsWith("/api/auth/callback") || hasCode || hasError) {
-    console.log('[AUTH DEBUG] Allowing auth callback:', p);
+  // Always pass static assets, auth-related paths, and OAuth flows
+  if (isAsset(p) || 
+      p.startsWith("/auth/") || 
+      p.startsWith("/api/auth/") || 
+      p.startsWith("/sign-in") || 
+      p.startsWith("/sign-up") || 
+      p.startsWith("/complete-profile") || 
+      p.startsWith("/home") || 
+      p === "/" || 
+      p.startsWith("/order") || 
+      p.startsWith("/payment") || 
+      p.startsWith("/mobile-preview") || 
+      p.startsWith("/generate-qr") || 
+      p.startsWith("/settings") || 
+      p.startsWith("/api/") || 
+      p.startsWith("/docs/") || 
+      p.startsWith("/scripts/") || 
+      p.startsWith("/data/") || 
+      p.startsWith("/public/") || 
+      p.startsWith("/styles/") || 
+      p.startsWith("/types/") || 
+      p.startsWith("/hooks/") || 
+      p.startsWith("/lib/") || 
+      p.startsWith("/components/") || 
+      p.startsWith("/pages/") || 
+      p.startsWith("/src/") || 
+      p.startsWith("/favicon") || 
+      p.startsWith("/robots") || 
+      p.startsWith("/sitemap") || 
+      p.startsWith("/manifest") || 
+      p.startsWith("/_next/") || 
+      p.startsWith("/trivial-change") || 
+      p.startsWith("/middleware") || 
+      p.startsWith("/package") || 
+      p.startsWith("/node_modules") || 
+      p.startsWith("/.well-known") || 
+      p.startsWith("/.env") || 
+      p.startsWith("/.git") || 
+      p.startsWith("/.github") || 
+      p.startsWith("/.vscode") || 
+      p.startsWith("/.idea") || 
+      p.startsWith("/.editorconfig") || 
+      p.startsWith("/.eslintrc") || 
+      p.startsWith("/.prettierrc") || 
+      p.startsWith("/.babelrc") || 
+      p.startsWith("/.browserslistrc") || 
+      p.startsWith("/.gitignore") || 
+      hasCode || 
+      hasError) {
+    console.log('[AUTH DEBUG] Allowing path:', p);
     return NextResponse.next();
   }
 
