@@ -76,8 +76,10 @@ export async function signUpUser(
   try {
     logger.info("Attempting sign up", { email, fullName });
 
-    // ALWAYS use Railway production URL - never localhost
-    const emailRedirectTo = process.env.NEXT_PUBLIC_SITE_URL 
+    // Use environment variable or fallback to Railway production URL
+    const emailRedirectTo = process.env.NEXT_PUBLIC_APP_URL 
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+      : process.env.NEXT_PUBLIC_SITE_URL 
       ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
       : "https://servio-production.up.railway.app/dashboard";
     
@@ -195,7 +197,9 @@ export async function signInUser(email: string, password: string) {
 export async function signInWithGoogle() {
   console.log('[AUTH DEBUG] signInWithGoogle called');
   
-  const origin = "https://servio-production.up.railway.app";
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 
+                 process.env.NEXT_PUBLIC_SITE_URL || 
+                 (typeof window !== 'undefined' ? window.location.origin : 'https://servio-production.up.railway.app');
 
   console.log('[AUTH DEBUG] Origin determined:', origin);
   console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);

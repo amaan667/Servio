@@ -78,6 +78,21 @@ function CallbackInner() {
         return;
       }
 
+      // Verify session was actually created
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        // Clear all auth state on session verification failure
+        try {
+          Object.keys(localStorage).forEach(k => {
+            if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
+              localStorage.removeItem(k);
+          });
+          sessionStorage.removeItem(retryKey);
+        } catch {}
+        router.replace("/sign-in?error=session_verification_failed&message=Authentication completed but no session was created. Please try signing in again.");
+        return;
+      }
+
       // Success - clear retry flag and redirect
       try { 
         sessionStorage.removeItem(retryKey);
