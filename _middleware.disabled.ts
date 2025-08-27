@@ -1,58 +1,81 @@
-// middleware.ts
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from "next/server";
 
-const PROD_BASE = process.env.NEXT_PUBLIC_APP_URL!;
-const PROD_URL = new URL(PROD_BASE);
-const PROD_HOST = PROD_URL.host;
+const PROTECTED = ["/dashboard"];
+const isAsset = (p:string)=>p.startsWith("/_next/")||p.startsWith("/favicon")||/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$/.test(p);
+const needsAuth = (p:string)=>PROTECTED.some(pref=>p===pref||p.startsWith(pref+"/"));
+// Updated to match Supabase SSR cookie patterns
+const AUTH_COOKIE_PATTERNS = [
+  /^sb-[a-z0-9]+-auth-token(?:\.\d+)?$/i,  // Original pattern
+  /^sb-[a-z0-9]+-auth-token$/i,            // Without version suffix
+  /^sb-[a-z0-9]+-auth$/i,                  // Shorter auth token
+  /^sb-[a-z0-9]+-refresh-token$/i,         // Refresh token
+  /^sb-[a-z0-9]+-access-token$/i,          // Access token
+  /^sb-[a-z0-9]+-session$/i,               // Session cookie
+  /^sb-[a-z0-9]+-user$/i,                  // User cookie
+  /^sb-[a-z0-9]+-token$/i,                 // Generic token cookie
+];
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+export function middleware(req: NextRequest) {
+  const url = new URL(req.url);
+  const p = url.pathname;
+
+  // Always allow auth callbacks, API routes, and URLs with code/error params
+  if (
+    isAsset(p) ||
+    p.startsWith("/auth/callback") ||
+    p.startsWith("/api/auth/callback") ||
+    url.searchParams.has("code") ||
+    url.searchParams.has("error")
+  ) {
+    return NextResponse.next();
+  }
+
+  if (!needsAuth(p)) {
+    return NextResponse.next();
+  }
+
+  const allCookies = req.cookies.getAll();
+  const hasAuthCookie = allCookies.some(c => 
+    AUTH_COOKIE_PATTERNS.some(pattern => pattern.test(c.name))
+  );
   
-  // Never intercept the auth callback
-  if (req.nextUrl.pathname.startsWith('/auth/')) {
-    return res;
+  // Fallback: check for any Supabase-related cookies
+  const hasSupabaseCookie = allCookies.some(c => 
+    c.name.startsWith('sb-') || c.name.includes('supabase') || c.name.includes('auth')
+  );
+  
+  const authCookies = allCookies.filter(c => 
+    AUTH_COOKIE_PATTERNS.some(pattern => pattern.test(c.name))
+  );
+  
+  const supabaseCookies = allCookies.filter(c => 
+    c.name.startsWith('sb-') || c.name.includes('supabase') || c.name.includes('auth')
+  );
+  
+  console.log('[MIDDLEWARE DEBUG] Auth check:', {
+    needsAuth: true,
+    hasAuthCookie,
+    hasSupabaseCookie,
+    authCookies: authCookies.map(c => c.name),
+    supabaseCookies: supabaseCookies.map(c => c.name),
+    allCookies: allCookies.map(c => c.name)
+  });
+  
+  // Temporary debug: log all cookies to understand the pattern
+  console.log('[MIDDLEWARE DEBUG] All cookies:', allCookies.map(c => ({ name: c.name, value: c.value?.substring(0, 20) + '...' })));
+  
+  if (!hasAuthCookie && !hasSupabaseCookie) {
+    console.log('[MIDDLEWARE DEBUG] No auth cookie found, redirecting to sign-in');
+    const to = new URL("/sign-in", req.url);
+    to.searchParams.set("next", p);
+    return NextResponse.redirect(to);
   }
-
-  // Handle Supabase session propagation
-  try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get: (name) => req.cookies.get(name)?.value,
-          set: (name, value, options) => {
-            res.cookies.set(name, value, options);
-          },
-          remove: (name, options) => {
-            res.cookies.set(name, '', { ...options, maxAge: 0 });
-          },
-        },
-      }
-    );
-    await supabase.auth.getSession(); // propagates cookies to SSR
-  } catch (error) {
-    console.log('[AUTH DEBUG] Middleware session error:', error);
-  }
-
-  // Force https and the exact production host (only in production)
-  if (process.env.NODE_ENV === 'production') {
-    const isHttps = req.nextUrl.protocol === 'https:';
-    const host = req.headers.get('host');
-
-    if (!isHttps || host !== PROD_HOST) {
-      const redirectUrl = new URL(req.nextUrl);
-      redirectUrl.protocol = 'https:';
-      redirectUrl.host = PROD_HOST;
-      return NextResponse.redirect(redirectUrl, 308);
-    }
-  }
-
-  return res;
+  
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!_next|favicon.ico|robots.txt|sitemap.xml).*)'],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$).*)"],
 };
+
+

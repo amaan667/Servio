@@ -1,9 +1,10 @@
 "use client";
-import { Suspense, useEffect } from "react";
+export const dynamic = "force-dynamic";
+
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-export const dynamic = "force-dynamic";
+import { siteOrigin } from "@/lib/site";
 
 function CallbackInner() {
   const router = useRouter();
@@ -12,6 +13,7 @@ function CallbackInner() {
   useEffect(() => {
     let finished = false;
     const sb = createClient();
+
     const timeout = setTimeout(() => {
       if (!finished) router.replace("/sign-in?error=timeout");
     }, 15000);
@@ -23,43 +25,42 @@ function CallbackInner() {
       if (err) return router.replace("/sign-in?error=oauth_error");
       if (!code) return router.replace("/sign-in?error=missing_code");
 
+      // One-time retry if verifier is missing
       const retryKey = "sb_oauth_retry";
-      let retried = false;
-      try { retried = sessionStorage.getItem(retryKey) === "1"; } catch {}
+      const retried = (() => { try { return sessionStorage.getItem(retryKey) === "1"; } catch { return false; } })();
+      const hasVerifier = (() => {
+        try {
+          return !!localStorage.getItem("supabase.auth.token-code-verifier") ||
+                 Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
+        } catch { return false; }
+      })();
 
-      try {
-        const hasVerifier =
-          typeof localStorage !== "undefined" &&
-          (localStorage.getItem("supabase.auth.token-code-verifier") ||
-           Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier")));
+      if (!hasVerifier && !retried) {
+        try { sessionStorage.setItem(retryKey, "1"); } catch {}
+        await sb.auth.signInWithOAuth({
+          provider: "google",
+          options: { flowType: "pkce", redirectTo: `${siteOrigin()}/auth/callback` },
+        });
+        return;
+      }
 
-        if (!hasVerifier && !retried) {
-          sessionStorage.setItem(retryKey, "1");
-          const origin = window.location.origin;
-          await sb.auth.signInWithOAuth({
-            provider: "google",
-            options: { flowType: "pkce", redirectTo: `${origin}/auth/callback` },
-          });
-          return;
-        }
-      } catch {}
-
+      // Exchange in the browser
       const { error } = await sb.auth.exchangeCodeForSession({
         queryParams: new URLSearchParams(window.location.search),
       });
 
+      // Clean the URL so refresh/back won't re-exchange
       try {
         const url = new URL(window.location.href);
-        url.searchParams.delete("code");
-        url.searchParams.delete("state");
+        url.searchParams.delete("code"); url.searchParams.delete("state");
         window.history.replaceState({}, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ""));
       } catch {}
 
       if (error) {
+        // Stop loops and fail cleanly
         try {
-          Object.keys(localStorage).forEach(k => {
-            if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
-              localStorage.removeItem(k);
+          Object.keys(localStorage).forEach((k) => {
+            if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier")) localStorage.removeItem(k);
           });
           sessionStorage.removeItem(retryKey);
         } catch {}
@@ -67,15 +68,16 @@ function CallbackInner() {
         return;
       }
 
+      // Sanity-check that we truly have a session
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return router.replace("/sign-in?error=no_session");
+
       try { sessionStorage.removeItem(retryKey); } catch {}
       router.replace(next);
-    })().finally(() => {
-      finished = true;
-      clearTimeout(timeout);
-    });
+    })().finally(() => { finished = true; clearTimeout(timeout); });
   }, [router, sp]);
 
-  return null;
+  return null; // no UI
 }
 
 export default function OAuthCallback() {

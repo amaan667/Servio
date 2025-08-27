@@ -1,36 +1,33 @@
 'use client';
 import { createBrowserClient } from '@supabase/ssr';
 
-let _client: ReturnType<typeof createBrowserClient> | null = null;
-
-function ensureClient() {
-  if (!_client) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key) {
-      throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
-    }
-    _client = createBrowserClient(url, key, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        debug: true,
-      },
-      global: {
-        headers: { 'X-Client-Info': 'servio-mvp' },
-      },
-    });
-  }
-  return _client;
-}
-
-export const supabase: any = new Proxy({}, {
-  get(_target, prop) {
-    const client = ensureClient() as any;
-    return client[prop as any];
-  },
+console.log('[AUTH DEBUG] ===== Supabase Client Initialization =====');
+console.log('[AUTH DEBUG] Environment variables:', {
+  hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
+  timestamp: new Date().toISOString()
 });
+
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      debug: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'supabase.auth.token',
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'servio-mvp',
+      },
+    },
+  }
+);
 
 // Utility function to clear all authentication-related storage
 export function clearAuthStorage() {
