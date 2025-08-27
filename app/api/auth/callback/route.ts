@@ -22,14 +22,14 @@ export async function GET(request: NextRequest) {
       if (error) {
       console.log('[AUTH DEBUG] OAuth error:', error, errorDescription);
       return NextResponse.redirect(
-        `https://servio-production.up.railway.app/sign-in?error=oauth_error&message=${encodeURIComponent(errorDescription || error)}`
+        `https://servio-production.up.railway.app/?error=oauth_error&message=${encodeURIComponent(errorDescription || error)}`
       );
     }
   
       if (!code) {
       console.log('[AUTH DEBUG] No code received');
       return NextResponse.redirect(
-        `https://servio-production.up.railway.app/sign-in?error=missing_code&message=No authentication code received`
+        `https://servio-production.up.railway.app/?error=missing_code&message=No authentication code received`
       );
     }
   
@@ -86,28 +86,28 @@ export async function GET(request: NextRequest) {
       // Handle timeout specifically
       if (exchangeError.message.includes('timeout') || exchangeError.message.includes('Authentication callback timeout')) {
         return NextResponse.redirect(
-          `https://servio-production.up.railway.app/sign-in?error=timeout&message=Authentication timed out. Please try again.`
+          `https://servio-production.up.railway.app/?error=timeout&message=Authentication timed out. Please try again.`
         );
       }
       
       // Handle specific PKCE error
       if (exchangeError.message.includes('code verifier should be non-empty') || 
           exchangeError.message.includes('both auth code and code verifier should be non-empty')) {
-        console.log('[AUTH DEBUG] PKCE error detected - redirecting to sign-in');
+        console.log('[AUTH DEBUG] PKCE error detected - redirecting to home');
         return NextResponse.redirect(
-          `https://servio-production.up.railway.app/sign-in?error=pkce_failed&message=Authentication flow interrupted. Please try signing in again.`
+          `https://servio-production.up.railway.app/?error=pkce_failed&message=Authentication flow interrupted. Please try signing in again.`
         );
       }
       
       return NextResponse.redirect(
-        `https://servio-production.up.railway.app/sign-in?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`
+        `https://servio-production.up.railway.app/?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`
       );
     }
     
     if (!data.session) {
       console.log('[AUTH DEBUG] No session after exchange');
       return NextResponse.redirect(
-        `https://servio-production.up.railway.app/sign-in?error=no_session&message=No session created after authentication`
+        `https://servio-production.up.railway.app/?error=no_session&message=No session created after authentication`
       );
     }
     
@@ -117,8 +117,8 @@ export async function GET(request: NextRequest) {
       sessionExpiresAt: data.session.expires_at
     });
     
-    console.log('[AUTH DEBUG] Redirecting to dashboard');
-    return NextResponse.redirect(`https://servio-production.up.railway.app/dashboard`);
+    console.log('[AUTH DEBUG] Redirecting to home page');
+    return NextResponse.redirect(`https://servio-production.up.railway.app/`);
     
   } catch (error: any) {
     console.log('[AUTH DEBUG] Unexpected error:', error);
@@ -135,12 +135,12 @@ export async function GET(request: NextRequest) {
     // Handle timeout specifically
     if (errorMessage.includes('timeout') || errorMessage.includes('Authentication callback timeout')) {
       return NextResponse.redirect(
-        `${requestUrl.origin}/sign-in?error=timeout&message=Authentication timed out. Please try again.`
+        `${requestUrl.origin}/?error=timeout&message=Authentication timed out. Please try again.`
       );
     }
     
     return NextResponse.redirect(
-      `https://servio-production.up.railway.app/sign-in?error=unexpected_error&message=${encodeURIComponent(errorMessage)}`
+      `https://servio-production.up.railway.app/?error=unexpected_error&message=${encodeURIComponent(errorMessage)}`
     );
   }
 }

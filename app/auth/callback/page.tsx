@@ -19,13 +19,13 @@ function AuthCallbackContent() {
         
         if (error) {
           console.log('[AUTH DEBUG] OAuth error in client callback:', error);
-          router.replace(`/sign-in?error=oauth_error&message=${encodeURIComponent(error)}`);
+          router.replace(`/?error=oauth_error&message=${encodeURIComponent(error)}`);
           return;
         }
         
         if (!code) {
           console.log('[AUTH DEBUG] No code in client callback');
-          router.replace('/sign-in?error=missing_code&message=No authentication code received');
+          router.replace('/?error=missing_code&message=No authentication code received');
           return;
         }
         
@@ -52,30 +52,30 @@ function AuthCallbackContent() {
           if (exchangeError.message.includes('code verifier should be non-empty') || 
               exchangeError.message.includes('both auth code and code verifier should be non-empty')) {
             console.log('[AUTH DEBUG] PKCE error detected - clearing storage and redirecting');
-            // Clear all auth storage and redirect to sign-in
+            // Clear all auth storage and redirect to home
             localStorage.clear();
             sessionStorage.clear();
-            router.replace('/sign-in?error=pkce_failed&message=Authentication flow interrupted. Please try signing in again.');
+            router.replace('/?error=pkce_failed&message=Authentication flow interrupted. Please try signing in again.');
             return;
           }
           
-          router.replace(`/sign-in?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`);
+          router.replace(`/?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`);
           return;
         }
         
         if (!data.session) {
           console.log('[AUTH DEBUG] No session in client callback');
-          router.replace('/sign-in?error=no_session&message=No session created');
+          router.replace('/?error=no_session&message=No session created');
           return;
         }
         
-        console.log('[AUTH DEBUG] Client callback successful, redirecting to dashboard');
+        console.log('[AUTH DEBUG] Client callback successful, redirecting to home page');
         setStatus("Authentication successful! Redirecting...");
-        router.replace('/dashboard');
+        router.replace('/');
         
       } catch (error: any) {
         console.log('[AUTH DEBUG] Unexpected error in client callback:', error);
-        router.replace(`/sign-in?error=unexpected_error&message=${encodeURIComponent(error.message || 'Unknown error')}`);
+        router.replace(`/?error=unexpected_error&message=${encodeURIComponent(error.message || 'Unknown error')}`);
       }
     };
 
