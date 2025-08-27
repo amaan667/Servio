@@ -168,6 +168,8 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                 console.log('[AUTH DEBUG] Button clicked at:', new Date().toISOString());
                 console.log('[AUTH DEBUG] Current URL:', window.location.href);
                 console.log('[AUTH DEBUG] User agent:', navigator.userAgent);
+                console.log('[AUTH DEBUG] Network status:', navigator.onLine ? 'online' : 'offline');
+                console.log('[AUTH DEBUG] Connection type:', (navigator as any).connection?.effectiveType || 'unknown');
                 
                 setError(null);
                 setLoading(true);
@@ -178,7 +180,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   // Use the same URL resolution logic as the callback
                   const origin = typeof window !== "undefined" ? window.location.origin : "https://servio-production.up.railway.app";
                   console.log('[AUTH DEBUG] Origin determined:', origin);
-                  console.log('[AUTH DEBUG] Redirect URL will be:', `${origin}/auth/callback`);
+                  console.log('[AUTH DEBUG] Redirect URL will be:', `${origin}/api/auth/callback`);
                   
                   // Clear any stale auth state
                   console.log('[AUTH DEBUG] 🔄 Step 2: Clearing stale auth state');
@@ -188,7 +190,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   console.log('[AUTH DEBUG] OAuth options:', {
                     provider: "google",
                     flowType: "pkce",
-                    redirectTo: `${origin}/auth/callback`,
+                    redirectTo: `${origin}/api/auth/callback`,
                     queryParams: { prompt: 'select_account' }
                   });
                   
@@ -207,14 +209,14 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                         provider: "google",
                         options: { 
                           flowType: "pkce", 
-                          redirectTo: `${origin}/auth/callback`,
+                          redirectTo: `${origin}/api/auth/callback`,
                           queryParams: { prompt: 'select_account' }
                         },
                       });
                       
-                      // Add 30-second timeout for OAuth initiation
+                      // Add 45-second timeout for OAuth initiation
                       const timeoutPromise = new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('OAuth initiation timeout')), 30000)
+                        setTimeout(() => reject(new Error('OAuth initiation timeout')), 45000)
                       );
                       
                       const { data, error } = await Promise.race([oauthPromise, timeoutPromise]) as any;
@@ -235,7 +237,10 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                           error.message.includes('network') || 
                           error.message.includes('timeout') ||
                           error.message.includes('fetch') ||
-                          error.message.includes('OAuth initiation timeout')
+                          error.message.includes('OAuth initiation timeout') ||
+                          error.message.includes('Failed to fetch') ||
+                          error.message.includes('ERR_NETWORK') ||
+                          error.message.includes('ERR_INTERNET_DISCONNECTED')
                         )) {
                           console.log('[AUTH DEBUG] 🔄 Retrying OAuth due to network/timeout error');
                           retryCount++;

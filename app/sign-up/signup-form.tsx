@@ -140,7 +140,7 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
                   console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
                   const result = await supabase.auth.signInWithOAuth({
                     provider: "google",
-                    options: { flowType: "pkce", redirectTo: `${origin}/auth/callback` },
+                    options: { flowType: "pkce", redirectTo: `${origin}/api/auth/callback` },
                   });
                   
                   console.log('[AUTH DEBUG] OAuth initiation result:', result);

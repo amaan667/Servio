@@ -26,7 +26,7 @@ export async function GET() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { 
-        redirectTo: 'https://servio-production.up.railway.app/auth/callback',
+        redirectTo: 'https://servio-production.up.railway.app/api/auth/callback',
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -37,7 +37,7 @@ export async function GET() {
     return NextResponse.json({
       data,
       error,
-      redirectTo: 'https://servio-production.up.railway.app/auth/callback',
+              redirectTo: 'https://servio-production.up.railway.app/api/auth/callback',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

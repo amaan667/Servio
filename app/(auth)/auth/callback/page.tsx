@@ -141,7 +141,7 @@ function OAuthCallbackContent() {
                   provider: "google",
                   options: { 
                     flowType: "pkce", 
-                    redirectTo: `${origin}/auth/callback`,
+                    redirectTo: `${origin}/api/auth/callback`,
                     queryParams: { prompt: 'select_account' }
                   },
                 });

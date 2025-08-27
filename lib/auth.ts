@@ -24,7 +24,7 @@ console.log('🔧 AUTH CONFIG:', {
   IS_PRODUCTION: process.env.NODE_ENV === 'production',
 });
 
-export const getAuthRedirectUrl = (path: string = '/auth/callback') => {
+export const getAuthRedirectUrl = (path: string = '/api/auth/callback') => {
   // In production, ALWAYS use the Railway URL - never localhost
   if (process.env.NODE_ENV === 'production') {
     const productionUrl = `https://servio-production.up.railway.app${path}`;

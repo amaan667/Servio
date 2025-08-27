@@ -26,7 +26,7 @@ export function middleware(req: NextRequest) {
   }
   
   // Always allow auth callback
-  if (pathname.startsWith('/auth/callback') || searchParams.has('code')) {
+  if (pathname.startsWith('/auth/callback') || pathname.startsWith('/api/auth/callback') || searchParams.has('code')) {
     console.log('[AUTH DEBUG] Allowing auth callback:', pathname);
     return NextResponse.next();
   }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthRedirectUrl } from '@/lib/auth';
 
 export async function GET() {
-  const redirectUrl = getAuthRedirectUrl('/auth/callback');
+  const redirectUrl = getAuthRedirectUrl('/api/auth/callback');
   
   return NextResponse.json({
     authConfig: {
