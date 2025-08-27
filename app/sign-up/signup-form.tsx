@@ -5,13 +5,49 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { signInWithGoogle } from '@/lib/supabase-client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { signUpUser, signInWithGoogle } from '@/lib/supabase';
 
 export default function SignUpForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    fullName: '',
+    venueName: '',
+    venueType: '',
+  });
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await signUpUser(
+        formData.email,
+        formData.password,
+        formData.fullName,
+        formData.venueName,
+        formData.venueType
+      );
+      
+      if (result.success) {
+        router.push('/dashboard');
+      } else {
+        setError(result.message || 'Sign up failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleSignUp = async () => {
     setLoading(true);
@@ -21,7 +57,6 @@ export default function SignUpForm() {
       await signInWithGoogle();
       // The redirect will happen automatically
     } catch (err: any) {
-      console.error('Google sign-up failed:', err);
       setError(err.message || 'Google sign-up failed. Please try again.');
       setLoading(false);
     }
@@ -41,6 +76,7 @@ export default function SignUpForm() {
             </Alert>
           )}
           
+          {/* Google Sign Up Button */}
           <Button
             onClick={handleGoogleSignUp}
             disabled={loading}
@@ -57,6 +93,95 @@ export default function SignUpForm() {
             </svg>
             {loading ? 'Creating account...' : 'Sign up with Google'}
           </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+            </div>
+          </div>
+
+          {/* Email/Password Form */}
+          <form onSubmit={handleEmailSignUp} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                placeholder="Enter your full name"
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="Enter your email"
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Create a password"
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="venueName">Business Name</Label>
+              <Input
+                id="venueName"
+                type="text"
+                value={formData.venueName}
+                onChange={(e) => setFormData({ ...formData, venueName: e.target.value })}
+                placeholder="Enter your business name"
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="venueType">Business Type</Label>
+              <Select
+                value={formData.venueType}
+                onValueChange={(value) => setFormData({ ...formData, venueType: value })}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your business type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="restaurant">Restaurant</SelectItem>
+                  <SelectItem value="cafe">Cafe</SelectItem>
+                  <SelectItem value="bar">Bar</SelectItem>
+                  <SelectItem value="food-truck">Food Truck</SelectItem>
+                  <SelectItem value="bakery">Bakery</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Creating account...' : 'Create Account'}
+            </Button>
+          </form>
 
           <div className="text-center text-sm text-gray-600">
             Already have an account?{' '}

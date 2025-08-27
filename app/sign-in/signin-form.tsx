@@ -5,13 +5,39 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { signInWithGoogle } from '@/lib/supabase-client';
+import { signInUser, signInWithGoogle } from '@/lib/supabase';
 
 export default function SignInForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await signInUser(formData.email, formData.password);
+      
+      if (result.success) {
+        router.push('/dashboard');
+      } else {
+        setError(result.message || 'Sign in failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -21,7 +47,6 @@ export default function SignInForm() {
       await signInWithGoogle();
       // The redirect will happen automatically
     } catch (err: any) {
-      console.error('Google sign-in failed:', err);
       setError(err.message || 'Google sign-in failed. Please try again.');
       setLoading(false);
     }
@@ -41,6 +66,7 @@ export default function SignInForm() {
             </Alert>
           )}
           
+          {/* Google Sign In Button */}
           <Button
             onClick={handleGoogleSignIn}
             disabled={loading}
@@ -57,6 +83,48 @@ export default function SignInForm() {
             </svg>
             {loading ? 'Signing in...' : 'Sign in with Google'}
           </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+            </div>
+          </div>
+
+          {/* Email/Password Form */}
+          <form onSubmit={handleEmailSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="Enter your email"
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Enter your password"
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </form>
 
           <div className="text-center text-sm text-gray-600">
             Don't have an account?{' '}
