@@ -19,19 +19,19 @@ export async function GET(request: NextRequest) {
     setTimeout(() => reject(new Error('Authentication callback timeout')), 60000)
   );
   
-  if (error) {
-    console.log('[AUTH DEBUG] OAuth error:', error, errorDescription);
-    return NextResponse.redirect(
-      `${requestUrl.origin}/sign-in?error=oauth_error&message=${encodeURIComponent(errorDescription || error)}`
-    );
-  }
+      if (error) {
+      console.log('[AUTH DEBUG] OAuth error:', error, errorDescription);
+      return NextResponse.redirect(
+        `https://servio-production.up.railway.app/sign-in?error=oauth_error&message=${encodeURIComponent(errorDescription || error)}`
+      );
+    }
   
-  if (!code) {
-    console.log('[AUTH DEBUG] No code received');
-    return NextResponse.redirect(
-      `${requestUrl.origin}/sign-in?error=missing_code&message=No authentication code received`
-    );
-  }
+      if (!code) {
+      console.log('[AUTH DEBUG] No code received');
+      return NextResponse.redirect(
+        `https://servio-production.up.railway.app/sign-in?error=missing_code&message=No authentication code received`
+      );
+    }
   
   try {
     const cookieStore = await cookies();
@@ -72,19 +72,19 @@ export async function GET(request: NextRequest) {
       // Handle timeout specifically
       if (exchangeError.message.includes('timeout') || exchangeError.message.includes('Authentication callback timeout')) {
         return NextResponse.redirect(
-          `${requestUrl.origin}/sign-in?error=timeout&message=Authentication timed out. Please try again.`
+          `https://servio-production.up.railway.app/sign-in?error=timeout&message=Authentication timed out. Please try again.`
         );
       }
       
       return NextResponse.redirect(
-        `${requestUrl.origin}/sign-in?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`
+        `https://servio-production.up.railway.app/sign-in?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`
       );
     }
     
     if (!data.session) {
       console.log('[AUTH DEBUG] No session after exchange');
       return NextResponse.redirect(
-        `${requestUrl.origin}/sign-in?error=no_session&message=No session created after authentication`
+        `https://servio-production.up.railway.app/sign-in?error=no_session&message=No session created after authentication`
       );
     }
     
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     });
     
     console.log('[AUTH DEBUG] Redirecting to dashboard');
-    return NextResponse.redirect(`${requestUrl.origin}/dashboard`);
+    return NextResponse.redirect(`https://servio-production.up.railway.app/dashboard`);
     
   } catch (error: any) {
     console.log('[AUTH DEBUG] Unexpected error:', error);
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     }
     
     return NextResponse.redirect(
-      `${requestUrl.origin}/sign-in?error=unexpected_error&message=${encodeURIComponent(errorMessage)}`
+      `https://servio-production.up.railway.app/sign-in?error=unexpected_error&message=${encodeURIComponent(errorMessage)}`
     );
   }
 }
