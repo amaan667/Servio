@@ -11,6 +11,10 @@ function OAuthCallbackInner() {
   const sp = useSearchParams();
 
   useEffect(() => {
+    console.log('[AUTH DEBUG] ===== Auth Callback Page Loaded =====');
+    console.log('[AUTH DEBUG] Current URL:', window.location.href);
+    console.log('[AUTH DEBUG] Search params:', window.location.search);
+    
     let finished = false;
     const sb = createClient();
 
@@ -20,9 +24,12 @@ function OAuthCallbackInner() {
     }, 15000);
 
     (async () => {
+      console.log('[AUTH DEBUG] Processing callback parameters...');
       const err = sp?.get("error");
       const code = sp?.get("code");
       const next = sp?.get("next") || "/dashboard";
+      
+      console.log('[AUTH DEBUG] Callback params:', { err, hasCode: !!code, next });
 
       if (err) return router.replace("/sign-in?error=oauth_error");
       if (!code) return router.replace("/sign-in?error=missing_code");
@@ -35,7 +42,7 @@ function OAuthCallbackInner() {
           !!localStorage.getItem("supabase.auth.token-code-verifier");
 
         if (!hasVerifier) {
-          const origin = window.location.origin;
+          const origin = "https://servio-production.up.railway.app";
           await sb.auth.signInWithOAuth({
             provider: "google",
             options: { flowType: "pkce", redirectTo: `${origin}/auth/callback` },
@@ -63,7 +70,7 @@ function OAuthCallbackInner() {
               localStorage.removeItem(k);
           });
         } catch {}
-        const origin = window.location.origin;
+        const origin = "https://servio-production.up.railway.app";
         await sb.auth.signInWithOAuth({
           provider: "google",
           options: { flowType: "pkce", redirectTo: `${origin}/auth/callback` },
