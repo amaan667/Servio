@@ -177,9 +177,9 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                 try {
                   console.log('[AUTH DEBUG] 🔍 Step 1: Determining origin for redirect');
                   
-                  // Use the same URL resolution logic as the callback
-                  const origin = typeof window !== "undefined" ? window.location.origin : "https://servio-production.up.railway.app";
-                  console.log('[AUTH DEBUG] Origin determined:', origin);
+                  // ALWAYS use production URL for OAuth redirects
+                  const origin = "https://servio-production.up.railway.app";
+                  console.log('[AUTH DEBUG] Using production origin:', origin);
                   console.log('[AUTH DEBUG] Redirect URL will be:', `${origin}/api/auth/callback`);
                   
                   // Clear any stale auth state

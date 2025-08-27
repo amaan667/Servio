@@ -121,7 +121,7 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
                 setError(null);
                 try {
                   console.log('[AUTH DEBUG] Determining origin for OAuth');
-                  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
+                  const origin = "https://servio-production.up.railway.app";
                   console.log('[AUTH DEBUG] Origin determined:', origin);
                   console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
                   
