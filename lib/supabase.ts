@@ -224,8 +224,7 @@ export async function signInWithGoogle() {
     provider: "google",
     options: { 
       flowType: "pkce",
-      redirectTo: redirectTo,
-      queryParams: { prompt: 'select_account' }
+      redirectTo: redirectTo
     },
   });
 

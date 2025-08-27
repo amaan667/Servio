@@ -8,15 +8,13 @@ export default function SignInButton() {
   const onGoogle = async () => {
     const supabase = createClient();
     
-    // Clear any existing auth state
-    await supabase.auth.signOut();
-    
     // Clean stale PKCE state before starting
     try {
       Object.keys(localStorage).forEach(k => {
         if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
           localStorage.removeItem(k);
       });
+      sessionStorage.removeItem("sb_oauth_retry");
     } catch {}
     
     // Use the proper OAuth flow with PKCE
@@ -24,12 +22,7 @@ export default function SignInButton() {
       provider: 'google',
       options: {
         flowType: "pkce",
-        redirectTo: `${siteOrigin()}/auth/callback`,
-        queryParams: { 
-          prompt: 'select_account',
-          access_type: 'offline'
-        },
-        skipBrowserRedirect: false
+        redirectTo: `${siteOrigin()}/auth/callback`
       }
     });
     

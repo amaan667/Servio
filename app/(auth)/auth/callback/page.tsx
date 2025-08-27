@@ -1,17 +1,19 @@
 "use client";
-import { useEffect, Suspense } from "react";
+import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
 
-function OAuthCallbackInner() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default function OAuthCallback() {
   const router = useRouter();
   const sp = useSearchParams();
 
   useEffect(() => {
     let finished = false;
     const sb = createClient();
-
     const timeout = setTimeout(() => {
       if (!finished) router.replace("/sign-in?error=timeout");
     }, 15000);
@@ -23,7 +25,6 @@ function OAuthCallbackInner() {
       if (err) return router.replace("/sign-in?error=oauth_error");
       if (!code) return router.replace("/sign-in?error=missing_code");
 
-      // One-time retry if PKCE verifier is missing
       const retryKey = "sb_oauth_retry";
       const retried = (() => {
         try { return sessionStorage.getItem(retryKey) === "1"; } catch { return false; }
@@ -42,26 +43,23 @@ function OAuthCallbackInner() {
         try { sessionStorage.setItem(retryKey, "1"); } catch {}
         await sb.auth.signInWithOAuth({
           provider: "google",
-          options: { flowType: "pkce", redirectTo: `${siteOrigin()}/auth/callback` },
+          options: { flowType: "pkce", redirectTo: `${siteOrigin()}/auth/callback` }
         });
         return;
       }
 
-      // Exchange PKCE strictly in the browser
       const { error } = await sb.auth.exchangeCodeForSession({
-        queryParams: new URLSearchParams(window.location.search),
+        queryParams: new URLSearchParams(window.location.search)
       });
 
-      // Clean URL so back/refresh won't re-exchange
+      // Clean URL so refresh/back won't re-exchange
       try {
         const url = new URL(window.location.href);
-        url.searchParams.delete("code");
-        url.searchParams.delete("state");
+        url.searchParams.delete("code"); url.searchParams.delete("state");
         window.history.replaceState({}, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ""));
       } catch {}
 
       if (error) {
-        // Stop loops and show a clean failure
         try {
           const ls = localStorage;
           if (ls) {
@@ -76,28 +74,15 @@ function OAuthCallbackInner() {
         return;
       }
 
-      // Confirm session really exists
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        router.replace("/sign-in?error=no_session");
-        return;
-      }
+      if (!session) return router.replace("/sign-in?error=no_session");
 
       try { sessionStorage.removeItem(retryKey); } catch {}
       router.replace(next);
     })().finally(() => {
-      finished = true;
-      clearTimeout(timeout);
+      finished = true; clearTimeout(timeout);
     });
   }, [router, sp]);
 
-  return null; // no UI
-}
-
-export default function OAuthCallback() {
-  return (
-    <Suspense fallback={null}>
-      <OAuthCallbackInner />
-    </Suspense>
-  );
+  return null;
 }

@@ -33,12 +33,7 @@ export default function TestOAuthPage() {
         provider: 'google',
         options: {
           flowType: "pkce",
-          redirectTo: `${siteOrigin()}/auth/callback`,
-          queryParams: { 
-            prompt: 'select_account',
-            access_type: 'offline'
-          },
-          skipBrowserRedirect: false
+          redirectTo: `${siteOrigin()}/auth/callback`
         }
       });
       
