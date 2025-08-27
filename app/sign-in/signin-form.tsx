@@ -40,13 +40,36 @@ export default function SignInForm() {
   };
 
   const handleGoogleSignIn = async () => {
+    const startTime = Date.now();
+    console.log('[AUTH DEBUG] ===== GOOGLE SIGN-IN BUTTON CLICKED =====');
+    console.log('[AUTH DEBUG] Timestamp:', new Date().toISOString());
+    console.log('[AUTH DEBUG] Button clicked, starting Google sign-in process...');
+    
     setLoading(true);
     setError(null);
     
     try {
+      console.log('[AUTH DEBUG] 🔄 Calling signInWithGoogle function...');
+      const signInStartTime = Date.now();
+      
       await signInWithGoogle();
+      
+      const signInTime = Date.now() - signInStartTime;
+      console.log(`[AUTH DEBUG] ⏱️ signInWithGoogle completed in ${signInTime}ms`);
+      console.log('[AUTH DEBUG] ✅ signInWithGoogle completed successfully');
+      console.log('[AUTH DEBUG] 🔄 OAuth redirect should happen automatically');
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`[AUTH DEBUG] ✅ GOOGLE SIGN-IN BUTTON HANDLER COMPLETED in ${totalTime}ms`);
+      
       // The redirect will happen automatically
     } catch (err: any) {
+      const elapsed = Date.now() - startTime;
+      console.error(`[AUTH DEBUG] ❌ Google sign-in failed after ${elapsed}ms:`, err);
+      console.error('[AUTH DEBUG] - Error type:', typeof err);
+      console.error('[AUTH DEBUG] - Error message:', err?.message);
+      console.error('[AUTH DEBUG] - Error stack:', err?.stack);
+      
       setError(err.message || 'Google sign-in failed. Please try again.');
       setLoading(false);
     }
