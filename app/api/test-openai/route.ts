@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { getOpenAI } from "@/lib/openai";
 
 export async function GET(req: Request) {
   // If you need Supabase, you must use the Node.js request/response objects.
@@ -6,8 +6,7 @@ export async function GET(req: Request) {
   // Remove or comment out Supabase usage if not needed for this test route.
 
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    if (!process.env.OPENAI_API_KEY) {
       return new Response(
         JSON.stringify({
           error: "OpenAI API key is missing",
@@ -18,10 +17,10 @@ export async function GET(req: Request) {
     }
 
     console.log("Testing OpenAI API key...");
-    const openai = new OpenAI({ apiKey });
+    const openai = getOpenAI();
     // Test with a simple text completion
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini",
       messages: [
         { role: "user", content: "Say 'Hello World' if you can read this." },
       ],

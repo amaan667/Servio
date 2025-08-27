@@ -1,11 +1,8 @@
-import { OpenAI } from "openai";
+import { getOpenAI } from "./openai";
 import fs from "fs";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function extractMenuFromImage(imagePath: string) {
+  const openai = getOpenAI();
   const imageBytes = fs.readFileSync(imagePath).toString("base64");
 
   const prompt = `
