@@ -9,7 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { signUpUser, signInWithGoogle } from '@/lib/supabase';
+import { signUpUser } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+import { siteOrigin } from '@/lib/site';
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -54,8 +56,23 @@ export default function SignUpForm() {
     setError(null);
     
     try {
-      await signInWithGoogle();
-      // The redirect will happen automatically
+      // Clear stale PKCE artifacts to avoid loops
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('sb-') || k.includes('pkce') || k.includes('token-code-verifier')) {
+            localStorage.removeItem(k);
+          }
+        });
+        sessionStorage.removeItem('sb_oauth_retry');
+      } catch {}
+
+      await createClient().auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          flowType: 'pkce',
+          redirectTo: `${siteOrigin()}/auth/callback`,
+        },
+      });
     } catch (err: any) {
       setError(err.message || 'Google sign-up failed. Please try again.');
       setLoading(false);

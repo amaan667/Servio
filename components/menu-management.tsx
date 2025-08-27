@@ -25,7 +25,7 @@ import {
   Link,
   FileText,
 } from "lucide-react";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { logger } from "@/lib/logger";
 import {
   Dialog,
@@ -35,6 +35,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+
+const supabase = createClient();
 
 // Define types locally since they're not exported from supabase
 interface BaseMenuItem {
@@ -253,10 +255,13 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     setSaving(itemId);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("menu_items")
         .update(updates)
-        .eq("id", itemId);
+        .eq("id", itemId)
+        .eq("venue_id", venueUuid)
+        .select("*")
+        .single();
 
       if (error) {
         logger.error("Failed to update item", {
@@ -265,8 +270,8 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           code: error.code,
         });
         setError(`Failed to update item: ${error.message}`);
-      } else {
-        logger.info("Item updated successfully", { itemId });
+      } else if (data) {
+        setMenuItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, ...updates } as any : it)));
       }
     } catch (error: any) {
       logger.error("Unexpected error updating item", { error });
@@ -288,7 +293,8 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       const { error } = await supabase
         .from("menu_items")
         .delete()
-        .eq("id", itemId);
+        .eq("id", itemId)
+        .eq("venue_id", venueUuid);
 
       if (error) {
         logger.error("Failed to delete item", {
@@ -353,7 +359,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         return;
       }
       for (const item of batchEditItems) {
-        await createClient().from("menu_items").update({ category: item.category }).eq("id", item.id);
+        await supabase.from("menu_items").update({ category: item.category }).eq("id", item.id);
       }
       setBatchEditOpen(false);
       fetchMenu();
@@ -391,7 +397,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           setSaving(null);
           return;
         }
-        await createClient().from("menu_items").update({ category: batchEditValue }).in("id", selectedItems);
+        await supabase.from("menu_items").update({ category: batchEditValue }).in("id", selectedItems);
       } else if (batchAction === "price") {
         const price = Number(batchEditValue);
         if (!batchEditValue || isNaN(price) || price <= 0) {
@@ -399,13 +405,13 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           setSaving(null);
           return;
         }
-        await createClient().from("menu_items").update({ price }).in("id", selectedItems);
+        await supabase.from("menu_items").update({ price }).in("id", selectedItems);
       } else if (batchAction === "unavailable") {
-        await createClient().from("menu_items").update({ available: false }).in("id", selectedItems);
+        await supabase.from("menu_items").update({ available: false }).in("id", selectedItems);
       } else if (batchAction === "edit") {
-        await createClient().from("menu_items").update({ available: true }).in("id", selectedItems);
+        await supabase.from("menu_items").update({ available: true }).in("id", selectedItems);
       } else if (batchAction === "delete") {
-        await createClient().from("menu_items").delete().in("id", selectedItems);
+        await supabase.from("menu_items").delete().in("id", selectedItems);
       }
       setBatchAction(null);
       setSelectedItems([]);

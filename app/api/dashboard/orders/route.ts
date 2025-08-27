@@ -15,13 +15,13 @@ export async function GET(req: Request) {
   }
 
   const supabase = createServerSupabase();
-  const { data: { user } } = await createClient().auth.getUser();
+  const { data: { user } } = await (await supabase).auth.getUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
   }
 
   // Check venue ownership
-  const { data: venue } = await supabase
+  const { data: venue } = await (await supabase)
     .from('venues')
     .select('venue_id')
     .eq('venue_id', venueId)
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 
-  let query = supabase
+  let query = (await supabase)
     .from('orders')
     .select(`
       id, venue_id, table_number, customer_name, customer_phone, 
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
   // Get active tables count for today
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const { data: activeTables } = await supabase
+  const { data: activeTables } = await (await supabase)
     .from('orders')
     .select('table_number')
     .eq('venue_id', venueId)

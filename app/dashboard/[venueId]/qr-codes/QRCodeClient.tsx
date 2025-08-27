@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,8 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+
+const supabase = createClient();
 
 interface Table {
   id: string;
@@ -122,10 +124,10 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
     );
   }
 
-              return (
-        <div className="min-h-screen bg-gray-50">
-          <ClientNavBar venueId={venueId} />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <ClientNavBar venueId={venueId} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
         
         <div className="mb-8 flex justify-between items-center">

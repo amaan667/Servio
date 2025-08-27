@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Clock } from "lucide-react";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { todayWindowForTZ } from "@/lib/time";
+
+const supabase = createClient();
 
 type OrdersClientProps = {
   venueId: string;

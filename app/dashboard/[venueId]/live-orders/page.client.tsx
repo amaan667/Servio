@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createClient } from '@/lib/sb-client';
+import { createClient } from '@/lib/supabase/client';
 import { toMoney } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,8 @@ import Link from 'next/link';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import ClientNavBar from '@/components/ClientNavBar';
 import { useAuth } from "@/app/authenticated-client-provider";
+
+const supabase = createClient();
 
 type Item = {
   id: string;

@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/dates";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
+const supabase = createClient();
 
 interface Order {
   id: string;
@@ -38,8 +39,6 @@ interface LiveOrdersClientProps {
 interface GroupedHistoryOrders {
   [date: string]: Order[];
 }
-
-
 
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -69,7 +68,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setTodayWindow(window);
       
       // Load live orders (pending/preparing from today)
-      // Load live orders (pending/preparing from today)
       const { data: liveData, error: liveError } = await supabase
         .from('orders')
         .select('*')
@@ -97,26 +95,18 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false })
         .limit(100); // Limit to last 100 orders
 
-      if (!liveError && liveData) {
-        setOrders(liveData as Order[]);
-      }
-      if (!allError && allData) {
-        setAllOrders(allData as Order[]);
-      }
+      if (!liveError && liveData) setOrders(liveData as Order[]);
+      if (!allError && allData) setAllOrders(allData as Order[]);
       if (!historyError && historyData) {
         const history = historyData as Order[];
         setHistoryOrders(history);
-        
-        // Group history orders by date
         const grouped = history.reduce((acc: GroupedHistoryOrders, order) => {
           const date = new Date(order.created_at).toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
             year: 'numeric'
           });
-          if (!acc[date]) {
-            acc[date] = [];
-          }
+          if (!acc[date]) acc[date] = [];
           acc[date].push(order);
           return acc;
         }, {});

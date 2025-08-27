@@ -8,10 +8,10 @@ import GenerateQRClient from './GenerateQRClient';
 export default async function GenerateQRPage() {
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await createClient().auth.getUser();
+  const { data: { user } } = await (await supabase).auth.getUser();
   if (!user) redirect('/sign-in');
 
-  const { data: venue, error } = await supabase
+  const { data: venue, error } = await (await supabase)
     .from('venues')
     .select('venue_id, name')
     .eq('owner_id', user.id)

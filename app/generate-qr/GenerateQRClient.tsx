@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Printer, Copy, Check } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
+
+const supabase = createClient();
 
 interface Props {
   venueId: string;
