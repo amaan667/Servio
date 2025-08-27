@@ -31,6 +31,7 @@ export default function TestOAuthPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
+          flowType: "pkce",
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: { 
             prompt: 'select_account',
