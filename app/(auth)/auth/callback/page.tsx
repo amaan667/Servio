@@ -1,11 +1,9 @@
 "use client";
+
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export default function OAuthCallback() {
   const router = useRouter();

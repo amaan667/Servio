@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
-export const revalidate = 0;
+export const revalidate = false;
 
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
