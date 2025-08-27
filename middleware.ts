@@ -1,17 +1,16 @@
-// middleware.ts
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const PROD_BASE = process.env.NEXT_PUBLIC_APP_URL!;
-const PROD_URL = new URL(PROD_BASE);
-const PROD_HOST = PROD_URL.host;
+const PROD_BASE = 'https://servio-production.up.railway.app';
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   
-  // Never intercept the auth callback
-  if (req.nextUrl.pathname.startsWith('/auth/')) {
+  // Never intercept auth routes or URLs with code/error parameters
+  if (req.nextUrl.pathname.startsWith('/auth/') || 
+      req.nextUrl.searchParams.has('code') || 
+      req.nextUrl.searchParams.has('error')) {
     return res;
   }
 
@@ -32,7 +31,9 @@ export async function middleware(req: NextRequest) {
         },
       }
     );
-    await createClient().auth.getSession(); // propagates cookies to SSR
+    
+    // Propagate session to SSR
+    await supabase.auth.getSession();
   } catch (error) {
     console.log('[AUTH DEBUG] Middleware session error:', error);
   }
@@ -42,10 +43,10 @@ export async function middleware(req: NextRequest) {
     const isHttps = req.nextUrl.protocol === 'https:';
     const host = req.headers.get('host');
 
-    if (!isHttps || host !== PROD_HOST) {
+    if (!isHttps || host !== 'servio-production.up.railway.app') {
       const redirectUrl = new URL(req.nextUrl);
       redirectUrl.protocol = 'https:';
-      redirectUrl.host = PROD_HOST;
+      redirectUrl.host = 'servio-production.up.railway.app';
       return NextResponse.redirect(redirectUrl, 308);
     }
   }
