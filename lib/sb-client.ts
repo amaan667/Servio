@@ -17,6 +17,12 @@ export const supabase = createBrowserClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      flowType: 'pkce',
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'servio-mvp',
+      },
     },
   }
 );
@@ -56,7 +62,7 @@ export function clearAuthStorage() {
   }
 }
 
-// Utility function to check authentication state
+// Utility function to check authentication state with retry
 export async function checkAuthState() {
   try {
     const { data, error } = await supabase.auth.getSession();

@@ -31,16 +31,27 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
   
-  // For dashboard protection, only check for refresh token cookie
+  // For dashboard protection, check for any Supabase auth cookies
   if (pathname.startsWith('/dashboard')) {
+    const allCookies = req.cookies.getAll();
+    const authCookies = allCookies.filter(cookie => 
+      cookie.name.startsWith('sb-') || 
+      cookie.name.includes('auth') ||
+      cookie.name.includes('session')
+    );
+    
     const hasRefreshToken = req.cookies.has('sb-refresh-token') || 
-                           req.cookies.has('sb-access-token');
+                           req.cookies.has('sb-access-token') ||
+                           req.cookies.has('supabase-auth-token');
     
     console.log('[AUTH DEBUG] Dashboard access check:', { 
       pathname, 
       hasRefreshToken,
       hasRefreshCookie: req.cookies.has('sb-refresh-token'),
-      hasAccessCookie: req.cookies.has('sb-access-token')
+      hasAccessCookie: req.cookies.has('sb-access-token'),
+      hasAuthToken: req.cookies.has('supabase-auth-token'),
+      totalCookies: allCookies.length,
+      authCookies: authCookies.map(c => c.name)
     });
     
     if (!hasRefreshToken) {

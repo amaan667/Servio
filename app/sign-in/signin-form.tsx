@@ -193,16 +193,17 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   });
                   
                   const startTime = Date.now();
-                  // Add retry mechanism for OAuth initiation
+                  // Add retry mechanism for OAuth initiation with increased timeout
                   let retryCount = 0;
-                  const maxRetries = 2;
+                  const maxRetries = 3;
                   let lastError = null;
                   
                   while (retryCount <= maxRetries) {
                     try {
                       console.log('[AUTH DEBUG] 🔄 OAuth attempt', retryCount + 1, 'of', maxRetries + 1);
                       
-                      const { data, error } = await supabase.auth.signInWithOAuth({
+                      // Add timeout to the OAuth call
+                      const oauthPromise = supabase.auth.signInWithOAuth({
                         provider: "google",
                         options: { 
                           flowType: "pkce", 
@@ -210,6 +211,13 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                           queryParams: { prompt: 'select_account' }
                         },
                       });
+                      
+                      // Add 30-second timeout for OAuth initiation
+                      const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('OAuth initiation timeout')), 30000)
+                      );
+                      
+                      const { data, error } = await Promise.race([oauthPromise, timeoutPromise]) as any;
                       const oauthTime = Date.now() - startTime;
                       
                       console.log('[AUTH DEBUG] OAuth call completed in', oauthTime, 'ms');
@@ -226,11 +234,12 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                         if (retryCount < maxRetries && (
                           error.message.includes('network') || 
                           error.message.includes('timeout') ||
-                          error.message.includes('fetch')
+                          error.message.includes('fetch') ||
+                          error.message.includes('OAuth initiation timeout')
                         )) {
                           console.log('[AUTH DEBUG] 🔄 Retrying OAuth due to network/timeout error');
                           retryCount++;
-                          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+                          await new Promise(resolve => setTimeout(resolve, 2000 * retryCount)); // Exponential backoff
                           continue;
                         }
                         
@@ -258,7 +267,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                       if (retryCount < maxRetries) {
                         console.log('[AUTH DEBUG] 🔄 Retrying OAuth due to exception');
                         retryCount++;
-                        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+                        await new Promise(resolve => setTimeout(resolve, 2000 * retryCount)); // Exponential backoff
                         continue;
                       }
                       
