@@ -1,5 +1,5 @@
 'use client';
-import { createClient } from '@/lib/sb-client';
+import { createClient } from '@/lib/supabase/client';
 
 export async function getPrimaryVenue() {
   const { data: { user } } = await createClient().auth.getUser();

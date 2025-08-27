@@ -5,5 +5,13 @@ export function siteOrigin(): string {
     (process.env.NEXT_PUBLIC_SITE_URL ?? "");
 
   // Normalize: trim whitespace, remove trailing slashes and stray punctuation
-  return raw.trim().replace(/[;\s]+$/g, "").replace(/\/+$/g, "");
+  // Ensure it matches exactly https://servio-production.up.railway.app
+  const normalized = raw.trim().replace(/[;\s]+$/g, "").replace(/\/+$/g, "");
+  
+  // In production, force the exact Railway URL
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://servio-production.up.railway.app';
+  }
+  
+  return normalized;
 }

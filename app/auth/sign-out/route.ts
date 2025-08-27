@@ -5,16 +5,20 @@ export const revalidate = false;
 
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/server/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 export async function GET(req: NextRequest) {
   console.log('[AUTH] Sign-out route called');
   
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
     
     console.log('[AUTH] Signing out user');
-    const { error } = await createClient().auth.signOut();
+    const { error } = await supabase.auth.signOut();
     
     if (error) {
       console.error('[AUTH] Sign out error:', error);
