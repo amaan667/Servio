@@ -40,37 +40,34 @@ export default function SignInForm() {
   };
 
   const handleGoogleSignIn = async () => {
-    const startTime = Date.now();
-    console.log('[AUTH DEBUG] ===== GOOGLE SIGN-IN BUTTON CLICKED =====');
-    console.log('[AUTH DEBUG] Timestamp:', new Date().toISOString());
-    console.log('[AUTH DEBUG] Button clicked, starting Google sign-in process...');
+    console.log('[AUTH DEBUG] Google sign-in button clicked');
     
     setLoading(true);
     setError(null);
     
     try {
-      console.log('[AUTH DEBUG] 🔄 Calling signInWithGoogle function...');
-      const signInStartTime = Date.now();
-      
       await signInWithGoogle();
-      
-      const signInTime = Date.now() - signInStartTime;
-      console.log(`[AUTH DEBUG] ⏱️ signInWithGoogle completed in ${signInTime}ms`);
-      console.log('[AUTH DEBUG] ✅ signInWithGoogle completed successfully');
-      console.log('[AUTH DEBUG] 🔄 OAuth redirect should happen automatically');
-      
-      const totalTime = Date.now() - startTime;
-      console.log(`[AUTH DEBUG] ✅ GOOGLE SIGN-IN BUTTON HANDLER COMPLETED in ${totalTime}ms`);
-      
+      console.log('[AUTH DEBUG] Google sign-in initiated, redirect should happen automatically');
       // The redirect will happen automatically
     } catch (err: any) {
-      const elapsed = Date.now() - startTime;
-      console.error(`[AUTH DEBUG] ❌ Google sign-in failed after ${elapsed}ms:`, err);
-      console.error('[AUTH DEBUG] - Error type:', typeof err);
-      console.error('[AUTH DEBUG] - Error message:', err?.message);
-      console.error('[AUTH DEBUG] - Error stack:', err?.stack);
+      console.error('[AUTH DEBUG] Google sign-in failed:', err);
       
-      setError(err.message || 'Google sign-in failed. Please try again.');
+      // Provide more specific error messages
+      let errorMessage = 'Google sign-in failed. Please try again.';
+      
+      if (err?.message?.includes('popup')) {
+        errorMessage = 'Pop-up blocked. Please allow pop-ups for this site and try again.';
+      } else if (err?.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (err?.message?.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (err?.message?.includes('cancelled')) {
+        errorMessage = 'Sign-in was cancelled. Please try again.';
+      } else if (err?.message) {
+        errorMessage = `Sign-in error: ${err.message}`;
+      }
+      
+      setError(errorMessage);
       setLoading(false);
     }
   };

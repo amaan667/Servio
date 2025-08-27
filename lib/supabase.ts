@@ -192,53 +192,12 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  const startTime = Date.now();
-  console.log('[AUTH DEBUG] ===== GOOGLE OAUTH SIGN-IN STARTED =====');
-  console.log('[AUTH DEBUG] Timestamp:', new Date().toISOString());
-  console.log('[AUTH DEBUG] signInWithGoogle function called');
+  console.log('[AUTH DEBUG] Starting Google OAuth sign-in...');
   
   const origin = siteOrigin();
-  console.log('[AUTH DEBUG] Site Origin Analysis:');
-  console.log('[AUTH DEBUG] - Origin determined:', origin);
-  console.log('[AUTH DEBUG] - window.location.origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A (server)');
-  console.log('[AUTH DEBUG] - NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
-  console.log('[AUTH DEBUG] - NODE_ENV:', process.env.NODE_ENV);
-
-  // Log environment variables
-  console.log('[AUTH DEBUG] Environment Variables Check:');
-  console.log('[AUTH DEBUG] - NEXT_PUBLIC_SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log('[AUTH DEBUG] - NEXT_PUBLIC_SUPABASE_ANON_KEY exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
-  // Clear localStorage with detailed logging
-  try {
-    console.log('[AUTH DEBUG] Clearing localStorage items...');
-    const itemsToRemove = [];
-    Object.keys(localStorage).forEach(k => {
-      if (k.startsWith("sb-") || k.includes("pkce")) {
-        itemsToRemove.push(k);
-        console.log('[AUTH DEBUG] - Removing localStorage item:', k);
-        localStorage.removeItem(k);
-      }
-    });
-    console.log('[AUTH DEBUG] - Total items removed:', itemsToRemove.length);
-    console.log('[AUTH DEBUG] - Items removed:', itemsToRemove);
-  } catch (error) {
-    console.log('[AUTH DEBUG] ❌ Error clearing localStorage:', error);
-  }
-
-  console.log('[AUTH DEBUG] Supabase Client Check:');
-  console.log('[AUTH DEBUG] - supabase object exists:', !!supabase);
-  console.log('[AUTH DEBUG] - supabase.auth exists:', !!(supabase && supabase.auth));
-  console.log('[AUTH DEBUG] - supabase.auth.signInWithOAuth exists:', !!(supabase && supabase.auth && supabase.auth.signInWithOAuth));
-  
   const redirectTo = `${origin}/auth/callback`;
-  console.log('[AUTH DEBUG] Redirect URL Configuration:');
-  console.log('[AUTH DEBUG] - Redirect URL:', redirectTo);
-  console.log('[AUTH DEBUG] - Origin:', origin);
-  console.log('[AUTH DEBUG] - Callback path:', '/auth/callback');
   
-  console.log('[AUTH DEBUG] 🔄 Calling signInWithOAuth with provider: google');
-  const oauthStartTime = Date.now();
+  console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -247,29 +206,12 @@ export async function signInWithGoogle() {
     },
   });
 
-  const oauthTime = Date.now() - oauthStartTime;
-  console.log(`[AUTH DEBUG] ⏱️ signInWithOAuth completed in ${oauthTime}ms`);
-
-  console.log('[AUTH DEBUG] OAuth Response Analysis:');
-  console.log('[AUTH DEBUG] - Error exists:', !!error);
-  console.log('[AUTH DEBUG] - Data exists:', !!data);
-  console.log('[AUTH DEBUG] - Error details:', error);
-  console.log('[AUTH DEBUG] - Data details:', data);
-
   if (error) {
-    console.log('[AUTH DEBUG] ❌ OAuth error occurred:', error);
-    console.log('[AUTH DEBUG] - Error message:', error.message);
-    console.log('[AUTH DEBUG] - Error status:', error.status);
-    console.log('[AUTH DEBUG] - Error name:', error.name);
+    console.error('[AUTH DEBUG] OAuth error:', error);
     throw error;
   }
   
-  console.log('[AUTH DEBUG] ✅ OAuth initiated successfully');
-  console.log('[AUTH DEBUG] - Data returned:', data);
-  
-  const totalTime = Date.now() - startTime;
-  console.log(`[AUTH DEBUG] ✅ GOOGLE OAUTH SIGN-IN COMPLETED in ${totalTime}ms`);
-  
+  console.log('[AUTH DEBUG] OAuth initiated successfully');
   return data;
 }
 

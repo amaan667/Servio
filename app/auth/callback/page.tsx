@@ -8,214 +8,92 @@ function AuthCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
-  const [timeoutReached, setTimeoutReached] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>('');
 
   useEffect(() => {
     const handleCallback = async () => {
-      const startTime = Date.now();
       console.log('[AUTH DEBUG] ===== AUTHENTICATION CALLBACK STARTED =====');
-      console.log('[AUTH DEBUG] Timestamp:', new Date().toISOString());
-      console.log('[AUTH DEBUG] Component mounted, starting callback process...');
+      console.log('[AUTH DEBUG] URL:', window.location.href);
       
       try {
-        // Log environment and configuration
-        console.log('[AUTH DEBUG] Environment check:');
-        console.log('[AUTH DEBUG] - NODE_ENV:', process.env.NODE_ENV);
-        console.log('[AUTH DEBUG] - NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET');
-        console.log('[AUTH DEBUG] - NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
-        console.log('[AUTH DEBUG] - NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
-        
-        // Log current URL and parameters
-        console.log('[AUTH DEBUG] URL Analysis:');
-        console.log('[AUTH DEBUG] - Full URL:', window.location.href);
-        console.log('[AUTH DEBUG] - Pathname:', window.location.pathname);
-        console.log('[AUTH DEBUG] - Search params:', window.location.search);
-        console.log('[AUTH DEBUG] - Hash:', window.location.hash);
-        
-        // Log all search parameters
-        console.log('[AUTH DEBUG] Search Parameters:');
-        const allParams = {};
-        searchParams.forEach((value, key) => {
-          allParams[key] = value;
-        });
-        console.log('[AUTH DEBUG] - All params:', allParams);
-        
         // Check for error parameters first
         const errorParam = searchParams.get('error');
         const errorDescription = searchParams.get('error_description');
         
-        console.log('[AUTH DEBUG] Error Parameter Check:');
-        console.log('[AUTH DEBUG] - error param:', errorParam);
-        console.log('[AUTH DEBUG] - error_description param:', errorDescription);
-        
         if (errorParam) {
-          console.error('[AUTH DEBUG] ❌ OAuth error detected:', errorParam, errorDescription);
+          console.error('[AUTH DEBUG] ❌ OAuth error:', errorParam, errorDescription);
           setError(`OAuth Error: ${errorParam}${errorDescription ? ` - ${errorDescription}` : ''}`);
-          setTimeout(() => {
-            router.push('/sign-in');
-          }, 3000);
+          setTimeout(() => router.push('/sign-in'), 3000);
           return;
         }
 
         // Check if we have a code parameter
         const code = searchParams.get('code');
-        console.log('[AUTH DEBUG] Code Parameter Check:');
-        console.log('[AUTH DEBUG] - code param exists:', !!code);
-        console.log('[AUTH DEBUG] - code length:', code ? code.length : 0);
-        console.log('[AUTH DEBUG] - code preview:', code ? `${code.substring(0, 10)}...` : 'NONE');
-        
         if (!code) {
           console.error('[AUTH DEBUG] ❌ No code parameter found');
           setError('No authentication code received. Please try signing in again.');
-          setTimeout(() => {
-            router.push('/sign-in');
-          }, 3000);
+          setTimeout(() => router.push('/sign-in'), 3000);
           return;
         }
 
-        console.log('[AUTH DEBUG] ✅ Code parameter found, proceeding with session exchange...');
+        console.log('[AUTH DEBUG] ✅ Code found, exchanging for session...');
         setDebugInfo('Code found, exchanging for session...');
 
-        // Log Supabase client state
-        console.log('[AUTH DEBUG] Supabase Client Check:');
-        console.log('[AUTH DEBUG] - supabase object exists:', !!supabase);
-        console.log('[AUTH DEBUG] - supabase.auth exists:', !!(supabase && supabase.auth));
-        console.log('[AUTH DEBUG] - supabase.auth.exchangeCodeForSession exists:', !!(supabase && supabase.auth && supabase.auth.exchangeCodeForSession));
-        
-        // Test basic Supabase connection
-        console.log('[AUTH DEBUG] 🔄 Testing basic Supabase connection...');
-        try {
-          const { data: testData, error: testError } = await supabase.auth.getSession();
-          console.log('[AUTH DEBUG] ✅ Basic Supabase connection test successful');
-          console.log('[AUTH DEBUG] - Test session exists:', !!testData.session);
-          console.log('[AUTH DEBUG] - Test error:', testError);
-        } catch (testErr) {
-          console.error('[AUTH DEBUG] ❌ Basic Supabase connection test failed:', testErr);
-          setError('Unable to connect to authentication service. Please try again.');
-          setTimeout(() => {
-            router.push('/sign-in');
-          }, 3000);
+        // Exchange code for session - this should be fast
+        const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+
+        if (error) {
+          console.error('[AUTH DEBUG] ❌ Exchange error:', error);
+          setError(`Authentication failed: ${error.message}`);
+          setTimeout(() => router.push('/sign-in'), 3000);
           return;
         }
 
-        // Add a timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
-          const elapsed = Date.now() - startTime;
-          console.log(`[AUTH DEBUG] ❌ TIMEOUT REACHED after ${elapsed}ms`);
-          setTimeoutReached(true);
-          setError('Authentication timed out. The code may have expired or there was a network issue. Please try signing in again.');
-          setTimeout(() => {
-            router.push('/sign-in');
-          }, 3000);
-        }, 8000); // Reduced to 8 seconds for faster feedback
-
-        console.log('[AUTH DEBUG] 🔄 Calling supabase.auth.exchangeCodeForSession...');
-        console.log('[AUTH DEBUG] - Full URL being sent:', window.location.href);
-        console.log('[AUTH DEBUG] - Code parameter:', code);
-        const exchangeStartTime = Date.now();
-        
-        // Create a promise with timeout
-        const exchangePromise = supabase.auth.exchangeCodeForSession(window.location.href);
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Exchange timeout')), 7000); // 7 second timeout
-        });
-
-        try {
-          const { error } = await Promise.race([exchangePromise, timeoutPromise]);
-
-          const exchangeTime = Date.now() - exchangeStartTime;
-          console.log(`[AUTH DEBUG] ⏱️ exchangeCodeForSession completed in ${exchangeTime}ms`);
-
-          clearTimeout(timeoutId);
-
-          console.log('[AUTH DEBUG] Exchange Result:');
-          console.log('[AUTH DEBUG] - error exists:', !!error);
-          console.log('[AUTH DEBUG] - error details:', error);
-
-          if (error) {
-            console.error('[AUTH DEBUG] ❌ Auth callback error:', error);
-            console.error('[AUTH DEBUG] - Error message:', error.message);
-            console.error('[AUTH DEBUG] - Error status:', error.status);
-            console.error('[AUTH DEBUG] - Error name:', error.name);
-            
-            // Handle specific error types
-            if (error.message?.includes('expired') || error.message?.includes('invalid')) {
-              setError('Authentication code has expired. Please try signing in again.');
-            } else if (error.status === 400) {
-              setError('Invalid authentication code. Please try signing in again.');
-            } else if (error.status === 500) {
-              setError('Server error. Please try again in a moment.');
-            } else {
-              setError(`Authentication failed: ${error.message}`);
-            }
-            
-            setTimeout(() => {
-              router.push('/sign-in');
-            }, 3000);
-            return;
-          }
-
-          console.log('[AUTH DEBUG] ✅ Auth callback successful!');
-          console.log('[AUTH DEBUG] 🔄 Redirecting to dashboard...');
-          setDebugInfo('Authentication successful! Redirecting...');
-          
-          // Success - redirect to dashboard
-          router.push('/dashboard');
-          
-          const totalTime = Date.now() - startTime;
-          console.log(`[AUTH DEBUG] ✅ AUTHENTICATION COMPLETED SUCCESSFULLY in ${totalTime}ms`);
-          
-        } catch (exchangeError) {
-          clearTimeout(timeoutId);
-          const exchangeTime = Date.now() - exchangeStartTime;
-          console.error(`[AUTH DEBUG] ❌ exchangeCodeForSession failed after ${exchangeTime}ms:`, exchangeError);
-          console.error('[AUTH DEBUG] - Exchange error type:', typeof exchangeError);
-          console.error('[AUTH DEBUG] - Exchange error message:', exchangeError?.message);
-          console.error('[AUTH DEBUG] - Exchange error stack:', exchangeError?.stack);
-          
-          if (exchangeError?.message === 'Exchange timeout') {
-            setError('Authentication request timed out. The code may have expired. Please try signing in again.');
-          } else {
-            setError('Network error during authentication. Please check your connection and try again.');
-          }
-          setTimeout(() => {
-            router.push('/sign-in');
-          }, 3000);
+        if (!data || !data.session) {
+          console.error('[AUTH DEBUG] ❌ No session received');
+          setError('Authentication completed but no session was created.');
+          setTimeout(() => router.push('/sign-in'), 3000);
           return;
         }
+
+        console.log('[AUTH DEBUG] ✅ Authentication successful!');
+        console.log('[AUTH DEBUG] User ID:', data.session.user.id);
+        setDebugInfo('Authentication successful! Redirecting...');
+        
+        // Success - redirect to dashboard immediately
+        router.push('/dashboard');
         
       } catch (err) {
-        const elapsed = Date.now() - startTime;
-        console.error(`[AUTH DEBUG] ❌ UNEXPECTED ERROR after ${elapsed}ms:`, err);
-        console.error('[AUTH DEBUG] - Error type:', typeof err);
-        console.error('[AUTH DEBUG] - Error constructor:', err?.constructor?.name);
-        console.error('[AUTH DEBUG] - Error message:', err?.message);
-        console.error('[AUTH DEBUG] - Error stack:', err?.stack);
+        console.error('[AUTH DEBUG] ❌ Unexpected error:', err);
         setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
-        setTimeout(() => {
-          router.push('/sign-in');
-        }, 3000);
+        setTimeout(() => router.push('/sign-in'), 3000);
       }
     };
 
-    console.log('[AUTH DEBUG] 🚀 Component useEffect triggered, calling handleCallback...');
     handleCallback();
   }, [router, searchParams]);
 
-  if (error || timeoutReached) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 text-xl mb-4">Authentication Error</div>
           <div className="text-gray-600 mb-4">{error}</div>
           <div className="text-sm text-gray-500 mb-4">Redirecting to sign-in...</div>
-          <button 
-            onClick={() => router.push('/sign-in')}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-          >
-            Go to Sign In
-          </button>
+          <div className="space-y-2">
+            <button 
+              onClick={() => router.push('/sign-in')}
+              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 mr-2"
+            >
+              Go to Sign In
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+            >
+              Retry Authentication
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -235,7 +113,6 @@ function AuthCallbackInner() {
 }
 
 export default function AuthCallback() {
-  console.log('[AUTH DEBUG] 🎬 AuthCallback component rendering...');
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
