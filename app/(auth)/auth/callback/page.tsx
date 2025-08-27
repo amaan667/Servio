@@ -1,13 +1,10 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-export default function OAuthCallback() {
+function OAuthCallbackInner() {
   const router = useRouter();
   const sp = useSearchParams();
 
@@ -95,4 +92,12 @@ export default function OAuthCallback() {
   }, [router, sp]);
 
   return null; // no UI
+}
+
+export default function OAuthCallback() {
+  return (
+    <Suspense fallback={null}>
+      <OAuthCallbackInner />
+    </Suspense>
+  );
 }
