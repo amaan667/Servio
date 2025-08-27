@@ -117,56 +117,37 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
               type="button"
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
-                console.log('[AUTH DEBUG] Google sign-up button clicked');
                 setError(null);
+                setLoading(true);
+                
                 try {
-                  console.log('[AUTH DEBUG] Determining origin for OAuth');
-                  const origin = "https://servio-production.up.railway.app";
-                  console.log('[AUTH DEBUG] Origin determined:', origin);
-                  console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
-                  
-                  console.log('[AUTH DEBUG] Clearing localStorage before OAuth');
+                  // clear stale PKCE state
                   try {
-                    Object.keys(localStorage).forEach(k => { 
-                      if (k.startsWith("sb-") || k.includes("pkce")) {
-                        console.log('[AUTH DEBUG] Removing localStorage item:', k);
-                        localStorage.removeItem(k); 
-                      }
-                    }); 
-                  } catch (storageError) {
-                    console.log('[AUTH DEBUG] Error clearing localStorage:', storageError);
-                  }
-                  
-                  console.log('[AUTH DEBUG] Calling supabase.auth.signInWithOAuth');
-                  const result = await supabase.auth.signInWithOAuth({
+                    Object.keys(localStorage).forEach(k => {
+                      if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
+                        localStorage.removeItem(k);
+                    });
+                    sessionStorage.removeItem("sb_oauth_retry");
+                  } catch {}
+
+                  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
+
+                  await supabase.auth.signInWithOAuth({
                     provider: "google",
-                    options: { 
+                    options: {
                       flowType: "pkce",
-                      redirectTo: `${origin}/auth/callback` 
+                      redirectTo: `${origin}/auth/callback`,
                     },
                   });
-                  
-                  console.log('[AUTH DEBUG] OAuth initiation result:', result);
-                  
-                  if (result.error) {
-                    console.log('[AUTH DEBUG] OAuth initiation failed:', result.error);
-                    setError(`Google sign-up failed: ${result.error.message || "Please try again."}`);
-                  } else {
-                    console.log('[AUTH DEBUG] OAuth initiated successfully, should redirect to Google');
-                  }
-                } catch (err: any) {
-                  console.log('[AUTH DEBUG] Google sign-up error caught:', { 
-                    message: err?.message, 
-                    error: err,
-                    stack: err?.stack 
-                  });
-                  setError(`Google sign-up failed: ${err.message || "Please try again."}`);
+                } catch (error: any) {
+                  setError(`Google sign-up failed: ${error.message || "Please try again."}`);
+                  setLoading(false);
                 }
               }}
               disabled={loading || externalLoading}
             >
               <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/><path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.19-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
-              {loading || externalLoading ? 'Redirecting…' : 'Sign up with Google'}
+              {loading || externalLoading ? 'Redirecting to Google…' : 'Sign up with Google'}
             </Button>
 
             <div className="relative">
