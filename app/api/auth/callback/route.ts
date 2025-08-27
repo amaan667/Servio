@@ -61,6 +61,17 @@ export async function GET(request: NextRequest) {
     console.log('[AUTH DEBUG] Exchanging code for session...');
     console.log('[AUTH DEBUG] Code length:', code?.length);
     console.log('[AUTH DEBUG] State:', state);
+    console.log('[AUTH DEBUG] Code preview:', code?.substring(0, 20) + '...');
+    
+    // Log all cookies to debug PKCE state
+    const allCookies = cookieStore.getAll();
+    console.log('[AUTH DEBUG] All cookies:', allCookies.map(c => ({ name: c.name, value: c.value?.substring(0, 20) + '...' })));
+    
+    // Check for PKCE-related cookies
+    const pkceCookies = allCookies.filter(c => 
+      c.name.includes('pkce') || c.name.includes('verifier') || c.name.includes('code_verifier')
+    );
+    console.log('[AUTH DEBUG] PKCE cookies found:', pkceCookies.length);
     
     // Add timeout to the exchange process
     const exchangePromise = supabase.auth.exchangeCodeForSession(code);
@@ -73,6 +84,15 @@ export async function GET(request: NextRequest) {
       if (exchangeError.message.includes('timeout') || exchangeError.message.includes('Authentication callback timeout')) {
         return NextResponse.redirect(
           `https://servio-production.up.railway.app/sign-in?error=timeout&message=Authentication timed out. Please try again.`
+        );
+      }
+      
+      // Handle specific PKCE error
+      if (exchangeError.message.includes('code verifier should be non-empty') || 
+          exchangeError.message.includes('both auth code and code verifier should be non-empty')) {
+        console.log('[AUTH DEBUG] PKCE error detected - redirecting to sign-in');
+        return NextResponse.redirect(
+          `https://servio-production.up.railway.app/sign-in?error=pkce_failed&message=Authentication flow interrupted. Please try signing in again.`
         );
       }
       

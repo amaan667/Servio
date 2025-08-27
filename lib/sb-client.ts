@@ -17,7 +17,8 @@ export const supabase = createBrowserClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-
+      flowType: 'pkce',
+      debug: true,
     },
     global: {
       headers: {
@@ -59,6 +60,40 @@ export function clearAuthStorage() {
   } catch (error) {
     console.log('[AUTH DEBUG] ❌ Failed to clear authentication storage:', error);
     return false;
+  }
+}
+
+// Utility function to check PKCE state
+export function checkPKCEState() {
+  try {
+    console.log('[AUTH DEBUG] Checking PKCE state...');
+    
+    // Check localStorage for PKCE-related keys
+    const localStorageKeys = Object.keys(localStorage).filter(k => 
+      k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier")
+    );
+    console.log('[AUTH DEBUG] PKCE localStorage keys:', localStorageKeys);
+    
+    // Check sessionStorage for PKCE-related keys
+    const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
+      k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier")
+    );
+    console.log('[AUTH DEBUG] PKCE sessionStorage keys:', sessionStorageKeys);
+    
+    // Check for Supabase auth tokens
+    const supabaseKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-"));
+    console.log('[AUTH DEBUG] Supabase localStorage keys:', supabaseKeys);
+    
+    return {
+      localStorageKeys,
+      sessionStorageKeys,
+      supabaseKeys,
+      hasPKCE: localStorageKeys.length > 0 || sessionStorageKeys.length > 0,
+      hasSupabaseAuth: supabaseKeys.length > 0
+    };
+  } catch (error) {
+    console.log('[AUTH DEBUG] ❌ Error checking PKCE state:', error);
+    return { error: error.message };
   }
 }
 

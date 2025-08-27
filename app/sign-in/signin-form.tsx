@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 // Removed RefreshCw icon import for Clean Refresh button cleanup
 import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
-import { supabase, clearAuthStorage } from "@/lib/sb-client";
+import { supabase, clearAuthStorage, checkPKCEState } from "@/lib/sb-client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 // Removed SessionClearer from production to avoid redundant client-side sign-out
 
@@ -175,7 +175,11 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                 setLoading(true);
                 
                 try {
-                  console.log('[AUTH DEBUG] 🔍 Step 1: Determining origin for redirect');
+                  console.log('[AUTH DEBUG] 🔍 Step 1: Checking current PKCE state');
+                  const pkceState = checkPKCEState();
+                  console.log('[AUTH DEBUG] Current PKCE state:', pkceState);
+                  
+                  console.log('[AUTH DEBUG] 🔍 Step 2: Determining origin for redirect');
                   
                   // ALWAYS use production URL for OAuth redirects
                   const origin = "https://servio-production.up.railway.app";
@@ -183,10 +187,17 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   console.log('[AUTH DEBUG] Redirect URL will be:', `${origin}/api/auth/callback`);
                   
                   // Clear any stale auth state
-                  console.log('[AUTH DEBUG] 🔄 Step 2: Clearing stale auth state');
+                  console.log('[AUTH DEBUG] 🔄 Step 3: Clearing stale auth state');
                   clearAuthStorage();
                   
-                  console.log('[AUTH DEBUG] 🔄 Step 3: Calling supabase.auth.signInWithOAuth');
+                  // Wait a moment for storage to clear
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                  
+                  console.log('[AUTH DEBUG] 🔄 Step 4: Checking PKCE state after clearing');
+                  const pkceStateAfterClear = checkPKCEState();
+                  console.log('[AUTH DEBUG] PKCE state after clearing:', pkceStateAfterClear);
+                  
+                  console.log('[AUTH DEBUG] 🔄 Step 5: Calling supabase.auth.signInWithOAuth');
                   console.log('[AUTH DEBUG] OAuth options:', {
                     provider: "google",
                     flowType: "pkce",
@@ -210,7 +221,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                         options: { 
                           redirectTo: `${origin}/api/auth/callback`,
                           queryParams: { prompt: 'select_account' }
-                        },
+                        }
                       });
                       
                       // Add 45-second timeout for OAuth initiation

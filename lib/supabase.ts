@@ -1,6 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { logger } from "./logger";
-import { supabaseBrowser } from "./supabase-browser";
+import { supabase } from "./sb-client";
 
 // Environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -238,8 +238,7 @@ export async function signInWithGoogle() {
     console.log('[AUTH DEBUG] Error clearing localStorage:', error);
   }
 
-  const supabase = supabaseBrowser();
-  console.log('[AUTH DEBUG] Supabase client created');
+  console.log('[AUTH DEBUG] Using configured Supabase client');
   
   const redirectTo = `${origin}/api/auth/callback`;
   console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
@@ -248,8 +247,8 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { 
-       
-      redirectTo: redirectTo
+      redirectTo: redirectTo,
+      queryParams: { prompt: 'select_account' }
     },
   });
 

@@ -31,11 +31,34 @@ function AuthCallbackContent() {
         
         setStatus("Exchanging code for session...");
         
+        // Check for PKCE state before exchange
+        console.log('[AUTH DEBUG] Checking PKCE state before exchange...');
+        const localStorageKeys = Object.keys(localStorage).filter(k => 
+          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier")
+        );
+        const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
+          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier")
+        );
+        console.log('[AUTH DEBUG] PKCE localStorage keys:', localStorageKeys);
+        console.log('[AUTH DEBUG] PKCE sessionStorage keys:', sessionStorageKeys);
+        
         // Try to exchange the code for a session
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         
         if (exchangeError) {
           console.log('[AUTH DEBUG] Exchange error in client callback:', exchangeError);
+          
+          // Handle specific PKCE error
+          if (exchangeError.message.includes('code verifier should be non-empty') || 
+              exchangeError.message.includes('both auth code and code verifier should be non-empty')) {
+            console.log('[AUTH DEBUG] PKCE error detected - clearing storage and redirecting');
+            // Clear all auth storage and redirect to sign-in
+            localStorage.clear();
+            sessionStorage.clear();
+            router.replace('/sign-in?error=pkce_failed&message=Authentication flow interrupted. Please try signing in again.');
+            return;
+          }
+          
           router.replace(`/sign-in?error=exchange_failed&message=${encodeURIComponent(exchangeError.message)}`);
           return;
         }
