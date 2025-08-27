@@ -23,10 +23,16 @@ export async function GET() {
     );
 
     // Get the OAuth URL that Supabase would generate
+    const redirectTo = process.env.NEXT_PUBLIC_APP_URL 
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+      : process.env.NEXT_PUBLIC_SITE_URL 
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+      : 'https://servio-production.up.railway.app/auth/callback';
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { 
-        redirectTo: 'https://servio-production.up.railway.app/auth/callback',
+        redirectTo,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -37,7 +43,7 @@ export async function GET() {
     return NextResponse.json({
       data,
       error,
-              redirectTo: 'https://servio-production.up.railway.app/auth/callback',
+      redirectTo,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
