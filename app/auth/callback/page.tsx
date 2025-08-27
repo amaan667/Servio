@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -11,8 +11,7 @@ function AuthCallbackContent() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        console.log('[AUTH DEBUG] Client-side callback fallback triggered');
-        console.log('[AUTH DEBUG] URL params:', searchParams ? Object.fromEntries(searchParams.entries()) : 'null');
+        console.log('[AUTH DEBUG] Client-side callback processing');
         
         const code = searchParams?.get('code');
         const error = searchParams?.get('error');
@@ -31,18 +30,10 @@ function AuthCallbackContent() {
         
         setStatus("Exchanging code for session...");
         
-        // Check for PKCE state before exchange
-        console.log('[AUTH DEBUG] Checking PKCE state before exchange...');
-        const localStorageKeys = Object.keys(localStorage).filter(k => 
-          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
-        );
-        const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
-        );
-        console.log('[AUTH DEBUG] PKCE localStorage keys:', localStorageKeys);
-        console.log('[AUTH DEBUG] PKCE sessionStorage keys:', sessionStorageKeys);
+        // Use the proper browser client for PKCE exchange
+        const supabase = createClient();
         
-        // Try to exchange the code for a session
+        // Exchange the code for a session (client-side only)
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         
         if (exchangeError) {
@@ -71,6 +62,9 @@ function AuthCallbackContent() {
         
         console.log('[AUTH DEBUG] Client callback successful, redirecting to dashboard');
         setStatus("Authentication successful! Redirecting...");
+        
+        // Clean URL and redirect to dashboard
+        window.history.replaceState({}, document.title, '/auth/callback');
         router.replace('/dashboard');
         
       } catch (error: any) {
