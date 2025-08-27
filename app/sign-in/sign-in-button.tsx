@@ -8,6 +8,7 @@ export default function SignInButton() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
+        flowType: "pkce",
         redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
         queryParams: { prompt: 'select_account' }
       }
@@ -15,7 +16,11 @@ export default function SignInButton() {
   };
 
   return (
-    <button onClick={onGoogle} className="px-4 py-2 rounded bg-black text-white">
+    <button 
+      type="button"
+      onClick={onGoogle} 
+      className="px-4 py-2 rounded bg-black text-white"
+    >
       Sign in with Google
     </button>
   );
