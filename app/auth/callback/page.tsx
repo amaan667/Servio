@@ -83,6 +83,22 @@ function AuthCallbackInner() {
         console.log('[AUTH DEBUG] - supabase.auth exists:', !!(supabase && supabase.auth));
         console.log('[AUTH DEBUG] - supabase.auth.exchangeCodeForSession exists:', !!(supabase && supabase.auth && supabase.auth.exchangeCodeForSession));
         
+        // Test basic Supabase connection
+        console.log('[AUTH DEBUG] 🔄 Testing basic Supabase connection...');
+        try {
+          const { data: testData, error: testError } = await supabase.auth.getSession();
+          console.log('[AUTH DEBUG] ✅ Basic Supabase connection test successful');
+          console.log('[AUTH DEBUG] - Test session exists:', !!testData.session);
+          console.log('[AUTH DEBUG] - Test error:', testError);
+        } catch (testErr) {
+          console.error('[AUTH DEBUG] ❌ Basic Supabase connection test failed:', testErr);
+          setError('Unable to connect to authentication service. Please try again.');
+          setTimeout(() => {
+            router.push('/sign-in');
+          }, 3000);
+          return;
+        }
+
         // Add a timeout to prevent infinite loading
         const timeoutId = setTimeout(() => {
           const elapsed = Date.now() - startTime;
@@ -97,40 +113,67 @@ function AuthCallbackInner() {
         console.log('[AUTH DEBUG] 🔄 Calling supabase.auth.exchangeCodeForSession...');
         const exchangeStartTime = Date.now();
         
-        const { error } = await supabase.auth.exchangeCodeForSession(
-          window.location.href
-        );
+        try {
+          const { error } = await supabase.auth.exchangeCodeForSession(
+            window.location.href
+          );
 
-        const exchangeTime = Date.now() - exchangeStartTime;
-        console.log(`[AUTH DEBUG] ⏱️ exchangeCodeForSession completed in ${exchangeTime}ms`);
+          const exchangeTime = Date.now() - exchangeStartTime;
+          console.log(`[AUTH DEBUG] ⏱️ exchangeCodeForSession completed in ${exchangeTime}ms`);
 
-        clearTimeout(timeoutId);
+          clearTimeout(timeoutId);
 
-        console.log('[AUTH DEBUG] Exchange Result:');
-        console.log('[AUTH DEBUG] - error exists:', !!error);
-        console.log('[AUTH DEBUG] - error details:', error);
+          console.log('[AUTH DEBUG] Exchange Result:');
+          console.log('[AUTH DEBUG] - error exists:', !!error);
+          console.log('[AUTH DEBUG] - error details:', error);
 
-        if (error) {
-          console.error('[AUTH DEBUG] ❌ Auth callback error:', error);
-          console.error('[AUTH DEBUG] - Error message:', error.message);
-          console.error('[AUTH DEBUG] - Error status:', error.status);
-          console.error('[AUTH DEBUG] - Error name:', error.name);
-          setError(`Authentication failed: ${error.message}`);
+          if (error) {
+            console.error('[AUTH DEBUG] ❌ Auth callback error:', error);
+            console.error('[AUTH DEBUG] - Error message:', error.message);
+            console.error('[AUTH DEBUG] - Error status:', error.status);
+            console.error('[AUTH DEBUG] - Error name:', error.name);
+            
+            // Handle specific error types
+            if (error.message?.includes('expired') || error.message?.includes('invalid')) {
+              setError('Authentication code has expired. Please try signing in again.');
+            } else if (error.status === 400) {
+              setError('Invalid authentication code. Please try signing in again.');
+            } else if (error.status === 500) {
+              setError('Server error. Please try again in a moment.');
+            } else {
+              setError(`Authentication failed: ${error.message}`);
+            }
+            
+            setTimeout(() => {
+              router.push('/sign-in');
+            }, 3000);
+            return;
+          }
+
+          console.log('[AUTH DEBUG] ✅ Auth callback successful!');
+          console.log('[AUTH DEBUG] 🔄 Redirecting to dashboard...');
+          setDebugInfo('Authentication successful! Redirecting...');
+          
+          // Success - redirect to dashboard
+          router.push('/dashboard');
+          
+          const totalTime = Date.now() - startTime;
+          console.log(`[AUTH DEBUG] ✅ AUTHENTICATION COMPLETED SUCCESSFULLY in ${totalTime}ms`);
+          
+        } catch (exchangeError) {
+          clearTimeout(timeoutId);
+          const exchangeTime = Date.now() - exchangeStartTime;
+          console.error(`[AUTH DEBUG] ❌ exchangeCodeForSession failed after ${exchangeTime}ms:`, exchangeError);
+          console.error('[AUTH DEBUG] - Exchange error type:', typeof exchangeError);
+          console.error('[AUTH DEBUG] - Exchange error message:', exchangeError?.message);
+          console.error('[AUTH DEBUG] - Exchange error stack:', exchangeError?.stack);
+          
+          setError('Network error during authentication. Please check your connection and try again.');
           setTimeout(() => {
             router.push('/sign-in');
           }, 3000);
           return;
         }
-
-        console.log('[AUTH DEBUG] ✅ Auth callback successful!');
-        console.log('[AUTH DEBUG] 🔄 Redirecting to dashboard...');
-        setDebugInfo('Authentication successful! Redirecting...');
-        
-        // Success - redirect to dashboard
-        router.push('/dashboard');
-        
-        const totalTime = Date.now() - startTime;
-        console.log(`[AUTH DEBUG] ✅ AUTHENTICATION COMPLETED SUCCESSFULLY in ${totalTime}ms`);
         
       } catch (err) {
         const elapsed = Date.now() - startTime;
