@@ -1,4 +1,4 @@
-use client;
+'use client';
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/sb-client";
@@ -9,7 +9,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const { session, isLoading: loading } = useAuth();
+  const { session, loading } = useAuth();
 
   // Strict public routes (accessible without auth)
   const publicRoutes = ["/", "/sign-in", "/sign-up", "/order"];

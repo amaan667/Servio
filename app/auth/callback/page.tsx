@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/sb-client";
 
-export default function AuthCallback() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState("Processing authentication...");
@@ -12,10 +12,10 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         console.log('[AUTH DEBUG] Client-side callback fallback triggered');
-        console.log('[AUTH DEBUG] URL params:', Object.fromEntries(searchParams.entries()));
+        console.log('[AUTH DEBUG] URL params:', searchParams ? Object.fromEntries(searchParams.entries()) : 'null');
         
-        const code = searchParams.get('code');
-        const error = searchParams.get('error');
+        const code = searchParams?.get('code');
+        const error = searchParams?.get('error');
         
         if (error) {
           console.log('[AUTH DEBUG] OAuth error in client callback:', error);
@@ -68,5 +68,20 @@ export default function AuthCallback() {
         <p className="text-xs text-gray-400 mt-2">This may take a few moments</p>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 mb-2">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
