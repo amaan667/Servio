@@ -1,33 +1,18 @@
 'use client';
 import { createBrowserClient } from '@supabase/ssr';
 
-console.log('[AUTH DEBUG] ===== Supabase Client Initialization =====');
-console.log('[AUTH DEBUG] Environment variables:', {
-  hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-  hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
-  timestamp: new Date().toISOString()
-});
+let _client: ReturnType<typeof createBrowserClient> | null = null;
 
-export const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      debug: true,
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      storageKey: 'supabase.auth.token',
-    },
-    global: {
-      headers: {
-        'X-Client-Info': 'servio-mvp',
-      },
-    },
+export function createClient() {
+  if (!_client) {
+    _client = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { isSingleton: true }
+    );
   }
-);
+  return _client;
+}
 
 // Utility function to clear all authentication-related storage
 export function clearAuthStorage() {
@@ -120,7 +105,7 @@ export async function checkAuthState() {
 // Enhanced logger to spot state flips in dev
 if (typeof window !== 'undefined') {
   console.log('[AUTH DEBUG] Setting up auth state change listener');
-  
+
   supabase.auth.onAuthStateChange((evt, sess) => {
     console.log('[AUTH DEBUG] 🔄 Auth state changed:', {
       event: evt,

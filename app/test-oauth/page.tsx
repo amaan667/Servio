@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { siteOrigin } from "@/lib/site";
 
 export default function TestOAuthPage() {
   const [status, setStatus] = useState("Ready to test");
@@ -31,12 +32,8 @@ export default function TestOAuthPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: { 
-            prompt: 'select_account',
-            access_type: 'offline'
-          },
-          skipBrowserRedirect: false
+          flowType: "pkce",
+          redirectTo: `${siteOrigin()}/auth/callback`
         }
       });
       

@@ -1,14 +1,12 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
+import { siteOrigin } from '@/lib/site';
 
 export default function SignInButton() {
   
   const onGoogle = async () => {
     const supabase = createClient();
-    
-    // Clear any existing auth state
-    await supabase.auth.signOut();
     
     // Clean stale PKCE state before starting
     try {
@@ -16,21 +14,15 @@ export default function SignInButton() {
         if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
           localStorage.removeItem(k);
       });
+      sessionStorage.removeItem("sb_oauth_retry");
     } catch {}
-    
-    const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
     
     // Use the proper OAuth flow with PKCE
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         flowType: "pkce",
-        redirectTo: `${origin}/auth/callback`,
-        queryParams: { 
-          prompt: 'select_account',
-          access_type: 'offline'
-        },
-        skipBrowserRedirect: false
+        redirectTo: `${siteOrigin()}/auth/callback`
       }
     });
     

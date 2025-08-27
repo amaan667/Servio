@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { siteOrigin } from '@/lib/site';
 
 export async function GET() {
   try {
@@ -23,21 +24,20 @@ export async function GET() {
     );
 
     // Get the OAuth URL that Supabase would generate
+    const redirectTo = `${siteOrigin()}/auth/callback`;
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { 
-        redirectTo: 'https://servio-production.up.railway.app/auth/callback',
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        }
+        flowType: "pkce",
+        redirectTo
       },
     });
 
     return NextResponse.json({
       data,
       error,
-              redirectTo: 'https://servio-production.up.railway.app/auth/callback',
+      redirectTo,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

@@ -1,31 +1,7 @@
-import { createBrowserClient } from "@supabase/ssr";
+"use client";
 import { logger } from "./logger";
-
-// Environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-// Debug environment variables
-console.log("Supabase environment check:", {
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseAnonKey,
-  url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : "undefined",
-  key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : "undefined"
-});
-
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ Missing Supabase environment variables:", {
-    NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey
-  });
-  throw new Error("Missing Supabase environment variables");
-}
-
-// Create single Supabase client instance with proper configuration
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
-
-console.log("Supabase client created successfully");
+import { supabase } from "./sb-client";
+import { siteOrigin } from "./site";
 
 // Types
 export interface User {
@@ -101,10 +77,8 @@ export async function signUpUser(
   try {
     logger.info("Attempting sign up", { email, fullName });
 
-    // ALWAYS use Railway production URL - never localhost
-    const emailRedirectTo = process.env.NEXT_PUBLIC_SITE_URL 
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
-      : "https://servio-production.up.railway.app/dashboard";
+    // Use normalized site origin
+    const emailRedirectTo = `${(process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app').replace(/[;\s]+$/g, '').replace(/\/+$/g, '')}/dashboard`;
     
     console.log("✅ Using Railway domain for email redirect:", emailRedirectTo);
 
@@ -220,8 +194,7 @@ export async function signInUser(email: string, password: string) {
 export async function signInWithGoogle() {
   console.log('[AUTH DEBUG] signInWithGoogle called');
   
-  const origin = "https://servio-production.up.railway.app";
-
+  const origin = siteOrigin();
   console.log('[AUTH DEBUG] Origin determined:', origin);
   console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
 
@@ -246,8 +219,8 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { 
-      redirectTo: redirectTo,
-      queryParams: { prompt: 'select_account' }
+      flowType: "pkce",
+      redirectTo: redirectTo
     },
   });
 

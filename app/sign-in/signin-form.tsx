@@ -19,6 +19,7 @@ import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { supabase, clearAuthStorage, checkPKCEState } from "@/lib/sb-client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { siteOrigin } from "@/lib/site";
 // Removed SessionClearer from production to avoid redundant client-side sign-out
 
 interface SignInFormProps {
@@ -164,161 +165,28 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
               type="button"
               className="w-full mb-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
-                console.log('[AUTH DEBUG] ===== Google OAuth Sign In Started =====');
-                console.log('[AUTH DEBUG] Button clicked at:', new Date().toISOString());
-                console.log('[AUTH DEBUG] Current URL:', window.location.href);
-                console.log('[AUTH DEBUG] User agent:', navigator.userAgent);
-                console.log('[AUTH DEBUG] Network status:', navigator.onLine ? 'online' : 'offline');
-                console.log('[AUTH DEBUG] Connection type:', (navigator as any).connection?.effectiveType || 'unknown');
-                
                 setError(null);
                 setLoading(true);
                 
                 try {
-                  console.log('[AUTH DEBUG] 🔍 Step 1: Checking current PKCE state');
-                  const pkceState = checkPKCEState();
-                  console.log('[AUTH DEBUG] Current PKCE state:', pkceState);
-                  
-                  console.log('[AUTH DEBUG] 🔍 Step 2: Determining origin for redirect');
-                  
-                  // ALWAYS use production URL for OAuth redirects
-                  const origin = "https://servio-production.up.railway.app";
-                  console.log('[AUTH DEBUG] Using production origin:', origin);
-                  console.log('[AUTH DEBUG] Redirect URL will be:', `${origin}/auth/callback`);
-                  
-                  // Clear any stale auth state
-                  console.log('[AUTH DEBUG] 🔄 Step 3: Clearing stale auth state');
-                  clearAuthStorage();
-                  
-                  // Wait a moment for storage to clear
-                  await new Promise(resolve => setTimeout(resolve, 100));
-                  
-                  console.log('[AUTH DEBUG] 🔄 Step 4: Checking PKCE state after clearing');
-                  const pkceStateAfterClear = checkPKCEState();
-                  console.log('[AUTH DEBUG] PKCE state after clearing:', pkceStateAfterClear);
-                  
-                  console.log('[AUTH DEBUG] 🔄 Step 5: Calling supabase.auth.signInWithOAuth');
-                  console.log('[AUTH DEBUG] OAuth options:', {
+                  // clear stale PKCE state
+                  try {
+                    Object.keys(localStorage).forEach(k => {
+                      if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
+                        localStorage.removeItem(k);
+                    });
+                    sessionStorage.removeItem("sb_oauth_retry");
+                  } catch {}
+
+                  await supabase.auth.signInWithOAuth({
                     provider: "google",
-                    redirectTo: `${origin}/auth/callback`,
-                    queryParams: { prompt: 'select_account' }
+                    options: {
+                      flowType: "pkce",
+                      redirectTo: `${siteOrigin()}/auth/callback`,
+                    },
                   });
-                  
-                  const startTime = Date.now();
-                  // Add retry mechanism for OAuth initiation with increased timeout
-                  let retryCount = 0;
-                  const maxRetries = 3;
-                  let lastError = null;
-                  
-                  while (retryCount <= maxRetries) {
-                    try {
-                      console.log('[AUTH DEBUG] 🔄 OAuth attempt', retryCount + 1, 'of', maxRetries + 1);
-                      
-                      // Add timeout to the OAuth call
-                      const oauthPromise = supabase.auth.signInWithOAuth({
-                        provider: "google",
-                        options: { 
-                          redirectTo: `${origin}/auth/callback`,
-                          queryParams: { prompt: 'select_account' }
-                        }
-                      });
-                      
-                      // Add 45-second timeout for OAuth initiation
-                      const timeoutPromise = new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('OAuth initiation timeout')), 45000)
-                      );
-                      
-                      const { data, error } = await Promise.race([oauthPromise, timeoutPromise]) as any;
-                      const oauthTime = Date.now() - startTime;
-                      
-                      console.log('[AUTH DEBUG] OAuth call completed in', oauthTime, 'ms');
-                      console.log('[AUTH DEBUG] OAuth response:', { 
-                        hasData: !!data, 
-                        hasError: !!error,
-                        dataKeys: data ? Object.keys(data) : [],
-                        errorMessage: error?.message,
-                        errorStatus: error?.status
-                      });
-                      
-                      if (error) {
-                        lastError = error;
-                        console.log('[AUTH DEBUG] ❌ ERROR: OAuth initiation failed (attempt', retryCount + 1, '):', {
-                          error: error.message,
-                          errorCode: error.status,
-                          oauthTime
-                        });
-                        
-                        // If it's a network error or timeout, retry
-                        if (retryCount < maxRetries && (
-                          error.message.includes('network') || 
-                          error.message.includes('timeout') ||
-                          error.message.includes('fetch') ||
-                          error.message.includes('OAuth initiation timeout') ||
-                          error.message.includes('Failed to fetch') ||
-                          error.message.includes('ERR_NETWORK') ||
-                          error.message.includes('ERR_INTERNET_DISCONNECTED')
-                        )) {
-                          console.log('[AUTH DEBUG] 🔄 Retrying OAuth due to network/timeout error');
-                          retryCount++;
-                          await new Promise(resolve => setTimeout(resolve, 2000 * retryCount)); // Exponential backoff
-                          continue;
-                        }
-                        
-                        setError(`Google sign-in failed: ${error.message || "Please try again."}`);
-                        break;
-                      } else {
-                        console.log('[AUTH DEBUG] ✅ OAuth initiated successfully');
-                        console.log('[AUTH DEBUG] OAuth response data:', {
-                          hasUrl: !!data.url,
-                          urlLength: data.url?.length,
-                          hasProvider: !!data.provider,
-                          provider: data.provider
-                        });
-                        
-                        if (data.url) {
-                          console.log('[AUTH DEBUG] Redirecting to Google OAuth URL');
-                          console.log('[AUTH DEBUG] OAuth URL (first 100 chars):', data.url.substring(0, 100) + '...');
-                          window.location.href = data.url;
-                        } else {
-                          console.log('[AUTH DEBUG] ❌ No OAuth URL received from Supabase');
-                          setError('Google sign-in failed: No redirect URL received');
-                        }
-                        
-                        console.log('[AUTH DEBUG] ===== Google OAuth Sign In Initiated Successfully =====');
-                        break; // Success, exit retry loop
-                      }
-                    } catch (retryError: any) {
-                      lastError = retryError;
-                      console.log('[AUTH DEBUG] ❌ EXCEPTION: OAuth initiation error (attempt', retryCount + 1, '):', {
-                        message: retryError?.message,
-                        stack: retryError?.stack
-                      });
-                      
-                      if (retryCount < maxRetries) {
-                        console.log('[AUTH DEBUG] 🔄 Retrying OAuth due to exception');
-                        retryCount++;
-                        await new Promise(resolve => setTimeout(resolve, 2000 * retryCount)); // Exponential backoff
-                        continue;
-                      }
-                      
-                      setError(`Google sign-in failed: ${retryError.message || "Please try again."}`);
-                      break;
-                    }
-                  }
-                  
-                  // If we exhausted all retries
-                  if (retryCount > maxRetries && lastError) {
-                    console.log('[AUTH DEBUG] ❌ All OAuth retry attempts failed');
-                    setError(`Google sign-in failed after ${maxRetries + 1} attempts. Please try again.`);
-                  }
-                } catch (err: any) {
-                  console.log('[AUTH DEBUG] ❌ EXCEPTION: Google sign-in error:', { 
-                    message: err?.message,
-                    stack: err?.stack,
-                    timestamp: new Date().toISOString()
-                  });
-                  setError(`Google sign-in failed: ${err.message || "Please try again."}`);
-                } finally {
+                } catch (error: any) {
+                  setError(`Google sign-in failed: ${error.message || "Please try again."}`);
                   setLoading(false);
                 }
               }}

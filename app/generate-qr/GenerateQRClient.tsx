@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Printer, Copy, Check } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { supabase } from "@/lib/sb-client";
+import { siteOrigin } from "@/lib/site";
 
 interface Props {
   venueId: string;
@@ -21,9 +22,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   const [stats, setStats] = useState({ totalTablesToday: 0, activeTablesNow: 0 });
   const router = useRouter();
 
-  const orderUrl = process.env.NEXT_PUBLIC_SITE_URL
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/order?venue=${venueId}&table=${tableNumber}`
-    : `https://servio-production.up.railway.app/order?venue=${venueId}&table=${tableNumber}`;
+  const orderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`;
 
   const handleCopy = async () => {
     try {
