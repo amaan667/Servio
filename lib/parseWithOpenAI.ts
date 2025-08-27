@@ -1,10 +1,10 @@
-import OpenAI from "openai";
+import { getOpenAI } from "./openai";
 import { z } from "zod";
 import { MenuPayload, MenuPayloadT } from "./menuSchema";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 export async function parseMenuStrict(extractedText: string): Promise<MenuPayloadT> {
+  const openai = getOpenAI();
   const system = [
     "You extract restaurant/cafe menus from OCR text.",
     "Return ONLY a JSON object that matches the schema:",
@@ -81,6 +81,7 @@ function coarseFix(jsonish: string): string {
 
 async function repairMenuJson(modelOutput: string) {
   console.log('[MENU PARSE] Starting repair process...');
+  const openai = getOpenAI();
   
   const fixedAttempt = coarseFix(modelOutput);
   try {

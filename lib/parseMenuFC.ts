@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { getOpenAI } from "./openai";
 import { jsonrepair } from "jsonrepair";
 import { MenuPayload, MenuPayloadT, MenuItem } from "./menuSchema";
 import { findSections, sliceSection } from "./menuSections";
@@ -6,7 +6,6 @@ import { sectionPrompt } from "./prompts";
 import { filterSectionItems } from "./sectionPost";
 import { reassignMoved } from "./reassign";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 const menuFunction = {
   type: "function" as const,
@@ -67,6 +66,7 @@ async function callMenuTool(system: string, user: string) {
   console.log('[MENU PARSE] Calling menu tool with system prompt length:', system.length);
   console.log('[MENU PARSE] User prompt length:', user.length);
 
+  const openai = getOpenAI();
   const resp = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     temperature: 0,
@@ -237,6 +237,7 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
 
   const user = `OCR TEXT:\n${sanitizeText(ocrText)}`;
 
+  const openai = getOpenAI();
   const resp = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     response_format: { type: "json_object" },
