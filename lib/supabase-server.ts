@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
-export function createServerSupabase() {
-  const jar = cookies();
+export async function createServerSupabase() {
+  const jar = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,8 +18,8 @@ export function createServerSupabase() {
   );
 }
 
-export function createRouteSupabase() {
-  const jar = cookies();
+export async function createRouteSupabase() {
+  const jar = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

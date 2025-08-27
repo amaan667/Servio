@@ -1,6 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { logger } from "./logger";
-import { supabase } from "./sb-client";
 
 // Environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

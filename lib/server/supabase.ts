@@ -17,8 +17,8 @@ const isRouteHandler = () => {
   }
 };
 
-export const supabaseServer = () => {
-  const cookieStore = cookies();
+export const supabaseServer = async () => {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -58,13 +58,13 @@ export const supabaseServer = () => {
 };
 
 // Keep the old function name for backward compatibility
-export function createServerSupabaseClient() {
-  return supabaseServer();
+export async function createServerSupabaseClient() {
+  return await supabaseServer();
 }
 
 // Export a cookie adapter for use in Route Handlers that directly construct Supabase clients
 // with custom cookie handling.
-export function cookieAdapter(jar: ReturnType<typeof cookies>) {
+export function cookieAdapter(jar: any) {
   return {
     get(name: string) {
       return jar.get(name)?.value;

@@ -90,7 +90,7 @@ export function checkPKCEState() {
       hasPKCE: localStorageKeys.length > 0 || sessionStorageKeys.length > 0,
       hasSupabaseAuth: supabaseKeys.length > 0
     };
-  } catch (error) {
+  } catch (error: any) {
     console.log('[AUTH DEBUG] ❌ Error checking PKCE state:', error);
     return { error: error.message };
   }
