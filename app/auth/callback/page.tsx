@@ -12,9 +12,11 @@ function AuthCallbackContent() {
     const handleCallback = async () => {
       try {
         console.log('[AUTH DEBUG] Client-side callback processing');
+        console.log('[AUTH DEBUG] URL params:', searchParams ? Object.fromEntries(searchParams.entries()) : 'null');
         
         const code = searchParams?.get('code');
         const error = searchParams?.get('error');
+        const state = searchParams?.get('state');
         
         if (error) {
           console.log('[AUTH DEBUG] OAuth error in client callback:', error);
@@ -32,6 +34,17 @@ function AuthCallbackContent() {
         
         // Use the proper browser client for PKCE exchange
         const supabase = createClient();
+        
+        // Log PKCE state before exchange
+        console.log('[AUTH DEBUG] Checking PKCE state before exchange...');
+        const localStorageKeys = Object.keys(localStorage).filter(k => 
+          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
+        );
+        const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
+          k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
+        );
+        console.log('[AUTH DEBUG] PKCE localStorage keys:', localStorageKeys);
+        console.log('[AUTH DEBUG] PKCE sessionStorage keys:', sessionStorageKeys);
         
         // Exchange the code for a session (client-side only)
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);

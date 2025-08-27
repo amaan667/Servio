@@ -6,13 +6,26 @@ export default function SignInButton() {
   
   const onGoogle = async () => {
     const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
+    
+    // Clear any existing auth state
+    await supabase.auth.signOut();
+    
+    // Use the proper OAuth flow with PKCE
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { prompt: 'select_account' }
+        queryParams: { 
+          prompt: 'select_account',
+          access_type: 'offline'
+        },
+        skipBrowserRedirect: false
       }
     });
+    
+    if (error) {
+      console.error('[AUTH DEBUG] OAuth error:', error);
+    }
   };
 
   return (

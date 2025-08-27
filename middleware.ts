@@ -16,7 +16,6 @@ export function middleware(req: NextRequest) {
   // Always pass static assets, auth-related paths, and OAuth flows
   if (isAsset(p) || 
       p.startsWith("/auth/") || 
-      p.startsWith("/api/auth/") || 
       p.startsWith("/sign-in") || 
       p.startsWith("/sign-up") || 
       p.startsWith("/complete-profile") || 
@@ -27,6 +26,7 @@ export function middleware(req: NextRequest) {
       p.startsWith("/mobile-preview") || 
       p.startsWith("/generate-qr") || 
       p.startsWith("/settings") || 
+      p.startsWith("/test-oauth") || 
       p.startsWith("/api/") || 
       p.startsWith("/docs/") || 
       p.startsWith("/scripts/") || 
