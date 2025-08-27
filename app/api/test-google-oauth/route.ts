@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { siteOrigin } from '@/lib/site';
 
 export async function GET() {
   try {
@@ -23,11 +24,7 @@ export async function GET() {
     );
 
     // Get the OAuth URL that Supabase would generate
-    const redirectTo = process.env.NEXT_PUBLIC_APP_URL 
-      ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
-      : process.env.NEXT_PUBLIC_SITE_URL 
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-      : 'https://servio-production.up.railway.app/auth/callback';
+    const redirectTo = `${siteOrigin()}/auth/callback`;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

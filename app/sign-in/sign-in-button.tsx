@@ -1,6 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
+import { siteOrigin } from '@/lib/site';
 
 export default function SignInButton() {
   
@@ -18,14 +19,12 @@ export default function SignInButton() {
       });
     } catch {}
     
-    const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
-    
     // Use the proper OAuth flow with PKCE
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         flowType: "pkce",
-        redirectTo: `${origin}/auth/callback`,
+        redirectTo: `${siteOrigin()}/auth/callback`,
         queryParams: { 
           prompt: 'select_account',
           access_type: 'offline'

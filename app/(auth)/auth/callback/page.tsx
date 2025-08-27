@@ -1,17 +1,20 @@
 "use client";
-import { Suspense, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { siteOrigin } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-function CallbackInner() {
+export default function OAuthCallback() {
   const router = useRouter();
   const sp = useSearchParams();
 
   useEffect(() => {
     let finished = false;
     const sb = createClient();
+
     const timeout = setTimeout(() => {
       if (!finished) router.replace("/sign-in?error=timeout");
     }, 15000);
@@ -23,41 +26,36 @@ function CallbackInner() {
       if (err) return router.replace("/sign-in?error=oauth_error");
       if (!code) return router.replace("/sign-in?error=missing_code");
 
-      // Single retry guard - never retry OAuth from callback
+      // One-time retry if PKCE verifier is missing
       const retryKey = "sb_oauth_retry";
-      let hasRetried = false;
-      try { 
-        hasRetried = sessionStorage.getItem(retryKey) === "1"; 
-      } catch {}
+      const retried = (() => {
+        try { return sessionStorage.getItem(retryKey) === "1"; } catch { return false; }
+      })();
 
-      // Check for PKCE verifier
-      let hasVerifier = false;
-      try {
-        hasVerifier = typeof localStorage !== "undefined" &&
-          (localStorage.getItem("supabase.auth.token-code-verifier") ||
-           Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier")));
-      } catch {}
-
-      // If no verifier and haven't retried, this is likely a stale/wrong callback
-      // Don't auto-retry OAuth - just redirect to sign-in with error
-      if (!hasVerifier) {
-        // Clear any stale auth state
+      const hasVerifier = (() => {
         try {
-          Object.keys(localStorage).forEach(k => {
-            if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
-              localStorage.removeItem(k);
-          });
-          sessionStorage.removeItem(retryKey);
-        } catch {}
-        
-        router.replace("/sign-in?error=pkce_failed&message=Authentication state was lost. Please sign in again.");
+          const ls = localStorage;
+          if (!ls) return false;
+          return !!ls.getItem("supabase.auth.token-code-verifier") ||
+                 Object.keys(ls).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
+        } catch { return false; }
+      })();
+
+      if (!hasVerifier && !retried) {
+        try { sessionStorage.setItem(retryKey, "1"); } catch {}
+        await sb.auth.signInWithOAuth({
+          provider: "google",
+          options: { flowType: "pkce", redirectTo: `${siteOrigin()}/auth/callback` },
+        });
         return;
       }
 
+      // Exchange PKCE strictly in the browser
       const { error } = await sb.auth.exchangeCodeForSession({
         queryParams: new URLSearchParams(window.location.search),
       });
 
+      // Clean URL so back/refresh won't re-exchange
       try {
         const url = new URL(window.location.href);
         url.searchParams.delete("code");
@@ -66,42 +64,29 @@ function CallbackInner() {
       } catch {}
 
       if (error) {
-        // Clear all auth state on exchange failure
+        // Stop loops and show a clean failure
         try {
-          Object.keys(localStorage).forEach(k => {
-            if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
-              localStorage.removeItem(k);
-          });
+          const ls = localStorage;
+          if (ls) {
+            Object.keys(ls).forEach(k => {
+              if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
+                ls.removeItem(k);
+            });
+          }
           sessionStorage.removeItem(retryKey);
         } catch {}
-        router.replace(`/sign-in?error=exchange_failed&message=${encodeURIComponent(error.message || "Authentication failed")}`);
+        router.replace("/sign-in?error=exchange_failed");
         return;
       }
 
-      // Verify session was actually created
+      // Confirm session really exists
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
-        // Clear all auth state on session verification failure
-        try {
-          Object.keys(localStorage).forEach(k => {
-            if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
-              localStorage.removeItem(k);
-          });
-          sessionStorage.removeItem(retryKey);
-        } catch {}
-        router.replace("/sign-in?error=session_verification_failed&message=Authentication completed but no session was created. Please try signing in again.");
+        router.replace("/sign-in?error=no_session");
         return;
       }
 
-      // Success - clear retry flag and redirect
-      try { 
-        sessionStorage.removeItem(retryKey);
-        // Also clear PKCE verifier after successful exchange
-        Object.keys(localStorage).forEach(k => {
-          if (k.includes("pkce") || k.includes("token-code-verifier"))
-            localStorage.removeItem(k);
-        });
-      } catch {}
+      try { sessionStorage.removeItem(retryKey); } catch {}
       router.replace(next);
     })().finally(() => {
       finished = true;
@@ -109,13 +94,5 @@ function CallbackInner() {
     });
   }, [router, sp]);
 
-  return null;
-}
-
-export default function OAuthCallback() {
-  return (
-    <Suspense fallback={null}>
-      <CallbackInner />
-    </Suspense>
-  );
+  return null; // no UI
 }

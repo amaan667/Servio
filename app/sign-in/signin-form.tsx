@@ -19,6 +19,7 @@ import { signInUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { supabase, clearAuthStorage, checkPKCEState } from "@/lib/sb-client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { siteOrigin } from "@/lib/site";
 // Removed SessionClearer from production to avoid redundant client-side sign-out
 
 interface SignInFormProps {
@@ -177,13 +178,11 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                     sessionStorage.removeItem("sb_oauth_retry");
                   } catch {}
 
-                  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
-
                   await supabase.auth.signInWithOAuth({
                     provider: "google",
                     options: {
                       flowType: "pkce",
-                      redirectTo: `${origin}/auth/callback`,
+                      redirectTo: `${siteOrigin()}/auth/callback`,
                     },
                   });
                 } catch (error: any) {

@@ -1,6 +1,7 @@
 "use client";
 import { logger } from "./logger";
 import { supabase } from "./sb-client";
+import { siteOrigin } from "./site";
 
 // Types
 export interface User {
@@ -197,10 +198,7 @@ export async function signInUser(email: string, password: string) {
 export async function signInWithGoogle() {
   console.log('[AUTH DEBUG] signInWithGoogle called');
   
-  const origin = process.env.NEXT_PUBLIC_APP_URL || 
-                 process.env.NEXT_PUBLIC_SITE_URL || 
-                 (typeof window !== 'undefined' ? window.location.origin : 'https://servio-production.up.railway.app');
-
+  const origin = siteOrigin();
   console.log('[AUTH DEBUG] Origin determined:', origin);
   console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
 

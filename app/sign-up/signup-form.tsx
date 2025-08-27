@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 import { signUpUser, signInWithGoogle, signInUser } from "@/lib/supabase";
 import { supabase } from "@/lib/sb-client";
+import { siteOrigin } from "@/lib/site";
 
 interface SignUpFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -130,13 +131,11 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
                     sessionStorage.removeItem("sb_oauth_retry");
                   } catch {}
 
-                  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
-
                   await supabase.auth.signInWithOAuth({
                     provider: "google",
                     options: {
                       flowType: "pkce",
-                      redirectTo: `${origin}/auth/callback`,
+                      redirectTo: `${siteOrigin()}/auth/callback`,
                     },
                   });
                 } catch (error: any) {
