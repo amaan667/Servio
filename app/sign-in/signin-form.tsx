@@ -200,7 +200,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                   console.log('[AUTH DEBUG] 🔄 Step 5: Calling supabase.auth.signInWithOAuth');
                   console.log('[AUTH DEBUG] OAuth options:', {
                     provider: "google",
-                    redirectTo: `${origin}/api/auth/callback`,
+                    redirectTo: `${origin}/auth/callback`,
                     queryParams: { prompt: 'select_account' }
                   });
                   
@@ -232,6 +232,13 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                       const oauthTime = Date.now() - startTime;
                       
                       console.log('[AUTH DEBUG] OAuth call completed in', oauthTime, 'ms');
+                      console.log('[AUTH DEBUG] OAuth response:', { 
+                        hasData: !!data, 
+                        hasError: !!error,
+                        dataKeys: data ? Object.keys(data) : [],
+                        errorMessage: error?.message,
+                        errorStatus: error?.status
+                      });
                       
                       if (error) {
                         lastError = error;
@@ -267,7 +274,16 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                           hasProvider: !!data.provider,
                           provider: data.provider
                         });
-                        console.log('[AUTH DEBUG] Browser should now redirect to Google OAuth');
+                        
+                        if (data.url) {
+                          console.log('[AUTH DEBUG] Redirecting to Google OAuth URL');
+                          console.log('[AUTH DEBUG] OAuth URL (first 100 chars):', data.url.substring(0, 100) + '...');
+                          window.location.href = data.url;
+                        } else {
+                          console.log('[AUTH DEBUG] ❌ No OAuth URL received from Supabase');
+                          setError('Google sign-in failed: No redirect URL received');
+                        }
+                        
                         console.log('[AUTH DEBUG] ===== Google OAuth Sign In Initiated Successfully =====');
                         break; // Success, exit retry loop
                       }

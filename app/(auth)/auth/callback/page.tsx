@@ -18,6 +18,17 @@ function OAuthCallbackInner() {
     let finished = false;
     const sb = createClient();
 
+    // Listen for auth state changes
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+      console.log('[AUTH DEBUG] Auth state change in callback:', {
+        event,
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id,
+        userEmail: session?.user?.email
+      });
+    });
+
     // 15s hard timeout so we never hang
     const timeout = setTimeout(() => {
       if (!finished) router.replace("/sign-in?error=timeout");
@@ -78,10 +89,29 @@ function OAuthCallbackInner() {
         return; // navigates away
       }
 
+      console.log('[AUTH DEBUG] ✅ Exchange successful, redirecting to:', next);
+      
+      // Verify session was established
+      const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+      console.log('[AUTH DEBUG] Session verification after exchange:', {
+        hasSession: !!sessionData.session,
+        hasUser: !!sessionData.session?.user,
+        userId: sessionData.session?.user?.id,
+        userEmail: sessionData.session?.user?.email,
+        sessionError: sessionError?.message
+      });
+      
+      if (!sessionData.session) {
+        console.log('[AUTH DEBUG] ❌ No session established after exchange, redirecting to sign-in');
+        router.replace("/sign-in?error=no_session");
+        return;
+      }
+      
       router.replace(next);
     })().finally(() => {
       finished = true;
       clearTimeout(timeout);
+      subscription?.unsubscribe();
     });
   }, [router, sp]);
 
