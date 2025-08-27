@@ -25,7 +25,7 @@ import {
   Link,
   FileText,
 } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import { logger } from "@/lib/logger";
 import {
   Dialog,
@@ -166,7 +166,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     return () => {
       logger.debug("Cleaning up real-time subscription");
       if (supabase) {
-        supabase.removeChannel(channel);
+        createClient().removeChannel(channel);
       }
     };
   }, [fetchMenu, venueUuid]);
@@ -353,7 +353,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         return;
       }
       for (const item of batchEditItems) {
-        await supabase.from("menu_items").update({ category: item.category }).eq("id", item.id);
+        await createClient().from("menu_items").update({ category: item.category }).eq("id", item.id);
       }
       setBatchEditOpen(false);
       fetchMenu();
@@ -391,7 +391,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           setSaving(null);
           return;
         }
-        await supabase.from("menu_items").update({ category: batchEditValue }).in("id", selectedItems);
+        await createClient().from("menu_items").update({ category: batchEditValue }).in("id", selectedItems);
       } else if (batchAction === "price") {
         const price = Number(batchEditValue);
         if (!batchEditValue || isNaN(price) || price <= 0) {
@@ -399,13 +399,13 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           setSaving(null);
           return;
         }
-        await supabase.from("menu_items").update({ price }).in("id", selectedItems);
+        await createClient().from("menu_items").update({ price }).in("id", selectedItems);
       } else if (batchAction === "unavailable") {
-        await supabase.from("menu_items").update({ available: false }).in("id", selectedItems);
+        await createClient().from("menu_items").update({ available: false }).in("id", selectedItems);
       } else if (batchAction === "edit") {
-        await supabase.from("menu_items").update({ available: true }).in("id", selectedItems);
+        await createClient().from("menu_items").update({ available: true }).in("id", selectedItems);
       } else if (batchAction === "delete") {
-        await supabase.from("menu_items").delete().in("id", selectedItems);
+        await createClient().from("menu_items").delete().in("id", selectedItems);
       }
       setBatchAction(null);
       setSelectedItems([]);

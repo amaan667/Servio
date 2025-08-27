@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag } from "lucide-react";
 
 export default function AnalyticsClient({ venueId, venueName }: { venueId: string; venueName: string }) {

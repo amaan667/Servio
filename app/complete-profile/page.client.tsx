@@ -29,7 +29,7 @@ export default function CompleteProfilePage() {
       try {
         console.log('[COMPLETE-PROFILE] booting...');
         // Wait for session to be available
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await createClient().auth.getSession();
         console.log('[COMPLETE-PROFILE] session check:', { hasSession: !!session, hasUser: !!session?.user });
         
         if (!session?.user) {

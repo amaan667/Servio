@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/sb-client';
 import { logger } from "@/lib/logger";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
@@ -55,7 +55,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       const venueId = j.venue_id as string;
 
       // Update user metadata to mark profile as complete
-      const { error: metadataError } = await supabase.auth.updateUser({
+      const { error: metadataError } = await createClient().auth.updateUser({
         data: { profileComplete: true }
       });
       if (metadataError) console.error('[COMPLETE-PROFILE] metadata update error', metadataError);

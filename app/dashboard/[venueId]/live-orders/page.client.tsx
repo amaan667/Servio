@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/sb-client';
 import { toMoney } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -97,7 +97,7 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') setConnected(true);
       });
-    return () => { setConnected(false); supabase.removeChannel(ch); };
+    return () => { setConnected(false); createClient().removeChannel(ch); };
   }, [supabase, venueId]);
 
   // Fallback poll if realtime drops

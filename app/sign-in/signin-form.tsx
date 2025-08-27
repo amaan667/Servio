@@ -178,7 +178,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
                     sessionStorage.removeItem("sb_oauth_retry");
                   } catch {}
 
-                  await supabase.auth.signInWithOAuth({
+                  await createClient().auth.signInWithOAuth({
                     provider: "google",
                     options: {
                       flowType: "pkce",

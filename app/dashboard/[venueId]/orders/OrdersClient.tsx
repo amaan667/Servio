@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Clock } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import { todayWindowForTZ } from "@/lib/time";
 
 type OrdersClientProps = {

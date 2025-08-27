@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ShoppingCart, Plus, Minus, X } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 import OrderFeedbackForm from "@/components/OrderFeedbackForm";
@@ -54,12 +54,12 @@ export default function CustomerOrderPage() {
 
   useEffect(() => {
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await createClient().auth.getSession();
       setSession(session);
     };
     getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = createClient().auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 
 // This component will check for authentication and redirect appropriately
 export default function HomePage() {
@@ -12,7 +12,7 @@ export default function HomePage() {
   useEffect(() => {
     async function checkSession() {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await createClient().auth.getSession();
         
         if (!data.session) {
           // If no session, redirect to sign-in

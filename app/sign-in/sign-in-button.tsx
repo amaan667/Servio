@@ -18,7 +18,7 @@ export default function SignInButton() {
     } catch {}
     
     // Use the proper OAuth flow with PKCE
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
       options: {
         flowType: "pkce",

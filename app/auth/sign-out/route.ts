@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const supabase = createServerSupabaseClient();
     
     console.log('[AUTH] Signing out user');
-    const { error } = await supabase.auth.signOut();
+    const { error } = await createClient().auth.signOut();
     
     if (error) {
       console.error('[AUTH] Sign out error:', error);

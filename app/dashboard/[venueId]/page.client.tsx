@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
 
@@ -138,7 +138,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
     return () => {
       console.log('[DASHBOARD] Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
+      createClient().removeChannel(channel);
     };
   }, [venueId, venue?.venue_id, todayWindow?.startUtcISO]); // Use specific properties instead of objects to prevent unnecessary re-runs
 

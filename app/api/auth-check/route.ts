@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const supabase = createServerSupabaseClient();
     
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await createClient().auth.getUser();
     
     if (userError) {
       console.log('[AUTH CHECK] User error:', userError);

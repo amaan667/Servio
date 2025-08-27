@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 import { signUpUser, signInWithGoogle, signInUser } from "@/lib/supabase";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import { siteOrigin } from "@/lib/site";
 
 interface SignUpFormProps {
@@ -131,7 +131,7 @@ export default function SignUpForm({ onGoogleSignIn, loading: externalLoading }:
                     sessionStorage.removeItem("sb_oauth_retry");
                   } catch {}
 
-                  await supabase.auth.signInWithOAuth({
+                  await createClient().auth.signInWithOAuth({
                     provider: "google",
                     options: {
                       flowType: "pkce",

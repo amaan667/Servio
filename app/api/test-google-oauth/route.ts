@@ -26,7 +26,7 @@ export async function GET() {
     // Get the OAuth URL that Supabase would generate
     const redirectTo = `${siteOrigin()}/auth/callback`;
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
       options: { 
         flowType: "pkce",

@@ -17,7 +17,7 @@ export default async function VenueSettingsPage({
   // [AUTH] Use proper server Supabase client with cookie handling
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await createClient().auth.getUser();
   log('VENUE SETTINGS SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 

@@ -16,7 +16,7 @@ export default async function LiveOrdersPage({
   
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await createClient().auth.getUser();
   log('LIVE-ORDERS SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 

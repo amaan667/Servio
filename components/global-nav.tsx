@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
@@ -50,7 +50,7 @@ export default function GlobalNav() {
   }, [isAuthenticated]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await createClient().auth.signOut();
     router.replace('/sign-in');
   };
 

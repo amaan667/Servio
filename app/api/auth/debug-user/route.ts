@@ -13,7 +13,7 @@ export async function GET() {
         remove: (n,o) => cookieStore.set({ name:n, value:'', ...o }),
       } }
   );
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await createClient().auth.getUser();
   return NextResponse.json({
     serverSeesUser: !!user,
     cookieNames: cookieStore.getAll().map((c: any) => c.name),

@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
   // Auth check
   const supabase = createServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await createClient().auth.getUser();
   console.log("[LIVE ORDERS GET] user from cookie:", user?.id);
   if (!user) return NextResponse.json({ ok:false, error:'Not authenticated' }, { status:401 });
 

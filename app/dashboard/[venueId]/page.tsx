@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/sb-client';
 import DashboardClient from './page.client';
 
 export default function VenuePage({ params, searchParams }: { params: { venueId: string }, searchParams: any }) {
@@ -15,7 +15,7 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
       try {
         console.log('[VENUE PAGE] Checking venue access for:', params.venueId);
         
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await createClient().auth.getUser();
         console.log('[DASHBOARD VENUE] Auth getUser result:', { 
           hasUser: !!user, 
           userId: user?.id, 

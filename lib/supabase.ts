@@ -1,6 +1,6 @@
 "use client";
 import { logger } from "./logger";
-import { supabase } from "./sb-client";
+import { createClient } from "./sb-client";
 import { siteOrigin } from "./site";
 
 // Types
@@ -82,7 +82,7 @@ export async function signUpUser(
     
     console.log("✅ Using Railway domain for email redirect:", emailRedirectTo);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await createClient().auth.signUp({
       email,
       password,
       options: {
@@ -100,7 +100,7 @@ export async function signUpUser(
     }
 
     // Check for session (user is authenticated if session exists)
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await createClient().auth.getSession();
     if (!sessionData.session) {
       // No session means email confirmation is required
       return {
@@ -113,13 +113,13 @@ export async function signUpUser(
     // Create default venue for the user (as authenticated user)
     const userId = data.user.id;
     const venueId = `venue-${userId.slice(0, 8)}`;
-    let { data: venueData, error: venueError } = await supabase
+    let { data: venueData, error: venueError } = await createClient()
       .from("venues")
       .select("*")
       .eq("owner_id", userId)
       .single();
     if (venueError || !venueData) {
-      const { data: newVenue, error: createVenueError } = await supabase
+      const { data: newVenue, error: createVenueError } = await createClient()
         .from("venues")
         .insert({
           venue_id: venueId,
@@ -160,7 +160,7 @@ export async function signUpUser(
 export async function signInUser(email: string, password: string) {
   try {
     logger.info("Attempting sign in", { email });
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await createClient().auth.signInWithPassword({
       email,
       password,
     });
@@ -175,7 +175,7 @@ export async function signInUser(email: string, password: string) {
     logger.info("Sign in successful", { userId: data.user.id });
     
     // Ensure session is properly set
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await createClient().auth.getSession();
     if (!sessionData.session) {
       logger.error("No session after sign in");
       return {
@@ -216,7 +216,7 @@ export async function signInWithGoogle() {
   console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
   
   console.log('[AUTH DEBUG] Calling signInWithOAuth with provider: google');
-  const { data, error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await createClient().auth.signInWithOAuth({
     provider: "google",
     options: { 
       flowType: "pkce",
@@ -294,7 +294,7 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
 // Sign out function
 export async function signOutUser() {
   try {
-    await supabase.auth.signOut();
+    await createClient().auth.signOut();
     logger.info("User signed out");
   } catch (error) {
     logger.error("Sign out error", { error });

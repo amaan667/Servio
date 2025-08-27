@@ -31,7 +31,7 @@ export default function CallbackClient() {
         try {
           const ls = localStorage;
           if (!ls) return false;
-          return !!ls.getItem("supabase.auth.token-code-verifier") ||
+          return !!ls.getItem("createClient().auth.token-code-verifier") ||
                  Object.keys(ls).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
         } catch { return false; }
       })();

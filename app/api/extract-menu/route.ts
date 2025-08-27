@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
         venue_id: body.venue_id,
         available: item.available !== false, // default to true
       }));
-      const { error } = await supabase.from("menu_items").insert(itemsToInsert);
+      const { error } = await createClient().from("menu_items").insert(itemsToInsert);
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }

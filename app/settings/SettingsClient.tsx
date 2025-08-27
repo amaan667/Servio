@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import ClientNavBar from "@/components/ClientNavBar";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import { ArrowLeft, Save, User, Building, Mail, Phone } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -77,7 +77,7 @@ export default function SettingsClient({ user, venues }: { user: User; venues: V
       }
 
       if (accountForm.newPassword) {
-        const { error } = await supabase.auth.updateUser({
+        const { error } = await createClient().auth.updateUser({
           password: accountForm.newPassword
         });
 

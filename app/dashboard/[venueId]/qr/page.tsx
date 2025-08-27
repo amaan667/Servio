@@ -16,7 +16,7 @@ export default async function QRPage({
   
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await createClient().auth.getUser();
   log('QR SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 

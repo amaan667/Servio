@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   );
 
   try {
-    const { error } = await supabase.from('orders').update({ payment_status: 'paid' as any }).eq('id', orderId);
+    const { error } = await createClient().from('orders').update({ payment_status: 'paid' as any }).eq('id', orderId);
     if (error) throw error;
     return NextResponse.json({ ok: true });
   } catch (e: any) {

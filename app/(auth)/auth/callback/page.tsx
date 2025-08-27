@@ -30,7 +30,7 @@ function CallbackInner() {
       const retried = (() => { try { return sessionStorage.getItem(retryKey) === "1"; } catch { return false; } })();
       const hasVerifier = (() => {
         try {
-          return !!localStorage.getItem("supabase.auth.token-code-verifier") ||
+          return !!localStorage.getItem("createClient().auth.token-code-verifier") ||
                  Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
         } catch { return false; }
       })();

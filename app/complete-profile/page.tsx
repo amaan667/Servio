@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/sb-client';
 import CompleteProfileForm from './form';
 
 export default function CompleteProfilePage() {
@@ -15,7 +15,7 @@ export default function CompleteProfilePage() {
       try {
         console.log('[COMPLETE-PROFILE] Checking user session');
         
-        const { data: { user }, error: userErr } = await supabase.auth.getUser();
+        const { data: { user }, error: userErr } = await createClient().auth.getUser();
         console.log('[COMPLETE-PROFILE] Auth getUser result:', { 
           hasUser: !!user, 
           userId: user?.id, 

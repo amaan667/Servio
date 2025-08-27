@@ -86,7 +86,7 @@ export function checkPKCEState() {
 // Utility function to check authentication state with retry
 export async function checkAuthState() {
   try {
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } = await createClient().auth.getSession();
     console.log('[AUTH DEBUG] Current auth state:', {
       hasSession: !!data.session,
       hasUser: !!data.session?.user,
@@ -106,7 +106,7 @@ export async function checkAuthState() {
 if (typeof window !== 'undefined') {
   console.log('[AUTH DEBUG] Setting up auth state change listener');
 
-  supabase.auth.onAuthStateChange((evt, sess) => {
+  createClient().auth.onAuthStateChange((evt, sess) => {
     console.log('[AUTH DEBUG] 🔄 Auth state changed:', {
       event: evt,
       hasSession: !!sess,
@@ -130,7 +130,7 @@ if (typeof window !== 'undefined') {
   });
   
   // Log initial session state
-  supabase.auth.getSession().then(({ data, error }) => {
+  createClient().auth.getSession().then(({ data, error }) => {
     console.log('[AUTH DEBUG] Initial session check:', {
       hasSession: !!data.session,
       hasUser: !!data.session?.user,

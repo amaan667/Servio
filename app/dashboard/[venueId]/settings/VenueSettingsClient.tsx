@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import { User, Building, Mail, Phone, MapPin, Lock, Trash2, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -111,7 +111,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
     setError(null);
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error } = await createClient().auth.updateUser({
         password: newPassword
       });
 
@@ -162,14 +162,14 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
       }
 
       // Then delete the user account
-      const { error } = await supabase.auth.admin.deleteUser(user.id);
+      const { error } = await createClient().auth.admin.deleteUser(user.id);
 
       if (error) {
         throw new Error(error.message);
       }
 
       // Sign out and redirect to home
-      await supabase.auth.signOut();
+      await createClient().auth.signOut();
       router.push('/');
       
       toast({

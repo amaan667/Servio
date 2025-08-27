@@ -28,7 +28,7 @@ export default function CompleteProfile() {
       return;
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await createClient().auth.getUser();
     if (!user || userError) {
       setError("You must be signed in.");
       setLoading(false);
@@ -39,7 +39,7 @@ export default function CompleteProfile() {
       // Create venue with correct schema fields
       const venueId = `${businessName.toLowerCase().replace(/\s+/g, '-')}-${user.id.substring(0, 8)}`;
       
-      const { error: upsertError } = await supabase.from("venues").upsert({
+      const { error: upsertError } = await createClient().from("venues").upsert({
         venue_id: venueId,
         name: businessName,
         business_type: businessType.toLowerCase(),

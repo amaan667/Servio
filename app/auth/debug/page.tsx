@@ -14,7 +14,7 @@ export default function AuthDebugPage() {
     setLoading(true);
     try {
       // Check current auth state
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await createClient().auth.getSession();
       
       // Check PKCE state
       const pkceState = checkPKCEState();

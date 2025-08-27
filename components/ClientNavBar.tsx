@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/sb-client';
 import { useAuth } from '@/app/authenticated-client-provider';
 import { useRouter } from "next/navigation";
 
@@ -66,7 +66,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
   console.log('[NAV] ClientNavBar', { venueId, resolvedVenueId, homeHref, settingsHref });
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await createClient().auth.signOut();
     router.replace('/sign-in');
   };
 

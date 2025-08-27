@@ -17,7 +17,7 @@ export default async function StaffPage({
   
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await createClient().auth.getUser();
   log('STAFF SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 

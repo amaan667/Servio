@@ -21,15 +21,15 @@ export default function TestOAuthPage() {
       
       // Clear any existing state
       addLog("Clearing existing auth state");
-      await supabase.auth.signOut();
+      await createClient().auth.signOut();
       
       // Check current session
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await createClient().auth.getSession();
       addLog(`Current session: ${session ? 'exists' : 'none'}`);
       
       // Start OAuth flow
       addLog("Starting OAuth flow with Google");
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await createClient().auth.signInWithOAuth({
         provider: 'google',
         options: {
           flowType: "pkce",

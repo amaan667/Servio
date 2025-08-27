@@ -8,7 +8,7 @@ import SettingsClient from './SettingsClient.client';
 export default async function SettingsPage() {
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await createClient().auth.getUser();
   if (!user) redirect('/sign-in');
 
   const { data: venues } = await supabase

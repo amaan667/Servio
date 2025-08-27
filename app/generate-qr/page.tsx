@@ -8,7 +8,7 @@ import GenerateQRClient from './GenerateQRClient';
 export default async function GenerateQRPage() {
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await createClient().auth.getUser();
   if (!user) redirect('/sign-in');
 
   const { data: venue, error } = await supabase

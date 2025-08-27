@@ -6,7 +6,7 @@ export async function GET() {
     const supabase = createRouteSupabase();
     
     // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await createClient().auth.getUser();
     
     if (userError) {
       console.log('[AUTH DEBUG] Test auth - User error:', userError.message);

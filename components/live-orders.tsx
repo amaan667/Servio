@@ -19,7 +19,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
-import { supabase } from "@/lib/sb-client";
+import { createClient } from "@/lib/sb-client";
 import type { AuthSession } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
@@ -153,7 +153,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     return () => {
       logger.debug("LIVE_ORDERS: Cleaning up real-time subscription");
       if (supabase) {
-        supabase.removeChannel(channel);
+        createClient().removeChannel(channel);
       }
     };
   }, [fetchOrders, venueId]);

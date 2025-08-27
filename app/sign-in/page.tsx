@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/sb-client';
 import SignInForm from './signin-form';
 
 function SignInPageContent() {

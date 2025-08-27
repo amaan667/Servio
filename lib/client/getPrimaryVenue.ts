@@ -1,8 +1,8 @@
 'use client';
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/sb-client';
 
 export async function getPrimaryVenue() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await createClient().auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase

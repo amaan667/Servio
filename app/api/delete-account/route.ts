@@ -8,12 +8,12 @@ export async function POST(req: NextRequest) {
   try {
     // Delete venue and related data
     if (venueId) {
-      await supabase.from("venues").delete().eq("venue_id", venueId);
+      await createClient().from("venues").delete().eq("venue_id", venueId);
       // Optionally: delete related menu_items, orders, etc.
     }
     // Delete user from Auth
     if (userId) {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { error } = await createClient().auth.admin.deleteUser(userId);
       if (error) throw error;
     }
     return NextResponse.json({ success: true });

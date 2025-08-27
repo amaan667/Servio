@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/sb-client';
 import { Session } from '@supabase/supabase-js';
 
 function now() {
@@ -25,7 +25,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     const getInitialSession = async () => {
       try {
         console.log('[AUTH DEBUG] provider:getSession:begin', { t: now() });
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await createClient().auth.getSession();
         console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
         if (error) {
           setSession(null);
@@ -42,7 +42,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     getInitialSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = createClient().auth.onAuthStateChange((event, session) => {
       console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
       setSession(session);
       setLoading(false);

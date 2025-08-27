@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { createClient } from '@/lib/sb-client';
 
 export default function DashboardIndex() {
   const router = useRouter();
@@ -12,7 +12,7 @@ export default function DashboardIndex() {
       try {
         console.log('[DASHBOARD] Checking user session');
         
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await createClient().auth.getSession();
         console.log('[DASHBOARD] Auth getSession result:', { 
           hasSession: !!session, 
           userId: session?.user?.id, 
