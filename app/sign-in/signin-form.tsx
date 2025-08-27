@@ -125,7 +125,7 @@ export default function SignInForm({ onGoogleSignIn, loading: externalLoading }:
 
       if (result.success) {
         console.log('[AUTH DEBUG] ✅ Email/password sign-in successful, redirecting to dashboard');
-        // Force a page refresh to ensure auth state is updated
+        // Force a page refresh to ensure auth state is updated and cookies are set
         window.location.href = '/dashboard';
       } else {
         console.log('[AUTH DEBUG] ❌ Email/password sign-in failed:', { message: result.message });

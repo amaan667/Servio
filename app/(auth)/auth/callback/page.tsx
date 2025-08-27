@@ -63,9 +63,12 @@ function OAuthCallbackInner() {
       } catch { /* ignore */ }
 
       // Exchange PKCE **in the browser**
+      console.log('[AUTH DEBUG] Exchanging code for session...');
       const { error } = await sb.auth.exchangeCodeForSession({
         queryParams: new URLSearchParams(window.location.search),
       });
+      
+      console.log('[AUTH DEBUG] Exchange result:', { error: error?.message });
 
       // Always scrub query params to avoid re-exchange on back/refresh
       const url = new URL(window.location.href);
@@ -74,6 +77,7 @@ function OAuthCallbackInner() {
       window.history.replaceState({}, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ""));
 
       if (error) {
+        console.log('[AUTH DEBUG] ❌ Exchange failed:', error.message);
         // Clear stale PKCE artifacts and restart once
         try {
           Object.keys(localStorage).forEach(k => {
@@ -101,13 +105,21 @@ function OAuthCallbackInner() {
         sessionError: sessionError?.message
       });
       
+      // Check what cookies are set
+      console.log('[AUTH DEBUG] Cookies after session exchange:', {
+        localStorage: Object.keys(localStorage).filter(k => k.startsWith('sb-') || k.includes('auth')),
+        sessionStorage: Object.keys(sessionStorage).filter(k => k.startsWith('sb-') || k.includes('auth'))
+      });
+      
       if (!sessionData.session) {
         console.log('[AUTH DEBUG] ❌ No session established after exchange, redirecting to sign-in');
         router.replace("/sign-in?error=no_session");
         return;
       }
       
-      router.replace(next);
+      console.log('[AUTH DEBUG] ✅ Session verified, redirecting to:', next);
+      // Use window.location.href to ensure full page reload and cookie persistence
+      window.location.href = next;
     })().finally(() => {
       finished = true;
       clearTimeout(timeout);

@@ -18,6 +18,8 @@ export const supabase = createBrowserClient(
       autoRefreshToken: true,
       detectSessionInUrl: true,
       debug: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'supabase.auth.token',
     },
     global: {
       headers: {
