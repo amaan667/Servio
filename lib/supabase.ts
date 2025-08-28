@@ -194,6 +194,16 @@ export async function signInUser(email: string, password: string) {
 export async function signInWithGoogle() {
   console.log('[AUTH DEBUG] Starting Google OAuth sign-in...');
   
+  try {
+    // Clear stale PKCE artifacts to avoid verifier/code mismatches
+    Object.keys(localStorage).forEach((k) => {
+      if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier")) {
+        localStorage.removeItem(k);
+      }
+    });
+    sessionStorage.removeItem("sb_oauth_retry");
+  } catch {}
+  
   const origin = siteOrigin();
   const redirectTo = `${origin}/auth/callback`;
   
@@ -202,6 +212,7 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { 
+      flowType: "pkce",
       redirectTo: redirectTo
     },
   });
