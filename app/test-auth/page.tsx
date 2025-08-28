@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase-client';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -16,6 +16,7 @@ export default function TestAuthPage() {
 
   const checkSession = async () => {
     try {
+      const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
     } catch (error) {
@@ -28,13 +29,14 @@ export default function TestAuthPage() {
   const testGoogleSignIn = async () => {
     setTestResult('Testing Google sign-in...');
     try {
+      const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
-      
+
       if (error) {
         setTestResult(`Error: ${error.message}`);
       } else {
@@ -48,6 +50,7 @@ export default function TestAuthPage() {
 
   const signOut = async () => {
     try {
+      const supabase = createClient();
       await supabase.auth.signOut();
       setSession(null);
       setTestResult('Signed out successfully');

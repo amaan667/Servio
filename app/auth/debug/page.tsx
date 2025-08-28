@@ -2,13 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase-client';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+interface TestResults {
+  environment?: any;
+  client?: any;
+  connection?: any;
+  api?: any;
+  url?: any;
+  googleSignIn?: {
+    success: boolean;
+    url?: string;
+    error?: string;
+    timestamp: string;
+  };
+  timestamp: string;
+}
+
 export default function AuthDebugPage() {
   const router = useRouter();
-  const [testResults, setTestResults] = useState<any>(null);
+  const [testResults, setTestResults] = useState<TestResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
 
@@ -35,6 +50,7 @@ export default function AuthDebugPage() {
 
       // Test 2: Supabase client
       addLog('Testing Supabase client...');
+      const supabase = createClient();
       const clientTest = {
         clientExists: !!supabase,
         authExists: !!(supabase && supabase.auth),
@@ -91,8 +107,9 @@ export default function AuthDebugPage() {
   const testGoogleSignIn = async () => {
     setLoading(true);
     addLog('Testing Google sign-in flow...');
-    
+
     try {
+      const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -109,8 +126,8 @@ export default function AuthDebugPage() {
       addLog(`Redirect URL: ${data.url}`);
       
       // Don't redirect automatically, let user see the result
-      setTestResults(prev => ({
-        ...prev,
+      setTestResults((prev: TestResults | null) => ({
+        ...prev!,
         googleSignIn: {
           success: true,
           url: data.url,
@@ -119,8 +136,8 @@ export default function AuthDebugPage() {
       }));
     } catch (error) {
       addLog(`Google sign-in failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setTestResults(prev => ({
-        ...prev,
+      setTestResults((prev: TestResults | null) => ({
+        ...prev!,
         googleSignIn: {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',

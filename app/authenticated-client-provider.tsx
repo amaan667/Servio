@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { createClient } from '@/lib/sb-client';
-import { Session } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 function now() {
   return new Date().toISOString();
@@ -42,7 +42,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     getInitialSession();
 
-    const { data: { subscription } } = createClient().auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = createClient().auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
       setSession(session);
       setLoading(false);

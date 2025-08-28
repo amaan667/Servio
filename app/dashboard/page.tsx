@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../auth-provider';
-import { supabase } from '@/lib/supabase-client';
+import { createClient } from '@/lib/supabase/client';
 
 export default function DashboardIndex() {
   const router = useRouter();
@@ -20,7 +20,8 @@ export default function DashboardIndex() {
 
       try {
         console.log('[DASHBOARD] Getting primary venue for user:', user.id);
-        
+
+        const supabase = createClient();
         // Get the user's first venue directly
         const { data: venues, error: venueError } = await supabase
           .from('venues')
