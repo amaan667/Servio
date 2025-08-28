@@ -319,6 +319,61 @@ export default function SignInForm() {
               >
                 Test OAuth URL
               </Button>
+
+              {/* Mobile-specific debug buttons */}
+              <Button
+                onClick={async () => {
+                  try {
+                    const { debugMobileOAuthFlow, checkMobilePKCEState, testMobileStorage } = await import('@/lib/auth/mobile-auth-utils');
+                    console.log('[MOBILE AUTH DEBUG] === Mobile OAuth Flow Debug ===');
+                    console.log('[MOBILE AUTH DEBUG] OAuth Flow Debug:', debugMobileOAuthFlow());
+                    console.log('[MOBILE AUTH DEBUG] PKCE State:', checkMobilePKCEState());
+                    console.log('[MOBILE AUTH DEBUG] Storage Test:', testMobileStorage());
+                  } catch (err) {
+                    console.error('[MOBILE AUTH DEBUG] Error debugging mobile OAuth flow:', err);
+                  }
+                }}
+                variant="outline"
+                className="w-full text-xs bg-yellow-50 border-yellow-200 text-yellow-800"
+              >
+                Debug Mobile OAuth
+              </Button>
+
+              <Button
+                onClick={async () => {
+                  try {
+                    const { clearMobileAuthState } = await import('@/lib/auth/mobile-auth-utils');
+                    console.log('[MOBILE AUTH DEBUG] === Clearing Mobile Auth State ===');
+                    const result = clearMobileAuthState();
+                    console.log('[MOBILE AUTH DEBUG] Clear result:', result);
+                    console.log('[MOBILE AUTH DEBUG] Reloading page...');
+                    window.location.reload();
+                  } catch (err) {
+                    console.error('[MOBILE AUTH DEBUG] Error clearing mobile auth state:', err);
+                  }
+                }}
+                variant="outline"
+                className="w-full text-xs bg-red-50 border-red-200 text-red-800"
+              >
+                Clear Mobile Auth
+              </Button>
+
+              <Button
+                onClick={async () => {
+                  try {
+                    const { testMobileOAuthURL, retryMobilePKCEVerifier } = await import('@/lib/auth/mobile-auth-utils');
+                    console.log('[MOBILE AUTH DEBUG] === Testing Mobile OAuth ===');
+                    console.log('[MOBILE AUTH DEBUG] OAuth URL Test:', await testMobileOAuthURL());
+                    console.log('[MOBILE AUTH DEBUG] PKCE Retry Test:', await retryMobilePKCEVerifier());
+                  } catch (err) {
+                    console.error('[MOBILE AUTH DEBUG] Error testing mobile OAuth:', err);
+                  }
+                }}
+                variant="outline"
+                className="w-full text-xs bg-blue-50 border-blue-200 text-blue-800"
+              >
+                Test Mobile OAuth
+              </Button>
             </>
           )}
 

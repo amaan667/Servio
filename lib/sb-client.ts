@@ -3,11 +3,41 @@ import { createBrowserClient } from '@supabase/ssr';
 
 let _client: ReturnType<typeof createBrowserClient> | null = null;
 
+// Enhanced mobile detection
+function isMobileBrowser() {
+  if (typeof window === 'undefined') return false;
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent);
+}
+
+// Enhanced browser detection
+function getBrowserInfo() {
+  if (typeof window === 'undefined') return { type: 'unknown', isMobile: false };
+  
+  const userAgent = window.navigator.userAgent;
+  const isMobile = isMobileBrowser();
+  
+  let browserType = 'unknown';
+  if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+    browserType = 'safari';
+  } else if (userAgent.includes('Chrome')) {
+    browserType = 'chrome';
+  } else if (userAgent.includes('Firefox')) {
+    browserType = 'firefox';
+  } else if (userAgent.includes('Edge')) {
+    browserType = 'edge';
+  }
+  
+  return { type: browserType, isMobile, userAgent };
+}
+
 export function createClient() {
   if (!_client) {
     // Provide fallback values for build time
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+    
+    const browserInfo = getBrowserInfo();
     
     _client = createBrowserClient(
       supabaseUrl,
@@ -20,15 +50,48 @@ export function createClient() {
           persistSession: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
-          // Ensure cookies work properly on mobile
+          // Enhanced cookie options for mobile browsers
           cookieOptions: {
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: browserInfo.isMobile ? 'lax' : 'lax', // Use 'lax' for better mobile compatibility
             path: '/',
+            // Mobile-specific cookie settings
+            ...(browserInfo.isMobile && {
+              // Some mobile browsers have issues with strict cookie settings
+              httpOnly: false,
+            })
+          },
+          // Enhanced storage configuration for mobile
+          storage: {
+            // Use localStorage for better mobile compatibility
+            getItem: (key: string) => {
+              try {
+                return localStorage.getItem(key);
+              } catch (error) {
+                console.log('[AUTH DEBUG] localStorage.getItem failed:', error);
+                return null;
+              }
+            },
+            setItem: (key: string, value: string) => {
+              try {
+                localStorage.setItem(key, value);
+              } catch (error) {
+                console.log('[AUTH DEBUG] localStorage.setItem failed:', error);
+              }
+            },
+            removeItem: (key: string) => {
+              try {
+                localStorage.removeItem(key);
+              } catch (error) {
+                console.log('[AUTH DEBUG] localStorage.removeItem failed:', error);
+              }
+            },
           }
         }
       }
     );
+    
+    console.log('[AUTH DEBUG] Supabase client created with browser info:', browserInfo);
   }
   return _client;
 }
@@ -36,7 +99,8 @@ export function createClient() {
 // Utility function to clear all authentication-related storage
 export function clearAuthStorage() {
   try {
-    console.log('[AUTH DEBUG] Clearing all authentication storage');
+    const browserInfo = getBrowserInfo();
+    console.log('[AUTH DEBUG] Clearing all authentication storage', { browserInfo });
     
     // Clear localStorage
     const localStorageKeys = Object.keys(localStorage).filter(k => 
@@ -71,7 +135,8 @@ export function clearAuthStorage() {
 // Utility function to check PKCE state
 export function checkPKCEState() {
   try {
-    console.log('[AUTH DEBUG] Checking PKCE state...');
+    const browserInfo = getBrowserInfo();
+    console.log('[AUTH DEBUG] Checking PKCE state...', { browserInfo });
     
     // Check localStorage for PKCE-related keys
     const localStorageKeys = Object.keys(localStorage).filter(k => 
@@ -92,6 +157,7 @@ export function checkPKCEState() {
     // Check for OAuth progress flags
     const oauthProgress = sessionStorage.getItem("sb_oauth_in_progress");
     const oauthStartTime = sessionStorage.getItem("sb_oauth_start_time");
+    const oauthMobile = sessionStorage.getItem("sb_oauth_mobile");
     
     return {
       localStorageKeys,
@@ -100,7 +166,9 @@ export function checkPKCEState() {
       hasPKCE: localStorageKeys.length > 0 || sessionStorageKeys.length > 0,
       hasSupabaseAuth: supabaseKeys.length > 0,
       oauthProgress: !!oauthProgress,
-      oauthStartTime: oauthStartTime ? new Date(parseInt(oauthStartTime)).toISOString() : null
+      oauthStartTime: oauthStartTime ? new Date(parseInt(oauthStartTime)).toISOString() : null,
+      oauthMobile: oauthMobile === 'true',
+      browserInfo
     };
   } catch (error: any) {
     console.log('[AUTH DEBUG] ❌ Error checking PKCE state:', error);
@@ -111,6 +179,7 @@ export function checkPKCEState() {
 // Utility function to check authentication state with retry
 export async function checkAuthState() {
   try {
+    const browserInfo = getBrowserInfo();
     const { data, error } = await createClient().auth.getSession();
     console.log('[AUTH DEBUG] Current auth state:', {
       hasSession: !!data.session,
@@ -118,7 +187,8 @@ export async function checkAuthState() {
       userId: data.session?.user?.id,
       userEmail: data.session?.user?.email,
       sessionExpiresAt: data.session?.expires_at,
-      error: error?.message
+      error: error?.message,
+      browserInfo
     });
     return { data, error };
   } catch (error) {
@@ -129,39 +199,14 @@ export async function checkAuthState() {
 
 // Utility function to check if we're on a mobile device
 export function isMobileDevice() {
-  if (typeof window === 'undefined') return false;
-  
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone'];
-  
-  return mobileKeywords.some(keyword => userAgent.includes(keyword));
-}
-
-// Utility function to check browser type
-export function getBrowserInfo() {
-  if (typeof window === 'undefined') return { type: 'unknown', isMobile: false };
-  
-  const userAgent = window.navigator.userAgent;
-  const isMobile = isMobileDevice();
-  
-  let browserType = 'unknown';
-  if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
-    browserType = 'safari';
-  } else if (userAgent.includes('Chrome')) {
-    browserType = 'chrome';
-  } else if (userAgent.includes('Firefox')) {
-    browserType = 'firefox';
-  } else if (userAgent.includes('Edge')) {
-    browserType = 'edge';
-  }
-  
-  return { type: browserType, isMobile, userAgent };
+  return isMobileBrowser();
 }
 
 // Enhanced logger to spot state flips in dev
 if (typeof window !== 'undefined') {
+  const browserInfo = getBrowserInfo();
   console.log('[AUTH DEBUG] Setting up auth state change listener');
-  console.log('[AUTH DEBUG] Browser info:', getBrowserInfo());
+  console.log('[AUTH DEBUG] Browser info:', browserInfo);
 
   createClient().auth.onAuthStateChange((evt, sess) => {
     console.log('[AUTH DEBUG] 🔄 Auth state changed:', {
@@ -172,7 +217,7 @@ if (typeof window !== 'undefined') {
       userEmail: sess?.user?.email,
       sessionExpiresAt: sess?.expires_at,
       timestamp: new Date().toISOString(),
-      browserInfo: getBrowserInfo()
+      browserInfo
     });
     
     // Additional logging for specific events
@@ -195,7 +240,7 @@ if (typeof window !== 'undefined') {
       userId: data.session?.user?.id,
       error: error?.message,
       timestamp: new Date().toISOString(),
-      browserInfo: getBrowserInfo()
+      browserInfo
     });
   });
   
