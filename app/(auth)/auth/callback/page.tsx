@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/sb-client";
 
 function OAuthCallbackContent() {
   const router = useRouter();
@@ -12,8 +12,18 @@ function OAuthCallbackContent() {
   useEffect(() => {
     let finished = false;
     const sb = createClient();
+    
+    console.log('[AUTH DEBUG] callback: starting', { 
+      url: window.location.href,
+      searchParams: Object.fromEntries(sp.entries()),
+      timestamp: new Date().toISOString()
+    });
+
     const timeout = setTimeout(() => {
-      if (!finished) router.replace("/sign-in?error=timeout");
+      if (!finished) {
+        console.log('[AUTH DEBUG] callback: timeout reached');
+        router.replace("/sign-in?error=timeout");
+      }
     }, 15000);
 
     (async () => {
@@ -21,20 +31,46 @@ function OAuthCallbackContent() {
       const errorParam = sp.get("error");
       const next = sp.get("next") || "/dashboard";
 
-      if (errorParam) return router.replace("/sign-in?error=oauth_error");
-      if (!code) return router.replace("/sign-in?error=missing_code");
+      console.log('[AUTH DEBUG] callback: processing params', { 
+        hasCode: !!code, 
+        errorParam, 
+        next,
+        timestamp: new Date().toISOString()
+      });
+
+      if (errorParam) {
+        console.log('[AUTH DEBUG] callback: error param found', { errorParam });
+        return router.replace("/sign-in?error=oauth_error");
+      }
+      
+      if (!code) {
+        console.log('[AUTH DEBUG] callback: no code found');
+        return router.replace("/sign-in?error=missing_code");
+      }
 
       // IMPORTANT: Do NOT auto-relaunch Google if verifier is missing; stop with a clear error.
       const hasVerifier = (() => {
         try {
-          return !!localStorage.getItem("supabase.auth.token-code-verifier") ||
-                 Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
-        } catch { return false; }
+          const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
+          const hasPkceKeys = Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
+          console.log('[AUTH DEBUG] callback: verifier check', { 
+            hasVerifier: !!verifier, 
+            hasPkceKeys,
+            timestamp: new Date().toISOString()
+          });
+          return !!verifier || hasPkceKeys;
+        } catch (err) { 
+          console.log('[AUTH DEBUG] callback: verifier check failed', { error: err });
+          return false; 
+        }
       })();
+      
       if (!hasVerifier) {
+        console.log('[AUTH DEBUG] callback: missing verifier');
         return router.replace("/sign-in?error=missing_verifier");
       }
 
+      console.log('[AUTH DEBUG] callback: exchanging code for session');
       const { error } = await sb.auth.exchangeCodeForSession({
         queryParams: new URLSearchParams(window.location.search),
       });
@@ -47,13 +83,24 @@ function OAuthCallbackContent() {
         window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams}` : ""));
       } catch {}
 
-      if (error) return router.replace("/sign-in?error=exchange_failed");
+      if (error) {
+        console.log('[AUTH DEBUG] callback: exchange failed', { error: error.message });
+        return router.replace("/sign-in?error=exchange_failed");
+      }
 
+      console.log('[AUTH DEBUG] callback: getting session');
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) return router.replace("/sign-in?error=no_session");
+      if (!session) {
+        console.log('[AUTH DEBUG] callback: no session after exchange');
+        return router.replace("/sign-in?error=no_session");
+      }
 
+      console.log('[AUTH DEBUG] callback: success, redirecting to', { next, userId: session.user.id });
       router.replace(next);
-    })().finally(() => { finished = true; clearTimeout(timeout); });
+    })().finally(() => { 
+      finished = true; 
+      clearTimeout(timeout); 
+    });
   }, [router, sp]);
 
   return null;

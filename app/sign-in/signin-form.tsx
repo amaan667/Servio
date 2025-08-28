@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,12 +13,82 @@ import { signInWithGoogle } from '@/lib/auth/signin';
 
 export default function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const googleSignInInProgress = useRef(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+
+  // Handle error parameters from URL (e.g., from auth callback)
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      let errorMessage = 'Sign-in failed. Please try again.';
+      
+      switch (errorParam) {
+        case 'timeout':
+          errorMessage = 'Sign-in request timed out. Please try again.';
+          break;
+        case 'oauth_error':
+          errorMessage = 'OAuth authentication failed. Please try again.';
+          break;
+        case 'missing_code':
+          errorMessage = 'Authentication code is missing. Please try again.';
+          break;
+        case 'missing_verifier':
+          errorMessage = 'Authentication verifier is missing. Please try again.';
+          break;
+        case 'exchange_failed':
+          errorMessage = 'Failed to complete authentication. Please try again.';
+          break;
+        case 'no_session':
+          errorMessage = 'No session was created. Please try again.';
+          break;
+        default:
+          errorMessage = `Sign-in error: ${errorParam}`;
+      }
+      
+      setError(errorMessage);
+      setLoading(false); // Reset loading state when there's an error
+      googleSignInInProgress.current = false; // Reset the ref
+      
+      // Clear the error from URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('error');
+      window.history.replaceState({}, '', url.pathname + (url.search ? `?${url.searchParams}` : ''));
+    }
+  }, [searchParams]);
+
+  // Cleanup effect to reset the ref when component unmounts
+  useEffect(() => {
+    return () => {
+      googleSignInInProgress.current = false;
+    };
+  }, []);
+
+  // Debug effect to log current auth state
+  useEffect(() => {
+    const checkAuthState = async () => {
+      try {
+        const { createClient } = await import('@/lib/sb-client');
+        const { data, error } = await createClient().auth.getSession();
+        console.log('[AUTH DEBUG] SignInForm: current auth state', {
+          hasSession: !!data.session,
+          hasUser: !!data.session?.user,
+          userId: data.session?.user?.id,
+          error: error?.message,
+          timestamp: new Date().toISOString()
+        });
+      } catch (err) {
+        console.log('[AUTH DEBUG] SignInForm: error checking auth state', err);
+      }
+    };
+    
+    checkAuthState();
+  }, []);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,13 +113,21 @@ export default function SignInForm() {
   const handleGoogleSignIn = async () => {
     console.log('[AUTH DEBUG] Google sign-in button clicked');
     
+    // Prevent multiple simultaneous requests
+    if (googleSignInInProgress.current) {
+      console.log('[AUTH DEBUG] Google sign-in already in progress, ignoring click');
+      return;
+    }
+    
+    googleSignInInProgress.current = true;
     setLoading(true);
     setError(null);
     
     try {
       await signInWithGoogle();
       console.log('[AUTH DEBUG] Google sign-in initiated, redirect should happen automatically');
-      // The redirect will happen automatically
+      // The redirect will happen automatically via window.location.href in signInWithGoogle
+      // We don't reset loading here because the page will redirect
     } catch (err: any) {
       console.error('[AUTH DEBUG] Google sign-in failed:', err);
       
@@ -70,6 +148,7 @@ export default function SignInForm() {
       
       setError(errorMessage);
       setLoading(false);
+      googleSignInInProgress.current = false;
     }
   };
 
@@ -104,6 +183,107 @@ export default function SignInForm() {
             </svg>
             {loading ? 'Signing in...' : 'Sign in with Google'}
           </Button>
+
+          {/* Debug Button - Remove this in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={() => {
+                console.log('[AUTH DEBUG] Current URL:', window.location.href);
+                console.log('[AUTH DEBUG] Site origin:', window.location.origin);
+                console.log('[AUTH DEBUG] Redirect URL:', `${window.location.origin}/auth/callback`);
+                console.log('[AUTH DEBUG] LocalStorage keys:', Object.keys(localStorage));
+              }}
+              variant="outline"
+              className="w-full text-xs"
+            >
+              Debug OAuth Config
+            </Button>
+          )}
+
+          {/* Test Auth State Button - Remove this in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={async () => {
+                try {
+                  const { createClient, checkPKCEState, checkAuthState } = await import('@/lib/sb-client');
+                  console.log('[AUTH DEBUG] === Testing Auth State ===');
+                  console.log('[AUTH DEBUG] PKCE State:', checkPKCEState());
+                  console.log('[AUTH DEBUG] Auth State:', await checkAuthState());
+                  console.log('[AUTH DEBUG] Current session:', await createClient().auth.getSession());
+                } catch (err) {
+                  console.error('[AUTH DEBUG] Error testing auth state:', err);
+                }
+              }}
+              variant="outline"
+              className="w-full text-xs"
+            >
+              Test Auth State
+            </Button>
+          )}
+
+          {/* Clear Auth State Button - Remove this in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={async () => {
+                try {
+                  const { clearAuthStorage } = await import('@/lib/sb-client');
+                  console.log('[AUTH DEBUG] === Clearing Auth State ===');
+                  clearAuthStorage();
+                  console.log('[AUTH DEBUG] Auth state cleared, reloading page...');
+                  window.location.reload();
+                } catch (err) {
+                  console.error('[AUTH DEBUG] Error clearing auth state:', err);
+                }
+              }}
+              variant="outline"
+              className="w-full text-xs"
+            >
+              Clear Auth State
+            </Button>
+          )}
+
+          {/* Test OAuth URL Button - Remove this in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={async () => {
+                try {
+                  const { createClient } = await import('@/lib/sb-client');
+                  const { siteOrigin } = await import('@/lib/site');
+                  const sb = createClient();
+                  const redirectUrl = `${siteOrigin()}/auth/callback`;
+                  
+                  console.log('[AUTH DEBUG] === Testing OAuth URL ===');
+                  console.log('[AUTH DEBUG] Redirect URL:', redirectUrl);
+                  
+                  const { data, error } = await sb.auth.signInWithOAuth({
+                    provider: "google",
+                    options: {
+                      flowType: "pkce",
+                      redirectTo: redirectUrl,
+                    },
+                  });
+                  
+                  console.log('[AUTH DEBUG] OAuth URL test result:', {
+                    hasData: !!data,
+                    hasError: !!error,
+                    errorMessage: error?.message,
+                    url: data?.url,
+                    urlLength: data?.url?.length
+                  });
+                  
+                  if (data?.url) {
+                    console.log('[AUTH DEBUG] OAuth URL (first 100 chars):', data.url.substring(0, 100));
+                  }
+                } catch (err) {
+                  console.error('[AUTH DEBUG] Error testing OAuth URL:', err);
+                }
+              }}
+              variant="outline"
+              className="w-full text-xs"
+            >
+              Test OAuth URL
+            </Button>
+          )}
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">

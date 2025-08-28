@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/sb-client';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 function now() {
