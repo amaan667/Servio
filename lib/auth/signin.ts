@@ -89,10 +89,13 @@ async function handleGoogleCallback(authCode) {
   }
 
   // Exchange code + verifier for tokens (debug endpoint)
+  const payload = { code: authCode, verifier };
+  console.log('[OAuth Frontend] Sending payload:', payload);
+  
   const res = await fetch('/api/auth/google/callback', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: authCode, verifier })
+    body: JSON.stringify(payload)
   });
 
   let json: any = null;
