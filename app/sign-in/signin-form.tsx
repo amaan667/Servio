@@ -1,126 +1,127 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import SignInButton from './sign-in-button';
-import { clearCrossPlatformAuthState, checkCrossPlatformPKCEState, testCrossPlatformOAuthFlow } from '@/lib/auth/mobile-auth-utils';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RefreshCw } from 'lucide-react';
+import { signInUser } from '@/lib/supabase';
+import { signInWithGoogle } from '@/lib/auth/signin';
 
 export default function SignInForm() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-  const router = useRouter();
 
-  const handleSignIn = async () => {
-    setIsLoading(true);
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
+
+    if (!formData.email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!formData.password) {
+      setError('Please enter your password.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      // Clear any existing authentication state first
-      clearCrossPlatformAuthState();
-      
-      // Check initial PKCE state
-      const initialState = checkCrossPlatformPKCEState();
-      console.log('[SIGN-IN] Initial PKCE state:', initialState);
-      
-      // Import and call signInWithGoogle
-      const { signInWithGoogle } = await import('@/lib/auth/signin');
-      await signInWithGoogle();
+      const result = await signInUser(formData.email.trim(), formData.password);
+      if (!result.success) {
+        setError(result.message || 'Invalid email or password');
+      } else {
+        window.location.href = '/dashboard';
+      }
     } catch (err: any) {
-      console.error('[SIGN-IN] Error during sign-in:', err);
-      setError(err.message || 'Sign-in failed');
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleDebugAuth = async () => {
+  const handleGoogle = async () => {
     try {
-      const debugResult = await testCrossPlatformOAuthFlow();
-      setDebugInfo(debugResult);
-      console.log('[DEBUG] Cross-platform OAuth test result:', debugResult);
-    } catch (err) {
-      console.error('[DEBUG] Error during debug test:', err);
-      setError('Debug test failed');
-    }
-  };
-
-  const handleClearAuth = () => {
-    try {
-      const clearResult = clearCrossPlatformAuthState();
-      setDebugInfo(clearResult);
-      console.log('[DEBUG] Auth state cleared:', clearResult);
-    } catch (err) {
-      console.error('[DEBUG] Error clearing auth state:', err);
-      setError('Failed to clear auth state');
-    }
-  };
-
-  const handleCheckPKCE = () => {
-    try {
-      const pkceState = checkCrossPlatformPKCEState();
-      setDebugInfo(pkceState);
-      console.log('[DEBUG] PKCE state check:', pkceState);
-    } catch (err) {
-      console.error('[DEBUG] Error checking PKCE state:', err);
-      setError('Failed to check PKCE state');
+      setLoading(true);
+      setError(null);
+      await signInWithGoogle();
+      // Redirect handled by OAuth
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed. Please try again.');
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Sign In</h2>
-      
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-          {error}
-        </div>
-      )}
-      
-      <div className="space-y-4">
-        <button
-          onClick={handleSignIn}
-          disabled={isLoading}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isLoading ? 'Signing in...' : 'Sign in with Google'}
-        </button>
-        
-        {/* Debug tools for development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-6 p-4 bg-gray-100 rounded">
-            <h3 className="text-lg font-semibold mb-3">Debug Tools</h3>
-            <div className="space-y-2">
-              <button
-                onClick={handleDebugAuth}
-                className="w-full px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-              >
-                Test Cross-Platform OAuth
-              </button>
-              <button
-                onClick={handleCheckPKCE}
-                className="w-full px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-              >
-                Check PKCE State
-              </button>
-              <button
-                onClick={handleClearAuth}
-                className="w-full px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-              >
-                Clear Auth State
-              </button>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+          <CardDescription>Access your Servio account</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button onClick={handleGoogle} disabled={loading} className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
+            <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C35.64 2.09 30.18 0 24 0 14.82 0 6.44 5.48 2.69 13.44l7.98 6.2C12.13 13.09 17.62 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.36 46.1 31.45 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.09c-1.09-3.22-1.09-6.7 0-9.92l-7.98-6.2C.64 16.36 0 20.09 0 24s.64 7.64 2.69 11.03l7.98-6.2z"/><path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.98-5.6c-2.01 1.35-4.59 2.15-7.95 2.15-6.38 0-11.87-3.59-14.33-8.75l-7.98 6.2C6.44 42.52 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
+            {loading ? 'Signing in...' : 'Sign in with Google'}
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-500">Or continue with email</span>
             </div>
           </div>
-        )}
-        
-        {debugInfo && (
-          <div className="mt-4 p-3 bg-gray-100 rounded">
-            <h4 className="font-semibold mb-2">Debug Info:</h4>
-            <pre className="text-xs overflow-auto max-h-40">
-              {JSON.stringify(debugInfo, null, 2)}
-            </pre>
+
+          <form onSubmit={handleEmailSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="Enter your email"
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Enter your password"
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? (<><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Signing In...</>) : ('Sign In')}
+            </Button>
+          </form>
+
+          <div className="text-center text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link href="/sign-up" className="text-purple-600 hover:text-purple-500 font-medium">Sign up here</Link>
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

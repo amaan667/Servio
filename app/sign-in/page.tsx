@@ -1,22 +1,24 @@
-'use client';
-
-import { Suspense } from 'react';
-import SignInForm from './signin-form';
-
-// Disable static generation for this page
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default function SignInPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    }>
-      <SignInForm />
-    </Suspense>
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { createServerClient } from '@supabase/ssr';
+import SignInForm from './signin-form';
+
+export default async function SignInPage() {
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: {
+        get: n => cookieStore.get(n)?.value,
+        set: (n,v,o) => cookieStore.set({ name:n, value:v, ...o }),
+        remove: (n,o) => cookieStore.set({ name:n, value:'', ...o }),
+      } }
   );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect('/dashboard');
+  return <SignInForm />;
 }
