@@ -254,3 +254,159 @@ export async function retryMobilePKCEVerifier(maxRetries = 3, delay = 1000) {
   console.log('[MOBILE AUTH] PKCE verifier not found after', maxRetries, 'attempts');
   return { success: false, attempts: maxRetries };
 }
+
+// Test cross-platform OAuth flow and PKCE state
+export async function testCrossPlatformOAuthFlow() {
+  try {
+    const browserInfo = getMobileBrowserInfo();
+    const storageTest = testMobileStorage();
+    const pkceState = checkMobilePKCEState();
+    
+    // Test OAuth URL generation
+    const oauthTest = await testMobileOAuthURL();
+    
+    // Test storage clearing
+    const clearResult = clearMobileAuthState();
+    
+    // Test PKCE verifier retry mechanism
+    const retryResult = await retryMobilePKCEVerifier(3, 1000);
+    
+    return {
+      browserInfo,
+      storageTest,
+      pkceState,
+      oauthTest,
+      clearResult,
+      retryResult,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    return { error: error };
+  }
+}
+
+// Enhanced cross-platform PKCE state checking
+export function checkCrossPlatformPKCEState() {
+  try {
+    const browserInfo = getMobileBrowserInfo();
+    const storageTest = testMobileStorage();
+    
+    // Comprehensive PKCE verifier checking across all storage types
+    const verifierChecks = {
+      // Supabase PKCE verifier
+      supabaseVerifier: localStorage.getItem("supabase.auth.token-code-verifier"),
+      
+      // Custom PKCE verifier with fallback
+      customVerifier: (() => {
+        let verifier = sessionStorage.getItem('pkce_verifier');
+        if (!verifier) {
+          verifier = localStorage.getItem('pkce_verifier_backup');
+        }
+        return verifier;
+      })(),
+      
+      // All PKCE-related keys
+      localPkceKeys: Object.keys(localStorage).filter(k => 
+        k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier")
+      ),
+      sessionPkceKeys: Object.keys(sessionStorage).filter(k => 
+        k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier")
+      ),
+      
+      // Supabase auth keys
+      supabaseKeys: Object.keys(localStorage).filter(k => k.startsWith("sb-")),
+      
+      // OAuth progress flags
+      oauthProgress: sessionStorage.getItem("sb_oauth_in_progress"),
+      oauthStartTime: sessionStorage.getItem("sb_oauth_start_time"),
+      oauthMobile: sessionStorage.getItem("sb_oauth_mobile")
+    };
+    
+    // Cross-platform verifier validation
+    const hasAnyVerifier = !!(
+      verifierChecks.supabaseVerifier || 
+      verifierChecks.customVerifier || 
+      verifierChecks.localPkceKeys.length > 0 || 
+      verifierChecks.sessionPkceKeys.length > 0 ||
+      verifierChecks.supabaseKeys.length > 0
+    );
+    
+    // Platform-specific validation
+    const platformValidation = {
+      mobile: hasAnyVerifier, // Mobile is more lenient
+      desktop: !!(
+        verifierChecks.supabaseVerifier || 
+        verifierChecks.customVerifier || 
+        verifierChecks.localPkceKeys.length > 0
+      ) // Desktop requires more specific verifier presence
+    };
+    
+    return {
+      browserInfo,
+      storageTest,
+      verifierChecks,
+      hasAnyVerifier,
+      platformValidation,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    return { error: error };
+  }
+}
+
+// Force clear all cross-platform authentication state
+export function clearCrossPlatformAuthState() {
+  try {
+    const browserInfo = getMobileBrowserInfo();
+    console.log('[CROSS-PLATFORM AUTH] Clearing all authentication state', { browserInfo });
+    
+    // Clear all Supabase-related storage from localStorage
+    const localStorageKeys = Object.keys(localStorage).filter(k => 
+      k.startsWith("sb-") || 
+      k.includes("pkce") || 
+      k.includes("verifier") || 
+      k.includes("auth") ||
+      k.includes("code_verifier") ||
+      k.includes("token-code-verifier")
+    );
+    localStorageKeys.forEach(k => localStorage.removeItem(k));
+    
+    // Clear all authentication-related storage from sessionStorage
+    const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
+      k.startsWith("sb-") || 
+      k.includes("pkce") || 
+      k.includes("verifier") || 
+      k.includes("auth") ||
+      k.includes("code_verifier") ||
+      k.includes("token-code-verifier") ||
+      k.includes("oauth")
+    );
+    sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
+    
+    // Clear OAuth progress flags
+    sessionStorage.removeItem("sb_oauth_in_progress");
+    sessionStorage.removeItem("sb_oauth_start_time");
+    sessionStorage.removeItem("sb_oauth_mobile");
+    sessionStorage.removeItem("sb_oauth_retry");
+    
+    // Clear custom PKCE verifier from all locations
+    sessionStorage.removeItem('pkce_verifier');
+    localStorage.removeItem('pkce_verifier_backup');
+    
+    console.log('[CROSS-PLATFORM AUTH] Authentication state cleared', {
+      clearedLocalStorage: localStorageKeys,
+      clearedSessionStorage: sessionStorageKeys,
+      browserInfo
+    });
+    
+    return {
+      success: true,
+      clearedLocalStorage: localStorageKeys,
+      clearedSessionStorage: sessionStorageKeys,
+      browserInfo
+    };
+  } catch (error) {
+    console.error('[CROSS-PLATFORM AUTH] Error clearing authentication state:', error);
+    return { success: false, error: error };
+  }
+}

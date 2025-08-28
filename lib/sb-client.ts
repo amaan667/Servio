@@ -45,45 +45,81 @@ export function createClient() {
       { 
         isSingleton: true,
         auth: {
-          // Enhanced auth configuration for better mobile support
+          // Enhanced auth configuration for better cross-platform support
           autoRefreshToken: true,
           persistSession: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
-          // Enhanced cookie options for mobile browsers
+          // Enhanced cookie options for better cross-platform compatibility
           cookieOptions: {
             secure: process.env.NODE_ENV === 'production',
-            sameSite: browserInfo.isMobile ? 'lax' : 'lax', // Use 'lax' for better mobile compatibility
+            sameSite: 'lax', // Use 'lax' for better cross-platform compatibility
             path: '/',
-            // Mobile-specific cookie settings
-            ...(browserInfo.isMobile && {
-              // Some mobile browsers have issues with strict cookie settings
-              httpOnly: false,
-            })
+            // Cross-platform cookie settings
+            httpOnly: false, // Allow JavaScript access for better compatibility
+            maxAge: 60 * 60 * 24 * 7, // 7 days
           },
-          // Enhanced storage configuration for mobile
+          // Enhanced storage configuration with cross-platform error handling
           storage: {
-            // Use localStorage for better mobile compatibility
+            // Enhanced localStorage handling with retry logic
             getItem: (key: string) => {
               try {
-                return localStorage.getItem(key);
+                const value = localStorage.getItem(key);
+                if (value === null) {
+                  // Try sessionStorage as fallback for mobile
+                  const sessionValue = sessionStorage.getItem(key);
+                  if (sessionValue !== null) {
+                    console.log('[AUTH DEBUG] Fallback to sessionStorage for key:', key);
+                    return sessionValue;
+                  }
+                }
+                return value;
               } catch (error) {
-                console.log('[AUTH DEBUG] localStorage.getItem failed:', error);
-                return null;
+                console.log('[AUTH DEBUG] localStorage.getItem failed, trying sessionStorage:', error);
+                try {
+                  return sessionStorage.getItem(key);
+                } catch (sessionError) {
+                  console.log('[AUTH DEBUG] sessionStorage.getItem also failed:', sessionError);
+                  return null;
+                }
               }
             },
             setItem: (key: string, value: string) => {
               try {
                 localStorage.setItem(key, value);
+                // Also store in sessionStorage as backup for mobile
+                if (browserInfo.isMobile) {
+                  try {
+                    sessionStorage.setItem(key, value);
+                  } catch (sessionError) {
+                    console.log('[AUTH DEBUG] Failed to backup to sessionStorage:', sessionError);
+                  }
+                }
               } catch (error) {
-                console.log('[AUTH DEBUG] localStorage.setItem failed:', error);
+                console.log('[AUTH DEBUG] localStorage.setItem failed, trying sessionStorage:', error);
+                try {
+                  sessionStorage.setItem(key, value);
+                } catch (sessionError) {
+                  console.log('[AUTH DEBUG] sessionStorage.setItem also failed:', sessionError);
+                }
               }
             },
             removeItem: (key: string) => {
               try {
                 localStorage.removeItem(key);
+                // Also remove from sessionStorage
+                try {
+                  sessionStorage.removeItem(key);
+                } catch (sessionError) {
+                  console.log('[AUTH DEBUG] Failed to remove from sessionStorage:', sessionError);
+                }
               } catch (error) {
-                console.log('[AUTH DEBUG] localStorage.removeItem failed:', error);
+                console.log('[AUTH DEBUG] localStorage.removeItem failed, trying sessionStorage:', error);
+                try {
+                  sessionStorage.removeItem(key);
+                } catch (sessionError) {
+                  console.log('[AUTH DEBUG] sessionStorage.removeItem also failed:', sessionError);
+                }
               }
             },
           }
@@ -91,7 +127,7 @@ export function createClient() {
       }
     );
     
-    console.log('[AUTH DEBUG] Supabase client created with browser info:', browserInfo);
+    console.log('[AUTH DEBUG] Supabase client created with enhanced cross-platform support:', browserInfo);
   }
   return _client;
 }

@@ -76,27 +76,47 @@ export async function signInWithGoogle() {
   });
 
   try {
-    // Enhanced storage clearing for mobile browsers
+    // Enhanced storage clearing for cross-platform compatibility
     const clearedKeys: string[] = [];
     
-    // Clear localStorage with retry for mobile
+    // Clear localStorage with comprehensive key detection
     const localStorageKeys = Object.keys(localStorage).filter(k => 
-      k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier")
+      k.startsWith("sb-") || 
+      k.includes("pkce") || 
+      k.includes("token-code-verifier") || 
+      k.includes("code_verifier") ||
+      k.includes("auth") ||
+      k.includes("verifier")
     );
     localStorageKeys.forEach(k => {
       localStorage.removeItem(k);
-      clearedKeys.push(k);
+      clearedKeys.push(`local:${k}`);
     });
     
-    // Clear sessionStorage
-    sessionStorage.removeItem("sb_oauth_retry");
-    sessionStorage.removeItem("sb_oauth_in_progress");
-    sessionStorage.removeItem("sb_oauth_start_time");
+    // Clear sessionStorage with comprehensive key detection
+    const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
+      k.startsWith("sb-") || 
+      k.includes("pkce") || 
+      k.includes("token-code-verifier") || 
+      k.includes("code_verifier") ||
+      k.includes("auth") ||
+      k.includes("verifier") ||
+      k.includes("oauth")
+    );
+    sessionStorageKeys.forEach(k => {
+      sessionStorage.removeItem(k);
+      clearedKeys.push(`session:${k}`);
+    });
     
-    // Clear our custom PKCE verifier
+    // Clear our custom PKCE verifier from all locations
     clearPkceVerifier();
     
-    console.log('[AUTH DEBUG] signInWithGoogle: cleared keys', { clearedKeys, isMobile });
+    console.log('[AUTH DEBUG] signInWithGoogle: cleared keys', { 
+      clearedKeys, 
+      isMobile,
+      localStorageCount: localStorageKeys.length,
+      sessionStorageCount: sessionStorageKeys.length
+    });
 
     // Ensure we're starting with a clean state
     await sb.auth.signOut({ scope: 'local' });

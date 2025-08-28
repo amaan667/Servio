@@ -97,7 +97,7 @@ function OAuthCallbackContent() {
         return router.replace("/sign-in?error=missing_code");
       }
 
-      // Step 2: Enhanced PKCE verifier check with mobile-specific retry mechanism
+      // Step 2: Enhanced PKCE verifier check with cross-platform retry mechanism
       const checkVerifier = () => {
         try {
           console.log('[OAuth Frontend] callback: checking for PKCE verifier...', { isMobile });
@@ -111,30 +111,37 @@ function OAuthCallbackContent() {
             isMobile
           });
           
-          // Check for our custom PKCE verifier
+          // Check for our custom PKCE verifier with cross-platform fallback
           const customVerifier = getPkceVerifier();
-          console.log('[OAuth Frontend] callback: custom verifier from sessionStorage:', {
+          console.log('[OAuth Frontend] callback: custom verifier with fallback:', {
             hasCustomVerifier: !!customVerifier,
             customVerifierLength: customVerifier?.length,
             customVerifierPreview: customVerifier ? `${customVerifier.substring(0, 10)}...` : null,
             isMobile
           });
           
-          // Check for any PKCE-related keys
-          const allKeys = Object.keys(localStorage);
-          const pkceKeys = allKeys.filter(k => k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier"));
-          console.log('[OAuth Frontend] callback: all PKCE-related keys:', pkceKeys);
+          // Check for any PKCE-related keys in both storage types
+          const allLocalKeys = Object.keys(localStorage);
+          const allSessionKeys = Object.keys(sessionStorage);
+          
+          const localPkceKeys = allLocalKeys.filter(k => k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier"));
+          const sessionPkceKeys = allSessionKeys.filter(k => k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier"));
+          
+          console.log('[OAuth Frontend] callback: PKCE-related keys:', {
+            localPkceKeys,
+            sessionPkceKeys,
+            isMobile
+          });
           
           // Check for Supabase auth keys
-          const supabaseKeys = allKeys.filter(k => k.startsWith("sb-"));
+          const supabaseKeys = allLocalKeys.filter(k => k.startsWith("sb-"));
           console.log('[OAuth Frontend] callback: Supabase auth keys:', supabaseKeys);
           
           // Check for custom PKCE keys in sessionStorage
-          const sessionKeys = Object.keys(sessionStorage);
-          const customPkceKeys = sessionKeys.filter(k => k.includes("pkce_verifier"));
+          const customPkceKeys = allSessionKeys.filter(k => k.includes("pkce_verifier"));
           console.log('[OAuth Frontend] callback: custom PKCE keys in sessionStorage:', customPkceKeys);
           
-          const hasPkceKeys = pkceKeys.length > 0;
+          const hasPkceKeys = localPkceKeys.length > 0 || sessionPkceKeys.length > 0;
           const hasSupabaseAuth = supabaseKeys.length > 0;
           const hasCustomPkceKeys = customPkceKeys.length > 0;
           
@@ -148,14 +155,19 @@ function OAuthCallbackContent() {
             timestamp: new Date().toISOString()
           });
           
+          // Cross-platform verifier validation with fallback strategies
+          const hasAnyVerifier = !!verifier || !!customVerifier || hasPkceKeys || hasSupabaseAuth;
+          
           // On mobile, be more lenient with verifier checks
           if (isMobile) {
-            const hasAnyPkceData = !!verifier || !!customVerifier || hasPkceKeys || hasSupabaseAuth;
-            console.log('[OAuth Frontend] callback: mobile verifier check result', { hasAnyPkceData });
-            return hasAnyPkceData;
+            console.log('[OAuth Frontend] callback: mobile verifier check result', { hasAnyVerifier });
+            return hasAnyVerifier;
           }
           
-          return !!verifier || !!customVerifier || hasPkceKeys;
+          // On desktop, require more specific verifier presence
+          const hasSpecificVerifier = !!verifier || !!customVerifier || localPkceKeys.length > 0;
+          console.log('[OAuth Frontend] callback: desktop verifier check result', { hasSpecificVerifier });
+          return hasSpecificVerifier;
         } catch (err) { 
           console.log('[AUTH DEBUG] callback: verifier check failed', { error: err, isMobile });
           // On mobile, don't fail immediately if verifier check fails
