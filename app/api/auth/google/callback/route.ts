@@ -49,6 +49,10 @@ export async function POST(req: Request) {
     const code: string | undefined = body?.auth_code || body?.code;
     const verifier: string | undefined = body?.verifier;
 
+    // Add the suggested debugging logs
+    console.log("authCode typeof/value:", typeof code, code?.slice(0, 12), "...");
+    console.log("codeVerifier typeof/len:", typeof verifier, verifier?.length);
+
     console.log('[OAuth Backend] /api/auth/google/callback POST body', {
       hasCode: !!code,
       hasVerifier: !!verifier,
@@ -58,6 +62,17 @@ export async function POST(req: Request) {
     if (!code || !verifier) {
       console.error('[OAuth Backend] Missing code or verifier', { hasCode: !!code, hasVerifier: !!verifier });
       return NextResponse.json({ error: 'missing_code_or_verifier' }, { status: 400 });
+    }
+
+    // Validate that both code and verifier are strings
+    if (typeof code !== 'string') {
+      console.error('[OAuth Backend] Invalid code type', { type: typeof code });
+      return NextResponse.json({ error: 'invalid_code_type' }, { status: 400 });
+    }
+
+    if (typeof verifier !== 'string') {
+      console.error('[OAuth Backend] Invalid verifier type', { type: typeof verifier });
+      return NextResponse.json({ error: 'invalid_verifier_type' }, { status: 400 });
     }
 
     const clientId = trimEndingArtifacts(process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID);
