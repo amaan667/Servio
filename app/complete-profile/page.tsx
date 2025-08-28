@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/sb-client';
 import CompleteProfileForm from './form';
 
 export default function CompleteProfilePage() {
@@ -15,6 +14,9 @@ export default function CompleteProfilePage() {
     const checkUserAndVenues = async () => {
       try {
         console.log('[COMPLETE-PROFILE] Checking user session');
+        
+        // Dynamically import to avoid build-time issues
+        const { createClient } = await import('@/lib/sb-client');
         
         const { data: { user }, error: userErr } = await createClient().auth.getUser();
         console.log('[COMPLETE-PROFILE] Auth getUser result:', { 

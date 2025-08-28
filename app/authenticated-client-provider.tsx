@@ -80,6 +80,12 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   }, []);
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     console.log('[AUTH DEBUG] provider:mount', { t: now() });
 
     const getInitialSession = async () => {

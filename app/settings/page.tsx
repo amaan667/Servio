@@ -2,13 +2,16 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { createClient } from '@supabase/supabase-js';
 import SettingsClient from './SettingsClient.client';
 
 export default async function SettingsPage() {
-  const supabase = createServerSupabase();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
-  const { data: { user } } = await createClient().auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/sign-in');
 
   const { data: venues } = await supabase

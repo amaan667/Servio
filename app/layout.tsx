@@ -25,11 +25,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <ErrorBoundary>
           <Providers>
-            <AuthWrapper>
-              <AppHeader />
-              {children}
-              <ThemeToggleFloat />
-            </AuthWrapper>
+            <AppHeader />
+            {children}
+            <ThemeToggleFloat />
           </Providers>
         </ErrorBoundary>
       </body>
