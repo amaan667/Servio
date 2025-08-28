@@ -68,6 +68,9 @@ async function redirectToGoogleAuth() {
 
 // Step 3 – On redirect/callback from Google
 async function handleGoogleCallback(authCode) {
+  // Add the suggested debugging logs
+  console.log("authCode typeof/value:", typeof authCode, authCode?.slice(0, 12), "...");
+  
   if (!authCode) {
     console.error('[OAuth Frontend] Missing authorization code on callback');
     return;
@@ -81,10 +84,22 @@ async function handleGoogleCallback(authCode) {
   }
 
   const verifier = getPkceVerifier();
+  console.log("codeVerifier typeof/len:", typeof verifier, verifier?.length);
   console.log('[OAuth Frontend] Retrieved PKCE verifier before token exchange', { verifier: maskValue(verifier) });
 
   if (!verifier) {
     console.error('[OAuth Frontend] Error: No PKCE verifier found in storage');
+    return;
+  }
+
+  // Validate that both authCode and verifier are strings
+  if (typeof authCode !== 'string') {
+    console.error('[OAuth Frontend] Invalid authCode type', { type: typeof authCode });
+    return;
+  }
+
+  if (typeof verifier !== 'string') {
+    console.error('[OAuth Frontend] Invalid verifier type', { type: typeof verifier });
     return;
   }
 
