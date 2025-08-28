@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   
   try {
     const body = await req.json().catch(() => ({}));
-    const authCode: string | undefined = body?.auth_code;
+    const authCode: string | undefined = body?.code;
     const codeVerifier: string | undefined = body?.code_verifier;
 
     console.log('[Supabase PKCE] Request received', {
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     // Validate required parameters
     if (!authCode) {
-      console.error('[Supabase PKCE] Missing auth_code', { timestamp });
+      console.error('[Supabase PKCE] Missing code', { timestamp });
       return NextResponse.json({ error: 'missing_code' }, { status: 400 });
     }
 
@@ -43,8 +43,8 @@ export async function POST(req: Request) {
 
     // Validate parameter types
     if (typeof authCode !== 'string') {
-      console.error('[Supabase PKCE] Invalid auth_code type', { type: typeof authCode, timestamp });
-      return NextResponse.json({ error: 'invalid_auth_code_type' }, { status: 400 });
+      console.error('[Supabase PKCE] Invalid code type', { type: typeof authCode, timestamp });
+      return NextResponse.json({ error: 'invalid_code_type' }, { status: 400 });
     }
 
     if (typeof codeVerifier !== 'string') {
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
     // Prepare the payload exactly as Supabase expects it
     const payload = {
-      auth_code: authCode,
+      code: authCode,
       code_verifier: codeVerifier,
     };
 

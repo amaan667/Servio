@@ -171,7 +171,7 @@ function OAuthCallbackContent() {
         console.log('[OAuth Frontend] callback: Sending PKCE exchange request', {
           authCode: code ? `${code.substring(0, 10)}...` : null,
           codeVerifier: `${codeVerifier.substring(0, 10)}...`,
-          payloadShape: { auth_code: 'string', code_verifier: 'string' }
+          payloadShape: { code: 'string', code_verifier: 'string' }
         });
 
         // Call our custom Supabase PKCE endpoint
@@ -179,7 +179,7 @@ function OAuthCallbackContent() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            auth_code: code, 
+            code: code, 
             code_verifier: codeVerifier 
           })
         });
