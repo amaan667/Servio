@@ -19,7 +19,21 @@ export default function GlobalNav() {
   const supabase = createClient();
 
   // Ensure we don't show authenticated navigation while loading
-  const isAuthenticated = !loading && !!session?.user;
+  // Also add additional checks to ensure session is valid
+  const isAuthenticated = !loading && !!session?.user && !!session?.access_token;
+
+  // Debug logging for authentication state
+  useEffect(() => {
+    console.log('[NAV DEBUG] Authentication state changed:', {
+      loading,
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      hasAccessToken: !!session?.access_token,
+      userId: session?.user?.id,
+      isAuthenticated,
+      timestamp: new Date().toISOString()
+    });
+  }, [loading, session, isAuthenticated]);
 
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');
@@ -48,11 +62,18 @@ export default function GlobalNav() {
     };
 
     fetchPrimaryVenue();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, session?.user?.id]);
 
   const handleSignOut = async () => {
-    await createClient().auth.signOut();
-    router.replace('/sign-in');
+    try {
+      console.log('[NAV DEBUG] Signing out user');
+      await createClient().auth.signOut();
+      router.replace('/sign-in');
+    } catch (error) {
+      console.error('[NAV DEBUG] Error during sign out:', error);
+      // Force redirect even if sign out fails
+      router.replace('/sign-in');
+    }
   };
 
   return (
@@ -61,7 +82,7 @@ export default function GlobalNav() {
         <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href={session ? "/dashboard" : "/"} className="flex items-center group">
+            <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"

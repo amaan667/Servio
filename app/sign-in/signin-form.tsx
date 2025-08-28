@@ -22,6 +22,28 @@ export default function SignInForm() {
     password: '',
   });
 
+  // Clear any stale authentication state when the sign-in form loads
+  useEffect(() => {
+    const clearStaleAuth = async () => {
+      try {
+        console.log('[AUTH DEBUG] SignInForm: clearing stale authentication state');
+        const { createClient, clearAuthStorage } = await import('@/lib/sb-client');
+        
+        // Clear any existing session
+        await createClient().auth.signOut({ scope: 'local' });
+        
+        // Clear any PKCE artifacts
+        clearAuthStorage();
+        
+        console.log('[AUTH DEBUG] SignInForm: stale auth state cleared');
+      } catch (err) {
+        console.log('[AUTH DEBUG] SignInForm: error clearing stale auth state', err);
+      }
+    };
+    
+    clearStaleAuth();
+  }, []);
+
   // Handle error parameters from URL (e.g., from auth callback)
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -239,6 +261,27 @@ export default function SignInForm() {
               className="w-full text-xs"
             >
               Clear Auth State
+            </Button>
+          )}
+
+          {/* Force Clear Session Button - Remove this in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={async () => {
+                try {
+                  const { createClient } = await import('@/lib/sb-client');
+                  console.log('[AUTH DEBUG] === Force Clearing Session ===');
+                  await createClient().auth.signOut({ scope: 'local' });
+                  console.log('[AUTH DEBUG] Session cleared, reloading page...');
+                  window.location.reload();
+                } catch (err) {
+                  console.error('[AUTH DEBUG] Error clearing session:', err);
+                }
+              }}
+              variant="outline"
+              className="w-full text-xs"
+            >
+              Force Clear Session
             </Button>
           )}
 

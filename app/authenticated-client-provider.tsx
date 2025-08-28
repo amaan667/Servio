@@ -34,6 +34,39 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     });
   }, []);
 
+  // Validate session and clear if invalid
+  const validateAndUpdateSession = useCallback(async (session: Session | null) => {
+    if (!session) {
+      updateSession(null);
+      return;
+    }
+
+    // Check if session has required fields
+    if (!session.user?.id || !session.access_token) {
+      console.log('[AUTH DEBUG] provider:invalid session detected', {
+        hasUser: !!session.user,
+        hasUserId: !!session.user?.id,
+        hasAccessToken: !!session.access_token,
+        timestamp: now()
+      });
+      updateSession(null);
+      return;
+    }
+
+    // Check if session is expired
+    if (session.expires_at && new Date(session.expires_at * 1000) < new Date()) {
+      console.log('[AUTH DEBUG] provider:expired session detected', {
+        expiresAt: session.expires_at,
+        currentTime: Math.floor(Date.now() / 1000),
+        timestamp: now()
+      });
+      updateSession(null);
+      return;
+    }
+
+    updateSession(session);
+  }, [updateSession]);
+
   useEffect(() => {
     console.log('[AUTH DEBUG] provider:mount', { t: now() });
 
@@ -43,13 +76,13 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         const { data: { session }, error } = await createClient().auth.getSession();
         console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
         if (error) {
-          updateSession(null);
+          await validateAndUpdateSession(null);
         } else {
-          updateSession(session);
+          await validateAndUpdateSession(session);
         }
       } catch (err: any) {
         console.log('[AUTH DEBUG] provider:getSession:unexpected', { t: now(), message: err?.message });
-        updateSession(null);
+        await validateAndUpdateSession(null);
       } finally {
         setLoading(false);
       }
@@ -57,9 +90,9 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     getInitialSession();
 
-    const { data: { subscription } } = createClient().auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+    const { data: { subscription } } = createClient().auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
-      updateSession(session);
+      await validateAndUpdateSession(session);
       setLoading(false);
     });
 
@@ -67,7 +100,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       console.log('[AUTH DEBUG] provider:unmount', { t: now() });
       subscription.unsubscribe();
     };
-  }, [updateSession]);
+  }, [validateAndUpdateSession]);
 
   return (
     <AuthContext.Provider value={{ session, loading }}>

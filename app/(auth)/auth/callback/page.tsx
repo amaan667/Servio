@@ -48,16 +48,38 @@ function OAuthCallbackContent() {
         return router.replace("/sign-in?error=missing_code");
       }
 
-      // IMPORTANT: Do NOT auto-relaunch Google if verifier is missing; stop with a clear error.
+      // Enhanced PKCE verifier check with more detailed logging
       const hasVerifier = (() => {
         try {
+          console.log('[AUTH DEBUG] callback: checking for PKCE verifier...');
+          
+          // Check for the specific Supabase PKCE verifier
           const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
-          const hasPkceKeys = Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
-          console.log('[AUTH DEBUG] callback: verifier check', { 
+          console.log('[AUTH DEBUG] callback: verifier from localStorage:', {
+            hasVerifier: !!verifier,
+            verifierLength: verifier?.length,
+            verifierPreview: verifier ? `${verifier.substring(0, 10)}...` : null
+          });
+          
+          // Check for any PKCE-related keys
+          const allKeys = Object.keys(localStorage);
+          const pkceKeys = allKeys.filter(k => k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier"));
+          console.log('[AUTH DEBUG] callback: all PKCE-related keys:', pkceKeys);
+          
+          // Check for Supabase auth keys
+          const supabaseKeys = allKeys.filter(k => k.startsWith("sb-"));
+          console.log('[AUTH DEBUG] callback: Supabase auth keys:', supabaseKeys);
+          
+          const hasPkceKeys = pkceKeys.length > 0;
+          const hasSupabaseAuth = supabaseKeys.length > 0;
+          
+          console.log('[AUTH DEBUG] callback: verifier check summary', { 
             hasVerifier: !!verifier, 
             hasPkceKeys,
+            hasSupabaseAuth,
             timestamp: new Date().toISOString()
           });
+          
           return !!verifier || hasPkceKeys;
         } catch (err) { 
           console.log('[AUTH DEBUG] callback: verifier check failed', { error: err });
@@ -66,7 +88,7 @@ function OAuthCallbackContent() {
       })();
       
       if (!hasVerifier) {
-        console.log('[AUTH DEBUG] callback: missing verifier');
+        console.log('[AUTH DEBUG] callback: missing verifier - redirecting to sign-in with error');
         return router.replace("/sign-in?error=missing_verifier");
       }
 
