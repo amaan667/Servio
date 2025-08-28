@@ -16,6 +16,7 @@ export default function GlobalNav() {
   const { session, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const supabase = createClient();
 
   // Ensure we don't show authenticated navigation while loading
   const isAuthenticated = !loading && !!session?.user;
