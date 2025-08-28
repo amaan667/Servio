@@ -1,34 +1,51 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from "next/server";
 
-const PROD_BASE = 'https://servio-production.up.railway.app';
+const isAsset = (p: string) =>
+  p.startsWith("/_next/") ||
+  p.startsWith("/favicon") ||
+  /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$/.test(p);
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  
-  // Never intercept auth routes or URLs with code/error parameters
-  if (req.nextUrl.pathname.startsWith('/auth/') || 
-      req.nextUrl.searchParams.has('code') || 
-      req.nextUrl.searchParams.has('error')) {
-    return res;
+const AUTH_COOKIE_RE = /^sb-[a-z0-9]+-auth-token(?:\.\d+)?$/i;
+const PROTECTED = ["/dashboard"];
+
+export function middleware(req: NextRequest) {
+  const url = new URL(req.url);
+  const p = url.pathname;
+
+  // Always allow callback & any URL with ?code or ?error
+  if (
+    isAsset(p) ||
+    p.startsWith("/auth/callback") ||
+    p.startsWith("/api/auth/callback") ||
+    p.startsWith("/api/") ||
+    p.startsWith("/complete-profile") ||
+    p.startsWith("/sign-in") ||
+    p.startsWith("/sign-up") ||
+    p.startsWith("/order") ||
+    p.startsWith("/payment") ||
+    p.startsWith("/home") ||
+    p.startsWith("/generate-qr") ||
+    p.startsWith("/mobile-preview") ||
+    p.startsWith("/test-") ||
+    p.startsWith("/auth/") ||
+    url.searchParams.has("code") ||
+    url.searchParams.has("error")
+  ) {
+    return NextResponse.next();
   }
 
-  // Force https and the exact production host (only in production)
-  if (process.env.NODE_ENV === 'production') {
-    const isHttps = req.nextUrl.protocol === 'https:';
-    const host = req.headers.get('host');
+  const needsAuth = PROTECTED.some((pref) => p === pref || p.startsWith(pref + "/"));
+  if (!needsAuth) return NextResponse.next();
 
-    if (!isHttps || host !== 'servio-production.up.railway.app') {
-      const redirectUrl = new URL(req.nextUrl);
-      redirectUrl.protocol = 'https:';
-      redirectUrl.host = 'servio-production.up.railway.app';
-      return NextResponse.redirect(redirectUrl, 308);
-    }
+  const hasAuth = req.cookies.getAll().some((c) => AUTH_COOKIE_RE.test(c.name));
+  if (!hasAuth) {
+    const to = new URL("/sign-in", req.url);
+    to.searchParams.set("next", p);
+    return NextResponse.redirect(to);
   }
-
-  return res;
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!_next|favicon.ico|robots.txt|sitemap.xml).*)'],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$).*)"],
 };

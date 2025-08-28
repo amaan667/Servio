@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { signUpUser, signInWithGoogle } from '@/lib/supabase';
+import { signUpUser } from '@/lib/supabase';
+import { signInWithGoogle } from '@/lib/auth/signin';
 
 export default function SignUpForm() {
   const router = useRouter();

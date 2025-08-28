@@ -1,32 +1,13 @@
 'use client';
 
-import { createClient } from '@/lib/supabase/client';
-import { siteOrigin } from '@/lib/site';
+import { signInWithGoogle } from '@/lib/auth/signin';
 
 export default function SignInButton() {
   
   const onGoogle = async () => {
-    const supabase = createClient();
-    
-    // Clean stale PKCE state before starting
     try {
-      Object.keys(localStorage).forEach(k => {
-        if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier"))
-          localStorage.removeItem(k);
-      });
-      sessionStorage.removeItem("sb_oauth_retry");
-    } catch {}
-    
-    // Use the proper OAuth flow with PKCE
-    const { data, error } = await createClient().auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        flowType: "pkce",
-        redirectTo: `${siteOrigin()}/auth/callback`
-      }
-    });
-    
-    if (error) {
+      await signInWithGoogle();
+    } catch (error) {
       console.error('[AUTH DEBUG] OAuth error:', error);
     }
   };

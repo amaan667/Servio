@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { siteOrigin } from "@/lib/site";
 
 function OAuthCallbackContent() {
   const router = useRouter();
@@ -13,72 +12,46 @@ function OAuthCallbackContent() {
   useEffect(() => {
     let finished = false;
     const sb = createClient();
-
     const timeout = setTimeout(() => {
       if (!finished) router.replace("/sign-in?error=timeout");
     }, 15000);
 
     (async () => {
-      const err = sp.get("error");
       const code = sp.get("code");
+      const errorParam = sp.get("error");
       const next = sp.get("next") || "/dashboard";
 
-      if (err) return router.replace("/sign-in?error=oauth_error");
+      if (errorParam) return router.replace("/sign-in?error=oauth_error");
       if (!code) return router.replace("/sign-in?error=missing_code");
 
-      // One-time retry if PKCE verifier is missing locally
-      const retryKey = "sb_oauth_retry";
-      const retried = (() => { try { return sessionStorage.getItem(retryKey) === "1"; } catch { return false; } })();
+      // IMPORTANT: Do NOT auto-relaunch Google if verifier is missing; stop with a clear error.
       const hasVerifier = (() => {
         try {
-          return !!localStorage.getItem("supabase.auth.token-code-verifier")
-            || Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
+          return !!localStorage.getItem("supabase.auth.token-code-verifier") ||
+                 Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
         } catch { return false; }
       })();
-
-      if (!hasVerifier && !retried) {
-        try { sessionStorage.setItem(retryKey, "1"); } catch {}
-        await sb.auth.signInWithOAuth({
-          provider: "google",
-          options: { flowType: "pkce", redirectTo: `${siteOrigin()}/auth/callback` }
-        });
-        return; // navigates back to Google; no spinner UI here
+      if (!hasVerifier) {
+        return router.replace("/sign-in?error=missing_verifier");
       }
 
       const { error } = await sb.auth.exchangeCodeForSession({
         queryParams: new URLSearchParams(window.location.search),
       });
 
-      // Scrub query to avoid repeat exchange on refresh/back
+      // Scrub code/state to prevent repeat exchanges
       try {
         const url = new URL(window.location.href);
         url.searchParams.delete("code");
         url.searchParams.delete("state");
-        window.history.replaceState(
-          {},
-          "",
-          url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "")
-        );
+        window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams}` : ""));
       } catch {}
 
-      if (error) {
-        // Clean and fail gracefully
-        try {
-          Object.keys(localStorage).forEach((k) => {
-            if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier")) {
-              localStorage.removeItem(k);
-            }
-          });
-          sessionStorage.removeItem(retryKey);
-        } catch {}
-        router.replace("/sign-in?error=exchange_failed");
-        return;
-      }
+      if (error) return router.replace("/sign-in?error=exchange_failed");
 
       const { data: { session } } = await sb.auth.getSession();
       if (!session) return router.replace("/sign-in?error=no_session");
 
-      try { sessionStorage.removeItem(retryKey); } catch {}
       router.replace(next);
     })().finally(() => { finished = true; clearTimeout(timeout); });
   }, [router, sp]);

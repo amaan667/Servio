@@ -10,10 +10,10 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import {
-  supabase,
   type AuthSession,
   type OrderWithItems,
 } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 interface DebugPanelProps {
   session: AuthSession;
@@ -29,14 +29,8 @@ export function DashboardDebugPanel({ session }: DebugPanelProps) {
     setFetchError(null);
     setRawOrders(null);
 
-    if (!supabase) {
-      setFetchError("Supabase client not available.");
-      setIsFetching(false);
-      return;
-    }
-
     try {
-      const { data: venueData, error: venueError } = await supabase
+      const { data: venueData, error: venueError } = await createClient()
         .from("venues")
         .select("id")
         .eq("venue_id", session.venue.venue_id)
@@ -49,7 +43,7 @@ export function DashboardDebugPanel({ session }: DebugPanelProps) {
       }
 
       // This fetch uses the logged-in user's permissions, so it's a perfect test of RLS.
-      const { data, error } = await supabase
+      const { data, error } = await createClient()
         .from("orders")
         .select("*, order_items(*)")
         .eq("venue_id", venueData.id)

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { logger } from "@/lib/logger";
 
 export default function CompleteProfilePage() {
@@ -81,7 +81,7 @@ export default function CompleteProfilePage() {
       console.log("Creating/updating venue for user:", user.id);
       
       // First check if venue already exists
-      const { data: existingVenue, error: checkError } = await supabase
+      const { data: existingVenue, error: checkError } = await createClient()
         .from("venues")
         .select("*")
         .eq("owner_id", user.id)
@@ -90,7 +90,7 @@ export default function CompleteProfilePage() {
       if (existingVenue) {
         console.log("Updating existing venue:", existingVenue.venue_id);
         // Update existing venue
-        const { data: updatedVenue, error: updateError } = await supabase
+        const { data: updatedVenue, error: updateError } = await createClient()
           .from("venues")
           .update({
             name: formData.venueName,
@@ -114,7 +114,7 @@ export default function CompleteProfilePage() {
 
       console.log("Creating new venue:", venueId);
       // Create new venue
-      const { data: venue, error: venueError } = await supabase
+      const { data: venue, error: venueError } = await createClient()
         .from("venues")
         .insert({
           venue_id: venueId,
@@ -132,7 +132,7 @@ export default function CompleteProfilePage() {
         if (venueError.code === "23505") {
           // Unique constraint violation - venue already exists
           console.log("Venue already exists, updating instead");
-          const { data: existingVenue, error: fetchError } = await supabase
+          const { data: existingVenue, error: fetchError } = await createClient()
             .from("venues")
             .select("*")
             .eq("owner_id", user.id)
@@ -144,7 +144,7 @@ export default function CompleteProfilePage() {
           }
 
           // Update the existing venue
-          const { data: updatedVenue, error: updateError } = await supabase
+          const { data: updatedVenue, error: updateError } = await createClient()
             .from("venues")
             .update({
               name: formData.venueName,
