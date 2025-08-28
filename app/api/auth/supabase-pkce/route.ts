@@ -19,9 +19,11 @@ export async function POST(req: Request) {
   
   try {
     const body = await req.json().catch(() => ({}));
-    const authCode: string | undefined = body?.code;
-    const codeVerifier: string | undefined = body?.code_verifier;
-    const redirectUri: string | undefined = body?.redirect_uri;
+    
+    // Initialize variables properly
+    let authCode: string | undefined = body?.code;
+    let codeVerifier: string | undefined = body?.code_verifier;
+    let redirectUri: string | undefined = body?.redirect_uri;
 
     console.log('[Supabase PKCE] Request received', {
       hasAuthCode: !!authCode,
@@ -30,8 +32,35 @@ export async function POST(req: Request) {
       authCodeType: typeof authCode,
       codeVerifierType: typeof codeVerifier,
       redirectUriType: typeof redirectUri,
+      authCodeLength: authCode?.length,
+      codeVerifierLength: codeVerifier?.length,
       timestamp,
     });
+
+    // Enhanced validation: Check if variables are properly initialized
+    if (authCode === null || authCode === undefined) {
+      console.error('[Supabase PKCE] Auth code is null or undefined', { 
+        authCode, 
+        authCodeType: typeof authCode,
+        timestamp 
+      });
+      return NextResponse.json({ 
+        error: 'auth_code_not_initialized',
+        error_description: 'Authorization code was not properly initialized'
+      }, { status: 400 });
+    }
+
+    if (codeVerifier === null || codeVerifier === undefined) {
+      console.error('[Supabase PKCE] Code verifier is null or undefined', { 
+        codeVerifier, 
+        codeVerifierType: typeof codeVerifier,
+        timestamp 
+      });
+      return NextResponse.json({ 
+        error: 'code_verifier_not_initialized',
+        error_description: 'Code verifier was not properly initialized'
+      }, { status: 400 });
+    }
 
     // Validate required parameters
     if (!authCode) {
@@ -55,6 +84,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'invalid_code_verifier_type' }, { status: 400 });
     }
 
+    // Validate string lengths
+    if (authCode.length === 0) {
+      console.error('[Supabase PKCE] Empty auth code', { timestamp });
+      return NextResponse.json({ error: 'empty_auth_code' }, { status: 400 });
+    }
+
+    if (codeVerifier.length === 0) {
+      console.error('[Supabase PKCE] Empty code verifier', { timestamp });
+      return NextResponse.json({ error: 'empty_code_verifier' }, { status: 400 });
+    }
+
     // Validate redirect_uri type if provided
     if (redirectUri && typeof redirectUri !== 'string') {
       console.error('[Supabase PKCE] Invalid redirect_uri type', { type: typeof redirectUri, timestamp });
@@ -74,8 +114,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'missing_supabase_config' }, { status: 500 });
     }
 
-
-
     // Prepare the payload exactly as Supabase expects it
     const payload: any = {
       code: authCode,
@@ -92,6 +130,7 @@ export async function POST(req: Request) {
       codeVerifier: maskValue(codeVerifier),
       redirectUri: redirectUri ? maskValue(redirectUri) : { present: false },
       payloadKeys: Object.keys(payload),
+      payloadSize: JSON.stringify(payload).length,
       timestamp,
     });
 
