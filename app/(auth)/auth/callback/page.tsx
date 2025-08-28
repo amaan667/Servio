@@ -6,6 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/sb-client";
 import { getPkceVerifier } from '@/lib/auth/pkce-utils.js';
 
+// Enhanced mobile detection
+function isMobileBrowser() {
+  if (typeof window === 'undefined') return false;
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent);
+}
+
 function OAuthCallbackContent() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -13,16 +20,21 @@ function OAuthCallbackContent() {
   useEffect(() => {
     let finished = false;
     const sb = createClient();
+    const isMobile = isMobileBrowser();
     
     console.log('[OAuth Frontend] callback: starting', { 
       url: window.location.href,
       searchParams: Object.fromEntries(sp.entries()),
+      isMobile,
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
       timestamp: new Date().toISOString()
     });
 
+    // Enhanced timeout for mobile devices - they need more time for storage operations
+    const timeoutDuration = isMobile ? 30000 : 20000;
     const timeout = setTimeout(async () => {
       if (!finished) {
-        console.log('[OAuth Frontend] callback: timeout reached');
+        console.log('[OAuth Frontend] callback: timeout reached', { isMobile, timeoutDuration });
         try {
           await fetch('/api/auth/log', {
             method: 'POST',
@@ -31,13 +43,14 @@ function OAuthCallbackContent() {
               event: 'callback_timeout',
               url: window.location.href,
               searchParams: Object.fromEntries(sp.entries()),
+              isMobile,
               userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
             }),
           });
         } catch {}
         router.replace("/sign-in?error=timeout");
       }
-    }, 20000); // Increased timeout for mobile devices
+    }, timeoutDuration);
 
     (async () => {
       // Step 1: Get the authorization code from URL parameters
@@ -49,36 +62,53 @@ function OAuthCallbackContent() {
         hasCode: !!code, 
         errorParam, 
         next,
+        isMobile,
         timestamp: new Date().toISOString()
       });
 
       if (errorParam) {
-        console.log('[OAuth Frontend] callback: error param found', { errorParam });
+        console.log('[OAuth Frontend] callback: error param found', { errorParam, isMobile });
         try {
-          await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'oauth_error_param', errorParam }) });
+          await fetch('/api/auth/log', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+              event: 'oauth_error_param', 
+              errorParam,
+              isMobile 
+            }) 
+          });
         } catch {}
         return router.replace("/sign-in?error=oauth_error");
       }
       
       if (!code) {
-        console.log('[OAuth Frontend] callback: no code found');
+        console.log('[OAuth Frontend] callback: no code found', { isMobile });
         try {
-          await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'missing_code' }) });
+          await fetch('/api/auth/log', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+              event: 'missing_code',
+              isMobile 
+            }) 
+          });
         } catch {}
         return router.replace("/sign-in?error=missing_code");
       }
 
-      // Step 2: Enhanced PKCE verifier check with retry mechanism
+      // Step 2: Enhanced PKCE verifier check with mobile-specific retry mechanism
       const checkVerifier = () => {
         try {
-          console.log('[OAuth Frontend] callback: checking for PKCE verifier...');
+          console.log('[OAuth Frontend] callback: checking for PKCE verifier...', { isMobile });
           
           // Check for the specific Supabase PKCE verifier
           const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
           console.log('[OAuth Frontend] callback: verifier from localStorage:', {
             hasVerifier: !!verifier,
             verifierLength: verifier?.length,
-            verifierPreview: verifier ? `${verifier.substring(0, 10)}...` : null
+            verifierPreview: verifier ? `${verifier.substring(0, 10)}...` : null,
+            isMobile
           });
           
           // Check for our custom PKCE verifier
@@ -86,7 +116,8 @@ function OAuthCallbackContent() {
           console.log('[OAuth Frontend] callback: custom verifier from sessionStorage:', {
             hasCustomVerifier: !!customVerifier,
             customVerifierLength: customVerifier?.length,
-            customVerifierPreview: customVerifier ? `${customVerifier.substring(0, 10)}...` : null
+            customVerifierPreview: customVerifier ? `${customVerifier.substring(0, 10)}...` : null,
+            isMobile
           });
           
           // Check for any PKCE-related keys
@@ -113,34 +144,59 @@ function OAuthCallbackContent() {
             hasPkceKeys,
             hasCustomPkceKeys,
             hasSupabaseAuth,
+            isMobile,
             timestamp: new Date().toISOString()
           });
           
+          // On mobile, be more lenient with verifier checks
+          if (isMobile) {
+            const hasAnyPkceData = !!verifier || !!customVerifier || hasPkceKeys || hasSupabaseAuth;
+            console.log('[OAuth Frontend] callback: mobile verifier check result', { hasAnyPkceData });
+            return hasAnyPkceData;
+          }
+          
           return !!verifier || !!customVerifier || hasPkceKeys;
         } catch (err) { 
-          console.log('[AUTH DEBUG] callback: verifier check failed', { error: err });
-          return false; 
+          console.log('[AUTH DEBUG] callback: verifier check failed', { error: err, isMobile });
+          // On mobile, don't fail immediately if verifier check fails
+          return isMobile;
         }
       };
 
-      // Retry mechanism for mobile browsers that might have delayed storage
+      // Enhanced retry mechanism for mobile browsers
       let hasVerifier = checkVerifier();
       if (!hasVerifier) {
-        console.log('[OAuth Frontend] callback: verifier not found, retrying after delay...');
-        // Wait a bit for mobile browsers to sync storage
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('[OAuth Frontend] callback: verifier not found, retrying after delay...', { isMobile });
+        
+        // Mobile browsers need longer delays for storage sync
+        const retryDelay = isMobile ? 2000 : 1000;
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
         hasVerifier = checkVerifier();
+        
+        // On mobile, try one more time if still no verifier
+        if (!hasVerifier && isMobile) {
+          console.log('[OAuth Frontend] callback: second retry for mobile...');
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          hasVerifier = checkVerifier();
+        }
       }
       
       if (!hasVerifier) {
-        console.log('[OAuth Frontend] callback: missing verifier after retry - redirecting to sign-in with error');
+        console.log('[OAuth Frontend] callback: missing verifier after retry - redirecting to sign-in with error', { isMobile });
         try {
-          await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'missing_verifier_after_retry' }) });
+          await fetch('/api/auth/log', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+              event: 'missing_verifier_after_retry',
+              isMobile 
+            }) 
+          });
         } catch {}
         return router.replace("/sign-in?error=missing_verifier");
       }
 
-      console.log('[OAuth Frontend] callback: using Supabase exchangeCodeForSession');
+      console.log('[OAuth Frontend] callback: using Supabase exchangeCodeForSession', { isMobile });
       
       try {
         // Step 3: Use Supabase's built-in exchangeCodeForSession method
@@ -158,33 +214,67 @@ function OAuthCallbackContent() {
         } catch {}
 
         if (error) {
-          console.log('[OAuth Frontend] callback: Supabase exchange failed', { error: error.message });
+          console.log('[OAuth Frontend] callback: Supabase exchange failed', { 
+            error: error.message,
+            isMobile 
+          });
           try {
-            await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'supabase_exchange_failed', message: error.message }) });
+            await fetch('/api/auth/log', { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ 
+                event: 'supabase_exchange_failed', 
+                message: error.message,
+                isMobile 
+              }) 
+            });
           } catch {}
           return router.replace("/sign-in?error=exchange_failed");
         }
 
-        console.log('[OAuth Frontend] callback: getting session');
+        console.log('[OAuth Frontend] callback: getting session', { isMobile });
         const { data: { session } } = await sb.auth.getSession();
         if (!session) {
-          console.log('[OAuth Frontend] callback: no session after exchange');
+          console.log('[OAuth Frontend] callback: no session after exchange', { isMobile });
           try {
-            await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'no_session_after_exchange' }) });
+            await fetch('/api/auth/log', { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ 
+                event: 'no_session_after_exchange',
+                isMobile 
+              }) 
+            });
           } catch {}
           return router.replace("/sign-in?error=no_session");
         }
 
-        console.log('[OAuth Frontend] callback: success, redirecting to', { next, userId: session.user.id });
+        console.log('[OAuth Frontend] callback: success, redirecting to', { 
+          next, 
+          userId: session.user.id,
+          isMobile 
+        });
         
-        // Add a small delay for mobile browsers to ensure session is properly set
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Enhanced delay for mobile browsers to ensure session is properly set
+        const sessionDelay = isMobile ? 1000 : 500;
+        await new Promise(resolve => setTimeout(resolve, sessionDelay));
         
         router.replace(next);
       } catch (exchangeError: any) {
-        console.error('[OAuth Frontend] callback: unexpected error during exchange', exchangeError);
+        console.error('[OAuth Frontend] callback: unexpected error during exchange', { 
+          error: exchangeError,
+          isMobile 
+        });
         try {
-          await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'unexpected_exchange_error', message: String(exchangeError?.message || exchangeError) }) });
+          await fetch('/api/auth/log', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+              event: 'unexpected_exchange_error', 
+              message: String(exchangeError?.message || exchangeError),
+              isMobile 
+            }) 
+          });
         } catch {}
         return router.replace("/sign-in?error=exchange_failed");
       }
