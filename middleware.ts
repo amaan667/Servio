@@ -17,6 +17,17 @@ export function middleware(req: NextRequest) {
     isAsset(p) ||
     p.startsWith("/auth/callback") ||
     p.startsWith("/api/auth/callback") ||
+    p.startsWith("/api/") ||
+    p.startsWith("/complete-profile") ||
+    p.startsWith("/sign-in") ||
+    p.startsWith("/sign-up") ||
+    p.startsWith("/order") ||
+    p.startsWith("/payment") ||
+    p.startsWith("/home") ||
+    p.startsWith("/generate-qr") ||
+    p.startsWith("/mobile-preview") ||
+    p.startsWith("/test-") ||
+    p.startsWith("/auth/") ||
     url.searchParams.has("code") ||
     url.searchParams.has("error")
   ) {

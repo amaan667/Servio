@@ -39,12 +39,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession();
 
-    // Listen for auth changes
+    // Listen for auth changes - but only update user, not loading state
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('[AUTH DEBUG] AuthProvider: Auth state changed:', event, session?.user?.email);
         setUser(session?.user ?? null);
-        setLoading(false);
+        // Don't set loading to false here to avoid conflicts with AuthenticatedClientProvider
       }
     );
 

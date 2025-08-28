@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
@@ -19,6 +19,21 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const updateSession = useCallback((newSession: Session | null) => {
+    setSession(prevSession => {
+      // Only update if the session actually changed
+      if (prevSession?.user?.id !== newSession?.user?.id) {
+        console.log('[AUTH DEBUG] provider:session:changed', { 
+          t: now(), 
+          oldUserId: prevSession?.user?.id, 
+          newUserId: newSession?.user?.id 
+        });
+        return newSession;
+      }
+      return prevSession;
+    });
+  }, []);
+
   useEffect(() => {
     console.log('[AUTH DEBUG] provider:mount', { t: now() });
 
@@ -28,13 +43,13 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         const { data: { session }, error } = await createClient().auth.getSession();
         console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
         if (error) {
-          setSession(null);
+          updateSession(null);
         } else {
-          setSession(session);
+          updateSession(session);
         }
       } catch (err: any) {
         console.log('[AUTH DEBUG] provider:getSession:unexpected', { t: now(), message: err?.message });
-        setSession(null);
+        updateSession(null);
       } finally {
         setLoading(false);
       }
@@ -44,7 +59,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     const { data: { subscription } } = createClient().auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
-      setSession(session);
+      updateSession(session);
       setLoading(false);
     });
 
@@ -52,7 +67,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       console.log('[AUTH DEBUG] provider:unmount', { t: now() });
       subscription.unsubscribe();
     };
-  }, []);
+  }, [updateSession]);
 
   return (
     <AuthContext.Provider value={{ session, loading }}>
