@@ -155,10 +155,29 @@ export default function SignInForm() {
     } catch (err: any) {
       console.error('[AUTH DEBUG] Google sign-in failed:', err);
       
-      // Provide more specific error messages
+      // Enhanced error handling with PKCE-specific fallbacks
       let errorMessage = 'Google sign-in failed. Please try again.';
       
-      if (err?.message?.includes('popup')) {
+      if (err?.message?.includes('PKCE verifier not properly initialized')) {
+        errorMessage = 'Authentication setup failed. Please refresh the page and try again.';
+        
+        // Try to clear storage and retry once
+        try {
+          console.log('[AUTH DEBUG] Attempting PKCE recovery...');
+          const { clearAuthStorage } = await import('@/lib/sb-client');
+          clearAuthStorage();
+          
+          // Wait a moment and try again
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          console.log('[AUTH DEBUG] Retrying Google sign-in after PKCE recovery...');
+          await signInWithGoogle();
+          return; // Don't show error if retry succeeds
+        } catch (retryErr: any) {
+          console.error('[AUTH DEBUG] PKCE recovery failed:', retryErr);
+          errorMessage = 'Authentication setup failed. Please try clearing your browser cache and cookies, then try again.';
+        }
+      } else if (err?.message?.includes('popup')) {
         errorMessage = 'Pop-up blocked. Please allow pop-ups for this site and try again.';
       } else if (err?.message?.includes('network')) {
         errorMessage = 'Network error. Please check your connection and try again.';
@@ -316,6 +335,33 @@ export default function SignInForm() {
                 className="w-full text-xs"
               >
                 Test OAuth URL
+              </Button>
+
+              <Button
+                onClick={async () => {
+                  try {
+                    console.log('[AUTH DEBUG] === Manual PKCE Recovery ===');
+                    const { clearAuthStorage } = await import('@/lib/sb-client');
+                    
+                    // Clear all auth storage
+                    clearAuthStorage();
+                    
+                    // Force clear any existing session
+                    const { createClient } = await import('@/lib/sb-client');
+                    await createClient().auth.signOut({ scope: 'local' });
+                    
+                    console.log('[AUTH DEBUG] PKCE recovery completed, page will reload...');
+                    
+                    // Reload the page to start fresh
+                    window.location.reload();
+                  } catch (err) {
+                    console.error('[AUTH DEBUG] Error during PKCE recovery:', err);
+                  }
+                }}
+                variant="outline"
+                className="w-full text-xs"
+              >
+                Manual PKCE Recovery
               </Button>
             </>
           )}
