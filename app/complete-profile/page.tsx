@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -29,7 +30,7 @@ export default function CompleteProfilePage() {
         }
 
         console.log('[COMPLETE-PROFILE] Querying venues for user:', user.id);
-        const { data: venue, error: venueErr } = await supabase
+        const { data: venue, error: venueErr } = await createClient()
           .from('venues')
           .select('venue_id')
           .eq('owner_id', user.id)
