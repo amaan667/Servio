@@ -102,7 +102,7 @@ export async function signInWithGoogle() {
     await sb.auth.signOut({ scope: 'local' });
 
     // Enhanced delay for mobile browsers - they need more time for storage operations
-    const storageDelay = isMobile ? 500 : 100;
+    const storageDelay = isMobile ? 800 : 200; // Increased delay for mobile
     console.log('[AUTH DEBUG] signInWithGoogle: waiting for storage to clear', { delay: storageDelay, isMobile });
     await new Promise(resolve => setTimeout(resolve, storageDelay));
 
@@ -113,6 +113,15 @@ export async function signInWithGoogle() {
       
       if (!storageTest.localStorage || !storageTest.sessionStorage) {
         console.warn('[AUTH DEBUG] signInWithGoogle: storage sync issues detected on mobile');
+        // Try to recover by clearing storage again
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+          await new Promise(resolve => setTimeout(resolve, 500));
+          console.log('[AUTH DEBUG] signInWithGoogle: storage cleared again for mobile recovery');
+        } catch (error) {
+          console.error('[AUTH DEBUG] signInWithGoogle: failed to clear storage for mobile recovery', error);
+        }
       }
     }
 
@@ -193,11 +202,28 @@ export async function signInWithGoogle() {
       // On mobile, try one more time with a longer delay
       if (isMobile) {
         console.log('[AUTH DEBUG] signInWithGoogle: retrying verifier check on mobile after delay');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay
         
         const retryVerifier = localStorage.getItem("supabase.auth.token-code-verifier");
-        if (!retryVerifier) {
-          throw new Error('PKCE verifier not properly initialized on mobile device');
+        const retryPkceKeys = Object.keys(localStorage).filter(k => 
+          k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier")
+        );
+        
+        console.log('[AUTH DEBUG] signInWithGoogle: mobile retry verifier check', {
+          hasRetryVerifier: !!retryVerifier,
+          retryPkceKeys,
+          isMobile
+        });
+        
+        if (!retryVerifier && retryPkceKeys.length === 0) {
+          // Try one final recovery attempt
+          console.log('[AUTH DEBUG] signInWithGoogle: final mobile recovery attempt');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const finalVerifier = localStorage.getItem("supabase.auth.token-code-verifier");
+          if (!finalVerifier) {
+            throw new Error('PKCE verifier not properly initialized on mobile device after multiple attempts');
+          }
         }
       } else {
         throw new Error('PKCE verifier not properly initialized');

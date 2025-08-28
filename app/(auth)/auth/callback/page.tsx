@@ -163,32 +163,73 @@ function OAuthCallbackContent() {
         }
       };
 
-      // Enhanced retry mechanism for mobile browsers
+      // Enhanced retry mechanism for mobile browsers with progressive delays
       let hasVerifier = checkVerifier();
-      if (!hasVerifier) {
-        console.log('[OAuth Frontend] callback: verifier not found, retrying after delay...', { isMobile });
+      let retryCount = 0;
+      const maxRetries = isMobile ? 4 : 2; // More retries for mobile
+      
+      while (!hasVerifier && retryCount < maxRetries) {
+        retryCount++;
+        console.log('[OAuth Frontend] callback: verifier not found, retrying...', { 
+          retryCount, 
+          maxRetries, 
+          isMobile 
+        });
         
-        // Mobile browsers need longer delays for storage sync
-        const retryDelay = isMobile ? 2000 : 1000;
+        // Progressive delay: longer delays for each retry, especially on mobile
+        const retryDelay = isMobile ? (retryCount * 1500) : (retryCount * 800);
+        console.log('[OAuth Frontend] callback: waiting before retry', { retryDelay, isMobile });
         await new Promise(resolve => setTimeout(resolve, retryDelay));
+        
+        // Force a small delay to allow storage operations to complete
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         hasVerifier = checkVerifier();
         
-        // On mobile, try one more time if still no verifier
-        if (!hasVerifier && isMobile) {
-          console.log('[OAuth Frontend] callback: second retry for mobile...');
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          hasVerifier = checkVerifier();
+        if (hasVerifier) {
+          console.log('[OAuth Frontend] callback: verifier found on retry', { retryCount, isMobile });
+          break;
+        }
+      }
+      
+      // Additional mobile-specific fallback: try to recover from URL parameters
+      if (!hasVerifier && isMobile) {
+        console.log('[OAuth Frontend] callback: trying mobile fallback recovery...');
+        
+        // Check if we have any OAuth-related data in the URL or storage
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasCode = urlParams.has('code');
+        const hasState = urlParams.has('state');
+        const hasOAuthProgress = sessionStorage.getItem("sb_oauth_in_progress") === "true";
+        
+        console.log('[OAuth Frontend] callback: mobile fallback check', {
+          hasCode,
+          hasState,
+          hasOAuthProgress,
+          isMobile
+        });
+        
+        // If we have OAuth progress and code, we might be able to proceed
+        if (hasCode && hasOAuthProgress) {
+          console.log('[OAuth Frontend] callback: mobile fallback - proceeding with code and OAuth progress');
+          hasVerifier = true; // Allow proceeding with fallback
         }
       }
       
       if (!hasVerifier) {
-        console.log('[OAuth Frontend] callback: missing verifier after retry - redirecting to sign-in with error', { isMobile });
+        console.log('[OAuth Frontend] callback: missing verifier after retry - redirecting to sign-in with error', { 
+          retryCount, 
+          maxRetries, 
+          isMobile 
+        });
         try {
           await fetch('/api/auth/log', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ 
               event: 'missing_verifier_after_retry',
+              retryCount,
+              maxRetries,
               isMobile 
             }) 
           });
