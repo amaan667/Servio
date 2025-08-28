@@ -49,15 +49,16 @@ export async function POST(req: Request) {
     const code: string | undefined = body?.code;
     const verifier: string | undefined = body?.verifier;
 
-    console.log('[OAuth Backend] /api/auth/google/callback POST body', {
-      hasCode: !!code,
-      hasVerifier: !!verifier,
-      timestamp,
-    });
+    console.log('[AUTH LOG] received_code=%s, received_verifier=%s', code, verifier);
 
-    if (!code || !verifier) {
-      console.error('[OAuth Backend] Missing code or verifier', { hasCode: !!code, hasVerifier: !!verifier });
-      return NextResponse.json({ error: 'missing_code_or_verifier' }, { status: 400 });
+    if (!code) {
+      console.log('[AUTH LOG] missing_code');
+      return NextResponse.json({ error: 'missing_code' }, { status: 400 });
+    }
+
+    if (!verifier) {
+      console.log('[AUTH LOG] missing_verifier');
+      return NextResponse.json({ error: 'missing_verifier' }, { status: 400 });
     }
 
     const clientId = trimEndingArtifacts(process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID);
