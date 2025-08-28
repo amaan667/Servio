@@ -24,7 +24,7 @@ function OAuthCallbackContent() {
         console.log('[AUTH DEBUG] callback: timeout reached');
         router.replace("/sign-in?error=timeout");
       }
-    }, 20000); // Increased timeout for mobile devices
+    }, 30000); // Increased timeout for mobile devices
 
     (async () => {
       const code = sp.get("code");
@@ -48,7 +48,7 @@ function OAuthCallbackContent() {
         return router.replace("/sign-in?error=missing_code");
       }
 
-      // Enhanced PKCE verifier check with retry mechanism
+      // Enhanced PKCE verifier check with multiple retry attempts
       const checkVerifier = () => {
         try {
           console.log('[AUTH DEBUG] callback: checking for PKCE verifier...');
@@ -61,43 +61,55 @@ function OAuthCallbackContent() {
             verifierPreview: verifier ? `${verifier.substring(0, 10)}...` : null
           });
           
-          // Check for any PKCE-related keys
-          const allKeys = Object.keys(localStorage);
-          const pkceKeys = allKeys.filter(k => k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier"));
-          console.log('[AUTH DEBUG] callback: all PKCE-related keys:', pkceKeys);
+          // Check for any PKCE-related keys in localStorage
+          const allLocalKeys = Object.keys(localStorage);
+          const localPkceKeys = allLocalKeys.filter(k => k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier"));
+          console.log('[AUTH DEBUG] callback: localStorage PKCE-related keys:', localPkceKeys);
+          
+          // Check for any PKCE-related keys in sessionStorage
+          const allSessionKeys = Object.keys(sessionStorage);
+          const sessionPkceKeys = allSessionKeys.filter(k => k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier"));
+          console.log('[AUTH DEBUG] callback: sessionStorage PKCE-related keys:', sessionPkceKeys);
           
           // Check for Supabase auth keys
-          const supabaseKeys = allKeys.filter(k => k.startsWith("sb-"));
+          const supabaseKeys = allLocalKeys.filter(k => k.startsWith("sb-"));
           console.log('[AUTH DEBUG] callback: Supabase auth keys:', supabaseKeys);
           
-          const hasPkceKeys = pkceKeys.length > 0;
+          const hasVerifier = !!verifier;
+          const hasLocalPkceKeys = localPkceKeys.length > 0;
+          const hasSessionPkceKeys = sessionPkceKeys.length > 0;
           const hasSupabaseAuth = supabaseKeys.length > 0;
           
           console.log('[AUTH DEBUG] callback: verifier check summary', { 
-            hasVerifier: !!verifier, 
-            hasPkceKeys,
+            hasVerifier, 
+            hasLocalPkceKeys,
+            hasSessionPkceKeys,
             hasSupabaseAuth,
             timestamp: new Date().toISOString()
           });
           
-          return !!verifier || hasPkceKeys;
+          return hasVerifier || hasLocalPkceKeys || hasSessionPkceKeys || hasSupabaseAuth;
         } catch (err) { 
           console.log('[AUTH DEBUG] callback: verifier check failed', { error: err });
           return false; 
         }
       };
 
-      // Retry mechanism for mobile browsers that might have delayed storage
+      // Enhanced retry mechanism for mobile browsers
       let hasVerifier = checkVerifier();
-      if (!hasVerifier) {
-        console.log('[AUTH DEBUG] callback: verifier not found, retrying after delay...');
-        // Wait a bit for mobile browsers to sync storage
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      let retryCount = 0;
+      const maxRetries = 5;
+      
+      while (!hasVerifier && retryCount < maxRetries) {
+        console.log(`[AUTH DEBUG] callback: verifier not found, retry ${retryCount + 1}/${maxRetries}...`);
+        // Wait progressively longer for mobile browsers to sync storage
+        await new Promise(resolve => setTimeout(resolve, 1000 + (retryCount * 500)));
         hasVerifier = checkVerifier();
+        retryCount++;
       }
       
       if (!hasVerifier) {
-        console.log('[AUTH DEBUG] callback: missing verifier after retry - redirecting to sign-in with error');
+        console.log('[AUTH DEBUG] callback: missing verifier after all retries - redirecting to sign-in with error');
         return router.replace("/sign-in?error=missing_verifier");
       }
 
@@ -130,8 +142,12 @@ function OAuthCallbackContent() {
 
         console.log('[AUTH DEBUG] callback: success, redirecting to', { next, userId: session.user.id });
         
-        // Add a small delay for mobile browsers to ensure session is properly set
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Add a longer delay for mobile browsers to ensure session is properly set
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Clear OAuth progress flags
+        sessionStorage.removeItem("sb_oauth_in_progress");
+        sessionStorage.removeItem("sb_oauth_start_time");
         
         router.replace(next);
       } catch (exchangeError: any) {

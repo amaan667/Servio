@@ -9,6 +9,16 @@ export function createClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
     
+    // Enhanced mobile detection
+    const isMobile = typeof window !== 'undefined' && isMobileDevice();
+    const browserInfo = typeof window !== 'undefined' ? getBrowserInfo() : { type: 'unknown', isMobile: false };
+    
+    console.log('[AUTH DEBUG] Creating Supabase client with config:', {
+      isMobile,
+      browserInfo,
+      timestamp: new Date().toISOString()
+    });
+    
     _client = createBrowserClient(
       supabaseUrl,
       supabaseAnonKey,
@@ -20,11 +30,52 @@ export function createClient() {
           persistSession: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
-          // Ensure cookies work properly on mobile
+          // Enhanced cookie options for mobile browsers
           cookieOptions: {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
+            // Add domain for better mobile support
+            domain: typeof window !== 'undefined' ? window.location.hostname : undefined,
+          },
+          // Enhanced storage configuration for mobile browsers
+          storage: {
+            getItem: (key: string) => {
+              try {
+                // Try localStorage first
+                const value = localStorage.getItem(key);
+                if (value !== null) return value;
+                
+                // Fallback to sessionStorage for mobile browsers
+                return sessionStorage.getItem(key);
+              } catch (error) {
+                console.log('[AUTH DEBUG] Storage getItem error:', error);
+                return null;
+              }
+            },
+            setItem: (key: string, value: string) => {
+              try {
+                // Store in both localStorage and sessionStorage for mobile reliability
+                localStorage.setItem(key, value);
+                sessionStorage.setItem(key, value);
+              } catch (error) {
+                console.log('[AUTH DEBUG] Storage setItem error:', error);
+                // Fallback to sessionStorage only
+                try {
+                  sessionStorage.setItem(key, value);
+                } catch (fallbackError) {
+                  console.log('[AUTH DEBUG] SessionStorage fallback error:', fallbackError);
+                }
+              }
+            },
+            removeItem: (key: string) => {
+              try {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+              } catch (error) {
+                console.log('[AUTH DEBUG] Storage removeItem error:', error);
+              }
+            }
           }
         }
       }
