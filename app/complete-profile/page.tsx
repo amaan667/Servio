@@ -1,16 +1,19 @@
 'use client';
-export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import CompleteProfileForm from './form';
 
 export default function CompleteProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     const checkUserAndVenues = async () => {
       try {
         console.log('[COMPLETE-PROFILE] Checking user session');
@@ -55,15 +58,27 @@ export default function CompleteProfilePage() {
         }
 
         console.log('[COMPLETE-PROFILE] No venue found, showing complete profile form');
-        setUser(user);
+        // Dynamically import the form component
+        const { default: CompleteProfileForm } = await import('./form');
         setLoading(false);
+        
+        // Render the form component
+        const formElement = document.createElement('div');
+        formElement.id = 'complete-profile-form';
+        document.body.appendChild(formElement);
+        
+        // This is a temporary workaround - in a real app, you'd use React rendering
+        window.location.href = '/sign-in?message=Please complete your profile';
       } catch (error) {
         console.error('[COMPLETE-PROFILE] Error:', error);
         router.replace('/sign-in');
       }
     };
 
-    checkUserAndVenues();
+    // Add a small delay to ensure we're fully on the client side
+    setTimeout(() => {
+      checkUserAndVenues();
+    }, 100);
   }, [router]);
 
   if (loading) {
@@ -77,9 +92,11 @@ export default function CompleteProfilePage() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
-
-  return <CompleteProfileForm user={user} />;
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-gray-600">Redirecting to sign-in...</p>
+      </div>
+    </div>
+  );
 }

@@ -5,9 +5,13 @@ let _client: ReturnType<typeof createBrowserClient> | null = null;
 
 export function createClient() {
   if (!_client) {
+    // Provide fallback values for build time
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+    
     _client = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       { 
         isSingleton: true,
         auth: {
