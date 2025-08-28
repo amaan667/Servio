@@ -1,7 +1,7 @@
 "use client";
 import { createClient } from "@/lib/sb-client";
 import { siteOrigin } from "@/lib/site";
-import { generateCodeVerifier, generateCodeChallenge, storePkceVerifier, getPkceVerifier, clearPkceVerifier } from './pkce-utils.js';
+import { clearPkceVerifier } from './pkce-utils.js';
 
 function maskValue(value: string | null | undefined, opts: { prefix?: number; suffix?: number } = {}) {
   if (!value) return { present: false };
@@ -28,55 +28,6 @@ function sanitizeUrlMaskClientId(urlString: string | null | undefined) {
     return { url: urlString };
   }
 }
-
-// Step 1 – Generate PKCE verifier and challenge
-async function initPkceFlow() {
-  const verifier = generateCodeVerifier();
-  const challenge = await generateCodeChallenge(verifier);
-
-  // Store in session storage for later
-  storePkceVerifier(verifier);
-
-  console.log('[OAuth Frontend] PKCE generated', {
-    verifier: maskValue(verifier),
-    challenge: maskValue(challenge),
-    timestamp: new Date().toISOString(),
-  });
-
-  return challenge;
-}
-
-// Step 2 – Before redirecting to Google
-async function redirectToGoogleAuth() {
-  const challenge = await initPkceFlow();
-
-  const params = new URLSearchParams({
-    // Use the Google OAuth Client ID, not the Supabase anon key
-    client_id: (process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID || ''),
-    redirect_uri: `${siteOrigin()}/auth/callback`,
-    response_type: 'code',
-    scope: 'openid email profile',
-    code_challenge: challenge,
-    code_challenge_method: 'S256'
-  });
-
-  const fullUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
-  const sanitized = sanitizeUrlMaskClientId(fullUrl);
-  console.log('[OAuth Frontend] Google OAuth URL (sanitized client_id)', { url: sanitized.url });
-  window.location = fullUrl as any;
-}
-
-// Step 3 – On redirect/callback from Google
-// This function is no longer needed as we're using Supabase's built-in PKCE flow
-// The exchangeCodeForSession method in the callback page handles the token exchange
-async function handleGoogleCallback(authCode) {
-  console.log('[OAuth Frontend] Custom Google callback handler called - this should not be used with Supabase PKCE flow');
-  console.log('[OAuth Frontend] Supabase will handle the PKCE exchange automatically');
-  return;
-}
-
-// Export the callback handler for use in the callback page (deprecated)
-export { handleGoogleCallback };
 
 export async function signInWithGoogle() {
   const sb = createClient();
@@ -114,14 +65,8 @@ export async function signInWithGoogle() {
     // Wait a moment for storage to clear, especially important for mobile browsers
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Initialize PKCE flow for debugging
-    console.log('[OAuth Frontend] About to initialize PKCE flow');
-    try {
-      const challenge = await initPkceFlow();
-      console.log('[OAuth Frontend] PKCE flow initialized successfully', { challengeLength: challenge.length });
-    } catch (pkceError) {
-      console.error('[OAuth Frontend] Failed to initialize PKCE flow', pkceError);
-    }
+    // Use Supabase's built-in PKCE flow - no need for custom PKCE initialization
+    console.log('[OAuth Frontend] Using Supabase built-in PKCE flow');
 
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
@@ -156,7 +101,7 @@ export async function signInWithGoogle() {
     const verifierCheck = (() => {
       try {
         const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
-        const customVerifier = getPkceVerifier();
+        const customVerifier = sessionStorage.getItem('pkce_verifier');
         const hasPkceKeys = Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
         const hasCustomPkceKey = Object.keys(sessionStorage).some(k => k.includes("pkce_verifier"));
         
