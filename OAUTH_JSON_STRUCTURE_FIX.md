@@ -11,7 +11,7 @@ cannot unmarshal object into Go struct field PKCEGrantParams.auth_code of type s
 ## Current Frontend Payload (Correct)
 ```json
 {
-  "code": "AUTH_CODE_FROM_GOOGLE",
+  "auth_code": "AUTH_CODE_FROM_GOOGLE",
   "verifier": "PKCE_VERIFIER_STRING"
 }
 ```
@@ -35,7 +35,7 @@ cannot unmarshal object into Go struct field PKCEGrantParams.auth_code of type s
 ```go
 // PKCEGrantParams matches the flat JSON structure sent by the frontend
 type PKCEGrantParams struct {
-    Code     string `json:"code"`
+    AuthCode string `json:"auth_code"`
     Verifier string `json:"verifier"`
 }
 ```
@@ -66,13 +66,13 @@ if params.Verifier == "" {
 **File**: `lib/auth/signin.ts` (line 95)
 
 ```javascript
-const payload = { code: authCode, verifier };
+const payload = { auth_code: authCode, verifier };
 console.log('[OAuth Frontend] Sending payload:', payload);
 ```
 
 ## Expected OAuth Flow
 
-1. **Frontend logs**: `[OAuth Frontend] Sending payload: { code: "...", verifier: "..." }`
+1. **Frontend logs**: `[OAuth Frontend] Sending payload: { auth_code: "...", verifier: "..." }`
 2. **Go backend logs**: `[AUTH LOG] received_code=..., received_verifier=...`
 3. **If code is missing**: `[AUTH LOG] missing_code`
 4. **If verifier is missing**: `[AUTH LOG] missing_verifier`

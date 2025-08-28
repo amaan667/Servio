@@ -92,7 +92,7 @@ async function handleGoogleCallback(authCode) {
   const res = await fetch('/api/auth/google/callback', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: authCode, verifier })
+    body: JSON.stringify({ auth_code: authCode, verifier })
   });
 
   let json: any = null;
