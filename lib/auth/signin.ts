@@ -51,7 +51,8 @@ async function redirectToGoogleAuth() {
   const challenge = await initPkceFlow();
 
   const params = new URLSearchParams({
-    client_id: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+    // Use the Google OAuth Client ID, not the Supabase anon key
+    client_id: (process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID || ''),
     redirect_uri: `${siteOrigin()}/auth/callback`,
     response_type: 'code',
     scope: 'openid email profile',
@@ -69,6 +70,13 @@ async function redirectToGoogleAuth() {
 async function handleGoogleCallback(authCode) {
   if (!authCode) {
     console.error('[OAuth Frontend] Missing authorization code on callback');
+    return;
+  }
+
+  // Only run the debug token exchange if a Google Client ID is configured client-side
+  const googleClientId = (process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID || '').trim();
+  if (!googleClientId) {
+    console.log('[OAuth Frontend] Skipping server token exchange debug (NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID not set)');
     return;
   }
 

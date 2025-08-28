@@ -3,6 +3,27 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const revalidate = false;
 
+function trimEndingArtifacts(value: string | undefined | null) {
+  if (!value) return '';
+  return value.trim().replace(/[;\s]+$/g, '');
+}
+
+function sanitizeRedirectUri(rawRedirectUri: string | undefined, reqUrl: string) {
+  const cleaned = trimEndingArtifacts(rawRedirectUri || '');
+  if (cleaned) {
+    try {
+      const u = new URL(cleaned);
+      // Return fully-qualified URL with any trailing artifacts removed
+      return u.toString().replace(/[;\s]+$/g, '');
+    } catch (_) {
+      // Fall through to origin-based construction
+    }
+  }
+  // Fallback: build from request origin
+  const origin = new URL(reqUrl).origin;
+  return `${origin}/auth/callback`;
+}
+
 function mask(value: string | null | undefined, prefix = 6, suffix = 4) {
   if (!value) return { present: false };
   const len = value.length;
@@ -39,9 +60,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'missing_code_or_verifier' }, { status: 400 });
     }
 
-    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI || `${process.env.NEXT_PUBLIC_SITE_URL || ''}/auth/callback`;
+    const clientId = trimEndingArtifacts(process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID);
+    const clientSecret = trimEndingArtifacts(process.env.GOOGLE_OAUTH_CLIENT_SECRET);
+    const redirectUri = sanitizeRedirectUri(
+      process.env.GOOGLE_OAUTH_REDIRECT_URI ||
+        (process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` : ''),
+      req.url
+    );
 
     const tokenUrl = 'https://oauth2.googleapis.com/token';
 
@@ -49,7 +74,23 @@ export async function POST(req: Request) {
     payload.set('grant_type', 'authorization_code');
     payload.set('code', code);
     payload.set('redirect_uri', redirectUri || '');
-    payload.set('client_id', clientId || '');
+    // Guard against missing client_id to avoid confusing Google errors
+    if (!clientId) {
+      console.error('[OAuth Backend] Missing GOOGLE_OAUTH_CLIENT_ID configuration', {
+        timestamp,
+        envs: {
+          GOOGLE_OAUTH_CLIENT_ID: !!process.env.GOOGLE_OAUTH_CLIENT_ID,
+          NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: !!process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID,
+          GOOGLE_OAUTH_REDIRECT_URI: !!process.env.GOOGLE_OAUTH_REDIRECT_URI,
+          NEXT_PUBLIC_SITE_URL: !!process.env.NEXT_PUBLIC_SITE_URL,
+        },
+      });
+      return NextResponse.json(
+        { error: 'missing_client_id_config', error_description: 'GOOGLE_OAUTH_CLIENT_ID (or NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID) is not set on the server.' },
+        { status: 400 }
+      );
+    }
+    payload.set('client_id', clientId);
     payload.set('code_verifier', verifier);
     if (clientSecret) {
       payload.set('client_secret', clientSecret);
