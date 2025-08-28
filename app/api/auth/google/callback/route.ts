@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   const timestamp = new Date().toISOString();
   try {
     const body = await req.json().catch(() => ({}));
-    const code: string | undefined = body?.code;
+    const code: string | undefined = body?.auth_code || body?.code;
     const verifier: string | undefined = body?.verifier;
 
     console.log('[OAuth Backend] /api/auth/google/callback POST body', {
