@@ -21,9 +21,21 @@ function OAuthCallbackContent() {
       timestamp: new Date().toISOString()
     });
 
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(async () => {
       if (!finished) {
         console.log('[OAuth Frontend] callback: timeout reached');
+        try {
+          await fetch('/api/auth/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'callback_timeout',
+              url: window.location.href,
+              searchParams: Object.fromEntries(sp.entries()),
+              userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
+            }),
+          });
+        } catch {}
         router.replace("/sign-in?error=timeout");
       }
     }, 20000); // Increased timeout for mobile devices
@@ -42,11 +54,17 @@ function OAuthCallbackContent() {
 
       if (errorParam) {
         console.log('[OAuth Frontend] callback: error param found', { errorParam });
+        try {
+          await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'oauth_error_param', errorParam }) });
+        } catch {}
         return router.replace("/sign-in?error=oauth_error");
       }
       
       if (!code) {
         console.log('[OAuth Frontend] callback: no code found');
+        try {
+          await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'missing_code' }) });
+        } catch {}
         return router.replace("/sign-in?error=missing_code");
       }
 
@@ -60,6 +78,9 @@ function OAuthCallbackContent() {
         console.log('[OAuth Frontend] callback: custom PKCE handler completed');
       } catch (pkceError) {
         console.error('[OAuth Frontend] callback: custom PKCE handler failed:', pkceError);
+        try {
+          await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'pkce_handler_failed', message: String(pkceError?.message || pkceError) }) });
+        } catch {}
       }
 
       // Enhanced PKCE verifier check with retry mechanism
@@ -128,6 +149,9 @@ function OAuthCallbackContent() {
       
       if (!hasVerifier) {
         console.log('[OAuth Frontend] callback: missing verifier after retry - redirecting to sign-in with error');
+        try {
+          await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'missing_verifier_after_retry' }) });
+        } catch {}
         return router.replace("/sign-in?error=missing_verifier");
       }
 
@@ -148,6 +172,9 @@ function OAuthCallbackContent() {
 
         if (error) {
           console.log('[OAuth Frontend] callback: exchange failed', { error: error.message });
+          try {
+            await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'exchange_failed', message: error.message }) });
+          } catch {}
           return router.replace("/sign-in?error=exchange_failed");
         }
 
@@ -155,6 +182,9 @@ function OAuthCallbackContent() {
         const { data: { session } } = await sb.auth.getSession();
         if (!session) {
           console.log('[OAuth Frontend] callback: no session after exchange');
+          try {
+            await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'no_session_after_exchange' }) });
+          } catch {}
           return router.replace("/sign-in?error=no_session");
         }
 
@@ -166,6 +196,9 @@ function OAuthCallbackContent() {
         router.replace(next);
       } catch (exchangeError: any) {
         console.error('[OAuth Frontend] callback: unexpected error during exchange', exchangeError);
+        try {
+          await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'unexpected_exchange_error', message: String(exchangeError?.message || exchangeError) }) });
+        } catch {}
         return router.replace("/sign-in?error=exchange_failed");
       }
     })().finally(() => { 

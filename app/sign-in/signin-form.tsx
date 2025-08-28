@@ -47,6 +47,7 @@ export default function SignInForm() {
   // Handle error parameters from URL (e.g., from auth callback)
   useEffect(() => {
     const errorParam = searchParams.get('error');
+    const reason = searchParams.get('reason');
     if (errorParam) {
       let errorMessage = 'Sign-in failed. Please try again.';
       
@@ -73,13 +74,14 @@ export default function SignInForm() {
           errorMessage = `Sign-in error: ${errorParam}`;
       }
       
-      setError(errorMessage);
+      setError(reason ? `${errorMessage} (${reason})` : errorMessage);
       setLoading(false); // Reset loading state when there's an error
       googleSignInInProgress.current = false; // Reset the ref
       
       // Clear the error from URL
       const url = new URL(window.location.href);
       url.searchParams.delete('error');
+      url.searchParams.delete('reason');
       window.history.replaceState({}, '', url.pathname + (url.search ? `?${url.searchParams}` : ''));
     }
   }, [searchParams]);
