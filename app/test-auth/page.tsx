@@ -17,7 +17,7 @@ export default function TestAuthPage() {
   const checkSession = async () => {
     try {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await createClient().auth.getSession();
       setSession(session);
     } catch (error) {
       console.error('Session check error:', error);
@@ -30,7 +30,7 @@ export default function TestAuthPage() {
     setTestResult('Testing Google sign-in...');
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await createClient().auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -51,7 +51,7 @@ export default function TestAuthPage() {
   const signOut = async () => {
     try {
       const supabase = createClient();
-      await supabase.auth.signOut();
+      await createClient().auth.signOut();
       setSession(null);
       setTestResult('Signed out successfully');
     } catch (error) {

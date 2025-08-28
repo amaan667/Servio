@@ -1,6 +1,6 @@
 "use client";
 import { logger } from "./logger";
-import { supabase } from "./supabase-client";
+import { createClient } from "./supabase/client";
 import { siteOrigin } from "./site";
 
 // Types
@@ -82,7 +82,7 @@ export async function signUpUser(
     
     console.log("✅ Using Railway domain for email redirect:", emailRedirectTo);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await createClient().auth.signUp({
       email,
       password,
       options: {
@@ -100,7 +100,7 @@ export async function signUpUser(
     }
 
     // Check for session (user is authenticated if session exists)
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await createClient().auth.getSession();
     if (!sessionData.session) {
       // No session means email confirmation is required
       return {
@@ -113,13 +113,13 @@ export async function signUpUser(
     // Create default venue for the user (as authenticated user)
     const userId = data.user.id;
     const venueId = `venue-${userId.slice(0, 8)}`;
-    let { data: venueData, error: venueError } = await supabase
+    let { data: venueData, error: venueError } = await createClient()
       .from("venues")
       .select("*")
       .eq("owner_id", userId)
       .single();
     if (venueError || !venueData) {
-      const { data: newVenue, error: createVenueError } = await supabase
+      const { data: newVenue, error: createVenueError } = await createClient()
         .from("venues")
         .insert({
           venue_id: venueId,
@@ -160,7 +160,7 @@ export async function signUpUser(
 export async function signInUser(email: string, password: string) {
   try {
     logger.info("Attempting sign in", { email });
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await createClient().auth.signInWithPassword({
       email,
       password,
     });
@@ -175,7 +175,7 @@ export async function signInUser(email: string, password: string) {
     logger.info("Sign in successful", { userId: data.user.id });
     
     // Ensure session is properly set
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await createClient().auth.getSession();
     if (!sessionData.session) {
       logger.error("No session after sign in");
       return {
@@ -209,7 +209,7 @@ export async function signInWithGoogle() {
   
   console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
   
-  const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await createClient().auth.signInWithOAuth({
     provider: "google",
     options: { 
       flowType: "pkce",
@@ -235,7 +235,7 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
     
     // Check if user already has a venue
     console.log('[AUTH DEBUG] Checking for existing venue');
-    const { data: existingVenue, error: checkError } = await supabase
+    const { data: existingVenue, error: checkError } = await createClient()
       .from("venues")
       .select("*")
       .eq("owner_id", userId)
@@ -254,7 +254,7 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
     
     console.log('[AUTH DEBUG] Creating new venue with:', { venueId, venueName, userId });
     
-    const { data: newVenue, error: createError } = await supabase
+    const { data: newVenue, error: createError } = await createClient()
       .from("venues")
       .insert({
         venue_id: venueId,
@@ -285,7 +285,7 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
 // Sign out function
 export async function signOutUser() {
   try {
-    await supabase.auth.signOut();
+    await createClient().auth.signOut();
     logger.info("User signed out");
   } catch (error) {
     logger.error("Sign out error", { error });
@@ -298,7 +298,7 @@ export async function createMenuItem(
   item: Omit<MenuItem, "id" | "venue_id" | "created_at">,
 ) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await createClient()
       .from("menu_items")
       .insert({
         venue_id: venueId,
@@ -325,7 +325,7 @@ export async function updateMenuItem(
   updates: Partial<MenuItem>,
 ) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await createClient()
       .from("menu_items")
       .update(updates)
       .eq("id", itemId)
@@ -347,7 +347,7 @@ export async function updateMenuItem(
 
 export async function deleteMenuItem(itemId: string) {
   try {
-    const { error } = await supabase
+    const { error } = await createClient()
       .from("menu_items")
       .delete()
       .eq("id", itemId);
@@ -390,7 +390,7 @@ export async function createOrder(orderData: {
     });
 
     // Create the order
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await createClient()
       .from("orders")
       .insert({
         venue_id: orderData.venue_id,
@@ -418,7 +418,7 @@ export async function createOrder(orderData: {
       total_price: item.price * item.quantity,
     }));
 
-    const { error: itemsError } = await supabase
+    const { error: itemsError } = await createClient()
       .from("order_items")
       .insert(orderItems);
 
@@ -442,8 +442,8 @@ export async function createOrder(orderData: {
 // Venue functions
 export async function createVenueIfNotExists(venueId: string) {
   // Try to find existing venue
-  const { data: existingVenue, error: findError } = await supabase
-    .from("venues")
+      const { data: existingVenue, error: findError } = await createClient()
+      .from("venues")
     .select("*")
     .eq("venue_id", venueId)
     .single();
@@ -453,8 +453,8 @@ export async function createVenueIfNotExists(venueId: string) {
   }
 
   // Create venue if it doesn't exist
-  const { data: newVenue, error: createError } = await supabase
-    .from("venues")
+      const { data: newVenue, error: createError } = await createClient()
+      .from("venues")
     .insert({
       venue_id: venueId,
       name: `Business ${venueId}`,

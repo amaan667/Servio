@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,12 +21,6 @@ export default function CompleteProfile() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    if (!supabase) {
-      setError("Database connection not available.");
-      setLoading(false);
-      return;
-    }
 
     const { data: { user }, error: userError } = await createClient().auth.getUser();
     if (!user || userError) {
@@ -56,7 +50,7 @@ export default function CompleteProfile() {
       }
 
       // Fetch the venue just created
-      const { data: venue, error: venueError } = await supabase
+      const { data: venue, error: venueError } = await createClient()
         .from("venues")
         .select("*")
         .eq("venue_id", venueId)

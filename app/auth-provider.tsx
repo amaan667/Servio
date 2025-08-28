@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await createClient().auth.getSession();
         if (session?.user) {
           setUser(session.user);
         }
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getInitialSession();
 
     // Listen for auth changes - but only update user, not loading state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = createClient().auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
         console.log('[AUTH DEBUG] AuthProvider: Auth state changed:', event, session?.user?.email);
         setUser(session?.user ?? null);
@@ -53,8 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
+      await createClient().auth.signOut();
       setUser(null);
     } catch (error) {
       console.error('Error signing out:', error);

@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { signInUser, signInWithGoogle } from '@/lib/supabase';
+import { signInUser } from '@/lib/supabase';
+import { signInWithGoogle } from '@/lib/auth/signin';
 
 export default function SignInForm() {
   const router = useRouter();
