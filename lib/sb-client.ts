@@ -8,7 +8,22 @@ export function createClient() {
     _client = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { isSingleton: true }
+      { 
+        isSingleton: true,
+        auth: {
+          // Enhanced auth configuration for better mobile support
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+          flowType: 'pkce',
+          // Ensure cookies work properly on mobile
+          cookieOptions: {
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+          }
+        }
+      }
     );
   }
   return _client;
@@ -70,12 +85,18 @@ export function checkPKCEState() {
     const supabaseKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-"));
     console.log('[AUTH DEBUG] Supabase localStorage keys:', supabaseKeys);
     
+    // Check for OAuth progress flags
+    const oauthProgress = sessionStorage.getItem("sb_oauth_in_progress");
+    const oauthStartTime = sessionStorage.getItem("sb_oauth_start_time");
+    
     return {
       localStorageKeys,
       sessionStorageKeys,
       supabaseKeys,
       hasPKCE: localStorageKeys.length > 0 || sessionStorageKeys.length > 0,
-      hasSupabaseAuth: supabaseKeys.length > 0
+      hasSupabaseAuth: supabaseKeys.length > 0,
+      oauthProgress: !!oauthProgress,
+      oauthStartTime: oauthStartTime ? new Date(parseInt(oauthStartTime)).toISOString() : null
     };
   } catch (error: any) {
     console.log('[AUTH DEBUG] ❌ Error checking PKCE state:', error);
@@ -102,9 +123,41 @@ export async function checkAuthState() {
   }
 }
 
+// Utility function to check if we're on a mobile device
+export function isMobileDevice() {
+  if (typeof window === 'undefined') return false;
+  
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone'];
+  
+  return mobileKeywords.some(keyword => userAgent.includes(keyword));
+}
+
+// Utility function to check browser type
+export function getBrowserInfo() {
+  if (typeof window === 'undefined') return { type: 'unknown', isMobile: false };
+  
+  const userAgent = window.navigator.userAgent;
+  const isMobile = isMobileDevice();
+  
+  let browserType = 'unknown';
+  if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+    browserType = 'safari';
+  } else if (userAgent.includes('Chrome')) {
+    browserType = 'chrome';
+  } else if (userAgent.includes('Firefox')) {
+    browserType = 'firefox';
+  } else if (userAgent.includes('Edge')) {
+    browserType = 'edge';
+  }
+  
+  return { type: browserType, isMobile, userAgent };
+}
+
 // Enhanced logger to spot state flips in dev
 if (typeof window !== 'undefined') {
   console.log('[AUTH DEBUG] Setting up auth state change listener');
+  console.log('[AUTH DEBUG] Browser info:', getBrowserInfo());
 
   createClient().auth.onAuthStateChange((evt, sess) => {
     console.log('[AUTH DEBUG] 🔄 Auth state changed:', {
@@ -114,7 +167,8 @@ if (typeof window !== 'undefined') {
       userId: sess?.user?.id,
       userEmail: sess?.user?.email,
       sessionExpiresAt: sess?.expires_at,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      browserInfo: getBrowserInfo()
     });
     
     // Additional logging for specific events
@@ -136,7 +190,8 @@ if (typeof window !== 'undefined') {
       hasUser: !!data.session?.user,
       userId: data.session?.user?.id,
       error: error?.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      browserInfo: getBrowserInfo()
     });
   });
   

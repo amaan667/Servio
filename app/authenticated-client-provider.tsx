@@ -67,6 +67,18 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     updateSession(session);
   }, [updateSession]);
 
+  // Clear session and related storage
+  const clearSession = useCallback(() => {
+    console.log('[AUTH DEBUG] provider:clearing session');
+    setSession(null);
+    
+    // Clear any OAuth progress flags
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem("sb_oauth_in_progress");
+      sessionStorage.removeItem("sb_oauth_start_time");
+    }
+  }, []);
+
   useEffect(() => {
     console.log('[AUTH DEBUG] provider:mount', { t: now() });
 
@@ -92,7 +104,16 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     const { data: { subscription } } = createClient().auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
-      await validateAndUpdateSession(session);
+      
+      // Handle specific auth events
+      if (event === 'SIGNED_OUT') {
+        clearSession();
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await validateAndUpdateSession(session);
+      } else {
+        await validateAndUpdateSession(session);
+      }
+      
       setLoading(false);
     });
 
@@ -100,7 +121,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       console.log('[AUTH DEBUG] provider:unmount', { t: now() });
       subscription.unsubscribe();
     };
-  }, [validateAndUpdateSession]);
+  }, [validateAndUpdateSession, clearSession]);
 
   return (
     <AuthContext.Provider value={{ session, loading }}>

@@ -12,6 +12,7 @@ export async function signInWithGoogle() {
     redirectUrl, 
     windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'undefined',
     envSiteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'undefined',
     timestamp: new Date().toISOString()
   });
 
@@ -31,6 +32,9 @@ export async function signInWithGoogle() {
     // Ensure we're starting with a clean state
     await sb.auth.signOut({ scope: 'local' });
 
+    // Wait a moment for storage to clear, especially important for mobile browsers
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -48,6 +52,7 @@ export async function signInWithGoogle() {
       hasError: !!error, 
       errorMessage: error?.message,
       url: data?.url,
+      urlLength: data?.url?.length,
       timestamp: new Date().toISOString()
     });
 
@@ -82,8 +87,14 @@ export async function signInWithGoogle() {
       throw new Error('PKCE verifier not properly initialized');
     }
 
+    // Store a flag to indicate OAuth is in progress (useful for debugging)
+    sessionStorage.setItem("sb_oauth_in_progress", "true");
+    sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
+
     // The redirect should happen automatically, but let's ensure it does
     console.log('[AUTH DEBUG] signInWithGoogle: redirecting to', data.url);
+    
+    // Use window.location.href for better mobile browser compatibility
     window.location.href = data.url;
     
   } catch (error: any) {
@@ -92,6 +103,11 @@ export async function signInWithGoogle() {
       name: error?.name,
       timestamp: new Date().toISOString()
     });
+    
+    // Clear any OAuth progress flags on error
+    sessionStorage.removeItem("sb_oauth_in_progress");
+    sessionStorage.removeItem("sb_oauth_start_time");
+    
     throw error;
   }
 }
