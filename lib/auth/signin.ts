@@ -28,11 +28,18 @@ export async function signInWithGoogle() {
     
     console.log('[AUTH DEBUG] signInWithGoogle: cleared keys', { clearedKeys });
 
+    // Ensure we're starting with a clean state
+    await sb.auth.signOut({ scope: 'local' });
+
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: {
         flowType: "pkce",
         redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     });
 
@@ -50,6 +57,29 @@ export async function signInWithGoogle() {
 
     if (!data?.url) {
       throw new Error('No redirect URL received from OAuth provider');
+    }
+
+    // Verify that PKCE verifier was stored before redirecting
+    const verifierCheck = (() => {
+      try {
+        const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
+        const hasPkceKeys = Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
+        console.log('[AUTH DEBUG] signInWithGoogle: verifier check before redirect', { 
+          hasVerifier: !!verifier, 
+          hasPkceKeys,
+          verifierLength: verifier?.length,
+          timestamp: new Date().toISOString()
+        });
+        return !!verifier || hasPkceKeys;
+      } catch (err) { 
+        console.log('[AUTH DEBUG] signInWithGoogle: verifier check failed', { error: err });
+        return false; 
+      }
+    })();
+
+    if (!verifierCheck) {
+      console.error('[AUTH DEBUG] signInWithGoogle: PKCE verifier not found before redirect');
+      throw new Error('PKCE verifier not properly initialized');
     }
 
     // The redirect should happen automatically, but let's ensure it does

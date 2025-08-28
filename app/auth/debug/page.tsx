@@ -1,8 +1,9 @@
 'use client';
+export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/sb-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -26,6 +27,14 @@ export default function AuthDebugPage() {
   const [testResults, setTestResults] = useState<TestResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
+  const [supabaseClient, setSupabaseClient] = useState<any>(null);
+
+  // Initialize Supabase client only on the client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSupabaseClient(createClient());
+    }
+  }, []);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -33,6 +42,11 @@ export default function AuthDebugPage() {
   };
 
   const runTests = async () => {
+    if (!supabaseClient) {
+      addLog('Supabase client not initialized yet');
+      return;
+    }
+
     setLoading(true);
     setLogs([]);
     addLog('Starting authentication debug tests...');
@@ -50,18 +64,17 @@ export default function AuthDebugPage() {
 
       // Test 2: Supabase client
       addLog('Testing Supabase client...');
-      const supabase = createClient();
       const clientTest = {
-        clientExists: !!supabase,
-        authExists: !!(supabase && supabase.auth),
-        signInWithOAuthExists: !!(supabase && supabase.auth && supabase.auth.signInWithOAuth),
-        exchangeCodeForSessionExists: !!(supabase && supabase.auth && supabase.auth.exchangeCodeForSession),
+        clientExists: !!supabaseClient,
+        authExists: !!(supabaseClient && supabaseClient.auth),
+        signInWithOAuthExists: !!(supabaseClient && supabaseClient.auth && supabaseClient.auth.signInWithOAuth),
+        exchangeCodeForSessionExists: !!(supabaseClient && supabaseClient.auth && supabaseClient.auth.exchangeCodeForSession),
       };
       addLog(`Client test: ${JSON.stringify(clientTest, null, 2)}`);
 
       // Test 3: Basic connection
       addLog('Testing basic Supabase connection...');
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
       const connectionTest = {
         success: !sessionError,
         error: sessionError?.message,
@@ -105,12 +118,16 @@ export default function AuthDebugPage() {
   };
 
   const testGoogleSignIn = async () => {
+    if (!supabaseClient) {
+      addLog('Supabase client not initialized yet');
+      return;
+    }
+
     setLoading(true);
     addLog('Testing Google sign-in flow...');
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -170,10 +187,10 @@ export default function AuthDebugPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
-              <Button onClick={runTests} disabled={loading}>
+              <Button onClick={runTests} disabled={loading || !supabaseClient}>
                 {loading ? 'Running Tests...' : 'Run All Tests'}
               </Button>
-              <Button onClick={testGoogleSignIn} disabled={loading} variant="outline">
+              <Button onClick={testGoogleSignIn} disabled={loading || !supabaseClient} variant="outline">
                 Test Google Sign-In
               </Button>
               <Button onClick={clearLogs} variant="outline">
