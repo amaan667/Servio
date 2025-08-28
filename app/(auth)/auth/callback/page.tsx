@@ -171,8 +171,12 @@ function OAuthCallbackContent() {
         console.log('[OAuth Frontend] callback: Sending PKCE exchange request', {
           authCode: code ? `${code.substring(0, 10)}...` : null,
           codeVerifier: `${codeVerifier.substring(0, 10)}...`,
-          payloadShape: { code: 'string', code_verifier: 'string' }
+          redirectUri,
+          payloadShape: { code: 'string', code_verifier: 'string', redirect_uri: 'string' }
         });
+
+        // Get the redirect_uri that was used in the original OAuth request
+        const redirectUri = `${window.location.origin}/auth/callback`;
 
         // Call our custom Supabase PKCE endpoint
         const exchangeResponse = await fetch('/api/auth/supabase-pkce', {
@@ -180,7 +184,8 @@ function OAuthCallbackContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             code: code, 
-            code_verifier: codeVerifier 
+            code_verifier: codeVerifier,
+            redirect_uri: redirectUri
           })
         });
 

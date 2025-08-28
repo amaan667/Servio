@@ -21,12 +21,15 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const authCode: string | undefined = body?.code;
     const codeVerifier: string | undefined = body?.code_verifier;
+    const redirectUri: string | undefined = body?.redirect_uri;
 
     console.log('[Supabase PKCE] Request received', {
       hasAuthCode: !!authCode,
       hasCodeVerifier: !!codeVerifier,
+      hasRedirectUri: !!redirectUri,
       authCodeType: typeof authCode,
       codeVerifierType: typeof codeVerifier,
+      redirectUriType: typeof redirectUri,
       timestamp,
     });
 
@@ -52,6 +55,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'invalid_code_verifier_type' }, { status: 400 });
     }
 
+    // Validate redirect_uri type if provided
+    if (redirectUri && typeof redirectUri !== 'string') {
+      console.error('[Supabase PKCE] Invalid redirect_uri type', { type: typeof redirectUri, timestamp });
+      return NextResponse.json({ error: 'invalid_redirect_uri_type' }, { status: 400 });
+    }
+
     // Get Supabase configuration
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -65,15 +74,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'missing_supabase_config' }, { status: 500 });
     }
 
+
+
     // Prepare the payload exactly as Supabase expects it
-    const payload = {
+    const payload: any = {
       code: authCode,
       code_verifier: codeVerifier,
     };
 
+    // Include redirect_uri if it was provided (required for PKCE flow)
+    if (redirectUri) {
+      payload.redirect_uri = redirectUri;
+    }
+
     console.log('[Supabase PKCE] Sending payload to Supabase', {
       authCode: maskValue(authCode),
       codeVerifier: maskValue(codeVerifier),
+      redirectUri: redirectUri ? maskValue(redirectUri) : { present: false },
       payloadKeys: Object.keys(payload),
       timestamp,
     });

@@ -16,8 +16,9 @@ The main issue was that the custom Google OAuth callback handler was sending the
 
 ```json
 {
-  "auth_code": "<string from Google redirect>",
-  "code_verifier": "<string PKCE verifier>"
+  "code": "<string from Google redirect>",
+  "code_verifier": "<string PKCE verifier>",
+  "redirect_uri": "<redirect URI if used in login request>"
 }
 ```
 
@@ -42,17 +43,22 @@ But the custom implementation was sending nested objects or using incorrect fiel
 
 **Features:**
 - Sends the exact JSON structure Supabase expects
-- Uses correct field names: `auth_code` and `code_verifier`
+- Uses correct field names: `code`, `code_verifier`, and `redirect_uri`
 - Includes comprehensive logging for debugging
 - Validates parameter types and presence
 - Returns Supabase's response directly
 
 **Key Implementation:**
 ```typescript
-const payload = {
-  auth_code: authCode,
+const payload: any = {
+  code: authCode,
   code_verifier: codeVerifier,
 };
+
+// Include redirect_uri if it was provided (required for PKCE flow)
+if (redirectUri) {
+  payload.redirect_uri = redirectUri;
+}
 
 const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=pkce`, {
   method: 'POST',
@@ -82,13 +88,17 @@ const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
 const customVerifier = getPkceVerifier();
 const codeVerifier = verifier || customVerifier;
 
+// Get the redirect_uri that was used in the original OAuth request
+const redirectUri = `${window.location.origin}/auth/callback`;
+
 // Call our custom Supabase PKCE endpoint
 const exchangeResponse = await fetch('/api/auth/supabase-pkce', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ 
-    auth_code: code, 
-    code_verifier: codeVerifier 
+    code: code, 
+    code_verifier: codeVerifier,
+    redirect_uri: redirectUri
   })
 });
 ```
@@ -113,7 +123,7 @@ A comprehensive testing page that allows:
 
 ✅ **Flat JSON Body**: The new endpoint sends a flat JSON structure, not nested objects
 
-✅ **Correct Field Names**: Uses `auth_code` and `code_verifier` as required
+✅ **Correct Field Names**: Uses `code`, `code_verifier`, and `redirect_uri` as required
 
 ✅ **String Types**: Both fields are validated as strings before sending
 
