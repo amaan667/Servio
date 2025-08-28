@@ -178,77 +178,11 @@ export async function signInWithGoogle() {
       throw new Error('No redirect URL received from OAuth provider');
     }
 
-    // Enhanced PKCE verifier verification with mobile-specific handling
-    const verifierCheck = (() => {
-      try {
-        // Check for Supabase's PKCE verifier
-        const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
-        
-        // Check for any PKCE-related keys
-        const pkceKeys = Object.keys(localStorage).filter(k => 
-          k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier")
-        );
-        
-        // Check for Supabase auth keys
-        const supabaseKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-"));
-        
-        console.log('[AUTH DEBUG] signInWithGoogle: verifier check before redirect', { 
-          hasVerifier: !!verifier, 
-          verifierLength: verifier?.length,
-          pkceKeys,
-          supabaseKeys,
-          isMobile,
-          timestamp: new Date().toISOString()
-        });
-        
-        // On mobile, we're more lenient with verifier checks due to storage sync delays
-        if (isMobile) {
-          const hasAnyPkceData = !!verifier || pkceKeys.length > 0 || supabaseKeys.length > 0;
-          console.log('[AUTH DEBUG] signInWithGoogle: mobile verifier check result', { hasAnyPkceData });
-          return hasAnyPkceData;
-        }
-        
-        return !!verifier || pkceKeys.length > 0;
-      } catch (err) { 
-        console.log('[AUTH DEBUG] signInWithGoogle: verifier check failed', { error: err, isMobile });
-        // On mobile, don't fail immediately if verifier check fails
-        return isMobile;
-      }
-    })();
-
-    if (!verifierCheck) {
-      console.error('[AUTH DEBUG] signInWithGoogle: PKCE verifier not found before redirect');
-      
-      // On mobile, try one more time with a longer delay
-      if (isMobile) {
-        console.log('[AUTH DEBUG] signInWithGoogle: retrying verifier check on mobile after delay');
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay
-        
-        const retryVerifier = localStorage.getItem("supabase.auth.token-code-verifier");
-        const retryPkceKeys = Object.keys(localStorage).filter(k => 
-          k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier")
-        );
-        
-        console.log('[AUTH DEBUG] signInWithGoogle: mobile retry verifier check', {
-          hasRetryVerifier: !!retryVerifier,
-          retryPkceKeys,
-          isMobile
-        });
-        
-        if (!retryVerifier && retryPkceKeys.length === 0) {
-          // Try one final recovery attempt
-          console.log('[AUTH DEBUG] signInWithGoogle: final mobile recovery attempt');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          const finalVerifier = localStorage.getItem("supabase.auth.token-code-verifier");
-          if (!finalVerifier) {
-            throw new Error('PKCE verifier not properly initialized on mobile device after multiple attempts');
-          }
-        }
-      } else {
-        throw new Error('PKCE verifier not properly initialized');
-      }
-    }
+    // Do not enforce a PKCE verifier pre-check here. Supabase will handle
+    // PKCE generation and storage internally during signInWithOAuth. We've
+    // seen false negatives on some browsers when checking storage immediately
+    // after initiating the flow, so we skip strict checks to avoid spurious
+    // "missing verifier" errors.
 
     // Store OAuth progress flags with mobile-specific handling
     sessionStorage.setItem("sb_oauth_in_progress", "true");
