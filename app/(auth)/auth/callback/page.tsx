@@ -4,6 +4,8 @@ export const dynamic = "force-dynamic";
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/sb-client";
+import { getPkceVerifier } from '@/lib/auth/pkce-utils.js';
+import { handleGoogleCallback } from '@/lib/auth/signin';
 
 function OAuthCallbackContent() {
   const router = useRouter();
@@ -48,6 +50,15 @@ function OAuthCallbackContent() {
         return router.replace("/sign-in?error=missing_code");
       }
 
+      // Call our custom PKCE callback handler for debugging
+      console.log('[AUTH DEBUG] callback: calling custom PKCE handler...');
+      try {
+        await handleGoogleCallback(code);
+        console.log('[AUTH DEBUG] callback: custom PKCE handler completed');
+      } catch (pkceError) {
+        console.error('[AUTH DEBUG] callback: custom PKCE handler failed:', pkceError);
+      }
+
       // Enhanced PKCE verifier check with retry mechanism
       const checkVerifier = () => {
         try {
@@ -61,6 +72,14 @@ function OAuthCallbackContent() {
             verifierPreview: verifier ? `${verifier.substring(0, 10)}...` : null
           });
           
+          // Check for our custom PKCE verifier
+          const customVerifier = getPkceVerifier();
+          console.log('[AUTH DEBUG] callback: custom verifier from sessionStorage:', {
+            hasCustomVerifier: !!customVerifier,
+            customVerifierLength: customVerifier?.length,
+            customVerifierPreview: customVerifier ? `${customVerifier.substring(0, 10)}...` : null
+          });
+          
           // Check for any PKCE-related keys
           const allKeys = Object.keys(localStorage);
           const pkceKeys = allKeys.filter(k => k.includes("pkce") || k.includes("token-code-verifier") || k.includes("code_verifier"));
@@ -70,17 +89,25 @@ function OAuthCallbackContent() {
           const supabaseKeys = allKeys.filter(k => k.startsWith("sb-"));
           console.log('[AUTH DEBUG] callback: Supabase auth keys:', supabaseKeys);
           
+          // Check for custom PKCE keys in sessionStorage
+          const sessionKeys = Object.keys(sessionStorage);
+          const customPkceKeys = sessionKeys.filter(k => k.includes("pkce_verifier"));
+          console.log('[AUTH DEBUG] callback: custom PKCE keys in sessionStorage:', customPkceKeys);
+          
           const hasPkceKeys = pkceKeys.length > 0;
           const hasSupabaseAuth = supabaseKeys.length > 0;
+          const hasCustomPkceKeys = customPkceKeys.length > 0;
           
           console.log('[AUTH DEBUG] callback: verifier check summary', { 
             hasVerifier: !!verifier, 
+            hasCustomVerifier: !!customVerifier,
             hasPkceKeys,
+            hasCustomPkceKeys,
             hasSupabaseAuth,
             timestamp: new Date().toISOString()
           });
           
-          return !!verifier || hasPkceKeys;
+          return !!verifier || !!customVerifier || hasPkceKeys;
         } catch (err) { 
           console.log('[AUTH DEBUG] callback: verifier check failed', { error: err });
           return false; 

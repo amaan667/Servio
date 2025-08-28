@@ -1,6 +1,61 @@
 "use client";
 import { createClient } from "@/lib/sb-client";
 import { siteOrigin } from "@/lib/site";
+import { generateCodeVerifier, generateCodeChallenge, storePkceVerifier, getPkceVerifier, clearPkceVerifier } from './pkce-utils.js';
+
+// Step 1 – Generate PKCE verifier and challenge
+async function initPkceFlow() {
+  const verifier = generateCodeVerifier();
+  const challenge = await generateCodeChallenge(verifier);
+
+  // Store in session storage for later
+  storePkceVerifier(verifier);
+
+  console.log('[PKCE Init] Generated verifier:', verifier);
+  console.log('[PKCE Init] Generated challenge:', challenge);
+
+  return challenge;
+}
+
+// Step 2 – Before redirecting to Google
+async function redirectToGoogleAuth() {
+  const challenge = await initPkceFlow();
+
+  const params = new URLSearchParams({
+    client_id: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+    redirect_uri: `${siteOrigin()}/auth/callback`,
+    response_type: 'code',
+    scope: 'openid email profile',
+    code_challenge: challenge,
+    code_challenge_method: 'S256'
+  });
+
+  console.log('[Google Auth] Redirecting with params:', params.toString());
+  window.location = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+}
+
+// Step 3 – On redirect/callback from Google
+async function handleGoogleCallback(authCode) {
+  const verifier = getPkceVerifier();
+  console.log('[PKCE Callback] Using verifier from storage:', verifier);
+
+  if (!verifier) {
+    console.error('[PKCE ERROR] No verifier found in storage!');
+    return;
+  }
+
+  // Exchange code + verifier for tokens
+  const res = await fetch('/api/auth/google/callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: authCode, verifier })
+  });
+
+  console.log('[PKCE Exchange] Response:', await res.json());
+}
+
+// Export the callback handler for use in the callback page
+export { handleGoogleCallback };
 
 export async function signInWithGoogle() {
   const sb = createClient();
@@ -27,6 +82,9 @@ export async function signInWithGoogle() {
     });
     sessionStorage.removeItem("sb_oauth_retry");
     
+    // Clear our custom PKCE verifier as well
+    clearPkceVerifier();
+    
     console.log('[AUTH DEBUG] signInWithGoogle: cleared keys', { clearedKeys });
 
     // Ensure we're starting with a clean state
@@ -34,6 +92,15 @@ export async function signInWithGoogle() {
 
     // Wait a moment for storage to clear, especially important for mobile browsers
     await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Initialize PKCE flow for debugging
+    console.log('[PKCE DEBUG] About to initialize PKCE flow...');
+    try {
+      const challenge = await initPkceFlow();
+      console.log('[PKCE DEBUG] PKCE flow initialized successfully, challenge length:', challenge.length);
+    } catch (pkceError) {
+      console.error('[PKCE DEBUG] Failed to initialize PKCE flow:', pkceError);
+    }
 
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
@@ -68,14 +135,20 @@ export async function signInWithGoogle() {
     const verifierCheck = (() => {
       try {
         const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
+        const customVerifier = getPkceVerifier();
         const hasPkceKeys = Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
+        const hasCustomPkceKey = Object.keys(sessionStorage).some(k => k.includes("pkce_verifier"));
+        
         console.log('[AUTH DEBUG] signInWithGoogle: verifier check before redirect', { 
           hasVerifier: !!verifier, 
+          hasCustomVerifier: !!customVerifier,
           hasPkceKeys,
+          hasCustomPkceKey,
           verifierLength: verifier?.length,
+          customVerifierLength: customVerifier?.length,
           timestamp: new Date().toISOString()
         });
-        return !!verifier || hasPkceKeys;
+        return !!verifier || !!customVerifier || hasPkceKeys;
       } catch (err) { 
         console.log('[AUTH DEBUG] signInWithGoogle: verifier check failed', { error: err });
         return false; 

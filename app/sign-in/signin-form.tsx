@@ -364,11 +364,20 @@ export default function SignInForm() {
             </Button>
           </form>
 
-          <div className="text-center text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link href="/sign-up" className="text-purple-600 hover:text-purple-500 font-medium transition-colors">
-              Sign up here
-            </Link>
+          <div className="text-center space-y-2">
+            <div className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link href="/sign-up" className="text-purple-600 hover:text-purple-500 font-medium transition-colors">
+                Sign up here
+              </Link>
+            </div>
+            {process.env.NODE_ENV === 'development' && (
+              <div className="text-xs text-gray-500">
+                <Link href="/debug-pkce" className="text-blue-600 hover:text-blue-500">
+                  Debug PKCE Flow
+                </Link>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
