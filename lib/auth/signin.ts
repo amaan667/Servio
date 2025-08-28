@@ -3,6 +3,32 @@ import { createClient } from "@/lib/sb-client";
 import { siteOrigin } from "@/lib/site";
 import { generateCodeVerifier, generateCodeChallenge, storePkceVerifier, getPkceVerifier, clearPkceVerifier } from './pkce-utils.js';
 
+function maskValue(value: string | null | undefined, opts: { prefix?: number; suffix?: number } = {}) {
+  if (!value) return { present: false };
+  const prefix = opts.prefix ?? 6;
+  const suffix = opts.suffix ?? 4;
+  const len = value.length;
+  const masked = len > prefix + suffix
+    ? `${value.slice(0, prefix)}...${value.slice(-suffix)}`
+    : `${value.slice(0, Math.min(prefix, len))}`;
+  return { present: true, length: len, preview: masked };
+}
+
+function sanitizeUrlMaskClientId(urlString: string | null | undefined) {
+  if (!urlString) return { url: urlString };
+  try {
+    const u = new URL(urlString);
+    if (u.searchParams.has('client_id')) {
+      const cid = u.searchParams.get('client_id');
+      const masked = maskValue(cid);
+      if (cid) u.searchParams.set('client_id', masked.preview || '***');
+    }
+    return { url: u.toString() };
+  } catch {
+    return { url: urlString };
+  }
+}
+
 // Step 1 – Generate PKCE verifier and challenge
 async function initPkceFlow() {
   const verifier = generateCodeVerifier();
@@ -11,8 +37,11 @@ async function initPkceFlow() {
   // Store in session storage for later
   storePkceVerifier(verifier);
 
-  console.log('[PKCE Init] Generated verifier:', verifier);
-  console.log('[PKCE Init] Generated challenge:', challenge);
+  console.log('[OAuth Frontend] PKCE generated', {
+    verifier: maskValue(verifier),
+    challenge: maskValue(challenge),
+    timestamp: new Date().toISOString(),
+  });
 
   return challenge;
 }
@@ -30,28 +59,52 @@ async function redirectToGoogleAuth() {
     code_challenge_method: 'S256'
   });
 
-  console.log('[Google Auth] Redirecting with params:', params.toString());
-  window.location = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  const fullUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  const sanitized = sanitizeUrlMaskClientId(fullUrl);
+  console.log('[OAuth Frontend] Google OAuth URL (sanitized client_id)', { url: sanitized.url });
+  window.location = fullUrl as any;
 }
 
 // Step 3 – On redirect/callback from Google
 async function handleGoogleCallback(authCode) {
-  const verifier = getPkceVerifier();
-  console.log('[PKCE Callback] Using verifier from storage:', verifier);
-
-  if (!verifier) {
-    console.error('[PKCE ERROR] No verifier found in storage!');
+  if (!authCode) {
+    console.error('[OAuth Frontend] Missing authorization code on callback');
     return;
   }
 
-  // Exchange code + verifier for tokens
+  const verifier = getPkceVerifier();
+  console.log('[OAuth Frontend] Retrieved PKCE verifier before token exchange', { verifier: maskValue(verifier) });
+
+  if (!verifier) {
+    console.error('[OAuth Frontend] Error: No PKCE verifier found in storage');
+    return;
+  }
+
+  // Exchange code + verifier for tokens (debug endpoint)
   const res = await fetch('/api/auth/google/callback', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code: authCode, verifier })
   });
 
-  console.log('[PKCE Exchange] Response:', await res.json());
+  let json: any = null;
+  try {
+    json = await res.json();
+  } catch {}
+
+  const sanitized = json ? {
+    ok: res.ok,
+    status: res.status,
+    hasAccessToken: !!json.access_token,
+    hasRefreshToken: !!json.refresh_token,
+    id_token_present: !!json.id_token,
+    error: json.error,
+    error_description: json.error_description,
+    scope: json.scope,
+    expires_in: json.expires_in,
+  } : { ok: res.ok, status: res.status };
+
+  console.log('[OAuth Frontend] Server response from token exchange (sanitized)', sanitized);
 }
 
 // Export the callback handler for use in the callback page
@@ -94,12 +147,12 @@ export async function signInWithGoogle() {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Initialize PKCE flow for debugging
-    console.log('[PKCE DEBUG] About to initialize PKCE flow...');
+    console.log('[OAuth Frontend] About to initialize PKCE flow');
     try {
       const challenge = await initPkceFlow();
-      console.log('[PKCE DEBUG] PKCE flow initialized successfully, challenge length:', challenge.length);
+      console.log('[OAuth Frontend] PKCE flow initialized successfully', { challengeLength: challenge.length });
     } catch (pkceError) {
-      console.error('[PKCE DEBUG] Failed to initialize PKCE flow:', pkceError);
+      console.error('[OAuth Frontend] Failed to initialize PKCE flow', pkceError);
     }
 
     const { data, error } = await sb.auth.signInWithOAuth({
@@ -163,6 +216,12 @@ export async function signInWithGoogle() {
     // Store a flag to indicate OAuth is in progress (useful for debugging)
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
+
+    // Log the exact Google OAuth URL with masked client_id for debugging
+    try {
+      const sanitized = sanitizeUrlMaskClientId(data.url);
+      console.log('[OAuth Frontend] Redirecting to Google OAuth URL (sanitized client_id)', { url: sanitized.url });
+    } catch {}
 
     // The redirect should happen automatically, but let's ensure it does
     console.log('[AUTH DEBUG] signInWithGoogle: redirecting to', data.url);
