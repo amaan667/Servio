@@ -14,10 +14,6 @@ function OAuthCallbackContent() {
     let finished = false;
     const sb = createClient();
     
-    // Initialize variables properly before use
-    let authCode: string | null = null;
-    let codeVerifier: string | null = null;
-    
     console.log('[OAuth Frontend] callback: starting', { 
       url: window.location.href,
       searchParams: Object.fromEntries(sp.entries()),
@@ -72,14 +68,7 @@ function OAuthCallbackContent() {
         return router.replace("/sign-in?error=missing_code");
       }
 
-      // Step 2: Assign the authorization code
-      authCode = code;
-      console.log('[OAuth Frontend] callback: received authorization code', { 
-        authCode: authCode ? `${authCode.substring(0, 10)}...` : null,
-        authCodeLength: authCode?.length 
-      });
-
-      // Step 3: Enhanced PKCE verifier check with retry mechanism
+      // Step 2: Enhanced PKCE verifier check with retry mechanism
       const checkVerifier = () => {
         try {
           console.log('[OAuth Frontend] callback: checking for PKCE verifier...');
@@ -151,105 +140,11 @@ function OAuthCallbackContent() {
         return router.replace("/sign-in?error=missing_verifier");
       }
 
-      console.log('[OAuth Frontend] callback: exchanging code for session');
+      console.log('[OAuth Frontend] callback: using Supabase exchangeCodeForSession');
       
       try {
-        // Step 4: Get the PKCE verifier from storage and assign it
-        const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
-        const customVerifier = getPkceVerifier();
-        
-        console.log('[OAuth Frontend] callback: PKCE verifier check', {
-          hasVerifier: !!verifier,
-          hasCustomVerifier: !!customVerifier,
-          verifierLength: verifier?.length,
-          customVerifierLength: customVerifier?.length,
-        });
-
-        // Assign the code verifier
-        codeVerifier = verifier || customVerifier;
-        
-        if (!codeVerifier) {
-          console.error('[OAuth Frontend] callback: No PKCE verifier found');
-          try {
-            await fetch('/api/auth/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'missing_verifier_for_exchange' }) });
-          } catch {}
-          return router.replace("/sign-in?error=missing_verifier");
-        }
-
-        // Step 5: Validate both variables have valid string values before exchange
-        if (!authCode || !codeVerifier) {
-          console.error('[OAuth Frontend] callback: Auth code or code verifier not ready', {
-            hasAuthCode: !!authCode,
-            hasCodeVerifier: !!codeVerifier,
-            authCodeType: typeof authCode,
-            codeVerifierType: typeof codeVerifier
-          });
-          try {
-            await fetch('/api/auth/log', { 
-              method: 'POST', 
-              headers: { 'Content-Type': 'application/json' }, 
-              body: JSON.stringify({ 
-                event: 'variables_not_ready',
-                hasAuthCode: !!authCode,
-                hasCodeVerifier: !!codeVerifier
-              }) 
-            });
-          } catch {}
-          return router.replace("/sign-in?error=variables_not_ready");
-        }
-
-        // Step 6: Log the payload before sending
-        console.log('[OAuth Frontend] callback: Sending PKCE exchange request', {
-          authCode: authCode ? `${authCode.substring(0, 10)}...` : null,
-          codeVerifier: codeVerifier ? `${codeVerifier.substring(0, 10)}...` : null,
-          payloadShape: { code: 'string', code_verifier: 'string', redirect_uri: 'string' }
-        });
-
-        // Get the redirect_uri that was used in the original OAuth request
-        const redirectUri = `${window.location.origin}/auth/callback`;
-
-        // Step 7: Call the PKCE exchange only after both variables are ready
-        const exchangeResponse = await fetch('/api/auth/supabase-pkce', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            code: authCode, 
-            code_verifier: codeVerifier,
-            redirect_uri: redirectUri
-          })
-        });
-
-        const exchangeData = await exchangeResponse.json();
-        
-        console.log('[OAuth Frontend] callback: PKCE exchange response', {
-          status: exchangeResponse.status,
-          ok: exchangeResponse.ok,
-          hasError: !!exchangeData.error,
-          error: exchangeData.error,
-          hasAccessToken: !!exchangeData.access_token,
-          hasUser: !!exchangeData.user,
-        });
-
-        if (!exchangeResponse.ok || exchangeData.error) {
-          console.log('[OAuth Frontend] callback: PKCE exchange failed', { 
-            error: exchangeData.error, 
-            errorDescription: exchangeData.error_description 
-          });
-          try {
-            await fetch('/api/auth/log', { 
-              method: 'POST', 
-              headers: { 'Content-Type': 'application/json' }, 
-              body: JSON.stringify({ 
-                event: 'pkce_exchange_failed', 
-                error: exchangeData.error,
-                errorDescription: exchangeData.error_description 
-              }) 
-            });
-          } catch {}
-          return router.replace("/sign-in?error=pkce_exchange_failed");
-        }
-
-        // Now use Supabase's exchangeCodeForSession to complete the flow
+        // Step 3: Use Supabase's built-in exchangeCodeForSession method
+        // This method automatically handles PKCE exchange with the correct payload structure
         const { error } = await sb.auth.exchangeCodeForSession({
           queryParams: new URLSearchParams(window.location.search),
         });

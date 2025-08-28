@@ -1,173 +1,107 @@
-# Supabase PKCE Login Flow Fixes
+# PKCE Exchange Fixes - Final Resolution
 
-This document outlines the fixes implemented to resolve the Supabase PKCE login flow issues.
+## Problem
+The `pkce_exchange_failed` error was occurring due to multiple issues in the PKCE flow:
 
-## Problem Summary
+1. **Double PKCE Exchange**: The callback was calling both a custom API endpoint AND Supabase's built-in `exchangeCodeForSession`
+2. **Incorrect Payload Structure**: Custom API was interfering with Supabase's built-in PKCE handling
+3. **Storage Inconsistency**: Multiple storage locations for PKCE verifiers causing mismatches
+4. **Redundant Exchange**: Unnecessary custom exchange before using Supabase's method
 
-The original implementation had the following issues:
+## Solution
+**Use Supabase's Built-in PKCE Flow Only**
 
-1. **JSON Unmarshal Error**: Supabase logs showed `"json: cannot unmarshal object into Go struct field PKCEGrantParams.auth_code of type string"`
-2. **Missing Code Error**: Supabase logs showed `"missing_code"`
-3. **Conflicting OAuth Flows**: The code had both Supabase's built-in PKCE flow and a custom Google OAuth flow running simultaneously
+### Key Changes Made:
 
-## Root Cause
+#### 1. **Simplified Callback Flow** (`app/(auth)/auth/callback/page.tsx`)
+- **Removed**: Custom API call to `/api/auth/supabase-pkce`
+- **Removed**: Manual PKCE verifier extraction and payload construction
+- **Added**: Direct use of `sb.auth.exchangeCodeForSession()` with URL query params
+- **Result**: Single, clean PKCE exchange using Supabase's proven implementation
 
-The main issue was that the custom Google OAuth callback handler was sending the wrong JSON structure to Supabase's `/auth/v1/token` endpoint. Supabase expects a flat JSON structure with specific field names:
+#### 2. **Cleaned Up Sign-in Flow** (`lib/auth/signin.ts`)
+- **Removed**: Custom PKCE initialization (`initPkceFlow`, `generateCodeVerifier`, etc.)
+- **Removed**: Manual PKCE challenge generation
+- **Added**: Reliance on Supabase's built-in PKCE handling
+- **Result**: Simplified flow that lets Supabase handle all PKCE complexity
 
+#### 3. **Removed Custom API** (`app/api/auth/supabase-pkce/route.ts`)
+- **Deleted**: Entire custom PKCE exchange endpoint
+- **Reason**: Supabase's `exchangeCodeForSession` handles this correctly
+- **Result**: Eliminated potential conflicts and payload structure issues
+
+## How It Works Now
+
+### 1. Sign-in Process
+```typescript
+// Clean, simple sign-in
+const { data, error } = await sb.auth.signInWithOAuth({
+  provider: "google",
+  options: {
+    flowType: "pkce",  // Supabase handles PKCE automatically
+    redirectTo: redirectUrl,
+    queryParams: {
+      access_type: 'offline',
+      prompt: 'consent',
+    },
+  },
+});
+```
+
+### 2. Callback Process
+```typescript
+// Single, reliable exchange
+const { error } = await sb.auth.exchangeCodeForSession({
+  queryParams: new URLSearchParams(window.location.search),
+});
+```
+
+## Why This Fixes the Issue
+
+### ✅ **Correct Payload Structure**
+Supabase's `exchangeCodeForSession` automatically constructs the correct payload:
 ```json
 {
-  "code": "<string from Google redirect>",
-  "code_verifier": "<string PKCE verifier>",
-  "redirect_uri": "<redirect URI if used in login request>"
+  "code": "auth_code_string",
+  "code_verifier": "verifier_string", 
+  "redirect_uri": "callback_url"
 }
 ```
 
-But the custom implementation was sending nested objects or using incorrect field names.
+### ✅ **Proper Timing**
+- No delays between receiving auth code and exchange
+- Single exchange call prevents conflicts
+- Immediate processing after callback
 
-## Fixes Implemented
+### ✅ **Storage Consistency**
+- Supabase manages its own PKCE verifier storage
+- No custom storage that could get out of sync
+- Automatic cleanup after exchange
 
-### 1. Removed Conflicting Custom Google OAuth Flow
-
-**Files Modified:**
-- `app/(auth)/auth/callback/page.tsx`
-- `lib/auth/signin.ts`
-
-**Changes:**
-- Removed the call to `handleGoogleCallback()` in the callback page
-- Simplified the custom Google callback handler to be a no-op
-- Let Supabase's built-in PKCE flow handle the token exchange
-
-### 2. Created Proper Supabase PKCE Endpoint
-
-**New File:** `app/api/auth/supabase-pkce/route.ts`
-
-**Features:**
-- Sends the exact JSON structure Supabase expects
-- Uses correct field names: `code`, `code_verifier`, and `redirect_uri`
-- Includes comprehensive logging for debugging
-- Validates parameter types and presence
-- Returns Supabase's response directly
-
-**Key Implementation:**
-```typescript
-const payload: any = {
-  code: authCode,
-  code_verifier: codeVerifier,
-};
-
-// Include redirect_uri if it was provided (required for PKCE flow)
-if (redirectUri) {
-  payload.redirect_uri = redirectUri;
-}
-
-const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=pkce`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'apikey': supabaseAnonKey,
-    'Authorization': `Bearer ${supabaseAnonKey}`,
-  },
-  body: JSON.stringify(payload),
-});
-```
-
-### 3. Updated Callback Handler
-
-**File Modified:** `app/(auth)/auth/callback/page.tsx`
-
-**Changes:**
-- Added proper PKCE verifier retrieval from both localStorage and sessionStorage
-- Implemented the new Supabase PKCE endpoint call
-- Added comprehensive logging before and after the exchange
-- Enhanced error handling with specific error messages
-
-**Key Implementation:**
-```typescript
-// Get PKCE verifier from storage
-const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
-const customVerifier = getPkceVerifier();
-const codeVerifier = verifier || customVerifier;
-
-// Get the redirect_uri that was used in the original OAuth request
-const redirectUri = `${window.location.origin}/auth/callback`;
-
-// Call our custom Supabase PKCE endpoint
-const exchangeResponse = await fetch('/api/auth/supabase-pkce', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ 
-    code: code, 
-    code_verifier: codeVerifier,
-    redirect_uri: redirectUri
-  })
-});
-```
-
-### 4. Removed Old Google Callback API
-
-**File Deleted:** `app/api/auth/google/callback/route.ts`
-
-This endpoint was causing conflicts and is no longer needed since we're using Supabase's built-in PKCE flow.
-
-### 5. Added Testing Tools
-
-**New File:** `app/test-pkce/page.tsx`
-
-A comprehensive testing page that allows:
-- Testing the PKCE flow
-- Checking current PKCE state
-- Clearing storage
-- Viewing detailed logs
-
-## Requirements Met
-
-✅ **Flat JSON Body**: The new endpoint sends a flat JSON structure, not nested objects
-
-✅ **Correct Field Names**: Uses `code`, `code_verifier`, and `redirect_uri` as required
-
-✅ **String Types**: Both fields are validated as strings before sending
-
-✅ **Comprehensive Logging**: Added logging before the request to confirm payload shape
-
-✅ **Error Logging**: Added error logging if auth_code or code_verifier is missing
-
-✅ **Correct Headers**: Uses `Content-Type: application/json` and proper Supabase headers
-
-✅ **Response Logging**: Returns and logs Supabase's response for debugging
+### ✅ **Error Handling**
+- Supabase provides detailed error messages
+- Built-in retry mechanisms
+- Proper error propagation
 
 ## Testing the Fix
 
-1. **Visit the test page**: Navigate to `/test-pkce` to test the PKCE flow
-2. **Check logs**: Monitor browser console and server logs for detailed debugging information
-3. **Verify success**: The Google sign-up should now work without the JSON unmarshal error
+1. **Clear Browser Storage**: Clear localStorage and sessionStorage
+2. **Sign Out**: Ensure clean state
+3. **Sign In**: Use Google OAuth
+4. **Monitor Console**: Should see clean flow without `pkce_exchange_failed`
 
-## Expected Flow
+## Expected Console Output
+```
+[OAuth Frontend] callback: starting
+[OAuth Frontend] callback: processing params
+[OAuth Frontend] callback: using Supabase exchangeCodeForSession
+[OAuth Frontend] callback: success, redirecting to /dashboard
+```
 
-1. User clicks "Sign in with Google"
-2. PKCE verifier and challenge are generated
-3. User is redirected to Google OAuth
-4. Google redirects back with authorization code
-5. Callback page retrieves PKCE verifier from storage
-6. Custom endpoint sends correct JSON to Supabase
-7. Supabase exchanges code for session
-8. User is authenticated and redirected to dashboard
+## Files Modified
+- ✅ `app/(auth)/auth/callback/page.tsx` - Simplified callback flow
+- ✅ `lib/auth/signin.ts` - Removed custom PKCE initialization
+- ✅ `app/api/auth/supabase-pkce/route.ts` - Deleted (no longer needed)
 
-## Monitoring
-
-To monitor the fix:
-
-1. **Browser Console**: Look for `[Supabase PKCE]` and `[OAuth Frontend]` logs
-2. **Server Logs**: Check for the new endpoint logs
-3. **Supabase Logs**: Should no longer show JSON unmarshal errors
-4. **Network Tab**: Verify the correct JSON payload is sent to `/auth/v1/token`
-
-## Troubleshooting
-
-If issues persist:
-
-1. Check that PKCE verifier is properly stored before redirect
-2. Verify the JSON payload structure in network requests
-3. Ensure Supabase configuration is correct
-4. Check for any remaining custom OAuth code that might interfere
-
-The fix ensures that Supabase receives the exact JSON structure it expects, resolving both the unmarshal error and the missing code error.
+## Result
+The `pkce_exchange_failed` error should now be resolved. The flow uses Supabase's proven PKCE implementation instead of custom code that was causing conflicts.
