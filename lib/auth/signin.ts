@@ -67,70 +67,15 @@ async function redirectToGoogleAuth() {
 }
 
 // Step 3 – On redirect/callback from Google
+// This function is no longer needed as we're using Supabase's built-in PKCE flow
+// The exchangeCodeForSession method in the callback page handles the token exchange
 async function handleGoogleCallback(authCode) {
-  // Add the suggested debugging logs
-  console.log("authCode typeof/value:", typeof authCode, authCode?.slice(0, 12), "...");
-  
-  if (!authCode) {
-    console.error('[OAuth Frontend] Missing authorization code on callback');
-    return;
-  }
-
-  // Only run the debug token exchange if a Google Client ID is configured client-side
-  const googleClientId = (process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID || '').trim();
-  if (!googleClientId) {
-    console.log('[OAuth Frontend] Skipping server token exchange debug (NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID not set)');
-    return;
-  }
-
-  const verifier = getPkceVerifier();
-  console.log("codeVerifier typeof/len:", typeof verifier, verifier?.length);
-  console.log('[OAuth Frontend] Retrieved PKCE verifier before token exchange', { verifier: maskValue(verifier) });
-
-  if (!verifier) {
-    console.error('[OAuth Frontend] Error: No PKCE verifier found in storage');
-    return;
-  }
-
-  // Validate that both authCode and verifier are strings
-  if (typeof authCode !== 'string') {
-    console.error('[OAuth Frontend] Invalid authCode type', { type: typeof authCode });
-    return;
-  }
-
-  if (typeof verifier !== 'string') {
-    console.error('[OAuth Frontend] Invalid verifier type', { type: typeof verifier });
-    return;
-  }
-
-  // Exchange code + verifier for tokens (debug endpoint)
-  const res = await fetch('/api/auth/google/callback', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ auth_code: authCode, verifier })
-  });
-
-  let json: any = null;
-  try {
-    json = await res.json();
-  } catch {}
-
-  const sanitized = json ? {
-    ok: res.ok,
-    status: res.status,
-    hasAccessToken: !!json.access_token,
-    hasRefreshToken: !!json.refresh_token,
-    id_token_present: !!json.id_token,
-    error: json.error,
-    error_description: json.error_description,
-    scope: json.scope,
-    expires_in: json.expires_in,
-  } : { ok: res.ok, status: res.status };
-
-  console.log('[OAuth Frontend] Server response from token exchange (sanitized)', sanitized);
+  console.log('[OAuth Frontend] Custom Google callback handler called - this should not be used with Supabase PKCE flow');
+  console.log('[OAuth Frontend] Supabase will handle the PKCE exchange automatically');
+  return;
 }
 
-// Export the callback handler for use in the callback page
+// Export the callback handler for use in the callback page (deprecated)
 export { handleGoogleCallback };
 
 export async function signInWithGoogle() {
