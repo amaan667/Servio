@@ -17,7 +17,7 @@ export default function DebugOAuthPage() {
         provider: "google",
         options: {
           flowType: "pkce",
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -25,7 +25,7 @@ export default function DebugOAuthPage() {
         success: !error,
         data: data,
         error: error,
-        redirectUrl: `${window.location.origin}/api/auth/callback`,
+        redirectUrl: `${window.location.origin}/auth/callback`,
         currentUrl: window.location.href,
         origin: window.location.origin
       });
@@ -33,7 +33,7 @@ export default function DebugOAuthPage() {
       setDebugInfo({
         success: false,
         error: err.message,
-        redirectUrl: `${window.location.origin}/api/auth/callback`,
+        redirectUrl: `${window.location.origin}/auth/callback`,
         currentUrl: window.location.href,
         origin: window.location.origin
       });

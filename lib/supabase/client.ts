@@ -1,62 +1,20 @@
-"use client";
-import { createBrowserClient } from "@supabase/ssr";
-import { Session, AuthChangeEvent, AuthError } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr'
 
-let _client: ReturnType<typeof createBrowserClient> | null = null;
-
-export function createClient() {
-  if (!_client) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    // Handle missing environment variables gracefully
-    if (!supabaseUrl || !supabaseAnonKey) {
-      // Return a mock client for build time
-      return {
-        auth: {
-          getSession: async () => ({ data: { session: null }, error: null }),
-          getUser: async () => ({ data: { user: null }, error: null }),
-          signOut: async () => ({ error: null }),
-          signInWithOAuth: async () => ({ data: null, error: new Error('Supabase not configured') }),
-          exchangeCodeForSession: async () => ({ data: null, error: new Error('Supabase not configured') }),
-          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-          updateUser: async () => ({ data: null, error: new Error('Supabase not configured') })
-        },
-        from: () => ({
-          select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
-          insert: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
-          update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
-          delete: () => ({ eq: async () => ({ error: null }) })
-        }),
-        channel: () => ({
-          on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
-          removeChannel: () => {}
-        }),
-        removeChannel: () => {}
-      } as any;
-    }
-    
-    _client = createBrowserClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      { 
-        isSingleton: true,
-        auth: {
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: true,
-          flowType: 'pkce'
-        },
-        // Disable cookie operations on client side to prevent Next.js 15 errors
-        cookies: {
-          get: () => undefined,
-          set: () => {},
-          remove: () => {}
-        }
-      }
-    );
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
   }
-  return _client;
+)
+
+// Keep the old createClient function for backward compatibility
+export function createClient() {
+  return supabase;
 }
 
 // Browser info for debugging

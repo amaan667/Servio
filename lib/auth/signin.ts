@@ -16,12 +16,11 @@ export async function signInWithGoogle() {
     // Silent error handling
   }
 
-  const redirectTo = `${window.location.origin}/api/auth/callback`;
+  const redirectTo = `${window.location.origin}/auth/callback`;
 
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: "google",
     options: {
-      flowType: "pkce",
       redirectTo: redirectTo,
     },
   });

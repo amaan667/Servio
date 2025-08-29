@@ -9,7 +9,7 @@ export async function GET() {
       provider: "google",
       options: {
         flowType: "pkce",
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/api/auth/callback`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`,
       },
     });
 

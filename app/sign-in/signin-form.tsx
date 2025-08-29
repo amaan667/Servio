@@ -171,7 +171,7 @@ export default function SignInForm() {
                   const { createClient } = await import('@/lib/sb-client');
                   const { siteOrigin } = await import('@/lib/site');
                   const sb = createClient();
-                  const redirectUrl = `${siteOrigin()}/api/auth/callback`;
+                  const redirectUrl = `${window.location.origin}/auth/callback`;
                   
                   console.log('[AUTH DEBUG] === Testing OAuth URL ===');
                   console.log('[AUTH DEBUG] Redirect URL:', redirectUrl);
@@ -234,7 +234,7 @@ export default function SignInForm() {
                 // Test 4: Site origin calculation
                 const { siteOrigin } = await import('@/lib/site');
                 const origin = siteOrigin();
-                const redirectUrl = `${origin}/api/auth/callback`;
+                const redirectUrl = `${origin}/auth/callback`;
                 console.log('[AUTH DEBUG] Test 4: Site origin calculation', {
                   origin,
                   redirectUrl,

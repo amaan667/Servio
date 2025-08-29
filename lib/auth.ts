@@ -1,6 +1,6 @@
 import { siteOrigin } from '@/lib/site';
 
-export const getAuthRedirectUrl = (path: string = '/api/auth/callback') => {
+export const getAuthRedirectUrl = (path: string = '/auth/callback') => {
   return `${siteOrigin()}${path}`;
 };
 

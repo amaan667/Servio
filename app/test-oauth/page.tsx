@@ -20,13 +20,12 @@ export default function TestOAuthPage() {
       console.log('[AUTH DEBUG] Test OAuth - Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
       console.log('[AUTH DEBUG] Test OAuth - Has anon key:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-      const redirectTo = `${origin}/api/auth/callback`;
+      const redirectTo = `${origin}/auth/callback`;
       console.log('[AUTH DEBUG] Test OAuth - Redirect URL:', redirectTo);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          flowType: "pkce",
           redirectTo: redirectTo,
         },
       });
@@ -56,7 +55,7 @@ export default function TestOAuthPage() {
           <p>Origin: {siteOrigin()}</p>
           <p>Supabase URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Set" : "❌ Missing"}</p>
           <p>Supabase Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✅ Set" : "❌ Missing"}</p>
-          <p>Redirect URL: {siteOrigin()}/api/auth/callback</p>
+          <p>Redirect URL: {siteOrigin()}/auth/callback</p>
         </div>
 
         <button
