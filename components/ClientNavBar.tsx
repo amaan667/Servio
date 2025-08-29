@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
-import { createClient } from '@/lib/sb-client';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/app/authenticated-client-provider';
 import { useRouter } from "next/navigation";
 

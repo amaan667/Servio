@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { MenuUploadCard } from "@/components/MenuUploadCard";

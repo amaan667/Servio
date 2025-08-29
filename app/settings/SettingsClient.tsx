@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 
 const supabase = createClient();
 import { ArrowLeft, Save, User, Building, Mail, Phone } from "lucide-react";

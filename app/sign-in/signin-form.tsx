@@ -126,7 +126,7 @@ export default function SignInForm() {
             <Button
               onClick={async () => {
                 try {
-                  const { createClient, checkPKCEState, checkAuthState } = await import('@/lib/sb-client');
+                  const { createClient, checkPKCEState, checkAuthState } = await import('@/lib/supabase/client');
                   console.log('[AUTH DEBUG] === Testing Auth State ===');
                   console.log('[AUTH DEBUG] PKCE State:', checkPKCEState());
                   console.log('[AUTH DEBUG] Auth State:', await checkAuthState());
@@ -147,7 +147,7 @@ export default function SignInForm() {
             <Button
               onClick={async () => {
                 try {
-                  const { clearAuthStorage } = await import('@/lib/sb-client');
+                  const { clearAuthStorage } = await import('@/lib/supabase/client');
                   console.log('[AUTH DEBUG] === Clearing Auth State ===');
                   clearAuthStorage();
                   console.log('[AUTH DEBUG] Auth state cleared, reloading page...');
@@ -258,7 +258,7 @@ export default function SignInForm() {
                 
                 // Test 6: Supabase client creation
                 try {
-                  const { createClient } = await import('@/lib/sb-client');
+                  const { createClient } = await import('@/lib/supabase/client');
                   const sb = createClient();
                   console.log('[AUTH DEBUG] Test 6: Supabase client creation ✓');
                   
@@ -277,7 +277,7 @@ export default function SignInForm() {
                 
                 // Test 8: OAuth URL generation test
                 try {
-                  const { createClient } = await import('@/lib/sb-client');
+                  const { createClient } = await import('@/lib/supabase/client');
                   const sb = createClient();
                   
                   console.log('[AUTH DEBUG] Test 8: OAuth URL generation test');

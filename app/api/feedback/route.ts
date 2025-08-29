@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const { order_id, rating, comment } = await req.json();
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const admin = createClient(url, key, { auth: { persistSession:false }});
+    const admin = await createClient();
     
     // Validate required fields
     if (!rating || rating < 1 || rating > 5) {

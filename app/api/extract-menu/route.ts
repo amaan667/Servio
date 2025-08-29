@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,17 +7,14 @@ export async function POST(req: NextRequest) {
 
     // Save menu items to Supabase using service role key
     if (body.items && Array.isArray(body.items) && body.venue_id) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      );
+          const supabase = await createClient();
       // Attach venue_id to each item if not present
       const itemsToInsert = body.items.map((item: any) => ({
         ...item,
         venue_id: body.venue_id,
         available: item.available !== false, // default to true
       }));
-      const { error } = await createClient().from("menu_items").insert(itemsToInsert);
+              const { error } = await supabase.from("menu_items").insert(itemsToInsert);
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { signInWithGoogle } from '@/lib/auth/signin';
-import { clearAuthStorage, checkPKCEState } from '@/lib/sb-client';
+import { clearAuthStorage, checkPKCEState } from '@/lib/supabase/client';
 
 export default function TestPkcePage() {
   const [logs, setLogs] = useState<string[]>([]);

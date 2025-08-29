@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[AUTH DEBUG] Clearing menu items for venue:', venue_id);
 
-    const supabase = createClient();
+    const supabase = await createAdminClient();
 
     // Delete all menu items for the venue
     const { error } = await supabase
