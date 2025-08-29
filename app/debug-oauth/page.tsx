@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function DebugOAuthPage() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setIsClient(true);
+    setOrigin(window.location.origin);
+  }, []);
 
   const testOAuth = async () => {
     setLoading(true);
@@ -16,8 +23,7 @@ export default function DebugOAuthPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          flowType: "pkce",
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${origin}/auth/callback`,
         },
       });
 
@@ -25,17 +31,17 @@ export default function DebugOAuthPage() {
         success: !error,
         data: data,
         error: error,
-        redirectUrl: `${window.location.origin}/auth/callback`,
+        redirectUrl: `${origin}/auth/callback`,
         currentUrl: window.location.href,
-        origin: window.location.origin
+        origin: origin
       });
     } catch (err: any) {
       setDebugInfo({
         success: false,
         error: err.message,
-        redirectUrl: `${window.location.origin}/auth/callback`,
+        redirectUrl: `${origin}/auth/callback`,
         currentUrl: window.location.href,
-        origin: window.location.origin
+        origin: origin
       });
     } finally {
       setLoading(false);

@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function TestOAuthPage() {
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [origin, setOrigin] = useState<string>("");
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    setOrigin(window.location.origin);
+  }, []);
 
   const testOAuth = async () => {
     try {
@@ -13,7 +20,6 @@ export default function TestOAuthPage() {
       setError("");
 
       const supabase = createClient();
-      const origin = window.location.origin;
       
       console.log('[AUTH DEBUG] Test OAuth - Origin:', origin);
       console.log('[AUTH DEBUG] Test OAuth - Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
@@ -51,10 +57,10 @@ export default function TestOAuthPage() {
         
                   <div className="bg-gray-100 p-4 rounded-lg">
             <h2 className="font-semibold mb-2">Environment Check:</h2>
-            <p>Origin: {window.location.origin}</p>
+            <p>Origin: {isClient ? origin : "Loading..."}</p>
             <p>Supabase URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Set" : "❌ Missing"}</p>
             <p>Supabase Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✅ Set" : "❌ Missing"}</p>
-            <p>Redirect URL: {window.location.origin}/auth/callback</p>
+            <p>Redirect URL: {isClient ? `${origin}/auth/callback` : "Loading..."}</p>
           </div>
 
         <button

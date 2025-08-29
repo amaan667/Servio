@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function OAuthDebugPage() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setIsClient(true);
+    setOrigin(window.location.origin);
+  }, []);
 
   const testOAuth = async () => {
     setLoading(true);
@@ -14,11 +21,11 @@ export default function OAuthDebugPage() {
       
       console.log('[AUTH DEBUG] === OAuth Debug Test ===');
       console.log('[AUTH DEBUG] Window location:', window.location.href);
-      console.log('[AUTH DEBUG] Window origin:', window.location.origin);
+      console.log('[AUTH DEBUG] Window origin:', origin);
       console.log('[AUTH DEBUG] NODE_ENV:', process.env.NODE_ENV);
       console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
       
-      const redirectTo = `${window.location.origin}/auth/callback`;
+      const redirectTo = `${origin}/auth/callback`;
       console.log('[AUTH DEBUG] RedirectTo URL:', redirectTo);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -36,7 +43,7 @@ export default function OAuthDebugPage() {
         data: data,
         error: error,
         redirectTo: redirectTo,
-        windowOrigin: window.location.origin,
+        windowOrigin: origin,
         windowLocation: window.location.href,
         nodeEnv: process.env.NODE_ENV,
         siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
@@ -47,8 +54,8 @@ export default function OAuthDebugPage() {
       setDebugInfo({
         success: false,
         error: err.message,
-        redirectTo: `${window.location.origin}/auth/callback`,
-        windowOrigin: window.location.origin,
+        redirectTo: `${origin}/auth/callback`,
+        windowOrigin: origin,
         windowLocation: window.location.href,
         nodeEnv: process.env.NODE_ENV,
         siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
@@ -65,11 +72,11 @@ export default function OAuthDebugPage() {
       
       <div className="mb-6 p-4 bg-blue-50 rounded">
         <h2 className="font-bold mb-2">Current Environment:</h2>
-        <p><strong>Window Origin:</strong> {typeof window !== 'undefined' ? window.location.origin : 'server-side'}</p>
-        <p><strong>Window Location:</strong> {typeof window !== 'undefined' ? window.location.href : 'server-side'}</p>
+        <p><strong>Window Origin:</strong> {isClient ? origin : 'Loading...'}</p>
+        <p><strong>Window Location:</strong> {isClient ? window.location.href : 'Loading...'}</p>
         <p><strong>NODE_ENV:</strong> {process.env.NODE_ENV}</p>
         <p><strong>NEXT_PUBLIC_SITE_URL:</strong> {process.env.NEXT_PUBLIC_SITE_URL || 'NOT SET'}</p>
-        <p><strong>Redirect URL:</strong> {typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : 'server-side'}</p>
+        <p><strong>Redirect URL:</strong> {isClient ? `${origin}/auth/callback` : 'Loading...'}</p>
       </div>
       
       <button
