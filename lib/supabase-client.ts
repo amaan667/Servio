@@ -3,33 +3,58 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce'
-  },
-  // Disable cookie operations on client side to prevent Next.js 15 errors
-  cookies: {
-    get: () => undefined,
-    set: () => {},
-    remove: () => {}
-  }
-});
+// Handle missing environment variables gracefully
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('[SUPABASE CLIENT] Missing environment variables:', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey
+  });
+}
+
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createBrowserClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      // Disable cookie operations on client side to prevent Next.js 15 errors
+      cookies: {
+        get: () => undefined,
+        set: () => {},
+        remove: () => {}
+      }
+    })
+  : {
+      auth: {
+        getSession: async () => ({ data: { session: null }, error: null }),
+        getUser: async () => ({ data: { user: null }, error: null }),
+        signOut: async () => ({ error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+      },
+      from: () => ({
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+        insert: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
+        update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
+        delete: () => ({ eq: async () => ({ error: null }) })
+      })
+    } as any;
 
 // Override the onAuthStateChange to prevent cookie operations
-const originalOnAuthStateChange = supabase.auth.onAuthStateChange;
-supabase.auth.onAuthStateChange = (callback: (event: AuthChangeEvent, session: Session | null) => void) => {
-  return originalOnAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
-    // Don't trigger any cookie operations during auth state changes
-    console.log('[AUTH DEBUG] Auth state change (no cookie ops):', event, !!session);
-    callback(event, session);
-  });
-};
+if (supabaseUrl && supabaseAnonKey) {
+  const originalOnAuthStateChange = supabase.auth.onAuthStateChange;
+  supabase.auth.onAuthStateChange = (callback: (event: AuthChangeEvent, session: Session | null) => void) => {
+    return originalOnAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      // Don't trigger any cookie operations during auth state changes
+      console.log('[AUTH DEBUG] Auth state change (no cookie ops):', event, !!session);
+      callback(event, session);
+    });
+  };
+}
 
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
