@@ -112,6 +112,8 @@ export default function SignInForm() {
 
   const handleGoogleSignIn = async () => {
     console.log('[AUTH DEBUG] Google sign-in button clicked');
+    console.log('[AUTH DEBUG] User agent:', navigator.userAgent);
+    console.log('[AUTH DEBUG] Is mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
     
     // Prevent multiple simultaneous requests
     if (googleSignInInProgress.current) {
@@ -124,6 +126,24 @@ export default function SignInForm() {
     setError(null);
     
     try {
+      // Check if we're on desktop and warn about popup blocking
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (!isMobile) {
+        console.log('[AUTH DEBUG] Desktop detected, checking for popup blockers');
+        // Test if popups are blocked
+        const popupTest = window.open('', '_blank', 'width=1,height=1');
+        if (!popupTest || popupTest.closed || typeof popupTest.closed === 'undefined') {
+          console.log('[AUTH DEBUG] Popup blocker detected');
+          setError('Popup blocker detected. Please allow pop-ups for this site and try again.');
+          setLoading(false);
+          googleSignInInProgress.current = false;
+          return;
+        } else {
+          popupTest.close();
+          console.log('[AUTH DEBUG] Popup test successful');
+        }
+      }
+      
       await signInWithGoogle();
       console.log('[AUTH DEBUG] Google sign-in initiated, redirect should happen automatically');
       // The redirect will happen automatically via window.location.href in signInWithGoogle
@@ -282,6 +302,113 @@ export default function SignInForm() {
               className="w-full text-xs"
             >
               Test OAuth URL
+            </Button>
+          )}
+
+          {/* Comprehensive Test Button - Remove this in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={async () => {
+                console.log('[AUTH DEBUG] === COMPREHENSIVE SIGN-IN TEST ===');
+                
+                // Test 1: Basic button click functionality
+                console.log('[AUTH DEBUG] Test 1: Button click works ✓');
+                
+                // Test 2: User agent detection
+                const userAgent = navigator.userAgent;
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+                console.log('[AUTH DEBUG] Test 2: User agent detection', {
+                  userAgent,
+                  isMobile,
+                  isDesktop: !isMobile
+                });
+                
+                // Test 3: Environment variables
+                console.log('[AUTH DEBUG] Test 3: Environment check', {
+                  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ Set' : '✗ Missing',
+                  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓ Set' : '✗ Missing',
+                  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'Using window.location.origin'
+                });
+                
+                // Test 4: Site origin calculation
+                const { siteOrigin } = await import('@/lib/site');
+                const origin = siteOrigin();
+                const redirectUrl = `${origin}/auth/callback`;
+                console.log('[AUTH DEBUG] Test 4: Site origin calculation', {
+                  origin,
+                  redirectUrl,
+                  windowOrigin: window.location.origin
+                });
+                
+                // Test 5: Popup blocker test (desktop only)
+                if (!isMobile) {
+                  console.log('[AUTH DEBUG] Test 5: Popup blocker test (desktop)');
+                  const popupTest = window.open('', '_blank', 'width=1,height=1');
+                  if (!popupTest || popupTest.closed || typeof popupTest.closed === 'undefined') {
+                    console.log('[AUTH DEBUG] ❌ Popup blocker detected');
+                    alert('Popup blocker detected! This will prevent Google sign-in from working.');
+                  } else {
+                    popupTest.close();
+                    console.log('[AUTH DEBUG] ✓ Popup test successful');
+                  }
+                } else {
+                  console.log('[AUTH DEBUG] Test 5: Skipped (mobile device)');
+                }
+                
+                // Test 6: Supabase client creation
+                try {
+                  const { createClient } = await import('@/lib/sb-client');
+                  const sb = createClient();
+                  console.log('[AUTH DEBUG] Test 6: Supabase client creation ✓');
+                  
+                  // Test 7: Current auth state
+                  const { data, error } = await sb.auth.getSession();
+                  console.log('[AUTH DEBUG] Test 7: Current auth state', {
+                    hasSession: !!data.session,
+                    hasUser: !!data.session?.user,
+                    userId: data.session?.user?.id,
+                    error: error?.message
+                  });
+                  
+                } catch (err) {
+                  console.log('[AUTH DEBUG] Test 6-7: Supabase client error', err);
+                }
+                
+                // Test 8: OAuth URL generation test
+                try {
+                  const { createClient } = await import('@/lib/sb-client');
+                  const sb = createClient();
+                  
+                  console.log('[AUTH DEBUG] Test 8: OAuth URL generation test');
+                  const { data, error } = await sb.auth.signInWithOAuth({
+                    provider: "google",
+                    options: {
+                      flowType: "pkce",
+                      redirectTo: redirectUrl,
+                      skipBrowserRedirect: true // Don't actually redirect, just test URL generation
+                    },
+                  });
+                  
+                  if (error) {
+                    console.log('[AUTH DEBUG] ❌ OAuth URL generation failed:', error.message);
+                  } else if (data?.url) {
+                    console.log('[AUTH DEBUG] ✓ OAuth URL generated successfully');
+                    console.log('[AUTH DEBUG] OAuth URL (first 100 chars):', data.url.substring(0, 100));
+                  } else {
+                    console.log('[AUTH DEBUG] ❌ No OAuth URL received');
+                  }
+                  
+                } catch (err) {
+                  console.log('[AUTH DEBUG] Test 8: OAuth URL generation error', err);
+                }
+                
+                console.log('[AUTH DEBUG] === COMPREHENSIVE TEST COMPLETE ===');
+                alert('Comprehensive test complete! Check console for detailed results.');
+              }}
+              variant="outline"
+              className="w-full text-xs bg-yellow-50 border-yellow-200 text-yellow-800"
+            >
+              🧪 Comprehensive Sign-In Test
             </Button>
           )}
 

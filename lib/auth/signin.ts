@@ -12,6 +12,8 @@ export async function signInWithGoogle() {
     redirectUrl, 
     windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'undefined',
     envSiteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'undefined',
+    isMobile: typeof window !== 'undefined' ? /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) : false,
     timestamp: new Date().toISOString()
   });
 
@@ -28,11 +30,16 @@ export async function signInWithGoogle() {
     
     console.log('[AUTH DEBUG] signInWithGoogle: cleared keys', { clearedKeys });
 
+    // For desktop, we might want to use a different approach to avoid popup issues
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: {
         flowType: "pkce",
         redirectTo: redirectUrl,
+        // For desktop, we might want to force a redirect instead of popup
+        ...(isMobile ? {} : { skipBrowserRedirect: false })
       },
     });
 
@@ -41,6 +48,7 @@ export async function signInWithGoogle() {
       hasError: !!error, 
       errorMessage: error?.message,
       url: data?.url,
+      isMobile,
       timestamp: new Date().toISOString()
     });
 
@@ -54,12 +62,20 @@ export async function signInWithGoogle() {
 
     // The redirect should happen automatically, but let's ensure it does
     console.log('[AUTH DEBUG] signInWithGoogle: redirecting to', data.url);
-    window.location.href = data.url;
+    
+    // For desktop, we might want to use a more direct approach
+    if (isMobile) {
+      window.location.href = data.url;
+    } else {
+      // On desktop, try to open in the same window to avoid popup issues
+      window.location.href = data.url;
+    }
     
   } catch (error: any) {
     console.error('[AUTH DEBUG] signInWithGoogle: error', { 
       message: error?.message, 
       name: error?.name,
+      userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'undefined',
       timestamp: new Date().toISOString()
     });
     throw error;

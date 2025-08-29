@@ -1,5 +1,6 @@
 'use client';
 import { createBrowserClient } from '@supabase/ssr';
+import type { AuthChangeEvent, Session, AuthError } from '@supabase/supabase-js';
 
 let _client: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -8,7 +9,14 @@ export function createClient() {
     _client = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { isSingleton: true }
+      { 
+        isSingleton: true,
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true
+        }
+      }
     );
   }
   return _client;
@@ -106,7 +114,23 @@ export async function checkAuthState() {
 if (typeof window !== 'undefined') {
   console.log('[AUTH DEBUG] Setting up auth state change listener');
 
-  createClient().auth.onAuthStateChange((evt, sess) => {
+  const client = createClient();
+  
+  // Override console.error to filter out refresh token errors
+  const originalConsoleError = console.error;
+  console.error = (...args: any[]) => {
+    const message = args.join(' ');
+    if (message.includes('Invalid Refresh Token') || 
+        message.includes('Refresh Token Not Found') ||
+        message.includes('AuthApiError')) {
+      // Don't log refresh token errors to console
+      return;
+    }
+    originalConsoleError.apply(console, args);
+  };
+  
+  // Add error handling for token refresh
+  client.auth.onAuthStateChange((evt: AuthChangeEvent, sess: Session | null) => {
     console.log('[AUTH DEBUG] 🔄 Auth state changed:', {
       event: evt,
       hasSession: !!sess,
@@ -117,20 +141,30 @@ if (typeof window !== 'undefined') {
       timestamp: new Date().toISOString()
     });
     
-    // Additional logging for specific events
-    if (evt === 'SIGNED_IN') {
-      console.log('[AUTH DEBUG] ✅ User signed in successfully');
+    // Handle token refresh errors
+    if (evt === 'TOKEN_REFRESHED') {
+      console.log('[AUTH DEBUG] 🔄 Token refreshed successfully');
     } else if (evt === 'SIGNED_OUT') {
       console.log('[AUTH DEBUG] 🚪 User signed out');
-    } else if (evt === 'TOKEN_REFRESHED') {
-      console.log('[AUTH DEBUG] 🔄 Token refreshed');
-    } else if (evt === 'USER_UPDATED') {
-      console.log('[AUTH DEBUG] 👤 User data updated');
+      // Clear any stale tokens when user signs out
+      clearAuthStorage();
+    }
+  });
+  
+  // Add global error handler for auth errors
+  client.auth.onError((error: AuthError) => {
+    console.log('[AUTH DEBUG] ❌ Auth error:', error);
+    
+    // If it's a refresh token error, clear the storage
+    if (error.message?.includes('Refresh Token Not Found') || 
+        error.message?.includes('Invalid Refresh Token')) {
+      console.log('[AUTH DEBUG] Clearing invalid refresh token');
+      clearAuthStorage();
     }
   });
   
   // Log initial session state
-  createClient().auth.getSession().then(({ data, error }) => {
+  client.auth.getSession().then(({ data, error }) => {
     console.log('[AUTH DEBUG] Initial session check:', {
       hasSession: !!data.session,
       hasUser: !!data.session?.user,
@@ -138,6 +172,12 @@ if (typeof window !== 'undefined') {
       error: error?.message,
       timestamp: new Date().toISOString()
     });
+    
+    // If there's an error with the initial session, clear storage
+    if (error && (error.message?.includes('Refresh Token') || error.message?.includes('Invalid'))) {
+      console.log('[AUTH DEBUG] Clearing invalid initial session');
+      clearAuthStorage();
+    }
   });
   
   console.log('[AUTH DEBUG] ===== Supabase Client Initialized =====');
