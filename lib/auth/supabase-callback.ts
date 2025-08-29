@@ -37,10 +37,18 @@ export async function handleGoogleCallback(req: any, res: any) {
   }
 
   try {
-    const { data, error } = await supabase.auth.exchangeCodeForSession({
-      authCode,
-      codeVerifier,
-    });
+    const payload: any = {
+      code: authCode,
+      code_verifier: codeVerifier,
+    };
+
+    // If a redirect_uri was used during sign-in, include it here as well
+    const redirectUri = process.env.OAUTH_REDIRECT_URI;
+    if (redirectUri) {
+      payload.redirect_uri = redirectUri;
+    }
+
+    const { data, error } = await supabase.auth.exchangeCodeForSession(payload);
 
     if (error) {
       // Typical: invalid_grant if verifier mismatches or code reused/expired

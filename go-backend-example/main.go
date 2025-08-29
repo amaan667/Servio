@@ -6,9 +6,9 @@ import (
 )
 
 // PKCEGrantParams matches the flat JSON structure sent by the frontend
-// Frontend sends: { "auth_code": "AUTH_CODE_FROM_GOOGLE", "verifier": "PKCE_VERIFIER_STRING" }
+// Frontend sends: { "code": "AUTH_CODE_FROM_GOOGLE", "verifier": "PKCE_VERIFIER_STRING" }
 type PKCEGrantParams struct {
-	AuthCode string `json:"auth_code"`
+	Code     string `json:"code"`
 	Verifier string `json:"verifier"`
 }
 
