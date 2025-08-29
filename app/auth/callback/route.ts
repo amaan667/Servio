@@ -19,18 +19,9 @@ export async function GET(req: Request) {
   console.log('[CALLBACK FLOW] URL pathname:', url.pathname);
   console.log('[CALLBACK FLOW] URL search:', url.search);
 
-  // Use robust base URL helper instead of trusting req.url
-  const redirectBase = getBaseUrl()
-  console.log('[CALLBACK FLOW] Redirect base (from getBaseUrl):', redirectBase);
-
-  // Additional safety check - ensure we never use localhost
-  if (redirectBase.includes('localhost') || redirectBase.includes('127.0.0.1')) {
-    console.error('[CALLBACK FLOW] ERROR: getBaseUrl returned localhost:', redirectBase);
-    // Fall back to environment variable
-    const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app'
-    console.log('[CALLBACK FLOW] Using environment fallback:', envUrl);
-    return NextResponse.redirect(`${envUrl}/?auth_error=base_url_error`)
-  }
+  // Use consistent redirect base for all platforms
+  const redirectBase = 'https://servio-production.up.railway.app';
+  console.log('[CALLBACK FLOW] Redirect base (consistent):', redirectBase);
 
   console.log('[CALLBACK FLOW] Callback params:', { 
     hasCode: !!code, 

@@ -205,22 +205,8 @@ export async function signInWithGoogle() {
     sessionStorage.removeItem("sb_oauth_retry");
   } catch {}
   
-  // Use robust base URL helper for client-side
-  let redirectTo: string;
-  if (typeof window !== 'undefined') {
-    // Client-side: use window.location.origin but ensure it's not localhost
-    const clientOrigin = window.location.origin;
-    if (clientOrigin.includes('localhost') || clientOrigin.includes('127.0.0.1')) {
-      console.log('[AUTH DEBUG] WARNING: Client on localhost, using production URL');
-      redirectTo = 'https://servio-production.up.railway.app/auth/callback';
-    } else {
-      redirectTo = `${clientOrigin}/auth/callback`;
-    }
-  } else {
-    // Server-side: use environment variable
-    const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
-    redirectTo = `${envUrl.replace(/\/+$/, '')}/auth/callback`;
-  }
+  // Use consistent redirect URL for all platforms
+  const redirectTo = 'https://servio-production.up.railway.app/auth/callback';
   
   console.log('[OAUTH FLOW] Step 1: OAuth initiation');
   console.log('[OAUTH FLOW] Environment check: NODE_ENV=', process.env.NODE_ENV);
@@ -232,12 +218,6 @@ export async function signInWithGoogle() {
   console.log('[OAUTH FLOW] Final redirectTo: ', redirectTo);
   console.log('[OAUTH FLOW] Supabase URL: ', process.env.NEXT_PUBLIC_SUPABASE_URL);
   console.log('[OAUTH FLOW] Has anon key: ', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  
-  // Safety check - ensure we never use localhost
-  if (redirectTo.includes('localhost') || redirectTo.includes('127.0.0.1')) {
-    console.error('[AUTH DEBUG] ERROR: Redirect URL contains localhost:', redirectTo);
-    throw new Error('Invalid redirect URL - contains localhost');
-  }
   
   console.log('[AUTH DEBUG] Using redirect URL:', redirectTo);
   console.log('[AUTH DEBUG] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);

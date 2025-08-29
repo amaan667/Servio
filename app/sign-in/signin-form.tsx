@@ -65,24 +65,6 @@ export default function SignInForm() {
     setError(null);
     
     try {
-      // Check if we're on desktop and warn about popup blocking
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (!isMobile) {
-        console.log('[AUTH DEBUG] Desktop detected, checking for popup blockers');
-        // Test if popups are blocked
-        const popupTest = window.open('', '_blank', 'width=1,height=1');
-        if (!popupTest || popupTest.closed || typeof popupTest.closed === 'undefined') {
-          console.log('[AUTH DEBUG] Popup blocker detected');
-          setError('Popup blocker detected. Please allow pop-ups for this site and try again.');
-          setLoading(false);
-          googleSignInInProgress.current = false;
-          return;
-        } else {
-          popupTest.close();
-          console.log('[AUTH DEBUG] Popup test successful');
-        }
-      }
-      
       console.log('[SIGNIN FORM] Step 2: Calling signInWithGoogle function');
       await signInWithGoogle();
       console.log('[SIGNIN FORM] Step 3: signInWithGoogle completed');
@@ -90,6 +72,7 @@ export default function SignInForm() {
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed. Please try again.');
       setLoading(false);
+      googleSignInInProgress.current = false;
     }
   };
 
@@ -174,10 +157,9 @@ export default function SignInForm() {
             <Button
               onClick={async () => {
                 try {
-                  const { createClient } = await import('@/lib/sb-client');
-                  const { siteOrigin } = await import('@/lib/site');
+                  const { createClient } = await import('@/lib/supabase/client');
                   const sb = createClient();
-                  const redirectUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
+                  const redirectUrl = 'https://servio-production.up.railway.app/auth/callback';
                   
                   console.log('[AUTH DEBUG] === Testing OAuth URL ===');
                   console.log('[AUTH DEBUG] Redirect URL:', redirectUrl);
@@ -185,8 +167,8 @@ export default function SignInForm() {
                   const { data, error } = await sb.auth.signInWithOAuth({
                     provider: "google",
                     options: {
-                      flowType: "pkce",
                       redirectTo: redirectUrl,
+                      skipBrowserRedirect: true // Don't actually redirect, just test URL generation
                     },
                   });
                   
@@ -200,15 +182,19 @@ export default function SignInForm() {
                   
                   if (data?.url) {
                     console.log('[AUTH DEBUG] OAuth URL (first 100 chars):', data.url.substring(0, 100));
+                    alert('OAuth URL generated successfully! Check console for details.');
+                  } else {
+                    alert('Failed to generate OAuth URL. Check console for error details.');
                   }
                 } catch (err) {
                   console.error('[AUTH DEBUG] Error testing OAuth URL:', err);
+                  alert('Error testing OAuth URL. Check console for details.');
                 }
               }}
               variant="outline"
               className="w-full text-xs"
             >
-              Test OAuth URL
+              Test OAuth URL (Desktop Fix)
             </Button>
           )}
 
