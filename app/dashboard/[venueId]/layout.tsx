@@ -1,3 +1,5 @@
+import ClientNavBar from '@/components/ClientNavBar';
+
 export default function VenueDashboardLayout({
   children,
   params,
@@ -7,6 +9,7 @@ export default function VenueDashboardLayout({
 }) {
   return (
     <>
+      <ClientNavBar venueId={params.venueId} />
       {children}
     </>
   );

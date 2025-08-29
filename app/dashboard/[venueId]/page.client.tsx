@@ -32,7 +32,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         }
         
         // Load venue data and stats (userId already verified by SSR)
-        const { data: venueData, error } = await supabase
+        const { data: venueData, error } = await createClient()
           .from("venues")
           .select("*")
           .eq("venue_id", venueId)
