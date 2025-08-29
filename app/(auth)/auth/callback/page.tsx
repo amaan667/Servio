@@ -4,14 +4,6 @@ export const dynamic = "force-dynamic";
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/sb-client";
-import { getPkceVerifier } from '@/lib/auth/pkce-utils.js';
-
-// Enhanced mobile detection
-function isMobileBrowser() {
-  if (typeof window === 'undefined') return false;
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent);
-}
 
 function OAuthCallbackContent() {
   const router = useRouter();
@@ -20,21 +12,18 @@ function OAuthCallbackContent() {
   useEffect(() => {
     let finished = false;
     const sb = createClient();
-    const isMobile = isMobileBrowser();
     
     console.log('[OAuth Frontend] callback: starting', { 
       url: window.location.href,
       searchParams: Object.fromEntries(sp.entries()),
-      isMobile,
-      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
       timestamp: new Date().toISOString()
     });
 
-    // Enhanced timeout for mobile devices - they need more time for storage operations
-    const timeoutDuration = isMobile ? 30000 : 20000;
+    // Use consistent timeout for all platforms
+    const timeoutDuration = 20000;
     const timeout = setTimeout(async () => {
       if (!finished) {
-        console.log('[OAuth Frontend] callback: timeout reached', { isMobile, timeoutDuration });
+        console.log('[OAuth Frontend] callback: timeout reached', { timeoutDuration });
         try {
           await fetch('/api/auth/log', {
             method: 'POST',
@@ -43,8 +32,6 @@ function OAuthCallbackContent() {
               event: 'callback_timeout',
               url: window.location.href,
               searchParams: Object.fromEntries(sp.entries()),
-              isMobile,
-              userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
             }),
           });
         } catch {}
@@ -62,20 +49,18 @@ function OAuthCallbackContent() {
         hasCode: !!code, 
         errorParam, 
         next,
-        isMobile,
         timestamp: new Date().toISOString()
       });
 
       if (errorParam) {
-        console.log('[OAuth Frontend] callback: error param found', { errorParam, isMobile });
+        console.log('[OAuth Frontend] callback: error param found', { errorParam });
         try {
           await fetch('/api/auth/log', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ 
               event: 'oauth_error_param', 
-              errorParam,
-              isMobile 
+              errorParam
             }) 
           });
         } catch {}
@@ -83,25 +68,20 @@ function OAuthCallbackContent() {
       }
       
       if (!code) {
-        console.log('[OAuth Frontend] callback: no code found', { isMobile });
+        console.log('[OAuth Frontend] callback: no code found');
         try {
           await fetch('/api/auth/log', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ 
-              event: 'missing_code',
-              isMobile 
+              event: 'missing_code'
             }) 
           });
         } catch {}
         return router.replace("/sign-in?error=missing_code");
       }
 
-      // Step 2: Skip strict PKCE verifier checks. Supabase's exchangeCodeForSession
-      // handles PKCE internally, and aggressive storage checks can cause false
-      // negatives on some browsers.
-
-      console.log('[OAuth Frontend] callback: using Supabase exchangeCodeForSession', { isMobile });
+      console.log('[OAuth Frontend] callback: using Supabase exchangeCodeForSession');
       
       try {
         // Step 3: Use Supabase's built-in exchangeCodeForSession method
@@ -120,8 +100,7 @@ function OAuthCallbackContent() {
 
         if (error) {
           console.log('[OAuth Frontend] callback: Supabase exchange failed', { 
-            error: error.message,
-            isMobile 
+            error: error.message
           });
           try {
             await fetch('/api/auth/log', { 
@@ -129,25 +108,23 @@ function OAuthCallbackContent() {
               headers: { 'Content-Type': 'application/json' }, 
               body: JSON.stringify({ 
                 event: 'supabase_exchange_failed', 
-                message: error.message,
-                isMobile 
+                message: error.message
               }) 
             });
           } catch {}
           return router.replace("/sign-in?error=exchange_failed");
         }
 
-        console.log('[OAuth Frontend] callback: getting session', { isMobile });
+        console.log('[OAuth Frontend] callback: getting session');
         const { data: { session } } = await sb.auth.getSession();
         if (!session) {
-          console.log('[OAuth Frontend] callback: no session after exchange', { isMobile });
+          console.log('[OAuth Frontend] callback: no session after exchange');
           try {
             await fetch('/api/auth/log', { 
               method: 'POST', 
               headers: { 'Content-Type': 'application/json' }, 
               body: JSON.stringify({ 
-                event: 'no_session_after_exchange',
-                isMobile 
+                event: 'no_session_after_exchange'
               }) 
             });
           } catch {}
@@ -156,19 +133,17 @@ function OAuthCallbackContent() {
 
         console.log('[OAuth Frontend] callback: success, redirecting to', { 
           next, 
-          userId: session.user.id,
-          isMobile 
+          userId: session.user.id
         });
         
-        // Enhanced delay for mobile browsers to ensure session is properly set
-        const sessionDelay = isMobile ? 1000 : 500;
+        // Use consistent delay for all platforms
+        const sessionDelay = 500;
         await new Promise(resolve => setTimeout(resolve, sessionDelay));
         
         router.replace(next);
       } catch (exchangeError: any) {
         console.error('[OAuth Frontend] callback: unexpected error during exchange', { 
-          error: exchangeError,
-          isMobile 
+          error: exchangeError
         });
         try {
           await fetch('/api/auth/log', { 
@@ -176,8 +151,7 @@ function OAuthCallbackContent() {
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ 
               event: 'unexpected_exchange_error', 
-              message: String(exchangeError?.message || exchangeError),
-              isMobile 
+              message: String(exchangeError?.message || exchangeError)
             }) 
           });
         } catch {}

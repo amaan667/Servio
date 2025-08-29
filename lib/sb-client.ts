@@ -3,19 +3,12 @@ import { createBrowserClient } from '@supabase/ssr';
 
 let _client: ReturnType<typeof createBrowserClient> | null = null;
 
-// Enhanced mobile detection
-function isMobileBrowser() {
-  if (typeof window === 'undefined') return false;
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent);
-}
-
 // Enhanced browser detection
 function getBrowserInfo() {
   if (typeof window === 'undefined') return { type: 'unknown', isMobile: false };
   
   const userAgent = window.navigator.userAgent;
-  const isMobile = isMobileBrowser();
+  const isMobile = /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent.toLowerCase());
   
   let browserType = 'unknown';
   if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
@@ -45,81 +38,41 @@ export function createClient() {
       { 
         isSingleton: true,
         auth: {
-          // Enhanced auth configuration for better cross-platform support
+          // Consistent auth configuration for all platforms
           autoRefreshToken: true,
           persistSession: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
-          // Enhanced cookie options for better cross-platform compatibility
+          // Consistent cookie options
           cookieOptions: {
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax', // Use 'lax' for better cross-platform compatibility
+            sameSite: 'lax',
             path: '/',
-            // Cross-platform cookie settings
-            httpOnly: false, // Allow JavaScript access for better compatibility
+            httpOnly: false,
             maxAge: 60 * 60 * 24 * 7, // 7 days
           },
-          // Enhanced storage configuration with cross-platform error handling
+          // Consistent storage configuration
           storage: {
-            // Enhanced localStorage handling with retry logic
             getItem: (key: string) => {
               try {
-                const value = localStorage.getItem(key);
-                if (value === null) {
-                  // Try sessionStorage as fallback for mobile
-                  const sessionValue = sessionStorage.getItem(key);
-                  if (sessionValue !== null) {
-                    console.log('[AUTH DEBUG] Fallback to sessionStorage for key:', key);
-                    return sessionValue;
-                  }
-                }
-                return value;
+                return localStorage.getItem(key);
               } catch (error) {
-                console.log('[AUTH DEBUG] localStorage.getItem failed, trying sessionStorage:', error);
-                try {
-                  return sessionStorage.getItem(key);
-                } catch (sessionError) {
-                  console.log('[AUTH DEBUG] sessionStorage.getItem also failed:', sessionError);
-                  return null;
-                }
+                console.log('[AUTH DEBUG] localStorage.getItem failed:', error);
+                return null;
               }
             },
             setItem: (key: string, value: string) => {
               try {
                 localStorage.setItem(key, value);
-                // Also store in sessionStorage as backup for mobile
-                if (browserInfo.isMobile) {
-                  try {
-                    sessionStorage.setItem(key, value);
-                  } catch (sessionError) {
-                    console.log('[AUTH DEBUG] Failed to backup to sessionStorage:', sessionError);
-                  }
-                }
               } catch (error) {
-                console.log('[AUTH DEBUG] localStorage.setItem failed, trying sessionStorage:', error);
-                try {
-                  sessionStorage.setItem(key, value);
-                } catch (sessionError) {
-                  console.log('[AUTH DEBUG] sessionStorage.setItem also failed:', sessionError);
-                }
+                console.log('[AUTH DEBUG] localStorage.setItem failed:', error);
               }
             },
             removeItem: (key: string) => {
               try {
                 localStorage.removeItem(key);
-                // Also remove from sessionStorage
-                try {
-                  sessionStorage.removeItem(key);
-                } catch (sessionError) {
-                  console.log('[AUTH DEBUG] Failed to remove from sessionStorage:', sessionError);
-                }
               } catch (error) {
-                console.log('[AUTH DEBUG] localStorage.removeItem failed, trying sessionStorage:', error);
-                try {
-                  sessionStorage.removeItem(key);
-                } catch (sessionError) {
-                  console.log('[AUTH DEBUG] sessionStorage.removeItem also failed:', sessionError);
-                }
+                console.log('[AUTH DEBUG] localStorage.removeItem failed:', error);
               }
             },
           }
@@ -127,7 +80,7 @@ export function createClient() {
       }
     );
     
-    console.log('[AUTH DEBUG] Supabase client created with enhanced cross-platform support:', browserInfo);
+    console.log('[AUTH DEBUG] Supabase client created with consistent configuration:', browserInfo);
   }
   return _client;
 }
@@ -193,7 +146,6 @@ export function checkPKCEState() {
     // Check for OAuth progress flags
     const oauthProgress = sessionStorage.getItem("sb_oauth_in_progress");
     const oauthStartTime = sessionStorage.getItem("sb_oauth_start_time");
-    const oauthMobile = sessionStorage.getItem("sb_oauth_mobile");
     
     return {
       localStorageKeys,
@@ -203,7 +155,6 @@ export function checkPKCEState() {
       hasSupabaseAuth: supabaseKeys.length > 0,
       oauthProgress: !!oauthProgress,
       oauthStartTime: oauthStartTime ? new Date(parseInt(oauthStartTime)).toISOString() : null,
-      oauthMobile: oauthMobile === 'true',
       browserInfo
     };
   } catch (error: any) {
@@ -235,7 +186,7 @@ export async function checkAuthState() {
 
 // Utility function to check if we're on a mobile device
 export function isMobileDevice() {
-  return isMobileBrowser();
+  return getBrowserInfo().isMobile;
 }
 
 // Enhanced logger to spot state flips in dev
