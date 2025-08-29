@@ -14,8 +14,8 @@ export function middleware(req: NextRequest) {
 
   if (
     isAsset(p) ||
-    p.startsWith("/auth/callback") ||
     p.startsWith("/api/auth/callback") ||
+    p.startsWith("/auth/callback") ||
     url.searchParams.has("code") ||
     url.searchParams.has("error")
   ) {
