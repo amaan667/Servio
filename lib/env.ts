@@ -12,7 +12,7 @@ export const ENV = {
           process.env.APP_URL ||
           process.env.NEXT_PUBLIC_APP_URL ||
           process.env.NEXT_PUBLIC_SITE_URL ||
-          'https://servio-production.up.railway.app'
+          'http://localhost:3000'
         ),
   SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL!,
   SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

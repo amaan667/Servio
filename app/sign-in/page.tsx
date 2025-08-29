@@ -29,8 +29,9 @@ function SignInContent() {
           {err === "oauth_error" && "Authentication failed. Please try again."}
           {err === "exchange_failed" && "Sign-in failed while finalizing session."}
           {err === "missing_code" && "Missing authorization code in callback."}
+          {err === "pkce_error" && "Authentication flow error. Please try again."}
           {err === "no_session" && "Signed in, but no session returned."}
-          {["timeout","oauth_error","exchange_failed","missing_code","no_session"].includes(err) ? "" : err}
+          {["timeout","oauth_error","exchange_failed","missing_code","pkce_error","no_session"].includes(err) ? "" : err}
         </p>
       )}
 

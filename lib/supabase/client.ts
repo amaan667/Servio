@@ -161,3 +161,52 @@ export async function checkAuthState() {
     return { data: null, error };
   }
 }
+
+// Enhanced PKCE state checker for debugging
+export function debugPKCEState() {
+  if (typeof window === 'undefined') return { isServer: true };
+  
+  try {
+    console.log('[AUTH DEBUG] 🔍 Debugging PKCE state...');
+    
+    const browserInfo = getBrowserInfo();
+    const oauthProgress = sessionStorage.getItem("sb_oauth_in_progress");
+    const oauthStartTime = sessionStorage.getItem("sb_oauth_start_time");
+    
+    // Check all possible PKCE verifier locations
+    const pkceKeys = {
+      supabaseVerifier: localStorage.getItem("supabase.auth.token-code-verifier"),
+      customVerifier: sessionStorage.getItem("pkce_verifier"),
+      authToken: localStorage.getItem("sb-auth-token"),
+      // Check for any other potential verifier keys
+      allLocalStorage: Object.keys(localStorage).filter(k => 
+        k.includes('verifier') || k.includes('pkce') || k.includes('code')
+      ),
+      allSessionStorage: Object.keys(sessionStorage).filter(k => 
+        k.includes('verifier') || k.includes('pkce') || k.includes('code')
+      )
+    };
+    
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      oauthInProgress: oauthProgress === "true",
+      oauthStartTime: oauthStartTime ? parseInt(oauthStartTime) : null,
+      pkceKeys,
+      browserInfo,
+      localStorage: {
+        size: Object.keys(localStorage).length,
+        authKeys: Object.keys(localStorage).filter(k => k.includes('auth') || k.includes('sb-') || k.includes('pkce')),
+      },
+      sessionStorage: {
+        size: Object.keys(sessionStorage).length,
+        authKeys: Object.keys(sessionStorage).filter(k => k.includes('auth') || k.includes('sb-') || k.includes('pkce')),
+      }
+    };
+    
+    console.log('[AUTH DEBUG] 🔍 PKCE Debug Info:', debugInfo);
+    return debugInfo;
+  } catch (error) {
+    console.error('[AUTH DEBUG] ❌ Error debugging PKCE state:', error);
+    return { error: error.message };
+  }
+}

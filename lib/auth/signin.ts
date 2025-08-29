@@ -1,6 +1,7 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
+import { debugPKCEState } from "@/lib/supabase/client";
 
 function maskValue(value: string | null | undefined, opts: { prefix?: number; suffix?: number } = {}) {
   if (!value) return { present: false };
@@ -43,28 +44,18 @@ export async function signInWithGoogle() {
     timestamp: new Date().toISOString()
   });
 
+  // Debug PKCE state before starting
+  debugPKCEState();
+
   try {
-    // Clear any existing OAuth progress flags
+    // Only clear OAuth progress flags, not PKCE state
     sessionStorage.removeItem("sb_oauth_in_progress");
     sessionStorage.removeItem("sb_oauth_start_time");
     
-    // Clear any stale Supabase storage
-    const localStorageKeys = Object.keys(localStorage).filter(k => 
-      k.startsWith("sb-") || k.includes("auth")
-    );
-    localStorageKeys.forEach(k => localStorage.removeItem(k));
-    
-    const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-      k.startsWith("sb-") || k.includes("auth")
-    );
-    sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
-    
-    console.log('[AUTH DEBUG] signInWithGoogle: cleared storage', { 
-      localStorageKeys: localStorageKeys.length,
-      sessionStorageKeys: sessionStorageKeys.length
-    });
+    // Don't clear Supabase storage - let Supabase manage PKCE state
+    console.log('[AUTH DEBUG] signInWithGoogle: preserving PKCE state');
 
-    // Ensure we're starting with a clean state
+    // Ensure we're starting with a clean state but preserve PKCE artifacts
     await sb.auth.signOut({ scope: 'local' });
 
     // Use Supabase's built-in PKCE flow
@@ -102,6 +93,9 @@ export async function signInWithGoogle() {
     // Store OAuth progress flags
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
+
+    // Debug PKCE state after OAuth initiation
+    debugPKCEState();
 
     // Log the exact Google OAuth URL with masked client_id for debugging
     try {

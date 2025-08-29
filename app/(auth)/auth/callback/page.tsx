@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { debugPKCEState } from "@/lib/supabase/client";
 
 function OAuthCallbackContent() {
   const router = useRouter();
@@ -18,6 +19,9 @@ function OAuthCallbackContent() {
       searchParams: Object.fromEntries(sp.entries()),
       timestamp: new Date().toISOString()
     });
+
+    // Debug PKCE state at callback start
+    debugPKCEState();
 
     // Use consistent timeout for all platforms
     const timeoutDuration = 20000;
@@ -109,6 +113,12 @@ function OAuthCallbackContent() {
               }) 
             });
           } catch {}
+          
+          // Check if it's a PKCE verifier issue and provide specific error
+          if (error.message.includes('code verifier') || error.message.includes('non-empty')) {
+            return router.replace("/sign-in?error=pkce_error");
+          }
+          
           return router.replace("/sign-in?error=exchange_failed");
         }
 
@@ -130,6 +140,10 @@ function OAuthCallbackContent() {
           next, 
           userId: data.user.id
         });
+        
+        // Clear OAuth progress flags on success
+        sessionStorage.removeItem("sb_oauth_in_progress");
+        sessionStorage.removeItem("sb_oauth_start_time");
         
         // Use consistent delay for all platforms
         const sessionDelay = 500;

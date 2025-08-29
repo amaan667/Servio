@@ -1,174 +1,87 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/app/authenticated-client-provider';
-import { createClient, getBrowserInfo, checkAuthState, clearAuthStorage } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { debugPKCEState, checkAuthState } from "@/lib/supabase/client";
+import { signInWithGoogle } from "@/lib/auth/signin";
 
 export default function TestAuthPage() {
-  const { session, loading, signOut } = useAuth();
-  const [browserInfo, setBrowserInfo] = useState<any>(null);
   const [authState, setAuthState] = useState<any>(null);
-  const [testResults, setTestResults] = useState<any>(null);
+  const [pkceState, setPkceState] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // Get browser info
-    setBrowserInfo(getBrowserInfo());
-    
-    // Check auth state
-    const checkAuth = async () => {
-      const state = await checkAuthState();
-      setAuthState(state);
-    };
-    checkAuth();
-  }, []);
+  const checkState = async () => {
+    const auth = await checkAuthState();
+    const pkce = debugPKCEState();
+    setAuthState(auth);
+    setPkceState(pkce);
+  };
 
-  const runAuthTests = async () => {
-    const results = {
-      timestamp: new Date().toISOString(),
-      browserInfo: getBrowserInfo(),
-      session: {
-        hasSession: !!session,
-        userId: session?.user?.id,
-        userEmail: session?.user?.email,
-        expiresAt: session?.expires_at,
-      },
-      authState: await checkAuthState(),
-      localStorage: {
-        available: typeof window !== 'undefined' && !!window.localStorage,
-        keys: typeof window !== 'undefined' ? Object.keys(localStorage).filter(k => k.startsWith('sb-')) : [],
-      },
-      sessionStorage: {
-        available: typeof window !== 'undefined' && !!window.sessionStorage,
-        keys: typeof window !== 'undefined' ? Object.keys(sessionStorage).filter(k => k.startsWith('sb-')) : [],
-      },
-      expectedBehavior: {
-        noAutoRestoration: true,
-        requiresExplicitSignIn: true,
-        sessionOnlyDuringOAuth: true,
-      }
-    };
-    
-    setTestResults(results);
-    console.log('[AUTH TEST] Results:', results);
+  const handleSignIn = async () => {
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error('Sign in error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignOut = async () => {
-    try {
-      console.log('[AUTH TEST] Starting sign out process');
-      await signOut();
-      console.log('[AUTH TEST] Sign out completed');
-      
-      // Force clear storage
-      clearAuthStorage();
-      console.log('[AUTH TEST] Storage cleared');
-      
-      // Redirect to sign-in
-      window.location.href = '/sign-in';
-    } catch (error) {
-      console.error('[AUTH TEST] Sign out error:', error);
-    }
+    const sb = createClient();
+    await sb.auth.signOut();
+    await checkState();
   };
 
-  const forceClearStorage = () => {
-    try {
-      clearAuthStorage();
-      console.log('[AUTH TEST] Force cleared storage');
-      window.location.reload();
-    } catch (error) {
-      console.error('[AUTH TEST] Force clear error:', error);
-    }
-  };
-
-  const testNoAutoRestoration = () => {
-    try {
-      // Clear all storage
-      clearAuthStorage();
-      console.log('[AUTH TEST] Cleared storage for no-auto-restoration test');
-      
-      // Reload page to test if session is restored
-      window.location.reload();
-    } catch (error) {
-      console.error('[AUTH TEST] No-auto-restoration test error:', error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h2>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    checkState();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Authentication Test - No Auto Restoration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded p-4">
-              <h3 className="font-semibold text-blue-800 mb-2">Expected Behavior:</h3>
-              <ul className="text-blue-700 text-sm space-y-1">
-                <li>✅ Users should NOT be automatically signed in</li>
-                <li>✅ Users must explicitly sign in themselves</li>
-                <li>✅ No session restoration on page load</li>
-                <li>✅ Session only exists during active OAuth flow</li>
-              </ul>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="font-semibold mb-2">Browser Info</h3>
-                <pre className="bg-gray-100 p-2 rounded text-sm overflow-auto">
-                  {JSON.stringify(browserInfo, null, 2)}
-                </pre>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold mb-2">Current Session</h3>
-                <pre className="bg-gray-100 p-2 rounded text-sm overflow-auto">
-                  {JSON.stringify({
-                    hasSession: !!session,
-                    userId: session?.user?.id,
-                    userEmail: session?.user?.email,
-                    expiresAt: session?.expires_at,
-                  }, null, 2)}
-                </pre>
-              </div>
-            </div>
-
-            <div className="flex gap-4 flex-wrap">
-              <Button onClick={runAuthTests} variant="outline">
-                Run Auth Tests
-              </Button>
-              <Button onClick={handleSignOut} variant="destructive">
-                Sign Out
-              </Button>
-              <Button onClick={forceClearStorage} variant="outline">
-                Force Clear Storage
-              </Button>
-              <Button onClick={testNoAutoRestoration} variant="outline">
-                Test No Auto Restoration
-              </Button>
-            </div>
-
-            {testResults && (
-              <div>
-                <h3 className="font-semibold mb-2">Test Results</h3>
-                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96">
-                  {JSON.stringify(testResults, null, 2)}
-                </pre>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Auth Debug Page</h1>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">Authentication State</h2>
+            <pre className="text-xs bg-gray-100 p-4 rounded overflow-auto max-h-96">
+              {JSON.stringify(authState, null, 2)}
+            </pre>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">PKCE State</h2>
+            <pre className="text-xs bg-gray-100 p-4 rounded overflow-auto max-h-96">
+              {JSON.stringify(pkceState, null, 2)}
+            </pre>
+          </div>
+        </div>
+        
+        <div className="mt-8 flex gap-4">
+          <button
+            onClick={checkState}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Refresh State
+          </button>
+          
+          <button
+            onClick={handleSignIn}
+            disabled={loading}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+          >
+            {loading ? "Signing In..." : "Sign In with Google"}
+          </button>
+          
+          <button
+            onClick={handleSignOut}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Sign Out
+          </button>
+        </div>
       </div>
     </div>
   );
