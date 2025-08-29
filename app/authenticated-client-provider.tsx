@@ -34,7 +34,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     });
   }, []);
 
-  // Validate session and clear if invalid
+  // Universal session validation
   const validateAndUpdateSession = useCallback(async (session: Session | null) => {
     if (!session) {
       updateSession(null);
@@ -67,7 +67,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     updateSession(session);
   }, [updateSession]);
 
-  // Clear session and related storage
+  // Universal session clearing
   const clearSession = useCallback(() => {
     console.log('[AUTH DEBUG] provider:clearing session');
     setSession(null);

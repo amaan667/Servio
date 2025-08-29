@@ -44,7 +44,7 @@ export async function signInWithGoogle() {
   });
 
   try {
-    // Clear authentication storage consistently across all platforms
+    // Universal storage clearing for all platforms
     const clearedKeys: string[] = [];
     
     // Clear localStorage with comprehensive key detection
@@ -88,13 +88,13 @@ export async function signInWithGoogle() {
     // Ensure we're starting with a clean state
     await sb.auth.signOut({ scope: 'local' });
 
-    // Use consistent delay for all platforms
+    // Universal delay for all platforms
     const storageDelay = 200;
     console.log('[AUTH DEBUG] signInWithGoogle: waiting for storage to clear', { delay: storageDelay });
     await new Promise(resolve => setTimeout(resolve, storageDelay));
 
     // Use Supabase's built-in PKCE flow
-    console.log('[OAuth Frontend] Using Supabase built-in PKCE flow');
+    console.log('[OAuth Frontend] Using universal Supabase built-in PKCE flow');
 
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
@@ -137,7 +137,7 @@ export async function signInWithGoogle() {
       });
     } catch {}
 
-    // Redirect to OAuth provider
+    // Universal redirect to OAuth provider
     console.log('[AUTH DEBUG] signInWithGoogle: redirecting to', data.url);
     window.location.href = data.url;
     

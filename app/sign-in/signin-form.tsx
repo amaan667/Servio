@@ -35,6 +35,7 @@ export default function SignInForm() {
       if (!result.success) {
         setError(result.message || 'Invalid email or password');
       } else {
+        // Use consistent redirect logic for all platforms
         window.location.href = '/dashboard';
       }
     } catch (err: any) {
@@ -49,7 +50,7 @@ export default function SignInForm() {
       setLoading(true);
       setError(null);
       await signInWithGoogle();
-      // Redirect handled by OAuth
+      // Redirect handled by OAuth callback - consistent across all platforms
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed. Please try again.');
       setLoading(false);

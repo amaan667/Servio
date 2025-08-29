@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '@/app/authenticated-client-provider';
-import { createClient, getBrowserInfo } from '@/lib/sb-client';
+import { getBrowserInfo } from '@/lib/sb-client';
 
 interface AuthWrapperProps {
   children: React.ReactNode;

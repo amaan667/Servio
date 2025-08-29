@@ -3,7 +3,7 @@ import { createBrowserClient } from '@supabase/ssr';
 
 let _client: ReturnType<typeof createBrowserClient> | null = null;
 
-// Enhanced browser detection
+// Universal browser detection for logging only
 function getBrowserInfo() {
   if (typeof window === 'undefined') return { type: 'unknown', isMobile: false };
   
@@ -38,12 +38,12 @@ export function createClient() {
       { 
         isSingleton: true,
         auth: {
-          // Consistent auth configuration for all platforms
+          // Universal auth configuration for all platforms
           autoRefreshToken: true,
           persistSession: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
-          // Consistent cookie options
+          // Universal cookie options
           cookieOptions: {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
@@ -51,7 +51,7 @@ export function createClient() {
             httpOnly: false,
             maxAge: 60 * 60 * 24 * 7, // 7 days
           },
-          // Consistent storage configuration
+          // Universal storage configuration
           storage: {
             getItem: (key: string) => {
               try {
@@ -80,12 +80,12 @@ export function createClient() {
       }
     );
     
-    console.log('[AUTH DEBUG] Supabase client created with consistent configuration:', browserInfo);
+    console.log('[AUTH DEBUG] Supabase client created with universal configuration:', browserInfo);
   }
   return _client;
 }
 
-// Utility function to clear all authentication-related storage
+// Universal utility function to clear all authentication-related storage
 export function clearAuthStorage() {
   try {
     const browserInfo = getBrowserInfo();
@@ -121,7 +121,7 @@ export function clearAuthStorage() {
   }
 }
 
-// Utility function to check PKCE state
+// Universal utility function to check PKCE state
 export function checkPKCEState() {
   try {
     const browserInfo = getBrowserInfo();
@@ -163,7 +163,7 @@ export function checkPKCEState() {
   }
 }
 
-// Utility function to check authentication state with retry
+// Universal utility function to check authentication state
 export async function checkAuthState() {
   try {
     const browserInfo = getBrowserInfo();
@@ -184,15 +184,10 @@ export async function checkAuthState() {
   }
 }
 
-// Utility function to check if we're on a mobile device
-export function isMobileDevice() {
-  return getBrowserInfo().isMobile;
-}
-
-// Enhanced logger to spot state flips in dev
+// Universal logger for auth state changes
 if (typeof window !== 'undefined') {
   const browserInfo = getBrowserInfo();
-  console.log('[AUTH DEBUG] Setting up auth state change listener');
+  console.log('[AUTH DEBUG] Setting up universal auth state change listener');
   console.log('[AUTH DEBUG] Browser info:', browserInfo);
 
   createClient().auth.onAuthStateChange((evt, sess) => {
@@ -231,5 +226,5 @@ if (typeof window !== 'undefined') {
     });
   });
   
-  console.log('[AUTH DEBUG] ===== Supabase Client Initialized =====');
+  console.log('[AUTH DEBUG] ===== Universal Supabase Client Initialized =====');
 }
