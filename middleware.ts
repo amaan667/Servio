@@ -5,8 +5,10 @@ const isAsset = (p: string) =>
   p.startsWith("/favicon") ||
   /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$/.test(p);
 
+// We no longer gate routes in middleware because we rely on per-page guards.
+// Supabase auth is stored in localStorage on the client, which middleware can't access.
 const AUTH_COOKIE_RE = /^sb-[a-z0-9]+-auth-token(?:\.\d+)?$/i;
-const PROTECTED = ["/dashboard"];
+const PROTECTED: string[] = [];
 
 export function middleware(req: NextRequest) {
   const url = new URL(req.url);
@@ -26,12 +28,7 @@ export function middleware(req: NextRequest) {
   if (!needsAuth) return NextResponse.next();
 
   const hasAuth = req.cookies.getAll().some((c) => AUTH_COOKIE_RE.test(c.name));
-  if (!hasAuth) {
-    // Send unauthenticated users to home where the Sign In button starts OAuth directly
-    const to = new URL("/", req.url);
-    to.searchParams.set("next", p);
-    return NextResponse.redirect(to);
-  }
+  if (!hasAuth) return NextResponse.next();
   return NextResponse.next();
 }
 

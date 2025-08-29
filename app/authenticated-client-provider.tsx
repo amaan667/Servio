@@ -137,30 +137,17 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     console.log('[AUTH DEBUG] provider:mount', { t: now() });
 
-    // NO automatic session restoration - users must sign in explicitly
+    // Always read current session on mount so UI reflects auth state after redirects
     const initializeAuth = async () => {
       try {
-        console.log('[AUTH DEBUG] provider:initializing auth (NO auto restoration)');
-        
-        // Only check for session if we're in an OAuth callback
-        const isOAuthCallback = window.location.pathname.includes('/auth/callback') || 
-                               window.location.search.includes('code=');
-        
-        if (isOAuthCallback) {
-          console.log('[AUTH DEBUG] provider:OAuth callback detected, checking session');
-          const { data: { session }, error } = await createClient().auth.getSession();
-          console.log('[AUTH DEBUG] provider:OAuth session check', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
-          
-          if (error) {
-            console.log('[AUTH DEBUG] provider:OAuth session error, clearing session');
-            await validateAndUpdateSession(null);
-          } else {
-            await validateAndUpdateSession(session);
-          }
+        console.log('[AUTH DEBUG] provider:initializing auth (read current session)');
+        const { data: { session }, error } = await createClient().auth.getSession();
+        console.log('[AUTH DEBUG] provider:initial session check', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
+
+        if (error) {
+          await validateAndUpdateSession(null);
         } else {
-          console.log('[AUTH DEBUG] provider:Not in OAuth callback, no session restoration');
-          // Don't restore any session - user must sign in explicitly
-          setSession(null);
+          await validateAndUpdateSession(session);
         }
       } catch (err: any) {
         console.log('[AUTH DEBUG] provider:initialization error', { t: now(), message: err?.message });
