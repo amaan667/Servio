@@ -25,7 +25,18 @@ export async function GET(req: Request) {
     baseUrl = u.origin;
   }
   
-  // Preserve the entire querystring verbatim
+  // Check if we have an authorization code or error
+  const code = u.searchParams.get('code');
+  const error = u.searchParams.get('error');
+  
+  if (!code && !error) {
+    console.log('[AUTH DEBUG] No code or error in callback - redirecting to sign-in');
+    // If no code or error, redirect to sign-in page
+    const signInUrl = new URL('/sign-in?error=missing_code', baseUrl);
+    return NextResponse.redirect(signInUrl, { status: 307 });
+  }
+  
+  // Preserve the entire querystring verbatim for the client-side callback
   const dest = new URL(`/auth/callback${u.search}`, baseUrl);
   
   console.log('[AUTH DEBUG] API callback redirecting to:', dest.toString());

@@ -1,6 +1,5 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
-import { siteOrigin } from "@/lib/site";
 
 export async function signInWithGoogle() {
   const sb = createClient();
@@ -15,8 +14,8 @@ export async function signInWithGoogle() {
     sessionStorage.removeItem("sb_oauth_retry");
   } catch {}
 
-  const origin = siteOrigin();
-  const redirectTo = `${origin}/auth/callback`;
+  // Use window.location.origin for client-side redirect URL
+  const redirectTo = `${window.location.origin}/auth/callback`;
   
   console.log('[AUTH DEBUG] Starting Google OAuth with redirect:', redirectTo);
 
@@ -33,6 +32,6 @@ export async function signInWithGoogle() {
     throw error;
   }
 
-  console.log('[AUTH DEBUG] OAuth initiated successfully');
+  console.log('[AUTH DEBUG] OAuth initiated successfully, redirecting to:', data.url);
   return data;
 }

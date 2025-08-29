@@ -8,41 +8,65 @@ function SignInContent() {
   const router = useRouter();
   const sp = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const err = sp.get("error");
 
   async function handleGoogle() {
     try {
       setLoading(true);
+      setError(null);
+      console.log('[AUTH DEBUG] Starting Google OAuth sign-in...');
       await signInWithGoogle(); // redirects to Google
+    } catch (err: any) {
+      console.error('[AUTH DEBUG] Google OAuth sign-in failed:', err);
+      setError(err.message || 'Failed to start Google sign-in');
     } finally {
       setLoading(false);
     }
   }
 
+  // Show error from URL params or local state
+  const displayError = error || err;
+
   return (
     <main className="mx-auto max-w-md py-16">
       <h1 className="text-2xl font-semibold mb-6">Sign In</h1>
 
-      {err && (
-        <p className="mb-4 text-sm text-red-600">
-          {err === "timeout" && "Authentication timed out. Please try again."}
-          {err === "oauth_error" && "Authentication failed. Please try again."}
-          {err === "exchange_failed" && "Sign-in failed while finalizing session."}
-          {err === "missing_code" && "Missing authorization code in callback."}
-          {err === "pkce_error" && "Authentication flow error. Please try again."}
-          {err === "no_session" && "Signed in, but no session returned."}
-          {["timeout","oauth_error","exchange_failed","missing_code","pkce_error","no_session"].includes(err) ? "" : err}
-        </p>
+      {displayError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-600">
+            {displayError === "timeout" && "Authentication timed out. Please try again."}
+            {displayError === "oauth_error" && "Authentication failed. Please try again."}
+            {displayError === "exchange_failed" && "Sign-in failed while finalizing session."}
+            {displayError === "missing_code" && "Missing authorization code in callback. Please try again."}
+            {displayError === "pkce_error" && "Authentication flow error. Please try again."}
+            {displayError === "no_session" && "Signed in, but no session returned."}
+            {!["timeout","oauth_error","exchange_failed","missing_code","pkce_error","no_session"].includes(displayError) && displayError}
+          </p>
+        </div>
       )}
 
       <button
         type="button"
         onClick={handleGoogle}
         disabled={loading}
-        className="rounded-md bg-indigo-600 px-4 py-2 text-white disabled:opacity-60"
+        className="w-full rounded-md bg-indigo-600 px-4 py-2 text-white disabled:opacity-60 hover:bg-indigo-700 transition-colors"
       >
-        {loading ? "Redirecting…" : "Sign in with Google"}
+        {loading ? "Redirecting to Google…" : "Sign in with Google"}
       </button>
+      
+      {displayError && (
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            router.replace('/sign-in');
+          }}
+          className="w-full mt-2 rounded-md bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200 transition-colors"
+        >
+          Clear Error & Try Again
+        </button>
+      )}
     </main>
   );
 }

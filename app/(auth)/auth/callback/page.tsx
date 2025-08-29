@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 export default function OAuthCallback() {
   const router = useRouter();
   const sp = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,19 +33,17 @@ export default function OAuthCallback() {
 
         const code = qs.get("code");
         const err = qs.get("error");
-        const next = sp.get("next") || "/dashboard";
 
         if (err) {
           console.error('[AUTH DEBUG] OAuth error in callback:', err);
-          setError(err);
-          setLoading(false);
+          router.replace('/sign-in?error=oauth_error');
           return;
         }
 
         if (!code) {
-          console.error('[AUTH DEBUG] No authorization code in callback');
-          setError('missing_code');
-          setLoading(false);
+          console.error('[AUTH DEBUG] No authorization code in callback - redirecting to sign-in');
+          // Redirect to sign-in page instead of showing error
+          router.replace('/sign-in?error=missing_code');
           return;
         }
 
@@ -70,16 +67,14 @@ export default function OAuthCallback() {
 
         if (exchangeError) {
           console.error('[AUTH DEBUG] Exchange failed:', exchangeError);
-          setError('exchange_failed');
-          setLoading(false);
+          router.replace('/sign-in?error=exchange_failed');
           return;
         }
 
         const { data: { session } } = await sb.auth.getSession();
         if (!session) {
           console.error('[AUTH DEBUG] No session after exchange');
-          setError('no_session');
-          setLoading(false);
+          router.replace('/sign-in?error=no_session');
           return;
         }
 
@@ -104,50 +99,18 @@ export default function OAuthCallback() {
 
       } catch (err: any) {
         console.error('[AUTH DEBUG] OAuth callback error:', err);
-        setError('oauth_error');
-        setLoading(false);
+        router.replace('/sign-in?error=oauth_error');
       }
     })().finally(() => { finished = true; });
   }, [router, sp]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Finalizing your sign-in...</p>
-        </div>
+  // Show loading state while processing
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Finalizing your sign-in...</p>
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">
-            <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <p className="text-lg font-semibold">Sign-in Failed</p>
-          </div>
-          <p className="text-gray-600 mb-4">
-            {error === 'exchange_failed' && 'Sign-in failed while finalizing session.'}
-            {error === 'missing_code' && 'Missing authorization code in callback.'}
-            {error === 'no_session' && 'Signed in, but no session returned.'}
-            {error === 'oauth_error' && 'Authentication failed. Please try again.'}
-            {!['exchange_failed', 'missing_code', 'no_session', 'oauth_error'].includes(error) && error}
-          </p>
-          <button
-            onClick={() => router.push('/sign-in')}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }
