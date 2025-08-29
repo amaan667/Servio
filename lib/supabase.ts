@@ -205,29 +205,41 @@ export async function signInWithGoogle() {
     sessionStorage.removeItem("sb_oauth_retry");
   } catch {}
   
-  // ALWAYS use production URL - NEVER use window.location.origin or localhost
-  // This ensures OAuth always redirects to production, regardless of where the request originates
-  const productionUrl = 'https://servio-production.up.railway.app'
+  // Use robust base URL helper for client-side
+  let redirectTo: string;
+  if (typeof window !== 'undefined') {
+    // Client-side: use window.location.origin but ensure it's not localhost
+    const clientOrigin = window.location.origin;
+    if (clientOrigin.includes('localhost') || clientOrigin.includes('127.0.0.1')) {
+      console.log('[AUTH DEBUG] WARNING: Client on localhost, using production URL');
+      redirectTo = 'https://servio-production.up.railway.app/auth/callback';
+    } else {
+      redirectTo = `${clientOrigin}/auth/callback`;
+    }
+  } else {
+    // Server-side: use environment variable
+    const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
+    redirectTo = `${envUrl.replace(/\/+$/, '')}/auth/callback`;
+  }
+  
   console.log('[OAUTH FLOW] Step 1: OAuth initiation');
   console.log('[OAUTH FLOW] Environment check: NODE_ENV=', process.env.NODE_ENV);
   console.log('[OAUTH FLOW] Window location: ', typeof window !== 'undefined' ? window.location.href : 'server-side');
   console.log('[OAUTH FLOW] Window origin: ', typeof window !== 'undefined' ? window.location.origin : 'server-side');
   console.log('[OAUTH FLOW] NEXT_PUBLIC_SITE_URL: ', process.env.NEXT_PUBLIC_SITE_URL);
   console.log('[OAUTH FLOW] NEXT_PUBLIC_APP_URL: ', process.env.NEXT_PUBLIC_APP_URL);
-  const redirectTo = `${productionUrl}/auth/callback`;
   console.log('[OAUTH FLOW] Step 2: Redirect URL configuration');
-  console.log('[OAUTH FLOW] Production URL: ', productionUrl);
   console.log('[OAUTH FLOW] Final redirectTo: ', redirectTo);
   console.log('[OAUTH FLOW] Supabase URL: ', process.env.NEXT_PUBLIC_SUPABASE_URL);
   console.log('[OAUTH FLOW] Has anon key: ', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   
   // Safety check - ensure we never use localhost
-  if (typeof window !== 'undefined' && window.location.origin.includes('localhost')) {
-    console.log('[AUTH DEBUG] WARNING: Running on localhost, but OAuth will redirect to production:', window.location.origin);
+  if (redirectTo.includes('localhost') || redirectTo.includes('127.0.0.1')) {
+    console.error('[AUTH DEBUG] ERROR: Redirect URL contains localhost:', redirectTo);
+    throw new Error('Invalid redirect URL - contains localhost');
   }
   
-  console.log('[AUTH DEBUG] Using production URL:', productionUrl);
-  console.log('[AUTH DEBUG] Final redirectTo URL:', redirectTo);
+  console.log('[AUTH DEBUG] Using redirect URL:', redirectTo);
   console.log('[AUTH DEBUG] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
   console.log('[AUTH DEBUG] Has anon key:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   
@@ -509,35 +521,36 @@ export async function createVenueIfNotExists(venueId: string) {
 export function testOAuthRedirects() {
   console.log('[AUTH TEST] Testing OAuth redirect configuration...');
   
-  // Test 1: Verify signInWithGoogle uses production URL
-  const productionUrl = 'https://servio-production.up.railway.app'
-  console.log('[OAUTH FLOW] Step 1: OAuth initiation');
-  console.log('[OAUTH FLOW] Environment check: NODE_ENV=', process.env.NODE_ENV);
-  console.log('[OAUTH FLOW] Window location: ', typeof window !== 'undefined' ? window.location.href : 'server-side');
-  console.log('[OAUTH FLOW] Window origin: ', typeof window !== 'undefined' ? window.location.origin : 'server-side');
-  console.log('[OAUTH FLOW] NEXT_PUBLIC_SITE_URL: ', process.env.NEXT_PUBLIC_SITE_URL);
-  console.log('[OAUTH FLOW] NEXT_PUBLIC_APP_URL: ', process.env.NEXT_PUBLIC_APP_URL);
-  const expectedRedirectTo = `${productionUrl}/auth/callback`
+  // Test 1: Verify environment variables are set correctly
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
+  console.log('[AUTH TEST] Environment URL:', envUrl);
+  console.log('[AUTH TEST] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
+  console.log('[AUTH TEST] NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL);
   
-  console.log('[AUTH TEST] Expected redirect URL:', expectedRedirectTo)
-  console.log('[AUTH TEST] Production URL:', productionUrl)
-  console.log('[AUTH TEST] Environment NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
+  // Test 2: Verify no localhost in environment URLs
+  const envUrls = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    envUrl
+  ].filter(Boolean);
   
-  // Test 2: Verify no localhost in any redirect URLs
-  const testUrls = [
-    expectedRedirectTo,
-    `${productionUrl}/dashboard/test`,
-    `${productionUrl}/complete-profile`,
-    `${productionUrl}/?auth_error=test`
-  ]
-  
-  const hasLocalhost = testUrls.some(url => url.includes('localhost') || url.includes('127.0.0.1'))
+  const hasLocalhost = envUrls.some(url => url && (url.includes('localhost') || url.includes('127.0.0.1')));
   
   if (hasLocalhost) {
-    console.error('[AUTH TEST] ❌ FAILED: Found localhost in redirect URLs!')
-    return false
-  } else {
-    console.log('[AUTH TEST] ✅ PASSED: No localhost found in redirect URLs')
-    return true
+    console.error('[AUTH TEST] ❌ FAILED: Found localhost in environment URLs!');
+    console.error('[AUTH TEST] Problematic URLs:', envUrls.filter(url => url && (url.includes('localhost') || url.includes('127.0.0.1'))));
+    return false;
   }
+  
+  // Test 3: Verify expected redirect URL format
+  const expectedRedirectTo = `${envUrl.replace(/\/+$/, '')}/auth/callback`;
+  console.log('[AUTH TEST] Expected redirect URL:', expectedRedirectTo);
+  
+  if (expectedRedirectTo.includes('localhost') || expectedRedirectTo.includes('127.0.0.1')) {
+    console.error('[AUTH TEST] ❌ FAILED: Expected redirect URL contains localhost!');
+    return false;
+  }
+  
+  console.log('[AUTH TEST] ✅ PASSED: No localhost found in any URLs');
+  return true;
 }

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getBaseUrl } from '@/lib/getBaseUrl'
 
 export async function GET(req: Request) {
   console.log('[CALLBACK FLOW] Step 1: Callback route received');
@@ -18,14 +19,17 @@ export async function GET(req: Request) {
   console.log('[CALLBACK FLOW] URL pathname:', url.pathname);
   console.log('[CALLBACK FLOW] URL search:', url.search);
 
-  // Use the request origin for redirects to handle both local and production
-  const redirectBase = url.origin
-  console.log('[CALLBACK FLOW] Redirect base:', redirectBase);
+  // Use robust base URL helper instead of trusting req.url
+  const redirectBase = getBaseUrl()
+  console.log('[CALLBACK FLOW] Redirect base (from getBaseUrl):', redirectBase);
 
   // Additional safety check - ensure we never use localhost
-  const requestOrigin = url.origin
-  if (requestOrigin.includes('localhost') || requestOrigin.includes('127.0.0.1')) {
-    console.log('[CALLBACK FLOW] WARNING: Request origin contains localhost:', requestOrigin);
+  if (redirectBase.includes('localhost') || redirectBase.includes('127.0.0.1')) {
+    console.error('[CALLBACK FLOW] ERROR: getBaseUrl returned localhost:', redirectBase);
+    // Fall back to environment variable
+    const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app'
+    console.log('[CALLBACK FLOW] Using environment fallback:', envUrl);
+    return NextResponse.redirect(`${envUrl}/?auth_error=base_url_error`)
   }
 
   console.log('[CALLBACK FLOW] Callback params:', { 
@@ -39,7 +43,7 @@ export async function GET(req: Request) {
 
   if (error) {
     console.log('[CALLBACK FLOW] OAuth error:', error);
-    return NextResponse.redirect(new URL('/?auth_error=oauth_error', redirectBase))
+    return NextResponse.redirect(`${redirectBase}/?auth_error=oauth_error`)
   }
 
   if (code) {
@@ -53,7 +57,7 @@ export async function GET(req: Request) {
     
     if (exchangeError) {
       console.log('[CALLBACK FLOW] Exchange error:', exchangeError);
-      return NextResponse.redirect(new URL('/?auth_error=exchange_failed', redirectBase))
+      return NextResponse.redirect(`${redirectBase}/?auth_error=exchange_failed`)
     }
 
     console.log('[CALLBACK FLOW] Step 5: Session exchange result');
@@ -76,23 +80,21 @@ export async function GET(req: Request) {
         console.log('[CALLBACK FLOW] First venue ID:', venues[0].venue_id);
         
         console.log('[CALLBACK FLOW] Step 7: Redirecting to dashboard');
-        const dashboardUrl = `/dashboard/${venues[0].venue_id}`;
-        const fullRedirectUrl = new URL(dashboardUrl, redirectBase).toString();
+        const dashboardUrl = `${redirectBase}/dashboard/${venues[0].venue_id}`;
         console.log('[CALLBACK FLOW] Dashboard URL:', dashboardUrl);
-        console.log('[CALLBACK FLOW] Full redirect URL:', fullRedirectUrl);
         
-        return NextResponse.redirect(new URL(dashboardUrl, redirectBase))
+        return NextResponse.redirect(dashboardUrl)
       } else {
         console.log('[CALLBACK FLOW] Step 6: User has no venues');
         console.log('[CALLBACK FLOW] Redirecting to complete profile');
-        const completeProfileUrl = new URL('/complete-profile', redirectBase).toString();
+        const completeProfileUrl = `${redirectBase}/complete-profile`;
         console.log('[CALLBACK FLOW] Complete profile URL:', completeProfileUrl);
         
-        return NextResponse.redirect(new URL('/complete-profile', redirectBase))
+        return NextResponse.redirect(completeProfileUrl)
       }
     }
   }
 
   console.log('[CALLBACK FLOW] No code or session, redirecting to home');
-  return NextResponse.redirect(new URL('/?auth_error=missing_code', redirectBase))
+  return NextResponse.redirect(`${redirectBase}/?auth_error=missing_code`)
 }
