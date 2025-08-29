@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { getBaseUrl } from '@/lib/getBaseUrl';
 
 export async function GET() {
   try {
@@ -23,7 +24,7 @@ export async function GET() {
     );
 
     // Get the OAuth URL that Supabase would generate
-    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
+    const redirectTo = `${getBaseUrl()}/auth/callback`;
 
     const { data, error } = await createClient().auth.signInWithOAuth({
       provider: 'google',

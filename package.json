@@ -9,7 +9,7 @@
     "build": "node scripts/check-server-imports.js && next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start -p 8080",
+    "start": "node .next/standalone/server.js",
     "check-imports": "node scripts/check-server-imports.js"
   },
   "dependencies": {

@@ -16,12 +16,13 @@ export async function signInWithGoogle() {
     // Silent error handling
   }
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
+  const redirectTo = `${window.location.origin}/auth/callback`;
 
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo: redirectTo,
+      // queryParams: { prompt: 'select_account' } // optional
     },
   });
 

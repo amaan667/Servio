@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getBaseUrl } from '@/lib/getBaseUrl';
 
 export async function GET() {
   try {
@@ -8,8 +9,7 @@ export async function GET() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        flowType: "pkce",
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`,
+        redirectTo: `${getBaseUrl()}/auth/callback`,
       },
     });
 
