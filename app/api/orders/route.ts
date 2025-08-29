@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -51,9 +51,7 @@ export async function POST(req: Request) {
     if (!url || !serviceKey) {
       return bad('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY', 500);
     }
-    const supabase = createClient(url, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const supabase = await createClient();
 
     // Verify venue exists
     const { data: venue, error: venueErr } = await supabase

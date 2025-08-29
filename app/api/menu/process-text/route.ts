@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { parseMenuInChunks } from "@/lib/parseMenuFC";
 import { normalizeForInsert } from "@/lib/normalizeMenu";
 import { MenuPayload } from "@/lib/menuSchema";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
 
     console.log('[DB] about_to_insert', itemsToUpsert.length);
 
-    const supabase = createClient();
+    const supabase = await createAdminClient();
 
     // Avoid relying on ON CONFLICT; filter existing names first
     const { data: existing } = await supabase

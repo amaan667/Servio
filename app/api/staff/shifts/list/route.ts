@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -9,11 +9,7 @@ export async function GET(req: Request) {
   const staff_id = searchParams.get('staff_id');
   if (!venue_id) return NextResponse.json({ error: 'venue_id required' }, { status: 400 });
 
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
+  const admin = await createClient();
 
   let q = admin.from('staff_shifts')
     .select('id, staff_id, venue_id, start_time, end_time, area')

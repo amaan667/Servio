@@ -13,7 +13,7 @@ import {
   type AuthSession,
   type OrderWithItems,
 } from "@/lib/supabase";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 
 interface DebugPanelProps {
   session: AuthSession;

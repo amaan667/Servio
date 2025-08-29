@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  return createClient();
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {

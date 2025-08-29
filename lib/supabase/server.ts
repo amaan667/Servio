@@ -34,3 +34,22 @@ export async function createClient() {
     }
   );
 }
+
+// Admin client for API routes that need service role access
+export async function createAdminClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      },
+      cookies: {
+        get() { return undefined; },
+        set() {},
+        remove() {},
+      },
+    }
+  );
+}

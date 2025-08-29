@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { getOpenAI } from '@/lib/openai';
 import { isMenuLike } from '@/lib/menuLike';
 import { tryParseMenuWithGPT } from '@/lib/safeParse';
@@ -8,10 +8,7 @@ import { PDFDocument } from 'pdf-lib';
 export async function POST(req: NextRequest) {
   try {
     const openai = getOpenAI();
-    const supa = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+      const supa = await createClient();
     const { uploadId } = await req.json();
     
     console.log('[AUTH DEBUG] Processing menu upload:', uploadId);

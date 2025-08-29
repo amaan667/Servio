@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { ENV } from '@/lib/env';
 
 export const runtime = 'nodejs';
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const venueId = searchParams.get('venueId');
   if (!venueId) return NextResponse.json({ ok:false, error:'venueId required' }, { status:400 });
-  const admin = createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession:false }});
+      const admin = await createClient();
   const { data, error } = await admin
     .from('reviews')
     .select('id, order_id, rating, comment, created_at')

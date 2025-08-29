@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
@@ -15,7 +15,7 @@ export async function GET() {
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = await createClient();
     
     // Test basic connection
     const { data, error } = await supabase.auth.getSession();

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { signInWithGoogle } from '@/lib/auth/signin';
-import { checkPKCEState } from '@/lib/sb-client';
+import { checkPKCEState } from '@/lib/supabase/client';
 
 export default function TestPKCEFix() {
   const [pkceState, setPkceState] = useState<any>(null);
