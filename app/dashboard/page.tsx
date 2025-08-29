@@ -1,7 +1,15 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { hasServerAuthCookie } from '@/lib/utils';
 
 export default async function DashboardPage() {
+  // Check for auth cookies before making auth calls
+  const hasAuthCookie = await hasServerAuthCookie();
+  if (!hasAuthCookie) {
+    console.log('[DASHBOARD] No auth cookie found, redirecting to home');
+    redirect('/');
+  }
+
   const supabase = await createServerSupabase();
 
   const { data: { user } } = await supabase.auth.getUser();

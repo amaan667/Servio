@@ -3,10 +3,18 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { hasServerAuthCookie } from '@/lib/utils';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import GenerateQRClient from './GenerateQRClient';
 
 export default async function GenerateQRPage() {
+  // Check for auth cookies before making auth calls
+  const hasAuthCookie = await hasServerAuthCookie();
+  if (!hasAuthCookie) {
+    console.log('[GENERATE-QR] No auth cookie found, redirecting to sign-in');
+    redirect('/sign-in');
+  }
+
   const supabase = createServerSupabase();
 
   const { data: { user } } = await supabase.auth.getUser();

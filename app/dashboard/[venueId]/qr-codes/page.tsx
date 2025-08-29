@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { hasServerAuthCookie } from '@/lib/utils';
 import { log } from '@/lib/debug';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import QRCodeClientWrapper from './QRCodeClientWrapper';
@@ -14,6 +15,13 @@ export default async function QrCodesPage({
   params: { venueId: string }
 }) {
   console.log('[QR-CODES] Page mounted for venue', params.venueId);
+  // Check for auth cookies before making auth calls
+  const hasAuthCookie = await hasServerAuthCookie();
+  if (!hasAuthCookie) {
+    console.log('[PAGE] No auth cookie found, redirecting to sign-in');
+    redirect('/sign-in');
+  }
+
   
   const supabase = createServerSupabase();
 

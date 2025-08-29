@@ -6,28 +6,32 @@ const isAsset = (p: string) =>
   /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$/.test(p);
 
 // Public paths that should always be allowed
-const publicPaths = ['/auth/callback', '/api/health', '/', '/pricing'];
+const PUBLIC_PATHS = ['/', '/auth/callback', '/pricing', '/features', '/_next', '/favicon', '/images', '/api/health'];
 
 export function middleware(req: NextRequest) {
-  const url = new URL(req.url);
-  const p = url.pathname;
+  const { pathname } = req.nextUrl;
 
-  // Allow assets and public paths
-  if (
-    isAsset(p) ||
-    publicPaths.some(path => p === path || p.startsWith(path + "/")) ||
-    p.startsWith("/api/auth/callback") ||
-    url.searchParams.has("code") ||
-    url.searchParams.has("error")
-  ) {
+  // Public routes: skip auth entirely
+  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // We no longer gate routes in middleware because we rely on per-page guards.
-  // Supabase auth is stored in localStorage on the client, which middleware can't access.
+  // Allow assets
+  if (isAsset(pathname)) {
+    return NextResponse.next();
+  }
+
+  // If there is no Supabase cookie at all, don't try to read/refresh user
+  const hasSbCookie = [...req.cookies.keys()].some((k) => k.includes('-auth-token'));
+  if (!hasSbCookie) {
+    return NextResponse.next();
+  }
+
+  // If you REALLY need auth in middleware, use auth-helpers' middleware client.
+  // Otherwise, stop here. Doing SSR checks in route handlers/components is safer.
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
