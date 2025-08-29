@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/sb-client';
+import CompleteProfileForm from './form';
 
 export default function CompleteProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     // Only run on client side
@@ -17,9 +20,6 @@ export default function CompleteProfilePage() {
     const checkUserAndVenues = async () => {
       try {
         console.log('[COMPLETE-PROFILE] Checking user session');
-        
-        // Dynamically import to avoid build-time issues
-        const { createClient } = await import('@/lib/sb-client');
         
         const { data: { user }, error: userErr } = await createClient().auth.getUser();
         console.log('[COMPLETE-PROFILE] Auth getUser result:', { 
@@ -58,27 +58,15 @@ export default function CompleteProfilePage() {
         }
 
         console.log('[COMPLETE-PROFILE] No venue found, showing complete profile form');
-        // Dynamically import the form component
-        const { default: CompleteProfileForm } = await import('./form');
+        setShowForm(true);
         setLoading(false);
-        
-        // Render the form component
-        const formElement = document.createElement('div');
-        formElement.id = 'complete-profile-form';
-        document.body.appendChild(formElement);
-        
-        // This is a temporary workaround - in a real app, you'd use React rendering
-        window.location.href = '/sign-in?message=Please complete your profile';
       } catch (error) {
         console.error('[COMPLETE-PROFILE] Error:', error);
         router.replace('/sign-in');
       }
     };
 
-    // Add a small delay to ensure we're fully on the client side
-    setTimeout(() => {
-      checkUserAndVenues();
-    }, 100);
+    checkUserAndVenues();
   }, [router]);
 
   if (loading) {
@@ -92,10 +80,14 @@ export default function CompleteProfilePage() {
     );
   }
 
+  if (showForm) {
+    return <CompleteProfileForm />;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <p className="text-gray-600">Redirecting to sign-in...</p>
+        <p className="text-gray-600">Redirecting...</p>
       </div>
     </div>
   );

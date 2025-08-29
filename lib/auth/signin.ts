@@ -29,46 +29,14 @@ function sanitizeUrlMaskClientId(urlString: string | null | undefined) {
   }
 }
 
-// Enhanced mobile detection
-function isMobileBrowser() {
-  if (typeof window === 'undefined') return false;
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent);
-}
-
-// Enhanced storage verification for mobile browsers
-function verifyStorageSync() {
-  try {
-    const testKey = 'mobile_storage_test_' + Date.now();
-    const testValue = 'test_value_' + Math.random();
-    
-    // Test localStorage
-    localStorage.setItem(testKey, testValue);
-    const localStorageResult = localStorage.getItem(testKey) === testValue;
-    localStorage.removeItem(testKey);
-    
-    // Test sessionStorage
-    sessionStorage.setItem(testKey, testValue);
-    const sessionStorageResult = sessionStorage.getItem(testKey) === testValue;
-    sessionStorage.removeItem(testKey);
-    
-    return { localStorage: localStorageResult, sessionStorage: sessionStorageResult };
-  } catch (error) {
-    console.log('[AUTH DEBUG] Storage sync test failed:', error);
-    return { localStorage: false, sessionStorage: false };
-  }
-}
-
 export async function signInWithGoogle() {
   const sb = createClient();
   const origin = siteOrigin();
   const redirectUrl = `${origin}/auth/callback`;
-  const isMobile = isMobileBrowser();
 
   console.log('[AUTH DEBUG] signInWithGoogle: starting', { 
     origin,
     redirectUrl, 
-    isMobile,
     windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'undefined',
     envSiteUrl: process.env.NEXT_PUBLIC_SITE_URL,
     userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'undefined',
@@ -76,7 +44,7 @@ export async function signInWithGoogle() {
   });
 
   try {
-    // Enhanced storage clearing for cross-platform compatibility
+    // Universal storage clearing for all platforms
     const clearedKeys: string[] = [];
     
     // Clear localStorage with comprehensive key detection
@@ -113,7 +81,6 @@ export async function signInWithGoogle() {
     
     console.log('[AUTH DEBUG] signInWithGoogle: cleared keys', { 
       clearedKeys, 
-      isMobile,
       localStorageCount: localStorageKeys.length,
       sessionStorageCount: sessionStorageKeys.length
     });
@@ -121,32 +88,13 @@ export async function signInWithGoogle() {
     // Ensure we're starting with a clean state
     await sb.auth.signOut({ scope: 'local' });
 
-    // Enhanced delay for mobile browsers - they need more time for storage operations
-    const storageDelay = isMobile ? 800 : 200; // Increased delay for mobile
-    console.log('[AUTH DEBUG] signInWithGoogle: waiting for storage to clear', { delay: storageDelay, isMobile });
+    // Universal delay for all platforms
+    const storageDelay = 200;
+    console.log('[AUTH DEBUG] signInWithGoogle: waiting for storage to clear', { delay: storageDelay });
     await new Promise(resolve => setTimeout(resolve, storageDelay));
 
-    // Verify storage is working properly on mobile
-    if (isMobile) {
-      const storageTest = verifyStorageSync();
-      console.log('[AUTH DEBUG] signInWithGoogle: storage sync test', storageTest);
-      
-      if (!storageTest.localStorage || !storageTest.sessionStorage) {
-        console.warn('[AUTH DEBUG] signInWithGoogle: storage sync issues detected on mobile');
-        // Try to recover by clearing storage again
-        try {
-          localStorage.clear();
-          sessionStorage.clear();
-          await new Promise(resolve => setTimeout(resolve, 500));
-          console.log('[AUTH DEBUG] signInWithGoogle: storage cleared again for mobile recovery');
-        } catch (error) {
-          console.error('[AUTH DEBUG] signInWithGoogle: failed to clear storage for mobile recovery', error);
-        }
-      }
-    }
-
-    // Use Supabase's built-in PKCE flow with enhanced mobile support
-    console.log('[OAuth Frontend] Using Supabase built-in PKCE flow with mobile optimizations');
+    // Use Supabase's built-in PKCE flow
+    console.log('[OAuth Frontend] Using universal Supabase built-in PKCE flow');
 
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
@@ -166,7 +114,6 @@ export async function signInWithGoogle() {
       errorMessage: error?.message,
       url: data?.url,
       urlLength: data?.url?.length,
-      isMobile,
       timestamp: new Date().toISOString()
     });
 
@@ -178,49 +125,32 @@ export async function signInWithGoogle() {
       throw new Error('No redirect URL received from OAuth provider');
     }
 
-    // Do not enforce a PKCE verifier pre-check here. Supabase will handle
-    // PKCE generation and storage internally during signInWithOAuth. We've
-    // seen false negatives on some browsers when checking storage immediately
-    // after initiating the flow, so we skip strict checks to avoid spurious
-    // "missing verifier" errors.
-
-    // Store OAuth progress flags with mobile-specific handling
+    // Store OAuth progress flags
     sessionStorage.setItem("sb_oauth_in_progress", "true");
     sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
-    sessionStorage.setItem("sb_oauth_mobile", isMobile.toString());
 
     // Log the exact Google OAuth URL with masked client_id for debugging
     try {
       const sanitized = sanitizeUrlMaskClientId(data.url);
       console.log('[OAuth Frontend] Redirecting to Google OAuth URL (sanitized client_id)', { 
-        url: sanitized.url,
-        isMobile 
+        url: sanitized.url
       });
     } catch {}
 
-    // Enhanced redirect handling for mobile browsers
+    // Universal redirect to OAuth provider
     console.log('[AUTH DEBUG] signInWithGoogle: redirecting to', data.url);
-    
-    // Use window.location.href for better mobile browser compatibility
-    // Add a small delay for mobile browsers to ensure all storage operations are complete
-    if (isMobile) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
-    
     window.location.href = data.url;
     
   } catch (error: any) {
     console.error('[AUTH DEBUG] signInWithGoogle: error', { 
       message: error?.message, 
       name: error?.name,
-      isMobile,
       timestamp: new Date().toISOString()
     });
     
     // Clear any OAuth progress flags on error
     sessionStorage.removeItem("sb_oauth_in_progress");
     sessionStorage.removeItem("sb_oauth_start_time");
-    sessionStorage.removeItem("sb_oauth_mobile");
     
     throw error;
   }
