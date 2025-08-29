@@ -59,8 +59,8 @@ export function createClient() {
       { 
         isSingleton: true,
         auth: {
-          autoRefreshToken: true,
-          persistSession: true,
+          autoRefreshToken: false,
+          persistSession: false,
           detectSessionInUrl: true
         }
       }
@@ -218,10 +218,12 @@ if (typeof window !== 'undefined') {
   client.auth.onError((error: AuthError) => {
     console.log('[AUTH DEBUG] ❌ Auth error:', error);
     
-    // If it's a refresh token error, clear the storage
+    // If it's a refresh token error or 400 bad request, clear the storage
     if (error.message?.includes('Refresh Token Not Found') || 
-        error.message?.includes('Invalid Refresh Token')) {
-      console.log('[AUTH DEBUG] Clearing invalid refresh token');
+        error.message?.includes('Invalid Refresh Token') ||
+        error.message?.includes('400') ||
+        error.status === 400) {
+      console.log('[AUTH DEBUG] Clearing invalid refresh token due to error:', error.message);
       clearAuthStorage();
     }
   });
@@ -238,8 +240,11 @@ if (typeof window !== 'undefined') {
     });
     
     // If there's an error with the initial session, clear storage
-    if (error && (error.message?.includes('Refresh Token') || error.message?.includes('Invalid'))) {
-      console.log('[AUTH DEBUG] Clearing invalid initial session');
+    if (error && (error.message?.includes('Refresh Token') || 
+                  error.message?.includes('Invalid') || 
+                  error.message?.includes('400') ||
+                  error.status === 400)) {
+      console.log('[AUTH DEBUG] Clearing invalid initial session due to error:', error.message);
       clearAuthStorage();
     }
   });
