@@ -5,7 +5,6 @@ import { createClient } from '@/lib/sb-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import ClientNavBar from '@/components/ClientNavBar';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { useAuth } from "@/app/authenticated-client-provider";
 import { Plus, Trash2, Clock, User } from "lucide-react";
@@ -121,7 +120,6 @@ export default function StaffClient({ venueId }: { venueId: string }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ClientNavBar venueId={venueId} />
       <div className="max-w-5xl mx-auto p-6">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
         <h1 className="text-2xl font-semibold mb-4">Staff Management</h1>
