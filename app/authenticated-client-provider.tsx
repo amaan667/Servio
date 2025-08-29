@@ -4,10 +4,6 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { createClient } from '@/lib/supabase/client';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
-function now() {
-  return new Date().toISOString();
-}
-
 interface AuthContextType {
   session: Session | null;
   loading: boolean;
@@ -26,14 +22,10 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
   const updateSession = useCallback((newSession: Session | null) => {
     setSession(prevSession => {
-      // Only update if the session actually changed
       if (prevSession?.user?.id !== newSession?.user?.id) {
-        console.log('[AUTH DEBUG] provider:session:changed', { 
-          t: now(), 
+        console.log('[AUTH DEBUG] Session changed:', { 
           oldUserId: prevSession?.user?.id, 
-          newUserId: newSession?.user?.id,
-          oldUserEmail: prevSession?.user?.email,
-          newUserEmail: newSession?.user?.email
+          newUserId: newSession?.user?.id 
         });
         return newSession;
       }
@@ -41,56 +33,33 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     });
   }, []);
 
-  // Universal session validation - NO automatic restoration
   const validateAndUpdateSession = useCallback(async (session: Session | null) => {
-    console.log('[AUTH DEBUG] provider:validating session:', {
-      hasSession: !!session,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email,
-      hasAccessToken: !!session?.access_token,
-      expiresAt: session?.expires_at,
-      timestamp: now()
-    });
-
     if (!session) {
-      console.log('[AUTH DEBUG] provider:no session provided, clearing');
       updateSession(null);
       return;
     }
 
     // Check if session has required fields
     if (!session.user?.id || !session.access_token) {
-      console.log('[AUTH DEBUG] provider:invalid session detected', {
-        hasUser: !!session.user,
-        hasUserId: !!session.user?.id,
-        hasAccessToken: !!session.access_token,
-        timestamp: now()
-      });
+      console.log('[AUTH DEBUG] Invalid session detected');
       updateSession(null);
       return;
     }
 
     // Check if session is expired
     if (session.expires_at && new Date(session.expires_at * 1000) < new Date()) {
-      console.log('[AUTH DEBUG] provider:expired session detected', {
-        expiresAt: session.expires_at,
-        currentTime: Math.floor(Date.now() / 1000),
-        timestamp: now()
-      });
+      console.log('[AUTH DEBUG] Expired session detected');
       updateSession(null);
       return;
     }
 
-    console.log('[AUTH DEBUG] provider:session validation passed, updating');
     updateSession(session);
   }, [updateSession]);
 
-  // Universal session clearing
   const clearSession = useCallback(() => {
-    console.log('[AUTH DEBUG] provider:clearing session');
+    console.log('[AUTH DEBUG] Clearing session');
     setSession(null);
     
-    // Clear all authentication-related storage
     if (typeof window !== 'undefined') {
       // Clear OAuth progress flags
       sessionStorage.removeItem("sb_oauth_in_progress");
@@ -106,23 +75,14 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")
       );
       sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
-      
-      console.log('[AUTH DEBUG] provider:cleared storage keys', {
-        localStorage: localStorageKeys,
-        sessionStorage: sessionStorageKeys
-      });
     }
   }, []);
 
-  // Universal sign out function
   const signOut = useCallback(async () => {
     try {
-      console.log('[AUTH DEBUG] provider:signing out');
-      
-      // Clear session and storage first to prevent auth state change errors
+      console.log('[AUTH DEBUG] Signing out');
       clearSession();
       
-      // Use server-side sign out to clear cookies
       const response = await fetch('/api/auth/signout', {
         method: 'POST',
         headers: {
@@ -131,50 +91,33 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       });
       
       if (!response.ok) {
-        console.log('[AUTH DEBUG] provider:server-side sign out failed');
-      } else {
-        console.log('[AUTH DEBUG] provider:server-side sign out successful');
+        console.log('[AUTH DEBUG] Server-side sign out failed');
       }
     } catch (error) {
-      console.error('[AUTH DEBUG] provider:sign out error', error);
-      // Even if server-side sign out fails, we've already cleared the session
+      console.error('[AUTH DEBUG] Sign out error', error);
     }
   }, [clearSession]);
 
   useEffect(() => {
-    // Only run on client side
     if (typeof window === 'undefined') {
-      console.log('[AUTH DEBUG] provider:server side, skipping initialization');
       setLoading(false);
       return;
     }
 
-    console.log('[AUTH DEBUG] provider:mount', { t: now() });
+    console.log('[AUTH DEBUG] Initializing auth provider');
 
-    // Always read current session on mount so UI reflects auth state after redirects
     const initializeAuth = async () => {
       try {
-        console.log('[AUTH DEBUG] provider:initializing auth (read current session)');
         const { data: { session }, error } = await createClient().auth.getSession();
-        console.log('[AUTH DEBUG] provider:initial session check', { 
-          t: now(), 
-          hasSession: !!session, 
-          userId: session?.user?.id,
-          userEmail: session?.user?.email,
-          err: error?.message 
-        });
-
+        
         if (error) {
+          console.log('[AUTH DEBUG] Session check error:', error.message);
           await validateAndUpdateSession(null);
         } else {
           await validateAndUpdateSession(session);
         }
       } catch (err: any) {
-        console.log('[AUTH DEBUG] provider:initialization error', { 
-          t: now(), 
-          message: err?.message,
-          stack: err?.stack 
-        });
+        console.log('[AUTH DEBUG] Initialization error:', err?.message);
         setSession(null);
       } finally {
         setLoading(false);
@@ -184,36 +127,24 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     initializeAuth();
 
     const { data: { subscription } } = createClient().auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      console.log('[AUTH DEBUG] provider:onAuthStateChange', { 
-        t: now(), 
-        event, 
-        hasSession: !!session, 
-        userId: session?.user?.id,
-        userEmail: session?.user?.email 
-      });
+      console.log('[AUTH DEBUG] Auth state change:', { event, hasSession: !!session });
       
       try {
-        // Handle specific auth events
         if (event === 'SIGNED_OUT') {
-          console.log('[AUTH DEBUG] provider:auth state change - SIGNED_OUT');
           clearSession();
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          console.log('[AUTH DEBUG] provider:auth state change - SIGNED_IN/TOKEN_REFRESHED');
           await validateAndUpdateSession(session);
         } else {
-          console.log('[AUTH DEBUG] provider:auth state change - other event:', event);
           await validateAndUpdateSession(session);
         }
       } catch (error) {
-        console.error('[AUTH DEBUG] provider:auth state change error', error);
-        // Don't let auth state change errors crash the app
+        console.error('[AUTH DEBUG] Auth state change error', error);
       }
       
       setLoading(false);
     });
 
     return () => {
-      console.log('[AUTH DEBUG] provider:unmount', { t: now() });
       subscription.unsubscribe();
     };
   }, [validateAndUpdateSession, clearSession]);

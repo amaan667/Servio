@@ -81,16 +81,6 @@ function SignInContent() {
           Clear Error & Try Again
         </button>
       )}
-
-      {/* Debug Link */}
-      <div className="mt-8 text-center">
-        <a
-          href="/debug-auth"
-          className="text-sm text-gray-500 hover:text-gray-700 underline"
-        >
-          Debug Authentication
-        </a>
-      </div>
     </main>
   );
 }
