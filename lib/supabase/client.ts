@@ -57,7 +57,9 @@ export function createClient() {
         auth: {
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: true,
+          // We manually call exchangeCodeForSession on the callback page.
+          // Disabling this avoids a double exchange that causes `exchange_failed`.
+          detectSessionInUrl: false,
           flowType: 'pkce'
         },
         // Disable cookie operations on client side to prevent Next.js 15 errors
