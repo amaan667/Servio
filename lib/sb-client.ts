@@ -38,10 +38,10 @@ export function createClient() {
       { 
         isSingleton: true,
         auth: {
-          // Universal auth configuration for all platforms
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: true,
+          // Universal auth configuration - NO automatic session restoration
+          autoRefreshToken: false, // Disable automatic token refresh
+          persistSession: false,   // Disable session persistence
+          detectSessionInUrl: true, // Only detect session from URL (OAuth callback)
           flowType: 'pkce',
           // Universal cookie options
           cookieOptions: {
@@ -51,16 +51,20 @@ export function createClient() {
             httpOnly: false,
             maxAge: 60 * 60 * 24 * 7, // 7 days
           },
-          // Universal storage configuration with proper error handling
+          // Universal storage configuration - NO automatic restoration
           storage: {
             getItem: (key: string) => {
               try {
-                // Check if we're in a sign-out state
-                const signOutFlag = sessionStorage.getItem('auth_sign_out');
-                if (signOutFlag === 'true') {
-                  console.log('[AUTH DEBUG] Sign out flag detected, not restoring session');
+                // Only return session data if explicitly requested (OAuth callback)
+                const isOAuthCallback = typeof window !== 'undefined' && 
+                  (window.location.pathname.includes('/auth/callback') || 
+                   window.location.search.includes('code='));
+                
+                if (!isOAuthCallback) {
+                  console.log('[AUTH DEBUG] Not in OAuth callback, not restoring session data');
                   return null;
                 }
+                
                 return localStorage.getItem(key);
               } catch (error) {
                 console.log('[AUTH DEBUG] localStorage.getItem failed:', error);
@@ -69,10 +73,16 @@ export function createClient() {
             },
             setItem: (key: string, value: string) => {
               try {
-                localStorage.setItem(key, value);
-                // Clear sign out flag when setting auth data
-                if (key.includes('auth') || key.startsWith('sb-')) {
-                  sessionStorage.removeItem('auth_sign_out');
+                // Only store session data during active authentication
+                const isOAuthCallback = typeof window !== 'undefined' && 
+                  (window.location.pathname.includes('/auth/callback') || 
+                   window.location.search.includes('code='));
+                
+                if (isOAuthCallback) {
+                  localStorage.setItem(key, value);
+                  console.log('[AUTH DEBUG] Stored session data during OAuth callback');
+                } else {
+                  console.log('[AUTH DEBUG] Not in OAuth callback, not storing session data');
                 }
               } catch (error) {
                 console.log('[AUTH DEBUG] localStorage.setItem failed:', error);
@@ -81,10 +91,7 @@ export function createClient() {
             removeItem: (key: string) => {
               try {
                 localStorage.removeItem(key);
-                // Set sign out flag when removing auth data
-                if (key.includes('auth') || key.startsWith('sb-')) {
-                  sessionStorage.setItem('auth_sign_out', 'true');
-                }
+                console.log('[AUTH DEBUG] Removed session data');
               } catch (error) {
                 console.log('[AUTH DEBUG] localStorage.removeItem failed:', error);
               }
@@ -94,7 +101,7 @@ export function createClient() {
       }
     );
     
-    console.log('[AUTH DEBUG] Supabase client created with universal configuration:', browserInfo);
+    console.log('[AUTH DEBUG] Supabase client created with NO automatic session restoration:', browserInfo);
   }
   return _client;
 }
@@ -104,9 +111,6 @@ export function clearAuthStorage() {
   try {
     const browserInfo = getBrowserInfo();
     console.log('[AUTH DEBUG] Clearing all authentication storage', { browserInfo });
-    
-    // Set sign out flag to prevent automatic session restoration
-    sessionStorage.setItem('auth_sign_out', 'true');
     
     // Clear localStorage
     const localStorageKeys = Object.keys(localStorage).filter(k => 
@@ -144,9 +148,6 @@ export function checkPKCEState() {
     const browserInfo = getBrowserInfo();
     console.log('[AUTH DEBUG] Checking PKCE state...', { browserInfo });
     
-    // Check for sign out flag
-    const signOutFlag = sessionStorage.getItem('auth_sign_out');
-    
     // Check localStorage for PKCE-related keys
     const localStorageKeys = Object.keys(localStorage).filter(k => 
       k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
@@ -175,7 +176,6 @@ export function checkPKCEState() {
       hasSupabaseAuth: supabaseKeys.length > 0,
       oauthProgress: !!oauthProgress,
       oauthStartTime: oauthStartTime ? new Date(parseInt(oauthStartTime)).toISOString() : null,
-      signOutFlag: signOutFlag === 'true',
       browserInfo
     };
   } catch (error: any) {
@@ -226,12 +226,8 @@ if (typeof window !== 'undefined') {
     // Additional logging for specific events
     if (evt === 'SIGNED_IN') {
       console.log('[AUTH DEBUG] ✅ User signed in successfully');
-      // Clear sign out flag when user signs in
-      sessionStorage.removeItem('auth_sign_out');
     } else if (evt === 'SIGNED_OUT') {
       console.log('[AUTH DEBUG] 🚪 User signed out');
-      // Set sign out flag when user signs out
-      sessionStorage.setItem('auth_sign_out', 'true');
     } else if (evt === 'TOKEN_REFRESHED') {
       console.log('[AUTH DEBUG] 🔄 Token refreshed');
     } else if (evt === 'USER_UPDATED') {
@@ -251,5 +247,5 @@ if (typeof window !== 'undefined') {
     });
   });
   
-  console.log('[AUTH DEBUG] ===== Universal Supabase Client Initialized =====');
+  console.log('[AUTH DEBUG] ===== Universal Supabase Client Initialized (NO AUTO RESTORATION) =====');
 }

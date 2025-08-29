@@ -42,8 +42,12 @@ export default function TestAuthPage() {
       sessionStorage: {
         available: typeof window !== 'undefined' && !!window.sessionStorage,
         keys: typeof window !== 'undefined' ? Object.keys(sessionStorage).filter(k => k.startsWith('sb-')) : [],
-        signOutFlag: typeof window !== 'undefined' ? sessionStorage.getItem('auth_sign_out') : null,
       },
+      expectedBehavior: {
+        noAutoRestoration: true,
+        requiresExplicitSignIn: true,
+        sessionOnlyDuringOAuth: true,
+      }
     };
     
     setTestResults(results);
@@ -77,6 +81,19 @@ export default function TestAuthPage() {
     }
   };
 
+  const testNoAutoRestoration = () => {
+    try {
+      // Clear all storage
+      clearAuthStorage();
+      console.log('[AUTH TEST] Cleared storage for no-auto-restoration test');
+      
+      // Reload page to test if session is restored
+      window.location.reload();
+    } catch (error) {
+      console.error('[AUTH TEST] No-auto-restoration test error:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -93,9 +110,19 @@ export default function TestAuthPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Authentication Test - Universal Platform</CardTitle>
+            <CardTitle>Authentication Test - No Auto Restoration</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Expected Behavior:</h3>
+              <ul className="text-blue-700 text-sm space-y-1">
+                <li>✅ Users should NOT be automatically signed in</li>
+                <li>✅ Users must explicitly sign in themselves</li>
+                <li>✅ No session restoration on page load</li>
+                <li>✅ Session only exists during active OAuth flow</li>
+              </ul>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h3 className="font-semibold mb-2">Browser Info</h3>
@@ -126,6 +153,9 @@ export default function TestAuthPage() {
               </Button>
               <Button onClick={forceClearStorage} variant="outline">
                 Force Clear Storage
+              </Button>
+              <Button onClick={testNoAutoRestoration} variant="outline">
+                Test No Auto Restoration
               </Button>
             </div>
 
