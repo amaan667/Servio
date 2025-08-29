@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { siteOrigin } from "@/lib/site";
 
 export default function TestOAuthPage() {
   const [status, setStatus] = useState<string>("");
@@ -14,7 +13,7 @@ export default function TestOAuthPage() {
       setError("");
 
       const supabase = createClient();
-      const origin = siteOrigin();
+      const origin = window.location.origin;
       
       console.log('[AUTH DEBUG] Test OAuth - Origin:', origin);
       console.log('[AUTH DEBUG] Test OAuth - Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
@@ -50,13 +49,13 @@ export default function TestOAuthPage() {
       <div className="max-w-md w-full space-y-4">
         <h1 className="text-2xl font-bold text-center">OAuth Test</h1>
         
-        <div className="bg-gray-100 p-4 rounded-lg">
-          <h2 className="font-semibold mb-2">Environment Check:</h2>
-          <p>Origin: {siteOrigin()}</p>
-          <p>Supabase URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Set" : "❌ Missing"}</p>
-          <p>Supabase Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✅ Set" : "❌ Missing"}</p>
-          <p>Redirect URL: {siteOrigin()}/auth/callback</p>
-        </div>
+                  <div className="bg-gray-100 p-4 rounded-lg">
+            <h2 className="font-semibold mb-2">Environment Check:</h2>
+            <p>Origin: {window.location.origin}</p>
+            <p>Supabase URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Set" : "❌ Missing"}</p>
+            <p>Supabase Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✅ Set" : "❌ Missing"}</p>
+            <p>Redirect URL: {window.location.origin}/auth/callback</p>
+          </div>
 
         <button
           onClick={testOAuth}

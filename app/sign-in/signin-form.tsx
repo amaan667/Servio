@@ -232,8 +232,7 @@ export default function SignInForm() {
                 });
                 
                 // Test 4: Site origin calculation
-                const { siteOrigin } = await import('@/lib/site');
-                const origin = siteOrigin();
+                const origin = window.location.origin;
                 const redirectUrl = `${origin}/auth/callback`;
                 console.log('[AUTH DEBUG] Test 4: Site origin calculation', {
                   origin,

@@ -1,7 +1,6 @@
 "use client";
 import { logger } from "./logger";
 import { createClient } from "./supabase/client";
-import { siteOrigin } from "./site";
 
 // Types
 export interface User {
