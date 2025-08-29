@@ -5,6 +5,13 @@ export const revalidate = false;
 export async function GET(req: Request) {
   const u = new URL(req.url);
   
+  console.log('[AUTH DEBUG] API callback received:', {
+    url: req.url,
+    search: u.search,
+    hasCode: !!u.searchParams.get('code'),
+    hasError: !!u.searchParams.get('error')
+  });
+  
   // Determine the correct base URL for the redirect
   let baseUrl: string;
   if (process.env.NODE_ENV === 'production') {
@@ -18,7 +25,10 @@ export async function GET(req: Request) {
     baseUrl = u.origin;
   }
   
-  // ✅ Preserve the entire querystring verbatim
+  // Preserve the entire querystring verbatim
   const dest = new URL(`/auth/callback${u.search}`, baseUrl);
+  
+  console.log('[AUTH DEBUG] API callback redirecting to:', dest.toString());
+  
   return NextResponse.redirect(dest, { status: 307 });
 }
