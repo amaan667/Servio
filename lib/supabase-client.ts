@@ -5,7 +5,14 @@ import { createBrowserClient } from '@supabase/ssr';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  // Disable cookie operations on client side to prevent Next.js 15 errors
+  cookies: {
+    get: () => undefined,
+    set: () => {},
+    remove: () => {}
+  }
+});
 
 export async function signOut() {
   const { error } = await supabase.auth.signOut();

@@ -3,14 +3,13 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { createClient } from '@/lib/sb-client';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import GenerateQRClient from './GenerateQRClient';
 
 export default async function GenerateQRPage() {
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await createClient().auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/sign-in');
 
   const { data: venue, error } = await supabase

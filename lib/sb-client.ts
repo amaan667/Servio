@@ -61,11 +61,17 @@ export function createClient() {
           autoRefreshToken: false,
           persistSession: false,
           detectSessionInUrl: true
+        },
+        // Disable cookie operations on client side to prevent Next.js 15 errors
+        cookies: {
+          get: () => undefined,
+          set: () => {},
+          remove: () => {}
         }
       }
     );
     
-    console.log('[AUTH DEBUG] Supabase client created with NO automatic session restoration:', browserInfo);
+    console.log('[AUTH DEBUG] Supabase client created with NO automatic session restoration and NO cookie operations:', browserInfo);
   }
   return _client;
 }
