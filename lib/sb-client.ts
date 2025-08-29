@@ -5,7 +5,7 @@ import type { AuthChangeEvent, Session, AuthError } from '@supabase/supabase-js'
 let _client: ReturnType<typeof createBrowserClient> | null = null;
 
 // Universal browser detection for logging only
-function getBrowserInfo() {
+export function getBrowserInfo() {
   if (typeof window === 'undefined') return { type: 'unknown', isMobile: false };
   
   const userAgent = window.navigator.userAgent;
@@ -27,15 +27,35 @@ function getBrowserInfo() {
 
 export function createClient() {
   if (!_client) {
-    // Provide fallback values for build time
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+    // Check for required environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[AUTH DEBUG] Missing required environment variables:', {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasSupabaseAnonKey: !!supabaseAnonKey,
+        supabaseUrl: supabaseUrl ? 'SET' : 'MISSING',
+        supabaseAnonKey: supabaseAnonKey ? 'SET' : 'MISSING'
+      });
+      
+      // Return a mock client that won't crash the app
+      return {
+        auth: {
+          getSession: async () => ({ data: { session: null }, error: null }),
+          signInWithOAuth: async () => ({ data: null, error: { message: 'Environment variables not configured' } }),
+          signOut: async () => ({ error: null }),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+          onError: () => {}
+        }
+      } as any;
+    }
     
     const browserInfo = getBrowserInfo();
     
     _client = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       { 
         isSingleton: true,
         auth: {
@@ -207,7 +227,7 @@ if (typeof window !== 'undefined') {
   });
   
   // Log initial session state
-  client.auth.getSession().then(({ data, error }) => {
+  client.auth.getSession().then(({ data, error }: { data: { session: Session | null }, error: AuthError | null }) => {
     console.log('[AUTH DEBUG] Initial session check:', {
       hasSession: !!data.session,
       hasUser: !!data.session?.user,
