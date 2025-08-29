@@ -96,7 +96,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
     console.log('[DASHBOARD] Setting up real-time subscription with window:', todayWindow);
     
-    const channel = supabase
+    const channel = createClient()
       .channel('dashboard-orders')
       .on('postgres_changes', 
         { 
@@ -146,7 +146,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
     try {
       console.log('[DASHBOARD] Loading stats for today:', window.startUtcISO, 'to', window.endUtcISO);
 
-      const { data: orders } = await supabase
+      const { data: orders } = await createClient()
         .from("orders")
         .select("total_amount, table_number, status, payment_status, created_at, items")
         .eq("venue_id", vId)
@@ -155,7 +155,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       console.log('[DASHBOARD] Found orders for today:', orders?.length || 0);
 
-      const { data: menuItems } = await supabase
+      const { data: menuItems } = await createClient()
         .from("menu_items")
         .select("id")
         .eq("venue_id", vId)
