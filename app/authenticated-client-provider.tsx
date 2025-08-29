@@ -11,9 +11,14 @@ function now() {
 interface AuthContextType {
   session: Session | null;
   loading: boolean;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ session: null, loading: true });
+const AuthContext = createContext<AuthContextType>({ 
+  session: null, 
+  loading: true,
+  signOut: async () => {}
+});
 
 export function AuthenticatedClientProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -34,7 +39,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     });
   }, []);
 
-  // Universal session validation
+  // Universal session validation with proper clearing
   const validateAndUpdateSession = useCallback(async (session: Session | null) => {
     if (!session) {
       updateSession(null);
@@ -67,17 +72,48 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     updateSession(session);
   }, [updateSession]);
 
-  // Universal session clearing
+  // Universal session clearing with proper storage cleanup
   const clearSession = useCallback(() => {
     console.log('[AUTH DEBUG] provider:clearing session');
     setSession(null);
     
-    // Clear any OAuth progress flags
+    // Clear all authentication-related storage
     if (typeof window !== 'undefined') {
+      // Clear OAuth progress flags
       sessionStorage.removeItem("sb_oauth_in_progress");
       sessionStorage.removeItem("sb_oauth_start_time");
+      
+      // Clear all Supabase-related storage
+      const localStorageKeys = Object.keys(localStorage).filter(k => 
+        k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")
+      );
+      localStorageKeys.forEach(k => localStorage.removeItem(k));
+      
+      const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
+        k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")
+      );
+      sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
+      
+      console.log('[AUTH DEBUG] provider:cleared storage keys', {
+        localStorage: localStorageKeys,
+        sessionStorage: sessionStorageKeys
+      });
     }
   }, []);
+
+  // Universal sign out function
+  const signOut = useCallback(async () => {
+    try {
+      console.log('[AUTH DEBUG] provider:signing out');
+      await createClient().auth.signOut({ scope: 'global' });
+      clearSession();
+      console.log('[AUTH DEBUG] provider:sign out successful');
+    } catch (error) {
+      console.error('[AUTH DEBUG] provider:sign out error', error);
+      // Force clear session even if sign out fails
+      clearSession();
+    }
+  }, [clearSession]);
 
   useEffect(() => {
     // Only run on client side
@@ -93,7 +129,9 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         console.log('[AUTH DEBUG] provider:getSession:begin', { t: now() });
         const { data: { session }, error } = await createClient().auth.getSession();
         console.log('[AUTH DEBUG] provider:getSession:done', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
+        
         if (error) {
+          console.log('[AUTH DEBUG] provider:session error, clearing session');
           await validateAndUpdateSession(null);
         } else {
           await validateAndUpdateSession(session);
@@ -130,7 +168,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   }, [validateAndUpdateSession, clearSession]);
 
   return (
-    <AuthContext.Provider value={{ session, loading }}>
+    <AuthContext.Provider value={{ session, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

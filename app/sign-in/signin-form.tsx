@@ -10,11 +10,26 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RefreshCw } from 'lucide-react';
 import { signInUser } from '@/lib/supabase';
 import { signInWithGoogle } from '@/lib/auth/signin';
+import { useAuth } from '@/app/authenticated-client-provider';
+import { clearAuthStorage } from '@/lib/sb-client';
 
 export default function SignInForm() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { signOut } = useAuth();
+
+  const clearSessionAndStorage = async () => {
+    try {
+      // Clear any existing session
+      await signOut();
+      // Clear all authentication storage
+      clearAuthStorage();
+      console.log('[SIGN-IN] Cleared session and storage');
+    } catch (error) {
+      console.log('[SIGN-IN] Error clearing session:', error);
+    }
+  };
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +46,9 @@ export default function SignInForm() {
 
     setLoading(true);
     try {
+      // Clear any existing session before signing in
+      await clearSessionAndStorage();
+      
       const result = await signInUser(formData.email.trim(), formData.password);
       if (!result.success) {
         setError(result.message || 'Invalid email or password');
@@ -49,6 +67,10 @@ export default function SignInForm() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Clear any existing session before signing in
+      await clearSessionAndStorage();
+      
       await signInWithGoogle();
       // Redirect handled by OAuth callback - consistent across all platforms
     } catch (err: any) {

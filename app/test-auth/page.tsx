@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/authenticated-client-provider';
-import { createClient, getBrowserInfo, checkAuthState } from '@/lib/sb-client';
+import { createClient, getBrowserInfo, checkAuthState, clearAuthStorage } from '@/lib/sb-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function TestAuthPage() {
-  const { session, loading } = useAuth();
+  const { session, loading, signOut } = useAuth();
   const [browserInfo, setBrowserInfo] = useState<any>(null);
   const [authState, setAuthState] = useState<any>(null);
   const [testResults, setTestResults] = useState<any>(null);
@@ -42,6 +42,7 @@ export default function TestAuthPage() {
       sessionStorage: {
         available: typeof window !== 'undefined' && !!window.sessionStorage,
         keys: typeof window !== 'undefined' ? Object.keys(sessionStorage).filter(k => k.startsWith('sb-')) : [],
+        signOutFlag: typeof window !== 'undefined' ? sessionStorage.getItem('auth_sign_out') : null,
       },
     };
     
@@ -49,12 +50,30 @@ export default function TestAuthPage() {
     console.log('[AUTH TEST] Results:', results);
   };
 
-  const signOut = async () => {
+  const handleSignOut = async () => {
     try {
-      await createClient().auth.signOut();
-      console.log('[AUTH TEST] Signed out successfully');
+      console.log('[AUTH TEST] Starting sign out process');
+      await signOut();
+      console.log('[AUTH TEST] Sign out completed');
+      
+      // Force clear storage
+      clearAuthStorage();
+      console.log('[AUTH TEST] Storage cleared');
+      
+      // Redirect to sign-in
+      window.location.href = '/sign-in';
     } catch (error) {
       console.error('[AUTH TEST] Sign out error:', error);
+    }
+  };
+
+  const forceClearStorage = () => {
+    try {
+      clearAuthStorage();
+      console.log('[AUTH TEST] Force cleared storage');
+      window.location.reload();
+    } catch (error) {
+      console.error('[AUTH TEST] Force clear error:', error);
     }
   };
 
@@ -98,12 +117,15 @@ export default function TestAuthPage() {
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap">
               <Button onClick={runAuthTests} variant="outline">
                 Run Auth Tests
               </Button>
-              <Button onClick={signOut} variant="destructive">
+              <Button onClick={handleSignOut} variant="destructive">
                 Sign Out
+              </Button>
+              <Button onClick={forceClearStorage} variant="outline">
+                Force Clear Storage
               </Button>
             </div>
 
