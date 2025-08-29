@@ -33,7 +33,7 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
                 Settings
               </Button>
             </Link>
-            <Link href="/auth/sign-out">
+            <Link href="/sign-out">
               <Button variant="destructive" size="sm">Sign Out</Button>
             </Link>
           </>
