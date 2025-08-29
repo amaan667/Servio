@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { createClient } from '@/lib/sb-client';
 import { log } from '@/lib/debug';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import LiveOrdersClient from './LiveOrdersClient';
@@ -17,7 +16,7 @@ export default async function LiveOrdersPage({
   
   const supabase = createServerSupabase();
 
-  const { data: { user } } = await createClient().auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   log('LIVE-ORDERS SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 
