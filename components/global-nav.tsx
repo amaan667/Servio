@@ -9,7 +9,7 @@ import { Menu, X } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
-import { signOut } from "@/lib/supabase/auth";
+import { signOutUser } from "@/lib/supabase";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -69,7 +69,7 @@ export default function GlobalNav() {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await signOutUser();
       router.replace('/');
     } catch (error) {
       console.error('Sign out error:', error);
