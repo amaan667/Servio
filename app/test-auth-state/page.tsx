@@ -29,18 +29,21 @@ export default function TestAuthState() {
 
   const clearAllAuth = async () => {
     try {
-      // Clear all Supabase storage
-      Object.keys(localStorage).forEach((k) => {
-        if (k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")) {
-          localStorage.removeItem(k);
-        }
-      });
-      
-      Object.keys(sessionStorage).forEach((k) => {
-        if (k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")) {
-          sessionStorage.removeItem(k);
-        }
-      });
+      // Only run in browser environment
+      if (typeof window !== 'undefined') {
+        // Clear all Supabase storage
+        Object.keys(localStorage).forEach((k) => {
+          if (k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")) {
+            localStorage.removeItem(k);
+          }
+        });
+        
+        Object.keys(sessionStorage).forEach((k) => {
+          if (k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")) {
+            sessionStorage.removeItem(k);
+          }
+        });
+      }
 
       // Sign out from Supabase
       await createClient().auth.signOut();
@@ -48,7 +51,9 @@ export default function TestAuthState() {
       // Call API signout
       await fetch('/api/auth/signout', { method: 'POST' });
       
-      window.location.reload();
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
     } catch (err) {
       console.error('[TEST] Error clearing auth:', err);
     }
@@ -135,18 +140,24 @@ export default function TestAuthState() {
               <div>
                 <h4 className="font-semibold mb-2">LocalStorage Keys:</h4>
                 <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
-                  {Object.keys(localStorage)
-                    .filter(k => k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth"))
-                    .join('\n')}
+                  {typeof window !== 'undefined' 
+                    ? Object.keys(localStorage)
+                        .filter(k => k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth"))
+                        .join('\n')
+                    : 'Not available during SSR'
+                  }
                 </pre>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-2">SessionStorage Keys:</h4>
                 <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
-                  {Object.keys(sessionStorage)
-                    .filter(k => k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth"))
-                    .join('\n')}
+                  {typeof window !== 'undefined' 
+                    ? Object.keys(sessionStorage)
+                        .filter(k => k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth"))
+                        .join('\n')
+                    : 'Not available during SSR'
+                  }
                 </pre>
               </div>
             </div>

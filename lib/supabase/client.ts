@@ -1,16 +1,37 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-export const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  }
-)
+// Handle missing environment variables during build time
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// Create a mock client for build time if environment variables are missing
+const createMockClient = () => ({
+  auth: {
+    getUser: async () => ({ data: { user: null }, error: null }),
+    getSession: async () => ({ data: { session: null }, error: null }),
+    signOut: async () => ({ error: null }),
+    signInWithOAuth: async () => ({ data: null, error: new Error('Supabase not configured') }),
+    signUp: async () => ({ data: null, error: new Error('Supabase not configured') }),
+    signInWithPassword: async () => ({ data: null, error: new Error('Supabase not configured') }),
+    updateUser: async () => ({ data: null, error: new Error('Supabase not configured') })
+  },
+  from: () => ({
+    select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+    insert: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
+    update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
+    delete: () => ({ eq: async () => ({ error: null }) })
+  })
+});
+
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createBrowserClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
+  : createMockClient() as any;
 
 // Keep the old createClient function for backward compatibility
 export function createClient() {
