@@ -1,41 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options });
-          },
-          remove(name: string, options: any) {
-            cookieStore.set({ name, value: '', ...options });
-          },
-        },
-      }
-    );
-
     console.log('[AUTH DEBUG] Server-side sign out initiated');
     
-    const { error } = await supabase.auth.signOut();
+    // Clear all Supabase-related cookies without triggering auth state changes
+    const cookieOptions = {
+      maxAge: 0,
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const
+    };
     
-    if (error) {
-      console.log('[AUTH DEBUG] Server-side sign out failed:', error.message);
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    console.log('[AUTH DEBUG] Server-side sign out successful');
+    // Clear all possible Supabase cookie names
+    const supabaseCookieNames = [
+      'sb-access-token',
+      'sb-refresh-token', 
+      'supabase-auth-token',
+      'sb-auth-token',
+      'supabase-auth-token-code-verifier'
+    ];
     
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+    
+    supabaseCookieNames.forEach(cookieName => {
+      response.cookies.set(cookieName, '', cookieOptions);
+    });
+    
+    console.log('[AUTH DEBUG] Server-side sign out successful - cookies cleared');
+    
+    return response;
     
   } catch (error: any) {
     console.log('[AUTH DEBUG] Server-side sign out error:', error.message);

@@ -106,7 +106,10 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     try {
       console.log('[AUTH DEBUG] provider:signing out');
       
-      // Use server-side sign out to avoid cookie modification errors
+      // Clear session and storage first to prevent auth state change errors
+      clearSession();
+      
+      // Use server-side sign out to clear cookies
       const response = await fetch('/api/auth/signout', {
         method: 'POST',
         headers: {
@@ -121,9 +124,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       }
     } catch (error) {
       console.error('[AUTH DEBUG] provider:sign out error', error);
-    } finally {
-      // Always clear session and storage regardless of server response
-      clearSession();
+      // Even if server-side sign out fails, we've already cleared the session
     }
   }, [clearSession]);
 
@@ -174,13 +175,18 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     const { data: { subscription } } = createClient().auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
       
-      // Handle specific auth events
-      if (event === 'SIGNED_OUT') {
-        clearSession();
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await validateAndUpdateSession(session);
-      } else {
-        await validateAndUpdateSession(session);
+      try {
+        // Handle specific auth events
+        if (event === 'SIGNED_OUT') {
+          clearSession();
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          await validateAndUpdateSession(session);
+        } else {
+          await validateAndUpdateSession(session);
+        }
+      } catch (error) {
+        console.error('[AUTH DEBUG] provider:auth state change error', error);
+        // Don't let auth state change errors crash the app
       }
       
       setLoading(false);

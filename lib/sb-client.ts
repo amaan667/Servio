@@ -196,30 +196,15 @@ if (typeof window !== 'undefined') {
     originalConsoleError.apply(console, args);
   };
   
-  // Add error handling for token refresh
-  client.auth.onAuthStateChange((evt: AuthChangeEvent, sess: Session | null) => {
-    console.log('[AUTH DEBUG] 🔄 Auth state changed:', {
-      event: evt,
-      hasSession: !!sess,
-      hasUser: !!sess?.user,
-      userId: sess?.user?.id,
-      userEmail: sess?.user?.email,
-      sessionExpiresAt: sess?.expires_at,
-      timestamp: new Date().toISOString(),
-      browserInfo
+  // Override the onAuthStateChange to prevent cookie operations
+  const originalOnAuthStateChange = client.auth.onAuthStateChange;
+  client.auth.onAuthStateChange = (callback: (event: AuthChangeEvent, session: Session | null) => void) => {
+    return originalOnAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      // Don't trigger any cookie operations during auth state changes
+      console.log('[AUTH DEBUG] Auth state change (no cookie ops):', event, !!session);
+      callback(event, session);
     });
-    
-    // Handle token refresh errors
-    if (evt === 'TOKEN_REFRESHED') {
-      console.log('[AUTH DEBUG] 🔄 Token refreshed successfully');
-    } else if (evt === 'SIGNED_OUT') {
-      console.log('[AUTH DEBUG] 🚪 User signed out');
-      // Clear any stale tokens when user signs out
-      clearAuthStorage();
-    }
-  });
-  
-
+  };
   
   // Log initial session state
   client.auth.getSession().then(({ data, error }: { data: { session: Session | null }, error: AuthError | null }) => {
