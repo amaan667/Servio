@@ -27,7 +27,8 @@ export function middleware(req: NextRequest) {
 
   const hasAuth = req.cookies.getAll().some((c) => AUTH_COOKIE_RE.test(c.name));
   if (!hasAuth) {
-    const to = new URL("/sign-in", req.url);
+    // Send unauthenticated users to home where the Sign In button starts OAuth directly
+    const to = new URL("/", req.url);
     to.searchParams.set("next", p);
     return NextResponse.redirect(to);
   }

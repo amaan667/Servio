@@ -36,14 +36,13 @@ export default function OAuthCallback() {
 
         if (err) {
           console.error('[AUTH DEBUG] OAuth error in callback:', err);
-          router.replace('/sign-in?error=oauth_error');
+          router.replace('/?auth_error=oauth_error');
           return;
         }
 
         if (!code) {
-          console.error('[AUTH DEBUG] No authorization code in callback - redirecting to sign-in');
-          // Redirect to sign-in page instead of showing error
-          router.replace('/sign-in?error=missing_code');
+          console.error('[AUTH DEBUG] No authorization code in callback - redirecting home');
+          router.replace('/?auth_error=missing_code');
           return;
         }
 
@@ -67,14 +66,14 @@ export default function OAuthCallback() {
 
         if (exchangeError) {
           console.error('[AUTH DEBUG] Exchange failed:', exchangeError);
-          router.replace('/sign-in?error=exchange_failed');
+          router.replace('/?auth_error=exchange_failed');
           return;
         }
 
         const { data: { session } } = await sb.auth.getSession();
         if (!session) {
           console.error('[AUTH DEBUG] No session after exchange');
-          router.replace('/sign-in?error=no_session');
+          router.replace('/?auth_error=no_session');
           return;
         }
 
@@ -99,7 +98,7 @@ export default function OAuthCallback() {
 
       } catch (err: any) {
         console.error('[AUTH DEBUG] OAuth callback error:', err);
-        router.replace('/sign-in?error=oauth_error');
+        router.replace('/?auth_error=oauth_error');
       }
     })().finally(() => { finished = true; });
   }, [router, sp]);

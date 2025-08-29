@@ -30,10 +30,9 @@ export async function GET(req: Request) {
   const error = u.searchParams.get('error');
   
   if (!code && !error) {
-    console.log('[AUTH DEBUG] No code or error in callback - redirecting to sign-in');
-    // If no code or error, redirect to sign-in page
-    const signInUrl = new URL('/sign-in?error=missing_code', baseUrl);
-    return NextResponse.redirect(signInUrl, { status: 307 });
+    console.log('[AUTH DEBUG] No code or error in callback - redirecting home');
+    const homeUrl = new URL('/?auth_error=missing_code', baseUrl);
+    return NextResponse.redirect(homeUrl, { status: 307 });
   }
   
   // Preserve the entire querystring verbatim for the client-side callback
