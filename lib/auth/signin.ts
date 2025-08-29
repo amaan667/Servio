@@ -16,7 +16,7 @@ export async function signInWithGoogle() {
     // Silent error handling
   }
 
-  const redirectTo = `${window.location.origin}/auth/callback`;
+  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
 
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: "google",

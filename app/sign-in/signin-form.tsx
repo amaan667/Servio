@@ -171,7 +171,7 @@ export default function SignInForm() {
                   const { createClient } = await import('@/lib/sb-client');
                   const { siteOrigin } = await import('@/lib/site');
                   const sb = createClient();
-                  const redirectUrl = `${window.location.origin}/auth/callback`;
+                  const redirectUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
                   
                   console.log('[AUTH DEBUG] === Testing OAuth URL ===');
                   console.log('[AUTH DEBUG] Redirect URL:', redirectUrl);
