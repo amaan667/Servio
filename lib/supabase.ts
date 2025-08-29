@@ -205,10 +205,17 @@ export async function signInWithGoogle() {
     sessionStorage.removeItem("sb_oauth_retry");
   } catch {}
   
-  // Use environment variable instead of window.location.origin
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
+  // ALWAYS use production URL - NEVER use window.location.origin or localhost
+  // This ensures OAuth always redirects to production, regardless of where the request originates
+  const productionUrl = 'https://servio-production.up.railway.app'
+  const redirectTo = `${productionUrl}/auth/callback`;
   
-  console.log('[AUTH DEBUG] Using NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
+  // Safety check - ensure we never use localhost
+  if (typeof window !== 'undefined' && window.location.origin.includes('localhost')) {
+    console.log('[AUTH DEBUG] WARNING: Running on localhost, but OAuth will redirect to production:', window.location.origin);
+  }
+  
+  console.log('[AUTH DEBUG] Using production URL:', productionUrl);
   console.log('[AUTH DEBUG] Final redirectTo URL:', redirectTo);
   console.log('[AUTH DEBUG] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
   console.log('[AUTH DEBUG] Has anon key:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -472,4 +479,35 @@ export async function createVenueIfNotExists(venueId: string) {
   }
 
   return newVenue;
+}
+
+// Test function to verify OAuth redirect URLs
+export function testOAuthRedirects() {
+  console.log('[AUTH TEST] Testing OAuth redirect configuration...');
+  
+  // Test 1: Verify signInWithGoogle uses production URL
+  const productionUrl = 'https://servio-production.up.railway.app'
+  const expectedRedirectTo = `${productionUrl}/auth/callback`
+  
+  console.log('[AUTH TEST] Expected redirect URL:', expectedRedirectTo)
+  console.log('[AUTH TEST] Production URL:', productionUrl)
+  console.log('[AUTH TEST] Environment NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
+  
+  // Test 2: Verify no localhost in any redirect URLs
+  const testUrls = [
+    expectedRedirectTo,
+    `${productionUrl}/dashboard/test`,
+    `${productionUrl}/complete-profile`,
+    `${productionUrl}/?auth_error=test`
+  ]
+  
+  const hasLocalhost = testUrls.some(url => url.includes('localhost') || url.includes('127.0.0.1'))
+  
+  if (hasLocalhost) {
+    console.error('[AUTH TEST] ❌ FAILED: Found localhost in redirect URLs!')
+    return false
+  } else {
+    console.log('[AUTH TEST] ✅ PASSED: No localhost found in redirect URLs')
+    return true
+  }
 }

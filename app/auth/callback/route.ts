@@ -9,16 +9,28 @@ export async function GET(req: Request) {
   const code = url.searchParams.get('code')
   const error = url.searchParams.get('error')
 
+  // ALWAYS use production URL for redirects - NEVER use request origin
+  // This prevents any possibility of localhost redirects
+  const productionUrl = 'https://servio-production.up.railway.app'
+  
+  // Additional safety check - ensure we never use localhost
+  const requestOrigin = url.origin
+  if (requestOrigin.includes('localhost') || requestOrigin.includes('127.0.0.1')) {
+    console.log('[AUTH DEBUG] WARNING: Request origin contains localhost, but we will redirect to production:', requestOrigin);
+  }
+
   console.log('[AUTH DEBUG] Callback params:', { 
     hasCode: !!code, 
     hasError: !!error,
-    origin: url.origin,
-    hostname: url.hostname 
+    requestOrigin: url.origin,
+    hostname: url.hostname,
+    productionUrl,
+    willRedirectTo: productionUrl
   });
 
   if (error) {
     console.log('[AUTH DEBUG] OAuth error:', error);
-    return NextResponse.redirect(new URL('/?auth_error=oauth_error', url.origin))
+    return NextResponse.redirect(new URL('/?auth_error=oauth_error', productionUrl))
   }
 
   if (code) {
@@ -28,7 +40,7 @@ export async function GET(req: Request) {
     
     if (exchangeError) {
       console.log('[AUTH DEBUG] Exchange error:', exchangeError);
-      return NextResponse.redirect(new URL('/?auth_error=exchange_failed', url.origin))
+      return NextResponse.redirect(new URL('/?auth_error=exchange_failed', productionUrl))
     }
 
     console.log('[AUTH DEBUG] Session exchange successful:', !!data.session);
@@ -43,14 +55,14 @@ export async function GET(req: Request) {
 
       if (venues && venues.length > 0) {
         console.log('[AUTH DEBUG] Redirecting to dashboard:', venues[0].venue_id);
-        return NextResponse.redirect(new URL(`/dashboard/${venues[0].venue_id}`, url.origin))
+        return NextResponse.redirect(new URL(`/dashboard/${venues[0].venue_id}`, productionUrl))
       } else {
         console.log('[AUTH DEBUG] Redirecting to complete profile');
-        return NextResponse.redirect(new URL('/complete-profile', url.origin))
+        return NextResponse.redirect(new URL('/complete-profile', productionUrl))
       }
     }
   }
 
   console.log('[AUTH DEBUG] No code or session, redirecting to home');
-  return NextResponse.redirect(new URL('/?auth_error=missing_code', url.origin))
+  return NextResponse.redirect(new URL('/?auth_error=missing_code', productionUrl))
 }
