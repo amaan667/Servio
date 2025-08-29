@@ -1,16 +1,17 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/sb-client';
+import { createServerSupabase } from '@/lib/supabase-server';
 
 export default async function DashboardPage() {
+  const supabase = await createServerSupabase();
 
-  const { data: { session } } = await createClient().auth.getSession();
+  const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
     redirect('/sign-in');
   }
 
   // Get the user's primary venue
-  const { data: venues, error } = await createClient()
+  const { data: venues, error } = await supabase
     .from('venues')
     .select('venue_id, venue_name')
     .eq('owner_id', session.user.id)
