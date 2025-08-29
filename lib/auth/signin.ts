@@ -1,7 +1,6 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
-import { clearPkceVerifier } from './pkce-utils.js';
 
 function maskValue(value: string | null | undefined, opts: { prefix?: number; suffix?: number } = {}) {
   if (!value) return { present: false };
@@ -45,68 +44,37 @@ export async function signInWithGoogle() {
   });
 
   try {
-    // Universal storage clearing for all platforms
-    const clearedKeys: string[] = [];
+    // Clear any existing OAuth progress flags
+    sessionStorage.removeItem("sb_oauth_in_progress");
+    sessionStorage.removeItem("sb_oauth_start_time");
     
-    // Clear localStorage with comprehensive key detection
+    // Clear any stale Supabase storage
     const localStorageKeys = Object.keys(localStorage).filter(k => 
-      k.startsWith("sb-") || 
-      k.includes("pkce") || 
-      k.includes("token-code-verifier") || 
-      k.includes("code_verifier") ||
-      k.includes("auth") ||
-      k.includes("verifier")
+      k.startsWith("sb-") || k.includes("auth")
     );
-    localStorageKeys.forEach(k => {
-      localStorage.removeItem(k);
-      clearedKeys.push(`local:${k}`);
-    });
+    localStorageKeys.forEach(k => localStorage.removeItem(k));
     
-    // Clear sessionStorage with comprehensive key detection
     const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-      k.startsWith("sb-") || 
-      k.includes("pkce") || 
-      k.includes("token-code-verifier") || 
-      k.includes("code_verifier") ||
-      k.includes("auth") ||
-      k.includes("verifier") ||
-      k.includes("oauth")
+      k.startsWith("sb-") || k.includes("auth")
     );
-    sessionStorageKeys.forEach(k => {
-      sessionStorage.removeItem(k);
-      clearedKeys.push(`session:${k}`);
-    });
+    sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
     
-    // Clear our custom PKCE verifier from all locations
-    clearPkceVerifier();
-    
-    console.log('[AUTH DEBUG] signInWithGoogle: cleared keys', { 
-      clearedKeys, 
-      localStorageCount: localStorageKeys.length,
-      sessionStorageCount: sessionStorageKeys.length
+    console.log('[AUTH DEBUG] signInWithGoogle: cleared storage', { 
+      localStorageKeys: localStorageKeys.length,
+      sessionStorageKeys: sessionStorageKeys.length
     });
 
     // Ensure we're starting with a clean state
     await sb.auth.signOut({ scope: 'local' });
 
-    // Universal delay for all platforms
-    const storageDelay = 200;
-    console.log('[AUTH DEBUG] signInWithGoogle: waiting for storage to clear', { delay: storageDelay });
-    await new Promise(resolve => setTimeout(resolve, storageDelay));
-
     // Use Supabase's built-in PKCE flow
-    console.log('[OAuth Frontend] Using universal Supabase built-in PKCE flow');
+    console.log('[OAuth Frontend] Using Supabase built-in PKCE flow');
 
-    // For desktop, we might want to use a different approach to avoid popup issues
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: {
         flowType: "pkce",
         redirectTo: redirectUrl,
-        // For desktop, we might want to force a redirect instead of popup
-        ...(isMobile ? {} : { skipBrowserRedirect: false }),
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -119,7 +87,6 @@ export async function signInWithGoogle() {
       hasError: !!error, 
       errorMessage: error?.message,
       url: data?.url,
-      isMobile,
       urlLength: data?.url?.length,
       timestamp: new Date().toISOString()
     });
@@ -144,16 +111,9 @@ export async function signInWithGoogle() {
       });
     } catch {}
 
-    // Universal redirect to OAuth provider
+    // Redirect to OAuth provider
     console.log('[AUTH DEBUG] signInWithGoogle: redirecting to', data.url);
-    
-    // For desktop, we might want to use a more direct approach
-    if (isMobile) {
-      window.location.href = data.url;
-    } else {
-      // On desktop, try to open in the same window to avoid popup issues
-      window.location.href = data.url;
-    }
+    window.location.href = data.url;
     
   } catch (error: any) {
     console.error('[AUTH DEBUG] signInWithGoogle: error', { 

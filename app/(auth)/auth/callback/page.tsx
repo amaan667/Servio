@@ -81,21 +81,12 @@ function OAuthCallbackContent() {
         return router.replace("/sign-in?error=missing_code");
       }
 
-      console.log('[OAuth Frontend] callback: using server-side exchange');
+      console.log('[OAuth Frontend] callback: using client-side exchange');
       
       try {
-        // Step 3: Use server-side exchange to avoid cookie modification errors
-        const response = await fetch('/api/auth/exchange-code', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code: code,
-            state: sp.get("state")
-          }),
-        });
-
+        // Step 3: Use client-side exchange to properly handle PKCE
+        const { data, error } = await sb.auth.exchangeCodeForSession(code);
+        
         // Scrub code/state to prevent repeat exchanges
         try {
           const url = new URL(window.location.href);
@@ -104,10 +95,9 @@ function OAuthCallbackContent() {
           window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams}` : ""));
         } catch {}
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.log('[OAuth Frontend] callback: Server-side exchange failed', { 
-            error: errorData.error
+        if (error) {
+          console.log('[OAuth Frontend] callback: Client-side exchange failed', { 
+            error: error.message
           });
           try {
             await fetch('/api/auth/log', { 
@@ -115,17 +105,15 @@ function OAuthCallbackContent() {
               headers: { 'Content-Type': 'application/json' }, 
               body: JSON.stringify({ 
                 event: 'supabase_exchange_failed', 
-                message: errorData.error
+                message: error.message
               }) 
             });
           } catch {}
           return router.replace("/sign-in?error=exchange_failed");
         }
 
-        const exchangeData = await response.json();
-        
-        if (!exchangeData.success || !exchangeData.session) {
-          console.log('[OAuth Frontend] callback: no session after server-side exchange');
+        if (!data.session) {
+          console.log('[OAuth Frontend] callback: no session after client-side exchange');
           try {
             await fetch('/api/auth/log', { 
               method: 'POST', 
@@ -140,7 +128,7 @@ function OAuthCallbackContent() {
 
         console.log('[OAuth Frontend] callback: success, redirecting to', { 
           next, 
-          userId: exchangeData.user.id
+          userId: data.user.id
         });
         
         // Use consistent delay for all platforms
