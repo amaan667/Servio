@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/sb-client";
+
+const supabase = createClient();
 import { ArrowLeft, Save, User, Building, Mail, Phone } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -18,7 +20,7 @@ interface Venue {
 
 interface User {
   id: string;
-  email: string;
+  email?: string;
 }
 
 export default function SettingsClient({ user, venues }: { user: User; venues: Venue[] }) {
