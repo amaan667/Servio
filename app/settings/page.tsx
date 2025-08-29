@@ -19,5 +19,6 @@ export default async function SettingsPage() {
 
   if (!venues || venues.length === 0) redirect('/complete-profile');
 
-  return <SettingsClient user={user} venues={venues} />;
+  // Redirect to the venue-specific settings page
+  redirect(`/dashboard/${venues[0].venue_id}/settings`);
 }
