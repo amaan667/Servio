@@ -8,7 +8,7 @@ echo "================================="
 echo "Test 1: Valid flat JSON structure"
 curl -X POST http://localhost:8080/api/auth/google/callback \
   -H "Content-Type: application/json" \
-  -d '{"auth_code":"test_auth_code_123","verifier":"test_verifier_456"}' \
+  -d '{"code":"test_auth_code_123","verifier":"test_verifier_456"}' \
   -w "\nHTTP Status: %{http_code}\n" \
   -s
 
@@ -28,7 +28,7 @@ echo -e "\n"
 echo "Test 3: Missing verifier"
 curl -X POST http://localhost:8080/api/auth/google/callback \
   -H "Content-Type: application/json" \
-  -d '{"auth_code":"test_auth_code_123"}' \
+  -d '{"code":"test_auth_code_123"}' \
   -w "\nHTTP Status: %{http_code}\n" \
   -s
 

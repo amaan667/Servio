@@ -102,9 +102,9 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Comprehensive logging as requested
-	log.Printf("[AUTH LOG] received_code=%s, received_verifier=%s", params.AuthCode, params.Verifier)
+	log.Printf("[AUTH LOG] received_code=%s, received_verifier=%s", params.Code, params.Verifier)
 
-	if params.AuthCode == "" {
+	if params.Code == "" {
 		log.Printf("[AUTH LOG] missing_code")
 		http.Error(w, "missing_code", http.StatusBadRequest)
 		return
@@ -116,8 +116,8 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[AUTH LOG] Processing OAuth exchange for code length=%d, verifier length=%d", 
-		len(params.AuthCode), len(params.Verifier))
+	log.Printf("[AUTH LOG] Processing OAuth exchange for code length=%d, verifier length=%d",
+		len(params.Code), len(params.Verifier))
 
 	// Get OAuth configuration
 	config := getOAuthConfig()
@@ -128,7 +128,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Exchange the authorization code for tokens
-	tokenResp, err := exchangeCodeForToken(params.AuthCode, params.Verifier, config)
+	tokenResp, err := exchangeCodeForToken(params.Code, params.Verifier, config)
 	if err != nil {
 		log.Printf("[AUTH LOG] Token exchange failed: %v", err)
 		http.Error(w, "Token exchange failed", http.StatusBadRequest)
