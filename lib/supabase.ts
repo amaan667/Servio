@@ -244,6 +244,13 @@ export async function signInWithGoogle() {
   console.log('[OAUTH FLOW] OAuth data: ', data);
   console.log('[OAUTH FLOW] OAuth URL: ', data?.url);
   console.log('[OAUTH FLOW] OAuth provider: ', data?.provider);
+  
+  // Automatically redirect to OAuth URL
+  if (data?.url) {
+    console.log('[OAUTH FLOW] Step 6: Redirecting to OAuth URL');
+    window.location.href = data.url;
+  }
+  
   return data;
 }
 
