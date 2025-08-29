@@ -11,7 +11,7 @@ export default function TestOAuthPage() {
 
   useEffect(() => {
     setIsClient(true);
-    setOrigin(window.location.origin);
+    setOrigin(process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app');
   }, []);
 
   const testOAuth = async () => {

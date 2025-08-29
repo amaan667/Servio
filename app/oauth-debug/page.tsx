@@ -11,7 +11,7 @@ export default function OAuthDebugPage() {
 
   useEffect(() => {
     setIsClient(true);
-    setOrigin(window.location.origin);
+    setOrigin(process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app');
   }, []);
 
   const testOAuth = async () => {
@@ -20,7 +20,7 @@ export default function OAuthDebugPage() {
       const supabase = createClient();
       
       console.log('[AUTH DEBUG] === OAuth Debug Test ===');
-      console.log('[AUTH DEBUG] Window location:', window.location.href);
+      console.log('[AUTH DEBUG] Production URL:', process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app');
       console.log('[AUTH DEBUG] Window origin:', origin);
       console.log('[AUTH DEBUG] NODE_ENV:', process.env.NODE_ENV);
       console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
@@ -43,8 +43,8 @@ export default function OAuthDebugPage() {
         data: data,
         error: error,
         redirectTo: redirectTo,
-        windowOrigin: origin,
-        windowLocation: window.location.href,
+        productionUrl: origin,
+        currentUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app',
         nodeEnv: process.env.NODE_ENV,
         siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
         timestamp: new Date().toISOString()
@@ -55,8 +55,8 @@ export default function OAuthDebugPage() {
         success: false,
         error: err.message,
         redirectTo: `${origin}/auth/callback`,
-        windowOrigin: origin,
-        windowLocation: window.location.href,
+        productionUrl: origin,
+        currentUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app',
         nodeEnv: process.env.NODE_ENV,
         siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
         timestamp: new Date().toISOString()
@@ -72,8 +72,8 @@ export default function OAuthDebugPage() {
       
       <div className="mb-6 p-4 bg-blue-50 rounded">
         <h2 className="font-bold mb-2">Current Environment:</h2>
-        <p><strong>Window Origin:</strong> {isClient ? origin : 'Loading...'}</p>
-        <p><strong>Window Location:</strong> {isClient ? window.location.href : 'Loading...'}</p>
+        <p><strong>Production URL:</strong> {isClient ? origin : 'Loading...'}</p>
+        <p><strong>Current URL:</strong> {process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}</p>
         <p><strong>NODE_ENV:</strong> {process.env.NODE_ENV}</p>
         <p><strong>NEXT_PUBLIC_SITE_URL:</strong> {process.env.NEXT_PUBLIC_SITE_URL || 'NOT SET'}</p>
         <p><strong>Redirect URL:</strong> {isClient ? `${origin}/auth/callback` : 'Loading...'}</p>

@@ -11,7 +11,7 @@ export default function DebugOAuthPage() {
 
   useEffect(() => {
     setIsClient(true);
-    setOrigin(window.location.origin);
+    setOrigin(process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app');
   }, []);
 
   const testOAuth = async () => {
@@ -32,7 +32,7 @@ export default function DebugOAuthPage() {
         data: data,
         error: error,
         redirectUrl: `${origin}/auth/callback`,
-        currentUrl: window.location.href,
+        currentUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app',
         origin: origin
       });
     } catch (err: any) {
@@ -40,7 +40,7 @@ export default function DebugOAuthPage() {
         success: false,
         error: err.message,
         redirectUrl: `${origin}/auth/callback`,
-        currentUrl: window.location.href,
+        currentUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app',
         origin: origin
       });
     } finally {

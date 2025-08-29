@@ -109,9 +109,9 @@ export default function SignInForm() {
           {process.env.NODE_ENV === 'development' && (
             <Button
               onClick={() => {
-                console.log('[AUTH DEBUG] Current URL:', window.location.href);
-                console.log('[AUTH DEBUG] Site origin:', window.location.origin);
-                console.log('[AUTH DEBUG] Redirect URL:', `${window.location.origin}/auth/callback`);
+                console.log('[AUTH DEBUG] Current URL:', process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app');
+                console.log('[AUTH DEBUG] Site origin:', process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app');
+                console.log('[AUTH DEBUG] Redirect URL:', `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`);
                 console.log('[AUTH DEBUG] LocalStorage keys:', Object.keys(localStorage));
               }}
               variant="outline"
@@ -228,16 +228,16 @@ export default function SignInForm() {
                 console.log('[AUTH DEBUG] Test 3: Environment check', {
                   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ Set' : '✗ Missing',
                   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓ Set' : '✗ Missing',
-                  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'Using window.location.origin'
+                  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'
                 });
                 
                 // Test 4: Site origin calculation
-                const origin = window.location.origin;
+                const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app';
                 const redirectUrl = `${origin}/auth/callback`;
                 console.log('[AUTH DEBUG] Test 4: Site origin calculation', {
                   origin,
                   redirectUrl,
-                  windowOrigin: window.location.origin
+                  productionUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'
                 });
                 
                 // Test 5: Popup blocker test (desktop only)
