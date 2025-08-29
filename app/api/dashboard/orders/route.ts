@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 
@@ -14,8 +15,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
   }
 
-  const supabase = createServerSupabase();
-  const { data: { user } } = await createClient().auth.getUser();
+  const supabase = await createServerSupabase();
+  const adminAuth = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data: { user } } = await adminAuth.auth.getUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
   }

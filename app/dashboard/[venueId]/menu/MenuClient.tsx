@@ -48,7 +48,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   }, [venueId]);
 
   const loadMenuItems = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await createClient()
       .from('menu_items')
       .select('*')
       .eq('venue_id', venueId)
@@ -77,7 +77,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
     if (editingItem) {
       // Update existing item
-      const { error } = await supabase
+      const { error } = await createClient()
         .from('menu_items')
         .update(itemData)
         .eq('id', editingItem.id)
@@ -91,7 +91,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       }
     } else {
       // Add new item
-      const { data, error } = await supabase
+      const { data, error } = await createClient()
         .from('menu_items')
         .insert([itemData])
         .select()
@@ -107,7 +107,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   };
 
   const handleDelete = async (itemId: string) => {
-    const { error } = await supabase
+    const { error } = await createClient()
       .from('menu_items')
       .delete()
       .eq('id', itemId)
@@ -119,7 +119,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   };
 
   const handleToggleAvailable = async (itemId: string, available: boolean) => {
-    const { error } = await supabase
+    const { error } = await createClient()
       .from('menu_items')
       .update({ available })
       .eq('id', itemId)

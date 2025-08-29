@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [activeTab, setActiveTab] = useState("live");
   // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const loadVenueAndOrders = async () => {
@@ -187,7 +188,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       .subscribe();
 
     return () => {
-      createClient().removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [venueId]);
 

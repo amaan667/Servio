@@ -16,7 +16,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
 
   useEffect(() => {
     const checkForData = async () => {
-      const { data: orders } = await supabase
+      const { data: orders } = await createClient()
         .from('orders')
         .select('id')
         .eq('venue_id', venueId)

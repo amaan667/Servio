@@ -11,8 +11,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'name and business_type are required' }, { status: 400 });
     }
 
-    const supabase = createServerSupabase();
-    const { data: { user } } = await createClient().auth.getUser();
+    const supabase = await createServerSupabase();
+    const adminAuth = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession:false, autoRefreshToken:false } });
+    const { data: { user } } = await adminAuth.auth.getUser();
     if (!user) return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
 
     const admin = await createClient();

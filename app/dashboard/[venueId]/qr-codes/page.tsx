@@ -15,7 +15,7 @@ export default async function QrCodesPage({
 }) {
   console.log('[QR-CODES] Page mounted for venue', params.venueId);
   
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: { user } } = await supabase.auth.getUser();
   log('QR-CODES SSR user', { hasUser: !!user });
