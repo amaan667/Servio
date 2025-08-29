@@ -45,8 +45,7 @@ export function createClient() {
           getSession: async () => ({ data: { session: null }, error: null }),
           signInWithOAuth: async () => ({ data: null, error: { message: 'Environment variables not configured' } }),
           signOut: async () => ({ error: null }),
-          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-          onError: () => {}
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
         }
       } as any;
     }
@@ -214,19 +213,7 @@ if (typeof window !== 'undefined') {
     }
   });
   
-  // Add global error handler for auth errors
-  client.auth.onError((error: AuthError) => {
-    console.log('[AUTH DEBUG] ❌ Auth error:', error);
-    
-    // If it's a refresh token error or 400 bad request, clear the storage
-    if (error.message?.includes('Refresh Token Not Found') || 
-        error.message?.includes('Invalid Refresh Token') ||
-        error.message?.includes('400') ||
-        error.status === 400) {
-      console.log('[AUTH DEBUG] Clearing invalid refresh token due to error:', error.message);
-      clearAuthStorage();
-    }
-  });
+
   
   // Log initial session state
   client.auth.getSession().then(({ data, error }: { data: { session: Session | null }, error: AuthError | null }) => {
