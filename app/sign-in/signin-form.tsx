@@ -47,6 +47,9 @@ export default function SignInForm() {
   };
 
   const handleGoogleSignIn = async () => {
+    console.log('[SIGNIN FORM] Step 1: Google sign-in button clicked');
+    console.log('[SIGNIN FORM] Current window location: ', window.location.href);
+    console.log('[SIGNIN FORM] Current window origin: ', window.location.origin);
     console.log('[AUTH DEBUG] Google sign-in button clicked');
     console.log('[AUTH DEBUG] User agent:', navigator.userAgent);
     console.log('[AUTH DEBUG] Is mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -80,7 +83,9 @@ export default function SignInForm() {
         }
       }
       
+      console.log('[SIGNIN FORM] Step 2: Calling signInWithGoogle function');
       await signInWithGoogle();
+      console.log('[SIGNIN FORM] Step 3: signInWithGoogle completed');
       // Redirect handled by OAuth callback - consistent across all platforms
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed. Please try again.');

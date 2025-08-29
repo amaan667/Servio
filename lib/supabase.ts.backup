@@ -208,18 +208,7 @@ export async function signInWithGoogle() {
   // ALWAYS use production URL - NEVER use window.location.origin or localhost
   // This ensures OAuth always redirects to production, regardless of where the request originates
   const productionUrl = 'https://servio-production.up.railway.app'
-  console.log('[OAUTH FLOW] Step 1: OAuth initiation');
-  console.log('[OAUTH FLOW] Environment check: NODE_ENV=', process.env.NODE_ENV);
-  console.log('[OAUTH FLOW] Window location: ', typeof window !== 'undefined' ? window.location.href : 'server-side');
-  console.log('[OAUTH FLOW] Window origin: ', typeof window !== 'undefined' ? window.location.origin : 'server-side');
-  console.log('[OAUTH FLOW] NEXT_PUBLIC_SITE_URL: ', process.env.NEXT_PUBLIC_SITE_URL);
-  console.log('[OAUTH FLOW] NEXT_PUBLIC_APP_URL: ', process.env.NEXT_PUBLIC_APP_URL);
   const redirectTo = `${productionUrl}/auth/callback`;
-  console.log('[OAUTH FLOW] Step 2: Redirect URL configuration');
-  console.log('[OAUTH FLOW] Production URL: ', productionUrl);
-  console.log('[OAUTH FLOW] Final redirectTo: ', redirectTo);
-  console.log('[OAUTH FLOW] Supabase URL: ', process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log('[OAUTH FLOW] Has anon key: ', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   
   // Safety check - ensure we never use localhost
   if (typeof window !== 'undefined' && window.location.origin.includes('localhost')) {
@@ -231,8 +220,6 @@ export async function signInWithGoogle() {
   console.log('[AUTH DEBUG] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
   console.log('[AUTH DEBUG] Has anon key:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   
-  console.log('[OAUTH FLOW] Step 3: Initiating Supabase OAuth');
-  console.log('[OAUTH FLOW] OAuth options: ', { redirectTo, queryParams: { prompt: 'select_account' } });
   const { data, error } = await createClient().auth.signInWithOAuth({
     provider: "google",
     options: { 
@@ -242,16 +229,11 @@ export async function signInWithGoogle() {
   });
 
   if (error) {
-    console.log('[OAUTH FLOW] Step 4: OAuth error occurred');
-    console.log('[OAUTH FLOW] Error details: ', error);
     console.error('[AUTH DEBUG] OAuth error:', error);
     throw error;
   }
   
-  console.log('[OAUTH FLOW] Step 5: OAuth initiated successfully');
-  console.log('[OAUTH FLOW] OAuth data: ', data);
-  console.log('[OAUTH FLOW] OAuth URL: ', data?.url);
-  console.log('[OAUTH FLOW] OAuth provider: ', data?.provider);
+  console.log('[AUTH DEBUG] OAuth initiated successfully');
   return data;
 }
 
@@ -337,8 +319,6 @@ export async function createMenuItem(
       .single();
 
     if (error) {
-    console.log('[OAUTH FLOW] Step 4: OAuth error occurred');
-    console.log('[OAUTH FLOW] Error details: ', error);
       logger.error("Failed to create menu item", { error, venueId });
       return { success: false, message: "Failed to create menu item" };
     }
@@ -364,8 +344,6 @@ export async function updateMenuItem(
       .single();
 
     if (error) {
-    console.log('[OAUTH FLOW] Step 4: OAuth error occurred');
-    console.log('[OAUTH FLOW] Error details: ', error);
       logger.error("Failed to update menu item", { error, itemId });
       return { success: false, message: "Failed to update menu item" };
     }
@@ -386,8 +364,6 @@ export async function deleteMenuItem(itemId: string) {
       .eq("id", itemId);
 
     if (error) {
-    console.log('[OAUTH FLOW] Step 4: OAuth error occurred');
-    console.log('[OAUTH FLOW] Error details: ', error);
       logger.error("Failed to delete menu item", { error, itemId });
       return { success: false, message: "Failed to delete menu item" };
     }
@@ -511,12 +487,6 @@ export function testOAuthRedirects() {
   
   // Test 1: Verify signInWithGoogle uses production URL
   const productionUrl = 'https://servio-production.up.railway.app'
-  console.log('[OAUTH FLOW] Step 1: OAuth initiation');
-  console.log('[OAUTH FLOW] Environment check: NODE_ENV=', process.env.NODE_ENV);
-  console.log('[OAUTH FLOW] Window location: ', typeof window !== 'undefined' ? window.location.href : 'server-side');
-  console.log('[OAUTH FLOW] Window origin: ', typeof window !== 'undefined' ? window.location.origin : 'server-side');
-  console.log('[OAUTH FLOW] NEXT_PUBLIC_SITE_URL: ', process.env.NEXT_PUBLIC_SITE_URL);
-  console.log('[OAUTH FLOW] NEXT_PUBLIC_APP_URL: ', process.env.NEXT_PUBLIC_APP_URL);
   const expectedRedirectTo = `${productionUrl}/auth/callback`
   
   console.log('[AUTH TEST] Expected redirect URL:', expectedRedirectTo)
