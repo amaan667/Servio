@@ -20,14 +20,16 @@ export default async function SettingsPage({
   log('SETTINGS SSR user', { hasUser: !!user });
   if (!user) redirect('/sign-in');
 
-  // Verify user owns this venue
-  const { data: venue } = await supabase
+  // Verify user owns this venue and get all venues
+  const { data: venues } = await supabase
     .from('venues')
-    .select('venue_id, name')
-    .eq('venue_id', params.venueId)
+    .select('venue_id, name, email, phone, address')
     .eq('owner_id', user.id)
-    .maybeSingle();
+    .order('created_at', { ascending: true });
 
+  if (!venues || venues.length === 0) redirect('/complete-profile');
+
+  const venue = venues.find(v => v.venue_id === params.venueId);
   if (!venue) redirect('/dashboard');
 
   return (
@@ -44,7 +46,7 @@ export default async function SettingsPage({
           </p>
         </div>
         
-        <VenueSettingsClient venueId={params.venueId} />
+        <VenueSettingsClient user={user} venue={venue} venues={venues} />
       </div>
     </div>
   );

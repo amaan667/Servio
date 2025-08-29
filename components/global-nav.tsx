@@ -144,7 +144,7 @@ export default function GlobalNav() {
                         Home
                       </Link>
                       <Link
-                        href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
+                        href={venueId ? `/dashboard/${venueId}/settings` : "/dashboard"}
                         className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
                       >
                         <Settings className="mr-2 h-4 w-4" />
@@ -161,7 +161,7 @@ export default function GlobalNav() {
                         Dashboard
                       </Link>
                       <Link
-                        href="/settings"
+                        href="/dashboard"
                         className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                       >
                         Settings
@@ -238,7 +238,7 @@ export default function GlobalNav() {
                       Home
                     </Link>
                     <Link
-                      href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
+                      href={venueId ? `/dashboard/${venueId}/settings` : "/dashboard"}
                       className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -257,7 +257,7 @@ export default function GlobalNav() {
                       Dashboard
                     </Link>
                     <Link
-                      href="/settings"
+                      href="/dashboard"
                       className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
