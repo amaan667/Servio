@@ -4,20 +4,16 @@ import { createServerSupabase } from '@/lib/supabase-server';
 export default async function DashboardPage() {
   const supabase = await createServerSupabase();
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/');
 
-  if (!session) {
-    console.log('[DASHBOARD] No session found, redirecting to sign-in');
-    redirect('/sign-in');
-  }
-
-  console.log('[DASHBOARD] Session found, checking venues for user:', session.user.id);
+  console.log('[DASHBOARD] Session found, checking venues for user:', user.id);
 
   // Get the user's primary venue
   const { data: venues, error } = await supabase
     .from('venues')
     .select('venue_id, venue_name')
-    .eq('owner_id', session.user.id)
+    .eq('owner_id', user.id)
     .order('created_at', { ascending: true })
     .limit(1);
 

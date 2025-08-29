@@ -9,6 +9,7 @@ import { Menu, X } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
+import { signOut } from "@/lib/supabase/auth";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -68,34 +69,11 @@ export default function GlobalNav() {
 
   const handleSignOut = async () => {
     try {
-      console.log('[NAV DEBUG] Signing out user');
-      
-      // Use server-side sign out to avoid cookie modification errors
-      const response = await fetch('/api/auth/signout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        console.log('[NAV DEBUG] Server-side sign out failed');
-      } else {
-        console.log('[NAV DEBUG] Server-side sign out successful');
-      }
-      
-      // Clear any OAuth progress flags and cached session state
-      sessionStorage.removeItem("sb_oauth_in_progress");
-      sessionStorage.removeItem("sb_oauth_start_time");
-      localStorage.removeItem("sb-auth-token");
-      sessionStorage.clear();
-      
-      console.log('[NAV DEBUG] User signed out successfully');
-      router.replace('/sign-in');
+      await signOut();
+      router.replace('/');
     } catch (error) {
-      console.error('[NAV DEBUG] Error during sign out:', error);
-      // Force redirect even if sign out fails
-      router.replace('/sign-in');
+      console.error('Sign out error:', error);
+      router.replace('/');
     }
   };
 

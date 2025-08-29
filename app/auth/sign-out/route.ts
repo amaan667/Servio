@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     // Redirect to sign-in page
     const base = process.env.NEXT_PUBLIC_SITE_URL || '';
-    const redirectUrl = new URL('/sign-in?signedOut=true', base || 'https://servio-production.up.railway.app');
+    const redirectUrl = new URL('/?signedOut=true', base || 'https://servio-production.up.railway.app');
     
     const response = NextResponse.redirect(redirectUrl);
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -40,6 +40,6 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('[AUTH] Unexpected error in sign-out:', error);
     const base = process.env.NEXT_PUBLIC_SITE_URL || '';
-    return NextResponse.redirect(new URL('/sign-in?signedOut=true', base || 'https://servio-production.up.railway.app'));
+    return NextResponse.redirect(new URL('/?signedOut=true', base || 'https://servio-production.up.railway.app'));
   }
 }

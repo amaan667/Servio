@@ -78,13 +78,12 @@ function HomePageContent() {
   const { session, loading } = useAuth();
 
   const handleGetStarted = () => {
-    console.log('[HOME] handleGetStarted called', { hasSession: !!session, sessionId: session?.user?.id });
     if (session) {
-      console.log('[HOME] Redirecting to dashboard');
+      // User is signed in, redirect to their dashboard
       router.push("/dashboard");
     } else {
-      console.log('[HOME] Redirecting to sign-up');
-      router.push("/sign-up");
+      // User is not signed in, stay on home page where they can sign in
+      // The sign-in button will handle OAuth
     }
   };
 

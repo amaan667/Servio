@@ -23,10 +23,6 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   const updateSession = useCallback((newSession: Session | null) => {
     setSession(prevSession => {
       if (prevSession?.user?.id !== newSession?.user?.id) {
-        console.log('[AUTH DEBUG] Session changed:', { 
-          oldUserId: prevSession?.user?.id, 
-          newUserId: newSession?.user?.id 
-        });
         return newSession;
       }
       return prevSession;
@@ -41,14 +37,12 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     // Check if session has required fields
     if (!session.user?.id || !session.access_token) {
-      console.log('[AUTH DEBUG] Invalid session detected');
       updateSession(null);
       return;
     }
 
     // Check if session is expired
     if (session.expires_at && new Date(session.expires_at * 1000) < new Date()) {
-      console.log('[AUTH DEBUG] Expired session detected');
       updateSession(null);
       return;
     }
@@ -57,7 +51,6 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   }, [updateSession]);
 
   const clearSession = useCallback(() => {
-    console.log('[AUTH DEBUG] Clearing session');
     setSession(null);
     
     if (typeof window !== 'undefined') {
@@ -80,7 +73,6 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
   const signOut = useCallback(async () => {
     try {
-      console.log('[AUTH DEBUG] Signing out');
       clearSession();
       
       const response = await fetch('/api/auth/signout', {
@@ -89,12 +81,8 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
           'Content-Type': 'application/json',
         },
       });
-      
-      if (!response.ok) {
-        console.log('[AUTH DEBUG] Server-side sign out failed');
-      }
     } catch (error) {
-      console.error('[AUTH DEBUG] Sign out error', error);
+      // Silent error handling
     }
   }, [clearSession]);
 
@@ -104,20 +92,16 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       return;
     }
 
-    console.log('[AUTH DEBUG] Initializing auth provider');
-
     const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await createClient().auth.getSession();
         
         if (error) {
-          console.log('[AUTH DEBUG] Session check error:', error.message);
           await validateAndUpdateSession(null);
         } else {
           await validateAndUpdateSession(session);
         }
       } catch (err: any) {
-        console.log('[AUTH DEBUG] Initialization error:', err?.message);
         setSession(null);
       } finally {
         setLoading(false);
@@ -127,8 +111,6 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     initializeAuth();
 
     const { data: { subscription } } = createClient().auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      console.log('[AUTH DEBUG] Auth state change:', { event, hasSession: !!session });
-      
       try {
         if (event === 'SIGNED_OUT') {
           clearSession();
@@ -138,7 +120,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
           await validateAndUpdateSession(session);
         }
       } catch (error) {
-        console.error('[AUTH DEBUG] Auth state change error', error);
+        // Silent error handling
       }
       
       setLoading(false);

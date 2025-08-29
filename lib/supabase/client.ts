@@ -9,20 +9,8 @@ export function createClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
-    console.log('[AUTH DEBUG] Creating Supabase client with:', {
-      hasUrl: !!supabaseUrl,
-      hasKey: !!supabaseAnonKey,
-      urlLength: supabaseUrl?.length || 0,
-      keyLength: supabaseAnonKey?.length || 0,
-      timestamp: new Date().toISOString()
-    });
-    
     // Handle missing environment variables gracefully
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('[AUTH DEBUG] Missing environment variables:', {
-        hasUrl: !!supabaseUrl,
-        hasKey: !!supabaseAnonKey
-      });
       // Return a mock client for build time
       return {
         auth: {
@@ -48,7 +36,6 @@ export function createClient() {
       } as any;
     }
     
-    console.log('[AUTH DEBUG] Initializing Supabase browser client...');
     _client = createBrowserClient(
       supabaseUrl,
       supabaseAnonKey,
@@ -57,9 +44,7 @@ export function createClient() {
         auth: {
           autoRefreshToken: true,
           persistSession: true,
-          // We manually call exchangeCodeForSession on the callback page.
-          // Disabling this avoids a double exchange that causes `exchange_failed`.
-          detectSessionInUrl: false,
+          detectSessionInUrl: true,
           flowType: 'pkce'
         },
         // Disable cookie operations on client side to prevent Next.js 15 errors
@@ -70,7 +55,6 @@ export function createClient() {
         }
       }
     );
-    console.log('[AUTH DEBUG] Supabase client created successfully');
   }
   return _client;
 }
@@ -106,8 +90,6 @@ export function clearAuthStorage() {
   if (typeof window === 'undefined') return;
   
   try {
-    console.log('[AUTH DEBUG] Starting universal storage clear...');
-    
     // Clear localStorage with comprehensive key detection
     const localStorageKeys = Object.keys(localStorage).filter(k => 
       k.startsWith("sb-") || 
@@ -119,9 +101,7 @@ export function clearAuthStorage() {
     );
     
     localStorageKeys.forEach(k => {
-      const value = localStorage.getItem(k);
       localStorage.removeItem(k);
-      console.log(`[AUTH DEBUG] Cleared localStorage: ${k} = ${value ? 'had value' : 'was null'}`);
     });
     
     // Clear sessionStorage with comprehensive key detection
@@ -133,14 +113,10 @@ export function clearAuthStorage() {
     );
     
     sessionStorageKeys.forEach(k => {
-      const value = sessionStorage.getItem(k);
       sessionStorage.removeItem(k);
-      console.log(`[AUTH DEBUG] Cleared sessionStorage: ${k} = ${value ? 'had value' : 'was null'}`);
     });
-    
-    console.log('[AUTH DEBUG] Universal storage clear completed successfully');
   } catch (error) {
-    console.error('[AUTH DEBUG] ❌ Error clearing storage:', error);
+    // Silent error handling
   }
 }
 
@@ -150,7 +126,6 @@ export function checkPKCEState() {
   
   try {
     const browserInfo = getBrowserInfo();
-    console.log('[AUTH DEBUG] Checking PKCE state...');
     
     // Check OAuth progress flags
     const oauthProgress = sessionStorage.getItem("sb_oauth_in_progress");
@@ -179,7 +154,6 @@ export function checkPKCEState() {
       }
     };
   } catch (error) {
-    console.error('[AUTH DEBUG] ❌ Error checking PKCE state:', error);
     return { error: error.message };
   }
 }
@@ -189,21 +163,10 @@ export async function checkAuthState() {
   if (typeof window === 'undefined') return { isServer: true };
   
   try {
-    console.log('[AUTH DEBUG] Checking current auth state...');
     const browserInfo = getBrowserInfo();
     const { data, error } = await createClient().auth.getSession();
-    console.log('[AUTH DEBUG] Current auth state:', {
-      hasSession: !!data.session,
-      hasUser: !!data.session?.user,
-      userId: data.session?.user?.id,
-      userEmail: data.session?.user?.email,
-      sessionExpiresAt: data.session?.expires_at,
-      error: error?.message,
-      browserInfo
-    });
     return { data, error };
   } catch (error) {
-    console.log('[AUTH DEBUG] ❌ Error checking auth state:', error);
     return { data: null, error };
   }
 }
@@ -213,8 +176,6 @@ export function debugPKCEState() {
   if (typeof window === 'undefined') return { isServer: true };
   
   try {
-    console.log('[AUTH DEBUG] 🔍 Debugging PKCE state...');
-    
     const browserInfo = getBrowserInfo();
     const oauthProgress = sessionStorage.getItem("sb_oauth_in_progress");
     const oauthStartTime = sessionStorage.getItem("sb_oauth_start_time");
@@ -249,10 +210,8 @@ export function debugPKCEState() {
       }
     };
     
-    console.log('[AUTH DEBUG] 🔍 PKCE Debug Info:', debugInfo);
     return debugInfo;
   } catch (error) {
-    console.error('[AUTH DEBUG] ❌ Error debugging PKCE state:', error);
     return { error: error.message };
   }
 }

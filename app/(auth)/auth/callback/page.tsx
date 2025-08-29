@@ -15,8 +15,6 @@ export default function OAuthCallback() {
 
     (async () => {
       try {
-        console.log('[AUTH DEBUG] Processing OAuth callback');
-        
         // Try to read from ?query and fallback to #hash if needed
         let qs = new URLSearchParams(window.location.search);
         if (!qs.get("code") && window.location.hash?.includes("code=")) {
@@ -27,18 +25,15 @@ export default function OAuthCallback() {
         const err = qs.get("error");
 
         if (err) {
-          console.error('[AUTH DEBUG] OAuth error:', err);
-          router.replace('/sign-in?error=oauth_error');
+          router.replace('/?auth_error=oauth_error');
           return;
         }
 
         if (!code) {
-          console.error('[AUTH DEBUG] No authorization code');
-          router.replace('/sign-in?error=missing_code');
+          router.replace('/?auth_error=missing_code');
           return;
         }
 
-        console.log('[AUTH DEBUG] Exchanging code for session');
         const { data, error: exchangeError } = await sb.auth.exchangeCodeForSession({ queryParams: qs });
 
         // scrub params to avoid accidental re-exchange on refresh
@@ -48,23 +43,19 @@ export default function OAuthCallback() {
           url.hash = "";
           window.history.replaceState({}, "", url.toString());
         } catch (error) {
-          console.error('[AUTH DEBUG] Error scrubbing URL:', error);
+          // Silent error handling
         }
 
         if (exchangeError) {
-          console.error('[AUTH DEBUG] Exchange failed:', exchangeError.message);
-          router.replace('/sign-in?error=exchange_failed');
+          router.replace('/?auth_error=exchange_failed');
           return;
         }
 
         const { data: { session } } = await sb.auth.getSession();
         if (!session) {
-          console.error('[AUTH DEBUG] No session after exchange');
-          router.replace('/sign-in?error=no_session');
+          router.replace('/?auth_error=no_session');
           return;
         }
-
-        console.log('[AUTH DEBUG] OAuth successful, checking venues');
         
         // Check if user has venues
         const { data: venues } = await sb
@@ -74,16 +65,13 @@ export default function OAuthCallback() {
           .limit(1);
 
         if (venues && venues.length > 0) {
-          console.log('[AUTH DEBUG] Redirecting to venue:', venues[0].venue_id);
           router.replace(`/dashboard/${venues[0].venue_id}`);
         } else {
-          console.log('[AUTH DEBUG] Redirecting to complete profile');
           router.replace('/complete-profile');
         }
 
       } catch (err: any) {
-        console.error('[AUTH DEBUG] OAuth callback error:', err.message);
-        router.replace('/sign-in?error=oauth_error');
+        router.replace('/?auth_error=oauth_error');
       }
     })().finally(() => { finished = true; });
   }, [router, sp]);

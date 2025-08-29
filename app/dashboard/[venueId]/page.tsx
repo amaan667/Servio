@@ -25,8 +25,8 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
         });
         
         if (!user) {
-          console.log('[DASHBOARD VENUE] No user found, redirecting to sign-in');
-          router.replace('/sign-in');
+          console.log('[DASHBOARD VENUE] No user found, redirecting to home');
+          router.replace('/');
           return;
         }
 
@@ -45,7 +45,7 @@ export default function VenuePage({ params, searchParams }: { params: { venueId:
 
         if (vErr) {
           console.error('[DASHBOARD VENUE] Database error:', vErr);
-          router.replace('/sign-in?error=database_error');
+          router.replace('/?auth_error=database_error');
           return;
         }
         
