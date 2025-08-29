@@ -205,7 +205,7 @@ export async function signInWithGoogle() {
   } catch {}
   
   const origin = siteOrigin();
-  const redirectTo = `${origin}/auth/callback`;
+  const redirectTo = `${origin}/api/auth/callback`;
   
   console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
   

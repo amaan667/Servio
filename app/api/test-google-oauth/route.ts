@@ -24,7 +24,7 @@ export async function GET() {
     );
 
     // Get the OAuth URL that Supabase would generate
-    const redirectTo = `${siteOrigin()}/auth/callback`;
+    const redirectTo = `${siteOrigin()}/api/auth/callback`;
 
     const { data, error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
