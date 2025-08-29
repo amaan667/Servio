@@ -40,6 +40,7 @@ export default function GlobalNav() {
 
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');
+  const isOnHomePage = pathname === '/';
   
   // Extract venueId from pathname for venue-specific navigation
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
@@ -79,10 +80,10 @@ export default function GlobalNav() {
         const { clearAuthStorage } = await import('@/lib/sb-client');
         clearAuthStorage();
       } catch {}
-      router.replace('/sign-in');
+      router.replace('/');
     } catch (error) {
       console.error('Sign out error:', error);
-      router.replace('/sign-in');
+      router.replace('/');
     }
   };
 
@@ -150,7 +151,7 @@ export default function GlobalNav() {
                         Home
                       </Link>
                       <Link
-                        href={venueId ? `/dashboard/${venueId}/settings` : "/dashboard"}
+                        href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
                         className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
                       >
                         <Settings className="mr-2 h-4 w-4" />
@@ -167,7 +168,7 @@ export default function GlobalNav() {
                         Dashboard
                       </Link>
                       <Link
-                        href="/dashboard"
+                        href="/settings"
                         className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                       >
                         Settings
@@ -244,7 +245,7 @@ export default function GlobalNav() {
                       Home
                     </Link>
                     <Link
-                      href={venueId ? `/dashboard/${venueId}/settings` : "/dashboard"}
+                      href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
                       className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -263,7 +264,7 @@ export default function GlobalNav() {
                       Dashboard
                     </Link>
                     <Link
-                      href="/dashboard"
+                      href="/settings"
                       className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >

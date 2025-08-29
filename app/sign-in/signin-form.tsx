@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RefreshCw } from 'lucide-react';
 import { signInUser } from '@/lib/supabase';
-import { signInWithGoogle } from '@/lib/supabase';
+import { signInWithGoogle } from '@/lib/auth/signin';
 
 export default function SignInForm() {
   const googleSignInInProgress = { current: false };

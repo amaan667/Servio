@@ -21,6 +21,13 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   const [loading, setLoading] = useState(true);
 
   const updateSession = useCallback((newSession: Session | null) => {
+    console.log('[AUTH PROVIDER] Updating session:', {
+      hasNewSession: !!newSession,
+      newUserId: newSession?.user?.id,
+      hasAccessToken: !!newSession?.access_token,
+      expiresAt: newSession?.expires_at
+    });
+    
     setSession(prevSession => {
       if (prevSession?.user?.id !== newSession?.user?.id) {
         return newSession;
@@ -30,27 +37,39 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   }, []);
 
   const validateAndUpdateSession = useCallback(async (session: Session | null) => {
+    console.log('[AUTH PROVIDER] Validating session:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      hasAccessToken: !!session?.access_token,
+      expiresAt: session?.expires_at
+    });
+
     if (!session) {
+      console.log('[AUTH PROVIDER] No session, clearing');
       updateSession(null);
       return;
     }
 
     // Check if session has required fields
     if (!session.user?.id || !session.access_token) {
+      console.log('[AUTH PROVIDER] Session missing required fields, clearing');
       updateSession(null);
       return;
     }
 
     // Check if session is expired
     if (session.expires_at && new Date(session.expires_at * 1000) < new Date()) {
+      console.log('[AUTH PROVIDER] Session expired, clearing');
       updateSession(null);
       return;
     }
 
+    console.log('[AUTH PROVIDER] Session is valid, updating');
     updateSession(session);
   }, [updateSession]);
 
   const clearSession = useCallback(() => {
+    console.log('[AUTH PROVIDER] Clearing session');
     setSession(null);
     
     if (typeof window !== 'undefined') {
@@ -93,15 +112,23 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     }
 
     const initializeAuth = async () => {
+      console.log('[AUTH PROVIDER] Initializing auth');
       try {
         const { data: { session }, error } = await createClient().auth.getSession();
         
         if (error) {
+          console.log('[AUTH PROVIDER] Error getting session:', error);
           await validateAndUpdateSession(null);
         } else {
+          console.log('[AUTH PROVIDER] Got session from storage:', {
+            hasSession: !!session,
+            hasUser: !!session?.user,
+            userId: session?.user?.id
+          });
           await validateAndUpdateSession(session);
         }
       } catch (err: any) {
+        console.log('[AUTH PROVIDER] Exception getting session:', err);
         setSession(null);
       } finally {
         setLoading(false);
@@ -111,6 +138,12 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     initializeAuth();
 
     const { data: { subscription } } = createClient().auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+      console.log('[AUTH PROVIDER] Auth state change:', event, {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id
+      });
+      
       try {
         if (event === 'SIGNED_OUT') {
           clearSession();
@@ -120,7 +153,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
           await validateAndUpdateSession(session);
         }
       } catch (error) {
-        // Silent error handling
+        console.log('[AUTH PROVIDER] Error handling auth state change:', error);
       }
       
       setLoading(false);
