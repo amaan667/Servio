@@ -11,16 +11,29 @@ function SignInContent() {
   const [error, setError] = useState<string | null>(null);
   const err = sp.get("error");
 
+  console.log('[AUTH DEBUG] SignInContent: Component rendered with:', {
+    hasError: !!err,
+    error: err,
+    loading,
+    timestamp: new Date().toISOString()
+  });
+
   async function handleGoogle() {
     try {
+      console.log('[AUTH DEBUG] SignInContent: Google sign-in button clicked');
       setLoading(true);
       setError(null);
-      console.log('[AUTH DEBUG] Starting Google OAuth sign-in...');
+      console.log('[AUTH DEBUG] SignInContent: Starting Google OAuth sign-in...');
       await signInWithGoogle(); // redirects to Google
     } catch (err: any) {
-      console.error('[AUTH DEBUG] Google OAuth sign-in failed:', err);
+      console.error('[AUTH DEBUG] SignInContent: Google OAuth sign-in failed:', {
+        error: err.message,
+        stack: err.stack,
+        timestamp: new Date().toISOString()
+      });
       setError(err.message || 'Failed to start Google sign-in');
     } finally {
+      console.log('[AUTH DEBUG] SignInContent: Google sign-in attempt finished');
       setLoading(false);
     }
   }
@@ -59,6 +72,7 @@ function SignInContent() {
         <button
           type="button"
           onClick={() => {
+            console.log('[AUTH DEBUG] SignInContent: Clearing error and retrying');
             setError(null);
             router.replace('/sign-in');
           }}
@@ -67,11 +81,23 @@ function SignInContent() {
           Clear Error & Try Again
         </button>
       )}
+
+      {/* Debug Link */}
+      <div className="mt-8 text-center">
+        <a
+          href="/debug-auth"
+          className="text-sm text-gray-500 hover:text-gray-700 underline"
+        >
+          Debug Authentication
+        </a>
+      </div>
     </main>
   );
 }
 
 export default function SignInPage() {
+  console.log('[AUTH DEBUG] SignInPage: Page component rendered');
+  
   return (
     <Suspense fallback={
       <main className="mx-auto max-w-md py-16">

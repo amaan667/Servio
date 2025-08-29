@@ -9,9 +9,17 @@ export function createClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
+    console.log('[AUTH DEBUG] Creating Supabase client with:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseAnonKey,
+      urlLength: supabaseUrl?.length || 0,
+      keyLength: supabaseAnonKey?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+    
     // Handle missing environment variables gracefully
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('[SUPABASE] Missing environment variables:', {
+      console.warn('[AUTH DEBUG] Missing environment variables:', {
         hasUrl: !!supabaseUrl,
         hasKey: !!supabaseAnonKey
       });
@@ -40,6 +48,7 @@ export function createClient() {
       } as any;
     }
     
+    console.log('[AUTH DEBUG] Initializing Supabase browser client...');
     _client = createBrowserClient(
       supabaseUrl,
       supabaseAnonKey,
@@ -59,6 +68,7 @@ export function createClient() {
         }
       }
     );
+    console.log('[AUTH DEBUG] Supabase client created successfully');
   }
   return _client;
 }

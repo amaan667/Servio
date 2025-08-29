@@ -31,7 +31,9 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         console.log('[AUTH DEBUG] provider:session:changed', { 
           t: now(), 
           oldUserId: prevSession?.user?.id, 
-          newUserId: newSession?.user?.id 
+          newUserId: newSession?.user?.id,
+          oldUserEmail: prevSession?.user?.email,
+          newUserEmail: newSession?.user?.email
         });
         return newSession;
       }
@@ -41,7 +43,17 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
   // Universal session validation - NO automatic restoration
   const validateAndUpdateSession = useCallback(async (session: Session | null) => {
+    console.log('[AUTH DEBUG] provider:validating session:', {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      userEmail: session?.user?.email,
+      hasAccessToken: !!session?.access_token,
+      expiresAt: session?.expires_at,
+      timestamp: now()
+    });
+
     if (!session) {
+      console.log('[AUTH DEBUG] provider:no session provided, clearing');
       updateSession(null);
       return;
     }
@@ -69,6 +81,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       return;
     }
 
+    console.log('[AUTH DEBUG] provider:session validation passed, updating');
     updateSession(session);
   }, [updateSession]);
 
@@ -131,6 +144,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   useEffect(() => {
     // Only run on client side
     if (typeof window === 'undefined') {
+      console.log('[AUTH DEBUG] provider:server side, skipping initialization');
       setLoading(false);
       return;
     }
@@ -146,10 +160,23 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         const isOAuthCallback = window.location.pathname.includes('/auth/callback') || 
                                window.location.search.includes('code=');
         
+        console.log('[AUTH DEBUG] provider:checking if OAuth callback:', {
+          pathname: window.location.pathname,
+          search: window.location.search,
+          isOAuthCallback,
+          timestamp: now()
+        });
+        
         if (isOAuthCallback) {
           console.log('[AUTH DEBUG] provider:OAuth callback detected, checking session');
           const { data: { session }, error } = await createClient().auth.getSession();
-          console.log('[AUTH DEBUG] provider:OAuth session check', { t: now(), hasSession: !!session, userId: session?.user?.id, err: error?.message });
+          console.log('[AUTH DEBUG] provider:OAuth session check', { 
+            t: now(), 
+            hasSession: !!session, 
+            userId: session?.user?.id,
+            userEmail: session?.user?.email,
+            err: error?.message 
+          });
           
           if (error) {
             console.log('[AUTH DEBUG] provider:OAuth session error, clearing session');
@@ -163,7 +190,11 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
           setSession(null);
         }
       } catch (err: any) {
-        console.log('[AUTH DEBUG] provider:initialization error', { t: now(), message: err?.message });
+        console.log('[AUTH DEBUG] provider:initialization error', { 
+          t: now(), 
+          message: err?.message,
+          stack: err?.stack 
+        });
         setSession(null);
       } finally {
         setLoading(false);
@@ -173,15 +204,24 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     initializeAuth();
 
     const { data: { subscription } } = createClient().auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      console.log('[AUTH DEBUG] provider:onAuthStateChange', { t: now(), event, hasSession: !!session, userId: session?.user?.id });
+      console.log('[AUTH DEBUG] provider:onAuthStateChange', { 
+        t: now(), 
+        event, 
+        hasSession: !!session, 
+        userId: session?.user?.id,
+        userEmail: session?.user?.email 
+      });
       
       try {
         // Handle specific auth events
         if (event === 'SIGNED_OUT') {
+          console.log('[AUTH DEBUG] provider:auth state change - SIGNED_OUT');
           clearSession();
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log('[AUTH DEBUG] provider:auth state change - SIGNED_IN/TOKEN_REFRESHED');
           await validateAndUpdateSession(session);
         } else {
+          console.log('[AUTH DEBUG] provider:auth state change - other event:', event);
           await validateAndUpdateSession(session);
         }
       } catch (error) {
