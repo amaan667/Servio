@@ -19,6 +19,6 @@ export default async function SignInPage() {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect('/dashboard');
+  if (user) redirect('/');
   return <SignInForm />;
 }

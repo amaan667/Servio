@@ -250,15 +250,13 @@ export default function GlobalNav() {
                     >
                       Home
                     </Link>
-                    {primaryVenueId && (
-                      <Link
-                        href={`/dashboard/${primaryVenueId}/settings`}
-                        className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Settings
-                      </Link>
-                    )}
+                    <Link
+                      href="/settings"
+                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Settings
+                    </Link>
                   </>
                 ) : (
                   // On home page: Dashboard, Settings, Sign Out
@@ -270,15 +268,13 @@ export default function GlobalNav() {
                     >
                       Dashboard
                     </Link>
-                    {primaryVenueId && (
-                      <Link
-                        href={`/dashboard/${primaryVenueId}/settings`}
-                        className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Settings
-                      </Link>
-                    )}
+                    <Link
+                      href="/settings"
+                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Settings
+                    </Link>
                   </>
                 )}
                 <Button
