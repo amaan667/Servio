@@ -15,7 +15,7 @@ export default async function MenuManagementPage({
 }) {
   console.log('[MENU-MANAGEMENT] Page mounted for venue', params.venueId);
   
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: { user } } = await createClient().auth.getUser();
   log('MENU-MANAGEMENT SSR user', { hasUser: !!user });

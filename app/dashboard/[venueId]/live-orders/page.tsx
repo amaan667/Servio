@@ -15,7 +15,7 @@ export default async function LiveOrdersPage({
 }) {
   console.log('[LIVE-ORDERS] Page mounted for venue', params.venueId);
   
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: { user } } = await createClient().auth.getUser();
   log('LIVE-ORDERS SSR user', { hasUser: !!user });

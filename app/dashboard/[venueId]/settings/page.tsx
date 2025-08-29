@@ -15,7 +15,7 @@ export default async function SettingsPage({
 }) {
   console.log('[SETTINGS] Page mounted for venue', params.venueId);
   
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: { user } } = await createClient().auth.getUser();
   log('SETTINGS SSR user', { hasUser: !!user });

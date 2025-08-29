@@ -16,7 +16,7 @@ export default async function StaffPage({
 }) {
   console.log('[STAFF] Page mounted for venue', params.venueId);
   
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: { user } } = await createClient().auth.getUser();
   log('STAFF SSR user', { hasUser: !!user });

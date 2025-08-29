@@ -46,7 +46,7 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
   useEffect(() => {
     loadStats();
     // Listen to orders changes to reflect active tables today
-    const channel = supabase
+    const channel = createClient()
       .channel('qr-dashboard-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `venue_id=eq.${venueId}` }, () => {
         loadStats();
@@ -58,7 +58,7 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
   const loadStats = async () => {
     try {
       // Load tables list
-      const { data: tables, error: tablesError } = await supabase
+      const { data: tables, error: tablesError } = await createClient()
         .from("tables")
         .select("id, qr_code, created_at, name")
         .eq("venue_id", venueId);
@@ -73,7 +73,7 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
       const startIso = today.toISOString();
       const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
       // Active open orders today (pending|preparing)
-      const { data: openOrders } = await supabase
+      const { data: openOrders } = await createClient()
         .from('orders')
         .select('table_number, status, created_at')
         .eq('venue_id', venueId)
@@ -83,7 +83,7 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
       const activeTables = new Set((openOrders ?? []).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
       // Any tables that interacted today (any order placed). If you later add a qr_scans table,
       // union those table_numbers here as well.
-      const { data: anyOrders } = await supabase
+      const { data: anyOrders } = await createClient()
         .from('orders')
         .select('table_number')
         .eq('venue_id', venueId)

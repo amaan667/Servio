@@ -8,7 +8,7 @@ import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import GenerateQRClient from './GenerateQRClient';
 
 export default async function GenerateQRPage() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: { user } } = await createClient().auth.getUser();
   if (!user) redirect('/sign-in');

@@ -47,6 +47,9 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
   const { toast } = useToast();
   const { session } = useAuth();
 
+  // Initialize Supabase client for realtime subscriptions
+  const supabase = useMemo(() => createClient(), []);
+
   // fetch with cache for seamless tab switching
   useEffect(() => {
     (async () => {

@@ -57,20 +57,13 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [updating, setUpdating] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
-    logger.info("LIVE_ORDERS: Fetching orders", {
-      venueId,
-      hasSupabase: !!supabase,
-    });
+    const supabase = createClient();
+    logger.info("LIVE_ORDERS: Fetching orders", { venueId });
 
     setLoading(true);
     setError(null);
 
-    if (!supabase) {
-      logger.error("LIVE_ORDERS: Supabase not configured");
-      setError("Service is not configured.");
-      setLoading(false);
-      return;
-    }
+    // supabase client always available in browser; proceed
 
     try {
       const { data: ordersData, error: ordersError } = await supabase
@@ -113,8 +106,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
   useEffect(() => {
     fetchOrders();
-
-    if (!supabase) return;
+    const supabase = createClient();
 
     logger.debug("LIVE_ORDERS: Setting up real-time subscription");
     const channel = supabase
@@ -152,9 +144,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
     return () => {
       logger.debug("LIVE_ORDERS: Cleaning up real-time subscription");
-      if (supabase) {
-        createClient().removeChannel(channel);
-      }
+      supabase.removeChannel(channel);
     };
   }, [fetchOrders, venueId]);
 
