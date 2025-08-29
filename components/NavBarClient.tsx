@@ -57,7 +57,7 @@ export default function NavBarClient() {
         <Button
           variant="destructive"
           onClick={() => {
-            fetch('/api/auth/sign-out', { method: 'POST' }).finally(() => {
+            fetch('/api/auth/signout', { method: 'POST' }).finally(() => {
               window.location.href = '/sign-in';
             });
           }}

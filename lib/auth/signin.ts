@@ -22,7 +22,8 @@ export async function signInWithGoogle() {
     provider: "google",
     options: {
       redirectTo: redirectTo,
-      // queryParams: { prompt: 'select_account' } // optional
+      flowType: 'pkce',
+      queryParams: { prompt: 'select_account' }
     },
   });
 

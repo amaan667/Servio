@@ -72,11 +72,17 @@ export default function GlobalNav() {
 
   const handleSignOut = async () => {
     try {
-      await signOutUser();
-      router.replace('/');
+      // Call unified API signout to clear cookies server-side
+      await fetch('/api/auth/signout', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      // Clear client storage to avoid auto sign-in or stale sessions
+      try {
+        const { clearAuthStorage } = await import('@/lib/sb-client');
+        clearAuthStorage();
+      } catch {}
+      router.replace('/sign-in');
     } catch (error) {
       console.error('Sign out error:', error);
-      router.replace('/');
+      router.replace('/sign-in');
     }
   };
 
