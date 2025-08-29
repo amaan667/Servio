@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Settings } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
@@ -40,6 +40,9 @@ export default function GlobalNav() {
 
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');
+  
+  // Extract venueId from pathname for venue-specific navigation
+  const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
   // Fetch primary venue when user is signed in
   useEffect(() => {
@@ -113,7 +116,7 @@ export default function GlobalNav() {
         <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center group">
+            <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
@@ -135,15 +138,16 @@ export default function GlobalNav() {
                     // On dashboard pages: Home, Settings, Sign Out
                     <>
                       <Link
-                        href="/"
+                        href={venueId ? `/dashboard/${venueId}` : "/dashboard"}
                         className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                       >
                         Home
                       </Link>
                       <Link
-                        href="/settings"
-                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                        href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
+                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
                       >
+                        <Settings className="mr-2 h-4 w-4" />
                         Settings
                       </Link>
                     </>
@@ -165,9 +169,9 @@ export default function GlobalNav() {
                     </>
                   )}
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     onClick={handleSignOut}
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                    className="transition-colors"
                   >
                     Sign Out
                   </Button>
@@ -227,17 +231,18 @@ export default function GlobalNav() {
                   // On dashboard pages: Home, Settings, Sign Out
                   <>
                     <Link
-                      href="/"
+                      href={venueId ? `/dashboard/${venueId}` : "/dashboard"}
                       className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Home
                     </Link>
                     <Link
-                      href="/settings"
-                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
+                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center"
                       onClick={() => setMobileMenuOpen(false)}
                     >
+                      <Settings className="mr-2 h-4 w-4" />
                       Settings
                     </Link>
                   </>
@@ -261,12 +266,12 @@ export default function GlobalNav() {
                   </>
                 )}
                 <Button
-                  variant="outline"
+                  variant="destructive"
                   onClick={() => {
                     handleSignOut();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full text-left text-gray-600 hover:text-gray-900 transition-colors"
+                  className="w-full text-left transition-colors"
                 >
                   Sign Out
                 </Button>
