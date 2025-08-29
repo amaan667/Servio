@@ -8,6 +8,7 @@ import { createClient } from "@/lib/sb-client";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
+import SignInButton from "@/app/components/SignInButton";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -205,12 +206,7 @@ export default function GlobalNav() {
                   >
                     Pricing
                   </Link>
-                  <Link
-                    href="/sign-in"
-                    className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
-                  >
-                    Sign In
-                  </Link>
+                  <SignInButton />
                 </>
               )}
             </div>
@@ -312,13 +308,9 @@ export default function GlobalNav() {
                 >
                   Pricing
                 </Link>
-                <Link
-                  href="/sign-in"
-                  className="bg-servio-purple text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-servio-purple/90 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
+                <div onClick={() => setMobileMenuOpen(false)}>
+                  <SignInButton />
+                </div>
               </>
             )}
           </div>
