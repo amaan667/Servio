@@ -11,6 +11,11 @@ export function createClient() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       { 
         isSingleton: true,
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false
+        },
         // Disable cookie operations on client side to prevent Next.js 15 errors
         cookies: {
           get: () => undefined,

@@ -70,14 +70,23 @@ export default function GlobalNav() {
     try {
       console.log('[NAV DEBUG] Signing out user');
       
-      // Clear any OAuth progress flags
+      // Use server-side sign out to avoid cookie modification errors
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.log('[NAV DEBUG] Server-side sign out failed');
+      } else {
+        console.log('[NAV DEBUG] Server-side sign out successful');
+      }
+      
+      // Clear any OAuth progress flags and cached session state
       sessionStorage.removeItem("sb_oauth_in_progress");
       sessionStorage.removeItem("sb_oauth_start_time");
-      
-      // Sign out from Supabase
-      await createClient().auth.signOut();
-      
-      // Clear any cached session state
       localStorage.removeItem("sb-auth-token");
       sessionStorage.clear();
       

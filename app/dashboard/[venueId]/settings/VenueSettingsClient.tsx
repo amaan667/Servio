@@ -169,7 +169,32 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
       }
 
       // Sign out and redirect to home
-      await createClient().auth.signOut();
+      try {
+        // Use server-side sign out to avoid cookie modification errors
+        const response = await fetch('/api/auth/signout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          console.log('[AUTH DEBUG] Server-side sign out failed');
+        } else {
+          console.log('[AUTH DEBUG] Server-side sign out successful');
+        }
+      } catch (error) {
+        console.log('[AUTH DEBUG] Sign out error:', error);
+      }
+      
+      // Clear client-side storage
+      try {
+        const { clearAuthStorage } = await import('@/lib/sb-client');
+        clearAuthStorage();
+      } catch (error) {
+        console.log('[AUTH DEBUG] Error clearing client storage:', error);
+      }
+      
       router.push('/');
       
       toast({

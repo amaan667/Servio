@@ -105,12 +105,24 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   const signOut = useCallback(async () => {
     try {
       console.log('[AUTH DEBUG] provider:signing out');
-      await createClient().auth.signOut({ scope: 'global' });
-      clearSession();
-      console.log('[AUTH DEBUG] provider:sign out successful');
+      
+      // Use server-side sign out to avoid cookie modification errors
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.log('[AUTH DEBUG] provider:server-side sign out failed');
+      } else {
+        console.log('[AUTH DEBUG] provider:server-side sign out successful');
+      }
     } catch (error) {
       console.error('[AUTH DEBUG] provider:sign out error', error);
-      // Force clear session even if sign out fails
+    } finally {
+      // Always clear session and storage regardless of server response
       clearSession();
     }
   }, [clearSession]);

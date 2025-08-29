@@ -81,13 +81,19 @@ function OAuthCallbackContent() {
         return router.replace("/sign-in?error=missing_code");
       }
 
-      console.log('[OAuth Frontend] callback: using Supabase exchangeCodeForSession');
+      console.log('[OAuth Frontend] callback: using server-side exchange');
       
       try {
-        // Step 3: Use Supabase's built-in exchangeCodeForSession method
-        // This method automatically handles PKCE exchange with the correct payload structure
-        const { error } = await sb.auth.exchangeCodeForSession({
-          queryParams: new URLSearchParams(window.location.search),
+        // Step 3: Use server-side exchange to avoid cookie modification errors
+        const response = await fetch('/api/auth/exchange-code', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            code: code,
+            state: sp.get("state")
+          }),
         });
 
         // Scrub code/state to prevent repeat exchanges
@@ -98,9 +104,10 @@ function OAuthCallbackContent() {
           window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams}` : ""));
         } catch {}
 
-        if (error) {
-          console.log('[OAuth Frontend] callback: Supabase exchange failed', { 
-            error: error.message
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.log('[OAuth Frontend] callback: Server-side exchange failed', { 
+            error: errorData.error
           });
           try {
             await fetch('/api/auth/log', { 
@@ -108,17 +115,17 @@ function OAuthCallbackContent() {
               headers: { 'Content-Type': 'application/json' }, 
               body: JSON.stringify({ 
                 event: 'supabase_exchange_failed', 
-                message: error.message
+                message: errorData.error
               }) 
             });
           } catch {}
           return router.replace("/sign-in?error=exchange_failed");
         }
 
-        console.log('[OAuth Frontend] callback: getting session');
-        const { data: { session } } = await sb.auth.getSession();
-        if (!session) {
-          console.log('[OAuth Frontend] callback: no session after exchange');
+        const exchangeData = await response.json();
+        
+        if (!exchangeData.success || !exchangeData.session) {
+          console.log('[OAuth Frontend] callback: no session after server-side exchange');
           try {
             await fetch('/api/auth/log', { 
               method: 'POST', 
@@ -133,7 +140,7 @@ function OAuthCallbackContent() {
 
         console.log('[OAuth Frontend] callback: success, redirecting to', { 
           next, 
-          userId: session.user.id
+          userId: exchangeData.user.id
         });
         
         // Use consistent delay for all platforms

@@ -60,9 +60,9 @@ export function createClient() {
         auth: {
           autoRefreshToken: false,
           persistSession: false,
-          detectSessionInUrl: true
+          detectSessionInUrl: false
         },
-        // Disable cookie operations on client side to prevent Next.js 15 errors
+        // Completely disable cookie operations on client side to prevent Next.js 15 errors
         cookies: {
           get: () => undefined,
           set: () => {},
