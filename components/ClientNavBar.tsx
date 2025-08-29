@@ -20,7 +20,7 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
     const fetchPrimaryVenue = async () => {
       try {
         if (session?.user) {
-          const { data, error } = await supabase
+          const { data, error } = await createClient()
             .from('venues')
             .select('venue_id')
             .eq('owner_id', session.user.id)

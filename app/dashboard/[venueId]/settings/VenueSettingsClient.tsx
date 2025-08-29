@@ -64,7 +64,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
     setSuccess(null);
 
     try {
-      const { error } = await supabase
+      const { error } = await createClient()
         .from('venues')
         .update({
           name: venueName,
@@ -152,7 +152,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
 
     try {
       // First delete all user's venues
-      const { error: venueError } = await supabase
+      const { error: venueError } = await createClient()
         .from('venues')
         .delete()
         .eq('owner_id', user.id);
