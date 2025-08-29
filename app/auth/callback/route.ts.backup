@@ -11,7 +11,7 @@ export async function GET(req: Request) {
 
   // ALWAYS use production URL for redirects - NEVER use request origin
   // This prevents any possibility of localhost redirects
-  const redirectBase = url.origin
+  const productionUrl = 'https://servio-production.up.railway.app'
   
   // Additional safety check - ensure we never use localhost
   const requestOrigin = url.origin
@@ -24,13 +24,13 @@ export async function GET(req: Request) {
     hasError: !!error,
     requestOrigin: url.origin,
     hostname: url.hostname,
-    redirectBase,
-    willRedirectTo: redirectBase
+    productionUrl,
+    willRedirectTo: productionUrl
   });
 
   if (error) {
     console.log('[AUTH DEBUG] OAuth error:', error);
-    return NextResponse.redirect(new URL('/?auth_error=oauth_error', redirectBase))
+    return NextResponse.redirect(new URL('/?auth_error=oauth_error', productionUrl))
   }
 
   if (code) {
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
     
     if (exchangeError) {
       console.log('[AUTH DEBUG] Exchange error:', exchangeError);
-      return NextResponse.redirect(new URL('/?auth_error=exchange_failed', redirectBase))
+      return NextResponse.redirect(new URL('/?auth_error=exchange_failed', productionUrl))
     }
 
     console.log('[AUTH DEBUG] Session exchange successful:', !!data.session);
@@ -55,14 +55,14 @@ export async function GET(req: Request) {
 
       if (venues && venues.length > 0) {
         console.log('[AUTH DEBUG] Redirecting to dashboard:', venues[0].venue_id);
-        return NextResponse.redirect(new URL(`/dashboard/${venues[0].venue_id}`, redirectBase))
+        return NextResponse.redirect(new URL(`/dashboard/${venues[0].venue_id}`, productionUrl))
       } else {
         console.log('[AUTH DEBUG] Redirecting to complete profile');
-        return NextResponse.redirect(new URL('/complete-profile', redirectBase))
+        return NextResponse.redirect(new URL('/complete-profile', productionUrl))
       }
     }
   }
 
   console.log('[AUTH DEBUG] No code or session, redirecting to home');
-  return NextResponse.redirect(new URL('/?auth_error=missing_code', redirectBase))
+  return NextResponse.redirect(new URL('/?auth_error=missing_code', productionUrl))
 }

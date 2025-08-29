@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RefreshCw } from 'lucide-react';
 import { signInUser } from '@/lib/supabase';
-import { signInWithGoogle } from '@/lib/auth/signin';
+import { signInWithGoogle } from '@/lib/supabase';
 
 export default function SignInForm() {
+  const googleSignInInProgress = { current: false };
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
