@@ -9,8 +9,17 @@ export async function GET(req: Request) {
     url: req.url,
     search: u.search,
     hasCode: !!u.searchParams.get('code'),
-    hasError: !!u.searchParams.get('error')
+    hasError: !!u.searchParams.get('error'),
+    origin: u.origin,
+    hostname: u.hostname,
+    protocol: u.protocol
   });
+  
+  console.log('[AUTH DEBUG] Environment variables in callback:');
+  console.log('[AUTH DEBUG] NODE_ENV:', process.env.NODE_ENV);
+  console.log('[AUTH DEBUG] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
+  console.log('[AUTH DEBUG] APP_URL:', process.env.APP_URL);
+  console.log('[AUTH DEBUG] NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL);
   
   // Determine the correct base URL for the redirect
   let baseUrl: string;
@@ -20,9 +29,11 @@ export async function GET(req: Request) {
               process.env.APP_URL || 
               process.env.NEXT_PUBLIC_APP_URL || 
               'https://servio-production.up.railway.app';
+    console.log('[AUTH DEBUG] Production baseUrl:', baseUrl);
   } else {
     // In development, use the request origin
     baseUrl = u.origin;
+    console.log('[AUTH DEBUG] Development baseUrl:', baseUrl);
   }
   
   // Check if we have an authorization code or error

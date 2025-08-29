@@ -193,6 +193,8 @@ export async function signInUser(email: string, password: string) {
 
 export async function signInWithGoogle() {
   console.log('[AUTH DEBUG] Starting Google OAuth sign-in...');
+  console.log('[AUTH DEBUG] Current window.location:', typeof window !== 'undefined' ? window.location.href : 'server-side');
+  console.log('[AUTH DEBUG] Current window.origin:', typeof window !== 'undefined' ? window.location.origin : 'server-side');
   
   try {
     // Clear stale PKCE artifacts to avoid verifier/code mismatches
@@ -207,7 +209,10 @@ export async function signInWithGoogle() {
   const origin = siteOrigin();
   const redirectTo = `${origin}/api/auth/callback`;
   
-  console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
+  console.log('[AUTH DEBUG] Origin from siteOrigin():', origin);
+  console.log('[AUTH DEBUG] Final redirectTo URL:', redirectTo);
+  console.log('[AUTH DEBUG] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log('[AUTH DEBUG] Has anon key:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   
       const { data, error } = await createClient().auth.signInWithOAuth({
     provider: "google",

@@ -1,22 +1,23 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  console.log('[AUTH DEBUG] Environment debug endpoint called');
-  
-  const envVars = {
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'present' : 'missing',
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'present' : 'missing',
-    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-    NODE_ENV: process.env.NODE_ENV,
-    // Don't expose sensitive keys in response
+  const envInfo = {
+    timestamp: new Date().toISOString(),
+    nodeEnv: process.env.NODE_ENV,
+    nextPublicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    appUrl: process.env.APP_URL,
+    nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    allEnvVars: Object.keys(process.env).filter(key => 
+      key.includes('URL') || key.includes('SITE') || key.includes('APP') || key.includes('SUPABASE')
+    ).reduce((acc, key) => {
+      acc[key] = process.env[key];
+      return acc;
+    }, {} as Record<string, string | undefined>)
   };
 
-  console.log('[AUTH DEBUG] Environment variables:', envVars);
+  console.log('[AUTH DEBUG] Server-side environment debug info:', envInfo);
 
-  return NextResponse.json({
-    message: 'Environment debug info',
-    env: envVars,
-    timestamp: new Date().toISOString()
-  });
+  return NextResponse.json(envInfo);
 }
