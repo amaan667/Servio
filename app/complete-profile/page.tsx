@@ -7,10 +7,16 @@ import CompleteProfileForm from './form';
 
 export default function CompleteProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     const checkUserAndVenues = async () => {
       try {
         console.log('[COMPLETE-PROFILE] Checking user session');
@@ -29,7 +35,7 @@ export default function CompleteProfilePage() {
         }
 
         console.log('[COMPLETE-PROFILE] Querying venues for user:', user.id);
-        const { data: venue, error: venueErr } = await supabase
+        const { data: venue, error: venueErr } = await createClient()
           .from('venues')
           .select('venue_id')
           .eq('owner_id', user.id)
@@ -52,7 +58,7 @@ export default function CompleteProfilePage() {
         }
 
         console.log('[COMPLETE-PROFILE] No venue found, showing complete profile form');
-        setUser(user);
+        setShowForm(true);
         setLoading(false);
       } catch (error) {
         console.error('[COMPLETE-PROFILE] Error:', error);
@@ -74,9 +80,15 @@ export default function CompleteProfilePage() {
     );
   }
 
-  if (!user) {
-    return null;
+  if (showForm) {
+    return <CompleteProfileForm />;
   }
 
-  return <CompleteProfileForm user={user} />;
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-gray-600">Redirecting...</p>
+      </div>
+    </div>
+  );
 }

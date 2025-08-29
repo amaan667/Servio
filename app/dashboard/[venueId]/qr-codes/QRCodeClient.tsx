@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, QrCode, Download } from "lucide-react";
-import ClientNavBar from "@/components/ClientNavBar";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -124,7 +123,6 @@ export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) 
 
               return (
         <div className="min-h-screen bg-gray-50">
-          <ClientNavBar venueId={venueId} />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
         

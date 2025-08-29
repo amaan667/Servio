@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import ClientNavBar from "@/components/ClientNavBar";
 import { createClient } from "@/lib/sb-client";
+
+const supabase = createClient();
 import { ArrowLeft, Save, User, Building, Mail, Phone } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -19,7 +20,7 @@ interface Venue {
 
 interface User {
   id: string;
-  email: string;
+  email?: string;
 }
 
 export default function SettingsClient({ user, venues }: { user: User; venues: Venue[] }) {
@@ -102,7 +103,6 @@ export default function SettingsClient({ user, venues }: { user: User; venues: V
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ClientNavBar venueId={venues?.[0]?.venue_id} />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

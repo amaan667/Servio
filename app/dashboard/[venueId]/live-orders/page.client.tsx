@@ -9,7 +9,6 @@ import { useTick } from '@/hooks/use-tick';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
-import ClientNavBar from '@/components/ClientNavBar';
 import { useAuth } from "@/app/authenticated-client-provider";
 
 type Item = {
@@ -240,7 +239,6 @@ export default function LiveOrdersClient({ venueId }: { venueId: string }) {
 
              return (
        <div className="min-h-screen bg-gray-50">
-         <ClientNavBar venueId={venueId} />
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
         <audio ref={audioRef} src="/assets/new-order.mp3" preload="auto" />

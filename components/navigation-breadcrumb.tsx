@@ -66,6 +66,7 @@ export default function NavigationBreadcrumb({
   const isDashboardRoot = /^\/dashboard\/(?:[^/]+)\/?$/.test(pathname);
   const isSignInPage = pathname.includes("/sign-in");
   const isSignUpPage = pathname.includes("/sign-up");
+  const isGenerateQRPage = pathname.includes("/generate-qr");
 
   // For sign-in/sign-up pages: Home → Sign In/Sign Up (current)
   if ((isSignInPage || isSignUpPage) && !showBackButton) {
@@ -106,6 +107,39 @@ export default function NavigationBreadcrumb({
           </li>
           <li className="text-gray-400">→</li>
           <li className="text-gray-700 font-medium">Dashboard</li>
+        </ol>
+      </nav>
+    );
+  }
+
+  // Generate QR page: Home → Dashboard → QR Codes (current)
+  if (isGenerateQRPage && venueId) {
+    return (
+      <nav aria-label="Breadcrumb" className="mb-4">
+        <ol className="flex items-center gap-2 text-sm">
+          <li>
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+              <Link href={homeLink}>
+                <>
+                  <Home className="h-4 w-4" />
+                  <span className="hidden sm:inline">Home</span>
+                </>
+              </Link>
+            </Button>
+          </li>
+          <li className="text-gray-400">→</li>
+          <li>
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+              <Link href={homeLink}>
+                <>
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </>
+              </Link>
+            </Button>
+          </li>
+          <li className="text-gray-400">→</li>
+          <li className="text-gray-700 font-medium">{pageTitle}</li>
         </ol>
       </nav>
     );

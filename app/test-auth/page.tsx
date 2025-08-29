@@ -1,117 +1,172 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/app/authenticated-client-provider';
+import { createClient, getBrowserInfo, checkAuthState, clearAuthStorage } from '@/lib/sb-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function TestAuthPage() {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [testResult, setTestResult] = useState<string>('');
+  const { session, loading, signOut } = useAuth();
+  const [browserInfo, setBrowserInfo] = useState<any>(null);
+  const [authState, setAuthState] = useState<any>(null);
+  const [testResults, setTestResults] = useState<any>(null);
 
   useEffect(() => {
-    checkSession();
+    // Get browser info
+    setBrowserInfo(getBrowserInfo());
+    
+    // Check auth state
+    const checkAuth = async () => {
+      const state = await checkAuthState();
+      setAuthState(state);
+    };
+    checkAuth();
   }, []);
 
-  const checkSession = async () => {
-    try {
-      const supabase = createClient();
-      const { data: { session } } = await createClient().auth.getSession();
-      setSession(session);
-    } catch (error) {
-      console.error('Session check error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const testGoogleSignIn = async () => {
-    setTestResult('Testing Google sign-in...');
-    try {
-      const supabase = createClient();
-      const { data, error } = await createClient().auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) {
-        setTestResult(`Error: ${error.message}`);
-      } else {
-        setTestResult(`Success! Redirect URL: ${data.url}`);
-        // Don't redirect automatically for testing
+  const runAuthTests = async () => {
+    const results = {
+      timestamp: new Date().toISOString(),
+      browserInfo: getBrowserInfo(),
+      session: {
+        hasSession: !!session,
+        userId: session?.user?.id,
+        userEmail: session?.user?.email,
+        expiresAt: session?.expires_at,
+      },
+      authState: await checkAuthState(),
+      localStorage: {
+        available: typeof window !== 'undefined' && !!window.localStorage,
+        keys: typeof window !== 'undefined' ? Object.keys(localStorage).filter(k => k.startsWith('sb-')) : [],
+      },
+      sessionStorage: {
+        available: typeof window !== 'undefined' && !!window.sessionStorage,
+        keys: typeof window !== 'undefined' ? Object.keys(sessionStorage).filter(k => k.startsWith('sb-')) : [],
+      },
+      expectedBehavior: {
+        noAutoRestoration: true,
+        requiresExplicitSignIn: true,
+        sessionOnlyDuringOAuth: true,
       }
+    };
+    
+    setTestResults(results);
+    console.log('[AUTH TEST] Results:', results);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      console.log('[AUTH TEST] Starting sign out process');
+      await signOut();
+      console.log('[AUTH TEST] Sign out completed');
+      
+      // Force clear storage
+      clearAuthStorage();
+      console.log('[AUTH TEST] Storage cleared');
+      
+      // Redirect to sign-in
+      window.location.href = '/sign-in';
     } catch (error) {
-      setTestResult(`Exception: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('[AUTH TEST] Sign out error:', error);
     }
   };
 
-  const signOut = async () => {
+  const forceClearStorage = () => {
     try {
-      const supabase = createClient();
-      await createClient().auth.signOut();
-      setSession(null);
-      setTestResult('Signed out successfully');
+      clearAuthStorage();
+      console.log('[AUTH TEST] Force cleared storage');
+      window.location.reload();
     } catch (error) {
-      setTestResult(`Sign out error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('[AUTH TEST] Force clear error:', error);
+    }
+  };
+
+  const testNoAutoRestoration = () => {
+    try {
+      // Clear all storage
+      clearAuthStorage();
+      console.log('[AUTH TEST] Cleared storage for no-auto-restoration test');
+      
+      // Reload page to test if session is restored
+      window.location.reload();
+    } catch (error) {
+      console.error('[AUTH TEST] No-auto-restoration test error:', error);
     }
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h2>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-2xl mx-auto space-y-4">
-        <h1 className="text-2xl font-bold">Authentication Test</h1>
-        
+      <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Current Session</CardTitle>
+            <CardTitle>Authentication Test - No Auto Restoration</CardTitle>
           </CardHeader>
-          <CardContent>
-            {session ? (
+          <CardContent className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Expected Behavior:</h3>
+              <ul className="text-blue-700 text-sm space-y-1">
+                <li>✅ Users should NOT be automatically signed in</li>
+                <li>✅ Users must explicitly sign in themselves</li>
+                <li>✅ No session restoration on page load</li>
+                <li>✅ Session only exists during active OAuth flow</li>
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p><strong>User ID:</strong> {session.user.id}</p>
-                <p><strong>Email:</strong> {session.user.email}</p>
-                <p><strong>Expires:</strong> {new Date(session.expires_at * 1000).toLocaleString()}</p>
-                <Button onClick={signOut} className="mt-2">Sign Out</Button>
+                <h3 className="font-semibold mb-2">Browser Info</h3>
+                <pre className="bg-gray-100 p-2 rounded text-sm overflow-auto">
+                  {JSON.stringify(browserInfo, null, 2)}
+                </pre>
               </div>
-            ) : (
-              <p>No active session</p>
-            )}
-          </CardContent>
-        </Card>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Current Session</h3>
+                <pre className="bg-gray-100 p-2 rounded text-sm overflow-auto">
+                  {JSON.stringify({
+                    hasSession: !!session,
+                    userId: session?.user?.id,
+                    userEmail: session?.user?.email,
+                    expiresAt: session?.expires_at,
+                  }, null, 2)}
+                </pre>
+              </div>
+            </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Test Google Sign-In</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={testGoogleSignIn} disabled={!!session}>
-              Test Google OAuth
-            </Button>
-            {testResult && (
-              <div className="mt-2 p-2 bg-gray-100 rounded">
-                <p className="text-sm">{testResult}</p>
+            <div className="flex gap-4 flex-wrap">
+              <Button onClick={runAuthTests} variant="outline">
+                Run Auth Tests
+              </Button>
+              <Button onClick={handleSignOut} variant="destructive">
+                Sign Out
+              </Button>
+              <Button onClick={forceClearStorage} variant="outline">
+                Force Clear Storage
+              </Button>
+              <Button onClick={testNoAutoRestoration} variant="outline">
+                Test No Auto Restoration
+              </Button>
+            </div>
+
+            {testResults && (
+              <div>
+                <h3 className="font-semibold mb-2">Test Results</h3>
+                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96">
+                  {JSON.stringify(testResults, null, 2)}
+                </pre>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Environment Info</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p><strong>NODE_ENV:</strong> {process.env.NODE_ENV}</p>
-            <p><strong>Supabase URL:</strong> {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET'}</p>
-            <p><strong>Supabase Key:</strong> {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET'}</p>
-            <p><strong>Site URL:</strong> {process.env.NEXT_PUBLIC_SITE_URL}</p>
-            <p><strong>Current Origin:</strong> {typeof window !== 'undefined' ? window.location.origin : 'N/A'}</p>
           </CardContent>
         </Card>
       </div>

@@ -13,25 +13,39 @@ function OAuthCallbackContent() {
     let finished = false;
     const sb = createClient();
     
-    console.log('[AUTH DEBUG] callback: starting', { 
+    console.log('[OAuth Frontend] callback: starting', { 
       url: window.location.href,
       searchParams: Object.fromEntries(sp.entries()),
       timestamp: new Date().toISOString()
     });
 
-    const timeout = setTimeout(() => {
+    // Use consistent timeout for all platforms
+    const timeoutDuration = 20000;
+    const timeout = setTimeout(async () => {
       if (!finished) {
-        console.log('[AUTH DEBUG] callback: timeout reached');
+        console.log('[OAuth Frontend] callback: timeout reached', { timeoutDuration });
+        try {
+          await fetch('/api/auth/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'callback_timeout',
+              url: window.location.href,
+              searchParams: Object.fromEntries(sp.entries()),
+            }),
+          });
+        } catch {}
         router.replace("/sign-in?error=timeout");
       }
-    }, 15000);
+    }, timeoutDuration);
 
     (async () => {
+      // Step 1: Get the authorization code from URL parameters
       const code = sp.get("code");
       const errorParam = sp.get("error");
       const next = sp.get("next") || "/dashboard";
 
-      console.log('[AUTH DEBUG] callback: processing params', { 
+      console.log('[OAuth Frontend] callback: processing params', { 
         hasCode: !!code, 
         errorParam, 
         next,
@@ -39,76 +53,137 @@ function OAuthCallbackContent() {
       });
 
       if (errorParam) {
-        console.log('[AUTH DEBUG] callback: error param found', { errorParam });
+        console.log('[OAuth Frontend] callback: error param found', { errorParam });
+        try {
+          await fetch('/api/auth/log', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+              event: 'oauth_error_param', 
+              errorParam
+            }) 
+          });
+        } catch {}
         return router.replace("/sign-in?error=oauth_error");
       }
       
       if (!code) {
-        console.log('[AUTH DEBUG] callback: no code found');
+        console.log('[OAuth Frontend] callback: no code found');
+        try {
+          await fetch('/api/auth/log', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+              event: 'missing_code'
+            }) 
+          });
+        } catch {}
         return router.replace("/sign-in?error=missing_code");
       }
 
-      // IMPORTANT: Do NOT auto-relaunch Google if verifier is missing; stop with a clear error.
-      const hasVerifier = (() => {
-        try {
-          const verifier = localStorage.getItem("supabase.auth.token-code-verifier");
-          const hasPkceKeys = Object.keys(localStorage).some(k => k.includes("pkce") || k.includes("token-code-verifier"));
-          console.log('[AUTH DEBUG] callback: verifier check', { 
-            hasVerifier: !!verifier, 
-            hasPkceKeys,
-            timestamp: new Date().toISOString()
-          });
-          return !!verifier || hasPkceKeys;
-        } catch (err) { 
-          console.log('[AUTH DEBUG] callback: verifier check failed', { error: err });
-          return false; 
-        }
-      })();
+      console.log('[OAuth Frontend] callback: using Supabase exchangeCodeForSession');
       
-      if (!hasVerifier) {
-        console.log('[AUTH DEBUG] callback: missing verifier');
-        return router.replace("/sign-in?error=missing_verifier");
-      }
-
-      console.log('[AUTH DEBUG] callback: exchanging code for session');
-      const { error } = await sb.auth.exchangeCodeForSession({
-        queryParams: new URLSearchParams(window.location.search),
-      });
-
-      // Scrub code/state to prevent repeat exchanges
       try {
-        const url = new URL(window.location.href);
-        url.searchParams.delete("code");
-        url.searchParams.delete("state");
-        window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams}` : ""));
-      } catch {}
+        // Step 3: Use Supabase's built-in exchangeCodeForSession method
+        // This method automatically handles PKCE exchange with the correct payload structure
+        const { error } = await sb.auth.exchangeCodeForSession({
+          queryParams: new URLSearchParams(window.location.search),
+        });
 
-      if (error) {
-        console.log('[AUTH DEBUG] callback: exchange failed', { error: error.message });
+        // Scrub code/state to prevent repeat exchanges
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("code");
+          url.searchParams.delete("state");
+          window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams}` : ""));
+        } catch {}
+
+        if (error) {
+          console.log('[OAuth Frontend] callback: Supabase exchange failed', { 
+            error: error.message
+          });
+          try {
+            await fetch('/api/auth/log', { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ 
+                event: 'supabase_exchange_failed', 
+                message: error.message
+              }) 
+            });
+          } catch {}
+          return router.replace("/sign-in?error=exchange_failed");
+        }
+
+        console.log('[OAuth Frontend] callback: getting session');
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+          console.log('[OAuth Frontend] callback: no session after exchange');
+          try {
+            await fetch('/api/auth/log', { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ 
+                event: 'no_session_after_exchange'
+              }) 
+            });
+          } catch {}
+          return router.replace("/sign-in?error=no_session");
+        }
+
+        console.log('[OAuth Frontend] callback: success, redirecting to', { 
+          next, 
+          userId: session.user.id
+        });
+        
+        // Use consistent delay for all platforms
+        const sessionDelay = 500;
+        await new Promise(resolve => setTimeout(resolve, sessionDelay));
+        
+        router.replace(next);
+      } catch (exchangeError: any) {
+        console.error('[OAuth Frontend] callback: unexpected error during exchange', { 
+          error: exchangeError
+        });
+        try {
+          await fetch('/api/auth/log', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+              event: 'unexpected_exchange_error', 
+              message: String(exchangeError?.message || exchangeError)
+            }) 
+          });
+        } catch {}
         return router.replace("/sign-in?error=exchange_failed");
       }
-
-      console.log('[AUTH DEBUG] callback: getting session');
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        console.log('[AUTH DEBUG] callback: no session after exchange');
-        return router.replace("/sign-in?error=no_session");
-      }
-
-      console.log('[AUTH DEBUG] callback: success, redirecting to', { next, userId: session.user.id });
-      router.replace(next);
     })().finally(() => { 
       finished = true; 
       clearTimeout(timeout); 
     });
   }, [router, sp]);
 
-  return null;
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Completing Sign In</h2>
+        <p className="text-gray-600">Please wait while we complete your authentication...</p>
+      </div>
+    </div>
+  );
 }
 
 export default function OAuthCallback() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h2>
+        </div>
+      </div>
+    }>
       <OAuthCallbackContent />
     </Suspense>
   );

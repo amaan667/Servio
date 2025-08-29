@@ -4,8 +4,35 @@ import type { AuthChangeEvent, Session, AuthError } from '@supabase/supabase-js'
 
 let _client: ReturnType<typeof createBrowserClient> | null = null;
 
+// Universal browser detection for logging only
+function getBrowserInfo() {
+  if (typeof window === 'undefined') return { type: 'unknown', isMobile: false };
+  
+  const userAgent = window.navigator.userAgent;
+  const isMobile = /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent.toLowerCase());
+  
+  let browserType = 'unknown';
+  if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+    browserType = 'safari';
+  } else if (userAgent.includes('Chrome')) {
+    browserType = 'chrome';
+  } else if (userAgent.includes('Firefox')) {
+    browserType = 'firefox';
+  } else if (userAgent.includes('Edge')) {
+    browserType = 'edge';
+  }
+  
+  return { type: browserType, isMobile, userAgent };
+}
+
 export function createClient() {
   if (!_client) {
+    // Provide fallback values for build time
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+    
+    const browserInfo = getBrowserInfo();
+    
     _client = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,14 +45,17 @@ export function createClient() {
         }
       }
     );
+    
+    console.log('[AUTH DEBUG] Supabase client created with NO automatic session restoration:', browserInfo);
   }
   return _client;
 }
 
-// Utility function to clear all authentication-related storage
+// Universal utility function to clear all authentication-related storage
 export function clearAuthStorage() {
   try {
-    console.log('[AUTH DEBUG] Clearing all authentication storage');
+    const browserInfo = getBrowserInfo();
+    console.log('[AUTH DEBUG] Clearing all authentication storage', { browserInfo });
     
     // Clear localStorage
     const localStorageKeys = Object.keys(localStorage).filter(k => 
@@ -57,10 +87,11 @@ export function clearAuthStorage() {
   }
 }
 
-// Utility function to check PKCE state
+// Universal utility function to check PKCE state
 export function checkPKCEState() {
   try {
-    console.log('[AUTH DEBUG] Checking PKCE state...');
+    const browserInfo = getBrowserInfo();
+    console.log('[AUTH DEBUG] Checking PKCE state...', { browserInfo });
     
     // Check localStorage for PKCE-related keys
     const localStorageKeys = Object.keys(localStorage).filter(k => 
@@ -78,12 +109,19 @@ export function checkPKCEState() {
     const supabaseKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-"));
     console.log('[AUTH DEBUG] Supabase localStorage keys:', supabaseKeys);
     
+    // Check for OAuth progress flags
+    const oauthProgress = sessionStorage.getItem("sb_oauth_in_progress");
+    const oauthStartTime = sessionStorage.getItem("sb_oauth_start_time");
+    
     return {
       localStorageKeys,
       sessionStorageKeys,
       supabaseKeys,
       hasPKCE: localStorageKeys.length > 0 || sessionStorageKeys.length > 0,
-      hasSupabaseAuth: supabaseKeys.length > 0
+      hasSupabaseAuth: supabaseKeys.length > 0,
+      oauthProgress: !!oauthProgress,
+      oauthStartTime: oauthStartTime ? new Date(parseInt(oauthStartTime)).toISOString() : null,
+      browserInfo
     };
   } catch (error: any) {
     console.log('[AUTH DEBUG] ❌ Error checking PKCE state:', error);
@@ -91,9 +129,10 @@ export function checkPKCEState() {
   }
 }
 
-// Utility function to check authentication state with retry
+// Universal utility function to check authentication state
 export async function checkAuthState() {
   try {
+    const browserInfo = getBrowserInfo();
     const { data, error } = await createClient().auth.getSession();
     console.log('[AUTH DEBUG] Current auth state:', {
       hasSession: !!data.session,
@@ -101,7 +140,8 @@ export async function checkAuthState() {
       userId: data.session?.user?.id,
       userEmail: data.session?.user?.email,
       sessionExpiresAt: data.session?.expires_at,
-      error: error?.message
+      error: error?.message,
+      browserInfo
     });
     return { data, error };
   } catch (error) {
@@ -110,9 +150,11 @@ export async function checkAuthState() {
   }
 }
 
-// Enhanced logger to spot state flips in dev
+// Universal logger for auth state changes
 if (typeof window !== 'undefined') {
-  console.log('[AUTH DEBUG] Setting up auth state change listener');
+  const browserInfo = getBrowserInfo();
+  console.log('[AUTH DEBUG] Setting up universal auth state change listener');
+  console.log('[AUTH DEBUG] Browser info:', browserInfo);
 
   const client = createClient();
   
@@ -138,7 +180,8 @@ if (typeof window !== 'undefined') {
       userId: sess?.user?.id,
       userEmail: sess?.user?.email,
       sessionExpiresAt: sess?.expires_at,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      browserInfo
     });
     
     // Handle token refresh errors
@@ -170,7 +213,8 @@ if (typeof window !== 'undefined') {
       hasUser: !!data.session?.user,
       userId: data.session?.user?.id,
       error: error?.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      browserInfo
     });
     
     // If there's an error with the initial session, clear storage
@@ -180,5 +224,5 @@ if (typeof window !== 'undefined') {
     }
   });
   
-  console.log('[AUTH DEBUG] ===== Supabase Client Initialized =====');
+  console.log('[AUTH DEBUG] ===== Universal Supabase Client Initialized (NO AUTO RESTORATION) =====');
 }
