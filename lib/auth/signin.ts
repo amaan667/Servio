@@ -1,5 +1,5 @@
 "use client";
-import { createClient } from "@/lib/sb-client";
+import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
 import { clearPkceVerifier } from './pkce-utils.js';
 

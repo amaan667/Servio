@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const { data: { user } } = await createClient().auth.getUser();
     if (!user) return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
 
-    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+    const admin = await createClient();
 
     // Check if a venue already exists for this owner
     const { data: existing, error: checkErr } = await admin

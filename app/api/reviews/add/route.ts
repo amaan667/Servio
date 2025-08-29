@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { ENV } from '@/lib/env';
 
 export const runtime = 'nodejs';
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   try {
     const json = await req.json();
     const { orderId, rating, comment } = Body.parse(json);
-    const admin = createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession:false }});
+    const admin = await createClient();
     const { data: order, error } = await admin
       .from('orders').select('id, venue_id').eq('id', orderId).maybeSingle();
     if (error || !order) return NextResponse.json({ ok:false, error: error?.message || 'Order not found' }, { status:404 });

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { clearAuthStorage } from '@/lib/sb-client';
+import { clearAuthStorage } from '@/lib/supabase/client';
 
 interface ErrorBoundaryState {
   hasError: boolean;

@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   const { id } = await req.json().catch(()=>({}));
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
+  const admin = await createClient();
 
   const { error } = await admin.from('staff').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
   if (!v) return NextResponse.json({ ok:false, error:'Forbidden' }, { status:403 });
 
   // Use service role
-  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession:false } });
+      const admin = await createClient();
 
   const statuses = status === 'open' ? ['pending','preparing'] : status ? [status] : undefined;
   console.log("[LIVE ORDERS GET] filtering statuses:", statuses);
