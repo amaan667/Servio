@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies as nextCookies } from 'next/headers'
 import type { CookieOptions } from '@supabase/ssr'
 
@@ -26,5 +27,13 @@ export async function createClient(c = nextCookies()) {
         },
       },
     }
+  )
+}
+
+// Admin client for server-side operations that need elevated permissions
+export function createAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
