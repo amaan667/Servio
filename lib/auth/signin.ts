@@ -17,7 +17,7 @@ export async function signInWithGoogle() {
     // Silent error handling
   }
 
-  const redirectTo = `${window.location.origin}/auth/callback`;
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
 
   console.log('[AUTH DEBUG] Starting Google OAuth with account selection forced');
   console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
@@ -26,7 +26,6 @@ export async function signInWithGoogle() {
     provider: "google",
     options: {
       redirectTo: redirectTo,
-      flowType: 'pkce',
       queryParams: { 
         prompt: 'select_account',
         access_type: 'offline'

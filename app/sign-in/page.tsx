@@ -28,7 +28,7 @@ function SignInPageContent() {
       provider: 'google',
       options: {
         redirectTo: getAuthRedirectUrl('/auth/callback'),
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        queryParams: { access_type: 'offline', prompt: 'select_account' },
       },
     });
   };

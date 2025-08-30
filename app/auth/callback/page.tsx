@@ -15,7 +15,12 @@ function AuthCallbackContent() {
       const code = searchParams.get('code');
       const error = searchParams.get('error');
       
-      console.log('[AUTH DEBUG] Client callback received:', { hasCode: !!code, error });
+      console.log('[AUTH DEBUG] Client callback received:', { 
+        hasCode: !!code, 
+        error,
+        currentUrl: window.location.href,
+        searchParams: Object.fromEntries(searchParams.entries())
+      });
       
       if (error) {
         console.log('[AUTH DEBUG] OAuth error in client callback:', error);
@@ -31,11 +36,35 @@ function AuthCallbackContent() {
         return;
       }
       
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.log('[AUTH DEBUG] Callback timeout reached');
+        setError('Authentication timed out. Please try again.');
+        setStatus('error');
+      }, 30000); // 30 seconds timeout
+      
       try {
         console.log('[AUTH DEBUG] Exchanging code for session');
+        console.log('[AUTH DEBUG] Code length:', code?.length);
+        console.log('[AUTH DEBUG] Supabase client config:', {
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
+          hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        });
+        
+        // Test Supabase connection first
+        console.log('[AUTH DEBUG] Testing Supabase connection...');
+        const { data: testData, error: testError } = await supabase.auth.getSession();
+        console.log('[AUTH DEBUG] Connection test result:', { hasTestData: !!testData, hasTestError: !!testError });
         
         // Exchange the code for a session
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        
+        console.log('[AUTH DEBUG] Exchange result:', { 
+          hasData: !!data, 
+          hasSession: !!data?.session, 
+          hasError: !!exchangeError,
+          errorMessage: exchangeError?.message 
+        });
         
         if (exchangeError) {
           console.log('[AUTH DEBUG] Exchange error:', exchangeError);
@@ -52,6 +81,7 @@ function AuthCallbackContent() {
         }
         
         console.log('[AUTH DEBUG] Authentication successful, redirecting to home page');
+        clearTimeout(timeoutId);
         setStatus('success');
         
         // Redirect to home page after successful authentication
@@ -62,6 +92,8 @@ function AuthCallbackContent() {
         
       } catch (err: any) {
         console.log('[AUTH DEBUG] Unexpected error during callback:', err);
+        console.log('[AUTH DEBUG] Error stack:', err.stack);
+        clearTimeout(timeoutId);
         setError(`Unexpected error: ${err.message}`);
         setStatus('error');
       }
