@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/sb-client';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import SignUpForm from './signup-form';
 

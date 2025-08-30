@@ -2,26 +2,9 @@
 
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/sb-client';
+import { getAuthRedirectUrl } from '@/lib/auth';
 import SignInForm from './signin-form';
-
-// Function to send debug logs to server
-async function sendDebugLog(action: string, data: any, error?: any) {
-  try {
-    await fetch('/api/auth/debug-oauth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action,
-        data,
-        error,
-        timestamp: new Date().toISOString()
-      })
-    });
-  } catch (err) {
-    console.error('[AUTH DEBUG] Failed to send debug log:', err);
-  }
-}
 
 function SignInPageContent() {
   const router = useRouter();
@@ -35,61 +18,19 @@ function SignInPageContent() {
 
       // If already signed in, redirect to dashboard
       console.log('[SIGN-IN] User already signed in, redirecting to dashboard');
-      await sendDebugLog('USER_ALREADY_SIGNED_IN', { 
-        userId: session.user.id,
-        userEmail: session.user.email 
-      });
       router.replace('/dashboard');
     };
     run();
   }, [router, sp]);
 
   const signInWithGoogle = async () => {
-    try {
-      console.log('[AUTH DEBUG] Starting Google OAuth sign in');
-      await sendDebugLog('OAUTH_SIGN_IN_START', { 
-        provider: 'google',
-        timestamp: new Date().toISOString()
-      });
-      
-      // Use production redirect URL
-      const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: { 
-            access_type: 'offline', 
-            prompt: 'select_account' 
-          },
-        },
-      });
-      
-      if (error) {
-        console.error('[AUTH DEBUG] OAuth sign in error:', error);
-        await sendDebugLog('OAUTH_SIGN_IN_ERROR', { 
-          error: error.message,
-          errorCode: error.status 
-        });
-        alert(`Sign in failed: ${error.message}`);
-        return;
-      }
-      
-      console.log('[AUTH DEBUG] OAuth sign in initiated successfully:', data);
-      await sendDebugLog('OAUTH_SIGN_IN_SUCCESS', { 
-        hasData: !!data,
-        url: data?.url,
-        provider: data?.provider
-      });
-      
-    } catch (err: any) {
-      console.error('[AUTH DEBUG] Unexpected error during OAuth sign in:', err);
-      await sendDebugLog('OAUTH_SIGN_IN_UNEXPECTED_ERROR', { 
-        error: err.message,
-        stack: err.stack 
-      });
-      alert(`Unexpected error: ${err.message}`);
-    }
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+  redirectTo: getAuthRedirectUrl('/auth/callback'),
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      },
+    });
   };
 
   return <SignInForm onGoogleSignIn={signInWithGoogle} />;

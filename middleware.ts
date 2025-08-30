@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const PUBLIC = ['/', '/auth/callback', '/sign-in', '/_next', '/favicon', '/images', '/api/health']
+// Add all public paths that should bypass auth checks
+const PUBLIC = [
+  '/', 
+  '/auth/callback', 
+  '/sign-in', 
+  '/sign-up',
+  '/api/auth',
+  '/api/health',
+  '/_next', 
+  '/favicon', 
+  '/images',
+  '/debug-auth'
+]
 
 function getOrigin(req: NextRequest) {
   const proto = req.headers.get('x-forwarded-proto') ?? 'https';
@@ -10,16 +22,26 @@ function getOrigin(req: NextRequest) {
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+  
+  // Check if the path is public (no auth required)
   if (PUBLIC.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
-  const hasAuthCookie = [...req.cookies.getAll()].some(k => k.name.includes('-auth-token'))
+  // Check for auth cookies
+  const hasAuthCookie = [...req.cookies.getAll()].some(k => 
+    k.name.includes('-auth-token') || 
+    k.name.includes('sb-access-token') ||
+    k.name.includes('sb-refresh-token')
+  )
+  
   if (!hasAuthCookie) {
+    // If no auth cookie is found, redirect to sign-in
     const origin = getOrigin(req);
     return NextResponse.redirect(`${origin}/sign-in`)
   }
 
+  // Continue to the requested page if authenticated
   return NextResponse.next()
 }
 
