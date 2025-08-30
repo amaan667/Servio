@@ -5,7 +5,7 @@ export async function getBaseUrl() {
     return (
       process.env.NEXT_PUBLIC_SITE_URL ||
       (process.env.RAILWAY_STATIC_URL ? `https://${process.env.RAILWAY_STATIC_URL}` : '') ||
-      'http://localhost:8080'
+      'https://servio-production.up.railway.app'
     );
   }
   return window.location.origin;
