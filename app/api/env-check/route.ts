@@ -1,13 +1,36 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 export async function GET() {
-  const envInfo = {
-    NODE_ENV: process.env.NODE_ENV,
-    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET',
-    timestamp: new Date().toISOString(),
-  };
+  try {
+    const envCheck = {
+      supabase: {
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Set' : '❌ Missing',
+        anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing',
+        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Set' : '❌ Missing',
+      },
+      app: {
+        url: process.env.NEXT_PUBLIC_APP_URL || 'Not set',
+        siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'Not set',
+        nodeEnv: process.env.NODE_ENV || 'Not set',
+      },
+      oauth: {
+        googleClientId: process.env.GOOGLE_CLIENT_ID ? '✅ Set' : '❌ Missing',
+        googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? '✅ Set' : '❌ Missing',
+      }
+    };
 
-  return NextResponse.json(envInfo);
+    console.log('[AUTH DEBUG] Environment check:', envCheck);
+
+    return NextResponse.json({
+      success: true,
+      data: envCheck,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    console.log('[AUTH DEBUG] Environment check error:', err);
+    return NextResponse.json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
 }
