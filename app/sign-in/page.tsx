@@ -5,6 +5,24 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import SignInForm from './signin-form';
 
+// Function to send debug logs to server
+async function sendDebugLog(action: string, data: any, error?: any) {
+  try {
+    await fetch('/api/auth/debug-oauth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action,
+        data,
+        error,
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch (err) {
+    console.error('[AUTH DEBUG] Failed to send debug log:', err);
+  }
+}
+
 function SignInPageContent() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -17,6 +35,10 @@ function SignInPageContent() {
 
       // If already signed in, redirect to dashboard
       console.log('[SIGN-IN] User already signed in, redirecting to dashboard');
+      await sendDebugLog('USER_ALREADY_SIGNED_IN', { 
+        userId: session.user.id,
+        userEmail: session.user.email 
+      });
       router.replace('/dashboard');
     };
     run();
@@ -25,6 +47,10 @@ function SignInPageContent() {
   const signInWithGoogle = async () => {
     try {
       console.log('[AUTH DEBUG] Starting Google OAuth sign in');
+      await sendDebugLog('OAUTH_SIGN_IN_START', { 
+        provider: 'google',
+        timestamp: new Date().toISOString()
+      });
       
       // Use the default Supabase OAuth flow without custom redirect URL
       // This should use the redirect URL configured in Supabase dashboard
@@ -40,14 +66,27 @@ function SignInPageContent() {
       
       if (error) {
         console.error('[AUTH DEBUG] OAuth sign in error:', error);
+        await sendDebugLog('OAUTH_SIGN_IN_ERROR', { 
+          error: error.message,
+          errorCode: error.status 
+        });
         alert(`Sign in failed: ${error.message}`);
         return;
       }
       
       console.log('[AUTH DEBUG] OAuth sign in initiated successfully:', data);
+      await sendDebugLog('OAUTH_SIGN_IN_SUCCESS', { 
+        hasData: !!data,
+        url: data?.url,
+        provider: data?.provider
+      });
       
     } catch (err: any) {
       console.error('[AUTH DEBUG] Unexpected error during OAuth sign in:', err);
+      await sendDebugLog('OAUTH_SIGN_IN_UNEXPECTED_ERROR', { 
+        error: err.message,
+        stack: err.stack 
+      });
       alert(`Unexpected error: ${err.message}`);
     }
   };
