@@ -10,6 +10,12 @@ function AuthCallbackContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
 
+  // Immediate logging when component loads
+  console.log('[AUTH DEBUG] === CALLBACK PAGE LOADED ===');
+  console.log('[AUTH DEBUG] Component mounted, searchParams:', searchParams ? 'Available' : 'Not available');
+  console.log('[AUTH DEBUG] Current URL:', typeof window !== 'undefined' ? window.location.href : 'Server side');
+  console.log('[AUTH DEBUG] Search params entries:', searchParams ? Object.fromEntries(searchParams.entries()) : 'No search params');
+
   useEffect(() => {
     const handleCallback = async () => {
       console.log('[AUTH DEBUG] === OAUTH CALLBACK START ===');
