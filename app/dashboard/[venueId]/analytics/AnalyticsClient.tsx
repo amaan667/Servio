@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "../../../../lib/supabase/client";
 import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag } from "lucide-react";
 
 export default function AnalyticsClient({ venueId, venueName }: { venueId: string; venueName: string }) {
@@ -22,7 +22,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .eq('venue_id', venueId)
         .limit(1);
 
-  setHasData(Array.isArray(orders) && orders.length > 0);
+      setHasData(Array.isArray(orders) && orders.length > 0);
       setLoading(false);
     };
 

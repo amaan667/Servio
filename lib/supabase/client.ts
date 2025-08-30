@@ -78,3 +78,17 @@ export async function checkAuthState() {
 export function debugPKCEState() {
   return checkPKCEState();
 }
+
+// Add missing getBrowserInfo function
+export function getBrowserInfo() {
+  if (typeof window === 'undefined') return { isServer: true };
+  
+  return {
+    userAgent: navigator.userAgent,
+    language: navigator.language,
+    platform: navigator.platform,
+    cookieEnabled: navigator.cookieEnabled,
+    onLine: navigator.onLine,
+    timestamp: new Date().toISOString(),
+  };
+}

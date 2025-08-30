@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createRouteSupabase } from '@/lib/supabase-server';
+import { createClient } from '../../../lib/supabase/server';
 
 export async function GET() {
   try {
-    const supabase = createRouteSupabase();
+    const supabase = await createClient();
     
     // Get the current user
-    const { data: { user }, error: userError } = await createClient().auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError) {
       console.log('[AUTH DEBUG] Test auth - User error:', userError.message);

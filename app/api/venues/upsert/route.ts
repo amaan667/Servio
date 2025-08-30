@@ -1,51 +1,75 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase-server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '../../../../lib/supabase/server';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    const { name, business_type, address, phone } = await req.json().catch(() => ({}));
-    if (!name || !business_type) {
-      return NextResponse.json({ ok: false, error: 'name and business_type are required' }, { status: 400 });
+    const { venueId, name, business_type, address, phone, email } = await req.json();
+
+    if (!venueId || !name || !business_type) {
+      return NextResponse.json({ ok: false, error: 'venueId, name, and business_type required' }, { status: 400 });
     }
 
-    const supabase = createServerSupabase();
-    const { data: { user } } = await createClient().auth.getUser();
-    if (!user) return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
+    }
 
     const admin = await createClient();
 
-    // Check if a venue already exists for this owner
-    const { data: existing, error: checkErr } = await admin
+    // Check if venue exists and user owns it
+    const { data: existingVenue } = await admin
       .from('venues')
-      .select('venue_id')
-      .eq('owner_id', user.id)
+      .select('id, owner_id')
+      .eq('venue_id', venueId)
       .maybeSingle();
-    if (checkErr) return NextResponse.json({ ok: false, error: checkErr.message }, { status: 400 });
 
-    if (existing) {
-      const { data: updated, error: updErr } = await admin
-        .from('venues')
-        .update({ name, business_type, address: address || null, phone: phone || null })
-        .eq('venue_id', existing.venue_id)
-        .select('venue_id')
-        .maybeSingle();
-      if (updErr) return NextResponse.json({ ok: false, error: updErr.message }, { status: 400 });
-      return NextResponse.json({ ok: true, venue_id: updated?.venue_id || existing.venue_id });
+    if (existingVenue && existingVenue.owner_id !== user.id) {
+      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    const venue_id = `venue-${user.id.slice(0, 8)}-${Math.random().toString(36).slice(2, 6)}`;
-    const { data: inserted, error: insErr } = await admin
-      .from('venues')
-      .insert({ venue_id, name, business_type, address: address || null, phone: phone || null, owner_id: user.id })
-      .select('venue_id')
-      .maybeSingle();
-    if (insErr) return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 });
-    return NextResponse.json({ ok: true, venue_id: inserted?.venue_id || venue_id });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || 'Server error' }, { status: 500 });
+    const venueData = {
+      venue_id: venueId,
+      name,
+      business_type: business_type.toLowerCase(),
+      address: address || null,
+      phone: phone || null,
+      email: email || null,
+      owner_id: user.id,
+      updated_at: new Date().toISOString()
+    };
+
+    if (existingVenue) {
+      // Update existing venue
+      const { data, error } = await admin
+        .from('venues')
+        .update(venueData)
+        .eq('id', existingVenue.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json({ ok: true, venue: data });
+    } else {
+      // Create new venue
+      const newVenueData = {
+        ...venueData,
+        created_at: new Date().toISOString()
+      };
+      const { data, error } = await admin
+        .from('venues')
+        .insert(newVenueData)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json({ ok: true, venue: data });
+    }
+  } catch (error: any) {
+    console.error('[VENUES UPSERT] Error:', error);
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }
 

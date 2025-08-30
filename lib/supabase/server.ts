@@ -10,9 +10,15 @@ export async function createClient(c = nextCookies()) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) { return cookies.get(name)?.value },
-        set(name, value, options: CookieOptions) { cookies.set(name, value, options) },
-        remove(name, options: CookieOptions) { cookies.set(name, '', { ...options, maxAge: 0 }) },
+        get(name) {
+          return cookies.get(name)?.value
+        },
+        set(name, value, options: CookieOptions) {
+          cookies.set(name, value, options)
+        },
+        remove(name, options: CookieOptions) {
+          cookies.set(name, '', { ...options, maxAge: 0 })
+        },
       },
     }
   )

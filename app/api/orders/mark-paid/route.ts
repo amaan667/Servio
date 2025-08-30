@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { cookieAdapter } from '@/lib/server/supabase';
+import { createClient } from '../../../../lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -9,15 +7,10 @@ export async function POST(req: Request) {
   const { orderId } = await req.json().catch(() => ({}));
   if (!orderId) return NextResponse.json({ ok: false, error: 'orderId required' }, { status: 400 });
 
-  const jar = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieAdapter(jar) }
-  );
+  const supabase = await createClient();
 
   try {
-    const { error } = await createClient().from('orders').update({ payment_status: 'paid' as any }).eq('id', orderId);
+    const { error } = await supabase.from('orders').update({ payment_status: 'paid' as any }).eq('id', orderId);
     if (error) throw error;
     return NextResponse.json({ ok: true });
   } catch (e: any) {

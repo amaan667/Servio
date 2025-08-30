@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "../../lib/supabase/client";
 
 export default function TestOAuthPage() {
   const [status, setStatus] = useState<string>("");
@@ -19,7 +19,7 @@ export default function TestOAuthPage() {
       setStatus("Testing OAuth configuration...");
       setError("");
 
-      const supabase = createClient();
+
       
       console.log('[AUTH DEBUG] Test OAuth - Origin:', origin);
       console.log('[AUTH DEBUG] Test OAuth - Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);

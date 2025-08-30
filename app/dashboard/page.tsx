@@ -1,24 +1,16 @@
-import { redirect } from 'next/navigation';
-import { createServerSupabase } from '@/lib/supabase-server';
-import { safeGetUser } from '@/lib/server-utils';
+import { getUserSafe } from '../../utils/getUserSafe'
+import { redirect } from 'next/navigation'
+import { createClient } from '../../lib/supabase/server'
 
 export default async function DashboardPage() {
-  // Safe auth check that only calls getUser if auth cookies exist
-  const { data: { user }, error } = await safeGetUser();
-  
-  if (error) {
-    console.error('[DASHBOARD] Auth error:', error);
-    redirect('/sign-in');
-  }
-  
+  const user = await getUserSafe('app/dashboard/page.tsx')
   if (!user) {
-    console.log('[DASHBOARD] No user found, redirecting to home');
-    redirect('/');
+    redirect('/sign-in')
   }
 
   console.log('[DASHBOARD] Session found, checking venues for user:', user.id);
 
-  const supabase = await createServerSupabase();
+  const supabase = await createClient();
 
   // Get the user's primary venue
   const { data: venues, error: venueError } = await supabase

@@ -1,30 +1,17 @@
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { NextResponse } from 'next/server';
+import { createClient } from '../../../../lib/supabase/server';
 
 export async function POST() {
-  const cookieStore = cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          // allowed in a route handler
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          // allowed in a route handler
-          cookieStore.delete({ name, ...options });
-        },
-      },
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message });
     }
-  );
-
-  await supabase.auth.signOut({ scope: "local" }); // clears auth cookies
-  return NextResponse.json({ ok: true });
+    
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    return NextResponse.json({ ok: false, error: error.message });
+  }
 }

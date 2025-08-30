@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { createClient } from '../../../../lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -11,8 +11,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'orderId and status required' }, { status: 400 });
     }
 
-    const supabase = createServerSupabase();
-    const { data: { user } } = await createClient().auth.getUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
 
     const { data, error } = await supabase

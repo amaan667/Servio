@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { createClient } from '../../../../lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -14,8 +14,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
   }
 
-  const supabase = createServerSupabase();
-  const { data: { user } } = await createClient().auth.getUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
   }
@@ -71,7 +71,7 @@ export async function GET(req: Request) {
     .gte('created_at', today.toISOString())
     .not('table_number', 'is', null);
 
-  const activeTablesToday = new Set(activeTables?.map(o => o.table_number) || []).size;
+  const activeTablesToday = new Set(activeTables?.map((o: any) => o.table_number) || []).size;
 
   return NextResponse.json({
     ok: true,

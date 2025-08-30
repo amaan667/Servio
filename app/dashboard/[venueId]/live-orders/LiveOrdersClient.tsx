@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "../../../../lib/supabase/client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/dates";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
@@ -187,7 +187,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       .subscribe();
 
     return () => {
-      createClient().removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [venueId]);
 

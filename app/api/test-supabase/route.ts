@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '../../../../lib/supabase/server';
 
 export async function GET() {
   try {
     console.log('[AUTH DEBUG] Testing Supabase configuration...');
     
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Test basic connection
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Printer, Copy, Check } from "lucide-react";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "../../lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
 
 interface Props {

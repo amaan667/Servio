@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/server/supabase';
+import { createClient } from '../../../lib/supabase/server';
 
 export const runtime = 'nodejs';
 export async function GET() {
-  const supabase = createServerSupabaseClient();
-  const userRes = await createClient().auth.getUser();
-  const venuesRes = userRes.data.user
-    ? await createClient().from('venues').select('venue_id').eq('owner_id', userRes.data.user.id)
-    : null;
-  return NextResponse.json({ userRes, venuesRes });
+  try {
+    const supabase = await createClient();
+    const userRes = await supabase.auth.getUser();
+    const venueRes = userRes.data.user 
+      ? await supabase.from('venues').select('venue_id').eq('owner_id', userRes.data.user.id)
+      : null;
+
+    return NextResponse.json({
+      hasUser: !!userRes.data.user,
+      hasVenues: !!(venueRes?.data && venueRes.data.length > 0),
+      userError: userRes.error?.message,
+      venueError: venueRes?.error?.message
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message });
+  }
 }
