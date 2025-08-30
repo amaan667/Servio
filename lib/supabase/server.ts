@@ -22,15 +22,21 @@ export async function createServerSupabase() {
   );
 }
 
-<<<<<<< Current (Your changes)
 // Admin client for server-side operations that need elevated permissions
 export function createAdminClient() {
-  return createSupabaseClient(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        get(name: string) { return undefined; },
+        set(name: string, value: string, options: any) { },
+        remove(name: string, options: any) { },
+      },
+    }
   )
 }
-=======
+
 // Helper function to get user with cookie guard
 export async function getAuthenticatedUser() {
   const cookieStore = await cookies();
@@ -47,5 +53,3 @@ export async function getAuthenticatedUser() {
 
 // Alias for backward compatibility with existing API routes
 export const createClient = createServerSupabase;
-export const createAdminClient = createServerSupabase;
->>>>>>> Incoming (Background Agent changes)

@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   if (!code) return redirect('/auth/error?reason=missing_code');
 
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   // Skip duplicate exchanges if already signed in
   const { data: { user } } = await supabase.auth.getUser();
@@ -21,11 +21,5 @@ export async function GET(req: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) return redirect(`/auth/error?reason=${encodeURIComponent(error.message)}`);
 
-<<<<<<< Current (Your changes)
-  return redirect('/dashboard')
-}
-
-=======
   return redirect('/dashboard');
 }
->>>>>>> Incoming (Background Agent changes)
