@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthRedirectUrl } from '@/lib/auth';
+import { cookies } from 'next/headers';
+import { hasSupabaseAuthCookies } from '@/lib/auth/utils';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const cookieNames = cookieStore.getAll().map(c => c.name);
+    const hasAuthCookies = hasSupabaseAuthCookies(cookieNames);
     
-    // Get current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    let session = null;
+    let sessionError = null;
+    let oauthSettings = null;
+    let oauthError = null;
     
-    // Get OAuth settings
-    const { data: oauthSettings, error: oauthError } = await supabase.auth.listIdentities();
+    if (hasAuthCookies) {
+      const supabase = await createClient();
+      const sessionResult = await supabase.auth.getSession();
+      session = sessionResult.data?.session;
+      sessionError = sessionResult.error;
+      
+      const oauthResult = await supabase.auth.listIdentities();
+      oauthSettings = oauthResult.data;
+      oauthError = oauthResult.error;
+    }
     
     const debugInfo = {
       timestamp: new Date().toISOString(),

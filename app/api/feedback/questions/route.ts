@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
-import { cookieAdapter } from '@/lib/server/supabase';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import type { FeedbackQuestion } from '@/types/feedback';
 
 export const runtime = 'nodejs';
@@ -24,17 +21,12 @@ export async function GET(req: Request) {
     }
 
     // Auth check
-    const jar = await cookies();
-    const supa = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: cookieAdapter(jar) }
-    );
-
-    const { data: { user } } = await supa.auth.getUser();
+    const { user } = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    
+    const supa = await createClient();
 
     const { data: venue } = await supa
       .from('venues')
@@ -101,17 +93,12 @@ export async function POST(req: Request) {
     }
 
     // Auth check
-    const jar = await cookies();
-    const supa = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: cookieAdapter(jar) }
-    );
-
-    const { data: { user } } = await supa.auth.getUser();
+    const { user } = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    
+    const supa = await createClient();
 
     const { data: venue } = await supa
       .from('venues')
@@ -183,17 +170,12 @@ export async function PATCH(req: Request) {
     }
 
     // Auth check
-    const jar = await cookies();
-    const supa = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: cookieAdapter(jar) }
-    );
-
-    const { data: { user } } = await supa.auth.getUser();
+    const { user } = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    
+    const supa = await createClient();
 
     const { data: venue } = await supa
       .from('venues')
@@ -276,17 +258,12 @@ export async function DELETE(req: Request) {
     }
 
     // Auth check
-    const jar = await cookies();
-    const supa = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: cookieAdapter(jar) }
-    );
-
-    const { data: { user } } = await supa.auth.getUser();
+    const { user } = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    
+    const supa = await createClient();
 
     const { data: venue } = await supa
       .from('venues')
