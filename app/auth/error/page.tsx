@@ -28,10 +28,10 @@ function AuthErrorContent() {
   };
 
   const handleRetry = () => {
-    // Clear any stale auth state
+    // Clear any stale auth state BUT preserve PKCE verifier
     if (typeof window !== 'undefined') {
       Object.keys(localStorage).forEach((k) => {
-        if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier")) {
+        if ((k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("pkce")) {
           localStorage.removeItem(k);
         }
       });

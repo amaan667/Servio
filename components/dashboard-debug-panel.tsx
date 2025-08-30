@@ -108,17 +108,17 @@ export default function DashboardDebugPanel() {
     console.log('[AUTH DEBUG] === CLEARING AUTH STATE ===');
     
     try {
-      // Clear localStorage
+      // Clear localStorage BUT preserve PKCE verifier
       Object.keys(localStorage).forEach((k) => {
-        if (k.startsWith("sb-") || k.includes("pkce") || k.includes("auth")) {
+        if ((k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth")) {
           console.log('[AUTH DEBUG] Clearing localStorage key:', k);
           localStorage.removeItem(k);
         }
       });
       
-      // Clear sessionStorage
+      // Clear sessionStorage BUT preserve PKCE verifier
       Object.keys(sessionStorage).forEach((k) => {
-        if (k.includes("pkce") || k.includes("auth")) {
+        if ((k.includes("pkce") && !k.includes("token-code-verifier")) || k.includes("auth")) {
           console.log('[AUTH DEBUG] Clearing sessionStorage key:', k);
           sessionStorage.removeItem(k);
         }
