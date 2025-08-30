@@ -1,10 +1,12 @@
 import { headers } from 'next/headers'
 
 export async function getBaseUrl() {
-  if (typeof window !== 'undefined') return window.location.origin
-  
-  const h = await headers()
-  const proto = h.get('x-forwarded-proto') ?? 'https'
-  const host  = h.get('x-forwarded-host') ?? h.get('host')!
-  return `${proto}://${host}`
+  if (typeof window === 'undefined') {
+    return (
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.RAILWAY_STATIC_URL ? `https://${process.env.RAILWAY_STATIC_URL}` : '') ||
+      'http://localhost:8080'
+    );
+  }
+  return window.location.origin;
 }

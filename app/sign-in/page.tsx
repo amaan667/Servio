@@ -52,11 +52,12 @@ function SignInPageContent() {
         timestamp: new Date().toISOString()
       });
       
-      // Use the default Supabase OAuth flow without custom redirect URL
-      // This should use the redirect URL configured in Supabase dashboard
+      // Use production redirect URL
+      const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
+          redirectTo,
           queryParams: { 
             access_type: 'offline', 
             prompt: 'select_account' 
