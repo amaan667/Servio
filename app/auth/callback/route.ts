@@ -71,7 +71,18 @@ export async function GET(req: NextRequest) {
   try {
     const stale = ['sb-access-token','sb-refresh-token'];
     stale.forEach(n => jar.set(n, '', { path: '/', httpOnly: true, sameSite: 'lax', secure: true, maxAge: 0 }));
-  } catch {}
+    
+    // Set a diagnostic cookie to help with client-side debugging
+    jar.set('_auth_callback_state', 'processing', { 
+      path: '/', 
+      httpOnly: false, 
+      secure: true, 
+      sameSite: 'lax', 
+      maxAge: 60 
+    });
+  } catch (e) {
+    console.error('[AUTH] Error clearing stale tokens:', e);
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -132,9 +143,26 @@ export async function GET(req: NextRequest) {
               }
             }
           });
+          
+          // Set a debug cookie to indicate the error type
+          cookieStore.set('_auth_error_type', 'refresh_token_error', {
+            path: '/',
+            maxAge: 300,
+            secure: true,
+            sameSite: 'lax',
+            httpOnly: false
+          });
+          
+          // Redirect to the debug page if specified in query params
+          const debug = url.searchParams.get('debug');
+          if (debug === 'true') {
+            return NextResponse.redirect(new URL(`/auth/callback-debug?error=${encodeURIComponent(msg)}&type=refresh_token`, baseOrigin));
+          }
         } catch (e) {
           console.error('[AUTH][DEBUG] Error clearing cookies:', e);
         }
+        
+        return NextResponse.redirect(new URL('/sign-in?error=session_expired', baseOrigin));
         return NextResponse.redirect(new URL('/sign-in?error=session_expired', baseOrigin));
       }
       if (/code verifier/i.test(msg) || /code and code verifier should be non-empty/i.test(msg) || /validation_failed/i.test(msg)) {

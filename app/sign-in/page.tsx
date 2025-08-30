@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/sb-client';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import SignInForm from './signin-form';
+import PkceDebugComponent from './pkce-debug';
 
 function SignInPageContent() {
   const router = useRouter();
@@ -27,13 +28,20 @@ function SignInPageContent() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-  redirectTo: getAuthRedirectUrl('/auth/callback'),
+        redirectTo: getAuthRedirectUrl('/auth/callback'),
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
   };
 
-  return <SignInForm onGoogleSignIn={signInWithGoogle} />;
+  return (
+    <>
+      <SignInForm />
+      <div className="fixed bottom-4 right-4 z-50">
+        <PkceDebugComponent />
+      </div>
+    </>
+  );
 }
 
 export default function SignInPage() {
