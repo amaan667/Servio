@@ -27,7 +27,7 @@ function SignInPageContent() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-  redirectTo: getAuthRedirectUrl('/auth/callback'),
+        redirectTo: getAuthRedirectUrl('/auth/callback'),
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });

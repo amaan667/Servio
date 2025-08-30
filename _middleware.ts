@@ -11,6 +11,6 @@ export function middleware(_req: NextRequest) {
 export const config = {
   matcher: [
     // apply to everything except:
-    '/((?!_next/static|_next/image|favicon.ico|auth/callback|api/test-openai|api/health).*)',
+    '/((?!_next/static|_next/image|favicon.ico|auth/callback|api/health).*)',
   ],
 };

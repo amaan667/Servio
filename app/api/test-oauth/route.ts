@@ -5,11 +5,10 @@ export async function GET() {
   try {
     console.log('[AUTH DEBUG] Starting OAuth flow from server');
     
-    // Instead of initiating OAuth server-side, redirect to a client-side page
-    // that will handle the OAuth flow properly with PKCE
-    const redirectUrl = `${getBaseUrl()}/test-oauth-simple`;
+    // Redirect to home page where users can sign in
+    const redirectUrl = `${getBaseUrl()}/`;
     
-    console.log('[AUTH DEBUG] Redirecting to client-side OAuth:', redirectUrl);
+    console.log('[AUTH DEBUG] Redirecting to home page:', redirectUrl);
     return NextResponse.redirect(redirectUrl);
   } catch (err: any) {
     console.log('[AUTH DEBUG] Unexpected error:', err);
