@@ -1,15 +1,10 @@
 // Determine the app URL based on environment
 export const APP_URL = (() => {
-  // Always use the production URL in production to avoid localhost issues
-  if (process.env.NODE_ENV === 'production') {
-    // Force Railway production URL to prevent any localhost redirects
-    return 'https://servio-production.up.railway.app';
-  }
-  
-  // In development, use localhost
+  // Always use the production Railway URL to prevent any localhost issues
+  // This ensures OAuth callbacks always work properly
   return process.env.NEXT_PUBLIC_APP_URL || 
          process.env.NEXT_PUBLIC_SITE_URL || 
-         'http://localhost:3000';
+         'https://servio-production.up.railway.app';
 })();
 
 console.log('🔧 AUTH CONFIG:', {
@@ -18,19 +13,13 @@ console.log('🔧 AUTH CONFIG:', {
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NODE_ENV: process.env.NODE_ENV,
   IS_PRODUCTION: process.env.NODE_ENV === 'production',
+  ALWAYS_USE_PRODUCTION: true,
 });
 
 export const getAuthRedirectUrl = (path: string = '/auth/callback') => {
-  // In production, always use the Railway URL to prevent localhost issues
-  if (process.env.NODE_ENV === 'production') {
-    const productionUrl = `https://servio-production.up.railway.app${path}`;
-    console.log('🔗 Auth redirect URL (production):', productionUrl);
-    return productionUrl;
-  }
-  
-  // Only use APP_URL in development
+  // Always use the Railway URL to prevent localhost issues
   const url = `${APP_URL}${path}`;
-  console.log('🔗 Auth redirect URL (development):', url);
+  console.log('🔗 Auth redirect URL:', url);
   return url;
 };
 

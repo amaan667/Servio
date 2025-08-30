@@ -167,6 +167,36 @@ export default function TestOAuthSimple() {
     }
   };
 
+  const clearUrlParams = () => {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('code');
+    currentUrl.searchParams.delete('error');
+    window.history.replaceState({}, document.title, currentUrl.toString());
+    console.log('URL params cleared.');
+    setResult({ message: 'URL params cleared.' });
+  };
+
+  const checkOAuthStatus = async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await fetch('/api/test-oauth-status');
+      const data = await response.json();
+      
+      if (data.success) {
+        setResult(data.data);
+      } else {
+        setError(data.error || 'Unknown error');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -185,6 +215,15 @@ export default function TestOAuthSimple() {
               </Button>
               
               <Button 
+                onClick={checkOAuthStatus} 
+                disabled={loading}
+                variant="outline"
+                className="flex-1"
+              >
+                Check OAuth Status
+              </Button>
+              
+              <Button 
                 onClick={checkAuthState} 
                 disabled={loading}
                 variant="outline"
@@ -200,6 +239,15 @@ export default function TestOAuthSimple() {
                 className="flex-1"
               >
                 Check Environment
+              </Button>
+              
+              <Button 
+                onClick={clearUrlParams} 
+                disabled={loading}
+                variant="outline"
+                className="flex-1"
+              >
+                Clear URL Params
               </Button>
               
               <Button 
@@ -246,6 +294,17 @@ export default function TestOAuthSimple() {
                       ✅ OAuth successful! User authenticated.
                     </AlertDescription>
                   </Alert>
+                )}
+
+                {result.oauth && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium">OAuth Status:</h4>
+                    <div className="grid grid-cols-1 gap-1 text-sm">
+                      <div>Status: <Badge variant="outline">{result.oauth.status}</Badge></div>
+                      <div>Callback: {result.oauth.callback}</div>
+                      <div>PKCE: {result.oauth.pkce}</div>
+                    </div>
+                  </div>
                 )}
 
                 {result.supabase && (
