@@ -24,30 +24,10 @@ function SignInPageContent() {
   }, [router, sp]);
 
   const signInWithGoogle = async () => {
-    const redirectUrl = (() => {
-      // Use the current origin for local development, Railway URL for production
-      if (typeof window !== 'undefined') {
-        const currentOrigin = window.location.origin;
-        console.log('[SIGN-IN] Current origin:', currentOrigin);
-        
-        // If we're on localhost, use localhost callback
-        if (currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')) {
-          const localRedirect = `${currentOrigin}/auth/callback`;
-          console.log('[SIGN-IN] Using local redirect URL:', localRedirect);
-          return localRedirect;
-        }
-      }
-      
-      // Default to Railway URL for production
-      const productionRedirect = getAuthRedirectUrl('/auth/callback');
-      console.log('[SIGN-IN] Using production redirect URL:', productionRedirect);
-      return productionRedirect;
-    })();
-
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: getAuthRedirectUrl('/auth/callback'),
         queryParams: { access_type: 'offline', prompt: 'select_account' },
       },
     });

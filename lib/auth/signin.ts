@@ -24,25 +24,7 @@ export async function signInWithGoogle() {
     // Silent error handling
   }
 
-  const redirectTo = (() => {
-    // Use the current origin for local development, Railway URL for production
-    if (typeof window !== 'undefined') {
-      const currentOrigin = window.location.origin;
-      console.log('[AUTH DEBUG] Current origin:', currentOrigin);
-      
-      // If we're on localhost, use localhost callback
-      if (currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')) {
-        const localRedirect = `${currentOrigin}/auth/callback`;
-        console.log('[AUTH DEBUG] Using local redirect URL:', localRedirect);
-        return localRedirect;
-      }
-    }
-    
-    // Default to Railway URL for production
-    const productionRedirect = `${process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
-    console.log('[AUTH DEBUG] Using production redirect URL:', productionRedirect);
-    return productionRedirect;
-  })();
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
 
   console.log('[AUTH DEBUG] Step 3: OAuth configuration');
   console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
