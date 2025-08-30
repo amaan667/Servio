@@ -3,7 +3,6 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { getAuthRedirectUrl } from '@/lib/auth';
 import SignInForm from './signin-form';
 
 function SignInPageContent() {
@@ -26,12 +25,12 @@ function SignInPageContent() {
   const signInWithGoogle = async () => {
     try {
       console.log('[AUTH DEBUG] Starting Google OAuth sign in');
-      console.log('[AUTH DEBUG] Redirect URL:', getAuthRedirectUrl('/auth/callback'));
       
+      // Use the default Supabase OAuth flow without custom redirect URL
+      // This should use the redirect URL configured in Supabase dashboard
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: getAuthRedirectUrl('/auth/callback'),
           queryParams: { 
             access_type: 'offline', 
             prompt: 'select_account' 
