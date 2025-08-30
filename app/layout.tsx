@@ -6,6 +6,7 @@ import ThemeToggleFloat from "@/components/ThemeToggleFloat";
 import AppHeader from "@/components/AppHeader";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ErrorBoundary } from "@/components/error-boundary";
+import DashboardDebugPanel from "@/components/dashboard-debug-panel";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,6 +29,7 @@ export default function RootLayout({
             <AppHeader />
             {children}
             <ThemeToggleFloat />
+            <DashboardDebugPanel />
           </Providers>
         </ErrorBoundary>
       </body>

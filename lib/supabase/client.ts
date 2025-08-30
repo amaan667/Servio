@@ -1,5 +1,13 @@
 import { createBrowserClient } from '@supabase/ssr'
 
+console.log('[AUTH DEBUG] === SUPABASE CLIENT CREATION ===');
+console.log('[AUTH DEBUG] Environment variables check:', {
+  hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
+  anonKeyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length
+});
+
 export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -12,8 +20,11 @@ export const supabase = createBrowserClient(
   }
 )
 
+console.log('[AUTH DEBUG] Supabase client created successfully');
+
 // Keep the old createClient function for backward compatibility
 export function createClient() {
+  console.log('[AUTH DEBUG] createClient() called - returning existing supabase instance');
   return supabase;
 }
 

@@ -47,12 +47,18 @@ export default function SignInForm() {
   };
 
   const handleGoogleSignIn = async () => {
-    console.log('[SIGNIN FORM] Step 1: Google sign-in button clicked');
+    console.log('[SIGNIN FORM] === GOOGLE SIGN-IN BUTTON CLICKED ===');
+    console.log('[SIGNIN FORM] Step 1: Button click detected');
     console.log('[SIGNIN FORM] Current window location: ', window.location.href);
     console.log('[SIGNIN FORM] Current window origin: ', window.location.origin);
     console.log('[AUTH DEBUG] Google sign-in button clicked');
     console.log('[AUTH DEBUG] User agent:', navigator.userAgent);
     console.log('[AUTH DEBUG] Is mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    console.log('[AUTH DEBUG] Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL
+    });
     
     // Prevent multiple simultaneous requests
     if (googleSignInInProgress.current) {
@@ -60,16 +66,28 @@ export default function SignInForm() {
       return;
     }
     
+    console.log('[SIGNIN FORM] Step 2: Setting up sign-in state');
     googleSignInInProgress.current = true;
     setLoading(true);
     setError(null);
     
     try {
-      console.log('[SIGNIN FORM] Step 2: Calling signInWithGoogle function');
-      await signInWithGoogle();
-      console.log('[SIGNIN FORM] Step 3: signInWithGoogle completed');
+      console.log('[SIGNIN FORM] Step 3: Calling signInWithGoogle function');
+      const result = await signInWithGoogle();
+      console.log('[SIGNIN FORM] Step 4: signInWithGoogle completed successfully');
+      console.log('[SIGNIN FORM] OAuth result:', {
+        hasData: !!result,
+        hasUrl: !!result?.url,
+        urlLength: result?.url?.length
+      });
       // Redirect handled by OAuth callback - consistent across all platforms
     } catch (err: any) {
+      console.log('[SIGNIN FORM] Step 4: signInWithGoogle failed');
+      console.log('[SIGNIN FORM] Error details:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
       setError(err.message || 'Google sign-in failed. Please try again.');
       setLoading(false);
       googleSignInInProgress.current = false;
