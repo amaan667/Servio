@@ -191,67 +191,11 @@ export async function signInUser(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  console.log('[AUTH DEBUG] Starting Google OAuth sign-in...');
-  console.log('[AUTH DEBUG] Current window.location:', typeof window !== 'undefined' ? window.location.href : 'server-side');
-  console.log('[AUTH DEBUG] Current window.origin:', typeof window !== 'undefined' ? window.location.origin : 'server-side');
-  
-  try {
-    // Clear stale PKCE artifacts to avoid verifier/code mismatches
-    Object.keys(localStorage).forEach((k) => {
-      if (k.startsWith("sb-") || k.includes("pkce") || k.includes("token-code-verifier")) {
-        localStorage.removeItem(k);
-      }
-    });
-    sessionStorage.removeItem("sb_oauth_retry");
-  } catch {}
-  
-  // Use dynamic redirect URL based on current origin
-  const redirectTo = `${window.location.origin}/auth/callback`;
-  
-  console.log('[OAUTH FLOW] Step 1: OAuth initiation');
-  console.log('[OAUTH FLOW] Environment check: NODE_ENV=', process.env.NODE_ENV);
-  console.log('[OAUTH FLOW] Window location: ', typeof window !== 'undefined' ? window.location.href : 'server-side');
-  console.log('[OAUTH FLOW] Window origin: ', typeof window !== 'undefined' ? window.location.origin : 'server-side');
-  console.log('[OAUTH FLOW] NEXT_PUBLIC_SITE_URL: ', process.env.NEXT_PUBLIC_SITE_URL);
-  console.log('[OAUTH FLOW] NEXT_PUBLIC_APP_URL: ', process.env.NEXT_PUBLIC_APP_URL);
-  console.log('[OAUTH FLOW] Step 2: Redirect URL configuration');
-  console.log('[OAUTH FLOW] Final redirectTo: ', redirectTo);
-  console.log('[OAUTH FLOW] Supabase URL: ', process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log('[OAUTH FLOW] Has anon key: ', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  
-  console.log('[AUTH DEBUG] Using redirect URL:', redirectTo);
-  console.log('[AUTH DEBUG] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log('[AUTH DEBUG] Has anon key:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  
-  console.log('[OAUTH FLOW] Step 3: Initiating Supabase OAuth');
-  console.log('[OAUTH FLOW] OAuth options: ', { redirectTo, queryParams: { prompt: 'select_account' } });
-  const { data, error } = await createClient().auth.signInWithOAuth({
-    provider: "google",
-    options: { 
-      redirectTo: redirectTo,
-      queryParams: { prompt: 'select_account' },
-    },
-  });
-
-  if (error) {
-    console.log('[OAUTH FLOW] Step 4: OAuth error occurred');
-    console.log('[OAUTH FLOW] Error details: ', error);
-    console.error('[AUTH DEBUG] OAuth error:', error);
-    throw error;
-  }
-  
-  console.log('[OAUTH FLOW] Step 5: OAuth initiated successfully');
-  console.log('[OAUTH FLOW] OAuth data: ', data);
-  console.log('[OAUTH FLOW] OAuth URL: ', data?.url);
-  console.log('[OAUTH FLOW] OAuth provider: ', data?.provider);
-  
-  // Automatically redirect to OAuth URL
-  if (data?.url) {
-    console.log('[OAUTH FLOW] Step 6: Redirecting to OAuth URL');
-    window.location.href = data.url;
-  }
-  
-  return data;
+  const { supabase } = await import('./supabase/client')
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/auth/callback` },
+  })
 }
 
 // Handle Google OAuth sign-up and create venue

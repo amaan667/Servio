@@ -1,35 +1,14 @@
-import { NextResponse, type NextRequest } from "next/server";
-
-const isAsset = (p: string) =>
-  p.startsWith("/_next/") ||
-  p.startsWith("/favicon") ||
-  /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt)$/.test(p);
-
-// Public paths that should always be allowed
-const PUBLIC_PATHS = ['/', '/auth/callback', '/pricing', '/features', '/_next', '/favicon', '/images', '/api/health'];
+import { NextRequest, NextResponse } from 'next/server'
+const PUBLIC = ['/', '/auth/callback', '/sign-in', '/_next', '/favicon', '/images']
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname } = req.nextUrl
+  if (PUBLIC.some(p => pathname.startsWith(p))) return NextResponse.next()
 
-  // Public routes: skip auth entirely
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
-    return NextResponse.next();
-  }
+  const hasSb = [...req.cookies.keys()].some(k => k.includes('-auth-token'))
+  if (!hasSb) return NextResponse.redirect(new URL('/sign-in', req.url))
 
-  // Allow assets
-  if (isAsset(pathname)) {
-    return NextResponse.next();
-  }
-
-  // If there is no Supabase cookie at all, don't try to read/refresh user
-  const hasSbCookie = [...req.cookies.keys()].some((k) => k.includes('-auth-token'));
-  if (!hasSbCookie) {
-    return NextResponse.next();
-  }
-
-  // If you REALLY need auth in middleware, use auth-helpers' middleware client.
-  // Otherwise, stop here. Doing SSR checks in route handlers/components is safer.
-  return NextResponse.next();
+  return NextResponse.next()
 }
 
 export const config = {
