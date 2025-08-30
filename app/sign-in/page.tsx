@@ -53,7 +53,7 @@ function SignInPageContent() {
       });
       
       // Use production redirect URL
-      const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
+      const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

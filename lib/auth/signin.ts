@@ -54,6 +54,15 @@ export async function signInWithGoogle() {
   }
 
   console.log('[AUTH DEBUG] Step 4b: Calling signInWithOAuth');
+  
+  // Clear any existing OAuth state before starting
+  try {
+    sessionStorage.setItem("sb_oauth_in_progress", "true");
+    sessionStorage.setItem("sb_oauth_start_time", Date.now().toString());
+  } catch (e) {
+    console.log('[AUTH DEBUG] Could not set OAuth progress flags:', e);
+  }
+  
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: "google",
     options: {

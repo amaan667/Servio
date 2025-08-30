@@ -118,7 +118,28 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         
         if (error) {
           console.log('[AUTH PROVIDER] Error getting session:', error);
-          await validateAndUpdateSession(null);
+          
+          // Handle refresh token error specifically
+          if (error.message?.includes('refresh_token_not_found') || error.code === 'refresh_token_not_found') {
+            console.log('[AUTH PROVIDER] Refresh token not found, attempting to refresh session');
+            try {
+              const { data: refreshData, error: refreshError } = await createClient().auth.refreshSession();
+              if (refreshError) {
+                console.log('[AUTH PROVIDER] Session refresh failed:', refreshError);
+                await validateAndUpdateSession(null);
+              } else if (refreshData.session) {
+                console.log('[AUTH PROVIDER] Session refreshed successfully');
+                await validateAndUpdateSession(refreshData.session);
+              } else {
+                await validateAndUpdateSession(null);
+              }
+            } catch (refreshErr) {
+              console.log('[AUTH PROVIDER] Session refresh exception:', refreshErr);
+              await validateAndUpdateSession(null);
+            }
+          } else {
+            await validateAndUpdateSession(null);
+          }
         } else {
           console.log('[AUTH PROVIDER] Got session from storage:', {
             hasSession: !!session,
