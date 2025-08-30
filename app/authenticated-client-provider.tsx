@@ -19,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthenticatedClientProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const updateSession = useCallback((newSession: Session | null) => {
     console.log('[AUTH PROVIDER] Updating session:', {
@@ -105,8 +106,13 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     }
   }, [clearSession]);
 
+  // Handle mounting
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || typeof window === 'undefined') {
       setLoading(false);
       return;
     }
@@ -210,7 +216,21 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     return () => {
       subscription?.unsubscribe();
     };
-  }, [validateAndUpdateSession, clearSession]);
+  }, [validateAndUpdateSession, clearSession, mounted]);
+
+  // Don't render children until mounted to prevent hydration issues
+  if (!mounted) {
+    return (
+      <AuthContext.Provider value={{ session: null, loading: true, signOut }}>
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </AuthContext.Provider>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ session, loading, signOut }}>
