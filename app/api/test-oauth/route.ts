@@ -1,44 +1,16 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getBaseUrl } from '@/lib/getBaseUrl';
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    console.log('[AUTH DEBUG] Starting OAuth flow from server');
     
-    // First, check if there's an existing session and clear it if needed
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      console.log('[AUTH DEBUG] Existing session found, signing out first');
-      await supabase.auth.signOut();
-    }
+    // Instead of initiating OAuth server-side, redirect to a client-side page
+    // that will handle the OAuth flow properly with PKCE
+    const redirectUrl = `${getBaseUrl()}/test-oauth-simple`;
     
-    // Clear any existing auth state
-    console.log('[AUTH DEBUG] Starting fresh OAuth flow');
-    
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${getBaseUrl()}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent'
-        },
-        skipBrowserRedirect: false
-      },
-    });
-
-    if (error) {
-      console.log('[AUTH DEBUG] OAuth error:', error);
-      return NextResponse.json({ 
-        success: false, 
-        error: error.message,
-        code: error.status 
-      });
-    }
-
-    console.log('[AUTH DEBUG] OAuth URL generated successfully');
-    return NextResponse.json({ success: true, url: data.url });
+    console.log('[AUTH DEBUG] Redirecting to client-side OAuth:', redirectUrl);
+    return NextResponse.redirect(redirectUrl);
   } catch (err: any) {
     console.log('[AUTH DEBUG] Unexpected error:', err);
     return NextResponse.json({ 

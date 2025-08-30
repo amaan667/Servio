@@ -1,15 +1,66 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/lib/supabase/client';
+import { getAuthRedirectUrl } from '@/lib/auth';
 
 export default function TestOAuthSimple() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Check for OAuth callback on page load
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const error = urlParams.get('error');
+      
+      if (error) {
+        setError(`OAuth error: ${error}`);
+        return;
+      }
+      
+      if (code) {
+        console.log('[AUTH DEBUG] OAuth code received, exchanging for session');
+        setLoading(true);
+        
+        try {
+          // Exchange the code for a session using the client-side Supabase
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (exchangeError) {
+            console.log('[AUTH DEBUG] Exchange error:', exchangeError);
+            setError(`Exchange error: ${exchangeError.message}`);
+          } else if (data.session) {
+            console.log('[AUTH DEBUG] Session created successfully');
+            setResult({
+              success: true,
+              message: 'OAuth successful!',
+              session: {
+                userId: data.session.user?.id,
+                userEmail: data.session.user?.email,
+                hasRefreshToken: !!data.session.refresh_token
+              }
+            });
+          } else {
+            setError('No session created after code exchange');
+          }
+        } catch (err: any) {
+          console.log('[AUTH DEBUG] Error during code exchange:', err);
+          setError(`Error during code exchange: ${err.message}`);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, []);
 
   const testOAuth = async () => {
     setLoading(true);
@@ -17,17 +68,32 @@ export default function TestOAuthSimple() {
     setResult(null);
 
     try {
-      const response = await fetch('/api/test-oauth');
-      const data = await response.json();
+      console.log('[AUTH DEBUG] Starting OAuth flow from client');
       
-      if (data.success) {
-        setResult(data);
-        // Redirect to the OAuth URL
-        window.location.href = data.url;
+      // Clear any existing session first
+      await supabase.auth.signOut();
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: getAuthRedirectUrl('/auth/callback'),
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
+        }
+      });
+
+      if (error) {
+        console.log('[AUTH DEBUG] OAuth error:', error);
+        setError(error.message);
       } else {
-        setError(data.error || 'Unknown error');
+        console.log('[AUTH DEBUG] OAuth URL generated, redirecting');
+        setResult({ message: 'Redirecting to OAuth...', url: data.url });
+        // The redirect will happen automatically
       }
     } catch (err: any) {
+      console.log('[AUTH DEBUG] Unexpected error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -82,6 +148,10 @@ export default function TestOAuthSimple() {
     setResult(null);
 
     try {
+      // Clear client-side auth
+      await supabase.auth.signOut();
+      
+      // Also clear server-side auth
       const response = await fetch('/api/clear-auth', { method: 'POST' });
       const data = await response.json();
       
@@ -168,6 +238,14 @@ export default function TestOAuthSimple() {
                     <Badge variant="secondary">User ID: {result.userId}</Badge>
                     <Badge variant="secondary">Email: {result.userEmail}</Badge>
                   </div>
+                )}
+
+                {result.session && (
+                  <Alert>
+                    <AlertDescription>
+                      ✅ OAuth successful! User authenticated.
+                    </AlertDescription>
+                  </Alert>
                 )}
 
                 {result.supabase && (
