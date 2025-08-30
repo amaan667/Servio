@@ -1,47 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getRequestOrigin } from '@/lib/origin'
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// Add all public paths that should bypass auth checks
-const PUBLIC = [
-  '/', 
-  '/auth/callback', 
-  '/sign-in', 
-  '/sign-up',
-  '/api/auth',
-  '/api/health',
-  '/_next', 
-  '/favicon', 
-  '/images',
-  '/debug-auth'
-]
-
-function getOrigin(req: NextRequest) {
-  return getRequestOrigin(req)
-}
+const PROTECTED = ['/dashboard'];
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
-  
-  // Check if the path is public (no auth required)
-  if (PUBLIC.some(p => pathname.startsWith(p))) {
-    return NextResponse.next()
-  }
+  const { pathname } = req.nextUrl;
+  if (!PROTECTED.some(p => pathname.startsWith(p))) return NextResponse.next();
 
-  // Check for auth cookies - match the exact cookie names set by Supabase SSR
-  const hasAuthCookie = [...req.cookies.getAll()].some(k =>
-    k.name === 'sb-access-token' ||
-    k.name === 'sb-refresh-token' ||
-    k.name.startsWith('sb-') && k.name.includes('-auth-token')
-  )
-  
-  if (!hasAuthCookie) {
-    // If no auth cookie is found, redirect to sign-in
-    const origin = getOrigin(req);
-    return NextResponse.redirect(`${origin}/sign-in`)
+  const hasAuth = req.cookies.getAll().some(c =>
+    c.name.startsWith('sb-') ||
+    c.name.startsWith('supabase.auth.token') ||
+    c.name.startsWith('supabase-auth-token')
+  );
+  if (!hasAuth) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/sign-in';
+    return NextResponse.redirect(url);
   }
-
-  // Continue to the requested page if authenticated
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
 export const config = {

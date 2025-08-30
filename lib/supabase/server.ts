@@ -1,4 +1,3 @@
-// /lib/supabase/server.ts
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { hasSupabaseAuthCookies } from '@/lib/auth/utils';
@@ -53,3 +52,4 @@ export async function getAuthenticatedUser() {
 
 // Alias for backward compatibility with existing API routes
 export const createClient = createServerSupabase;
+

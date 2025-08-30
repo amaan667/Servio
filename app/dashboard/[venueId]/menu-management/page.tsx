@@ -1,27 +1,34 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { getUserSafe } from '../../../../utils/getUserSafe'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers';
+import { createServerSupabase } from '@/lib/supabase/server';
+import { hasSupabaseAuthCookies } from '@/lib/auth/utils';
+import { redirect } from 'next/navigation';
 
 export default async function MenuManagementPage({ params }: { params: { venueId: string } }) {
-  const user = await getUserSafe('app/dashboard/[venueId]/menu-management/page.tsx')
-  if (!user) {
-    redirect('/sign-in')
+  const cookieStore = await cookies();
+  const names = cookieStore.getAll().map(c => c.name);
+  if (!hasSupabaseAuthCookies(names)) {
+    return <div>Please sign in.</div>;
   }
 
-  const supabase = await createClient()
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return <div>Please sign in.</div>;
+  }
+
   const { data: venue, error } = await supabase
     .from('venues')
     .select('id, name, slug, owner_id')
     .eq('slug', params.venueId)
-    .single()
+    .single();
 
   if (error) {
-    console.error('Failed to load venue', error)
-    return <div>Error loading venue</div>
+    console.error('Failed to load venue', error);
+    return <div>Error loading venue</div>;
   }
 
-  return <div>Menu Management for {venue.name}</div>
+  return <div>Menu Management for {venue.name}</div>;
 }

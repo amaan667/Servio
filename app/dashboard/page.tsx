@@ -1,16 +1,22 @@
-import { getUserSafe } from '../../utils/getUserSafe'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers';
+import { createServerSupabase } from '@/lib/supabase/server';
+import { hasSupabaseAuthCookies } from '@/lib/auth/utils';
+import { redirect } from 'next/navigation';
 
 export default async function DashboardPage() {
-  const user = await getUserSafe('app/dashboard/page.tsx')
+  const cookieStore = await cookies();
+  const names = cookieStore.getAll().map(c => c.name);
+  if (!hasSupabaseAuthCookies(names)) {
+    return <div>Please sign in.</div>;
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in')
+    return <div>Please sign in.</div>;
   }
 
   console.log('[DASHBOARD] Session found, checking venues for user:', user.id);
-
-  const supabase = await createClient();
 
   // Get the user's primary venue
   const { data: venues, error: venueError } = await supabase

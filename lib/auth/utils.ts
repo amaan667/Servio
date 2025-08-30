@@ -10,5 +10,5 @@ export function getOriginFromHeaders(h: Headers) {
 }
 
 export function hasSupabaseAuthCookies(cookieNames: string[]) {
-  return cookieNames.some((n) => AUTH_COOKIE_PREFIXES.some((p) => n.startsWith(p)));
+  return cookieNames.some(n => AUTH_COOKIE_PREFIXES.some(p => n.startsWith(p)));
 }
