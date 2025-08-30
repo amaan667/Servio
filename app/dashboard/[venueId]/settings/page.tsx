@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { hasServerAuthCookie } from '@/lib/utils';
+import { safeGetUser } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import VenueSettingsClient from './VenueSettingsClient';
@@ -14,19 +14,23 @@ export default async function SettingsPage({
   params: { venueId: string };
 }) {
   console.log('[SETTINGS] Page mounted for venue', params.venueId);
-  // Check for auth cookies before making auth calls
-  const hasAuthCookie = await hasServerAuthCookie();
-  if (!hasAuthCookie) {
-    console.log('[PAGE] No auth cookie found, redirecting to sign-in');
+  
+  // Safe auth check that only calls getUser if auth cookies exist
+  const { data: { user }, error } = await safeGetUser();
+  
+  if (error) {
+    console.error('[SETTINGS] Auth error:', error);
+    redirect('/sign-in');
+  }
+  
+  if (!user) {
+    console.log('[SETTINGS] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
 
-  
-  const supabase = createServerSupabase();
-
-  const { data: { user } } = await supabase.auth.getUser();
   log('SETTINGS SSR user', { hasUser: !!user });
-  if (!user) redirect('/sign-in');
+
+  const supabase = await createServerSupabase();
 
   // Verify user owns this venue and get all venues
   const { data: venues } = await supabase

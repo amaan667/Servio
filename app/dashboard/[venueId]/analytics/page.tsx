@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { hasServerAuthCookie } from '@/lib/utils';
+import { hasServerAuthCookie } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import AnalyticsClient from './AnalyticsClient';
@@ -14,13 +14,13 @@ export default async function AnalyticsPage({
   params: { venueId: string };
 }) {
   console.log('[ANALYTICS] Page mounted for venue', params.venueId);
-  
   // Check for auth cookies before making auth calls
   const hasAuthCookie = await hasServerAuthCookie();
   if (!hasAuthCookie) {
     console.log('[ANALYTICS] No auth cookie found, redirecting to sign-in');
     redirect('/sign-in');
   }
+
   
   const supabase = createServerSupabase();
 
@@ -48,7 +48,7 @@ export default async function AnalyticsPage({
             Analytics for {venue.name}
           </h1>
           <p className="text-lg text-muted-foreground mt-2">
-            View insights and performance metrics
+            View your business insights and performance metrics
           </p>
         </div>
         

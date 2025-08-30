@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { hasServerAuthCookie } from '@/lib/utils';
+import { hasServerAuthCookie } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import LiveOrdersClient from './LiveOrdersClient';

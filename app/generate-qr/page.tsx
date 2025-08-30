@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { hasServerAuthCookie } from '@/lib/utils';
+import { hasServerAuthCookie } from '@/lib/server-utils';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import GenerateQRClient from './GenerateQRClient';
 
