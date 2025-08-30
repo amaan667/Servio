@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/sb-client';
+import { supabaseBrowser } from '@/lib/supabase/browser';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import SignInForm from './signin-form';
 import PkceDebugComponent from './pkce-debug';
@@ -14,7 +14,7 @@ function SignInPageContent() {
   useEffect(() => {
     const run = async () => {
       // Check if user is already signed in
-      const { data: { session } } = await createClient().auth.getSession();
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
       if (!session) return; // show form
 
       // If already signed in, redirect to dashboard
@@ -30,7 +30,7 @@ function SignInPageContent() {
       
       // Use stable production redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
-      const { data, error } = await createClient().auth.signInWithOAuth({
+      const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,

@@ -77,6 +77,8 @@ function HomePageContent() {
   // Use our central auth context instead of duplicating logic
   const { session, loading } = useAuth();
 
+  console.log('[HOME PAGE] Auth state:', { session: !!session, loading, userId: session?.user?.id });
+
   const handleGetStarted = () => {
     if (session) {
       // User is signed in, redirect to their dashboard

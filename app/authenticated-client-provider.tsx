@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { supabaseBrowser } from '@/lib/supabase/browser';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -114,8 +114,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     const initializeAuth = async () => {
       console.log('[AUTH PROVIDER] Initializing auth');
       try {
-        const supabase = createClient();
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabaseBrowser.auth.getSession();
 
         if (error) {
           console.log('[AUTH PROVIDER] Error getting session:', {
@@ -181,7 +180,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     initializeAuth();
 
-    const { data: { subscription } } = createClient().auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       console.log('[AUTH PROVIDER] Auth state change:', event, {
         hasSession: !!session,
         hasUser: !!session?.user,
@@ -199,24 +198,17 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('[AUTH PROVIDER] Token refreshed, updating session');
           await validateAndUpdateSession(session);
-        } else {
-          console.log('[AUTH PROVIDER] Other auth event:', event);
+        } else if (event === 'USER_UPDATED') {
+          console.log('[AUTH PROVIDER] User updated, updating session');
           await validateAndUpdateSession(session);
         }
-      } catch (error: any) {
-        console.log('[AUTH PROVIDER] Error handling auth state change:', {
-          event,
-          error: error.message,
-          stack: error.stack?.substring(0, 200) + '...'
-        });
-        // Don't clear session on auth state change errors, just log them
+      } catch (error) {
+        console.log('[AUTH PROVIDER] Error handling auth state change:', error);
       }
-
-      setLoading(false);
     });
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, [validateAndUpdateSession, clearSession]);
 
@@ -228,5 +220,9 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthenticatedClientProvider');
+  }
+  return context;
 }
