@@ -1,4 +1,6 @@
 import { cookies } from 'next/headers'
-export function hasSbAuthCookie() {
-  return cookies().getAll().some(c => c.name.includes('-auth-token'))
+
+export async function hasSbAuthCookie() {
+  const cookieStore = await cookies()
+  return cookieStore.getAll().some(c => c.name.includes('-auth-token'))
 }

@@ -3,10 +3,10 @@ import { hasSbAuthCookie } from '@/utils/hasSbAuthCookie'
 import { redirect } from 'next/navigation'
 
 export default async function DashboardExamplePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   let user = null
-  if (hasSbAuthCookie()) {
+  if (await hasSbAuthCookie()) {
     const { data } = await supabase.auth.getUser()
     user = data?.user ?? null
   }
