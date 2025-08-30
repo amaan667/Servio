@@ -24,26 +24,29 @@ function AuthCallbackContent() {
       const code = searchParams.get('code');
       const error = searchParams.get('error');
       const state = searchParams.get('state');
+      const errorDescription = searchParams.get('error_description');
       
       console.log('[AUTH DEBUG] Callback parameters:', { 
         hasCode: !!code, 
         codeLength: code?.length,
         error,
+        errorDescription,
         hasState: !!state,
         currentUrl: window.location.href,
         searchParams: Object.fromEntries(searchParams.entries())
       });
       
       if (error) {
-        console.log('[AUTH DEBUG] OAuth error in callback:', error);
-        setError(`OAuth error: ${error}`);
+        console.log('[AUTH DEBUG] OAuth error in callback:', error, errorDescription);
+        setError(`OAuth error: ${error}${errorDescription ? ` - ${errorDescription}` : ''}`);
         setStatus('error');
         return;
       }
       
       if (!code) {
         console.log('[AUTH DEBUG] No authorization code received');
-        setError('No authorization code received');
+        console.log('[AUTH DEBUG] Full URL params:', Object.fromEntries(searchParams.entries()));
+        setError('No authorization code received. Please try signing in again.');
         setStatus('error');
         return;
       }
@@ -179,12 +182,20 @@ function AuthCallbackContent() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign In Failed</h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => router.push('/sign-in')}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Try Again
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={() => router.push('/sign-in')}
+              className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors w-full"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors w-full"
+            >
+              Go Home
+            </button>
+          </div>
         </div>
       </div>
     );

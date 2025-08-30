@@ -24,13 +24,33 @@ function SignInPageContent() {
   }, [router, sp]);
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: getAuthRedirectUrl('/auth/callback'),
-        queryParams: { access_type: 'offline', prompt: 'select_account' },
-      },
-    });
+    try {
+      console.log('[AUTH DEBUG] Starting Google OAuth sign in');
+      console.log('[AUTH DEBUG] Redirect URL:', getAuthRedirectUrl('/auth/callback'));
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: getAuthRedirectUrl('/auth/callback'),
+          queryParams: { 
+            access_type: 'offline', 
+            prompt: 'select_account' 
+          },
+        },
+      });
+      
+      if (error) {
+        console.error('[AUTH DEBUG] OAuth sign in error:', error);
+        alert(`Sign in failed: ${error.message}`);
+        return;
+      }
+      
+      console.log('[AUTH DEBUG] OAuth sign in initiated successfully:', data);
+      
+    } catch (err: any) {
+      console.error('[AUTH DEBUG] Unexpected error during OAuth sign in:', err);
+      alert(`Unexpected error: ${err.message}`);
+    }
   };
 
   return <SignInForm onGoogleSignIn={signInWithGoogle} />;
