@@ -71,20 +71,20 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   const clearSession = useCallback(() => {
     console.log('[AUTH PROVIDER] Clearing session');
     setSession(null);
-    
+
     if (typeof window !== 'undefined') {
       // Clear OAuth progress flags
       sessionStorage.removeItem("sb_oauth_in_progress");
       sessionStorage.removeItem("sb_oauth_start_time");
-      
-      // Clear all Supabase-related storage BUT preserve PKCE verifier
-      const localStorageKeys = Object.keys(localStorage).filter(k => 
-        (k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth")
+
+      // Clear all Supabase-related storage
+      const localStorageKeys = Object.keys(localStorage).filter(k =>
+        k.startsWith("sb-") || k.includes("auth")
       );
       localStorageKeys.forEach(k => localStorage.removeItem(k));
-      
-      const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-        (k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth")
+
+      const sessionStorageKeys = Object.keys(sessionStorage).filter(k =>
+        k.startsWith("sb-") || k.includes("auth")
       );
       sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
     }
@@ -114,42 +114,65 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     const initializeAuth = async () => {
       console.log('[AUTH PROVIDER] Initializing auth');
       try {
-        const { data: { session }, error } = await createClient().auth.getSession();
-        
+        const supabase = createClient();
+        const { data: { session }, error } = await supabase.auth.getSession();
+
         if (error) {
-          console.log('[AUTH PROVIDER] Error getting session:', error);
-          
+          console.log('[AUTH PROVIDER] Error getting session:', {
+            message: error.message,
+            status: error.status,
+            code: error.code
+          });
+
           // Handle refresh token error specifically
-          if (error.message?.includes('refresh_token_not_found') || error.code === 'refresh_token_not_found') {
-            console.log('[AUTH PROVIDER] Refresh token not found, attempting to refresh session');
-            try {
-              const { data: refreshData, error: refreshError } = await createClient().auth.refreshSession();
-              if (refreshError) {
-                console.log('[AUTH PROVIDER] Session refresh failed:', refreshError);
-                await validateAndUpdateSession(null);
-              } else if (refreshData.session) {
-                console.log('[AUTH PROVIDER] Session refreshed successfully');
-                await validateAndUpdateSession(refreshData.session);
-              } else {
-                await validateAndUpdateSession(null);
-              }
-            } catch (refreshErr) {
-              console.log('[AUTH PROVIDER] Session refresh exception:', refreshErr);
-              await validateAndUpdateSession(null);
+          if (error.message?.includes('refresh_token_not_found') ||
+              error.message?.includes('Invalid Refresh Token') ||
+              error.code === 'refresh_token_not_found') {
+            console.log('[AUTH PROVIDER] Refresh token not found, clearing auth state');
+
+            // Clear all auth-related storage to prevent repeated attempts
+            if (typeof window !== 'undefined') {
+              // Clear OAuth progress flags
+              sessionStorage.removeItem("sb_oauth_in_progress");
+              sessionStorage.removeItem("sb_oauth_start_time");
+
+              // Clear all Supabase-related storage
+              const localStorageKeys = Object.keys(localStorage).filter(k =>
+                k.startsWith("sb-") || k.includes("auth")
+              );
+              localStorageKeys.forEach(k => localStorage.removeItem(k));
+
+              const sessionStorageKeys = Object.keys(sessionStorage).filter(k =>
+                k.startsWith("sb-") || k.includes("auth")
+              );
+              sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
+
+              console.log('[AUTH PROVIDER] Cleared auth storage due to refresh token error');
             }
+
+            await validateAndUpdateSession(null);
+          } else if (error.message?.includes('JWT') || error.message?.includes('token')) {
+            console.log('[AUTH PROVIDER] Token-related error, clearing session');
+            await validateAndUpdateSession(null);
           } else {
+            console.log('[AUTH PROVIDER] Unknown session error, clearing session');
             await validateAndUpdateSession(null);
           }
         } else {
           console.log('[AUTH PROVIDER] Got session from storage:', {
             hasSession: !!session,
             hasUser: !!session?.user,
-            userId: session?.user?.id
+            userId: session?.user?.id,
+            expiresAt: session?.expires_at,
+            expiresIn: session?.expires_at ? Math.floor((session.expires_at * 1000 - Date.now()) / 1000 / 60) + ' minutes' : 'unknown'
           });
           await validateAndUpdateSession(session);
         }
       } catch (err: any) {
-        console.log('[AUTH PROVIDER] Exception getting session:', err);
+        console.log('[AUTH PROVIDER] Exception getting session:', {
+          message: err.message,
+          stack: err.stack?.substring(0, 200) + '...'
+        });
         setSession(null);
       } finally {
         setLoading(false);
@@ -162,21 +185,33 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       console.log('[AUTH PROVIDER] Auth state change:', event, {
         hasSession: !!session,
         hasUser: !!session?.user,
-        userId: session?.user?.id
+        userId: session?.user?.id,
+        expiresAt: session?.expires_at
       });
-      
+
       try {
         if (event === 'SIGNED_OUT') {
+          console.log('[AUTH PROVIDER] User signed out, clearing session');
           clearSession();
-        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        } else if (event === 'SIGNED_IN') {
+          console.log('[AUTH PROVIDER] User signed in, updating session');
+          await validateAndUpdateSession(session);
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('[AUTH PROVIDER] Token refreshed, updating session');
           await validateAndUpdateSession(session);
         } else {
+          console.log('[AUTH PROVIDER] Other auth event:', event);
           await validateAndUpdateSession(session);
         }
-      } catch (error) {
-        console.log('[AUTH PROVIDER] Error handling auth state change:', error);
+      } catch (error: any) {
+        console.log('[AUTH PROVIDER] Error handling auth state change:', {
+          event,
+          error: error.message,
+          stack: error.stack?.substring(0, 200) + '...'
+        });
+        // Don't clear session on auth state change errors, just log them
       }
-      
+
       setLoading(false);
     });
 

@@ -27,11 +27,11 @@ export function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check for auth cookies
-  const hasAuthCookie = [...req.cookies.getAll()].some(k => 
-    k.name.includes('-auth-token') || 
-    k.name.includes('sb-access-token') ||
-    k.name.includes('sb-refresh-token')
+  // Check for auth cookies - match the exact cookie names set by Supabase SSR
+  const hasAuthCookie = [...req.cookies.getAll()].some(k =>
+    k.name === 'sb-access-token' ||
+    k.name === 'sb-refresh-token' ||
+    k.name.startsWith('sb-') && k.name.includes('-auth-token')
   )
   
   if (!hasAuthCookie) {

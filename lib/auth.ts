@@ -12,13 +12,16 @@ export const APP_URL = (() => {
          'http://localhost:3000';
 })();
 
-console.log('🔧 AUTH CONFIG:', {
-  APP_URL,
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-  NODE_ENV: process.env.NODE_ENV,
-  IS_PRODUCTION: process.env.NODE_ENV === 'production',
-});
+// Only log in development or if there's an issue with the configuration
+if (process.env.NODE_ENV !== 'production' || !APP_URL.includes('servio-production.up.railway.app')) {
+  console.log('🔧 AUTH CONFIG:', {
+    APP_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NODE_ENV: process.env.NODE_ENV,
+    IS_PRODUCTION: process.env.NODE_ENV === 'production',
+  });
+}
 
 export const getAuthRedirectUrl = (path: string = '/auth/callback') => {
   // In production, always use the Railway URL to prevent localhost issues
