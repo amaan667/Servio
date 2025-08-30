@@ -24,13 +24,13 @@ export async function signInWithGoogle() {
     // Silent error handling
   }
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
+  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
 
   console.log('[AUTH DEBUG] Step 3: OAuth configuration');
   console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
   console.log('[AUTH DEBUG] Environment variables:', {
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NODE_ENV: process.env.NODE_ENV
   });
 
