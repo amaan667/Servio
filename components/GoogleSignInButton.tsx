@@ -1,11 +1,12 @@
 'use client'
 import { supabase } from '@/lib/supabase/client'
+import { getAuthRedirectUrl } from '@/lib/auth'
 
 export function GoogleSignInButton() {
   async function handleSignIn() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: getAuthRedirectUrl('/auth/callback') },
     })
   }
 

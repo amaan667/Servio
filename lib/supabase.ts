@@ -1,6 +1,7 @@
 "use client";
 import { logger } from "./logger";
 import { supabase } from "./supabase/client";
+import { getAuthRedirectUrl } from "./auth";
 
 // Types
 export interface User {
@@ -193,7 +194,7 @@ export async function signInUser(email: string, password: string) {
 export async function signInWithGoogle() {
   return supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}/auth/callback` },
+    options: { redirectTo: getAuthRedirectUrl('/auth/callback') },
   })
 }
 

@@ -1,5 +1,6 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
+import { getAuthRedirectUrl } from "@/lib/auth";
 
 export async function signInWithGoogle() {
   console.log('[AUTH DEBUG] === GOOGLE SIGN-IN START ===');
@@ -24,7 +25,7 @@ export async function signInWithGoogle() {
     // Silent error handling
   }
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
+  const redirectTo = getAuthRedirectUrl('/auth/callback');
 
   console.log('[AUTH DEBUG] Step 3: OAuth configuration');
   console.log('[AUTH DEBUG] Redirect URL:', redirectTo);

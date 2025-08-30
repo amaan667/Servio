@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { getAuthRedirectUrl } from '@/lib/auth';
 import SignInForm from './signin-form';
 
 // Function to send debug logs to server
@@ -52,8 +53,8 @@ function SignInPageContent() {
         timestamp: new Date().toISOString()
       });
       
-      // Use production redirect URL
-      const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app'}/auth/callback`;
+      // Use stable production redirect URL helper
+      const redirectTo = getAuthRedirectUrl('/auth/callback');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

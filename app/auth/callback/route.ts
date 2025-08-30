@@ -1,11 +1,13 @@
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { getRequestOrigin } from '@/lib/origin';
 
+// Use robust origin resolution to avoid localhost on Railway
 function getOrigin(req: NextRequest) {
-  const proto = req.headers.get('x-forwarded-proto') ?? 'https';
-  const host = req.headers.get('host');
-  return `${proto}://${host}`;
+  return getRequestOrigin(req);
 }
 
 export async function GET(req: NextRequest) {
@@ -46,13 +48,14 @@ export async function GET(req: NextRequest) {
           return cookie?.value; 
         },
         set(name: string, value: string, options: any) {
+          // Enforce secure, Lax cookies in production
           const cookieOptions = {
             ...options,
             sameSite: 'lax' as const,
             secure: true,
             httpOnly: true,
             path: '/',
-            maxAge: options.maxAge || 60 * 60 * 24 * 7, // 7 days default
+            maxAge: options?.maxAge ?? 60 * 60 * 24 * 7,
           };
           cookieStore.set(name, value, cookieOptions);
         },
@@ -79,6 +82,11 @@ export async function GET(req: NextRequest) {
 
   if (!code) {
     console.error('[AUTH CALLBACK] No authorization code received');
+    // Some providers use access_token instead of code (hash vs query). If so, delegate to client page.
+    const hasAccessToken = url.searchParams.get('access_token') || url.hash.includes('access_token=')
+    if (hasAccessToken) {
+      return redirect('/auth/callback')
+    }
     return redirect('/auth/error?reason=missing_code');
   }
 

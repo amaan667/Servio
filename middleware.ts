@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getRequestOrigin } from '@/lib/origin'
 
 const PUBLIC = ['/', '/auth/callback', '/sign-in', '/_next', '/favicon', '/images', '/api/health']
 
 function getOrigin(req: NextRequest) {
-  const proto = req.headers.get('x-forwarded-proto') ?? 'https';
-  const host = req.headers.get('host');
-  return `${proto}://${host}`;
+  return getRequestOrigin(req)
 }
 
 export function middleware(req: NextRequest) {
