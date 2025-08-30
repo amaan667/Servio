@@ -1,5 +1,5 @@
 'use client'
-import { supabase } from '../lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 export function GoogleSignInButton() {
   async function handleSignIn() {

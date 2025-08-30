@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { getUserSafe } from '../../../../utils/getUserSafe'
 import { redirect } from 'next/navigation'
-import { createClient } from '../../../../lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function VenueSettings({ params }: { params: { venueId: string } }) {
   const user = await getUserSafe('app/dashboard/[venueId]/settings/page.tsx')

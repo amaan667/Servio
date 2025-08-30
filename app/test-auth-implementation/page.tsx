@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 export default function TestAuthImplementation() {
   const [status, setStatus] = useState<string>('Loading...')

@@ -1,6 +1,6 @@
 import { getUserSafe } from '../../utils/getUserSafe'
 import { redirect } from 'next/navigation'
-import { createClient } from '../../lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function DashboardPage() {
   const user = await getUserSafe('app/dashboard/page.tsx')
