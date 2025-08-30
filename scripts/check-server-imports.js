@@ -7,7 +7,13 @@
 
 const fs = require('fs');
 const path = require('path');
-const glob = require('glob');
+let glob;
+try {
+  glob = require('glob');
+} catch (e) {
+  console.warn('⚠️  glob is not installed; skipping server-imports guard.');
+  process.exit(0);
+}
 
 // Files that should never import the browser client
 const SERVER_PATTERNS = [

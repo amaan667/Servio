@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/sb-client';
+import { supabase } from '@/lib/supabase/client';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import SignInForm from './signin-form';
 import PkceDebugComponent from './pkce-debug';
@@ -25,13 +25,32 @@ function SignInPageContent() {
   }, [router, sp]);
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: getAuthRedirectUrl('/auth/callback'),
-        queryParams: { access_type: 'offline', prompt: 'consent' },
-      },
-    });
+    try {
+      console.log('[AUTH DEBUG] Starting Google OAuth sign in');
+      
+      // Use stable production redirect URL helper
+      const redirectTo = getAuthRedirectUrl('/auth/callback');
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: { 
+            access_type: 'offline',
+            prompt: 'select_account'
+          },
+        },
+      });
+      
+      if (error) {
+        console.error('[AUTH DEBUG] OAuth sign in error:', error);
+        alert(`Sign in failed: ${error.message}`);
+        return;
+      }
+      console.log('[AUTH DEBUG] OAuth sign in initiated successfully:', data);
+    } catch (err: any) {
+      console.error('[AUTH DEBUG] Unexpected error during OAuth sign in:', err);
+      alert(`Unexpected error: ${err.message}`);
+    }
   };
 
   return (

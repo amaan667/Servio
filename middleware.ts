@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getRequestOrigin } from '@/lib/origin'
 
 // Add all public paths that should bypass auth checks
 const PUBLIC = [
@@ -15,9 +16,7 @@ const PUBLIC = [
 ]
 
 function getOrigin(req: NextRequest) {
-  const proto = req.headers.get('x-forwarded-proto') ?? 'https';
-  const host = req.headers.get('host');
-  return `${proto}://${host}`;
+  return getRequestOrigin(req)
 }
 
 export function middleware(req: NextRequest) {
