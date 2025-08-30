@@ -85,7 +85,7 @@ export function clearAuthStorage() {
     
     // Clear localStorage
     const localStorageKeys = Object.keys(localStorage).filter(k => 
-      k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth") || k.includes("code_verifier")
+      (k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth") || k.includes("code_verifier")
     );
     console.log('[AUTH DEBUG] Found localStorage keys to clear:', localStorageKeys);
     localStorageKeys.forEach(k => {
@@ -96,7 +96,7 @@ export function clearAuthStorage() {
     
     // Clear sessionStorage
     const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-      k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth") || k.includes("code_verifier")
+      (k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth") || k.includes("code_verifier")
     );
     console.log('[AUTH DEBUG] Found sessionStorage keys to clear:', sessionStorageKeys);
     sessionStorageKeys.forEach(k => {

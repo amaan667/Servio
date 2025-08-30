@@ -42,12 +42,12 @@ export function clearAuthStorage() {
   
   try {
     const localStorageKeys = Object.keys(localStorage).filter(k => 
-      k.startsWith("sb-") || k.includes("pkce") || k.includes("auth")
+      (k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth")
     );
     localStorageKeys.forEach(k => localStorage.removeItem(k));
     
     const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-      k.includes("pkce") || k.includes("auth")
+      k.includes("auth") && !k.includes("token-code-verifier")
     );
     sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
   } catch (error) {

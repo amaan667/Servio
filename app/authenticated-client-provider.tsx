@@ -77,14 +77,14 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       sessionStorage.removeItem("sb_oauth_in_progress");
       sessionStorage.removeItem("sb_oauth_start_time");
       
-      // Clear all Supabase-related storage
+      // Clear all Supabase-related storage BUT preserve PKCE verifier
       const localStorageKeys = Object.keys(localStorage).filter(k => 
-        k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")
+        (k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth")
       );
       localStorageKeys.forEach(k => localStorage.removeItem(k));
       
       const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
-        k.startsWith("sb-") || k.includes("pkce") || k.includes("verifier") || k.includes("auth")
+        (k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth")
       );
       sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
     }
