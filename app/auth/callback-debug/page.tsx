@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AuthDebugPanel from '../auth-debug-panel';
 
-export default function CallbackDebugPage() {
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic';
+
+function CallbackDebugContent() {
   const searchParams = useSearchParams();
   
   useEffect(() => {
@@ -72,5 +75,20 @@ export default function CallbackDebugPage() {
         </pre>
       </div>
     </div>
+  );
+}
+
+export default function CallbackDebugPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CallbackDebugContent />
+    </Suspense>
   );
 }

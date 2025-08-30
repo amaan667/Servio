@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { createClient, checkPKCEState, clearAuthStorage } from '@/lib/supabase/client';
 
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic';
+
 export default function DebugAuthPage() {
   const [authState, setAuthState] = useState<any>(null);
   const [pkceState, setPkceState] = useState<any>(null);
