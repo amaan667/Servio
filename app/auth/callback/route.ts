@@ -12,6 +12,7 @@ function cookieAdapter(jar: any) {
     set: (name: string, value: string, options?: any) =>
       jar.set(name, value, {
         ...options,
+  path: '/',
         httpOnly: true,
         sameSite: 'lax',
         secure: true,
@@ -19,6 +20,7 @@ function cookieAdapter(jar: any) {
     remove: (name: string, options?: any) =>
       jar.set(name, '', {
         ...options,
+  path: '/',
         httpOnly: true,
         sameSite: 'lax',
         secure: true,
@@ -49,6 +51,19 @@ export async function GET(req: NextRequest) {
   }
 
   const jar = await cookies();
+  // Diagnostic: list relevant cookies
+  try {
+    const all = jar.getAll?.() || [];
+    const authCookieNames = all.filter((c: any) => c.name.startsWith('sb-')).map((c: any) => c.name);
+    console.log('[AUTH][DEBUG] Incoming auth cookies:', authCookieNames);
+  } catch {}
+
+  // Proactively clear stale access/refresh tokens (NOT the PKCE verifier cookie) to avoid refresh attempts before exchange
+  try {
+    const stale = ['sb-access-token','sb-refresh-token'];
+    stale.forEach(n => jar.set(n, '', { path: '/', httpOnly: true, sameSite: 'lax', secure: true, maxAge: 0 }));
+  } catch {}
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -73,6 +88,19 @@ export async function GET(req: NextRequest) {
           });
         } catch {}
         return NextResponse.redirect(new URL('/sign-in?error=session_expired', baseOrigin));
+      }
+      if (/code verifier/i.test(msg) || /code and code verifier should be non-empty/i.test(msg) || /validation_failed/i.test(msg)) {
+        // PKCE missing or invalid; clear PKCE cookie and restart
+        try {
+          const cookieStore: any = await cookies();
+          // heuristic PKCE cookie names (may vary by supabase ref)
+          cookieStore.getAll?.().forEach((c: any) => {
+            if (c.name.includes('pkce')) {
+              try { cookieStore.set(c.name, '', { path:'/', maxAge:0, secure:true, sameSite:'lax', httpOnly:true }); } catch {}
+            }
+          });
+        } catch {}
+        return NextResponse.redirect(new URL('/sign-in?error=pkce_restart', baseOrigin));
       }
       return NextResponse.redirect(new URL('/sign-in?error=oauth_exchange_failed', baseOrigin));
     }
