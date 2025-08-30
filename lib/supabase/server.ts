@@ -14,6 +14,7 @@ export async function createClient(c = nextCookies()) {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false, // Disable for server-side
+        flowType: 'pkce',
       },
       cookies: {
         get(name) {

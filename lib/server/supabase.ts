@@ -49,6 +49,9 @@ export const supabaseServer = async () => {
     supabaseUrl,
     supabaseAnonKey,
     {
+      auth: {
+        flowType: 'pkce',
+      },
       cookies: {
         get(name) {
           return cookieStore.get(name)?.value;

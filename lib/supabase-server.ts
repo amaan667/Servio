@@ -33,6 +33,9 @@ export async function createServerSupabase() {
     supabaseUrl,
     supabaseAnonKey,
     {
+      auth: {
+        flowType: 'pkce',
+      },
       cookies: {
         get: (n) => jar.get(n)?.value,
         // Do NOT call set/remove from server components.
@@ -76,6 +79,9 @@ export async function createRouteSupabase() {
     supabaseUrl,
     supabaseAnonKey,
     {
+      auth: {
+        flowType: 'pkce',
+      },
       cookies: {
         get: (n) => jar.get(n)?.value,
         set: (n, v, opts) => jar.set(n, v, opts),
