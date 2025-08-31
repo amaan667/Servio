@@ -15,7 +15,7 @@ export default async function GenerateQRPage() {
     redirect('/sign-in');
   }
 
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/sign-in');

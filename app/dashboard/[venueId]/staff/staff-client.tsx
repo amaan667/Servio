@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import TimeField, { TimeValue } from '@/components/inputs/TimeField';
 import { to24h, buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
-import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+import { Users } from 'lucide-react';
 
 type StaffRow = {
   id: string;
