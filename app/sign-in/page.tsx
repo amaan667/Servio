@@ -77,6 +77,23 @@ function SignInPageContent() {
       console.log('[AUTH DEBUG] Clearing existing auth state...');
       await supabaseBrowser.auth.signOut();
       
+      // Clear any remaining auth-related storage to prevent state conflicts
+      try {
+        const authKeys = Object.keys(localStorage).filter(k => 
+          k.includes('auth') || k.includes('supabase') || k.includes('sb-')
+        );
+        console.log('[AUTH DEBUG] Clearing localStorage keys:', authKeys);
+        authKeys.forEach(key => localStorage.removeItem(key));
+        
+        const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
+          k.includes('auth') || k.includes('supabase') || k.includes('sb-')
+        );
+        console.log('[AUTH DEBUG] Clearing sessionStorage keys:', sessionAuthKeys);
+        sessionAuthKeys.forEach(key => sessionStorage.removeItem(key));
+      } catch (err) {
+        console.error('[AUTH DEBUG] Error clearing storage:', err);
+      }
+      
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
       console.log('[AUTH DEBUG] Redirect URL:', redirectTo);

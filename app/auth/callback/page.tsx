@@ -68,6 +68,36 @@ export default function Callback() {
           return;
         }
 
+        // Handle the case where we have state but no code (OAuth state mismatch)
+        if (state && !code) {
+          addDebugLog('[AUTH CALLBACK] State parameter present but no code - likely OAuth state mismatch');
+          addDebugLog('[AUTH CALLBACK] Clearing auth state and redirecting to sign-in');
+          
+          try {
+            // Clear any existing auth state
+            await supabaseBrowser.auth.signOut();
+            
+            // Clear storage
+            const authKeys = Object.keys(localStorage).filter(k => 
+              k.includes('auth') || k.includes('supabase') || k.includes('sb-')
+            );
+            addDebugLog(`[AUTH CALLBACK] Clearing localStorage keys: ${authKeys.join(', ')}`);
+            authKeys.forEach(key => localStorage.removeItem(key));
+            
+            const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
+              k.includes('auth') || k.includes('supabase') || k.includes('sb-')
+            );
+            addDebugLog(`[AUTH CALLBACK] Clearing sessionStorage keys: ${sessionAuthKeys.join(', ')}`);
+            sessionAuthKeys.forEach(key => sessionStorage.removeItem(key));
+          } catch (err) {
+            addDebugLog(`[AUTH CALLBACK] Error clearing storage: ${err}`);
+          }
+          
+          setError('OAuth state mismatch. Please try signing in again.');
+          setLoading(false);
+          return;
+        }
+
         if (!code) {
           addDebugLog('[AUTH CALLBACK] No code found in URL parameters');
           addDebugLog(`[AUTH CALLBACK] All search params: ${JSON.stringify(Object.fromEntries(searchParams.entries()))}`);
