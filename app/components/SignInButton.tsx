@@ -1,21 +1,22 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { signInWithGoogle } from '@/lib/auth/signin';
 
 export default function SignInButton() {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleSignIn = async () => {
     if (loading) return;
     
     setLoading(true);
     try {
-      await signInWithGoogle();
-      // Redirect handled by OAuth callback
+      console.log('[AUTH DEBUG] SignInButton: Redirecting to sign-in page');
+      router.push('/sign-in');
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error('[AUTH DEBUG] SignInButton error:', error);
       setLoading(false);
     }
   };
@@ -27,7 +28,7 @@ export default function SignInButton() {
       disabled={loading}
       className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
     >
-      {loading ? 'Signing In...' : 'Sign In'}
+      {loading ? 'Redirecting...' : 'Sign In'}
     </Button>
   );
 }

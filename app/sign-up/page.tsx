@@ -1,18 +1,14 @@
 'use client';
 
-import { createClient } from '@/lib/sb-client';
-import { getAuthRedirectUrl } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 import SignUpForm from './signup-form';
 
 export default function SignUpPage() {
+  const router = useRouter();
+  
   const signInWithGoogle = async () => {
-    await createClient().auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-  redirectTo: getAuthRedirectUrl('/auth/callback'),
-        queryParams: { access_type: 'offline', prompt: 'consent' }, // get refresh token
-      },
-    });
+    console.log('[AUTH DEBUG] SignUpPage: Redirecting to sign-in page');
+    router.push('/sign-in');
   };
 
   return <SignUpForm onGoogleSignIn={signInWithGoogle} />;

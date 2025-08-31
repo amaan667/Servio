@@ -1,27 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { signUpUser } from '@/lib/supabase';
-import { signInWithGoogle } from '@/lib/auth/signin';
+import { supabaseBrowser } from '@/lib/supabase/browser';
+import Link from 'next/link';
 
-export default function SignUpForm() {
-  const router = useRouter();
+interface SignUpFormProps {
+  onGoogleSignIn: () => Promise<void>;
+}
+
+export default function SignUpForm({ onGoogleSignIn }: SignUpFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
     password: '',
-    fullName: '',
     venueName: '',
-    venueType: '',
   });
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -30,22 +29,30 @@ export default function SignUpForm() {
     setError(null);
 
     try {
-      const result = await signUpUser(
-        formData.email,
-        formData.password,
-        formData.fullName,
-        formData.venueName,
-        formData.venueType
-      );
-      
-      if (result.success) {
-        router.push('/dashboard');
-      } else {
-        setError(result.message || 'Sign up failed');
+      const { data, error } = await supabaseBrowser.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            venue_name: formData.venueName,
+          },
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Show success message or redirect
+        setError('Please check your email to confirm your account.');
+        setLoading(false);
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
-    } finally {
+      setError(err.message || 'Sign-up failed. Please try again.');
       setLoading(false);
     }
   };
@@ -55,7 +62,7 @@ export default function SignUpForm() {
     setError(null);
     
     try {
-      await signInWithGoogle();
+      await onGoogleSignIn();
       // The redirect will happen automatically
     } catch (err: any) {
       setError(err.message || 'Google sign-up failed. Please try again.');
@@ -156,27 +163,6 @@ export default function SignUpForm() {
                 disabled={loading}
                 required
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="venueType">Business Type</Label>
-              <Select
-                value={formData.venueType}
-                onValueChange={(value) => setFormData({ ...formData, venueType: value })}
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your business type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="restaurant">Restaurant</SelectItem>
-                  <SelectItem value="cafe">Cafe</SelectItem>
-                  <SelectItem value="bar">Bar</SelectItem>
-                  <SelectItem value="food-truck">Food Truck</SelectItem>
-                  <SelectItem value="bakery">Bakery</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <Button type="submit" disabled={loading} className="w-full">

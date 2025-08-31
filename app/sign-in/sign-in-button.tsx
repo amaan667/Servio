@@ -1,14 +1,16 @@
 'use client';
 
-import { signInWithGoogle } from '@/lib/auth/signin';
+import { useRouter } from 'next/navigation';
 
 export default function SignInButton() {
+  const router = useRouter();
   
   const onGoogle = async () => {
     try {
-      await signInWithGoogle();
+      console.log('[AUTH DEBUG] SignInButton: Redirecting to sign-in page');
+      router.push('/sign-in');
     } catch (error) {
-      console.error('[AUTH DEBUG] OAuth error:', error);
+      console.error('[AUTH DEBUG] SignInButton error:', error);
     }
   };
 
