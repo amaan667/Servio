@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { Menu, X, Settings } from "lucide-react";
+import { Menu, X, Settings, Home, LogOut } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
@@ -105,9 +105,9 @@ export default function GlobalNav() {
   // Don't render navigation items while loading
   if (loading) {
     return (
-      <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
+      <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-24 sm:h-28 lg:h-32 xl:h-36">
+          <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center group">
@@ -116,7 +116,7 @@ export default function GlobalNav() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-24 sm:h-28 lg:h-32 xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                  className="h-8 w-auto transition-all duration-300 group-hover:scale-105"
                   priority
                 />
               </Link>
@@ -124,7 +124,7 @@ export default function GlobalNav() {
             
             {/* Loading indicator */}
             <div className="flex items-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
             </div>
           </div>
         </div>
@@ -133,9 +133,9 @@ export default function GlobalNav() {
   }
 
   return (
-    <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
+    <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-24 sm:h-28 lg:h-32 xl:h-36">
+        <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
@@ -144,131 +144,30 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-24 sm:h-28 lg:h-32 xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-8 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
-              {isAuthenticated ? (
-                // Signed in navigation - consistent styling
-                <>
-                  {isOnDashboard ? (
-                    // On dashboard pages: Home, Settings, Sign Out
-                    <>
-                      <Link
-                        href="/"
-                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                      >
-                        Home
-                      </Link>
-                      <Link
-                        href="/settings"
-                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
-                      >
-                        <Settings className="mr-2 h-4 w-4" />
-                        Settings
-                      </Link>
-                    </>
-                  ) : (
-                    // On home page: Dashboard, Settings, Sign Out
-                    <>
-                      <Link
-                        href="/dashboard"
-                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                      >
-                        Dashboard
-                      </Link>
-                      <Link
-                        href="/settings"
-                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
-                      >
-                        <Settings className="mr-2 h-4 w-4" />
-                        Settings
-                      </Link>
-                    </>
-                  )}
-                  <Button
-                    variant="destructive"
-                    onClick={handleSignOut}
-                    className="transition-colors"
-                  >
-                    Sign Out
-                  </Button>
-                </>
-              ) : (
-                // Not signed in navigation - only show public links
-                <>
-                  <Link
-                    href="/"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Home
-                  </Link>
-                  <Link
-                    href="#features"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Features
-                  </Link>
-                  <Link
-                    href="#pricing"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Pricing
-                  </Link>
-                  <Button
-                    onClick={() => router.push('/sign-in')}
-                    className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
-                  >
-                    Sign In
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <Button
-              variant="ghost"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2"
-            >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Navigation */}
-      {mobileMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
+          <div className="hidden md:flex items-center space-x-1">
             {isAuthenticated ? (
-              // Signed in mobile navigation - different based on current page
-              <>
+              // Signed in navigation - modern SaaS style
+              <div className="flex items-center space-x-1">
                 {isOnDashboard ? (
                   // On dashboard pages: Home, Settings, Sign Out
                   <>
                     <Link
                       href="/"
-                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
                     >
+                      <Home className="mr-2 h-4 w-4" />
                       Home
                     </Link>
                     <Link
-                      href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
-                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center"
-                      onClick={() => setMobileMenuOpen(false)}
+                      href="/settings"
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
                     >
                       <Settings className="mr-2 h-4 w-4" />
                       Settings
@@ -279,55 +178,161 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/dashboard"
-                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </>
+                )}
+                <div className="w-px h-6 bg-gray-300 mx-2"></div>
+                <Button
+                  variant="ghost"
+                  onClick={handleSignOut}
+                  className="flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all duration-200"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              // Not signed in navigation - modern SaaS style
+              <div className="flex items-center space-x-1">
+                <Link
+                  href="/"
+                  className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                >
+                  Home
+                </Link>
+                <Link
+                  href="#features"
+                  className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                >
+                  Features
+                </Link>
+                <Link
+                  href="#pricing"
+                  className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                >
+                  Pricing
+                </Link>
+                <div className="w-px h-6 bg-gray-300 mx-2"></div>
+                <Button
+                  onClick={() => router.push('/sign-in')}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 shadow-sm"
+                >
+                  Sign In
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-200 bg-white">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {isAuthenticated ? (
+              // Signed in mobile navigation
+              <>
+                {isOnDashboard ? (
+                  <>
+                    <Link
+                      href="/"
+                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Home className="mr-3 h-5 w-5" />
+                      Home
+                    </Link>
+                    <Link
+                      href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
+                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Settings className="mr-3 h-5 w-5" />
+                      Settings
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Dashboard
                     </Link>
                     <Link
                       href="/settings"
-                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
+                      <Settings className="mr-3 h-5 w-5" />
                       Settings
                     </Link>
                   </>
                 )}
+                <div className="border-t border-gray-200 my-2"></div>
                 <Button
-                  variant="destructive"
+                  variant="ghost"
                   onClick={() => {
                     handleSignOut();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full text-left transition-colors"
+                  className="flex items-center w-full justify-start px-3 py-2 text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
                 >
+                  <LogOut className="mr-3 h-5 w-5" />
                   Sign Out
                 </Button>
               </>
             ) : (
-              // Not signed in mobile navigation - only show public links
+              // Not signed in mobile navigation
               <>
                 <Link
                   href="/"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Home
                 </Link>
                 <Link
                   href="#features"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Features
                 </Link>
                 <Link
                   href="#pricing"
-                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Pricing
                 </Link>
+                <div className="border-t border-gray-200 my-2"></div>
                 <div onClick={() => setMobileMenuOpen(false)}>
                   <SignInButton />
                 </div>
