@@ -1,8 +1,12 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabaseBrowser, clearSupabaseAuth } from '@/lib/supabase/browser';
+// Delay importing supabase until after mount to avoid build-time env evaluation
+let supabaseBrowser: any = null;
+let clearSupabaseAuth: any = null;
 import { AuthErrorBoundary } from '@/components/auth-error-boundary';
 
 function CallbackContent() {
@@ -44,6 +48,12 @@ function CallbackContent() {
   };
 
   useEffect(() => {
+    // Lazy import supabase browser helpers on client
+    (async () => {
+      const mod = await import('@/lib/supabase/browser');
+      supabaseBrowser = mod.supabaseBrowser;
+      clearSupabaseAuth = mod.clearSupabaseAuth;
+    })();
     addDebugLog('[AUTH CALLBACK] Component mounted');
     addDebugLog(`[AUTH CALLBACK] Platform: ${isMobile() ? 'Mobile' : 'Desktop'}`);
     addDebugLog(`[AUTH CALLBACK] User Agent: ${typeof window !== 'undefined' ? navigator.userAgent : 'SSR'}`);
