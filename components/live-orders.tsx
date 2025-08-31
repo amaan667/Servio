@@ -275,7 +275,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <h3 className="font-semibold text-lg">
-                        Order #{order.order_number}
+                        Order #{order.id.slice(0, 8)}
                       </h3>
                       <Badge className={getStatusColor(order.status)}>
                         {getStatusIcon(order.status)}
@@ -301,13 +301,13 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                     </p>
                   </div>
 
-                  {order.order_items && order.order_items.length > 0 && (
+                  {order.items && order.items.length > 0 && (
                     <div className="mb-4">
                       <h4 className="font-medium mb-2">Items:</h4>
                       <div className="space-y-1">
-                        {order.order_items.map((item) => (
+                        {order.items.map((item, index) => (
                           <div
-                            key={item.id}
+                            key={index}
                             className="flex justify-between text-sm"
                           >
                             <span>
