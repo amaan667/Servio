@@ -17,8 +17,8 @@ export function hasSbAuthCookie(cookies: any) {
  */
 export async function hasServerAuthCookie() {
   const { cookies } = await import('next/headers');
-  const cookieStore = cookies();
-  return cookieStore.getAll().some((c) => c.name.includes('-auth-token'));
+  const cookieStore = await cookies();
+  return cookieStore.getAll().some((c: any) => c.name.includes('-auth-token'));
 }
 
 /**

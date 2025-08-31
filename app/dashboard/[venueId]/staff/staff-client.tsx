@@ -24,8 +24,8 @@ export default function StaffClient({
   initialStaff,
 }: {
   venueId: string;
-  venueName: string;
-  initialStaff: StaffRow[];
+  venueName?: string;
+  initialStaff?: StaffRow[];
 }) {
   const [staff, setStaff] = useState<StaffRow[]>(initialStaff || []);
   const [name, setName] = useState('');

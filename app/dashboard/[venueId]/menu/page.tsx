@@ -56,7 +56,7 @@ export default async function MenuPage({
           </p>
         </div>
         
-        <MenuClient venueId={params.venueId} />
+        <MenuClient venueId={params.venueId} venueName={venue.name} />
       </div>
     </div>
   );

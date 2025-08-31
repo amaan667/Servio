@@ -15,10 +15,11 @@ import type { FeedbackQuestion, FeedbackType } from '@/types/feedback';
 
 interface QuestionsClientProps {
   venueId: string;
+  venueName?: string;
   mode?: 'form-only' | 'list-only' | 'full';
 }
 
-export default function QuestionsClient({ venueId, mode = 'full' }: QuestionsClientProps) {
+export default function QuestionsClient({ venueId, venueName, mode = 'full' }: QuestionsClientProps) {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);

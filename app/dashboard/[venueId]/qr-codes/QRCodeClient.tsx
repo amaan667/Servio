@@ -18,7 +18,7 @@ interface QRCodeItem {
   created_at: string;
 }
 
-export default function QRCodeClient({ venueId }: { venueId: string }) {
+export default function QRCodeClient({ venueId, venueName }: { venueId: string; venueName?: string }) {
   const { session } = useAuth();
   const [qrCodes, setQrCodes] = useState<QRCodeItem[]>([]);
   const [loading, setLoading] = useState(true);
