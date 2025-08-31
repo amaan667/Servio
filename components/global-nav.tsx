@@ -107,10 +107,10 @@ export default function GlobalNav() {
   if (loading) {
     return (
       <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+        <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
           <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
             {/* Logo */}
-            <div className="flex-shrink-0 -ml-2">
+            <div className="flex-shrink-0 -ml-4">
               <Link href="/" className="flex items-center group">
                 <Image
                   src="/assets/servio-logo-updated.png"
@@ -135,10 +135,10 @@ export default function GlobalNav() {
 
   return (
     <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+      <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
         <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
           {/* Logo */}
-          <div className="flex-shrink-0 -ml-2">
+          <div className="flex-shrink-0 -ml-4">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"

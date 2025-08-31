@@ -114,10 +114,10 @@ export default function ClientNavBar() {
   if (loading) {
     return (
       <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+        <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
           <div className="flex justify-between items-center h-32 sm:h-36 md:h-40 lg:h-44 xl:h-48 2xl:h-52">
             {/* Logo */}
-            <div className="flex-shrink-0 -ml-2">
+            <div className="flex-shrink-0 -ml-4">
               <Link href="/" className="flex items-center group">
                 <Image
                   src="/assets/servio-logo-updated.png"
@@ -142,10 +142,10 @@ export default function ClientNavBar() {
 
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+      <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
         <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
           {/* Logo */}
-          <div className="flex-shrink-0 -ml-2">
+          <div className="flex-shrink-0 -ml-4">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
