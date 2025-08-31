@@ -25,7 +25,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         // Check if we already have venue data from SSR
         if (venue && !loading) {
           console.log('[DASHBOARD] Venue already loaded from SSR, setting up time window and stats');
-          const window = todayWindowForTZ(venue.timezone || 'Europe/London');
+          const window = todayWindowForTZ('Europe/London');
           setTodayWindow(window);
           await loadStats(venue.venue_id, window);
           return;
@@ -42,7 +42,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         
         if (!error && venueData) {
           setVenue(venueData);
-          const window = todayWindowForTZ(venueData.timezone || 'Europe/London');
+          const window = todayWindowForTZ('Europe/London');
           setTodayWindow(window);
           await loadStats(venueData.venue_id, window);
         } else {
@@ -81,7 +81,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
   useEffect(() => {
     if (venue && !todayWindow) {
       console.log('[DASHBOARD] Setting up time window for venue');
-      const window = todayWindowForTZ(venue.timezone || 'Europe/London');
+              const window = todayWindowForTZ('Europe/London');
       setTodayWindow(window);
       loadStats(venue.venue_id, window);
     }

@@ -58,11 +58,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       if (!venueNameProp) {
         const { data: venueData } = await supabase
           .from('venues')
-          .select('name, timezone')
+          .select('name')
           .eq('venue_id', venueId)
           .single();
         setVenueName(venueData?.name || '');
-        venueTimezone = venueData?.timezone;
+        venueTimezone = 'Europe/London'; // Default timezone
       }
       const window = todayWindowForTZ(venueTimezone);
       setTodayWindow(window);

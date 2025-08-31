@@ -37,7 +37,7 @@ export default async function VenueSettings({ params }: { params: { venueId: str
     // Verify user owns this venue and get full venue data
     const { data: venue, error: venueError } = await supabase
       .from('venues')
-      .select('venue_id, name, email, phone, address, timezone')
+      .select('venue_id, name, email, phone, address')
       .eq('venue_id', params.venueId)
       .eq('owner_id', user.id)
       .maybeSingle();
