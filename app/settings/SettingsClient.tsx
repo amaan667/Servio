@@ -38,6 +38,34 @@ export default function SettingsClient({ user, venues }: { user: User; venues: V
   });
   const router = useRouter();
 
+  // Load existing venue data when component mounts
+  useEffect(() => {
+    const loadVenueData = async () => {
+      if (venues[0]) {
+        try {
+          const { data, error } = await supabase
+            .from('venues')
+            .select('name, phone, address')
+            .eq('venue_id', venues[0].venue_id)
+            .eq('owner_id', user.id)
+            .single();
+
+          if (!error && data) {
+            setVenueForm({
+              name: data.name || '',
+              phone: data.phone || '',
+              address: data.address || ''
+            });
+          }
+        } catch (error) {
+          console.error('Error loading venue data:', error);
+        }
+      }
+    };
+
+    loadVenueData();
+  }, [venues, user.id]);
+
   const handleVenueUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -49,19 +77,31 @@ export default function SettingsClient({ user, venues }: { user: User; venues: V
           .update({
             name: venueForm.name,
             phone: venueForm.phone || null,
-            address: venueForm.address || null
+            address: venueForm.address || null,
+            updated_at: new Date().toISOString()
           })
           .eq('venue_id', venues[0].venue_id)
           .eq('owner_id', user.id);
 
         if (!error) {
-          alert('Venue settings updated successfully!');
+          toast({
+            title: "Success",
+            description: "Venue settings updated successfully!",
+          });
         } else {
-          alert('Error updating venue settings');
+          toast({
+            title: "Error",
+            description: "Error updating venue settings",
+            variant: "destructive",
+          });
         }
       }
     } catch (error) {
-      alert('Error updating venue settings');
+      toast({
+        title: "Error",
+        description: "Error updating venue settings",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -73,7 +113,11 @@ export default function SettingsClient({ user, venues }: { user: User; venues: V
 
     try {
       if (accountForm.newPassword && accountForm.newPassword !== accountForm.confirmPassword) {
-        alert('New passwords do not match');
+        toast({
+          title: "Error",
+          description: "New passwords do not match",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -83,9 +127,16 @@ export default function SettingsClient({ user, venues }: { user: User; venues: V
         });
 
         if (error) {
-          alert('Error updating password');
+          toast({
+            title: "Error",
+            description: "Error updating password",
+            variant: "destructive",
+          });
         } else {
-          alert('Password updated successfully!');
+          toast({
+            title: "Success",
+            description: "Password updated successfully!",
+          });
           setAccountForm(prev => ({
             ...prev,
             currentPassword: '',
@@ -95,7 +146,11 @@ export default function SettingsClient({ user, venues }: { user: User; venues: V
         }
       }
     } catch (error) {
-      alert('Error updating account settings');
+      toast({
+        title: "Error",
+        description: "Error updating account settings",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

@@ -107,7 +107,7 @@ export default function GlobalNav() {
     return (
       <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20 sm:h-24 lg:h-28 xl:h-32">
+          <div className="flex justify-between items-center h-24 sm:h-28 lg:h-32 xl:h-36">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center group">
@@ -116,7 +116,7 @@ export default function GlobalNav() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-16 sm:h-20 lg:h-24 xl:h-28 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                  className="h-24 sm:h-28 lg:h-32 xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                   priority
                 />
               </Link>
@@ -135,7 +135,7 @@ export default function GlobalNav() {
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20 sm:h-24 lg:h-28 xl:h-32">
+        <div className="flex justify-between items-center h-24 sm:h-28 lg:h-32 xl:h-36">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
@@ -144,7 +144,7 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-16 sm:h-20 lg:h-24 xl:h-28 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-24 sm:h-28 lg:h-32 xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                 priority
               />
             </Link>
@@ -154,7 +154,7 @@ export default function GlobalNav() {
           <div className="hidden md:block">
             <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
               {isAuthenticated ? (
-                // Signed in navigation - different based on current page
+                // Signed in navigation - consistent styling
                 <>
                   {isOnDashboard ? (
                     // On dashboard pages: Home, Settings, Sign Out
@@ -166,7 +166,7 @@ export default function GlobalNav() {
                         Home
                       </Link>
                       <Link
-                        href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
+                        href="/settings"
                         className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
                       >
                         <Settings className="mr-2 h-4 w-4" />
@@ -184,8 +184,9 @@ export default function GlobalNav() {
                       </Link>
                       <Link
                         href="/settings"
-                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
                       >
+                        <Settings className="mr-2 h-4 w-4" />
                         Settings
                       </Link>
                     </>
