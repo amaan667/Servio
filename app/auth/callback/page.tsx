@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { supabaseBrowser, clearSupabaseAuth } from '@/lib/supabase/browser';
+import { AuthErrorBoundary } from '@/components/auth-error-boundary';
 
 function CallbackContent() {
   const router = useRouter();
@@ -16,13 +17,30 @@ function CallbackContent() {
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}`;
     console.log(logEntry);
-    // Only update debug logs in useEffect to avoid re-renders
+    setDebugLogs(prev => [...prev, logEntry]);
   }, []);
 
-  // Detect if we're on mobile
+  // Detect if we're on mobile with improved detection
   const isMobile = () => {
     if (typeof window === 'undefined') return false;
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const userAgent = navigator.userAgent.toLowerCase();
+    const mobileKeywords = [
+      'android', 'webos', 'iphone', 'ipad', 'ipod', 'blackberry', 
+      'iemobile', 'opera mini', 'mobile', 'tablet'
+    ];
+    return mobileKeywords.some(keyword => userAgent.includes(keyword)) ||
+           window.innerWidth <= 768;
+  };
+
+  // Clear auth state function
+  const clearAuthState = async () => {
+    try {
+      addDebugLog('[AUTH CALLBACK] Clearing auth state...');
+      await clearSupabaseAuth();
+      addDebugLog('[AUTH CALLBACK] Auth state cleared successfully');
+    } catch (err) {
+      addDebugLog(`[AUTH CALLBACK] Error clearing auth state: ${err}`);
+    }
   };
 
   useEffect(() => {
@@ -56,9 +74,7 @@ function CallbackContent() {
           state: state?.substring(0, 10) + '...',
           hasCode: !!code,
           hasError: !!error,
-          hasState: !!state,
-          fullCode: code,
-          fullState: state
+          hasState: !!state
         })}`);
 
         if (error) {
@@ -71,28 +87,7 @@ function CallbackContent() {
         // Handle the case where we have state but no code (OAuth state mismatch)
         if (state && !code) {
           addDebugLog('[AUTH CALLBACK] State parameter present but no code - likely OAuth state mismatch');
-          addDebugLog('[AUTH CALLBACK] Clearing auth state and redirecting to sign-in');
-          
-          try {
-            // Clear any existing auth state
-            await supabaseBrowser().auth.signOut();
-            
-            // Clear storage
-            const authKeys = Object.keys(localStorage).filter(k => 
-              k.includes('auth') || k.includes('supabase') || k.includes('sb-')
-            );
-            addDebugLog(`[AUTH CALLBACK] Clearing localStorage keys: ${authKeys.join(', ')}`);
-            authKeys.forEach(key => localStorage.removeItem(key));
-            
-            const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
-              k.includes('auth') || k.includes('supabase') || k.includes('sb-')
-            );
-            addDebugLog(`[AUTH CALLBACK] Clearing sessionStorage keys: ${sessionAuthKeys.join(', ')}`);
-            sessionAuthKeys.forEach(key => sessionStorage.removeItem(key));
-          } catch (err) {
-            addDebugLog(`[AUTH CALLBACK] Error clearing storage: ${err}`);
-          }
-          
+          await clearAuthState();
           setError('OAuth state mismatch. Please try signing in again.');
           setLoading(false);
           return;
@@ -163,8 +158,7 @@ function CallbackContent() {
             message: exchangeError.message,
             status: exchangeError.status,
             name: exchangeError.name,
-            code: exchangeError.code,
-            stack: exchangeError.stack
+            code: exchangeError.code
           })}`);
           
           // Handle specific PKCE errors
@@ -172,28 +166,8 @@ function CallbackContent() {
               exchangeError.message?.includes('verifier') || 
               exchangeError.message?.includes('code verifier') ||
               exchangeError.code === 'validation_failed') {
-            addDebugLog('[AUTH CALLBACK] PKCE error detected, attempting to clear auth state and retry');
-            
-            // Clear auth state and redirect to sign-in
-            await supabaseBrowser().auth.signOut();
-            
-            // Clear any remaining auth-related storage
-            try {
-              const authKeys = Object.keys(localStorage).filter(k => 
-                k.includes('auth') || k.includes('supabase') || k.includes('sb-')
-              );
-              addDebugLog(`[AUTH CALLBACK] Clearing localStorage keys: ${authKeys.join(', ')}`);
-              authKeys.forEach(key => localStorage.removeItem(key));
-              
-              const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
-                k.includes('auth') || k.includes('supabase') || k.includes('sb-')
-              );
-              addDebugLog(`[AUTH CALLBACK] Clearing sessionStorage keys: ${sessionAuthKeys.join(', ')}`);
-              sessionAuthKeys.forEach(key => sessionStorage.removeItem(key));
-            } catch (err) {
-              addDebugLog(`[AUTH CALLBACK] Error clearing storage: ${err}`);
-            }
-            
+            addDebugLog('[AUTH CALLBACK] PKCE error detected, clearing auth state and redirecting');
+            await clearAuthState();
             setTimeout(() => {
               router.push('/sign-in?error=pkce_error');
             }, 1000);
@@ -204,27 +178,30 @@ function CallbackContent() {
           if (exchangeError.code === 'refresh_token_not_found' || 
               exchangeError.message?.includes('refresh token')) {
             addDebugLog('[AUTH CALLBACK] Refresh token error detected, redirecting to sign-in');
-            
-            // Clear auth state
-            await supabaseBrowser().auth.signOut();
-            
+            await clearAuthState();
             setTimeout(() => {
               router.push('/sign-in?error=refresh_token_error');
             }, 1000);
             return;
           }
           
-          // If it's not a PKCE error, try a fallback approach
+          // Handle network errors
+          if (exchangeError.message?.includes('network') || 
+              exchangeError.message?.includes('fetch') ||
+              exchangeError.message?.includes('timeout')) {
+            addDebugLog('[AUTH CALLBACK] Network error detected');
+            setError('Network error. Please check your connection and try again.');
+            setLoading(false);
+            return;
+          }
+          
+          // If it's not a specific error, try a fallback approach
           addDebugLog('[AUTH CALLBACK] Attempting fallback authentication...');
           
           try {
-            // Clear any existing auth state
-            await supabaseBrowser().auth.signOut();
-            
-            // Wait a moment for cleanup
+            await clearAuthState();
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // Try the exchange again
             addDebugLog('[AUTH CALLBACK] Retrying code exchange...');
             const { data: retryData, error: retryError } = await supabaseBrowser().auth.exchangeCodeForSession(code);
             
@@ -297,96 +274,95 @@ function CallbackContent() {
         
         setError(err.message || 'An unexpected error occurred during authentication');
         setLoading(false);
+      } finally {
+        clearTimeout(timeoutId);
       }
     };
 
-    addDebugLog('[AUTH CALLBACK] Starting callback handler...');
     handleCallback();
+  }, [searchParams, addDebugLog, router, error, loading]);
 
-    // Cleanup timeout on unmount
-    return () => {
-      addDebugLog('[AUTH CALLBACK] Component unmounting, clearing timeout');
-      clearTimeout(timeoutId);
-    };
-  }, [searchParams, router]);
-
-  if (error) {
-    addDebugLog(`[AUTH CALLBACK] Rendering error state: ${error}`);
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-        <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-6">
-          <div className="text-center mb-6">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-medium text-gray-900 mb-2">Authentication Error</h2>
-            <p className="text-sm text-gray-600 mb-4">{error}</p>
-            <div className="space-y-2">
-              <button
-                onClick={() => {
-                  addDebugLog('[AUTH CALLBACK] Try Again button clicked');
-                  router.push('/sign-in');
-                }}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-          
-          {/* Debug Logs Panel */}
-          <div className="mt-6 border-t pt-6">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Debug Logs:</h3>
-            <div className="bg-gray-100 p-4 rounded-md max-h-96 overflow-y-auto">
-              <pre className="text-xs text-gray-800 whitespace-pre-wrap">
-                {debugLogs.join('\n')}
-              </pre>
-            </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+            <h1 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
+              Completing Sign In
+            </h1>
+            <p className="text-gray-600 text-sm">
+              Please wait while we complete your authentication...
+            </p>
+            {debugLogs.length > 0 && (
+              <div className="mt-4 text-xs text-gray-500 text-left max-h-32 overflow-y-auto">
+                <p className="font-medium mb-1">Debug Logs:</p>
+                {debugLogs.slice(-5).map((log, index) => (
+                  <div key={index} className="mb-1">{log}</div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
-  addDebugLog('[AUTH CALLBACK] Rendering loading state');
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Signing you in…</p>
-        <p className="text-xs text-gray-400 mt-4">This may take a few seconds...</p>
-        
-        {/* Debug Logs Panel */}
-        <div className="mt-6 max-w-2xl mx-auto">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Debug Logs:</h3>
-          <div className="bg-white p-4 rounded-md max-h-64 overflow-y-auto border">
-            <pre className="text-xs text-gray-800 whitespace-pre-wrap">
-              {debugLogs.join('\n')}
-            </pre>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+          <div className="text-center">
+            <h1 className="text-xl font-semibold text-gray-900 mb-4">
+              Authentication Error
+            </h1>
+            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push('/sign-in')}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+            {debugLogs.length > 0 && (
+              <div className="mt-4 text-xs text-gray-500 text-left max-h-32 overflow-y-auto">
+                <p className="font-medium mb-1">Debug Logs:</p>
+                {debugLogs.slice(-5).map((log, index) => (
+                  <div key={index} className="mb-1">{log}</div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
 
-function LoadingFallback() {
+export default function CallbackPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
-export default function Callback() {
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <CallbackContent />
-    </Suspense>
+    <AuthErrorBoundary>
+      <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }>
+        <CallbackContent />
+      </Suspense>
+    </AuthErrorBoundary>
   );
 }
