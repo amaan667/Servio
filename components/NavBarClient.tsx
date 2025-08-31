@@ -28,9 +28,9 @@ export default function NavBarClient() {
   console.log('[NAV] NavBarClient mounted', { venueId, homeHref, settingsHref, pathname });
 
   return (
-    <nav className="flex items-center justify-between h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+    <nav className="flex items-center justify-between h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44 px-4 bg-white border-b shadow-lg sticky top-0 z-20">
       {/* Left (Logo + Home) */}
-      <div className="flex items-center">
+      <div className="flex items-center -ml-2">
         <Link href={homeHref} className="flex items-center" aria-label="Home">
           <Image
             src="/assets/servio-logo-updated.png"
@@ -38,7 +38,7 @@ export default function NavBarClient() {
             width={800}
             height={250}
             priority
-            className="h-48 sm:h-56 md:h-64 lg:h-72 xl:h-80 w-auto hover:opacity-80 transition-opacity"
+            className="h-36 sm:h-42 md:h-48 lg:h-54 xl:h-60 w-auto hover:opacity-80 transition-opacity"
           />
         </Link>
       </div>

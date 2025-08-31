@@ -114,17 +114,17 @@ export default function ClientNavBar() {
   if (loading) {
     return (
       <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
           <div className="flex justify-between items-center h-32 sm:h-36 md:h-40 lg:h-44 xl:h-48 2xl:h-52">
             {/* Logo */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 -ml-2">
               <Link href="/" className="flex items-center group">
                 <Image
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-56 sm:h-64 md:h-72 lg:h-80 xl:h-88 2xl:h-96 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                  className="h-42 sm:h-48 md:h-54 lg:h-60 xl:h-66 2xl:h-72 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                   priority
                 />
               </Link>
@@ -142,17 +142,17 @@ export default function ClientNavBar() {
 
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
           {/* Logo */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 -ml-2">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-56 sm:h-64 md:h-72 lg:h-80 xl:h-88 2xl:h-96 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-42 sm:h-48 md:h-54 lg:h-60 xl:h-66 2xl:h-72 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                 priority
               />
             </Link>
