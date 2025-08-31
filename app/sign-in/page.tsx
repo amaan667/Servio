@@ -22,10 +22,21 @@ function SignInPageContent() {
   useEffect(() => {
     const run = async () => {
       try {
+        console.log('[AUTH DEBUG] ===== SIGN-IN PAGE LOADED =====');
+        console.log('[AUTH DEBUG] Platform:', isMobile() ? 'Mobile' : 'Desktop');
+        console.log('[AUTH DEBUG] User Agent:', typeof window !== 'undefined' ? navigator.userAgent : 'SSR');
+        console.log('[AUTH DEBUG] Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
         console.log('[AUTH DEBUG] Checking existing session...');
         
         // Check if user is already signed in
         const { data: { session }, error } = await supabaseBrowser.auth.getSession();
+        
+        console.log('[AUTH DEBUG] Session check result:', {
+          hasSession: !!session,
+          error: error?.message,
+          sessionExpiry: session?.expires_at,
+          userId: session?.user?.id
+        });
         
         if (error) {
           console.error('[AUTH DEBUG] Session check error:', error);
@@ -58,15 +69,18 @@ function SignInPageContent() {
     try {
       setIsSigningIn(true);
 
+      console.log('[AUTH DEBUG] ===== STARTING GOOGLE OAUTH =====');
       console.log('[AUTH DEBUG] Starting Google OAuth sign in');
       console.log('[AUTH DEBUG] Platform:', isMobile() ? 'Mobile' : 'Desktop');
       
       // Clear any existing auth state that might interfere
+      console.log('[AUTH DEBUG] Clearing existing auth state...');
       await supabaseBrowser.auth.signOut();
       
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
       console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
+      console.log('[AUTH DEBUG] Current origin:', typeof window !== 'undefined' ? window.location.origin : 'SSR');
       
       const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
         provider: 'google',
@@ -82,8 +96,20 @@ function SignInPageContent() {
         },
       });
       
+      console.log('[AUTH DEBUG] OAuth signInWithOAuth result:', {
+        hasData: !!data,
+        hasUrl: !!data?.url,
+        error: error?.message,
+        errorCode: error?.status
+      });
+      
       if (error) {
         console.error('[AUTH DEBUG] OAuth sign in error:', error);
+        console.error('[AUTH DEBUG] Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
         alert(`Sign in failed: ${error.message}`);
         setIsSigningIn(false);
         return;
@@ -93,7 +119,8 @@ function SignInPageContent() {
       
       // The redirect should happen automatically, but if it doesn't, we'll handle it
       if (data.url) {
-        console.log('[AUTH DEBUG] Redirecting to OAuth URL');
+        console.log('[AUTH DEBUG] OAuth URL received, redirecting...');
+        console.log('[AUTH DEBUG] OAuth URL:', data.url);
         
         // On desktop, use window.location.href for full page redirect
         // On mobile, this might work better with the OAuth flow
@@ -103,14 +130,21 @@ function SignInPageContent() {
           console.log('[AUTH DEBUG] Desktop platform detected, using window.location.href');
         }
         
+        console.log('[AUTH DEBUG] About to redirect to OAuth URL...');
         window.location.href = data.url;
       } else {
         console.error('[AUTH DEBUG] No OAuth URL received');
+        console.error('[AUTH DEBUG] Data received:', data);
         alert('Failed to start OAuth flow - no redirect URL received');
         setIsSigningIn(false);
       }
     } catch (err: any) {
       console.error('[AUTH DEBUG] Unexpected error during OAuth sign in:', err);
+      console.error('[AUTH DEBUG] Error details:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
       alert(`Unexpected error: ${err.message}`);
       setIsSigningIn(false);
     }
