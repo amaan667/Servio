@@ -138,7 +138,7 @@ export default function GlobalNav() {
         <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
+            <Link href="/" className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
@@ -160,7 +160,7 @@ export default function GlobalNav() {
                     // On dashboard pages: Home, Settings, Sign Out
                     <>
                       <Link
-                        href={venueId ? `/dashboard/${venueId}` : "/dashboard"}
+                        href="/"
                         className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                       >
                         Home
@@ -258,7 +258,7 @@ export default function GlobalNav() {
                   // On dashboard pages: Home, Settings, Sign Out
                   <>
                     <Link
-                      href={venueId ? `/dashboard/${venueId}` : "/dashboard"}
+                      href="/"
                       className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >

@@ -30,8 +30,8 @@ export default async function VenueSettings({ params }: { params: { venueId: str
 
   const { data: venue, error } = await supabase
     .from('venues')
-    .select('id, name, slug, owner_id')
-    .eq('slug', params.venueId)
+    .select('venue_id, name, slug, owner_id')
+    .eq('venue_id', params.venueId)
     .single();
 
   if (error) {
