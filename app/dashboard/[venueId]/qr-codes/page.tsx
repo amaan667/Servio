@@ -64,7 +64,7 @@ export default async function QRCodesPage({
           
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              QR Codes for {venue.name}
+              QR Codes
             </h1>
             <p className="text-lg text-muted-foreground mt-2">
               Generate and manage QR codes for your tables
