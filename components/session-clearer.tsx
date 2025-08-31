@@ -1,12 +1,21 @@
 "use client";
 
 import { useEffect } from "react";
-import { supabase } from '@/lib/supabase/client'
 
 export default function SessionClearer() {
   useEffect(() => {
     const clearSession = async () => {
-      await supabase.auth.signOut()
+      try {
+        // Use server-side signout API instead of client-side auth.signOut()
+        await fetch('/api/auth/signout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      } catch (error) {
+        console.error('Error clearing session:', error);
+      }
     }
     clearSession()
   }, [])

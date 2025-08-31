@@ -83,8 +83,8 @@ const SidebarProvider = React.forwardRef<
           _setOpen(openState);
         }
 
-        // This sets the cookie to keep the sidebar state.
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+        // Note: Cookie setting removed to prevent Next.js App Router errors
+        // Sidebar state is now managed only in component state
       },
       [setOpenProp, open],
     );

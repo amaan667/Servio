@@ -27,39 +27,42 @@ export const supabaseBrowser = () => {
       supabaseAnonKey,
       {
         auth: {
-          persistSession: false, // Disable session persistence to prevent auto sign-in
-          autoRefreshToken: false, // Disable auto refresh to prevent auto sign-in
-          detectSessionInUrl: false, // Disable session detection in URL
+          persistSession: true, // Enable session persistence for better UX
+          autoRefreshToken: true, // Enable auto refresh for seamless experience
+          detectSessionInUrl: true, // Enable session detection for OAuth flows
           flowType: 'pkce', // Use PKCE for better security
           storage: {
             getItem: (key: string) => {
-              // Allow PKCE verifier to be read back during OAuth exchange
-              if (key.includes('token-code-verifier')) {
+              try {
+                // Allow all auth-related keys to be read for proper session management
                 return localStorage.getItem(key);
-              }
-              // Block other auth/session keys from being read to avoid auto sign-in
-              if (key.includes('auth') || key.includes('supabase') || key.startsWith('sb-')) {
+              } catch (error) {
+                console.error('[SUPABASE] Error reading from storage:', error);
                 return null;
               }
-              return localStorage.getItem(key);
             },
             setItem: (key: string, value: string) => {
-              // Persist ONLY the PKCE verifier required for OAuth code exchange
-              if (key.includes('token-code-verifier')) {
+              try {
                 localStorage.setItem(key, value);
-                return;
+              } catch (error) {
+                console.error('[SUPABASE] Error writing to storage:', error);
               }
-              // Block other auth/session keys from being written
-              if (key.includes('auth') || key.includes('supabase') || key.startsWith('sb-')) {
-                console.log('[SUPABASE] Blocking auth state persistence for key:', key);
-                return;
-              }
-              localStorage.setItem(key, value);
             },
             removeItem: (key: string) => {
-              localStorage.removeItem(key);
+              try {
+                localStorage.removeItem(key);
+              } catch (error) {
+                console.error('[SUPABASE] Error removing from storage:', error);
+              }
             },
           },
+        },
+        // Disable cookie operations on client side to prevent Next.js App Router errors
+        // Cookies will be handled by server-side APIs
+        cookies: {
+          get: () => undefined,
+          set: () => {},
+          remove: () => {}
         },
         global: {
           headers: {
@@ -76,15 +79,29 @@ export const supabaseBrowser = () => {
 // Function to clear Supabase auth state
 export const clearSupabaseAuth = async () => {
   try {
-    if (supabaseBrowserInstance) {
-      await supabaseBrowserInstance.auth.signOut();
+    console.log('[SUPABASE] Clearing auth state...');
+    
+    // Use server-side signout API to properly clear cookies
+    try {
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        console.log('[SUPABASE] Server signout successful');
+      } else {
+        console.log('[SUPABASE] Server signout failed:', response.status);
+      }
+    } catch (error) {
+      console.log('[SUPABASE] Server signout failed, continuing with local cleanup:', error);
     }
     
     // Clear any remaining auth-related storage
     const authKeys = Object.keys(localStorage).filter(k => 
       (k.includes('auth') || k.includes('supabase') || k.startsWith('sb-') || k.includes('pkce'))
-      // Preserve PKCE verifier so ongoing OAuth flows don't break
-      && !k.includes('token-code-verifier')
     );
     
     authKeys.forEach(key => {
@@ -95,7 +112,6 @@ export const clearSupabaseAuth = async () => {
     // Clear sessionStorage
     const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
       (k.includes('auth') || k.includes('supabase') || k.startsWith('sb-') || k.includes('pkce'))
-      && !k.includes('token-code-verifier')
     );
     
     sessionAuthKeys.forEach(key => {
@@ -103,20 +119,48 @@ export const clearSupabaseAuth = async () => {
       sessionStorage.removeItem(key);
     });
     
-    // Clear cookies
-    if (typeof document !== 'undefined') {
-      const cookies = document.cookie.split(';');
-      cookies.forEach(cookie => {
-        const [name] = cookie.split('=');
-        if (name.trim().startsWith('sb-') || name.trim().includes('auth')) {
-          document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-          console.log('[SUPABASE] Cleared auth cookie:', name.trim());
-        }
-      });
-    }
-    
     console.log('[SUPABASE] Auth state cleared successfully');
   } catch (error) {
     console.error('[SUPABASE] Error clearing auth state:', error);
+  }
+};
+
+// Function to check if user is authenticated
+export const checkAuthStatus = async () => {
+  try {
+    const supabase = supabaseBrowser();
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('[SUPABASE] Error checking auth status:', error);
+      return { isAuthenticated: false, error };
+    }
+    
+    return { 
+      isAuthenticated: !!session, 
+      session,
+      user: session?.user || null 
+    };
+  } catch (error) {
+    console.error('[SUPABASE] Error checking auth status:', error);
+    return { isAuthenticated: false, error };
+  }
+};
+
+// Function to refresh session
+export const refreshSession = async () => {
+  try {
+    const supabase = supabaseBrowser();
+    const { data: { session }, error } = await supabase.auth.refreshSession();
+    
+    if (error) {
+      console.error('[SUPABASE] Error refreshing session:', error);
+      return { session: null, error };
+    }
+    
+    return { session, error: null };
+  } catch (error) {
+    console.error('[SUPABASE] Error refreshing session:', error);
+    return { session: null, error };
   }
 };
