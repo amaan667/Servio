@@ -1,13 +1,10 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-// Delay importing supabase until after mount to avoid build-time env evaluation
-let supabaseBrowser: any = null;
-let clearSupabaseAuth: any = null;
-import { AuthErrorBoundary } from '@/components/auth-error-boundary';
+
+// Import supabase browser directly to avoid lazy loading issues
+import { supabaseBrowser, clearSupabaseAuth } from '@/lib/supabase/browser';
 
 function CallbackContent() {
   const router = useRouter();
@@ -24,7 +21,7 @@ function CallbackContent() {
     setDebugLogs(prev => [...prev, logEntry]);
   }, []);
 
-  // Detect if we're on mobile with improved detection
+  // Detect if we're on mobile
   const isMobile = () => {
     if (typeof window === 'undefined') return false;
     const userAgent = navigator.userAgent.toLowerCase();
@@ -48,12 +45,6 @@ function CallbackContent() {
   };
 
   useEffect(() => {
-    // Lazy import supabase browser helpers on client
-    (async () => {
-      const mod = await import('@/lib/supabase/browser');
-      supabaseBrowser = mod.supabaseBrowser;
-      clearSupabaseAuth = mod.clearSupabaseAuth;
-    })();
     addDebugLog('[AUTH CALLBACK] Component mounted');
     addDebugLog(`[AUTH CALLBACK] Platform: ${isMobile() ? 'Mobile' : 'Desktop'}`);
     addDebugLog(`[AUTH CALLBACK] User Agent: ${typeof window !== 'undefined' ? navigator.userAgent : 'SSR'}`);
@@ -199,9 +190,10 @@ function CallbackContent() {
           if (exchangeError.message?.includes('network') || 
               exchangeError.message?.includes('fetch') ||
               exchangeError.message?.includes('timeout')) {
-            addDebugLog('[AUTH CALLBACK] Network error detected');
-            setError('Network error. Please check your connection and try again.');
-            setLoading(false);
+            addDebugLog('[AUTH CALLBACK] Network error detected, redirecting to sign-in');
+            setTimeout(() => {
+              router.push('/sign-in?error=network_error');
+            }, 1000);
             return;
           }
           
@@ -209,9 +201,13 @@ function CallbackContent() {
           addDebugLog('[AUTH CALLBACK] Attempting fallback authentication...');
           
           try {
+            // Clear any existing auth state
             await clearAuthState();
+            
+            // Wait a moment for cleanup
             await new Promise(resolve => setTimeout(resolve, 1000));
             
+            // Try the exchange again
             addDebugLog('[AUTH CALLBACK] Retrying code exchange...');
             const { data: retryData, error: retryError } = await supabaseBrowser().auth.exchangeCodeForSession(code);
             
@@ -362,17 +358,15 @@ function CallbackContent() {
 
 export default function CallbackPage() {
   return (
-    <AuthErrorBoundary>
-      <Suspense fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading...</p>
-          </div>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
         </div>
-      }>
-        <CallbackContent />
-      </Suspense>
-    </AuthErrorBoundary>
+      </div>
+    }>
+      <CallbackContent />
+    </Suspense>
   );
 }
