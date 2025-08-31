@@ -108,7 +108,7 @@ export default function GlobalNav() {
     return (
       <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center group">
@@ -117,7 +117,7 @@ export default function GlobalNav() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-32 w-auto transition-all duration-300 group-hover:scale-105"
+                  className="h-48 sm:h-56 md:h-64 lg:h-72 xl:h-80 w-auto transition-all duration-300 group-hover:scale-105"
                   priority
                 />
               </Link>
@@ -136,7 +136,7 @@ export default function GlobalNav() {
   return (
     <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
@@ -145,7 +145,7 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-32 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-48 sm:h-56 md:h-64 lg:h-72 xl:h-80 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
