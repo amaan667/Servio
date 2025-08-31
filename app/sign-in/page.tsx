@@ -4,13 +4,14 @@ import { useEffect, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 import { getAuthRedirectUrl } from '@/lib/auth';
+import { useAuth } from '@/app/auth/AuthProvider';
 import SignInForm from './signin-form';
 import PkceDebugComponent from './pkce-debug';
 
 function SignInPageContent() {
   const router = useRouter();
   const sp = useSearchParams();
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const { session, loading } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,9 +22,12 @@ function SignInPageContent() {
   };
 
   useEffect(() => {
-    // Skip session check for now to test the sign-in form
-    console.log('[AUTH DEBUG] Skipping session check, showing sign-in form directly');
-    setIsCheckingSession(false);
+    // Check if user is already authenticated
+    if (!loading && session?.user) {
+      console.log('[AUTH DEBUG] User already authenticated, redirecting to dashboard');
+      router.replace('/dashboard');
+      return;
+    }
     
     // Check for error parameters in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -42,7 +46,7 @@ function SignInPageContent() {
           setError('Authentication failed. Please try again.');
       }
     }
-  }, []);
+  }, [session, loading, router]);
 
   const signInWithGoogle = async () => {
     if (isSigningIn) {
@@ -56,27 +60,6 @@ function SignInPageContent() {
       console.log('[AUTH DEBUG] ===== STARTING GOOGLE OAUTH =====');
       console.log('[AUTH DEBUG] Starting Google OAuth sign in');
       console.log('[AUTH DEBUG] Platform:', isMobile() ? 'Mobile' : 'Desktop');
-      
-      // Clear any existing auth state that might interfere
-      console.log('[AUTH DEBUG] Clearing existing auth state...');
-              await supabaseBrowser().auth.signOut();
-      
-      // Clear any remaining auth-related storage to prevent state conflicts
-      try {
-        const authKeys = Object.keys(localStorage).filter(k => 
-          k.includes('auth') || k.includes('supabase') || k.includes('sb-')
-        );
-        console.log('[AUTH DEBUG] Clearing localStorage keys:', authKeys);
-        authKeys.forEach(key => localStorage.removeItem(key));
-        
-        const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
-          k.includes('auth') || k.includes('supabase') || k.includes('sb-')
-        );
-        console.log('[AUTH DEBUG] Clearing sessionStorage keys:', sessionAuthKeys);
-        sessionAuthKeys.forEach(key => sessionStorage.removeItem(key));
-      } catch (err) {
-        console.error('[AUTH DEBUG] Error clearing storage:', err);
-      }
       
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
@@ -151,13 +134,25 @@ function SignInPageContent() {
     }
   };
 
-  // Skip session check for testing
-  if (false) {
+  // Show loading while checking authentication
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-2 text-gray-600">Checking session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If already authenticated, show loading while redirecting
+  if (session?.user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Redirecting to dashboard...</p>
         </div>
       </div>
     );

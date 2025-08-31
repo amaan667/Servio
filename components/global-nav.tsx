@@ -49,7 +49,7 @@ export default function GlobalNav() {
   // Fetch primary venue when user is signed in
   useEffect(() => {
     const fetchPrimaryVenue = async () => {
-      if (isAuthenticated) {
+      if (isAuthenticated && session?.user?.id) {
         try {
           const { data, error } = await supabase
             .from('venues')
@@ -86,14 +86,6 @@ export default function GlobalNav() {
         console.log('[AUTH DEBUG] Server-side sign out failed');
       } else {
         console.log('[AUTH DEBUG] Server-side sign out successful');
-      }
-      
-      // Clear client storage to avoid auto sign-in or stale sessions
-      try {
-        const { clearAuthStorage } = await import('@/lib/sb-client');
-        clearAuthStorage();
-      } catch (error) {
-        console.log('[AUTH DEBUG] Error clearing client storage:', error);
       }
       
       // Use the auth provider's signOut method

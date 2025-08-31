@@ -24,15 +24,15 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Always start with no session to prevent automatic sign-in
-  // Users must explicitly sign in through the sign-in page
-  const initialSession = null;
+  // Get the actual session from the server
+  const supabase = await createServerSupabase();
+  const { data: { session } } = await supabase.auth.getSession();
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ErrorBoundary>
-          <AuthProvider initialSession={initialSession}>
+          <AuthProvider initialSession={session}>
             <Providers>
               <AppHeader />
               {children}

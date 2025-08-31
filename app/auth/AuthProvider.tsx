@@ -7,7 +7,6 @@ import { supabaseBrowser } from '@/lib/supabase/browser';
 type AuthValue = {
   session: Session | null;
   user: User | null;
-  // Keep 'loading' for callers, but start as FALSE to match server render
   loading: boolean;
   signOut: () => Promise<void>;
 };
@@ -15,7 +14,7 @@ type AuthValue = {
 const AuthCtx = createContext<AuthValue>({
   session: null,
   user: null,
-  loading: false,
+  loading: true,
   signOut: async () => {},
 });
 
@@ -32,64 +31,57 @@ export default function AuthProvider({
 }) {
   const [session, setSession] = useState<Session | null>(initialSession ?? null);
   const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
-  // IMPORTANT: false initially so server & client markup match
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const supabase = supabaseBrowser();
     
-    // Clear any existing auth state on mount to prevent automatic sign-in
-    const clearExistingAuth = async () => {
+    // Get initial session
+    const getInitialSession = async () => {
       try {
-        console.log('[AUTH DEBUG] Clearing any existing auth state on mount');
+        console.log('[AUTH DEBUG] Getting initial session');
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        // Check if there's an existing session
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        console.log('[AUTH DEBUG] Initial session:', {
+          hasSession: !!currentSession,
+          userId: currentSession?.user?.id,
+          timestamp: new Date().toISOString()
+        });
         
-        if (existingSession) {
-          console.log('[AUTH DEBUG] Found existing session, clearing it');
-          await supabase.auth.signOut();
-          
-          // Clear any remaining auth storage
-          try {
-            const authKeys = Object.keys(localStorage).filter(k => 
-              k.includes('auth') || k.includes('supabase') || k.startsWith('sb-')
-            );
-            authKeys.forEach(key => localStorage.removeItem(key));
-            
-            const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
-              k.includes('auth') || k.includes('supabase') || k.startsWith('sb-')
-            );
-            sessionAuthKeys.forEach(key => sessionStorage.removeItem(key));
-          } catch (error) {
-            console.log('[AUTH DEBUG] Error clearing storage:', error);
-          }
-        }
-        
-        console.log('[AUTH DEBUG] Auth state cleared, starting fresh');
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setLoading(false);
       } catch (error) {
-        console.log('[AUTH DEBUG] Error clearing existing auth:', error);
+        console.log('[AUTH DEBUG] Error getting initial session:', error);
+        setSession(null);
+        setUser(null);
+        setLoading(false);
       }
     };
     
-    // Clear existing auth state first
-    clearExistingAuth();
+    // Get initial session first
+    getInitialSession();
     
-    // Handle auth state changes with error handling
+    // Handle auth state changes
     const { data: subscription } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('[AUTH DEBUG] Auth state change:', event, newSession?.user?.id);
+      console.log('[AUTH DEBUG] Auth state change:', {
+        event,
+        userId: newSession?.user?.id,
+        timestamp: new Date().toISOString()
+      });
       
-      // Handle specific auth events
       switch (event) {
         case 'SIGNED_IN':
           console.log('[AUTH DEBUG] User signed in successfully');
           setSession(newSession);
           setUser(newSession?.user ?? null);
+          setLoading(false);
           break;
         case 'SIGNED_OUT':
           console.log('[AUTH DEBUG] User signed out');
           setSession(null);
           setUser(null);
+          setLoading(false);
           break;
         case 'TOKEN_REFRESHED':
           console.log('[AUTH DEBUG] Token refreshed successfully');
@@ -103,11 +95,11 @@ export default function AuthProvider({
           break;
         default:
           console.log('[AUTH DEBUG] Unknown auth event:', event);
-          // Only update session if it's a valid session (not null from sign out)
           if (newSession) {
             setSession(newSession);
             setUser(newSession?.user ?? null);
           }
+          setLoading(false);
       }
     });
     
