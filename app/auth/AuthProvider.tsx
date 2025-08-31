@@ -38,6 +38,43 @@ export default function AuthProvider({
   useEffect(() => {
     const supabase = supabaseBrowser();
     
+    // Clear any existing auth state on mount to prevent automatic sign-in
+    const clearExistingAuth = async () => {
+      try {
+        console.log('[AUTH DEBUG] Clearing any existing auth state on mount');
+        
+        // Check if there's an existing session
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        
+        if (existingSession) {
+          console.log('[AUTH DEBUG] Found existing session, clearing it');
+          await supabase.auth.signOut();
+          
+          // Clear any remaining auth storage
+          try {
+            const authKeys = Object.keys(localStorage).filter(k => 
+              k.includes('auth') || k.includes('supabase') || k.startsWith('sb-')
+            );
+            authKeys.forEach(key => localStorage.removeItem(key));
+            
+            const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
+              k.includes('auth') || k.includes('supabase') || k.startsWith('sb-')
+            );
+            sessionAuthKeys.forEach(key => sessionStorage.removeItem(key));
+          } catch (error) {
+            console.log('[AUTH DEBUG] Error clearing storage:', error);
+          }
+        }
+        
+        console.log('[AUTH DEBUG] Auth state cleared, starting fresh');
+      } catch (error) {
+        console.log('[AUTH DEBUG] Error clearing existing auth:', error);
+      }
+    };
+    
+    // Clear existing auth state first
+    clearExistingAuth();
+    
     // Handle auth state changes with error handling
     const { data: subscription } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('[AUTH DEBUG] Auth state change:', event, newSession?.user?.id);

@@ -16,16 +16,16 @@ export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
+      persistSession: false, // Disable session persistence to prevent auto sign-in
+      autoRefreshToken: false, // Disable auto refresh to prevent auto sign-in
+      detectSessionInUrl: false, // Disable session detection in URL
       flowType: 'pkce',
     },
   }
 )
 
 if (typeof window !== 'undefined') {
-  console.log('[AUTH DEBUG] Supabase client created successfully');
+  console.log('[AUTH DEBUG] Supabase client created successfully (NO AUTO RESTORATION)');
 }
 
 // Keep the old createClient function for backward compatibility

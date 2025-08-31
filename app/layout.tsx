@@ -24,15 +24,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let initialSession = null;
-  const cookieStore = await cookies();
-  const names = cookieStore.getAll().map((c) => c.name);
-  if (hasSupabaseAuthCookies(names)) {
-    const supabase = await createServerSupabase();
-    // Safe: only called when auth cookies exist, avoids refresh_token_not_found
-    const { data: { session } } = await supabase.auth.getSession();
-    initialSession = session ?? null;
-  }
+  // Always start with no session to prevent automatic sign-in
+  // Users must explicitly sign in through the sign-in page
+  const initialSession = null;
 
   return (
     <html lang="en" suppressHydrationWarning>
