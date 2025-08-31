@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Flow Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 OAuth Flow Test</h1>
+        <p>This page helps test and debug the Google OAuth flow.</p>
+
+        <div class="test-section">
+            <h3>🔧 Environment Test</h3>
+            <button onclick="testEnvironment()">Test Environment</button>
+            <div id="env-log" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔐 Auth State Test</h3>
+            <button onclick="testAuthState()">Test Auth State</button>
+            <div id="auth-log" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔄 OAuth Flow Test</h3>
+            <button onclick="testOAuthFlow()">Test OAuth Flow</button>
+            <button onclick="clearLogs()">Clear Logs</button>
+            <div id="oauth-log" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🐛 Debug Tools</h3>
+            <button onclick="window.open('/debug-auth', '_blank')">Open Auth Debug</button>
+            <button onclick="window.open('/auth/callback-debug', '_blank')">Open Callback Debug</button>
+            <button onclick="window.open('/api/auth/debug', '_blank')">Open API Debug</button>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:3002';
+        
+        function log(elementId, message, type = 'info') {
+            const logElement = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logElement.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        async function testEnvironment() {
+            const logId = 'env-log';
+            log(logId, '🔧 Testing environment configuration...', 'info');
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/auth/debug`);
+                const data = await response.json();
+                
+                log(logId, '✅ Debug endpoint accessible', 'success');
+                log(logId, `📊 NODE_ENV: ${data.environment.NODE_ENV}`, 'info');
+                log(logId, `📊 Supabase URL: ${data.environment.NEXT_PUBLIC_SUPABASE_URL}`, 'info');
+                log(logId, `📊 Anon Key: ${data.environment.NEXT_PUBLIC_SUPABASE_ANON_KEY}`, 'info');
+                
+                if (data.environment.NODE_ENV === 'development') {
+                    log(logId, '⚠️ Development mode detected', 'warning');
+                }
+                
+            } catch (error) {
+                log(logId, `❌ Environment test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuthState() {
+            const logId = 'auth-log';
+            log(logId, '🔐 Testing auth state...', 'info');
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/auth/debug`);
+                const data = await response.json();
+                
+                log(logId, '✅ Auth state check successful', 'success');
+                log(logId, `📊 Has User: ${data.auth.hasUser}`, 'info');
+                log(logId, `📊 Has Session: ${data.auth.hasSession}`, 'info');
+                
+                if (data.auth.userError) {
+                    log(logId, `❌ User Error: ${data.auth.userError}`, 'error');
+                }
+                if (data.auth.sessionError) {
+                    log(logId, `❌ Session Error: ${data.auth.sessionError}`, 'error');
+                }
+                
+            } catch (error) {
+                log(logId, `❌ Auth state test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testOAuthFlow() {
+            const logId = 'oauth-log';
+            log(logId, '🔄 Testing OAuth flow...', 'info');
+            
+            try {
+                // Test 1: Check sign-in page
+                log(logId, '📋 Step 1: Checking sign-in page...', 'info');
+                const signInResponse = await fetch(`${BASE_URL}/sign-in`);
+                if (signInResponse.ok) {
+                    log(logId, '✅ Sign-in page accessible', 'success');
+                } else {
+                    log(logId, `❌ Sign-in page not accessible: ${signInResponse.status}`, 'error');
+                }
+                
+                // Test 2: Check callback page
+                log(logId, '📋 Step 2: Checking callback page...', 'info');
+                const callbackResponse = await fetch(`${BASE_URL}/auth/callback`);
+                if (callbackResponse.ok) {
+                    log(logId, '✅ Callback page accessible', 'success');
+                } else {
+                    log(logId, `❌ Callback page not accessible: ${callbackResponse.status}`, 'error');
+                }
+                
+                // Test 3: Check redirect URL
+                log(logId, '📋 Step 3: Checking redirect URL configuration...', 'info');
+                const debugResponse = await fetch(`${BASE_URL}/api/auth/debug`);
+                const debugData = await debugResponse.json();
+                
+                if (debugData.environment.NODE_ENV === 'development') {
+                    const expectedUrl = 'http://localhost:3002/auth/callback';
+                    log(logId, `📊 Expected redirect URL: ${expectedUrl}`, 'info');
+                    log(logId, '💡 In development, should use localhost URLs', 'info');
+                }
+                
+                log(logId, '🎯 OAuth flow test complete!', 'success');
+                log(logId, '💡 Next: Click "Sign in with Google" on the sign-in page', 'info');
+                
+            } catch (error) {
+                log(logId, `❌ OAuth flow test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLogs() {
+            document.querySelectorAll('.log').forEach(log => {
+                log.innerHTML = '';
+            });
+        }
+
+        // Auto-run environment test on page load
+        window.addEventListener('load', () => {
+            testEnvironment();
+        });
+    </script>
+</body>
+</html>

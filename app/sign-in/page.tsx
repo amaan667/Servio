@@ -56,7 +56,7 @@ function SignInPageContent() {
       // Clear any existing auth state that might interfere
       await supabaseBrowser.auth.signOut();
       
-      // Use stable production redirect URL helper
+      // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
       console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
       
@@ -66,7 +66,7 @@ function SignInPageContent() {
           redirectTo,
           queryParams: { 
             access_type: 'offline',
-            prompt: 'select_account'
+            prompt: 'consent' // Changed from 'select_account' to 'consent' for refresh tokens
           },
         },
       });
