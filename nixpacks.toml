@@ -1,5 +1,6 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "pnpm"]
+node_version = "20.18.1"
+pnpm_version = "9.15.9"
 
 [phases.install]
 cmds = ["pnpm install --frozen-lockfile"]
