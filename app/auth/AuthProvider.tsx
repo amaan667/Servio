@@ -48,7 +48,17 @@ export default function AuthProvider({
         
         if (existingSession) {
           console.log('[AUTH DEBUG] Found existing session, clearing it');
-          await supabase.auth.signOut();
+          // Use server-side signout API instead of client-side auth.signOut()
+          try {
+            await fetch('/api/auth/signout', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+          } catch (error) {
+            console.log('[AUTH DEBUG] Error calling server signout:', error);
+          }
           
           // Clear any remaining auth storage
           try {
@@ -117,13 +127,18 @@ export default function AuthProvider({
   const signOut = async () => {
     console.log('[AUTH DEBUG] AuthProvider signOut called');
     try {
-      const supabase = supabaseBrowser();
-      const { error } = await supabase.auth.signOut();
+      // Use server-side signout API instead of client-side auth.signOut()
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       
-      if (error) {
-        console.log('[AUTH DEBUG] Supabase signOut error:', error);
+      if (!response.ok) {
+        console.log('[AUTH DEBUG] Server signOut error:', response.status);
       } else {
-        console.log('[AUTH DEBUG] Supabase signOut successful');
+        console.log('[AUTH DEBUG] Server signOut successful');
       }
       
       // Clear local state immediately

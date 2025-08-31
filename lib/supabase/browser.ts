@@ -61,6 +61,12 @@ export const supabaseBrowser = () => {
             },
           },
         },
+        // Completely disable cookie operations to prevent Next.js App Router errors
+        cookies: {
+          get: () => undefined,
+          set: () => {},
+          remove: () => {}
+        },
         global: {
           headers: {
             'X-Client-Info': 'servio-web-app',
@@ -76,8 +82,17 @@ export const supabaseBrowser = () => {
 // Function to clear Supabase auth state
 export const clearSupabaseAuth = async () => {
   try {
-    if (supabaseBrowserInstance) {
-      await supabaseBrowserInstance.auth.signOut();
+    // Note: Don't call supabase.auth.signOut() directly as it can cause cookie modification errors
+    // Instead, use the server-side signout API
+    try {
+      await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.log('[SUPABASE] Server signout failed, continuing with local cleanup:', error);
     }
     
     // Clear any remaining auth-related storage
@@ -103,19 +118,9 @@ export const clearSupabaseAuth = async () => {
       sessionStorage.removeItem(key);
     });
     
-    // Clear cookies
-    if (typeof document !== 'undefined') {
-      const cookies = document.cookie.split(';');
-      cookies.forEach(cookie => {
-        const [name] = cookie.split('=');
-        if (name.trim().startsWith('sb-') || name.trim().includes('auth')) {
-          document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-          console.log('[SUPABASE] Cleared auth cookie:', name.trim());
-        }
-      });
-    }
-    
-    console.log('[SUPABASE] Auth state cleared successfully');
+    // Note: Cookie clearing should be handled by the server-side signout API
+    // Client-side cookie manipulation is not allowed in Next.js App Router
+    console.log('[SUPABASE] Auth state cleared successfully (cookies will be cleared by server)');
   } catch (error) {
     console.error('[SUPABASE] Error clearing auth state:', error);
   }

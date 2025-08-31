@@ -57,8 +57,19 @@ if (supabaseUrl && supabaseAnonKey) {
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) {
+  try {
+    // Use server-side signout API instead of client-side auth.signOut()
+    const response = await fetch('/api/auth/signout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server signout failed: ${response.status}`);
+    }
+  } catch (error) {
     console.error('Sign-out error:', error);
     throw error;
   }
