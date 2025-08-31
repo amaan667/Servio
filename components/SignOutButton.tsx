@@ -1,14 +1,19 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/auth/AuthProvider";
 
 export function SignOutButton() {
   const sb = createClient();
   const router = useRouter();
+  const { signOut } = useAuth();
+  
   return (
     <button
       onClick={async () => {
         try {
+          console.log('[AUTH DEBUG] SignOutButton clicked');
+          
           // Use server-side sign out to avoid cookie modification errors
           const response = await fetch('/api/auth/signout', {
             method: 'POST',
@@ -34,7 +39,13 @@ export function SignOutButton() {
           console.log('[AUTH DEBUG] Error clearing client storage:', error);
         }
         
-        router.replace("/sign-in");
+        // Use the auth provider's signOut method
+        await signOut();
+        
+        // Force redirect to home page
+        router.replace("/");
+        
+        console.log('[AUTH DEBUG] SignOutButton completed');
       }}
       className="rounded-md border px-3 py-2"
     >

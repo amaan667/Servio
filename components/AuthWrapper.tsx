@@ -1,35 +1,23 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useAuth } from '@/app/authenticated-client-provider';
-import { getBrowserInfo } from '@/lib/supabase/client';
+import { ReactNode } from 'react';
+import { useAuth } from '@/app/auth/AuthProvider';
+import { redirect } from 'next/navigation';
 
 interface AuthWrapperProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export default function AuthWrapper({ children }: AuthWrapperProps) {
   const { session, loading } = useAuth();
 
-  useEffect(() => {
-    // Log device and browser information for debugging
-    console.log('[AUTH DEBUG] AuthWrapper: Device info', {
-      browserInfo: getBrowserInfo(),
-      timestamp: new Date().toISOString()
-    });
-  }, []);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-  // Handle beforeunload event to clean up OAuth state
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Clear OAuth progress flags when page is about to unload
-      sessionStorage.removeItem("sb_oauth_in_progress");
-      sessionStorage.removeItem("sb_oauth_start_time");
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
+  if (!session) {
+    redirect('/sign-in');
+  }
 
   return <>{children}</>;
 }

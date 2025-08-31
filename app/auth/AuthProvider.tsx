@@ -66,8 +66,11 @@ export default function AuthProvider({
           break;
         default:
           console.log('[AUTH DEBUG] Unknown auth event:', event);
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
+          // Only update session if it's a valid session (not null from sign out)
+          if (newSession) {
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
+          }
       }
     });
     
@@ -75,8 +78,28 @@ export default function AuthProvider({
   }, []);
 
   const signOut = async () => {
-    const supabase = supabaseBrowser();
-    await supabase.auth.signOut();
+    console.log('[AUTH DEBUG] AuthProvider signOut called');
+    try {
+      const supabase = supabaseBrowser();
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.log('[AUTH DEBUG] Supabase signOut error:', error);
+      } else {
+        console.log('[AUTH DEBUG] Supabase signOut successful');
+      }
+      
+      // Clear local state immediately
+      setSession(null);
+      setUser(null);
+      
+      console.log('[AUTH DEBUG] AuthProvider signOut completed');
+    } catch (error) {
+      console.log('[AUTH DEBUG] AuthProvider signOut error:', error);
+      // Clear local state even if there's an error
+      setSession(null);
+      setUser(null);
+    }
   };
 
   const value = useMemo(() => ({ session, user, loading, signOut }), [session, user, loading]);

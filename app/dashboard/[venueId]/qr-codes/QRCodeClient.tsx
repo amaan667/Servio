@@ -1,237 +1,252 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, QrCode, Download } from "lucide-react";
-import { useAuth } from "@/app/authenticated-client-provider";
-import { toast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
+import { useState, useEffect } from 'react';
+import { useAuth } from "@/app/auth/AuthProvider";
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Download, Trash2, Copy } from 'lucide-react';
+import QRCode from 'qrcode';
 
-interface Table {
+interface QRCodeItem {
   id: string;
-  qr_code: string | null;
-  created_at?: string;
-  name?: string;
+  table_number: number;
+  qr_code_url: string;
+  created_at: string;
 }
 
-interface Stats {
-  totalTables: number; // distinct tables that had scans or any orders today
-  activeQRCodes: number; // tables currently active (open orders today)
-}
-
-interface QRCodeClientProps {
-  venueId: string;
-  venueName: string;
-}
-
-export default function QRCodeClient({ venueId, venueName }: QRCodeClientProps) {
+export default function QRCodeClient({ venueId }: { venueId: string }) {
+  const { session } = useAuth();
+  const [qrCodes, setQrCodes] = useState<QRCodeItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<Stats>({
-    totalTables: 0,
-    activeQRCodes: 0
-  });
-  const [tables, setTables] = useState<Table[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const router = useRouter();
+  const [newTableNumber, setNewTableNumber] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+
+  const supabase = createClient();
 
   useEffect(() => {
-    loadStats();
-    // Listen to orders changes to reflect active tables today
-    const channel = supabase
-      .channel('qr-dashboard-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `venue_id=eq.${venueId}` }, () => {
-        loadStats();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [venueId]);
+    if (session?.user) {
+      fetchQRCodes();
+    }
+  }, [session, venueId]);
 
-  const loadStats = async () => {
+  const fetchQRCodes = async () => {
     try {
-      // Load tables list
-      const { data: tables, error: tablesError } = await supabase
-        .from("tables")
-        .select("id, qr_code, created_at, name")
-        .eq("venue_id", venueId);
-      if (tablesError) {
-        console.error("Error fetching tables:", tablesError.message);
+      const { data, error } = await supabase()
+        .from('qr_codes')
+        .select('*')
+        .eq('venue_id', venueId)
+        .order('table_number', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching QR codes:', error);
       } else {
-        setTables(tables || []);
+        setQrCodes(data || []);
       }
-
-      // Today window in UTC (device-based)
-      const today = new Date(); today.setHours(0,0,0,0);
-      const startIso = today.toISOString();
-      const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
-      // Active open orders today (pending|preparing)
-      const { data: openOrders } = await supabase
-        .from('orders')
-        .select('table_number, status, created_at')
-        .eq('venue_id', venueId)
-        .in('status', ['pending','preparing'])
-        .gte('created_at', startIso)
-        .lt('created_at', endIso);
-      const activeTables = new Set((openOrders ?? []).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
-      // Any tables that interacted today (any order placed). If you later add a qr_scans table,
-      // union those table_numbers here as well.
-      const { data: anyOrders } = await supabase
-        .from('orders')
-        .select('table_number')
-        .eq('venue_id', venueId)
-        .gte('created_at', startIso)
-        .lt('created_at', endIso);
-      const interactedTables = new Set((anyOrders ?? []).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
-
-      setStats({ totalTables: interactedTables, activeQRCodes: activeTables });
     } catch (error) {
-      console.error("Error loading QR code stats:", error);
+      console.error('Error fetching QR codes:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGenerateQR = async () => {
-    setIsGenerating(true);
+  const generateQRCode = async () => {
+    if (!newTableNumber || isNaN(Number(newTableNumber))) return;
+
+    setIsAdding(true);
     try {
-      router.push(`/generate-qr?venue=${venueId}`);
+      const tableNumber = parseInt(newTableNumber);
+      const orderUrl = `${window.location.origin}/order?venue=${venueId}&table=${tableNumber}`;
+      
+      // Generate QR code as data URL
+      const qrDataUrl = await QRCode.toDataURL(orderUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      const { data, error } = await supabase()
+        .from('qr_codes')
+        .insert({
+          venue_id: venueId,
+          table_number: tableNumber,
+          qr_code_url: qrDataUrl,
+          order_url: orderUrl,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating QR code:', error);
+      } else {
+        setQrCodes([...qrCodes, data]);
+        setNewTableNumber('');
+      }
     } catch (error) {
-      console.error("Error navigating to QR generation:", error);
+      console.error('Error generating QR code:', error);
     } finally {
-      setIsGenerating(false);
+      setIsAdding(false);
+    }
+  };
+
+  const deleteQRCode = async (qrCodeId: string) => {
+    try {
+      const { error } = await supabase()
+        .from('qr_codes')
+        .delete()
+        .eq('id', qrCodeId);
+
+      if (error) {
+        console.error('Error deleting QR code:', error);
+      } else {
+        setQrCodes(qrCodes.filter(qr => qr.id !== qrCodeId));
+      }
+    } catch (error) {
+      console.error('Error deleting QR code:', error);
+    }
+  };
+
+  const downloadQRCode = async (qrCodeUrl: string, tableNumber: number) => {
+    try {
+      const link = document.createElement('a');
+      link.href = qrCodeUrl;
+      link.download = `qr-code-table-${tableNumber}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading QR code:', error);
+    }
+  };
+
+  const copyOrderUrl = async (orderUrl: string) => {
+    try {
+      await navigator.clipboard.writeText(orderUrl);
+      // You could add a toast notification here
+    } catch (error) {
+      console.error('Error copying URL:', error);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
       </div>
     );
   }
 
-              return (
-        <div className="min-h-screen bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
-        
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">QR Code Management</h2>
-            <p className="text-gray-600">Generate and manage QR codes for your tables</p>
-          </div>
-          <Button 
-            onClick={handleGenerateQR} 
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-white" />
-            ) : (
-              <Plus className="h-4 w-4 mr-2" />
-            )}
-            {isGenerating ? 'Generating...' : 'Generate New QR Code'}
-          </Button>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Tables</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalTables}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <QrCode className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Active QR Codes</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.activeQRCodes}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <QrCode className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* QR Code List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Add placeholder card for when no QR codes exist */}
-          {stats.totalTables === 0 && (
-            <Card className="col-span-full">
-              <CardContent className="p-6 text-center">
-                <QrCode className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold mb-2">No QR Codes Yet</h3>
-                <p className="text-gray-500 mb-4">Get started by generating your first QR code</p>
-                <Button 
-                  onClick={handleGenerateQR}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-white" />
-                  ) : null}
-                  {isGenerating ? 'Generating...' : 'Generate QR Code'}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {tables.map((table: Table) => (
-            <Card key={table.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="aspect-square relative mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
-                  {table.qr_code ? (
-                    <Image
-                      src={table.qr_code}
-                      alt={`QR Code for ${table.name || `Table ${table.id}`}`}
-                      fill
-                      className="object-contain p-4"
-                    />
-                  ) : (
-                    <QrCode className="h-12 w-12 text-gray-400" />
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">{table.name || `Table ${table.id}`}</h4>
-                    <p className="text-sm text-gray-500">
-                      Created on {new Date(table.created_at || Date.now()).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {table.qr_code && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={table.qr_code} download={`qr-${table.name || table.id}.png`}>
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">QR Code Management</h1>
+        <Button onClick={() => setIsAdding(!isAdding)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add QR Code
+        </Button>
       </div>
+
+      {isAdding && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Generate New QR Code</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="tableNumber">Table Number</Label>
+              <Input
+                id="tableNumber"
+                type="number"
+                value={newTableNumber}
+                onChange={(e) => setNewTableNumber(e.target.value)}
+                placeholder="Enter table number"
+                min="1"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={generateQRCode} disabled={isAdding || !newTableNumber}>
+                Generate QR Code
+              </Button>
+              <Button variant="outline" onClick={() => setIsAdding(false)}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {qrCodes.map((qrCode) => (
+          <Card key={qrCode.id}>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">Table {qrCode.table_number}</CardTitle>
+                <Badge variant="secondary">QR Code</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-center">
+                <img 
+                  src={qrCode.qr_code_url} 
+                  alt={`QR Code for Table ${qrCode.table_number}`}
+                  className="w-48 h-48 border rounded-lg"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => downloadQRCode(qrCode.qr_code_url, qrCode.table_number)}
+                    className="flex-1"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => copyOrderUrl(qrCode.order_url || '')}
+                    className="flex-1"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy URL
+                  </Button>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="destructive"
+                  onClick={() => deleteQRCode(qrCode.id)}
+                  className="w-full"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {qrCodes.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-gray-500">No QR codes generated yet.</p>
+            <Button onClick={() => setIsAdding(true)} className="mt-4">
+              <Plus className="w-4 h-4 mr-2" />
+              Generate Your First QR Code
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

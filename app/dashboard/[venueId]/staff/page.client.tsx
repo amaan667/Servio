@@ -1,227 +1,216 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from "@/app/auth/AuthProvider";
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
-import { useAuth } from "@/app/authenticated-client-provider";
-import { Plus, Trash2, Clock, User } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Trash2, Edit } from 'lucide-react';
 
-type Staff = { id: string; name: string; role: string; active: boolean; area?: string | null };
-type Shift = { id: string; staff_id: string; start_time: string; end_time: string; area?: string | null };
+interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  created_at: string;
+}
 
-export default function StaffClient({ venueId }: { venueId: string }) {
-  const router = useRouter();
-  const [staff, setStaff] = useState<Staff[]>([]);
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('Server');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [openShiftFor, setOpenShiftFor] = useState<string | null>(null);
-  const [shiftStart, setShiftStart] = useState('');
-  const [shiftEnd, setShiftEnd] = useState('');
-  const [shiftArea, setShiftArea] = useState('');
+export default function StaffPageClient({ venueId }: { venueId: string }) {
+  const { session } = useAuth();
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newStaff, setNewStaff] = useState({ name: '', email: '', role: 'server' });
+  const [isAdding, setIsAdding] = useState(false);
 
-  const load = async () => {
-    setError(null);
-    const { data, error } = await supabase
-      .from('staff')
-      .select('id,name,role,active')
-      .eq('venue_id', venueId)
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error('[STAFF] load error', error);
-      setError(error.message);
-    }
-    setStaff(data || []);
-  };
+  const supabase = createClient();
 
-  useEffect(() => { load(); }, [venueId]);
-
-  // On mount, check if staff table exists; if not, show inline hint
-  const [needsInit, setNeedsInit] = useState(false);
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/staff/check');
-        const j = await res.json();
-        if (j?.ok && j.exists === false) setNeedsInit(true);
-      } catch {}
-    })();
-  }, []);
+    if (session?.user) {
+      fetchStaff();
+    }
+  }, [session, venueId]);
 
-  const add = async () => {
-    setError(null);
-    if (!name.trim()) { setError('Enter a name'); return; }
-    setLoading(true);
+  const fetchStaff = async () => {
     try {
-      const res = await fetch('/api/staff/add', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ venue_id: venueId, name: name.trim(), role: role.trim() || 'Server' }),
-      });
-      const j = await res.json().catch(()=>({}));
-      if (!res.ok || j?.error) throw new Error(j?.error || 'Failed');
-      // Append new staff locally for immediacy
-      const inserted = (j?.data && j.data[0]) ? j.data[0] : { id: crypto.randomUUID(), name: name.trim(), role: role.trim() || 'Server', active: true };
-      setStaff(prev => [inserted, ...prev]);
-      setName(''); setRole('Server');
-    } catch (err: any) {
-      console.error('[STAFF] add error', err);
-      setError(err?.message || 'Failed to add staff');
+      const { data, error } = await supabase()
+        .from('staff')
+        .select('*')
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching staff:', error);
+      } else {
+        setStaff(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching staff:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleActive = async (id: string, active: boolean) => {
-    setError(null);
-    const { error } = await supabase.from('staff').update({ active: !active }).eq('id', id);
-    if (error) { console.error('[STAFF] toggle error', error); setError(error.message); }
-    else load();
+  const addStaffMember = async () => {
+    if (!newStaff.name || !newStaff.email) return;
+
+    setIsAdding(true);
+    try {
+      const { data, error } = await supabase()
+        .from('staff')
+        .insert({
+          venue_id: venueId,
+          name: newStaff.name,
+          email: newStaff.email,
+          role: newStaff.role,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding staff member:', error);
+      } else {
+        setStaff([data, ...staff]);
+        setNewStaff({ name: '', email: '', role: 'server' });
+      }
+    } catch (error) {
+      console.error('Error adding staff member:', error);
+    } finally {
+      setIsAdding(false);
+    }
   };
 
-  async function updateRole(id: string, role: string) {
-    await supabase.from('staff').update({ role }).eq('id', id);
-    load();
-  }
+  const removeStaffMember = async (staffId: string) => {
+    try {
+      const { error } = await supabase()
+        .from('staff')
+        .delete()
+        .eq('id', staffId);
 
-  async function updateArea(id: string, area: string) {
-    await supabase.from('staff').update({ area }).eq('id', id);
-    load();
-  }
-
-  async function addShift(staffId: string) {
-    if (!shiftStart || !shiftEnd) return;
-    const { error } = await supabase.from('staff_shifts').insert({ staff_id: staffId, start_time: shiftStart, end_time: shiftEnd, area: shiftArea || null });
-    if (!error) {
-      setOpenShiftFor(null); setShiftStart(''); setShiftEnd(''); setShiftArea('');
-      loadShifts();
+      if (error) {
+        console.error('Error removing staff member:', error);
+      } else {
+        setStaff(staff.filter(s => s.id !== staffId));
+      }
+    } catch (error) {
+      console.error('Error removing staff member:', error);
     }
-  }
+  };
 
-  async function loadShifts() {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const startIso = today.toISOString();
-    const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
-    const { data } = await supabase
-      .from('staff_shifts')
-      .select('id,staff_id,start_time,end_time,area')
-      .gte('start_time', startIso)
-      .lt('end_time', endIso);
-    setShifts((data || []) as any);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      </div>
+    );
   }
-
-  useEffect(()=>{ loadShifts(); }, [venueId]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto p-6">
-        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
-        <h1 className="text-2xl font-semibold mb-4">Staff Management</h1>
-
-        <Card className="mb-4"><CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input placeholder="Name" value={name} onChange={e=>setName(e.target.value)} />
-            <Input placeholder="Role (e.g. Barista)" value={role} onChange={e=>setRole(e.target.value)} />
-            <Button type="button" onClick={()=>add()} disabled={loading}>{loading ? 'Adding...' : 'Add'}</Button>
-          </div>
-          {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
-          {needsInit && (
-            <div className="text-sm text-amber-700 mt-2">
-              Staff table is missing. Ask the owner to run scripts/staff-schema.sql in Supabase or click
-              <Button className="ml-2" size="sm" variant="outline" onClick={async ()=>{ await fetch('/api/staff/init',{method:'POST'}); setNeedsInit(false); load(); }}>Init Now</Button>
-            </div>
-          )}
-        </CardContent></Card>
-
-        <div className="space-y-4">
-          {useMemo(() => {
-            if (!staff.length) return <div className="text-gray-500">No staff yet.</div>;
-            const groups: Record<string, Staff[]> = {};
-            for (const s of staff) {
-              const r = (s.role || 'Staff').trim();
-              if (!groups[r]) groups[r] = [];
-              groups[r].push(s);
-            }
-            const preferred = ['Manager','Kitchen','Barista','Cashier','Server'];
-            const roles = Object.keys(groups)
-              .sort((a,b)=>{
-                const ai = preferred.indexOf(a);
-                const bi = preferred.indexOf(b);
-                if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-                return a.localeCompare(b);
-              });
-            return roles.map(role => {
-              const list = groups[role].slice().sort((a,b)=>a.name.localeCompare(b.name));
-              return (
-                <div key={role}>
-                  <h2 className="text-sm font-semibold text-gray-700 mb-2">{role}</h2>
-                  <div className="space-y-2">
-                    {list.map(s => (
-                      <Card key={s.id}><CardContent className="p-4">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-medium">{s.name}{s.area ? <span className="text-xs text-gray-500"> • {s.area}</span> : null}</div>
-                              <div className="text-xs text-gray-500">{s.active ? 'Active' : 'Inactive'}</div>
-                            </div>
-                            <div className="flex gap-2">
-                              <select value={s.role} onChange={e=>updateRole(s.id, e.target.value)} className="border rounded px-2 py-1 text-sm">
-                                {['Manager','Kitchen','Barista','Cashier','Server'].map(r=>(<option key={r} value={r}>{r}</option>))}
-                              </select>
-                              <select value={s.area || ''} onChange={e=>updateArea(s.id, e.target.value)} className="border rounded px-2 py-1 text-sm">
-                                <option value="">Area</option>
-                                {['Counter','Kitchen','Table Service'].map(a=>(<option key={a} value={a}>{a}</option>))}
-                              </select>
-                              <Button variant="outline" onClick={()=>toggleActive(s.id, s.active)}>{s.active ? 'Deactivate' : 'Activate'}</Button>
-                            </div>
-                          </div>
-                          <div>
-                            {openShiftFor === s.id ? (
-                              <div className="flex flex-wrap gap-2 items-center">
-                                <input type="datetime-local" className="border rounded px-2 py-1 text-sm" value={shiftStart} onChange={e=>setShiftStart(e.target.value)} />
-                                <input type="datetime-local" className="border rounded px-2 py-1 text-sm" value={shiftEnd} onChange={e=>setShiftEnd(e.target.value)} />
-                                <input type="text" className="border rounded px-2 py-1 text-sm" placeholder="Area (optional)" value={shiftArea} onChange={e=>setShiftArea(e.target.value)} />
-                                <Button size="sm" onClick={()=>addShift(s.id)}>Add Shift</Button>
-                                <Button size="sm" variant="ghost" onClick={()=>{ setOpenShiftFor(null); setShiftStart(''); setShiftEnd(''); setShiftArea(''); }}>Cancel</Button>
-                              </div>
-                            ) : (
-                              <Button size="sm" variant="outline" onClick={()=>{ setOpenShiftFor(s.id); setShiftStart(''); setShiftEnd(''); setShiftArea(s.area || ''); }}>Add Shift</Button>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent></Card>
-                    ))}
-                  </div>
-                </div>
-              );
-            });
-          }, [staff, openShiftFor, shiftStart, shiftEnd, shiftArea])}
-        </div>
-
-        <div className="mt-8">
-          <h2 className="text-sm font-semibold text-gray-700 mb-2">Today's Shifts</h2>
-          {!shifts.length ? (
-            <div className="text-gray-500 text-sm">No shifts scheduled today.</div>
-          ) : (
-            <div className="space-y-1 text-sm text-gray-700">
-              {shifts.map(sh => {
-                const person = staff.find(s=>s.id===sh.staff_id);
-                return (
-                  <div key={sh.id}>
-                    {person?.name || 'Staff'} • {new Date(sh.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–{new Date(sh.end_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}{sh.area?` • ${sh.area}`:''}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Staff Management</h1>
+        <Button onClick={() => setIsAdding(!isAdding)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Staff Member
+        </Button>
       </div>
+
+      {isAdding && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add New Staff Member</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={newStaff.name}
+                  onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                  placeholder="Staff member name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newStaff.email}
+                  onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                  placeholder="staff@example.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="role">Role</Label>
+                <select
+                  id="role"
+                  value={newStaff.role}
+                  onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="server">Server</option>
+                  <option value="kitchen">Kitchen</option>
+                  <option value="manager">Manager</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={addStaffMember} disabled={isAdding}>
+                Add Staff Member
+              </Button>
+              <Button variant="outline" onClick={() => setIsAdding(false)}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4">
+        {staff.map((member) => (
+          <Card key={member.id}>
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold">{member.name}</h3>
+                  <p className="text-sm text-gray-600">{member.email}</p>
+                  <Badge variant="secondary" className="mt-1">
+                    {member.role}
+                  </Badge>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => removeStaffMember(member.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {staff.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-gray-500">No staff members added yet.</p>
+            <Button onClick={() => setIsAdding(true)} className="mt-4">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Your First Staff Member
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

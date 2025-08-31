@@ -1,26 +1,57 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '@/app/authenticated-client-provider';
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import { Menu, X, Settings } from "lucide-react";
+import { useAuth } from "@/app/auth/AuthProvider";
+import { useRouter, usePathname } from "next/navigation";
+import SignInButton from "@/app/components/SignInButton";
 
-export default function ClientNavBar({ showActions = true, venueId }: { showActions?: boolean; venueId?: string }) {
+import { signOutUser } from "@/lib/supabase";
+
+export default function ClientNavBar() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  // Use our central auth context
-  const { session } = useAuth();
+  // Use our central auth context instead of local state
+  const { session, loading, signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const supabase = createClient();
 
+  // Ensure we don't show authenticated navigation while loading
+  // Also add additional checks to ensure session is valid
+  const isAuthenticated = !loading && !!session?.user && !!session?.access_token;
+
+  // Debug logging for authentication state
+  useEffect(() => {
+    console.log('[NAV DEBUG] Authentication state changed:', {
+      loading,
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      hasAccessToken: !!session?.access_token,
+      userId: session?.user?.id,
+      isAuthenticated,
+      pathname,
+      timestamp: new Date().toISOString()
+    });
+  }, [loading, session, isAuthenticated, pathname]);
+
+  // Determine if we're on dashboard pages
+  const isOnDashboard = pathname?.startsWith('/dashboard');
+  const isOnHomePage = pathname === '/';
+  
+  // Extract venueId from pathname for venue-specific navigation
+  const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
+
+  // Fetch primary venue when user is signed in
   useEffect(() => {
     const fetchPrimaryVenue = async () => {
-      try {
-        if (session?.user) {
-          const { data, error } = await createClient()
+      if (isAuthenticated) {
+        try {
+          const { data, error } = await supabase()
             .from('venues')
             .select('venue_id')
             .eq('owner_id', session.user.id)
@@ -30,49 +61,25 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
           if (!error && data?.length) {
             setPrimaryVenueId(data[0].venue_id);
           }
+        } catch (err) {
+          console.error('Error fetching primary venue:', err);
         }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching primary venue:', err);
-        setLoading(false);
+      } else {
+        setPrimaryVenueId(null);
       }
     };
 
-    if (!venueId) {
-      fetchPrimaryVenue();
-    } else {
-      setPrimaryVenueId(venueId);
-      setLoading(false);
-    }
-  }, [venueId, session]);
-
-  const resolvedVenueId = venueId ?? primaryVenueId;
-
-  if (loading) {
-    return (
-      <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
-        <div className="flex items-center">
-          <div className="w-[200px] h-[50px] bg-gray-200 animate-pulse rounded"></div>
-        </div>
-      </nav>
-    );
-  }
-
-  // Fallback to dashboard if no venueId is available
-  const homeHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}` : '/dashboard';
-  const settingsHref = resolvedVenueId ? `/dashboard/${resolvedVenueId}/settings` : '/settings';
-
-  console.log('[NAV] ClientNavBar', { venueId, resolvedVenueId, homeHref, settingsHref });
+    fetchPrimaryVenue();
+  }, [isAuthenticated, session?.user?.id]);
 
   const handleSignOut = async () => {
     try {
-      // Use server-side sign out to avoid cookie modification errors
-      const response = await fetch('/api/auth/signout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      console.log('[AUTH DEBUG] Starting sign out process');
+      
+      // Call unified API signout to clear cookies server-side
+      const response = await fetch('/api/auth/signout', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' } 
       });
       
       if (!response.ok) {
@@ -80,54 +87,262 @@ export default function ClientNavBar({ showActions = true, venueId }: { showActi
       } else {
         console.log('[AUTH DEBUG] Server-side sign out successful');
       }
+      
+      // Clear client storage to avoid auto sign-in or stale sessions
+      try {
+        const { clearAuthStorage } = await import('@/lib/sb-client');
+        clearAuthStorage();
+      } catch (error) {
+        console.log('[AUTH DEBUG] Error clearing client storage:', error);
+      }
+      
+      // Use the auth provider's signOut method
+      await signOut();
+      
+      // Force redirect to home page
+      router.replace('/');
+      
+      console.log('[AUTH DEBUG] Sign out completed, redirected to home');
     } catch (error) {
-      console.log('[AUTH DEBUG] Sign out error:', error);
+      console.error('[AUTH DEBUG] Sign out error:', error);
+      // Force redirect even if there's an error
+      router.replace('/');
     }
-    
-    // Clear client-side storage and redirect
-    try {
-      const { clearAuthStorage } = await import('@/lib/sb-client');
-      clearAuthStorage();
-    } catch (error) {
-      console.log('[AUTH DEBUG] Error clearing client storage:', error);
-    }
-    
-    router.replace('/sign-in');
   };
 
+  // Don't render navigation items while loading
+  if (loading) {
+    return (
+      <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <Link href="/" className="flex items-center group">
+                <Image
+                  src="/assets/servio-logo-updated.png"
+                  alt="Servio"
+                  width={800}
+                  height={250}
+                  className="h-20 sm:h-24 lg:h-28 xl:h-32 2xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                  priority
+                />
+              </Link>
+            </div>
+            
+            {/* Loading indicator */}
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
-    <nav className="flex items-center justify-between h-28 px-6 bg-white border-b shadow-lg sticky top-0 z-20">
-      <div className="flex items-center">
-        {/* [NAV] Use relative link to venue dashboard */}
-        <Link href={homeHref} className="flex items-center">
-          <Image
-            src="/assets/servio-logo-updated.png"
-            alt="Servio logo"
-            width={200}
-            height={50}
-            priority
-            className="hover:opacity-80 transition-opacity"
-          />
-        </Link>
-      </div>
-      <div className="flex items-center space-x-4">
-        {/* [NAV] Home goes to venue dashboard */}
-        <Link href={homeHref} className="text-gray-600 hover:text-gray-900 font-medium">Home</Link>
-        {showActions && (
-          <>
-            <Link href={settingsHref} className="text-gray-600 hover:text-gray-900">
-              <Button variant="outline" className="flex items-center">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </Button>
+    <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
+              <Image
+                src="/assets/servio-logo-updated.png"
+                alt="Servio"
+                width={800}
+                height={250}
+                className="h-20 sm:h-24 lg:h-28 xl:h-32 2xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                priority
+              />
             </Link>
-            {/* [NAV] Use client-side sign-out */}
-            <Button variant="destructive" onClick={handleSignOut}>
-              Sign Out
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:block">
+            <div className="ml-6 lg:ml-10 flex items-center space-x-4 lg:space-x-6">
+              {isAuthenticated ? (
+                // Signed in navigation - different based on current page
+                <>
+                  {isOnDashboard ? (
+                    // On dashboard pages: Home, Settings, Sign Out
+                    <>
+                      <Link
+                        href={venueId ? `/dashboard/${venueId}` : "/dashboard"}
+                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                      >
+                        Home
+                      </Link>
+                      <Link
+                        href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
+                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
+                      >
+                        <Settings className="mr-2 h-4 w-4" />
+                        Settings
+                      </Link>
+                    </>
+                  ) : (
+                    // On home page: Dashboard, Settings, Sign Out
+                    <>
+                      <Link
+                        href="/dashboard"
+                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
+                        href="/settings"
+                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                      >
+                        Settings
+                      </Link>
+                    </>
+                  )}
+                  <Button
+                    variant="destructive"
+                    onClick={handleSignOut}
+                    className="transition-colors"
+                  >
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                // Not signed in navigation - only show public links
+                <>
+                  <Link
+                    href="/"
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    href="#features"
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Features
+                  </Link>
+                  <Link
+                    href="#pricing"
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Pricing
+                  </Link>
+                  <Button
+                    onClick={() => router.push('/sign-in')}
+                    className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
+                  >
+                    Sign In
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </Button>
-          </>
-        )}
+          </div>
+        </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur border-t">
+            {isAuthenticated ? (
+              // Signed in mobile navigation - different based on current page
+              <>
+                {isOnDashboard ? (
+                  // On dashboard pages: Home, Settings, Sign Out
+                  <>
+                    <Link
+                      href={venueId ? `/dashboard/${venueId}` : "/dashboard"}
+                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Home
+                    </Link>
+                    <Link
+                      href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
+                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </>
+                ) : (
+                  // On home page: Dashboard, Settings, Sign Out
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                  </>
+                )}
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    handleSignOut();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full text-left transition-colors"
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              // Not signed in mobile navigation - only show public links
+              <>
+                <Link
+                  href="/"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link
+                  href="#features"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Features
+                </Link>
+                <Link
+                  href="#pricing"
+                  className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Pricing
+                </Link>
+                <div onClick={() => setMobileMenuOpen(false)}>
+                  <SignInButton />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

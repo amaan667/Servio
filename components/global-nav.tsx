@@ -16,7 +16,7 @@ export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(null);
   // Use our central auth context instead of local state
-  const { session, loading } = useAuth();
+  const { session, loading, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -74,16 +74,38 @@ export default function GlobalNav() {
 
   const handleSignOut = async () => {
     try {
+      console.log('[AUTH DEBUG] Starting sign out process');
+      
       // Call unified API signout to clear cookies server-side
-      await fetch('/api/auth/signout', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const response = await fetch('/api/auth/signout', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' } 
+      });
+      
+      if (!response.ok) {
+        console.log('[AUTH DEBUG] Server-side sign out failed');
+      } else {
+        console.log('[AUTH DEBUG] Server-side sign out successful');
+      }
+      
       // Clear client storage to avoid auto sign-in or stale sessions
       try {
         const { clearAuthStorage } = await import('@/lib/sb-client');
         clearAuthStorage();
-      } catch {}
+      } catch (error) {
+        console.log('[AUTH DEBUG] Error clearing client storage:', error);
+      }
+      
+      // Use the auth provider's signOut method
+      await signOut();
+      
+      // Force redirect to home page
       router.replace('/');
+      
+      console.log('[AUTH DEBUG] Sign out completed, redirected to home');
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('[AUTH DEBUG] Sign out error:', error);
+      // Force redirect even if there's an error
       router.replace('/');
     }
   };
@@ -205,22 +227,12 @@ export default function GlobalNav() {
                   >
                     Pricing
                   </Link>
-                  {isAuthenticated ? (
-                    <Button
-                      variant="destructive"
-                      onClick={handleSignOut}
-                      className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
-                    >
-                      Sign Out
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => router.push('/sign-in')}
-                      className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
-                    >
-                      Sign In
-                    </Button>
-                  )}
+                  <Button
+                    onClick={() => router.push('/sign-in')}
+                    className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
+                  >
+                    Sign In
+                  </Button>
                 </>
               )}
             </div>
