@@ -18,15 +18,19 @@ interface Order {
   table_number: number | null;
   customer_name: string | null;
   customer_phone?: string | null;
+  customer_email?: string | null;
   items: Array<{
-    name: string;
+    menu_item_id: string;
+    item_name: string;
     quantity: number;
     price: number;
+    specialInstructions?: string;
   }>;
   total_amount: number;
   created_at: string;
-  status: 'pending' | 'preparing' | 'served';
+  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
   payment_status?: string;
+  notes?: string;
 }
 
 interface LiveOrdersClientProps {
@@ -41,6 +45,8 @@ interface GroupedHistoryOrders {
 
 
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
+  console.log('[LIVE ORDERS DEBUG] LiveOrdersClient mounted with venueId:', venueId);
+  
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
@@ -68,7 +74,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setTodayWindow(window);
       
       // Load live orders (pending/preparing from today)
-      // Load live orders (pending/preparing from today)
+      console.log('[LIVE ORDERS DEBUG] Fetching live orders for venueId:', venueId);
       const { data: liveData, error: liveError } = await supabase
         .from('orders')
         .select('*')
@@ -97,6 +103,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .limit(100); // Limit to last 100 orders
 
       if (!liveError && liveData) {
+        console.log('[LIVE ORDERS DEBUG] Live orders fetched successfully:', {
+          count: liveData.length,
+          orders: liveData.map(order => ({
+            id: order.id,
+            total_amount: order.total_amount,
+            items_count: order.items?.length || 0,
+            items: order.items?.map(item => ({
+              item_name: item.item_name,
+              quantity: item.quantity,
+              price: item.price
+            }))
+          }))
+        });
         setOrders(liveData as Order[]);
       }
       if (!allError && allData) {
@@ -190,7 +209,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     };
   }, [venueId]);
 
-  const updateOrderStatus = async (orderId: string, status: 'preparing' | 'served') => {
+  const updateOrderStatus = async (orderId: string, status: 'preparing' | 'ready' | 'completed') => {
     const { error } = await supabase
       .from('orders')
       .update({ status })
@@ -226,7 +245,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'preparing': return 'bg-blue-100 text-blue-800';
-      case 'served': return 'bg-green-100 text-green-800';
+      case 'ready': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -280,12 +300,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
         {/* Order Items */}
         <div className="space-y-2 mb-4">
-          {order.items.map((item, index) => (
-            <div key={index} className="flex justify-between text-sm">
-              <span>{item.quantity}x {item.name}</span>
-              <span>£{(item.quantity * item.price).toFixed(2)}</span>
-            </div>
-          ))}
+          {console.log('[LIVE ORDERS DEBUG] Rendering items for order', order.id, ':', order.items)}
+          {order.items.map((item, index) => {
+            console.log('[LIVE ORDERS DEBUG] Rendering item:', item);
+            return (
+              <div key={index} className="flex justify-between text-sm">
+                <span>{item.quantity}x {item.item_name}</span>
+                <span>£{(item.quantity * item.price).toFixed(2)}</span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Action Buttons */}
@@ -302,9 +326,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             {order.status === 'preparing' && (
               <Button 
                 size="sm"
-                onClick={() => updateOrderStatus(order.id, 'served')}
+                onClick={() => updateOrderStatus(order.id, 'ready')}
               >
-                Mark Served
+                Mark Ready
               </Button>
             )}
           </div>
