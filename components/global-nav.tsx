@@ -42,6 +42,7 @@ export default function GlobalNav() {
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');
   const isOnHomePage = pathname === '/';
+  const isOnSettings = pathname?.startsWith('/settings');
   
   // Extract venueId from pathname for venue-specific navigation
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
@@ -107,7 +108,7 @@ export default function GlobalNav() {
     return (
       <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center group">
@@ -116,7 +117,7 @@ export default function GlobalNav() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-8 w-auto transition-all duration-300 group-hover:scale-105"
+                  className="h-16 w-auto transition-all duration-300 group-hover:scale-105"
                   priority
                 />
               </Link>
@@ -135,7 +136,7 @@ export default function GlobalNav() {
   return (
     <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
@@ -144,7 +145,7 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-8 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-16 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
@@ -171,6 +172,23 @@ export default function GlobalNav() {
                     >
                       <Settings className="mr-2 h-4 w-4" />
                       Settings
+                    </Link>
+                  </>
+                ) : isOnSettings ? (
+                  // On settings pages: Dashboard, Home, Sign Out
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/"
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                    >
+                      <Home className="mr-2 h-4 w-4" />
+                      Home
                     </Link>
                   </>
                 ) : (
@@ -268,12 +286,30 @@ export default function GlobalNav() {
                       Home
                     </Link>
                     <Link
-                      href={venueId ? `/dashboard/${venueId}/settings` : "/settings"}
+                      href="/settings"
                       className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <Settings className="mr-3 h-5 w-5" />
                       Settings
+                    </Link>
+                  </>
+                ) : isOnSettings ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/"
+                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Home className="mr-3 h-5 w-5" />
+                      Home
                     </Link>
                   </>
                 ) : (
