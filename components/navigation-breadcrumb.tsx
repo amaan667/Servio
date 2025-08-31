@@ -35,8 +35,8 @@ export default function NavigationBreadcrumb({
     [params?.venueId, pathname, propVenueId]
   );
   
-  // [NAV] Determine dashboard link based on venueId - use relative links
-  const homeLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
+  // [NAV] Determine home link - always route to main home page
+  const homeLink = '/';
 
   console.log('[NAV] NavigationBreadcrumb', { venueId, homeLink, pathname });
 
