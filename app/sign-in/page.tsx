@@ -13,13 +13,16 @@ function SignInPageContent() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
+  // Detect if we're on mobile
+  const isMobile = () => {
+    if (typeof window === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
 
   useEffect(() => {
     const run = async () => {
       try {
         console.log('[AUTH DEBUG] Checking existing session...');
-        
-
         
         // Check if user is already signed in
         const { data: { session }, error } = await supabaseBrowser.auth.getSession();
@@ -56,6 +59,7 @@ function SignInPageContent() {
       setIsSigningIn(true);
 
       console.log('[AUTH DEBUG] Starting Google OAuth sign in');
+      console.log('[AUTH DEBUG] Platform:', isMobile() ? 'Mobile' : 'Desktop');
       
       // Clear any existing auth state that might interfere
       await supabaseBrowser.auth.signOut();
@@ -90,6 +94,15 @@ function SignInPageContent() {
       // The redirect should happen automatically, but if it doesn't, we'll handle it
       if (data.url) {
         console.log('[AUTH DEBUG] Redirecting to OAuth URL');
+        
+        // On desktop, use window.location.href for full page redirect
+        // On mobile, this might work better with the OAuth flow
+        if (isMobile()) {
+          console.log('[AUTH DEBUG] Mobile platform detected, using window.location.href');
+        } else {
+          console.log('[AUTH DEBUG] Desktop platform detected, using window.location.href');
+        }
+        
         window.location.href = data.url;
       } else {
         console.error('[AUTH DEBUG] No OAuth URL received');

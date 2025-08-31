@@ -10,6 +10,11 @@ export default function Callback() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Detect if we're on mobile
+  const isMobile = () => {
+    if (typeof window === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
 
   useEffect(() => {
     // Add a timeout to prevent infinite loading
@@ -22,6 +27,7 @@ export default function Callback() {
     const handleCallback = async () => {
       try {
         console.log('[AUTH CALLBACK] Processing OAuth callback');
+        console.log('[AUTH CALLBACK] Platform:', isMobile() ? 'Mobile' : 'Desktop');
         
         // Get the code from URL parameters
         const code = searchParams.get('code');
@@ -37,7 +43,6 @@ export default function Callback() {
           hasState: !!state
         });
 
-        
         if (error) {
           console.error('[AUTH CALLBACK] OAuth error:', error);
           setError(`OAuth error: ${error}`);
@@ -83,7 +88,6 @@ export default function Callback() {
           sessionExpiry: data?.session?.expires_at
         });
 
-        
         if (exchangeError) {
           console.error('[AUTH CALLBACK] Exchange error:', exchangeError);
           
@@ -117,7 +121,6 @@ export default function Callback() {
           
           // If it's not a PKCE error, try a fallback approach
           console.log('[AUTH CALLBACK] Attempting fallback authentication...');
-          setDebugInfo('Attempting fallback authentication...');
           
           try {
             // Clear any existing auth state
@@ -138,7 +141,6 @@ export default function Callback() {
             
             if (retryData?.session) {
               console.log('[AUTH CALLBACK] Fallback authentication successful');
-              setDebugInfo('Fallback authentication successful, redirecting...');
               setTimeout(() => {
                 router.push('/dashboard');
               }, 500);
@@ -158,7 +160,6 @@ export default function Callback() {
 
         if (data?.session) {
           console.log('[AUTH CALLBACK] Session created successfully, redirecting to dashboard');
-          setDebugInfo('Session created successfully, redirecting...');
           
           // Small delay to ensure session is properly set
           setTimeout(() => {
@@ -209,7 +210,6 @@ export default function Callback() {
               >
                 Try Again
               </button>
-
             </div>
           </div>
         </div>
