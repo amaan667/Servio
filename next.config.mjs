@@ -22,13 +22,8 @@ const nextConfig = {
     config.resolve.alias = config.resolve.alias || {};
     config.resolve.alias['@'] = path.resolve(__dirname);
     
-    // Suppress punycode deprecation warning
-    if (isServer) {
-      config.externals = config.externals || [];
-      config.externals.push({
-        'punycode': 'punycode',
-      });
-    }
+    // Fix punycode deprecation warning by using userland package
+    config.resolve.alias['punycode'] = 'punycode';
     
     // Ignore punycode deprecation warnings
     config.ignoreWarnings = config.ignoreWarnings || [];

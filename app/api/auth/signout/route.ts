@@ -7,15 +7,15 @@ export async function POST() {
     
     const supabase = await createServerSupabase();
     
-    // First, try to get the current session to log what we're signing out
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // SECURE: Use getUser() instead of getSession() for authentication check
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (sessionError) {
-      console.log('[SIGNOUT API] Error getting session:', sessionError.message);
-    } else if (session) {
-      console.log('[SIGNOUT API] Signing out user:', session.user.id);
+    if (userError) {
+      console.log('[SIGNOUT API] Error getting user:', userError.message);
+    } else if (user) {
+      console.log('[SIGNOUT API] Signing out user:', user.id);
     } else {
-      console.log('[SIGNOUT API] No active session found');
+      console.log('[SIGNOUT API] No authenticated user found');
     }
     
     // Perform the signout
