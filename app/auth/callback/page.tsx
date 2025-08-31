@@ -40,6 +40,10 @@ function CallbackContent() {
   const clearAuthState = async () => {
     try {
       addDebugLog('[AUTH CALLBACK] Clearing auth state...');
+      if (!clearSupabaseAuth) {
+        addDebugLog('[AUTH CALLBACK] WARNING: clearSupabaseAuth function not available');
+        return;
+      }
       await clearSupabaseAuth();
       addDebugLog('[AUTH CALLBACK] Auth state cleared successfully');
     } catch (err) {
@@ -50,9 +54,16 @@ function CallbackContent() {
   useEffect(() => {
     // Lazy import supabase browser helpers on client
     (async () => {
-      const mod = await import('@/lib/supabase/browser');
-      supabaseBrowser = mod.supabaseBrowser;
-      clearSupabaseAuth = mod.clearSupabaseAuth;
+      try {
+        const mod = await import('@/lib/supabase/browser');
+        supabaseBrowser = mod.supabaseBrowser;
+        clearSupabaseAuth = mod.clearSupabaseAuth;
+        addDebugLog('[AUTH CALLBACK] Supabase browser module loaded successfully');
+      } catch (err) {
+        addDebugLog(`[AUTH CALLBACK] ERROR: Failed to load supabase browser module: ${err}`);
+        setError('Authentication service not available. Please try again.');
+        setLoading(false);
+      }
     })();
     addDebugLog('[AUTH CALLBACK] Component mounted');
     addDebugLog(`[AUTH CALLBACK] Platform: ${isMobile() ? 'Mobile' : 'Desktop'}`);
@@ -114,6 +125,13 @@ function CallbackContent() {
         addDebugLog('[AUTH CALLBACK] Code found, checking existing session...');
 
         // Check if we have a valid session already
+        if (!supabaseBrowser) {
+          addDebugLog('[AUTH CALLBACK] ERROR: supabaseBrowser is null during session check');
+          setError('Authentication service not available. Please try again.');
+          setLoading(false);
+          return;
+        }
+        
         const { data: { session: existingSession }, error: sessionError } = await supabaseBrowser().auth.getSession();
         
         addDebugLog(`[AUTH CALLBACK] Session check result: ${JSON.stringify({
@@ -146,6 +164,13 @@ function CallbackContent() {
         addDebugLog('[AUTH CALLBACK] Starting code exchange with Supabase...');
         
         // Exchange the code for a session
+        if (!supabaseBrowser) {
+          addDebugLog('[AUTH CALLBACK] ERROR: supabaseBrowser is null');
+          setError('Authentication service not available. Please try again.');
+          setLoading(false);
+          return;
+        }
+        
         const exchangePromise = supabaseBrowser().auth.exchangeCodeForSession(code);
         
         const { data, error: exchangeError } = await Promise.race([
@@ -213,6 +238,13 @@ function CallbackContent() {
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             addDebugLog('[AUTH CALLBACK] Retrying code exchange...');
+            if (!supabaseBrowser) {
+              addDebugLog('[AUTH CALLBACK] ERROR: supabaseBrowser is null during retry');
+              setError('Authentication service not available. Please try again.');
+              setLoading(false);
+              return;
+            }
+            
             const { data: retryData, error: retryError } = await supabaseBrowser().auth.exchangeCodeForSession(code);
             
             addDebugLog(`[AUTH CALLBACK] Retry result: ${JSON.stringify({
