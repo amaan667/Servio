@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Menu, X, Settings } from "lucide-react";
 import { useAuth } from "@/app/authenticated-client-provider";
 import { useRouter, usePathname } from "next/navigation";
-import SignInButton from "@/app/components/SignInButton";
+
 import { signOutUser } from "@/lib/supabase";
 
 export default function GlobalNav() {
@@ -204,7 +204,22 @@ export default function GlobalNav() {
                   >
                     Pricing
                   </Link>
-                  <SignInButton />
+                  {isAuthenticated ? (
+                    <Button
+                      variant="destructive"
+                      onClick={handleSignOut}
+                      className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
+                    >
+                      Sign Out
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => router.push('/sign-in')}
+                      className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
+                    >
+                      Sign In
+                    </Button>
+                  )}
                 </>
               )}
             </div>

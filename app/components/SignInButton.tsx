@@ -28,7 +28,7 @@ export default function SignInButton() {
       disabled={loading}
       className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
     >
-      {loading ? 'Redirecting...' : 'Sign In'}
+      {loading ? 'Loading...' : 'Sign In'}
     </Button>
   );
 }
