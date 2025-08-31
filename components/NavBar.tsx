@@ -28,7 +28,7 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
         <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link>
         {showActions && (
           <>
-            <Link href={'/settings'}>
+            <Link href={'/dashboard'}>
               <Button variant="ghost" size="sm" className="flex items-center">
                 <Settings className="h-5 w-5 mr-2" />
                 Settings

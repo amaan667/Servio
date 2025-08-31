@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
-import SettingsClient from './SettingsClient';
 
 export default async function SettingsPage() {
   // Check for auth cookies before making auth calls
@@ -41,19 +40,7 @@ export default async function SettingsPage() {
     redirect('/complete-profile');
   }
 
-  // If user has multiple venues, redirect to the primary venue's settings
-  if (venues.length > 1) {
-    console.log('[SETTINGS] Multiple venues found, redirecting to primary venue settings');
-    redirect(`/dashboard/${venues[0].venue_id}/settings`);
-  }
-
-  // If user has exactly one venue, show the settings page
-  console.log('[SETTINGS] Rendering settings page for venue:', venues[0].venue_id);
-  
-  return (
-    <SettingsClient 
-      user={{ id: user.id, email: user.email || undefined }} 
-      venues={venues} 
-    />
-  );
+  // Redirect to the dashboard settings page for the primary venue
+  console.log('[SETTINGS] Redirecting to dashboard settings for venue:', venues[0].venue_id);
+  redirect(`/dashboard/${venues[0].venue_id}/settings`);
 }

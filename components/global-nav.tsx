@@ -42,7 +42,7 @@ export default function GlobalNav() {
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');
   const isOnHomePage = pathname === '/';
-  const isOnSettings = pathname?.startsWith('/settings');
+  const isOnSettings = pathname?.includes('/settings');
   
   // Extract venueId from pathname for venue-specific navigation
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
@@ -201,7 +201,7 @@ export default function GlobalNav() {
                       Dashboard
                     </Link>
                     <Link
-                      href="/settings"
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
                     >
                       <Settings className="mr-2 h-4 w-4" />
@@ -286,7 +286,7 @@ export default function GlobalNav() {
                       Home
                     </Link>
                     <Link
-                      href="/settings"
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -322,7 +322,7 @@ export default function GlobalNav() {
                       Dashboard
                     </Link>
                     <Link
-                      href="/settings"
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
