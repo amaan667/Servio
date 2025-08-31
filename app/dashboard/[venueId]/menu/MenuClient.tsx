@@ -208,13 +208,29 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
-            <p className="text-gray-600 mt-2">Manage menu items for {venueName} • {menuItems.length} total items</p>
+        {/* Menu Stats */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">{menuItems.length} menu items</span>
+            </div>
+            <span className="text-sm text-muted-foreground">•</span>
+            <span className="text-sm text-muted-foreground">
+              {menuItems.filter(item => item.available).length} available
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadMenuItems}
+              disabled={loading}
+            >
+              Refresh
+            </Button>
           </div>
         </div>
 

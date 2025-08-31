@@ -259,12 +259,24 @@ export default function StaffClient({
   }, [allShifts]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb customBackPath={`/dashboard/${venueId}`} customBackLabel="Dashboard" venueId={venueId} />
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold">Staff Management</h2>
-          <p className="text-gray-500">Manage staff for {venueName}</p>
+        {/* Staff Stats */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">{staff.length} staff members</span>
+            </div>
+            <span className="text-sm text-muted-foreground">•</span>
+            <span className="text-sm text-muted-foreground">
+              {staff.filter(s => s.active).length} active
+            </span>
+            <span className="text-sm text-muted-foreground">•</span>
+            <span className="text-sm text-muted-foreground">
+              {roles.length} roles
+            </span>
+          </div>
         </div>
 
       <Card className="mb-6">

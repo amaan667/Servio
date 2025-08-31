@@ -327,21 +327,41 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-  {/* NavBar is rendered by the server component */}
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Live Orders</h1>
-          <p className="text-gray-600 mt-2">Real-time order feed for {venueName} • Today • Local time</p>
+        {/* Status Summary */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm text-muted-foreground">Real-time monitoring active</span>
+            </div>
+            <span className="text-sm text-muted-foreground">•</span>
+            <span className="text-sm text-muted-foreground">Local time</span>
+          </div>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="live">Live Orders ({orders.length})</TabsTrigger>
-            <TabsTrigger value="all">All Today ({allOrders.length})</TabsTrigger>
-            <TabsTrigger value="history">History ({historyOrders.length})</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="live" className="flex items-center space-x-2">
+              <span>Live Orders</span>
+              {orders.length > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{orders.length}</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="all" className="flex items-center space-x-2">
+              <span>All Today</span>
+              {allOrders.length > 0 && (
+                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">{allOrders.length}</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center space-x-2">
+              <span>History</span>
+              {historyOrders.length > 0 && (
+                <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded-full">{historyOrders.length}</span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="live" className="mt-6">

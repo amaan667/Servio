@@ -361,6 +361,20 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
 
   return (
     <div className="space-y-6">
+      {/* Feedback Stats */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <MessageSquare className="h-5 w-5 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">{questions.length} feedback questions</span>
+          </div>
+          <span className="text-sm text-muted-foreground">•</span>
+          <span className="text-sm text-muted-foreground">
+            {questions.filter(q => q.is_active).length} active
+          </span>
+        </div>
+      </div>
+
       {/* Add Question Form */}
       {(mode === 'form-only' || mode === 'full') && (
         <div className="space-y-4">

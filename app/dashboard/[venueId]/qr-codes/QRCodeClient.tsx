@@ -145,8 +145,18 @@ export default function QRCodeClient({ venueId, venueName }: { venueId: string; 
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">QR Code Management</h1>
+      {/* QR Code Stats */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <QrCode className="h-5 w-5 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">{qrCodes.length} QR codes</span>
+          </div>
+          <span className="text-sm text-muted-foreground">•</span>
+          <span className="text-sm text-muted-foreground">
+            {qrCodes.length > 0 ? `${Math.max(...qrCodes.map(qr => qr.table_number))} tables` : 'No tables'}
+          </span>
+        </div>
         <Button onClick={() => setIsAdding(!isAdding)}>
           <Plus className="w-4 h-4 mr-2" />
           Add QR Code
