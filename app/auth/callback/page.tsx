@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSupabaseBrowser } from '@/lib/supabase/browser';
+import { supabaseBrowser } from '@/lib/supabase/browser';
 
 export default function Callback() {
   const router = useRouter();
@@ -75,7 +75,7 @@ export default function Callback() {
           
           try {
             // Clear any existing auth state
-            await getSupabaseBrowser().auth.signOut();
+            await supabaseBrowser().auth.signOut();
             
             // Clear storage
             const authKeys = Object.keys(localStorage).filter(k => 
@@ -109,7 +109,7 @@ export default function Callback() {
         addDebugLog('[AUTH CALLBACK] Code found, checking existing session...');
 
         // Check if we have a valid session already
-        const { data: { session: existingSession }, error: sessionError } = await getSupabaseBrowser().auth.getSession();
+        const { data: { session: existingSession }, error: sessionError } = await supabaseBrowser().auth.getSession();
         
         addDebugLog(`[AUTH CALLBACK] Session check result: ${JSON.stringify({
           hasSession: !!existingSession,
@@ -141,7 +141,7 @@ export default function Callback() {
         addDebugLog('[AUTH CALLBACK] Starting code exchange with Supabase...');
         
         // Exchange the code for a session
-        const exchangePromise = getSupabaseBrowser().auth.exchangeCodeForSession(code);
+        const exchangePromise = supabaseBrowser().auth.exchangeCodeForSession(code);
         
         const { data, error: exchangeError } = await Promise.race([
           exchangePromise,
@@ -175,7 +175,7 @@ export default function Callback() {
             addDebugLog('[AUTH CALLBACK] PKCE error detected, attempting to clear auth state and retry');
             
             // Clear auth state and redirect to sign-in
-            await getSupabaseBrowser().auth.signOut();
+            await supabaseBrowser().auth.signOut();
             
             // Clear any remaining auth-related storage
             try {
@@ -206,7 +206,7 @@ export default function Callback() {
             addDebugLog('[AUTH CALLBACK] Refresh token error detected, redirecting to sign-in');
             
             // Clear auth state
-            await getSupabaseBrowser().auth.signOut();
+            await supabaseBrowser().auth.signOut();
             
             setTimeout(() => {
               router.push('/sign-in?error=refresh_token_error');
@@ -219,14 +219,14 @@ export default function Callback() {
           
           try {
             // Clear any existing auth state
-            await getSupabaseBrowser().auth.signOut();
+            await supabaseBrowser().auth.signOut();
             
             // Wait a moment for cleanup
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             // Try the exchange again
             addDebugLog('[AUTH CALLBACK] Retrying code exchange...');
-            const { data: retryData, error: retryError } = await getSupabaseBrowser().auth.exchangeCodeForSession(code);
+            const { data: retryData, error: retryError } = await supabaseBrowser().auth.exchangeCodeForSession(code);
             
             addDebugLog(`[AUTH CALLBACK] Retry result: ${JSON.stringify({
               hasData: !!retryData,
