@@ -10,21 +10,24 @@ import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface Order {
   id: string;
-  order_number: number;
   table_number: number;
   customer_name: string;
+  customer_phone?: string;
+  customer_email?: string;
   status: string;
   total_amount: number;
+  notes?: string;
+  payment_method?: string;
+  payment_status?: string;
+  items: Array<{
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+    specialInstructions?: string;
+  }>;
   created_at: string;
-  order_items: OrderItem[];
-}
-
-interface OrderItem {
-  id: string;
-  item_name: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
+  updated_at: string;
 }
 
 export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
@@ -58,10 +61,7 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
     try {
       const { data, error } = await supabase()
         .from('orders')
-        .select(`
-          *,
-          order_items (*)
-        `)
+        .select('*')
         .eq('venue_id', venueId)
         .in('status', ['pending', 'preparing', 'ready'])
         .order('created_at', { ascending: false });
@@ -155,7 +155,7 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    Order #{order.order_number}
+                    Order #{order.id.slice(0, 8)}
                     {getStatusIcon(order.status)}
                   </CardTitle>
                   <p className="text-sm text-gray-600">
@@ -170,20 +170,20 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </Badge>
                   <span className="font-semibold">
-                    £{(order.total_amount / 100).toFixed(2)}
+                    £{order.total_amount.toFixed(2)}
                   </span>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {order.order_items.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center text-sm">
+                {order.items && order.items.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center text-sm">
                     <span>
                       {item.quantity}x {item.item_name}
                     </span>
                     <span className="text-gray-600">
-                      £{(item.total_price / 100).toFixed(2)}
+                      £{(item.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}
