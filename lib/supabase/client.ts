@@ -6,6 +6,7 @@ function createMockClient() {
   // Minimal mock to satisfy build-time and non-configured environments
   return {
     auth: {
+      getUser: async () => ({ data: { user: null }, error: null }),
       getSession: async () => ({ data: { session: null }, error: null }),
       signInWithOAuth: async () => ({ data: null, error: { message: 'Supabase not configured' } }),
       signOut: async () => ({ error: null }),
@@ -44,14 +45,14 @@ function getOrCreateClient() {
 
   supabaseInstance = createBrowserClient(url, anon, {
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
+      persistSession: true, // Enable session persistence for mobile compatibility
+      autoRefreshToken: true, // Enable auto token refresh
+      detectSessionInUrl: true, // Detect session in URL for OAuth flows
       flowType: 'pkce',
     },
   });
 
-  console.log('[AUTH DEBUG] Supabase client created successfully (NO AUTO RESTORATION)');
+  console.log('[AUTH DEBUG] Supabase client created successfully (WITH AUTO RESTORATION)');
   return supabaseInstance;
 }
 
@@ -112,11 +113,12 @@ export function checkPKCEState() {
   }
 }
 
+// SECURE: Use getUser() for authentication checks
 export async function checkAuthState() {
   if (typeof window === 'undefined') return { isServer: true };
   
   try {
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getUser();
     return { data, error };
   } catch (error) {
     return { data: null, error };

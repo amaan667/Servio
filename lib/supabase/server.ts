@@ -64,7 +64,7 @@ export function createAdminClient() {
   )
 }
 
-// Helper function to get user with cookie guard and better error handling
+// SECURE: Use getUser() instead of getSession() for authentication
 export async function getAuthenticatedUser() {
   try {
     const cookieStore = await cookies();
@@ -89,7 +89,7 @@ export async function getAuthenticatedUser() {
   }
 }
 
-// Helper function to get session with better error handling
+// Helper function to get session (use sparingly, prefer getUser() for auth checks)
 export async function getSession() {
   try {
     const supabase = await createServerSupabase();
