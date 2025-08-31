@@ -337,7 +337,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <span className="text-sm text-muted-foreground">Real-time monitoring active</span>
             </div>
             <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">Local time</span>
+            <span className="text-sm text-muted-foreground">
+              {new Date().toLocaleDateString('en-GB', { 
+                day: 'numeric', 
+                month: 'long' 
+              })} (today)
+            </span>
           </div>
         </div>
 
