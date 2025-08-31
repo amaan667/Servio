@@ -38,7 +38,7 @@ export default function NavBarClient() {
             width={200}
             height={50}
             priority
-            className="hover:opacity-80 transition-opacity"
+            className="h-32 w-auto hover:opacity-80 transition-opacity"
           />
         </Link>
       </div>

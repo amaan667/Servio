@@ -117,7 +117,7 @@ export default function GlobalNav() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-16 w-auto transition-all duration-300 group-hover:scale-105"
+                  className="h-32 w-auto transition-all duration-300 group-hover:scale-105"
                   priority
                 />
               </Link>
@@ -145,7 +145,7 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-16 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-32 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>

@@ -124,7 +124,7 @@ export default function ClientNavBar() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-20 sm:h-24 lg:h-28 xl:h-32 2xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                  className="h-40 sm:h-48 lg:h-56 xl:h-64 2xl:h-72 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                   priority
                 />
               </Link>
@@ -152,7 +152,7 @@ export default function ClientNavBar() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-20 sm:h-24 lg:h-28 xl:h-32 2xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-40 sm:h-48 lg:h-56 xl:h-64 2xl:h-72 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                 priority
               />
             </Link>

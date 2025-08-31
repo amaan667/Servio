@@ -18,6 +18,7 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
             alt="Servio logo"
             width={160}
             height={40}
+            className="h-32 w-auto"
             priority
           />
         </Link>
