@@ -109,7 +109,7 @@ function SignInPageContent() {
 
   return (
     <>
-      <SignInForm onSignIn={signInWithGoogle} isLoading={isSigningIn} />
+      <SignInForm onGoogleSignIn={signInWithGoogle} isLoading={isSigningIn} />
       <div className="fixed bottom-4 right-4 z-50">
         <PkceDebugComponent />
       </div>
