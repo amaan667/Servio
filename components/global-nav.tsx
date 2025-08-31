@@ -6,8 +6,9 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { Menu, X, Settings } from "lucide-react";
-import { useAuth } from "@/app/authenticated-client-provider";
+import { useAuth } from "@/app/authenticated-client-provider-minimal";
 import { useRouter, usePathname } from "next/navigation";
+import SignInButton from "@/app/components/SignInButton";
 
 import { signOutUser } from "@/lib/supabase";
 
@@ -50,7 +51,7 @@ export default function GlobalNav() {
     const fetchPrimaryVenue = async () => {
       if (isAuthenticated) {
         try {
-          const { data, error } = await supabase
+          const { data, error } = await supabase()
             .from('venues')
             .select('venue_id')
             .eq('owner_id', session.user.id)

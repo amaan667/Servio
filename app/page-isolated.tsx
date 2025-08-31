@@ -2,11 +2,11 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/app/auth/AuthProvider";
 import {
   QrCode,
   Smartphone,
@@ -17,6 +17,8 @@ import {
   Star,
   CheckCircle,
   ArrowRight,
+  Menu,
+  X,
 } from "lucide-react";
 
 function PricingQuickCompare() {
@@ -68,24 +70,27 @@ function PricingQuickCompare() {
 }
 
 function HomePageContent() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
-  const { session, loading } = useAuth();
+  
+  // Completely isolated - no auth context
+  const session = null;
+  const loading = false;
 
-  console.log('[HOME PAGE] Auth state:', { session: !!session, loading, userId: session?.user?.id });
+  console.log('[HOME PAGE ISOLATED] Rendering without auth context');
 
   const handleGetStarted = () => {
-    if (session) {
-      router.push("/dashboard");
-    } else {
-      router.push("/sign-in");
-    }
+    console.log('[HOME ISOLATED] handleGetStarted called');
+    router.push("/sign-in");
   };
 
   const handleSignIn = () => {
+    console.log('[HOME ISOLATED] handleSignIn called');
     router.push("/sign-in");
   };
 
   const handleDemo = () => {
+    console.log('[HOME ISOLATED] handleDemo called');
     router.push("/order?demo=1");
   };
 
@@ -116,19 +121,17 @@ function HomePageContent() {
                   onClick={handleGetStarted}
                   className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
                 >
-                  {session ? 'Go to Dashboard' : 'Start Free Trial'}
+                  Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                {!session && (
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
-                    onClick={handleSignIn}
-                  >
-                    Sign In
-                  </Button>
-                )}
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                  onClick={handleSignIn}
+                >
+                  Sign In
+                </Button>
                 <Button
                   size="lg"
                   variant="outline"
@@ -405,19 +408,17 @@ function HomePageContent() {
               onClick={handleGetStarted}
               className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
             >
-              {session ? 'Go to Dashboard' : 'Start Your Free Trial'}
+              Start Your Free Trial
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            {!session && (
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
-                onClick={handleSignIn}
-              >
-                Sign In
-              </Button>
-            )}
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+              onClick={handleSignIn}
+            >
+              Sign In
+            </Button>
             <Button
               size="lg"
               variant="outline"

@@ -15,10 +15,10 @@ export default function DashboardDebugPanel() {
     
     try {
       // Get current session
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabase().auth.getSession();
       
       // Get current user
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await supabase().auth.getUser();
       
       // Check localStorage and sessionStorage
       const localStorageKeys = Object.keys(localStorage).filter(k => 
@@ -125,7 +125,7 @@ export default function DashboardDebugPanel() {
       });
       
       // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase().auth.signOut();
       if (error) {
         console.log('[AUTH DEBUG] Sign out error:', error);
       } else {

@@ -29,7 +29,7 @@ export default function SignUpForm({ onGoogleSignIn }: SignUpFormProps) {
     setError(null);
 
     try {
-      const { data, error } = await supabaseBrowser.auth.signUp({
+      const { data, error } = await supabaseBrowser().auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {

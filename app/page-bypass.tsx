@@ -2,11 +2,11 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/app/auth/AuthProvider";
 import {
   QrCode,
   Smartphone,
@@ -17,6 +17,8 @@ import {
   Star,
   CheckCircle,
   ArrowRight,
+  Menu,
+  X,
 } from "lucide-react";
 
 function PricingQuickCompare() {
@@ -68,26 +70,58 @@ function PricingQuickCompare() {
 }
 
 function HomePageContent() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
-  const { session, loading } = useAuth();
+  
+  // Bypass auth context - hardcode values
+  const session = null;
+  const loading = false;
 
-  console.log('[HOME PAGE] Auth state:', { session: !!session, loading, userId: session?.user?.id });
+  console.log('[HOME PAGE BYPASS] Auth state:', { session: !!session, loading, userId: session?.user?.id });
 
   const handleGetStarted = () => {
     if (session) {
+      // User is signed in, redirect to their dashboard
       router.push("/dashboard");
     } else {
-      router.push("/sign-in");
+      // User is not signed in, stay on home page where they can sign in
+      // The sign-in button will handle OAuth
     }
   };
 
   const handleSignIn = () => {
-    router.push("/sign-in");
+    console.log('[HOME BYPASS] handleSignIn called', { hasSession: !!session, sessionId: session?.user?.id });
+    if (session) {
+      console.log('[HOME BYPASS] Redirecting to dashboard');
+      router.push("/dashboard");
+    } else {
+      console.log('[HOME BYPASS] Redirecting to sign-in');
+      router.push("/sign-in");
+    }
   };
 
+  // Show loading state while auth is being determined
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleDemo = () => {
-    router.push("/order?demo=1");
+    if (session) {
+      router.push("/order?venue=demo-cafe&table=1");
+    } else {
+      router.push("/order?demo=1");
+    }
   };
+
+  // Don't redirect automatically - let users view the features page even when logged in
+  // The buttons above will handle navigation appropriately
 
   return (
     <div className="min-h-screen bg-white">

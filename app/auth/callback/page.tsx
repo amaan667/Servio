@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 
@@ -12,12 +12,12 @@ export default function Callback() {
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   // Debug logging function
-  const addDebugLog = (message: string) => {
+  const addDebugLog = useCallback((message: string) => {
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}`;
     console.log(logEntry);
-    setDebugLogs(prev => [...prev, logEntry]);
-  };
+    // Only update debug logs in useEffect to avoid re-renders
+  }, []);
 
   // Detect if we're on mobile
   const isMobile = () => {
@@ -75,7 +75,7 @@ export default function Callback() {
           
           try {
             // Clear any existing auth state
-            await supabaseBrowser.auth.signOut();
+            await supabaseBrowser().auth.signOut();
             
             // Clear storage
             const authKeys = Object.keys(localStorage).filter(k => 
@@ -109,7 +109,7 @@ export default function Callback() {
         addDebugLog('[AUTH CALLBACK] Code found, checking existing session...');
 
         // Check if we have a valid session already
-        const { data: { session: existingSession }, error: sessionError } = await supabaseBrowser.auth.getSession();
+        const { data: { session: existingSession }, error: sessionError } = await supabaseBrowser().auth.getSession();
         
         addDebugLog(`[AUTH CALLBACK] Session check result: ${JSON.stringify({
           hasSession: !!existingSession,
@@ -141,7 +141,7 @@ export default function Callback() {
         addDebugLog('[AUTH CALLBACK] Starting code exchange with Supabase...');
         
         // Exchange the code for a session
-        const exchangePromise = supabaseBrowser.auth.exchangeCodeForSession(code);
+        const exchangePromise = supabaseBrowser().auth.exchangeCodeForSession(code);
         
         const { data, error: exchangeError } = await Promise.race([
           exchangePromise,
@@ -163,15 +163,19 @@ export default function Callback() {
             message: exchangeError.message,
             status: exchangeError.status,
             name: exchangeError.name,
+            code: exchangeError.code,
             stack: exchangeError.stack
           })}`);
           
           // Handle specific PKCE errors
-          if (exchangeError.message?.includes('pkce') || exchangeError.message?.includes('verifier')) {
+          if (exchangeError.message?.includes('pkce') || 
+              exchangeError.message?.includes('verifier') || 
+              exchangeError.message?.includes('code verifier') ||
+              exchangeError.code === 'validation_failed') {
             addDebugLog('[AUTH CALLBACK] PKCE error detected, attempting to clear auth state and retry');
             
             // Clear auth state and redirect to sign-in
-            await supabaseBrowser.auth.signOut();
+            await supabaseBrowser().auth.signOut();
             
             // Clear any remaining auth-related storage
             try {
@@ -196,19 +200,33 @@ export default function Callback() {
             return;
           }
           
+          // Handle refresh token errors
+          if (exchangeError.code === 'refresh_token_not_found' || 
+              exchangeError.message?.includes('refresh token')) {
+            addDebugLog('[AUTH CALLBACK] Refresh token error detected, redirecting to sign-in');
+            
+            // Clear auth state
+            await supabaseBrowser().auth.signOut();
+            
+            setTimeout(() => {
+              router.push('/sign-in?error=refresh_token_error');
+            }, 1000);
+            return;
+          }
+          
           // If it's not a PKCE error, try a fallback approach
           addDebugLog('[AUTH CALLBACK] Attempting fallback authentication...');
           
           try {
             // Clear any existing auth state
-            await supabaseBrowser.auth.signOut();
+            await supabaseBrowser().auth.signOut();
             
             // Wait a moment for cleanup
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             // Try the exchange again
             addDebugLog('[AUTH CALLBACK] Retrying code exchange...');
-            const { data: retryData, error: retryError } = await supabaseBrowser.auth.exchangeCodeForSession(code);
+            const { data: retryData, error: retryError } = await supabaseBrowser().auth.exchangeCodeForSession(code);
             
             addDebugLog(`[AUTH CALLBACK] Retry result: ${JSON.stringify({
               hasData: !!retryData,

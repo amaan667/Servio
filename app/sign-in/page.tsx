@@ -12,6 +12,7 @@ function SignInPageContent() {
   const sp = useSearchParams();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Detect if we're on mobile
   const isMobile = () => {
@@ -20,45 +21,28 @@ function SignInPageContent() {
   };
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        console.log('[AUTH DEBUG] ===== SIGN-IN PAGE LOADED =====');
-        console.log('[AUTH DEBUG] Platform:', isMobile() ? 'Mobile' : 'Desktop');
-        console.log('[AUTH DEBUG] User Agent:', typeof window !== 'undefined' ? navigator.userAgent : 'SSR');
-        console.log('[AUTH DEBUG] Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
-        console.log('[AUTH DEBUG] Checking existing session...');
-        
-        // Check if user is already signed in
-        const { data: { session }, error } = await supabaseBrowser.auth.getSession();
-        
-        console.log('[AUTH DEBUG] Session check result:', {
-          hasSession: !!session,
-          error: error?.message,
-          sessionExpiry: session?.expires_at,
-          userId: session?.user?.id
-        });
-        
-        if (error) {
-          console.error('[AUTH DEBUG] Session check error:', error);
-          setIsCheckingSession(false);
-          return;
-        }
-        
-        if (session) {
-          console.log('[AUTH DEBUG] User already signed in, redirecting to dashboard');
-          router.replace('/dashboard');
-          return;
-        }
-        
-        console.log('[AUTH DEBUG] No existing session, showing sign-in form');
-        setIsCheckingSession(false);
-      } catch (err) {
-        console.error('[AUTH DEBUG] Error checking session:', err);
-        setIsCheckingSession(false);
+    // Skip session check for now to test the sign-in form
+    console.log('[AUTH DEBUG] Skipping session check, showing sign-in form directly');
+    setIsCheckingSession(false);
+    
+    // Check for error parameters in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    
+    if (errorParam) {
+      console.log('[AUTH DEBUG] Error parameter found:', errorParam);
+      switch (errorParam) {
+        case 'pkce_error':
+          setError('Authentication failed due to security verification. Please try signing in again.');
+          break;
+        case 'refresh_token_error':
+          setError('Your session has expired. Please sign in again.');
+          break;
+        default:
+          setError('Authentication failed. Please try again.');
       }
-    };
-    run();
-  }, [router, sp]);
+    }
+  }, []);
 
   const signInWithGoogle = async () => {
     if (isSigningIn) {
@@ -75,7 +59,7 @@ function SignInPageContent() {
       
       // Clear any existing auth state that might interfere
       console.log('[AUTH DEBUG] Clearing existing auth state...');
-      await supabaseBrowser.auth.signOut();
+              await supabaseBrowser().auth.signOut();
       
       // Clear any remaining auth-related storage to prevent state conflicts
       try {
@@ -99,17 +83,17 @@ function SignInPageContent() {
       console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
       console.log('[AUTH DEBUG] Current origin:', typeof window !== 'undefined' ? window.location.origin : 'SSR');
       
-      const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
+      const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
           queryParams: { 
             access_type: 'offline',
-            prompt: 'consent', // Changed from 'select_account' to 'consent' for refresh tokens
-            // Add additional parameters to ensure proper state handling
+            prompt: 'consent',
             include_granted_scopes: 'true',
-            response_type: 'code'
           },
+          // Enable PKCE for better security
+          flowType: 'pkce',
         },
       });
       
@@ -167,7 +151,8 @@ function SignInPageContent() {
     }
   };
 
-  if (isCheckingSession) {
+  // Skip session check for testing
+  if (false) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -182,7 +167,9 @@ function SignInPageContent() {
     <>
       <SignInForm 
         onGoogleSignIn={signInWithGoogle} 
-        isLoading={isSigningIn} 
+        isLoading={isSigningIn}
+        error={error}
+        onClearError={() => setError(null)}
       />
     </>
   );

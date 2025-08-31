@@ -120,7 +120,22 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     const initializeAuth = async () => {
       console.log('[AUTH PROVIDER] Initializing auth');
       try {
-        const { data: { session }, error } = await supabaseBrowser.auth.getSession();
+        console.log('[AUTH PROVIDER] Creating Supabase client...');
+        let supabase;
+        try {
+          supabase = supabaseBrowser();
+          console.log('[AUTH PROVIDER] Supabase client created successfully');
+        } catch (clientError: any) {
+          console.log('[AUTH PROVIDER] Error creating Supabase client:', {
+            message: clientError.message,
+            stack: clientError.stack?.substring(0, 200) + '...'
+          });
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
           console.log('[AUTH PROVIDER] Error getting session:', {
@@ -180,13 +195,26 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
         });
         setSession(null);
       } finally {
+        console.log('[AUTH PROVIDER] Setting loading to false');
         setLoading(false);
       }
     };
 
     initializeAuth();
 
-    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+    let supabase;
+    try {
+      supabase = supabaseBrowser();
+    } catch (clientError: any) {
+      console.log('[AUTH PROVIDER] Error creating Supabase client for auth state change:', {
+        message: clientError.message,
+        stack: clientError.stack?.substring(0, 200) + '...'
+      });
+      setLoading(false);
+      return;
+    }
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       console.log('[AUTH PROVIDER] Auth state change:', event, {
         hasSession: !!session,
         hasUser: !!session?.user,

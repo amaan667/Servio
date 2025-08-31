@@ -46,8 +46,8 @@ export default function DebugAuthPage() {
         setDebugInfo(data);
         
         // Get client-side auth state
-        const { data: { session }, error: sessionError } = await supabaseBrowser.auth.getSession();
-        const { data: { user }, error: userError } = await supabaseBrowser.auth.getUser();
+            const { data: { session }, error: sessionError } = await supabaseBrowser().auth.getSession();
+    const { data: { user }, error: userError } = await supabaseBrowser().auth.getUser();
         
         setClientAuthState({
           hasSession: !!session,
@@ -71,7 +71,7 @@ export default function DebugAuthPage() {
 
   const clearAuthState = async () => {
     try {
-      await supabaseBrowser.auth.signOut();
+              await supabaseBrowser().auth.signOut();
       window.location.reload();
     } catch (err: any) {
       console.error('Error clearing auth state:', err);

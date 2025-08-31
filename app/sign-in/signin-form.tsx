@@ -11,13 +11,18 @@ import Link from 'next/link';
 interface SignInFormProps {
   onGoogleSignIn: () => Promise<void>;
   isLoading?: boolean;
+  error?: string | null;
+  onClearError?: () => void;
 }
 
-export default function SignInForm({ onGoogleSignIn, isLoading = false }: SignInFormProps) {
+export default function SignInForm({ onGoogleSignIn, isLoading = false, error: propError, onClearError }: SignInFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use prop error if provided, otherwise use local error
+  const displayError = propError || error;
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +30,7 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false }: SignIn
     setError(null);
 
     try {
-      const { data, error } = await supabaseBrowser.auth.signInWithPassword({
+      const { data, error } = await supabaseBrowser().auth.signInWithPassword({
         email,
         password,
       });
@@ -54,9 +59,19 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false }: SignIn
           <p className="text-gray-600">Sign in to manage your venue</p>
         </div>
         
-        {error && (
+        {displayError && (
           <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {displayError}
+              {onClearError && (
+                <button
+                  onClick={onClearError}
+                  className="ml-2 text-sm underline hover:no-underline"
+                >
+                  Dismiss
+                </button>
+              )}
+            </AlertDescription>
           </Alert>
         )}
         
