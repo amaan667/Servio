@@ -28,21 +28,25 @@ const hasSupabaseConfig = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env
 // Add OrderWithItems type locally since it's not exported from supabase
 interface OrderWithItems {
   id: string;
-  order_number: number;
   venue_id: string;
   table_number: number;
   customer_name: string;
   customer_phone?: string;
+  customer_email?: string;
   status: string;
   total_amount: number;
   notes?: string;
-  created_at: string;
-  order_items: Array<{
-    id: string;
+  payment_method?: string;
+  payment_status?: string;
+  items: Array<{
+    menu_item_id: string;
     quantity: number;
     price: number;
     item_name: string;
+    specialInstructions?: string;
   }>;
+  created_at: string;
+  updated_at: string;
 }
 
 interface LiveOrdersProps {
@@ -75,17 +79,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     try {
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
-        .select(
-          `
-          *,
-          order_items (
-            id,
-            quantity,
-            price,
-            item_name
-          )
-        `,
-        )
+        .select("*")
         .eq("venue_id", venueId)
         .order("created_at", { ascending: false });
 
@@ -130,17 +124,6 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         (payload: any) => {
           logger.info(
             "LIVE_ORDERS: Real-time change detected, refetching orders",
-            payload,
-          );
-          fetchOrders();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "order_items" },
-        (payload: any) => {
-          logger.info(
-            "LIVE_ORDERS: Order items change detected, refetching orders",
             payload,
           );
           fetchOrders();

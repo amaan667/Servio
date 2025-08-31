@@ -36,15 +36,25 @@ export interface MenuItem {
 
 export interface Order {
   id: string;
-  order_number: number;
   venue_id: string;
   table_number: number;
   customer_name: string;
   customer_phone?: string;
+  customer_email?: string;
   status: string;
   total_amount: number;
   notes?: string;
+  payment_method?: string;
+  payment_status?: string;
+  items: Array<{
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+    specialInstructions?: string;
+  }>;
   created_at: string;
+  updated_at: string;
 }
 
 export interface OrderItem {
@@ -58,7 +68,7 @@ export interface OrderItem {
 }
 
 export interface OrderWithItems extends Order {
-  order_items: OrderItem[];
+  // Order already includes items field, so this interface is just an alias
 }
 
 export interface AuthSession {
@@ -378,7 +388,10 @@ export async function createOrder(orderData: {
       totalAmount: orderData.total_amount,
     });
 
-    // Create the order
+    // Calculate total amount from items
+    const calculatedTotal = orderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    // Create the order with items as JSONB
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -387,8 +400,9 @@ export async function createOrder(orderData: {
         customer_name: orderData.customer_name,
         customer_phone: orderData.customer_phone,
         status: "pending",
-        total_amount: orderData.total_amount,
+        total_amount: calculatedTotal,
         notes: orderData.notes,
+        items: orderData.items, // Store items as JSONB
       })
       .select()
       .single();
@@ -398,27 +412,9 @@ export async function createOrder(orderData: {
       return { success: false, message: "Failed to create order" };
     }
 
-    // Create order items
-    const orderItems = orderData.items.map((item) => ({
-      order_id: order.id,
-      menu_item_id: item.menu_item_id,
-      quantity: item.quantity,
-      unit_price: item.price,
-      total_price: item.price * item.quantity,
-    }));
-
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .insert(orderItems);
-
-    if (itemsError) {
-      logger.error("Failed to create order items", { error: itemsError });
-      return { success: false, message: "Failed to create order items" };
-    }
-
     logger.info("Order created successfully", {
       orderId: order.id,
-      orderNumber: order.order_number,
+      calculatedTotal,
     });
 
     return { success: true, data: order };

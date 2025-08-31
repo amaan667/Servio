@@ -61,7 +61,7 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
             </CardTitle>
             <CardDescription className="flex items-center space-x-2 text-xs">
               <Hash className="h-3 w-3" />
-              <span>{order.order_number}</span>
+              <span>{order.id.slice(0, 8)}</span>
             </CardDescription>
           </div>
           <div className="text-right">
@@ -82,13 +82,13 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
       <CardContent>
         <Separator />
         <ul className="space-y-2 py-3">
-          {order.order_items && order.order_items.length > 0 ? (
-            order.order_items.map((item: OrderItem) => (
-              <li key={item.id} className="flex justify-between text-sm">
+          {order.items && order.items.length > 0 ? (
+            order.items.map((item: any, index: number) => (
+              <li key={index} className="flex justify-between text-sm">
                 <span>
                   {item.quantity} x {item.item_name}
                 </span>
-                <span>£{item.total_price.toFixed(2)}</span>
+                <span>£{(item.price * item.quantity).toFixed(2)}</span>
               </li>
             ))
           ) : (

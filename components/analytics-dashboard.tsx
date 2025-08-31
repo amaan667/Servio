@@ -9,7 +9,30 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { TrendingUp, ShoppingBag, Users, RefreshCw } from "lucide-react";
-import type { OrderWithItems } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+
+interface OrderWithItems {
+  id: string;
+  venue_id: string;
+  table_number: number;
+  customer_name: string;
+  customer_phone?: string;
+  customer_email?: string;
+  status: string;
+  total_amount: number;
+  notes?: string;
+  payment_method?: string;
+  payment_status?: string;
+  items: Array<{
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+    specialInstructions?: string;
+  }>;
+  created_at: string;
+  updated_at: string;
+}
 
 interface AnalyticsDashboardProps {
   venueId: string;
@@ -23,14 +46,26 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
   });
   const [loading, setLoading] = useState(true);
 
-  const calculateStats = useCallback(() => {
+  const calculateStats = useCallback(async () => {
     setLoading(true);
     try {
-      const localOrders: OrderWithItems[] = JSON.parse(
-        localStorage.getItem(`servio-orders-${venueId}`) || "[]",
-      );
+      const supabase = createClient();
+      
+      // Fetch orders from database
+      const { data: ordersData, error: ordersError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .gte("created_at", new Date().toISOString().split('T')[0]); // Today's orders
 
-      const todaysOrders = localOrders.filter((order) => {
+      if (ordersError) {
+        console.error("Error fetching orders:", ordersError);
+        setStats({ revenue: 0, orderCount: 0, activeTables: 0 });
+        return;
+      }
+
+      const orders: OrderWithItems[] = ordersData || [];
+      const todaysOrders = orders.filter((order) => {
         const orderDate = new Date(order.created_at).toDateString();
         const today = new Date().toDateString();
         return orderDate === today && order.status !== "cancelled";
@@ -58,13 +93,6 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
 
   useEffect(() => {
     calculateStats();
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === `servio-orders-${venueId}`) {
-        calculateStats();
-      }
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
   }, [calculateStats]);
 
   const StatCard = ({
