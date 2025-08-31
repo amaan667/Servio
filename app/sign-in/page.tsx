@@ -13,10 +13,13 @@ function SignInPageContent() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
+
   useEffect(() => {
     const run = async () => {
       try {
         console.log('[AUTH DEBUG] Checking existing session...');
+        
+
         
         // Check if user is already signed in
         const { data: { session }, error } = await supabaseBrowser.auth.getSession();
@@ -51,6 +54,7 @@ function SignInPageContent() {
     
     try {
       setIsSigningIn(true);
+
       console.log('[AUTH DEBUG] Starting Google OAuth sign in');
       
       // Clear any existing auth state that might interfere
@@ -66,7 +70,10 @@ function SignInPageContent() {
           redirectTo,
           queryParams: { 
             access_type: 'offline',
-            prompt: 'consent' // Changed from 'select_account' to 'consent' for refresh tokens
+            prompt: 'consent', // Changed from 'select_account' to 'consent' for refresh tokens
+            // Add additional parameters to ensure proper state handling
+            include_granted_scopes: 'true',
+            response_type: 'code'
           },
         },
       });
@@ -109,7 +116,10 @@ function SignInPageContent() {
 
   return (
     <>
-      <SignInForm onGoogleSignIn={signInWithGoogle} isLoading={isSigningIn} />
+      <SignInForm 
+        onGoogleSignIn={signInWithGoogle} 
+        isLoading={isSigningIn} 
+      />
     </>
   );
 }

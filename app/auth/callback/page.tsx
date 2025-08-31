@@ -9,13 +9,19 @@ export default function Callback() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState<string>('');
+
 
   useEffect(() => {
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log('[AUTH CALLBACK] Timeout reached, redirecting to sign-in');
+      setError('Authentication timed out. Please try signing in again.');
+      setLoading(false);
+    }, 30000); // 30 seconds timeout
+
     const handleCallback = async () => {
       try {
         console.log('[AUTH CALLBACK] Processing OAuth callback');
-        setDebugInfo('Starting callback processing...');
         
         // Get the code from URL parameters
         const code = searchParams.get('code');
@@ -27,9 +33,10 @@ export default function Callback() {
           error,
           state: state?.substring(0, 10) + '...',
           hasCode: !!code,
-          hasError: !!error
+          hasError: !!error,
+          hasState: !!state
         });
-        setDebugInfo(`Code: ${code ? 'Present' : 'Missing'}, Error: ${error || 'None'}, State: ${state ? 'Present' : 'Missing'}`);
+
         
         if (error) {
           console.error('[AUTH CALLBACK] OAuth error:', error);
@@ -49,13 +56,11 @@ export default function Callback() {
         const { data: { session: existingSession } } = await supabaseBrowser.auth.getSession();
         if (existingSession) {
           console.log('[AUTH CALLBACK] Session already exists, redirecting to dashboard');
-          setDebugInfo('Session already exists, redirecting...');
           router.push('/dashboard');
           return;
         }
 
         console.log('[AUTH CALLBACK] Exchanging code for session');
-        setDebugInfo('Exchanging code for session...');
         
         // Add timeout to prevent hanging
         const timeoutPromise = new Promise((_, reject) => {
@@ -77,10 +82,75 @@ export default function Callback() {
           error: exchangeError?.message,
           sessionExpiry: data?.session?.expires_at
         });
-        setDebugInfo(`Exchange complete. Session: ${data?.session ? 'Yes' : 'No'}, User: ${data?.user ? 'Yes' : 'No'}, Error: ${exchangeError?.message || 'None'}`);
+
         
         if (exchangeError) {
           console.error('[AUTH CALLBACK] Exchange error:', exchangeError);
+          
+          // Handle specific PKCE errors
+          if (exchangeError.message?.includes('pkce') || exchangeError.message?.includes('verifier')) {
+            console.log('[AUTH CALLBACK] PKCE error detected, attempting to clear auth state and retry');
+            
+            // Clear auth state and redirect to sign-in
+            await supabaseBrowser.auth.signOut();
+            
+            // Clear any remaining auth-related storage
+            try {
+              const authKeys = Object.keys(localStorage).filter(k => 
+                k.includes('auth') || k.includes('supabase') || k.includes('sb-')
+              );
+              authKeys.forEach(key => localStorage.removeItem(key));
+              
+              const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
+                k.includes('auth') || k.includes('supabase') || k.includes('sb-')
+              );
+              sessionAuthKeys.forEach(key => sessionStorage.removeItem(key));
+            } catch (err) {
+              console.error('[AUTH CALLBACK] Error clearing storage:', err);
+            }
+            
+            setTimeout(() => {
+              router.push('/sign-in?error=pkce_error');
+            }, 1000);
+            return;
+          }
+          
+          // If it's not a PKCE error, try a fallback approach
+          console.log('[AUTH CALLBACK] Attempting fallback authentication...');
+          setDebugInfo('Attempting fallback authentication...');
+          
+          try {
+            // Clear any existing auth state
+            await supabaseBrowser.auth.signOut();
+            
+            // Wait a moment for cleanup
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Try the exchange again
+            const { data: retryData, error: retryError } = await supabaseBrowser.auth.exchangeCodeForSession(code);
+            
+            if (retryError) {
+              console.error('[AUTH CALLBACK] Fallback exchange also failed:', retryError);
+              setError(`Authentication failed: ${retryError.message}`);
+              setLoading(false);
+              return;
+            }
+            
+            if (retryData?.session) {
+              console.log('[AUTH CALLBACK] Fallback authentication successful');
+              setDebugInfo('Fallback authentication successful, redirecting...');
+              setTimeout(() => {
+                router.push('/dashboard');
+              }, 500);
+              return;
+            }
+          } catch (fallbackErr: any) {
+            console.error('[AUTH CALLBACK] Fallback authentication error:', fallbackErr);
+            setError(`Authentication failed: ${fallbackErr.message}`);
+            setLoading(false);
+            return;
+          }
+          
           setError(`Exchange failed: ${exchangeError.message}`);
           setLoading(false);
           return;
@@ -101,12 +171,23 @@ export default function Callback() {
         }
       } catch (err: any) {
         console.error('[AUTH CALLBACK] Unexpected error:', err);
+        
+        // Handle timeout errors
+        if (err.message?.includes('timeout')) {
+          setError('Authentication timed out. Please try signing in again.');
+          setLoading(false);
+          return;
+        }
+        
         setError(err.message || 'An unexpected error occurred during authentication');
         setLoading(false);
       }
     };
 
     handleCallback();
+
+    // Cleanup timeout on unmount
+    return () => clearTimeout(timeoutId);
   }, [searchParams, router]);
 
   if (error) {
@@ -121,9 +202,6 @@ export default function Callback() {
             </div>
             <h2 className="text-lg font-medium text-gray-900 mb-2">Authentication Error</h2>
             <p className="text-sm text-gray-600 mb-4">{error}</p>
-            {debugInfo && (
-              <p className="text-xs text-gray-500 mb-4">Debug: {debugInfo}</p>
-            )}
             <div className="space-y-2">
               <button
                 onClick={() => router.push('/sign-in')}
@@ -131,12 +209,7 @@ export default function Callback() {
               >
                 Try Again
               </button>
-              <button
-                onClick={() => router.push('/auth/callback-debug')}
-                className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors text-sm"
-              >
-                Debug Info
-              </button>
+
             </div>
           </div>
         </div>
@@ -149,9 +222,6 @@ export default function Callback() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
         <p className="text-gray-600">Signing you in…</p>
-        {debugInfo && (
-          <p className="text-xs text-gray-500 mt-2">{debugInfo}</p>
-        )}
         <p className="text-xs text-gray-400 mt-4">This may take a few seconds...</p>
       </div>
     </div>
