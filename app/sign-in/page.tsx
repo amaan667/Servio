@@ -1,8 +1,12 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabaseBrowser, clearSupabaseAuth } from '@/lib/supabase/browser';
+// Delay importing supabase until after mount to avoid build-time env evaluation
+let supabaseBrowser: any = null;
+let clearSupabaseAuth: any = null;
 import { getAuthRedirectUrl } from '@/lib/auth';
 import SignInForm from './signin-form';
 import PkceDebugComponent from './pkce-debug';
@@ -30,6 +34,11 @@ function SignInPageContent() {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Lazy import
+        const mod = await import('@/lib/supabase/browser');
+        supabaseBrowser = mod.supabaseBrowser;
+        clearSupabaseAuth = mod.clearSupabaseAuth;
+
         console.log('[AUTH DEBUG] Initializing sign-in page');
         console.log('[AUTH DEBUG] Platform:', isMobile() ? 'Mobile' : 'Desktop');
         console.log('[AUTH DEBUG] User Agent:', typeof window !== 'undefined' ? navigator.userAgent : 'SSR');

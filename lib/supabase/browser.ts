@@ -33,14 +33,23 @@ export const supabaseBrowser = () => {
           flowType: 'pkce', // Use PKCE for better security
           storage: {
             getItem: (key: string) => {
-              // Custom storage that doesn't persist auth state
+              // Allow PKCE verifier to be read back during OAuth exchange
+              if (key.includes('token-code-verifier')) {
+                return localStorage.getItem(key);
+              }
+              // Block other auth/session keys from being read to avoid auto sign-in
               if (key.includes('auth') || key.includes('supabase') || key.startsWith('sb-')) {
-                return null; // Don't return any auth data
+                return null;
               }
               return localStorage.getItem(key);
             },
             setItem: (key: string, value: string) => {
-              // Don't persist auth state
+              // Persist ONLY the PKCE verifier required for OAuth code exchange
+              if (key.includes('token-code-verifier')) {
+                localStorage.setItem(key, value);
+                return;
+              }
+              // Block other auth/session keys from being written
               if (key.includes('auth') || key.includes('supabase') || key.startsWith('sb-')) {
                 console.log('[SUPABASE] Blocking auth state persistence for key:', key);
                 return;
@@ -73,7 +82,9 @@ export const clearSupabaseAuth = async () => {
     
     // Clear any remaining auth-related storage
     const authKeys = Object.keys(localStorage).filter(k => 
-      k.includes('auth') || k.includes('supabase') || k.startsWith('sb-') || k.includes('pkce')
+      (k.includes('auth') || k.includes('supabase') || k.startsWith('sb-') || k.includes('pkce'))
+      // Preserve PKCE verifier so ongoing OAuth flows don't break
+      && !k.includes('token-code-verifier')
     );
     
     authKeys.forEach(key => {
@@ -83,7 +94,8 @@ export const clearSupabaseAuth = async () => {
     
     // Clear sessionStorage
     const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
-      k.includes('auth') || k.includes('supabase') || k.startsWith('sb-') || k.includes('pkce')
+      (k.includes('auth') || k.includes('supabase') || k.startsWith('sb-') || k.includes('pkce'))
+      && !k.includes('token-code-verifier')
     );
     
     sessionAuthKeys.forEach(key => {
