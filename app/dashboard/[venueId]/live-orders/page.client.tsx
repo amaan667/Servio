@@ -31,6 +31,8 @@ interface Order {
 }
 
 export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
+  console.log('[LIVE ORDERS DEBUG] Component mounted with venueId:', venueId);
+  
   const { session } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +40,12 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
   const supabase = createClient();
 
   useEffect(() => {
+    console.log('[LIVE ORDERS DEBUG] useEffect triggered:', {
+      hasSession: !!session?.user,
+      venueId,
+      userId: session?.user?.id
+    });
+    
     if (session?.user) {
       fetchOrders();
       // Set up real-time subscription
@@ -46,18 +54,21 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
         .on('postgres_changes', 
           { event: '*', schema: 'public', table: 'orders', filter: `venue_id=eq.${venueId}` },
           () => {
+            console.log('[LIVE ORDERS DEBUG] Real-time change detected, refetching orders');
             fetchOrders();
           }
         )
         .subscribe();
 
       return () => {
+        console.log('[LIVE ORDERS DEBUG] Cleaning up real-time subscription');
         supabase().removeChannel(channel);
       };
     }
   }, [session, venueId]);
 
   const fetchOrders = async () => {
+    console.log('[LIVE ORDERS DEBUG] fetchOrders called for venueId:', venueId);
     try {
       const { data, error } = await supabase()
         .from('orders')
@@ -67,12 +78,25 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching orders:', error);
+        console.error('[LIVE ORDERS DEBUG] Error fetching orders:', error);
       } else {
+        console.log('[LIVE ORDERS DEBUG] Orders fetched successfully:', {
+          count: data?.length || 0,
+          orders: data?.map(order => ({
+            id: order.id,
+            total_amount: order.total_amount,
+            items_count: order.items?.length || 0,
+            items: order.items?.map(item => ({
+              item_name: item.item_name,
+              quantity: item.quantity,
+              price: item.price
+            }))
+          }))
+        });
         setOrders(data || []);
       }
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error('[LIVE ORDERS DEBUG] Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
@@ -149,6 +173,11 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
       </div>
 
       <div className="grid gap-4">
+        {console.log('[LIVE ORDERS DEBUG] Rendering orders:', orders.map(order => ({
+          id: order.id,
+          items_count: order.items?.length || 0,
+          items: order.items?.map(item => item.item_name)
+        })))}
         {orders.map((order) => (
           <Card key={order.id} className="border-l-4 border-l-purple-500">
             <CardHeader>
@@ -177,16 +206,20 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {order.items && order.items.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center text-sm">
-                    <span>
-                      {item.quantity}x {item.item_name}
-                    </span>
-                    <span className="text-gray-600">
-                      £{(item.price * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+                {console.log('[LIVE ORDERS DEBUG] Rendering items for order', order.id, ':', order.items)}
+                {order.items && order.items.map((item, index) => {
+                  console.log('[LIVE ORDERS DEBUG] Rendering item:', item);
+                  return (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span>
+                        {item.quantity}x {item.item_name}
+                      </span>
+                      <span className="text-gray-600">
+                        £{(item.price * item.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               
               <div className="flex gap-2 mt-4 pt-4 border-t">
