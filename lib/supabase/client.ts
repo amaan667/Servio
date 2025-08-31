@@ -1,39 +1,69 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-// Only log in browser environment, not during build
-if (typeof window !== 'undefined') {
+let supabaseInstance: ReturnType<typeof createBrowserClient> | any | null = null;
+
+function createMockClient() {
+  // Minimal mock to satisfy build-time and non-configured environments
+  return {
+    auth: {
+      getUser: async () => ({ data: { user: null }, error: null }),
+      getSession: async () => ({ data: { session: null }, error: null }),
+      signInWithOAuth: async () => ({ data: null, error: { message: 'Supabase not configured' } }),
+      signOut: async () => ({ error: null }),
+      updateUser: async () => ({ data: null, error: { message: 'Supabase not configured' } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      exchangeCodeForSession: async () => ({ data: { session: null }, error: { message: 'Supabase not configured' } }),
+    },
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+      insert: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
+      update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
+      delete: () => ({ eq: async () => ({ error: null }) })
+    })
+  } as any;
+}
+
+function getOrCreateClient() {
+  if (supabaseInstance) return supabaseInstance;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // If env is missing or not in a browser, return a mock to avoid build-time crashes
+  if (typeof window === 'undefined' || !url || !anon) {
+    supabaseInstance = createMockClient();
+    return supabaseInstance;
+  }
+
   console.log('[AUTH DEBUG] === SUPABASE CLIENT CREATION ===');
   console.log('[AUTH DEBUG] Environment variables check:', {
-    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-    hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
-    anonKeyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length
+    hasSupabaseUrl: !!url,
+    hasAnonKey: !!anon,
+    supabaseUrl: url?.substring(0, 20) + '...',
+    anonKeyLength: anon?.length
   });
-}
 
-export const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
+  supabaseInstance = createBrowserClient(url, anon, {
     auth: {
-      persistSession: false, // Disable session persistence to prevent auto sign-in
-      autoRefreshToken: false, // Disable auto refresh to prevent auto sign-in
-      detectSessionInUrl: false, // Disable session detection in URL
+      persistSession: true, // Enable session persistence for mobile compatibility
+      autoRefreshToken: true, // Enable auto token refresh
+      detectSessionInUrl: true, // Detect session in URL for OAuth flows
       flowType: 'pkce',
     },
-  }
-)
+  });
 
-if (typeof window !== 'undefined') {
-  console.log('[AUTH DEBUG] Supabase client created successfully (NO AUTO RESTORATION)');
+  console.log('[AUTH DEBUG] Supabase client created successfully (WITH AUTO RESTORATION)');
+  return supabaseInstance;
 }
+
+export const supabase = getOrCreateClient();
 
 // Keep the old createClient function for backward compatibility
 export function createClient() {
   if (typeof window !== 'undefined') {
     console.log('[AUTH DEBUG] createClient() called - returning existing supabase instance');
   }
-  return supabase;
+  return getOrCreateClient();
 }
 
 // Backward compatibility functions for existing code
@@ -83,11 +113,12 @@ export function checkPKCEState() {
   }
 }
 
+// SECURE: Use getUser() for authentication checks
 export async function checkAuthState() {
   if (typeof window === 'undefined') return { isServer: true };
   
   try {
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getUser();
     return { data, error };
   } catch (error) {
     return { data: null, error };

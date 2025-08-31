@@ -8,19 +8,159 @@ export const supabaseBrowser = () => {
   }
   
   if (!supabaseBrowserInstance) {
+    // Check if environment variables are available
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[SUPABASE] Missing environment variables:', {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseAnonKey
+      });
+      throw new Error('Missing Supabase environment variables');
+    }
+    
+    console.log('[SUPABASE] Creating browser client with URL:', supabaseUrl);
+    
     supabaseBrowserInstance = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         auth: {
-          persistSession: false, // Disable session persistence to prevent auto sign-in
-          autoRefreshToken: false, // Disable auto refresh to prevent auto sign-in
-          detectSessionInUrl: false, // Disable session detection in URL
-          flowType: 'pkce',
+          persistSession: true, // Enable session persistence for better UX
+          autoRefreshToken: true, // Enable auto refresh for seamless experience
+          detectSessionInUrl: true, // Enable session detection for OAuth flows
+          flowType: 'pkce', // Use PKCE for better security
+          storage: {
+            getItem: (key: string) => {
+              try {
+                // Allow all auth-related keys to be read for proper session management
+                return localStorage.getItem(key);
+              } catch (error) {
+                console.error('[SUPABASE] Error reading from storage:', error);
+                return null;
+              }
+            },
+            setItem: (key: string, value: string) => {
+              try {
+                localStorage.setItem(key, value);
+              } catch (error) {
+                console.error('[SUPABASE] Error writing to storage:', error);
+              }
+            },
+            removeItem: (key: string) => {
+              try {
+                localStorage.removeItem(key);
+              } catch (error) {
+                console.error('[SUPABASE] Error removing from storage:', error);
+              }
+            },
+          },
+        },
+        // Disable cookie operations on client side to prevent Next.js App Router errors
+        // Cookies will be handled by server-side APIs
+        cookies: {
+          get: () => undefined,
+          set: () => {},
+          remove: () => {}
+        },
+        global: {
+          headers: {
+            'X-Client-Info': 'servio-web-app',
+          },
         },
       }
     );
   }
   
   return supabaseBrowserInstance;
+};
+
+// Function to clear Supabase auth state
+export const clearSupabaseAuth = async () => {
+  try {
+    console.log('[SUPABASE] Clearing auth state...');
+    
+    // Use server-side signout API to properly clear cookies
+    try {
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        console.log('[SUPABASE] Server signout successful');
+      } else {
+        console.log('[SUPABASE] Server signout failed:', response.status);
+      }
+    } catch (error) {
+      console.log('[SUPABASE] Server signout failed, continuing with local cleanup:', error);
+    }
+    
+    // Clear any remaining auth-related storage
+    const authKeys = Object.keys(localStorage).filter(k => 
+      (k.includes('auth') || k.includes('supabase') || k.startsWith('sb-') || k.includes('pkce'))
+    );
+    
+    authKeys.forEach(key => {
+      console.log('[SUPABASE] Clearing auth key:', key);
+      localStorage.removeItem(key);
+    });
+    
+    // Clear sessionStorage
+    const sessionAuthKeys = Object.keys(sessionStorage).filter(k => 
+      (k.includes('auth') || k.includes('supabase') || k.startsWith('sb-') || k.includes('pkce'))
+    );
+    
+    sessionAuthKeys.forEach(key => {
+      console.log('[SUPABASE] Clearing session auth key:', key);
+      sessionStorage.removeItem(key);
+    });
+    
+    console.log('[SUPABASE] Auth state cleared successfully');
+  } catch (error) {
+    console.error('[SUPABASE] Error clearing auth state:', error);
+  }
+};
+
+// Function to check if user is authenticated
+export const checkAuthStatus = async () => {
+  try {
+    const supabase = supabaseBrowser();
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('[SUPABASE] Error checking auth status:', error);
+      return { isAuthenticated: false, error };
+    }
+    
+    return { 
+      isAuthenticated: !!session, 
+      session,
+      user: session?.user || null 
+    };
+  } catch (error) {
+    console.error('[SUPABASE] Error checking auth status:', error);
+    return { isAuthenticated: false, error };
+  }
+};
+
+// Function to refresh session
+export const refreshSession = async () => {
+  try {
+    const supabase = supabaseBrowser();
+    const { data: { session }, error } = await supabase.auth.refreshSession();
+    
+    if (error) {
+      console.error('[SUPABASE] Error refreshing session:', error);
+      return { session: null, error };
+    }
+    
+    return { session, error: null };
+  } catch (error) {
+    console.error('[SUPABASE] Error refreshing session:', error);
+    return { session: null, error };
+  }
 };

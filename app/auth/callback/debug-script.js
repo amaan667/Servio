@@ -34,16 +34,8 @@
       body: JSON.stringify(debugInfo)
     }).catch(() => {});
     
-    // Verify if the PKCE cookie check is present
-    if (document.cookie.includes('_check_pkce=true')) {
-      // Write the PKCE verifier to a cookie for server-side visibility
-      if (hasVerifier) {
-        document.cookie = '_pkce_verifier_exists=true; path=/; max-age=60';
-        document.cookie = `_pkce_verifier_length=${verifier.length}; path=/; max-age=60`;
-      } else {
-        document.cookie = '_pkce_verifier_exists=false; path=/; max-age=60';
-      }
-    }
+    // Note: Cookie manipulation removed to prevent Next.js App Router errors
+    // Debug information is now only sent via fetch request to server
   } catch (error) {
     console.error('[AUTH][CLIENT DEBUG] Error in PKCE debug script:', error);
   }

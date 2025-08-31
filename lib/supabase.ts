@@ -257,8 +257,19 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
 // Sign out function
 export async function signOutUser() {
   try {
-    await supabase.auth.signOut();
-    logger.info("User signed out");
+    // Use server-side signout API instead of client-side auth.signOut()
+    const response = await fetch('/api/auth/signout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (response.ok) {
+      logger.info("User signed out");
+    } else {
+      logger.error("Server signout failed", { status: response.status });
+    }
   } catch (error) {
     logger.error("Sign out error", { error });
   }

@@ -1,19 +1,21 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { supabaseBrowser, checkAuthStatus, refreshSession } from '@/lib/supabase/browser';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({ 
   session: null, 
   loading: true,
-  signOut: async () => {}
+  signOut: async () => {},
+  refreshAuth: async () => {}
 });
 
 export function AuthenticatedClientProvider({ children }: { children: React.ReactNode }) {
@@ -60,9 +62,31 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
 
     // Check if session is expired
     if (session.expires_at && new Date(session.expires_at * 1000) < new Date()) {
-      console.log('[AUTH PROVIDER] Session expired, clearing');
-      updateSession(null);
-      return;
+      console.log('[AUTH PROVIDER] Session expired, attempting refresh');
+      
+      try {
+        const { session: refreshedSession, error } = await refreshSession();
+        
+        if (error) {
+          console.log('[AUTH PROVIDER] Failed to refresh session:', error);
+          updateSession(null);
+          return;
+        }
+        
+        if (refreshedSession) {
+          console.log('[AUTH PROVIDER] Session refreshed successfully');
+          updateSession(refreshedSession);
+          return;
+        } else {
+          console.log('[AUTH PROVIDER] No refreshed session returned');
+          updateSession(null);
+          return;
+        }
+      } catch (error) {
+        console.log('[AUTH PROVIDER] Error refreshing session:', error);
+        updateSession(null);
+        return;
+      }
     }
 
     console.log('[AUTH PROVIDER] Session is valid, updating');
@@ -87,12 +111,13 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       const sessionStorageKeys = Object.keys(sessionStorage).filter(k =>
         k.startsWith("sb-") || k.includes("auth")
       );
-      sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
+      sessionStorageKeys.forEach(key => sessionStorage.removeItem(key));
     }
   }, []);
 
   const signOut = useCallback(async () => {
     try {
+      console.log('[AUTH PROVIDER] Signing out...');
       clearSession();
       
       const response = await fetch('/api/auth/signout', {
@@ -101,10 +126,38 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
           'Content-Type': 'application/json',
         },
       });
+      
+      if (!response.ok) {
+        console.log('[AUTH PROVIDER] Server signout failed:', response.status);
+      } else {
+        console.log('[AUTH PROVIDER] Server signout successful');
+      }
     } catch (error) {
-      // Silent error handling
+      console.error('[AUTH PROVIDER] Signout error:', error);
     }
   }, [clearSession]);
+
+  const refreshAuth = useCallback(async () => {
+    try {
+      console.log('[AUTH PROVIDER] Refreshing auth...');
+      const { isAuthenticated, session: currentSession, error } = await checkAuthStatus();
+      
+      if (error) {
+        console.log('[AUTH PROVIDER] Error checking auth status:', error);
+        updateSession(null);
+        return;
+      }
+      
+      if (isAuthenticated && currentSession) {
+        await validateAndUpdateSession(currentSession);
+      } else {
+        updateSession(null);
+      }
+    } catch (error) {
+      console.error('[AUTH PROVIDER] Error refreshing auth:', error);
+      updateSession(null);
+    }
+  }, [validateAndUpdateSession, updateSession]);
 
   // Handle mounting
   useEffect(() => {
@@ -149,27 +202,6 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
               error.message?.includes('Invalid Refresh Token') ||
               error.code === 'refresh_token_not_found') {
             console.log('[AUTH PROVIDER] Refresh token not found, clearing auth state');
-
-            // Clear all auth-related storage to prevent repeated attempts
-            if (typeof window !== 'undefined') {
-              // Clear OAuth progress flags
-              sessionStorage.removeItem("sb_oauth_in_progress");
-              sessionStorage.removeItem("sb_oauth_start_time");
-
-              // Clear all Supabase-related storage
-              const localStorageKeys = Object.keys(localStorage).filter(k =>
-                k.startsWith("sb-") || k.includes("auth")
-              );
-              localStorageKeys.forEach(k => localStorage.removeItem(k));
-
-              const sessionStorageKeys = Object.keys(sessionStorage).filter(k =>
-                k.startsWith("sb-") || k.includes("auth")
-              );
-              sessionStorageKeys.forEach(k => sessionStorage.removeItem(k));
-
-              console.log('[AUTH PROVIDER] Cleared auth storage due to refresh token error');
-            }
-
             await validateAndUpdateSession(null);
           } else if (error.message?.includes('JWT') || error.message?.includes('token')) {
             console.log('[AUTH PROVIDER] Token-related error, clearing session');
@@ -249,7 +281,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   // Don't render children until mounted to prevent hydration issues
   if (!mounted) {
     return (
-      <AuthContext.Provider value={{ session: null, loading: true, signOut }}>
+      <AuthContext.Provider value={{ session: null, loading: true, signOut, refreshAuth }}>
         <div className="min-h-screen bg-white flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
@@ -261,7 +293,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, signOut }}>
+    <AuthContext.Provider value={{ session, loading, signOut, refreshAuth }}>
       {children}
     </AuthContext.Provider>
   );
