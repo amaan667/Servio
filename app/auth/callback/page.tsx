@@ -20,21 +20,37 @@ export default function Callback() {
         // Get the code from URL parameters
         const code = searchParams.get('code');
         const error = searchParams.get('error');
+        const state = searchParams.get('state');
         
-        console.log('[AUTH CALLBACK] URL params:', { code: code?.substring(0, 10) + '...', error });
-        setDebugInfo(`Code: ${code ? 'Present' : 'Missing'}, Error: ${error || 'None'}`);
+        console.log('[AUTH CALLBACK] URL params:', { 
+          code: code?.substring(0, 10) + '...', 
+          error,
+          state: state?.substring(0, 10) + '...',
+          hasCode: !!code,
+          hasError: !!error
+        });
+        setDebugInfo(`Code: ${code ? 'Present' : 'Missing'}, Error: ${error || 'None'}, State: ${state ? 'Present' : 'Missing'}`);
         
         if (error) {
           console.error('[AUTH CALLBACK] OAuth error:', error);
-          setError(error);
+          setError(`OAuth error: ${error}`);
           setLoading(false);
           return;
         }
 
         if (!code) {
           console.error('[AUTH CALLBACK] No code found in URL');
-          setError('No authorization code found');
+          setError('No authorization code found in URL parameters');
           setLoading(false);
+          return;
+        }
+
+        // Check if we have a valid session already
+        const { data: { session: existingSession } } = await supabaseBrowser.auth.getSession();
+        if (existingSession) {
+          console.log('[AUTH CALLBACK] Session already exists, redirecting to dashboard');
+          setDebugInfo('Session already exists, redirecting...');
+          router.push('/dashboard');
           return;
         }
 
@@ -43,7 +59,7 @@ export default function Callback() {
         
         // Add timeout to prevent hanging
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Exchange timeout after 10 seconds')), 10000);
+          setTimeout(() => reject(new Error('Exchange timeout after 15 seconds')), 15000);
         });
 
         // Exchange the code for a session
@@ -57,29 +73,35 @@ export default function Callback() {
         console.log('[AUTH CALLBACK] Exchange result:', { 
           hasData: !!data, 
           hasSession: !!data?.session, 
-          error: exchangeError?.message 
+          hasUser: !!data?.user,
+          error: exchangeError?.message,
+          sessionExpiry: data?.session?.expires_at
         });
-        setDebugInfo(`Exchange complete. Session: ${data?.session ? 'Yes' : 'No'}, Error: ${exchangeError?.message || 'None'}`);
+        setDebugInfo(`Exchange complete. Session: ${data?.session ? 'Yes' : 'No'}, User: ${data?.user ? 'Yes' : 'No'}, Error: ${exchangeError?.message || 'None'}`);
         
         if (exchangeError) {
           console.error('[AUTH CALLBACK] Exchange error:', exchangeError);
-          setError(exchangeError.message);
+          setError(`Exchange failed: ${exchangeError.message}`);
           setLoading(false);
           return;
         }
 
-        if (data.session) {
+        if (data?.session) {
           console.log('[AUTH CALLBACK] Session created successfully, redirecting to dashboard');
-          setDebugInfo('Session created, redirecting...');
-          router.push('/dashboard');
+          setDebugInfo('Session created successfully, redirecting...');
+          
+          // Small delay to ensure session is properly set
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 500);
         } else {
           console.error('[AUTH CALLBACK] No session returned from exchange');
-          setError('Failed to create session');
+          setError('Failed to create session - no session data returned');
           setLoading(false);
         }
       } catch (err: any) {
         console.error('[AUTH CALLBACK] Unexpected error:', err);
-        setError(err.message || 'An unexpected error occurred');
+        setError(err.message || 'An unexpected error occurred during authentication');
         setLoading(false);
       }
     };
@@ -102,12 +124,20 @@ export default function Callback() {
             {debugInfo && (
               <p className="text-xs text-gray-500 mb-4">Debug: {debugInfo}</p>
             )}
-            <button
-              onClick={() => router.push('/sign-in')}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Try Again
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => router.push('/sign-in')}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => router.push('/auth/callback-debug')}
+                className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors text-sm"
+              >
+                Debug Info
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -122,6 +152,7 @@ export default function Callback() {
         {debugInfo && (
           <p className="text-xs text-gray-500 mt-2">{debugInfo}</p>
         )}
+        <p className="text-xs text-gray-400 mt-4">This may take a few seconds...</p>
       </div>
     </div>
   );
