@@ -72,6 +72,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       }
       const window = todayWindowForTZ(venueTimezone);
       setTodayWindow(window);
+      console.log('[LIVE ORDERS DEBUG] Today window set:', window);
       
       // Load live orders (pending/preparing from today)
       console.log('[LIVE ORDERS DEBUG] Fetching live orders for venueId:', venueId);
@@ -85,6 +86,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false });
 
       // Load all orders from today
+      console.log('[LIVE ORDERS DEBUG] Fetching all today orders with window:', window);
       const { data: allData, error: allError } = await supabase
         .from('orders')
         .select('*')
@@ -119,6 +121,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         setOrders(liveData as Order[]);
       }
       if (!allError && allData) {
+        console.log('[LIVE ORDERS DEBUG] All today orders fetched:', {
+          count: allData.length,
+          orders: allData.map(order => ({
+            id: order.id,
+            created_at: order.created_at,
+            status: order.status,
+            total_amount: order.total_amount
+          }))
+        });
         setAllOrders(allData as Order[]);
       }
       if (!historyError && historyData) {
@@ -156,15 +167,35 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           filter: `venue_id=eq.${venueId}`
         }, 
         (payload) => {
+          console.log('[LIVE ORDERS DEBUG] Real-time change detected:', {
+            eventType: payload.eventType,
+            orderId: payload.new?.id || payload.old?.id,
+            payload: payload
+          });
+          
           const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
           const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
           
+          console.log('[LIVE ORDERS DEBUG] Order date check:', {
+            orderCreatedAt,
+            todayWindow,
+            isInTodayWindow
+          });
+          
           if (payload.eventType === 'INSERT') {
             const newOrder = payload.new as Order;
+            console.log('[LIVE ORDERS DEBUG] New order inserted:', {
+              orderId: newOrder.id,
+              isInTodayWindow,
+              orderData: newOrder
+            });
+            
             if (isInTodayWindow) {
+              console.log('[LIVE ORDERS DEBUG] Adding to live orders and all today orders');
               setOrders(prev => [newOrder, ...prev]);
               setAllOrders(prev => [newOrder, ...prev]);
             } else {
+              console.log('[LIVE ORDERS DEBUG] Adding to history orders');
               setHistoryOrders(prev => [newOrder, ...prev]);
               // Update grouped history
               const date = new Date(newOrder.created_at).toLocaleDateString('en-GB', {

@@ -380,16 +380,18 @@ export async function createOrder(orderData: {
   notes?: string;
 }) {
   try {
-    logger.info("Creating order", {
+    console.log('[ORDER CREATION DEBUG] Creating order with data:', {
       venueId: orderData.venue_id,
       tableNumber: orderData.table_number,
       customerName: orderData.customer_name,
       itemCount: orderData.items.length,
       totalAmount: orderData.total_amount,
+      items: orderData.items
     });
 
     // Calculate total amount from items
     const calculatedTotal = orderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    console.log('[ORDER CREATION DEBUG] Calculated total:', calculatedTotal);
     
     // Create the order with items as JSONB
     const { data: order, error: orderError } = await supabase
@@ -408,18 +410,19 @@ export async function createOrder(orderData: {
       .single();
 
     if (orderError || !order) {
-      logger.error("Failed to create order", { error: orderError });
+      console.error('[ORDER CREATION DEBUG] Failed to create order:', orderError);
       return { success: false, message: "Failed to create order" };
     }
 
-    logger.info("Order created successfully", {
+    console.log('[ORDER CREATION DEBUG] Order created successfully:', {
       orderId: order.id,
       calculatedTotal,
+      orderData: order
     });
 
     return { success: true, data: order };
   } catch (error) {
-    logger.error("Create order error", { error });
+    console.error('[ORDER CREATION DEBUG] Create order error:', error);
     return { success: false, message: "An unexpected error occurred" };
   }
 }
