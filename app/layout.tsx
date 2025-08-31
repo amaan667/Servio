@@ -24,9 +24,15 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Get the actual session from the server
-  const supabase = await createServerSupabase();
-  const { data: { session } } = await supabase.auth.getSession();
+  // Get the actual session from the server efficiently
+  let session = null;
+  try {
+    const supabase = await createServerSupabase();
+    const { data } = await supabase.auth.getSession();
+    session = data.session;
+  } catch (error) {
+    console.log('[LAYOUT] Error getting session:', error);
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>

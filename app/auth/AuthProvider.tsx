@@ -36,7 +36,7 @@ export default function AuthProvider({
   useEffect(() => {
     const supabase = supabaseBrowser();
     
-    // Get initial session
+    // Get initial session quickly
     const getInitialSession = async () => {
       try {
         console.log('[AUTH DEBUG] Getting initial session');
@@ -59,7 +59,7 @@ export default function AuthProvider({
       }
     };
     
-    // Get initial session first
+    // Get initial session immediately
     getInitialSession();
     
     // Handle auth state changes

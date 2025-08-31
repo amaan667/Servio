@@ -251,11 +251,9 @@ function CallbackContent() {
             accessToken: data.session.access_token ? 'present' : 'missing'
           })}`);
           
-          // Small delay to ensure session is properly set
-          setTimeout(() => {
-            addDebugLog('[AUTH CALLBACK] Redirecting to dashboard...');
-            router.push('/dashboard');
-          }, 500);
+          // Redirect immediately without delay
+          addDebugLog('[AUTH CALLBACK] Redirecting to dashboard...');
+          router.push('/dashboard');
         } else {
           addDebugLog('[AUTH CALLBACK] No session returned from exchange');
           addDebugLog(`[AUTH CALLBACK] Data received: ${JSON.stringify(data)}`);
@@ -294,12 +292,6 @@ function CallbackContent() {
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-            <h1 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
-              Completing Sign In
-            </h1>
-            <p className="text-gray-600 text-sm">
-              Please wait while we complete your authentication...
-            </p>
             {debugLogs.length > 0 && (
               <div className="mt-4 text-xs text-gray-500 text-left max-h-32 overflow-y-auto">
                 <p className="font-medium mb-1">Debug Logs:</p>

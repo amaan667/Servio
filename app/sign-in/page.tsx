@@ -140,22 +140,16 @@ function SignInPageContent() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Checking session...</p>
         </div>
       </div>
     );
   }
 
-  // If already authenticated, show loading while redirecting
+  // If already authenticated, redirect immediately without showing loading
   if (session?.user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
+    // Redirect immediately without showing loading screen
+    router.replace('/dashboard');
+    return null;
   }
 
   return (

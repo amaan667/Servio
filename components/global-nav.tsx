@@ -107,7 +107,7 @@ export default function GlobalNav() {
     return (
       <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
+          <div className="flex justify-between items-center h-20 sm:h-24 lg:h-28 xl:h-32">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center group">
@@ -116,7 +116,7 @@ export default function GlobalNav() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-20 sm:h-24 lg:h-28 xl:h-32 2xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                  className="h-16 sm:h-20 lg:h-24 xl:h-28 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                   priority
                 />
               </Link>
@@ -135,16 +135,16 @@ export default function GlobalNav() {
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-28 sm:h-32 lg:h-36 xl:h-40">
+        <div className="flex justify-between items-center h-20 sm:h-24 lg:h-28 xl:h-32">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center group">
+            <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-20 sm:h-24 lg:h-28 xl:h-32 2xl:h-36 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-16 sm:h-20 lg:h-24 xl:h-28 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                 priority
               />
             </Link>
