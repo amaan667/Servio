@@ -73,11 +73,24 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
       // Try to use orders_with_totals view first, fallback to orders table
       let query;
+      let usingView = false;
+      
       try {
+        // Test if the view exists by trying to query it
+        const { data: viewTest, error: viewError } = await supabase
+          .from('orders_with_totals')
+          .select('id')
+          .limit(1);
+        
+        if (viewError) {
+          throw viewError;
+        }
+        
         query = supabase
           .from('orders_with_totals')
           .select('*')
           .eq('venue_id', venueId);
+        usingView = true;
         console.log(`[LIVE_ORDERS] Using orders_with_totals view`);
       } catch (viewError) {
         console.log(`[LIVE_ORDERS] View not available, using orders table:`, viewError);
@@ -85,27 +98,52 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           .from('orders')
           .select('*')
           .eq('venue_id', venueId);
+        usingView = false;
       }
 
       if (tab === 'live') {
-        query = query
-          .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
-          .gte('created_at', startUtc)
-          .lt('created_at', endUtc)
-          .order('updated_at', { ascending: false });
+        if (usingView) {
+          query = query
+            .in('order_status', ACTIVE_STATUSES)
+            .gte('created_at', startUtc)
+            .lt('created_at', endUtc)
+            .order('updated_at', { ascending: false });
+        } else {
+          // For regular orders table, try to use the most likely field names
+          query = query
+            .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
+            .gte('created_at', startUtc)
+            .lt('created_at', endUtc)
+            .order('updated_at', { ascending: false });
+        }
         console.log(`[LIVE_ORDERS] Live query with statuses:`, ACTIVE_STATUSES);
       } else if (tab === 'earlier') {
-        query = query
-          .or(`order_status.in.(${TERMINAL_TODAY.join(',')}),status.in.(${TERMINAL_TODAY.join(',')})`)
-          .gte('created_at', startUtc)
-          .lt('created_at', endUtc)
-          .order('created_at', { ascending: false });
+        if (usingView) {
+          query = query
+            .in('order_status', TERMINAL_TODAY)
+            .gte('created_at', startUtc)
+            .lt('created_at', endUtc)
+            .order('created_at', { ascending: false });
+        } else {
+          query = query
+            .or(`order_status.in.(${TERMINAL_TODAY.join(',')}),status.in.(${TERMINAL_TODAY.join(',')})`)
+            .gte('created_at', startUtc)
+            .lt('created_at', endUtc)
+            .order('created_at', { ascending: false });
+        }
         console.log(`[LIVE_ORDERS] Earlier query with statuses:`, TERMINAL_TODAY);
       } else if (tab === 'history') {
-        query = query
-          .or(`order_status.in.(SERVED,COMPLETED),status.in.(SERVED,COMPLETED)`)
-          .lt('created_at', startUtc)
-          .order('created_at', { ascending: false });
+        if (usingView) {
+          query = query
+            .in('order_status', ['SERVED', 'COMPLETED'])
+            .lt('created_at', startUtc)
+            .order('created_at', { ascending: false });
+        } else {
+          query = query
+            .or(`order_status.in.(SERVED,COMPLETED),status.in.(SERVED,COMPLETED)`)
+            .lt('created_at', startUtc)
+            .order('created_at', { ascending: false });
+        }
         console.log(`[LIVE_ORDERS] History query for SERVED/COMPLETED orders before:`, startUtc);
       }
 
@@ -114,7 +152,53 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
       if (queryError) {
         console.error(`[LIVE_ORDERS] Query error for ${tab}:`, queryError);
-        throw queryError;
+        
+        // Fallback: get all orders and filter in JavaScript
+        console.log(`[LIVE_ORDERS] Trying fallback approach...`);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('venue_id', venueId);
+        
+        if (fallbackError) {
+          console.error(`[LIVE_ORDERS] Fallback also failed:`, fallbackError);
+          throw queryError; // Throw original error
+        }
+        
+        // Filter orders in JavaScript based on tab
+        let filteredOrders = fallbackData || [];
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        if (tab === 'live') {
+          filteredOrders = filteredOrders.filter(order => {
+            const status = order.order_status || order.status;
+            const created = new Date(order.created_at);
+            return ACTIVE_STATUSES.includes(status) && created >= today && created < tomorrow;
+          });
+        } else if (tab === 'earlier') {
+          filteredOrders = filteredOrders.filter(order => {
+            const status = order.order_status || order.status;
+            const created = new Date(order.created_at);
+            return TERMINAL_TODAY.includes(status) && created >= today && created < tomorrow;
+          });
+        } else if (tab === 'history') {
+          filteredOrders = filteredOrders.filter(order => {
+            const status = order.order_status || order.status;
+            const created = new Date(order.created_at);
+            return ['SERVED', 'COMPLETED'].includes(status) && created < today;
+          });
+        }
+        
+        console.log(`[LIVE_ORDERS] Fallback result:`, { 
+          orderCount: filteredOrders.length, 
+          orders: filteredOrders.slice(0, 2)
+        });
+        
+        setOrders(filteredOrders);
+        return;
       }
 
       console.log(`[LIVE_ORDERS] ${tab} query result:`, { 
