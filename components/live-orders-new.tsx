@@ -71,79 +71,35 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         console.log(`[LIVE_ORDERS] All orders found:`, allOrders);
       }
 
-      // Try to use orders_with_totals view first, fallback to orders table
-      let query;
-      let usingView = false;
-      
-      try {
-        // Test if the view exists by trying to query it
-        const { data: viewTest, error: viewError } = await supabase
-          .from('orders_with_totals')
-          .select('id')
-          .limit(1);
-        
-        if (viewError) {
-          throw viewError;
-        }
-        
-        query = supabase
-          .from('orders_with_totals')
-          .select('*')
-          .eq('venue_id', venueId);
-        usingView = true;
-        console.log(`[LIVE_ORDERS] Using orders_with_totals view`);
-      } catch (viewError) {
-        console.log(`[LIVE_ORDERS] View not available, using orders table:`, viewError);
-        query = supabase
-          .from('orders')
-          .select('*')
-          .eq('venue_id', venueId);
-        usingView = false;
-      }
+      // Build query based on tab requirements
+      let query = supabase
+        .from('orders')
+        .select('*')
+        .eq('venue_id', venueId);
+      console.log(`[LIVE_ORDERS] Using orders table directly`);
 
       if (tab === 'live') {
-        if (usingView) {
-          query = query
-            .in('order_status', ACTIVE_STATUSES)
-            .gte('created_at', startUtc)
-            .lt('created_at', endUtc)
-            .order('updated_at', { ascending: false });
-        } else {
-          // For regular orders table, try to use the most likely field names
-          query = query
-            .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
-            .gte('created_at', startUtc)
-            .lt('created_at', endUtc)
-            .order('updated_at', { ascending: false });
-        }
+        // Live orders: active statuses from today
+        query = query
+          .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
+          .gte('created_at', startUtc)
+          .lt('created_at', endUtc)
+          .order('updated_at', { ascending: false });
         console.log(`[LIVE_ORDERS] Live query with statuses:`, ACTIVE_STATUSES);
       } else if (tab === 'earlier') {
-        if (usingView) {
-          query = query
-            .in('order_status', TERMINAL_TODAY)
-            .gte('created_at', startUtc)
-            .lt('created_at', endUtc)
-            .order('created_at', { ascending: false });
-        } else {
-          query = query
-            .or(`order_status.in.(${TERMINAL_TODAY.join(',')}),status.in.(${TERMINAL_TODAY.join(',')})`)
-            .gte('created_at', startUtc)
-            .lt('created_at', endUtc)
-            .order('created_at', { ascending: false });
-        }
+        // Earlier today: terminal statuses from today
+        query = query
+          .or(`order_status.in.(${TERMINAL_TODAY.join(',')}),status.in.(${TERMINAL_TODAY.join(',')})`)
+          .gte('created_at', startUtc)
+          .lt('created_at', endUtc)
+          .order('created_at', { ascending: false });
         console.log(`[LIVE_ORDERS] Earlier query with statuses:`, TERMINAL_TODAY);
       } else if (tab === 'history') {
-        if (usingView) {
-          query = query
-            .in('order_status', ['SERVED', 'COMPLETED'])
-            .lt('created_at', startUtc)
-            .order('created_at', { ascending: false });
-        } else {
-          query = query
-            .or(`order_status.in.(SERVED,COMPLETED),status.in.(SERVED,COMPLETED)`)
-            .lt('created_at', startUtc)
-            .order('created_at', { ascending: false });
-        }
+        // History: SERVED/COMPLETED orders from previous days
+        query = query
+          .or(`order_status.in.(SERVED,COMPLETED),status.in.(SERVED,COMPLETED)`)
+          .lt('created_at', startUtc)
+          .order('created_at', { ascending: false });
         console.log(`[LIVE_ORDERS] History query for SERVED/COMPLETED orders before:`, startUtc);
       }
 
