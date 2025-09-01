@@ -118,7 +118,13 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       }
 
       console.log(`[LIVE_ORDERS] Executing query for ${tab}...`);
-      console.log(`[LIVE_ORDERS] Final query:`, query);
+      console.log(`[LIVE_ORDERS] Query details:`, {
+        tab,
+        venueId,
+        startUtc,
+        endUtc,
+        statuses: tab === 'live' ? ACTIVE_STATUSES : tab === 'earlier' ? TERMINAL_TODAY : ['SERVED', 'COMPLETED']
+      });
       
       const { data, error: queryError } = await query;
 
@@ -195,8 +201,24 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       console.log(`[LIVE_ORDERS] ${tab} query result:`, { 
         orderCount: data?.length || 0, 
         orders: data?.slice(0, 2), // Log first 2 orders for debugging
-        statuses: data?.map(o => o.order_status || o.status) // Check what status values we're getting
+        statuses: data?.map(o => o.order_status || o.status), // Check what status values we're getting
+        rawData: data // Log the raw data to see what we're actually getting
       });
+      
+      if (data && data.length > 0) {
+        console.log(`[LIVE_ORDERS] ${tab} - Orders found:`, data.length);
+        data.forEach((order, index) => {
+          console.log(`[LIVE_ORDERS] ${tab} - Order ${index + 1}:`, {
+            id: order.id,
+            status: order.order_status || order.status,
+            payment: order.payment_status,
+            created: order.created_at,
+            amount: order.total_amount
+          });
+        });
+      } else {
+        console.log(`[LIVE_ORDERS] ${tab} - No orders returned from query`);
+      }
 
       setOrders(data || []);
       logger.info(`LIVE_ORDERS: ${tab} orders fetched successfully`, {
