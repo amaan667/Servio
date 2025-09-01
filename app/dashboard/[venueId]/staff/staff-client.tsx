@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import TimeField, { TimeValue } from '@/components/inputs/TimeField';
 import { to24h, buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
-import { Users } from 'lucide-react';
+import { Users, Clock } from 'lucide-react';
 
 type StaffRow = {
   id: string;
@@ -276,6 +276,13 @@ export default function StaffClient({
             <span className="text-sm text-muted-foreground">
               {roles.length} roles
             </span>
+            <span className="text-sm text-muted-foreground">•</span>
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                {allShifts.length} active shifts
+              </span>
+            </div>
           </div>
         </div>
 
