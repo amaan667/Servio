@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { createClient, getAuthenticatedUser, createAdminClient } from '@/lib/supabase/server';
 import type { FeedbackQuestion } from '@/types/feedback';
 
 export const runtime = 'nodejs';
 
 function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient();
+  return createAdminClient();
 }
 
 // GET - List questions for venue
