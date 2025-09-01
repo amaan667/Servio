@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthenticatedUser } from "@/lib/auth/client";
 
 // This component will check for authentication and redirect appropriately
 export default function HomePage() {
@@ -16,25 +16,33 @@ export default function HomePage() {
       return;
     }
 
-    async function checkSession() {
+    async function checkAuth() {
       try {
-        const { data } = await createClient().auth.getSession();
+        // SECURE: Use the secure authentication utility
+        const { user, error } = await getAuthenticatedUser();
         
-        if (!data.session) {
-          // If no session, redirect to sign-in
+        if (error || !user) {
+          console.log('[HOME PAGE] No authenticated user, redirecting to sign-in');
+          // If no authenticated user, redirect to sign-in
           router.push("/sign-in");
         } else {
+          console.log('[HOME PAGE] User authenticated, redirecting to dashboard:', {
+            userId: user.id,
+            email: user.email
+          });
           // User is authenticated, redirect to dashboard
           router.push("/dashboard");
         }
       } catch (error) {
-        console.error("Error checking session:", error);
+        console.error("[HOME PAGE] Error checking authentication:", error);
+        // On error, redirect to sign-in
+        router.push("/sign-in");
       } finally {
         setLoading(false);
       }
     }
     
-    checkSession();
+    checkAuth();
   }, [router]);
 
   return (
@@ -42,7 +50,7 @@ export default function HomePage() {
       {loading && (
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
-          <p className="mt-4 text-lg text-gray-600">Redirecting...</p>
+          <p className="mt-4 text-lg text-gray-600">Checking authentication...</p>
         </div>
       )}
     </div>

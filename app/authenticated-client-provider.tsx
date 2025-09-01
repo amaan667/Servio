@@ -188,10 +188,11 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
           return;
         }
         
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // SECURE: Use getUser() instead of getSession() for authentication
+        const { data: { user }, error } = await supabase.auth.getUser();
 
         if (error) {
-          console.log('[AUTH PROVIDER] Error getting session:', {
+          console.log('[AUTH PROVIDER] Error getting user:', {
             message: error.message,
             status: error.status,
             code: error.code
@@ -207,18 +208,21 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
             console.log('[AUTH PROVIDER] Token-related error, clearing session');
             await validateAndUpdateSession(null);
           } else {
-            console.log('[AUTH PROVIDER] Unknown session error, clearing session');
+            console.log('[AUTH PROVIDER] Unknown user error, clearing session');
             await validateAndUpdateSession(null);
           }
-        } else {
-          console.log('[AUTH PROVIDER] Got session from storage:', {
-            hasSession: !!session,
-            hasUser: !!session?.user,
-            userId: session?.user?.id,
-            expiresAt: session?.expires_at,
-            expiresIn: session?.expires_at ? Math.floor((session.expires_at * 1000 - Date.now()) / 1000 / 60) + ' minutes' : 'unknown'
+        } else if (user) {
+          console.log('[AUTH PROVIDER] Got authenticated user:', {
+            hasUser: !!user,
+            userId: user?.id,
+            userEmail: user?.email
           });
+          // Get session for the authenticated user
+          const { data: { session } } = await supabase.auth.getSession();
           await validateAndUpdateSession(session);
+        } else {
+          console.log('[AUTH PROVIDER] No authenticated user found');
+          await validateAndUpdateSession(null);
         }
       } catch (err: any) {
         console.log('[AUTH PROVIDER] Exception getting session:', {

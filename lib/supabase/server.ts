@@ -27,7 +27,10 @@ export async function createServerSupabase() {
               path: '/'
             });
           } catch (error) {
-            console.error('[SUPABASE SERVER] Error setting cookie:', error);
+            // Only log errors that aren't about cookie context
+            if (!error.message?.includes('Cookies can only be modified in a Server Action or Route Handler')) {
+              console.error('[SUPABASE SERVER] Error setting cookie:', error);
+            }
           }
         },
         remove(name: string, options: any) {
@@ -41,7 +44,10 @@ export async function createServerSupabase() {
               path: '/'
             });
           } catch (error) {
-            console.error('[SUPABASE SERVER] Error removing cookie:', error);
+            // Only log errors that aren't about cookie context
+            if (!error.message?.includes('Cookies can only be modified in a Server Action or Route Handler')) {
+              console.error('[SUPABASE SERVER] Error removing cookie:', error);
+            }
           }
         },
       },
