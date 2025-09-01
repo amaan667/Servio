@@ -28,14 +28,26 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
     fetchQuestions();
   }, [venueId]);
 
+  useEffect(() => {
+    console.log('[FEEDBACK DEBUG] totalCount state changed to:', totalCount);
+  }, [totalCount]);
+
   const fetchQuestions = async () => {
     try {
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
       if (response.ok) {
         const data = await response.json();
+        console.log('[FEEDBACK DEBUG] API response:', data);
+        console.log('[FEEDBACK DEBUG] Total questions from API:', data.totalCount);
+        console.log('[FEEDBACK DEBUG] All questions:', data.questions?.length || 0);
+        
         const activeQuestions = (data.questions || []).filter((q: FeedbackQuestion) => q.is_active);
+        console.log('[FEEDBACK DEBUG] Active questions:', activeQuestions.length);
+        
         setQuestions(activeQuestions);
         setTotalCount(data.totalCount || 0);
+        
+        console.log('[FEEDBACK DEBUG] Set totalCount to:', data.totalCount || 0);
       }
     } catch (error) {
       console.error('[FEEDBACK] Error fetching questions:', error);
@@ -186,7 +198,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           className="w-full"
         >
           <Send className="h-4 w-4 mr-2" />
-          Answer Feedback Questions ({totalCount})
+          Answer Feedback Questions ({totalCount}) - Active: {questions.length}
         </Button>
       ) : (
         <Card>
