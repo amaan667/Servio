@@ -411,21 +411,19 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
             <h3 className="text-lg font-semibold">
               {editingId ? 'Edit Question' : 'Add New Question'}
             </h3>
-            {questions.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (editingId) {
-                    resetForm();
-                  } else {
-                    setShowAddForm(!showAddForm);
-                  }
-                }}
-              >
-                {showAddForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (editingId) {
+                  resetForm();
+                } else {
+                  setShowAddForm(!showAddForm);
+                }
+              }}
+            >
+              {showAddForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            </Button>
           </div>
           
           {showAddForm && (

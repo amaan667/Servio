@@ -37,13 +37,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Get questions (excluding soft-deleted ones)
+    // Get questions (all questions since we don't have soft delete yet)
     const serviceClient = getServiceClient();
     const { data: questions, error } = await serviceClient
       .from('feedback_questions')
       .select('*')
       .eq('venue_id', venueId)
-      .is('is_deleted', null) // Exclude soft-deleted questions
       .order('sort_index', { ascending: true })
       .order('created_at', { ascending: true });
 
@@ -52,20 +51,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    // Get total count including deleted questions
-    const { data: totalCount, error: countError } = await serviceClient
-      .from('feedback_questions')
-      .select('id', { count: 'exact' })
-      .eq('venue_id', venueId);
+    // For now, total count is the same as questions count since we don't have soft delete
+    // TODO: Implement proper soft delete with is_deleted column
+    const totalCount = questions?.length || 0;
 
-    if (countError) {
-      console.error('[FEEDBACK:Q] count error:', countError.message);
-    }
-
-    console.log(`[FEEDBACK:Q] list venue=${venueId} count=${questions?.length || 0} total=${totalCount?.length || 0}`);
+    console.log(`[FEEDBACK:Q] list venue=${venueId} count=${questions?.length || 0} total=${totalCount}`);
     return NextResponse.json({ 
       questions: questions || [],
-      totalCount: totalCount?.length || 0
+      totalCount: totalCount
     });
 
   } catch (error: any) {
@@ -289,10 +282,11 @@ export async function DELETE(req: Request) {
     }
 
     const serviceClient = getServiceClient();
-    // Soft delete by setting is_deleted=true instead of actually deleting
+    // For now, use hard delete since is_deleted column doesn't exist yet
+    // TODO: Implement soft delete when is_deleted column is added
     const { error } = await serviceClient
       .from('feedback_questions')
-      .update({ is_deleted: true })
+      .delete()
       .eq('id', id);
 
     if (error) {
