@@ -254,7 +254,7 @@ export default function StaffClient({
     for (const d of Object.keys(by)) {
       by[d].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
     }
-    const entries = Object.entries(by).sort((a,b)=> new Date(a[0]).getTime() - new Date(b[0]).getTime());
+    const entries = Object.entries(by).sort((a,b)=> new Date(b[0]).getTime() - new Date(a[0]).getTime());
     return entries;
   }, [allShifts]);
 
