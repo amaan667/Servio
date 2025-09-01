@@ -10,6 +10,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Clock, User, Hash, Utensils, Check, ArrowRight } from "lucide-react";
 
@@ -39,17 +40,48 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
   const getNextStatus = (): Order["status"] | null => {
     switch (order.status) {
       case "pending":
+        return "paid";
+      case "paid":
         return "preparing";
       case "preparing":
-        return "ready";
-      case "ready":
-        return "completed";
+        return "served";
+      default:
+        return null;
+    }
+  };
+
+  const getPreviousStatus = (): Order["status"] | null => {
+    switch (order.status) {
+      case "paid":
+        return "pending";
+      case "preparing":
+        return "paid";
+      case "served":
+        return "preparing";
       default:
         return null;
     }
   };
 
   const nextStatus = getNextStatus();
+  const previousStatus = getPreviousStatus();
+
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case "pending":
+        return { label: "PENDING", color: "bg-yellow-100 text-yellow-800" };
+      case "paid":
+        return { label: "PAID", color: "bg-green-100 text-green-800" };
+      case "preparing":
+        return { label: "PREPARING", color: "bg-blue-100 text-blue-800" };
+      case "served":
+        return { label: "SERVED", color: "bg-purple-100 text-purple-800" };
+      default:
+        return { label: status.toUpperCase(), color: "bg-gray-100 text-gray-800" };
+    }
+  };
+
+  const statusDisplay = getStatusDisplay(order.status);
 
   return (
     <Card className="bg-white shadow-sm">
@@ -74,9 +106,14 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
             </p>
           </div>
         </div>
-        <div className="flex items-center space-x-2 text-sm text-gray-600 pt-2">
-          <User className="h-4 w-4" />
-          <span>{order.customer_name}</span>
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <User className="h-4 w-4" />
+            <span>{order.customer_name}</span>
+          </div>
+          <Badge className={statusDisplay.color}>
+            {statusDisplay.label}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent>
@@ -99,38 +136,51 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
         </ul>
         <Separator />
       </CardContent>
-      <CardFooter className="flex justify-end space-x-2">
-        {order.status !== "cancelled" && order.status !== "completed" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onStatusUpdate(order.id, "cancelled")}
-          >
-            Cancel
-          </Button>
-        )}
-        {nextStatus && (
-          <Button
-            size="sm"
-            onClick={() => onStatusUpdate(order.id, nextStatus)}
-          >
-            {nextStatus === "preparing" && (
-              <>
-                Start Preparing <Utensils className="h-4 w-4 ml-2" />
-              </>
-            )}
-            {nextStatus === "ready" && (
-              <>
-                Mark as Ready <Check className="h-4 w-4 ml-2" />
-              </>
-            )}
-            {nextStatus === "completed" && (
-              <>
-                Complete Order <ArrowRight className="h-4 w-4 ml-2" />
-              </>
-            )}
-          </Button>
-        )}
+      <CardFooter className="flex justify-between">
+        <div className="flex space-x-2">
+          {order.status !== "cancelled" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onStatusUpdate(order.id, "cancelled")}
+            >
+              Cancel
+            </Button>
+          )}
+          {previousStatus && order.status !== "pending" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onStatusUpdate(order.id, previousStatus)}
+            >
+              ← Back
+            </Button>
+          )}
+        </div>
+        <div className="flex space-x-2">
+          {nextStatus && (
+            <Button
+              size="sm"
+              onClick={() => onStatusUpdate(order.id, nextStatus)}
+            >
+              {nextStatus === "paid" && (
+                <>
+                  Mark as Paid <Check className="h-4 w-4 ml-2" />
+                </>
+              )}
+              {nextStatus === "preparing" && (
+                <>
+                  Start Preparing <Utensils className="h-4 w-4 ml-2" />
+                </>
+              )}
+              {nextStatus === "served" && (
+                <>
+                  Mark as Served <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

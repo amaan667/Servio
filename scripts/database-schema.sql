@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_email TEXT,
   table_number TEXT,
     total_amount DECIMAL(10,2) NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'preparing', 'served', 'cancelled')),
   payment_method TEXT,
   payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
   items JSONB NOT NULL, -- Array of order items with quantities and special instructions

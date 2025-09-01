@@ -61,6 +61,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [updating, setUpdating] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
+    const supabase = createClient();
+    
     logger.info("LIVE_ORDERS: Fetching orders", {
       venueId,
       hasSupabase: !!supabase,
@@ -108,6 +110,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   useEffect(() => {
     fetchOrders();
 
+    const supabase = createClient();
     if (!supabase) return;
 
     logger.debug("LIVE_ORDERS: Setting up real-time subscription");
@@ -144,6 +147,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     logger.info("LIVE_ORDERS: Updating order status", { orderId, newStatus });
 
+    const supabase = createClient();
     if (!supabase) return;
 
     setUpdating(orderId);
