@@ -34,7 +34,16 @@ export default function AuthProvider({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
+    let supabase;
+    try {
+      supabase = supabaseBrowser();
+    } catch (error) {
+      console.log('[AUTH DEBUG] Error creating Supabase client:', error);
+      setSession(null);
+      setUser(null);
+      setLoading(false);
+      return;
+    }
     
     // Get initial session quickly
     const getInitialSession = async () => {
@@ -63,45 +72,52 @@ export default function AuthProvider({
     getInitialSession();
     
     // Handle auth state changes
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('[AUTH DEBUG] Auth state change:', {
-        event,
-        userId: newSession?.user?.id,
-        timestamp: new Date().toISOString()
-      });
-      
-      switch (event) {
-        case 'SIGNED_IN':
-          console.log('[AUTH DEBUG] User signed in successfully');
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
-          setLoading(false);
-          break;
-        case 'SIGNED_OUT':
-          console.log('[AUTH DEBUG] User signed out');
-          setSession(null);
-          setUser(null);
-          setLoading(false);
-          break;
-        case 'TOKEN_REFRESHED':
-          console.log('[AUTH DEBUG] Token refreshed successfully');
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
-          break;
-        case 'USER_UPDATED':
-          console.log('[AUTH DEBUG] User updated');
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
-          break;
-        default:
-          console.log('[AUTH DEBUG] Unknown auth event:', event);
-          if (newSession) {
+    let subscription;
+    try {
+      const { data } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+        console.log('[AUTH DEBUG] Auth state change:', {
+          event,
+          userId: newSession?.user?.id,
+          timestamp: new Date().toISOString()
+        });
+        
+        switch (event) {
+          case 'SIGNED_IN':
+            console.log('[AUTH DEBUG] User signed in successfully');
             setSession(newSession);
             setUser(newSession?.user ?? null);
-          }
-          setLoading(false);
-      }
-    });
+            setLoading(false);
+            break;
+          case 'SIGNED_OUT':
+            console.log('[AUTH DEBUG] User signed out');
+            setSession(null);
+            setUser(null);
+            setLoading(false);
+            break;
+          case 'TOKEN_REFRESHED':
+            console.log('[AUTH DEBUG] Token refreshed successfully');
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
+            break;
+          case 'USER_UPDATED':
+            console.log('[AUTH DEBUG] User updated');
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
+            break;
+          default:
+            console.log('[AUTH DEBUG] Unknown auth event:', event);
+            if (newSession) {
+              setSession(newSession);
+              setUser(newSession?.user ?? null);
+            }
+            setLoading(false);
+        }
+      });
+      subscription = data.subscription;
+    } catch (error) {
+      console.log('[AUTH DEBUG] Error setting up auth state change listener:', error);
+      setLoading(false);
+    }
     
     return () => subscription.subscription?.unsubscribe();
   }, []);
