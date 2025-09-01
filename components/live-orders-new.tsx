@@ -27,29 +27,33 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   const ACTIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'ACCEPTED', 'OUT_FOR_DELIVERY'];
   const TERMINAL_TODAY = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED', 'COMPLETED'];
 
-           // Helper function to get today bounds in UTC for venue timezone
+                    // Helper function to get today bounds in UTC for venue timezone
          const todayBounds = useCallback((tz: string) => {
            const now = new Date();
            
            // Get the current date in the venue's timezone
            const venueDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
            
-           // Create start of day in venue timezone, then convert to UTC
+           // Create start of day in venue timezone
            const startOfDay = new Date(venueDate.getFullYear(), venueDate.getMonth(), venueDate.getDate());
-           const startUtc = new Date(startOfDay.getTime() - (startOfDay.getTimezoneOffset() * 60000)).toISOString();
            
-           // Create end of day (next day start) in venue timezone, then convert to UTC
+           // Convert venue start of day to UTC by using the timezone offset
+           const startUtc = new Date(startOfDay.toLocaleString('en-US', { timeZone: tz })).toISOString();
+           
+           // Create end of day (next day start) in venue timezone
            const endOfDay = new Date(startOfDay);
            endOfDay.setDate(startOfDay.getDate() + 1);
-           const endUtc = new Date(endOfDay.getTime() - (endOfDay.getTimezoneOffset() * 60000)).toISOString();
            
-                 console.log(`[LIVE_ORDERS] Timezone calculation for ${tz}:`);
-      console.log(`  - now: ${now.toISOString()}`);
-      console.log(`  - venueDate: ${venueDate.toISOString()}`);
-      console.log(`  - startOfDay: ${startOfDay.toISOString()}`);
-      console.log(`  - startUtc: ${startUtc}`);
-      console.log(`  - endOfDay: ${endOfDay.toISOString()}`);
-      console.log(`  - endUtc: ${endUtc}`);
+           // Convert venue end of day to UTC
+           const endUtc = new Date(endOfDay.toLocaleString('en-US', { timeZone: tz })).toISOString();
+           
+           console.log(`[LIVE_ORDERS] Timezone calculation for ${tz}:`);
+           console.log(`  - now: ${now.toISOString()}`);
+           console.log(`  - venueDate: ${venueDate.toISOString()}`);
+           console.log(`  - startOfDay: ${startOfDay.toISOString()}`);
+           console.log(`  - startUtc: ${startUtc}`);
+           console.log(`  - endOfDay: ${endOfDay.toISOString()}`);
+           console.log(`  - endUtc: ${endUtc}`);
            
            return { startUtc, endUtc };
          }, []);
