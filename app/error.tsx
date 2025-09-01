@@ -16,8 +16,12 @@ export default function Error({
     // Log the error to help with debugging
     console.error('Application error:', error);
     
-    // Instead of showing error page, redirect to home
-    router.push('/');
+    // Only redirect to home for certain types of errors, not order-related ones
+    if (error.message.includes('Cannot access uninitialized variable') || 
+        error.message.includes('Missing Supabase environment variables')) {
+      router.push('/');
+    }
+    // For other errors, don't redirect - let the component handle it
   }, [error, router]);
 
   // Return a simple loading state while redirecting

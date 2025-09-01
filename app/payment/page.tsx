@@ -132,7 +132,7 @@ export default function PaymentPage() {
                 }
                 className="w-full bg-servio-purple hover:bg-servio-purple-dark"
               >
-                Order More Items
+                Place Another Order
               </Button>
               <Button
                 onClick={() => router.push("/")}

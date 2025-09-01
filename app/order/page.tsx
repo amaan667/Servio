@@ -192,12 +192,14 @@ export default function CustomerOrderPage() {
       return;
     }
 
+    console.log('[ORDER DEBUG] Starting order submission');
     setIsSubmitting(true);
     try {
       const safeTable = parseInt(tableNumber) || 1;
 
       // For demo orders, create immediately
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
+        console.log('[ORDER DEBUG] Processing demo order');
         await new Promise((resolve) => setTimeout(resolve, 1000));
         setOrderSubmitted(true);
         setSubmittedOrder({ id: null, items: cart, total: getTotalPrice(), table_number: safeTable, venue_id: venueSlug });
@@ -248,6 +250,8 @@ export default function CustomerOrderPage() {
 
   const handlePaymentSuccess = async (orderData: any) => {
     try {
+      console.log('[ORDER DEBUG] Starting payment success flow with data:', orderData);
+      
       // Now create the actual order in the database
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -255,6 +259,8 @@ export default function CustomerOrderPage() {
         body: JSON.stringify(orderData),
       });
       const out = await res.json().catch(() => ({} as any));
+      
+      console.log('[ORDER DEBUG] Order API response:', { status: res.status, data: out });
       
       if (!res.ok || !out?.ok) {
         console.error('Order API failed', out);
@@ -270,6 +276,8 @@ export default function CustomerOrderPage() {
         id: out?.order?.id,
         pendingOrderData: undefined 
       }));
+      
+      console.log('[ORDER DEBUG] Order successfully confirmed, staying on order page');
       
     } catch (error) {
       console.error("Error confirming order:", error);
