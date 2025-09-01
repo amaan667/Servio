@@ -74,13 +74,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setTodayWindow(window);
       console.log('[LIVE ORDERS DEBUG] Today window set:', window);
       
-      // Load live orders (pending/preparing from today)
+      // Load live orders (PLACED/IN_PREP from today)
       console.log('[LIVE ORDERS DEBUG] Fetching live orders for venueId:', venueId);
       const { data: liveData, error: liveError } = await supabase
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .in('status', ['pending', 'preparing'])
+        .in('order_status', ['PLACED', 'IN_PREP'])
         .gte('created_at', window.startUtcISO)
         .lt('created_at', window.endUtcISO)
         .order('created_at', { ascending: false });
@@ -240,19 +240,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     };
   }, [venueId]);
 
-  const updateOrderStatus = async (orderId: string, status: 'preparing' | 'ready' | 'completed') => {
+  const updateOrderStatus = async (orderId: string, orderStatus: 'PLACED' | 'IN_PREP' | 'READY' | 'COMPLETED') => {
     const { error } = await supabase
       .from('orders')
-      .update({ status })
+      .update({ order_status: orderStatus })
       .eq('id', orderId)
       .eq('venue_id', venueId);
 
     if (!error) {
       setOrders(prev => prev.map(order => 
-        order.id === orderId ? { ...order, status } : order
+        order.id === orderId ? { ...order, order_status: orderStatus } : order
       ));
       setAllOrders(prev => prev.map(order => 
-        order.id === orderId ? { ...order, status } : order
+        order.id === orderId ? { ...order, order_status: orderStatus } : order
       ));
     }
   };
@@ -274,18 +274,20 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'preparing': return 'bg-blue-100 text-blue-800';
-      case 'ready': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-green-100 text-green-800';
+      case 'PLACED': return 'bg-yellow-100 text-yellow-800';
+      case 'IN_PREP': return 'bg-blue-100 text-blue-800';
+      case 'READY': return 'bg-green-100 text-green-800';
+      case 'COMPLETED': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getPaymentStatusColor = (paymentStatus: string) => {
     switch (paymentStatus) {
-      case 'paid': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'PAID': return 'bg-green-100 text-green-800';
+      case 'UNPAID': return 'bg-yellow-100 text-yellow-800';
+      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
+      case 'REFUNDED': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -315,8 +317,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             )}
           </div>
           <div className="flex items-center space-x-2">
-            <Badge className={getStatusColor(order.status)}>
-              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+            <Badge className={getStatusColor(order.order_status)}>
+              {order.order_status.replace('_', ' ').toLowerCase()}
             </Badge>
             {order.payment_status && (
               <Badge className={getPaymentStatusColor(order.payment_status)}>
@@ -346,18 +348,18 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         {/* Action Buttons */}
         {showActions && (
           <div className="flex space-x-2">
-            {order.status === 'pending' && (
+            {order.order_status === 'PLACED' && (
               <Button 
                 size="sm"
-                onClick={() => updateOrderStatus(order.id, 'preparing')}
+                onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
               >
                 Start Preparing
               </Button>
             )}
-            {order.status === 'preparing' && (
+            {order.order_status === 'IN_PREP' && (
               <Button 
                 size="sm"
-                onClick={() => updateOrderStatus(order.id, 'ready')}
+                onClick={() => updateOrderStatus(order.id, 'READY')}
               >
                 Mark Ready
               </Button>

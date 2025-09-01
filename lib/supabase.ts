@@ -391,9 +391,11 @@ export async function createOrder(orderData: {
       items: orderData.items
     });
 
-    // Calculate total amount from items
+    // Calculate total amount from items (always use this, not the passed total_amount)
     const calculatedTotal = orderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     console.log('[ORDER CREATION DEBUG] Calculated total:', calculatedTotal);
+    console.log('[ORDER CREATION DEBUG] Passed total_amount:', orderData.total_amount);
+    console.log('[ORDER CREATION DEBUG] Items for calculation:', orderData.items);
     
     // Create the order with items as JSONB
     const { data: order, error: orderError } = await supabase
@@ -405,7 +407,7 @@ export async function createOrder(orderData: {
         customer_phone: orderData.customer_phone,
         order_status: "PLACED",
         payment_status: "UNPAID",
-        total_amount: calculatedTotal,
+        total_amount: calculatedTotal, // Always use calculated total
         notes: orderData.notes,
         items: orderData.items, // Store items as JSONB
       })
