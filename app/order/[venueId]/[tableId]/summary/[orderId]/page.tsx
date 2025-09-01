@@ -46,9 +46,9 @@ export default function OrderSummaryPage() {
         setLoading(true);
         setError(null);
 
-        // Try to fetch from orders_with_totals view first
+        // Try to fetch from orders table directly
         let { data, error: viewError } = await supabase
-          .from('orders_with_totals')
+          .from('orders')
           .select('*')
           .eq('id', orderId)
           .single();

@@ -71,7 +71,7 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
     console.log('[LIVE ORDERS DEBUG] fetchOrders called for venueId:', venueId);
     try {
       const { data, error } = await supabase()
-        .from('orders_with_totals')
+        .from('orders')
         .select('*')
         .eq('venue_id', venueId)
         .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])

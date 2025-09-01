@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { Clock, ArrowLeft, User } from "lucide-react";
-import { todayWindowForTZ } from "@/lib/dates";
+import { todayWindowForTZ } from "@/lib/time";
 
 
 interface Order {
@@ -59,12 +59,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [activeTab, setActiveTab] = useState("live");
   // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
+  
+  // Constants for order statuses
+  const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
+  const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
+  const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
 
   useEffect(() => {
     const loadVenueAndOrders = async () => {
       let venueTimezone;
       if (!venueNameProp) {
-        const { data: venueData } = await supabase
+        const { data: venueData } = await createClient()
           .from('venues')
           .select('name')
           .eq('venue_id', venueId)
@@ -78,11 +83,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       // Load live orders (non-terminal statuses with scheduled_for logic)
       console.log('[LIVE ORDERS DEBUG] Fetching live orders for venueId:', venueId);
-      const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
-      const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
       
-      const { data: liveData, error: liveError } = await supabase
-        .from('orders_with_totals')
+      const { data: liveData, error: liveError } = await createClient()
+        .from('orders')
         .select('*')
         .eq('venue_id', venueId)
         .in('order_status', LIVE_STATUSES)
@@ -91,8 +94,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
       // Load all orders from today (venue timezone aware)
       console.log('[LIVE ORDERS DEBUG] Fetching all today orders with window:', window);
-      const { data: allData, error: allError } = await supabase
-        .from('orders_with_totals')
+      const { data: allData, error: allError } = await createClient()
+        .from('orders')
         .select('*')
         .eq('venue_id', venueId)
         .or(`created_at.gte.${window.startUtcISO},scheduled_for.gte.${window.startUtcISO}`)
@@ -100,11 +103,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false });
 
       // Load history orders (terminal statuses before today)
-      const { data: historyData, error: historyError } = await supabase
-        .from('orders_with_totals')
+      const { data: historyData, error: historyError } = await createClient()
+        .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .in('order_status', ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'])
+        .in('order_status', TERMINAL_STATUSES)
         .lt('created_at', window.startUtcISO)
         .order('created_at', { ascending: false })
         .limit(100); // Limit to last 100 orders
@@ -131,7 +134,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           orders: allData.map(order => ({
             id: order.id,
             created_at: order.created_at,
-            status: order.status,
+            status: order.order_status,
             total_amount: order.total_amount
           }))
         });
@@ -162,7 +165,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     loadVenueAndOrders();
 
     // Set up real-time subscription
-    const channel = supabase
+    const channel = createClient()
       .channel('orders')
       .on('postgres_changes', 
         { 
@@ -268,12 +271,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      createClient().removeChannel(channel);
     };
   }, [venueId]);
 
   const updateOrderStatus = async (orderId: string, orderStatus: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED') => {
-    const { error } = await supabase
+    const { error } = await createClient()
       .from('orders')
       .update({ 
         order_status: orderStatus,
@@ -368,7 +371,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
         {/* Order Items */}
         <div className="space-y-2 mb-4">
-          {console.log('[LIVE ORDERS DEBUG] Rendering items for order', order.id, ':', order.items)}
           {order.items.map((item, index) => {
             console.log('[LIVE ORDERS DEBUG] Rendering item:', item);
             return (
