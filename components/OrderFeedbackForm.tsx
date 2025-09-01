@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Star, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { createClient } from '@/lib/supabase/client';
 import type { FeedbackQuestion, FeedbackAnswer } from '@/types/feedback';
 
 interface OrderFeedbackFormProps {
@@ -26,13 +27,44 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
 
   useEffect(() => {
     fetchQuestions();
-  }, [venueId]);
+  }, [fetchQuestions]);
 
   useEffect(() => {
     console.log('[FEEDBACK DEBUG] totalCount state changed to:', totalCount);
   }, [totalCount]);
 
-  const fetchQuestions = async () => {
+  // Set up real-time subscription for feedback questions
+  useEffect(() => {
+    const supabase = createClient();
+    
+    console.log('[FEEDBACK DEBUG] Setting up real-time subscription for venue:', venueId);
+    
+    const channel = supabase
+      .channel(`feedback-questions-${venueId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'feedback_questions',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        (payload) => {
+          console.log('[FEEDBACK DEBUG] Real-time change detected:', payload);
+          fetchQuestions();
+        },
+      )
+      .subscribe((status) => {
+        console.log('[FEEDBACK DEBUG] Real-time subscription status:', status);
+      });
+
+    return () => {
+      console.log('[FEEDBACK DEBUG] Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [venueId, fetchQuestions]);
+
+  const fetchQuestions = useCallback(async () => {
     try {
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
       if (response.ok) {
@@ -54,7 +86,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
     } finally {
       setLoading(false);
     }
-  };
+  }, [venueId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
