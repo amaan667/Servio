@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     
-    // Test Supabase connection
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // SECURE: Use getUser() instead of getSession() for authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     const debugInfo = {
       timestamp: new Date().toISOString(),
@@ -56,10 +56,10 @@ export async function GET(request: NextRequest) {
         hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       },
       auth: {
-        hasSession: !!session,
-        userId: session?.user?.id,
-        userEmail: session?.user?.email,
-        sessionError: sessionError?.message,
+        hasUser: !!user,
+        userId: user?.id,
+        userEmail: user?.email,
+        userError: userError?.message,
       },
       request: {
         url: request.url,
