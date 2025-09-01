@@ -28,6 +28,7 @@ export default function PaymentPage() {
   const searchParams = useSearchParams();
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
@@ -45,7 +46,7 @@ export default function PaymentPage() {
   }, [router]);
 
   const handlePayment = async () => {
-    if (!checkoutData || !customerName.trim()) return;
+    if (!checkoutData || !customerName.trim() || !customerPhone.trim()) return;
 
     setIsProcessing(true);
 
@@ -58,6 +59,7 @@ export default function PaymentPage() {
         venue_id: checkoutData.venueId,
         table_number: checkoutData.tableNumber,
         customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim(),
         items: checkoutData.cart.map((item) => ({
           menu_item_id: item.id,
           quantity: item.quantity,
@@ -218,6 +220,17 @@ export default function PaymentPage() {
                 placeholder="Enter your name"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customerPhone">Phone Number</Label>
+              <Input
+                id="customerPhone"
+                type="tel"
+                placeholder="Enter your phone number"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
                 className="w-full"
               />
             </div>

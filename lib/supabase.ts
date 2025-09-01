@@ -371,7 +371,7 @@ export async function createOrder(orderData: {
   venue_id: string;
   table_number: number;
   customer_name: string;
-  customer_phone?: string;
+  customer_phone: string; // Make this required since DB schema requires it
   items: Array<{
     menu_item_id: string;
     quantity: number;
