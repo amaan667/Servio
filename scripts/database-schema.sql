@@ -7,7 +7,7 @@
 -- =====================================================
 -- VENUES TABLE
 -- =====================================================
--- Stores restaurant/venue information
+-- Stores venue information
 CREATE TABLE IF NOT EXISTS venues (
   venue_id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -133,7 +133,7 @@ CREATE INDEX IF NOT EXISTS idx_users_venue_id ON users(venue_id);
 
 -- Insert demo venue
 INSERT INTO venues (venue_id, name, description) 
-VALUES ('demo-cafe', 'Demo Cafe', 'A demonstration restaurant for testing the Servio MVP')
+VALUES ('demo-cafe', 'Demo Cafe', 'A demonstration venue for testing the Servio MVP')
 ON CONFLICT (venue_id) DO NOTHING;
 
 -- Insert sample menu items for demo venue
@@ -225,7 +225,7 @@ Optional (for future enhancements):
 -- =====================================================
 /*
 1. VENUE MANAGEMENT:
-   - Each restaurant/venue has a unique venue_id
+   - Each venue has a unique venue_id
    - Menu items are linked to venues via venue_id
    - Orders are linked to venues via venue_id
 

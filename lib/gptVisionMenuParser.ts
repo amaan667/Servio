@@ -6,7 +6,7 @@ export async function extractMenuFromImage(imagePath: string) {
   const imageBytes = fs.readFileSync(imagePath).toString("base64");
 
   const prompt = `
-You are an expert at reading restaurant menus. 
+You are an expert at reading venue menus. 
 From the image, extract structured JSON in the following format:
 
 [

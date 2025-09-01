@@ -102,6 +102,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         userId={user.id}
         activeTables={uniqueActiveTables}
         venue={venue}
+        userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
       />
     );
   } catch (error) {

@@ -48,7 +48,7 @@ BEGIN
         'venue-' || substr(new_user_id::text, 1, 8),
         'My Venue',
         new_user_id,
-        'Restaurant',
+        'Cafe',
         NOW(),
         NOW()
     WHERE NOT EXISTS (

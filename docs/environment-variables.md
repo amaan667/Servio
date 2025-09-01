@@ -1,6 +1,6 @@
 # Environment Variables Documentation
 
-This document outlines all required and optional environment variables for the Servio MVP restaurant ordering system.
+This document outlines all required and optional environment variables for the Servio MVP venue ordering system.
 
 ## Required Environment Variables
 

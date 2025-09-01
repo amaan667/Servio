@@ -7,7 +7,7 @@ ALTER TABLE IF EXISTS venues
 
 -- Add business_type column
 ALTER TABLE IF EXISTS venues
-  ADD COLUMN IF NOT EXISTS business_type TEXT DEFAULT 'Restaurant';
+  ADD COLUMN IF NOT EXISTS business_type TEXT DEFAULT 'Cafe';
 
 -- Add phone column
 ALTER TABLE IF EXISTS venues

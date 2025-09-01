@@ -243,7 +243,7 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
       .insert({
         venue_id: venueId,
         name: venueName,
-        business_type: "Restaurant",
+        business_type: "Cafe",
         owner_id: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -458,7 +458,7 @@ export async function createVenueIfNotExists(venueId: string) {
     .insert({
       venue_id: venueId,
       name: `Business ${venueId}`,
-      business_type: "Restaurant",
+              business_type: "Cafe",
     })
     .select()
     .single();

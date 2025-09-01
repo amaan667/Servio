@@ -221,7 +221,7 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
   
   // Use the old method as fallback
   const system = [
-    "You extract restaurant/cafe menus from OCR text.",
+    "You extract venue menus from OCR text.",
     "Return ONLY a JSON object that matches the schema:",
     `{
       "items": [

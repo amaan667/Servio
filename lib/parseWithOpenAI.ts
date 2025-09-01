@@ -6,7 +6,7 @@ import { MenuPayload, MenuPayloadT } from "./menuSchema";
 export async function parseMenuStrict(extractedText: string): Promise<MenuPayloadT> {
   const openai = getOpenAI();
   const system = [
-    "You extract restaurant/cafe menus from OCR text.",
+    "You extract venue menus from OCR text.",
     "Return ONLY a JSON object that matches the schema:",
     `{
       "items": [

@@ -622,7 +622,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         <CardHeader>
           <CardTitle>Add Menu Items</CardTitle>
           <CardDescription>
-            Add individual menu items to your restaurant.
+            Add individual menu items to your venue.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -22,7 +22,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     venueName: "",
-    businessType: "Restaurant",
+    businessType: "Cafe",
     address: "",
     phone: "",
   });
@@ -124,8 +124,11 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                   required
                 >
-                  <option value="Restaurant">Restaurant</option>
-                  <option value="Cafe">Cafe</option>
+                              <option value="Restaurant">Restaurant</option>
+            <option value="Cafe">Cafe</option>
+            <option value="Bar">Bar</option>
+            <option value="Takeaway">Takeaway</option>
+            <option value="Other">Other</option>
                   <option value="Food Truck">Food Truck</option>
                   <option value="Coffee Shop">Coffee Shop</option>
                   <option value="Bar">Bar</option>

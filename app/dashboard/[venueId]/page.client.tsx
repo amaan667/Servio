@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
 
-export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0, venue: initialVenue }: { venueId: string; userId: string; activeTables?: number; venue?: any }) {
+export default function VenueDashboardClient({ venueId, userId, activeTables: activeTablesFromSSR = 0, venue: initialVenue, userName }: { venueId: string; userId: string; activeTables?: number; venue?: any; userName: string }) {
   const [venue, setVenue] = useState<any>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue); // Start with loading false if we have initial venue data
   const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, activeTables: activeTablesFromSSR, menuItems: 0, unpaid: 0 });
@@ -254,7 +254,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
         
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-2">
-            Welcome back, Manager!
+            Welcome back, {userName}!
           </h2>
           <p className="text-muted-foreground">Here's what's happening at {venue?.name || "your venue"} today</p>
         </div>

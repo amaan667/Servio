@@ -13,7 +13,7 @@ CREATE TABLE venues (
   website TEXT,
   logo_url TEXT,
   owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  business_type TEXT DEFAULT 'Restaurant',
+  business_type TEXT DEFAULT 'Cafe',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

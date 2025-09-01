@@ -261,7 +261,7 @@ export default function OrderSummaryPage() {
           
           <div className="text-center">
             <p className="text-sm text-gray-500">
-              Need help? Contact the restaurant staff.
+              Need help? Contact the staff.
             </p>
           </div>
         </div>
