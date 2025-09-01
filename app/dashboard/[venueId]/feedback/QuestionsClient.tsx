@@ -33,6 +33,13 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
     }
   }, [questions, editingId]);
 
+  // Show form by default when there are no questions
+  useEffect(() => {
+    if (questions.length === 0 && !editingId) {
+      setShowAddForm(true);
+    }
+  }, [questions.length, editingId]);
+
   // Form state
   const [formData, setFormData] = useState({
     prompt: '',
@@ -382,19 +389,21 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
             <h3 className="text-lg font-semibold">
               {editingId ? 'Edit Question' : 'Add New Question'}
             </h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (editingId) {
-                  resetForm();
-                } else {
-                  setShowAddForm(!showAddForm);
-                }
-              }}
-            >
-              {showAddForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            </Button>
+            {questions.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (editingId) {
+                    resetForm();
+                  } else {
+                    setShowAddForm(!showAddForm);
+                  }
+                }}
+              >
+                {showAddForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              </Button>
+            )}
           </div>
           
           {showAddForm && (
@@ -500,105 +509,87 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
       )}
 
       {/* Questions List */}
-      {(mode === 'list-only' || mode === 'full') && (
+      {(mode === 'list-only' || mode === 'full') && questions.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Current Questions ({questions.length})</h3>
           </div>
           
-          {questions.length === 0 ? (
-            <Card className="border-0 shadow-sm bg-white/50 dark:bg-gray-900/50">
-              <CardContent className="p-12 text-center">
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <MessageSquare className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">No questions yet</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Create your first feedback question to start collecting customer insights
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {questions.map((question, index) => (
-                <Card key={question.id} className="border-0 shadow-sm bg-white/50 dark:bg-gray-900/50 hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <GripVertical className="h-4 w-4" />
-                            <span className="font-medium">{index + 1}.</span>
-                          </div>
-                          <h4 className="font-medium text-gray-900 dark:text-gray-100">{question.prompt}</h4>
+          <div className="space-y-3">
+            {questions.map((question, index) => (
+              <Card key={question.id} className="border-0 shadow-sm bg-white/50 dark:bg-gray-900/50 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <GripVertical className="h-4 w-4" />
+                          <span className="font-medium">{index + 1}.</span>
                         </div>
-                        
-                        <div className="flex items-center gap-2">
-                          {getTypeBadge(question.type)}
-                          {getStatusBadge(question.is_active)}
-                        </div>
-                        
-                        {question.type === 'multiple_choice' && question.choices && (
-                          <div className="text-sm text-muted-foreground">
-                            <span className="font-medium">Choices:</span> {question.choices.join(', ')}
-                          </div>
-                        )}
+                        <h4 className="font-medium text-gray-900 dark:text-gray-100">{question.prompt}</h4>
                       </div>
                       
-                      <div className="flex items-center gap-1 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReorder(question.id, 'up')}
-                          disabled={index === 0}
-                          className="h-8 w-8 p-0"
-                        >
-                          ↑
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReorder(question.id, 'down')}
-                          disabled={index === questions.length - 1}
-                          className="h-8 w-8 p-0"
-                        >
-                          ↓
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleActive(question.id, question.is_active)}
-                          className="h-8 w-8 p-0"
-                        >
-                          {question.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEdit(question)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(question.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="flex items-center gap-2">
+                        {getTypeBadge(question.type)}
+                        {getStatusBadge(question.is_active)}
                       </div>
+                      
+                      {question.type === 'multiple_choice' && question.choices && (
+                        <div className="text-sm text-muted-foreground">
+                          <span className="font-medium">Choices:</span> {question.choices.join(', ')}
+                        </div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                    
+                    <div className="flex items-center gap-1 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleReorder(question.id, 'up')}
+                        disabled={index === 0}
+                        className="h-8 w-8 p-0"
+                      >
+                        ↑
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleReorder(question.id, 'down')}
+                        disabled={index === questions.length - 1}
+                        className="h-8 w-8 p-0"
+                      >
+                        ↓
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleActive(question.id, question.is_active)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {question.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startEdit(question)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(question.id)}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
     </div>
