@@ -104,6 +104,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       }
 
       console.log(`[LIVE_ORDERS] Executing query for ${tab}...`);
+      console.log(`[LIVE_ORDERS] Final query:`, query);
+      
       const { data, error: queryError } = await query;
 
       if (queryError) {
@@ -121,6 +123,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           throw queryError; // Throw original error
         }
         
+        console.log(`[LIVE_ORDERS] Fallback data:`, fallbackData);
+        
         // Filter orders in JavaScript based on tab
         let filteredOrders = fallbackData || [];
         const now = new Date();
@@ -128,23 +132,40 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
         
+        console.log(`[LIVE_ORDERS] Date filtering:`, {
+          now: now.toISOString(),
+          today: today.toISOString(),
+          tomorrow: tomorrow.toISOString(),
+          startUtc,
+          endUtc
+        });
+        
         if (tab === 'live') {
           filteredOrders = filteredOrders.filter(order => {
             const status = order.order_status || order.status;
             const created = new Date(order.created_at);
-            return ACTIVE_STATUSES.includes(status) && created >= today && created < tomorrow;
+            const isActive = ACTIVE_STATUSES.includes(status);
+            const isToday = created >= today && created < tomorrow;
+            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isActive=${isActive}, isToday=${isToday}`);
+            return isActive && isToday;
           });
         } else if (tab === 'earlier') {
           filteredOrders = filteredOrders.filter(order => {
             const status = order.order_status || order.status;
             const created = new Date(order.created_at);
-            return TERMINAL_TODAY.includes(status) && created >= today && created < tomorrow;
+            const isTerminal = TERMINAL_TODAY.includes(status);
+            const isToday = created >= today && created < tomorrow;
+            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isTerminal=${isTerminal}, isToday=${isToday}`);
+            return isTerminal && isToday;
           });
         } else if (tab === 'history') {
           filteredOrders = filteredOrders.filter(order => {
             const status = order.order_status || order.status;
             const created = new Date(order.created_at);
-            return ['SERVED', 'COMPLETED'].includes(status) && created < today;
+            const isHistory = ['SERVED', 'COMPLETED'].includes(status);
+            const isBeforeToday = created < today;
+            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isHistory=${isHistory}, isBeforeToday=${isBeforeToday}`);
+            return isHistory && isBeforeToday;
           });
         }
         
