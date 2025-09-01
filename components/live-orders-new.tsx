@@ -27,19 +27,33 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   const ACTIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'ACCEPTED', 'OUT_FOR_DELIVERY'];
   const TERMINAL_TODAY = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED', 'COMPLETED'];
 
-  // Helper function to get today bounds in UTC for venue timezone
-  const todayBounds = useCallback((tz: string) => {
-    const now = new Date();
-    const start = new Date(new Intl.DateTimeFormat('en-GB', { 
-      timeZone: tz, 
-      year:'numeric', 
-      month:'2-digit', 
-      day:'2-digit'
-    }).format(now) + ' 00:00:00');
-    const end = new Date(start); 
-    end.setDate(start.getDate()+1);
-    return { startUtc: start.toISOString(), endUtc: end.toISOString() };
-  }, []);
+           // Helper function to get today bounds in UTC for venue timezone
+         const todayBounds = useCallback((tz: string) => {
+           const now = new Date();
+           
+           // Get the current date in the venue's timezone
+           const venueDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+           
+           // Create start of day in venue timezone, then convert to UTC
+           const startOfDay = new Date(venueDate.getFullYear(), venueDate.getMonth(), venueDate.getDate());
+           const startUtc = new Date(startOfDay.getTime() - (startOfDay.getTimezoneOffset() * 60000)).toISOString();
+           
+           // Create end of day (next day start) in venue timezone, then convert to UTC
+           const endOfDay = new Date(startOfDay);
+           endOfDay.setDate(startOfDay.getDate() + 1);
+           const endUtc = new Date(endOfDay.getTime() - (endOfDay.getTimezoneOffset() * 60000)).toISOString();
+           
+           console.log(`[LIVE_ORDERS] Timezone calculation for ${tz}:`, {
+             now: now.toISOString(),
+             venueDate: venueDate.toISOString(),
+             startOfDay: startOfDay.toISOString(),
+             startUtc,
+             endOfDay: endOfDay.toISOString(),
+             endUtc
+           });
+           
+           return { startUtc, endUtc };
+         }, []);
 
   const fetchOrders = useCallback(async (tab: 'live' | 'earlier' | 'history') => {
     if (!venueId) return;

@@ -1,5 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+const path = require('path');
+
+// Load .env.local file specifically
+require('dotenv').config({ path: path.resolve(process.cwd(), '.env.local') });
 
 async function debugOrders() {
   console.log('🔍 Debugging orders in database...');
