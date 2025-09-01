@@ -66,6 +66,60 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const ACTIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'PLACED':
+        return <Clock className="h-3 w-3" />;
+      case 'ACCEPTED':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'IN_PREP':
+        return <RefreshCw className="h-3 w-3" />;
+      case 'READY':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'OUT_FOR_DELIVERY':
+        return <Clock className="h-3 w-3" />;
+      case 'SERVING':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'COMPLETED':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'CANCELLED':
+        return <XCircle className="h-3 w-3" />;
+      case 'REFUNDED':
+        return <XCircle className="h-3 w-3" />;
+      case 'EXPIRED':
+        return <AlertTriangle className="h-3 w-3" />;
+      default:
+        return <Clock className="h-3 w-3" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PLACED':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'ACCEPTED':
+        return 'bg-blue-100 text-blue-800';
+      case 'IN_PREP':
+        return 'bg-orange-100 text-orange-800';
+      case 'READY':
+        return 'bg-green-100 text-green-800';
+      case 'OUT_FOR_DELIVERY':
+        return 'bg-purple-100 text-purple-800';
+      case 'SERVING':
+        return 'bg-green-100 text-green-800';
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800';
+      case 'REFUNDED':
+        return 'bg-red-100 text-red-800';
+      case 'EXPIRED':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const fetchLiveOrders = useCallback(async () => {
     const supabase = createClient();
     
@@ -447,9 +501,9 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                       <h3 className="font-semibold text-lg">
                         Order #{order.id.slice(0, 8)}
                       </h3>
-                      <Badge className={getStatusColor(order.status)}>
-                        {getStatusIcon(order.status)}
-                        <span className="ml-1 capitalize">{order.status}</span>
+                      <Badge className={getStatusColor(order.order_status)}>
+                        {getStatusIcon(order.order_status)}
+                        <span className="ml-1 capitalize">{order.order_status.replace('_', ' ').toLowerCase()}</span>
                       </Badge>
                     </div>
                     <div className="text-right">
@@ -493,10 +547,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                   )}
 
                   <div className="flex space-x-2">
-                    {order.status === "pending" && (
+                    {order.order_status === "PLACED" && (
                       <Button
                         size="sm"
-                        onClick={() => updateOrderStatus(order.id, "preparing")}
+                        onClick={() => updateOrderStatus(order.id, "IN_PREP")}
                         disabled={updating === order.id}
                       >
                         {updating === order.id ? (
@@ -506,10 +560,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                         )}
                       </Button>
                     )}
-                    {order.status === "preparing" && (
+                    {order.order_status === "IN_PREP" && (
                       <Button
                         size="sm"
-                        onClick={() => updateOrderStatus(order.id, "ready")}
+                        onClick={() => updateOrderStatus(order.id, "READY")}
                         disabled={updating === order.id}
                       >
                         {updating === order.id ? (
@@ -519,10 +573,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                         )}
                       </Button>
                     )}
-                    {order.status === "ready" && (
+                    {order.order_status === "READY" && (
                       <Button
                         size="sm"
-                        onClick={() => updateOrderStatus(order.id, "completed")}
+                        onClick={() => updateOrderStatus(order.id, "COMPLETED")}
                         disabled={updating === order.id}
                       >
                         {updating === order.id ? (
@@ -532,12 +586,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                         )}
                       </Button>
                     )}
-                    {(order.status === "pending" ||
-                      order.status === "preparing") && (
+                    {(order.order_status === "PLACED" ||
+                      order.order_status === "IN_PREP") && (
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => updateOrderStatus(order.id, "cancelled")}
+                        onClick={() => updateOrderStatus(order.id, "CANCELLED")}
                         disabled={updating === order.id}
                       >
                         {updating === order.id ? (

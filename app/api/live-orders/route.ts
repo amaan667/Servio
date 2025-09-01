@@ -35,10 +35,10 @@ export async function GET(req: Request) {
     .from('orders')
     .select(`
       id, venue_id, table_number, customer_name, customer_phone, 
-      total_amount, status, payment_status, notes, created_at, items
+      total_amount, order_status, payment_status, notes, created_at, items
     `)
     .eq('venue_id', venueId)
-    .in('status', ['pending', 'preparing', 'ready'])
+    .in('order_status', ['PLACED', 'IN_PREP', 'READY'])
     .order('created_at', { ascending: false });
 
   if (error) {

@@ -403,7 +403,8 @@ export async function createOrder(orderData: {
         table_number: orderData.table_number,
         customer_name: orderData.customer_name,
         customer_phone: orderData.customer_phone,
-        status: "pending",
+        order_status: "PLACED",
+        payment_status: "UNPAID",
         total_amount: calculatedTotal,
         notes: orderData.notes,
         items: orderData.items, // Store items as JSONB
