@@ -29,7 +29,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
 
   const fetchQuestions = async () => {
     try {
-      const response = await fetch(`/api/feedback-questions?venueId=${venueId}`);
+      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
       if (response.ok) {
         const data = await response.json();
         const activeQuestions = (data.questions || []).filter((q: FeedbackQuestion) => q.is_active);
