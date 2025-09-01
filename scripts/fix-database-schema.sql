@@ -31,16 +31,30 @@ ADD COLUMN IF NOT EXISTS scheduled_for TIMESTAMP WITH TIME ZONE,
 ADD COLUMN IF NOT EXISTS prep_lead_minutes INTEGER DEFAULT 30,
 ADD COLUMN IF NOT EXISTS special_instructions TEXT;
 
--- 4. Update payment_status to use correct values
+-- 4. First, migrate existing payment_status values BEFORE adding constraint
+UPDATE orders 
+SET payment_status = CASE 
+  WHEN payment_status = 'pending' THEN 'UNPAID'
+  WHEN payment_status = 'paid' THEN 'PAID'
+  WHEN payment_status = 'failed' THEN 'UNPAID'
+  WHEN payment_status = 'refunded' THEN 'REFUNDED'
+  WHEN payment_status IS NULL THEN 'UNPAID'
+  WHEN payment_status NOT IN ('UNPAID', 'IN_PROGRESS', 'PAID', 'REFUNDED') THEN 'UNPAID'
+  ELSE payment_status
+END;
+
+-- 5. Now safely update payment_status constraint
 ALTER TABLE orders 
-ALTER COLUMN payment_status SET DEFAULT 'UNPAID',
-DROP CONSTRAINT IF EXISTS orders_payment_status_check;
+ALTER COLUMN payment_status SET DEFAULT 'UNPAID';
+
+-- Drop the constraint if it exists, then add it back
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payment_status_check;
 
 ALTER TABLE orders 
 ADD CONSTRAINT orders_payment_status_check 
 CHECK (payment_status IN ('UNPAID', 'IN_PROGRESS', 'PAID', 'REFUNDED'));
 
--- 5. Migrate existing data from old status field to new order_status field
+-- 6. Migrate existing data from old status field to new order_status field
 UPDATE orders 
 SET order_status = CASE 
   WHEN status = 'pending' THEN 'PLACED'
@@ -52,17 +66,6 @@ SET order_status = CASE
   ELSE 'PLACED'
 END
 WHERE order_status IS NULL AND status IS NOT NULL;
-
--- 6. Migrate existing payment_status values
-UPDATE orders 
-SET payment_status = CASE 
-  WHEN payment_status = 'pending' THEN 'UNPAID'
-  WHEN payment_status = 'paid' THEN 'PAID'
-  WHEN payment_status = 'failed' THEN 'UNPAID'
-  WHEN payment_status = 'refunded' THEN 'REFUNDED'
-  ELSE 'UNPAID'
-END
-WHERE payment_status NOT IN ('UNPAID', 'IN_PROGRESS', 'PAID', 'REFUNDED');
 
 -- 7. Drop the old status column if it exists
 ALTER TABLE orders DROP COLUMN IF EXISTS status;
@@ -96,6 +99,12 @@ SELECT
     COUNT(CASE WHEN payment_status = 'UNPAID' THEN 1 END) as unpaid_orders,
     COUNT(CASE WHEN order_status NOT IN ('COMPLETED', 'CANCELLED') THEN 1 END) as active_orders
 FROM orders;
+
+-- 12. Show any problematic payment_status values (should be empty after migration)
+SELECT DISTINCT payment_status, COUNT(*) as count
+FROM orders 
+GROUP BY payment_status
+ORDER BY payment_status;
 
 -- Success message
 DO $$
