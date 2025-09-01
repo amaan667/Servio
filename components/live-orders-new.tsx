@@ -27,36 +27,36 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   const ACTIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'ACCEPTED', 'OUT_FOR_DELIVERY'];
   const TERMINAL_TODAY = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED', 'COMPLETED'];
 
-                    // Helper function to get today bounds in UTC for venue timezone
-         const todayBounds = useCallback((tz: string) => {
-           const now = new Date();
-           
-           // Get the current date in the venue's timezone
-           const venueDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-           
-           // Create start of day in venue timezone (midnight in venue timezone)
-           const startOfDay = new Date(venueDate.getFullYear(), venueDate.getMonth(), venueDate.getDate());
-           
-           // Convert to UTC by using the timezone offset
-           // For Europe/London (UTC+1 during summer), midnight London = 11pm UTC previous day
-           const startUtc = new Date(startOfDay.getTime() - (startOfDay.getTimezoneOffset() * 60000));
-           
-           // Create end of day (next day start) in venue timezone
-           const endOfDay = new Date(startOfDay);
-           endOfDay.setDate(startOfDay.getDate() + 1);
-           const endUtc = new Date(endOfDay.getTime() - (endOfDay.getTimezoneOffset() * 60000));
-           
-           console.log(`[LIVE_ORDERS] Timezone calculation for ${tz}:`);
-           console.log(`  - now: ${now.toISOString()}`);
-           console.log(`  - now in venue timezone: ${now.toLocaleString('en-US', { timeZone: tz })}`);
-           console.log(`  - venueDate: ${venueDate.toISOString()}`);
-           console.log(`  - startOfDay: ${startOfDay.toISOString()}`);
-           console.log(`  - startUtc: ${startUtc.toISOString()}`);
-           console.log(`  - endOfDay: ${endOfDay.toISOString()}`);
-           console.log(`  - endUtc: ${endUtc.toISOString()}`);
-           
-           return { startUtc: startUtc.toISOString(), endUtc: endUtc.toISOString() };
-         }, []);
+                                         // CORRECTED Helper function to get today bounds in UTC for venue timezone
+            const todayBoundsCorrected = useCallback((tz: string) => {
+              const now = new Date();
+              
+              // Get the current date in the venue's timezone
+              const venueDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+              
+              // Create start of day in venue timezone (midnight in venue timezone)
+              const startOfDay = new Date(venueDate.getFullYear(), venueDate.getMonth(), venueDate.getDate());
+              
+              // Convert to UTC by using the timezone offset
+              // For Europe/London (UTC+1 during summer), midnight London = 11pm UTC previous day
+              const startUtc = new Date(startOfDay.getTime() - (startOfDay.getTimezoneOffset() * 60000));
+              
+              // Create end of day (next day start) in venue timezone
+              const endOfDay = new Date(startOfDay);
+              endOfDay.setDate(startOfDay.getDate() + 1);
+              const endUtc = new Date(endOfDay.getTime() - (endOfDay.getTimezoneOffset() * 60000));
+              
+              console.log(`[LIVE_ORDERS] Timezone calculation for ${tz}:`);
+              console.log(`  - now: ${now.toISOString()}`);
+              console.log(`  - now in venue timezone: ${now.toLocaleString('en-US', { timeZone: tz })}`);
+              console.log(`  - venueDate: ${startOfDay.toISOString()}`);
+              console.log(`  - startOfDay: ${startOfDay.toISOString()}`);
+              console.log(`  - startUtc: ${startUtc.toISOString()}`);
+              console.log(`  - endOfDay: ${endOfDay.toISOString()}`);
+              console.log(`  - endUtc: ${endUtc.toISOString()}`);
+              
+              return { startUtc: startUtc.toISOString(), endUtc: endUtc.toISOString() };
+            }, []);
 
   const fetchOrders = useCallback(async (tab: 'live' | 'earlier' | 'history') => {
     if (!venueId) return;
@@ -70,7 +70,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         throw new Error('Supabase client not available');
       }
 
-      const { startUtc, endUtc } = todayBounds(venueTimezone);
+      const { startUtc, endUtc } = todayBoundsCorrected(venueTimezone);
       console.log(`[LIVE_ORDERS] Fetching ${tab} orders for venue:`, venueId);
       console.log(`[LIVE_ORDERS] Time bounds:`);
       console.log(`  - startUtc: ${startUtc}`);
@@ -246,7 +246,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     } finally {
       setLoading(false);
     }
-  }, [venueId, venueTimezone, todayBounds]);
+  }, [venueId, venueTimezone, todayBoundsCorrected]);
 
   // Fetch orders when tab changes
   useEffect(() => {
