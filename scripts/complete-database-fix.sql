@@ -55,9 +55,9 @@ CREATE TABLE orders (
   customer_email TEXT,
   table_number INTEGER,
   total_amount DECIMAL(10,2) NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled')),
+  order_status TEXT DEFAULT 'PLACED' CHECK (order_status IN ('PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING', 'COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED')),
   payment_method TEXT,
-  payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
+  payment_status TEXT DEFAULT 'UNPAID' CHECK (payment_status IN ('UNPAID', 'IN_PROGRESS', 'PAID', 'REFUNDED')),
   items JSONB NOT NULL, -- Array of order items with quantities and special instructions
   notes TEXT,
   estimated_prep_time INTEGER, -- in minutes
@@ -67,7 +67,8 @@ CREATE TABLE orders (
 
 -- Indexes for orders
 CREATE INDEX IF NOT EXISTS idx_orders_venue_id ON orders(venue_id);
-CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_order_status ON orders(order_status);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_orders_customer_phone ON orders(customer_phone);
 

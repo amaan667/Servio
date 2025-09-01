@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_name TEXT NOT NULL,
   customer_phone TEXT NOT NULL,
   customer_email TEXT,
-  table_number TEXT,
+  table_number INTEGER,
     total_amount DECIMAL(10,2) NOT NULL,
   order_status TEXT DEFAULT 'PLACED' CHECK (order_status IN ('PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING', 'COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED')),
   payment_method TEXT,

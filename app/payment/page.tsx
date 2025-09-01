@@ -77,7 +77,8 @@ export default function PaymentPage() {
       }
     } catch (error) {
       console.error("Payment error:", error);
-      alert("Payment failed. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Payment failed. Please try again.";
+      alert(`Payment failed: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }

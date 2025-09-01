@@ -413,7 +413,14 @@ export async function createOrder(orderData: {
 
     if (orderError || !order) {
       console.error('[ORDER CREATION DEBUG] Failed to create order:', orderError);
-      return { success: false, message: "Failed to create order" };
+      console.error('[ORDER CREATION DEBUG] Order data that failed:', {
+        venue_id: orderData.venue_id,
+        table_number: orderData.table_number,
+        customer_name: orderData.customer_name,
+        total_amount: calculatedTotal,
+        items: orderData.items
+      });
+      return { success: false, message: `Failed to create order: ${orderError?.message || 'Unknown error'}` };
     }
 
     console.log('[ORDER CREATION DEBUG] Order created successfully:', {
