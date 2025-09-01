@@ -241,6 +241,17 @@ export default function StaffClient({
 
   useEffect(()=>{ reloadAllShifts(); }, [reloadAllShifts]);
 
+  const isShiftActive = useCallback((shift: Shift) => {
+    const now = new Date();
+    const startTime = new Date(shift.start_time);
+    const endTime = new Date(shift.end_time);
+    return now >= startTime && now <= endTime;
+  }, []);
+
+  const activeShifts = useMemo(() => {
+    return allShifts.filter(isShiftActive);
+  }, [allShifts, isShiftActive]);
+
   const groupedByDay = useMemo(() => {
     const by: Record<string, Shift[]> = {};
     for (const s of allShifts) {
@@ -280,7 +291,7 @@ export default function StaffClient({
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                {allShifts.length} active shifts
+                {activeShifts.length} active shifts
               </span>
             </div>
           </div>
