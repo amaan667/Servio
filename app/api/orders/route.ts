@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     const safeItems = body.items.map((it) => ({
       menu_item_id: it.menu_item_id ?? null,
       quantity: Number(it.quantity) || 0,
-      price: Number((it as any).unit_price ?? (it as any).price) || 0,
+      price: Number(it.price) || 0, // Use 'price' field directly
       item_name: it.item_name,
       specialInstructions: (it as any).special_instructions ?? it.specialInstructions ?? null,
     }));
@@ -92,8 +92,8 @@ export async function POST(req: Request) {
       items: safeItems,
       total_amount: finalTotal,
       notes: body.notes ?? null,
-      order_status: 'ACCEPTED', // Set initial status as accepted since payment is confirmed
-      payment_status: 'PAID', // Also set payment status
+      order_status: 'PLACED', // Set initial status as PLACED for live orders
+      payment_status: 'UNPAID', // Set as UNPAID initially since this is a new order
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,

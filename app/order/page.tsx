@@ -196,10 +196,14 @@ export default function CustomerOrderPage() {
       return;
     }
 
-    console.log('[ORDER DEBUG] Starting order submission');
-    setIsSubmitting(true);
-    try {
-      const safeTable = parseInt(tableNumber) || 1;
+          console.log('[ORDER DEBUG] Starting order submission');
+      console.log('[ORDER DEBUG] Cart items:', cart);
+      console.log('[ORDER DEBUG] Customer info:', customerInfo);
+      console.log('[ORDER DEBUG] Venue slug:', venueSlug);
+      console.log('[ORDER DEBUG] Table number:', tableNumber);
+      setIsSubmitting(true);
+      try {
+        const safeTable = parseInt(tableNumber) || 1;
 
       // For demo orders, create immediately
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
@@ -221,7 +225,7 @@ export default function CustomerOrderPage() {
         items: cart.map((item) => ({
           menu_item_id: item.id && item.id.startsWith('demo-') ? null : item.id,
           quantity: item.quantity,
-          unit_price: item.price,
+          price: item.price, // Use 'price' instead of 'unit_price' to match API
           item_name: item.name,
           special_instructions: item.specialInstructions || null,
         })),
@@ -231,6 +235,10 @@ export default function CustomerOrderPage() {
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
       };
+
+      console.log('[ORDER DEBUG] Created order data:', orderData);
+      console.log('[ORDER DEBUG] Total price from getTotalPrice():', getTotalPrice());
+      console.log('[ORDER DEBUG] Cart total calculation:', cart.reduce((sum, item) => sum + (item.price * item.quantity), 0));
 
       // Store order data for payment confirmation
       setSubmittedOrder({ 
