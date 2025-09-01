@@ -34,28 +34,28 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
            // Get the current date in the venue's timezone
            const venueDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
            
-           // Create start of day in venue timezone
+           // Create start of day in venue timezone (midnight in venue timezone)
            const startOfDay = new Date(venueDate.getFullYear(), venueDate.getMonth(), venueDate.getDate());
            
-           // Convert venue start of day to UTC by using the timezone offset
-           const startUtc = new Date(startOfDay.toLocaleString('en-US', { timeZone: tz })).toISOString();
+           // Convert to UTC by using the timezone offset
+           // For Europe/London (UTC+1 during summer), midnight London = 11pm UTC previous day
+           const startUtc = new Date(startOfDay.getTime() - (startOfDay.getTimezoneOffset() * 60000));
            
            // Create end of day (next day start) in venue timezone
            const endOfDay = new Date(startOfDay);
            endOfDay.setDate(startOfDay.getDate() + 1);
-           
-           // Convert venue end of day to UTC
-           const endUtc = new Date(endOfDay.toLocaleString('en-US', { timeZone: tz })).toISOString();
+           const endUtc = new Date(endOfDay.getTime() - (endOfDay.getTimezoneOffset() * 60000));
            
            console.log(`[LIVE_ORDERS] Timezone calculation for ${tz}:`);
            console.log(`  - now: ${now.toISOString()}`);
+           console.log(`  - now in venue timezone: ${now.toLocaleString('en-US', { timeZone: tz })}`);
            console.log(`  - venueDate: ${venueDate.toISOString()}`);
            console.log(`  - startOfDay: ${startOfDay.toISOString()}`);
-           console.log(`  - startUtc: ${startUtc}`);
+           console.log(`  - startUtc: ${startUtc.toISOString()}`);
            console.log(`  - endOfDay: ${endOfDay.toISOString()}`);
-           console.log(`  - endUtc: ${endUtc}`);
+           console.log(`  - endUtc: ${endUtc.toISOString()}`);
            
-           return { startUtc, endUtc };
+           return { startUtc: startUtc.toISOString(), endUtc: endUtc.toISOString() };
          }, []);
 
   const fetchOrders = useCallback(async (tab: 'live' | 'earlier' | 'history') => {
