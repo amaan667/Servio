@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const PROTECTED = ['/dashboard'];
 const AUTH_ROUTES = ['/sign-in', '/sign-up', '/auth/callback'];
+const PUBLIC_ORDER_ROUTES = ['/order'];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -17,6 +18,12 @@ export function middleware(req: NextRequest) {
   // Check if the route is protected
   const isProtectedRoute = PROTECTED.some(p => pathname.startsWith(p));
   const isAuthRoute = AUTH_ROUTES.some(p => pathname.startsWith(p));
+  const isPublicOrderRoute = PUBLIC_ORDER_ROUTES.some(p => pathname.startsWith(p));
+  
+  // Allow public order routes (customers can access order pages without auth)
+  if (isPublicOrderRoute) {
+    return NextResponse.next();
+  }
   
   if (!isProtectedRoute) {
     return NextResponse.next();

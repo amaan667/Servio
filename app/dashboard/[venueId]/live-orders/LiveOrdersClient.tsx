@@ -28,9 +28,11 @@ interface Order {
   }>;
   total_amount: number;
   created_at: string;
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  order_status: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED';
   payment_status?: string;
   notes?: string;
+  scheduled_for?: string;
+  prep_lead_minutes?: number;
 }
 
 interface LiveOrdersClientProps {
@@ -74,32 +76,35 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setTodayWindow(window);
       console.log('[LIVE ORDERS DEBUG] Today window set:', window);
       
-      // Load live orders (PLACED/IN_PREP from today)
+      // Load live orders (non-terminal statuses with scheduled_for logic)
       console.log('[LIVE ORDERS DEBUG] Fetching live orders for venueId:', venueId);
+      const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
+      const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
+      
       const { data: liveData, error: liveError } = await supabase
-        .from('orders')
+        .from('orders_with_totals')
         .select('*')
         .eq('venue_id', venueId)
-        .in('order_status', ['PLACED', 'IN_PREP'])
-        .gte('created_at', window.startUtcISO)
-        .lt('created_at', window.endUtcISO)
-        .order('created_at', { ascending: false });
+        .in('order_status', LIVE_STATUSES)
+        .or(`scheduled_for.is.null,scheduled_for.lte.${new Date(Date.now() + prepLeadMs).toISOString()}`)
+        .order('updated_at', { ascending: false });
 
-      // Load all orders from today
+      // Load all orders from today (venue timezone aware)
       console.log('[LIVE ORDERS DEBUG] Fetching all today orders with window:', window);
       const { data: allData, error: allError } = await supabase
-        .from('orders')
+        .from('orders_with_totals')
         .select('*')
         .eq('venue_id', venueId)
-        .gte('created_at', window.startUtcISO)
+        .or(`created_at.gte.${window.startUtcISO},scheduled_for.gte.${window.startUtcISO}`)
         .lt('created_at', window.endUtcISO)
         .order('created_at', { ascending: false });
 
-      // Load history orders (not from today)
+      // Load history orders (terminal statuses before today)
       const { data: historyData, error: historyError } = await supabase
-        .from('orders')
+        .from('orders_with_totals')
         .select('*')
         .eq('venue_id', venueId)
+        .in('order_status', ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'])
         .lt('created_at', window.startUtcISO)
         .order('created_at', { ascending: false })
         .limit(100); // Limit to last 100 orders
@@ -173,26 +178,31 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             payload: payload
           });
           
-          const orderCreatedAt = (payload.new as Order)?.created_at || (payload.old as Order)?.created_at;
-          const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
-          
-          console.log('[LIVE ORDERS DEBUG] Order date check:', {
-            orderCreatedAt,
-            todayWindow,
-            isInTodayWindow
-          });
+          const newOrder = payload.new as Order;
+          const oldOrder = payload.old as Order;
           
           if (payload.eventType === 'INSERT') {
-            const newOrder = payload.new as Order;
             console.log('[LIVE ORDERS DEBUG] New order inserted:', {
               orderId: newOrder.id,
-              isInTodayWindow,
+              orderStatus: newOrder.order_status,
               orderData: newOrder
             });
             
-            if (isInTodayWindow) {
-              console.log('[LIVE ORDERS DEBUG] Adding to live orders and all today orders');
+            // Check if order should appear in live orders
+            const isLiveOrder = LIVE_STATUSES.includes(newOrder.order_status);
+            const isScheduled = newOrder.scheduled_for && new Date(newOrder.scheduled_for) > new Date(Date.now() + prepLeadMs);
+            
+            if (isLiveOrder && !isScheduled) {
+              console.log('[LIVE ORDERS DEBUG] Adding to live orders');
               setOrders(prev => [newOrder, ...prev]);
+            }
+            
+            // Always add to all today orders if within today window
+            const orderCreatedAt = newOrder.created_at;
+            const isInTodayWindow = orderCreatedAt && todayWindow && orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
+            
+            if (isInTodayWindow) {
+              console.log('[LIVE ORDERS DEBUG] Adding to all today orders');
               setAllOrders(prev => [newOrder, ...prev]);
             } else {
               console.log('[LIVE ORDERS DEBUG] Adding to history orders');
@@ -209,27 +219,49 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               }));
             }
           } else if (payload.eventType === 'UPDATE') {
-            const updatedOrder = payload.new as Order;
-            if (isInTodayWindow) {
-              setOrders(prev => prev.map(order => 
-                order.id === updatedOrder.id ? updatedOrder : order
-              ));
-              setAllOrders(prev => prev.map(order => 
-                order.id === updatedOrder.id ? updatedOrder : order
-              ));
+            console.log('[LIVE ORDERS DEBUG] Order updated:', {
+              orderId: newOrder.id,
+              oldStatus: oldOrder?.order_status,
+              newStatus: newOrder.order_status
+            });
+            
+            // Check if order should be in live orders
+            const isLiveOrder = LIVE_STATUSES.includes(newOrder.order_status);
+            const isScheduled = newOrder.scheduled_for && new Date(newOrder.scheduled_for) > new Date(Date.now() + prepLeadMs);
+            
+            if (isLiveOrder && !isScheduled) {
+              // Add to live orders if not already there
+              setOrders(prev => {
+                const exists = prev.find(order => order.id === newOrder.id);
+                if (!exists) {
+                  return [newOrder, ...prev];
+                }
+                return prev.map(order => order.id === newOrder.id ? newOrder : order);
+              });
             } else {
-              setHistoryOrders(prev => prev.map(order => 
-                order.id === updatedOrder.id ? updatedOrder : order
-              ));
+              // Remove from live orders if status changed to terminal or scheduled
+              setOrders(prev => prev.filter(order => order.id !== newOrder.id));
             }
+            
+            // Update in all today orders
+            setAllOrders(prev => prev.map(order => 
+              order.id === newOrder.id ? newOrder : order
+            ));
+            
+            // Update in history orders
+            setHistoryOrders(prev => prev.map(order => 
+              order.id === newOrder.id ? newOrder : order
+            ));
           } else if (payload.eventType === 'DELETE') {
             const deletedOrder = payload.old as Order;
-            if (isInTodayWindow) {
-              setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-              setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-            } else {
-              setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-            }
+            console.log('[LIVE ORDERS DEBUG] Order deleted:', {
+              orderId: deletedOrder.id
+            });
+            
+            // Remove from all lists
+            setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+            setAllOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+            setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
           }
         }
       )
@@ -240,10 +272,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     };
   }, [venueId]);
 
-  const updateOrderStatus = async (orderId: string, orderStatus: 'PLACED' | 'IN_PREP' | 'READY' | 'COMPLETED') => {
+  const updateOrderStatus = async (orderId: string, orderStatus: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED') => {
     const { error } = await supabase
       .from('orders')
-      .update({ order_status: orderStatus })
+      .update({ 
+        order_status: orderStatus,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', orderId)
       .eq('venue_id', venueId);
 

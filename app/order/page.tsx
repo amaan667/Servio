@@ -289,7 +289,10 @@ export default function CustomerOrderPage() {
         pendingOrderData: undefined 
       }));
       
-      console.log('[ORDER DEBUG] Order successfully confirmed, staying on order page');
+      console.log('[ORDER DEBUG] Order successfully confirmed, redirecting to summary page');
+      
+      // Redirect to order summary page
+      router.replace(`/order/${venueSlug}/${tableNumber}/summary/${out?.order?.id}`);
       
     } catch (error) {
       console.error("Error confirming order:", error);

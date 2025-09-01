@@ -46,6 +46,8 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
       case "IN_PREP":
         return "READY";
       case "READY":
+        return "OUT_FOR_DELIVERY";
+      case "OUT_FOR_DELIVERY":
         return "SERVING";
       case "SERVING":
         return "COMPLETED";
@@ -62,8 +64,10 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
         return "ACCEPTED";
       case "READY":
         return "IN_PREP";
-      case "SERVING":
+      case "OUT_FOR_DELIVERY":
         return "READY";
+      case "SERVING":
+        return "OUT_FOR_DELIVERY";
       case "COMPLETED":
         return "SERVING";
       default:
@@ -84,8 +88,10 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
         return { label: "IN PREP", color: "bg-blue-100 text-blue-800" };
       case "READY":
         return { label: "READY", color: "bg-orange-100 text-orange-800" };
+      case "OUT_FOR_DELIVERY":
+        return { label: "OUT FOR DELIVERY", color: "bg-purple-100 text-purple-800" };
       case "SERVING":
-        return { label: "SERVING", color: "bg-purple-100 text-purple-800" };
+        return { label: "SERVING", color: "bg-indigo-100 text-indigo-800" };
       case "COMPLETED":
         return { label: "COMPLETED", color: "bg-gray-100 text-gray-800" };
       case "CANCELLED":
@@ -137,6 +143,8 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
               <Badge className={
                 order.payment_status === 'PAID' 
                   ? 'bg-green-100 text-green-800' 
+                  : order.payment_status === 'IN_PROGRESS'
+                  ? 'bg-yellow-100 text-yellow-800'
                   : 'bg-red-100 text-red-800'
               }>
                 {order.payment_status}
@@ -187,38 +195,43 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
           )}
         </div>
         <div className="flex space-x-2">
-          {nextStatus && (
-            <Button
-              size="sm"
-              onClick={() => onStatusUpdate(order.id, nextStatus)}
-            >
-              {nextStatus === "ACCEPTED" && (
-                <>
-                  Accept Order <Check className="h-4 w-4 ml-2" />
-                </>
-              )}
-              {nextStatus === "IN_PREP" && (
-                <>
-                  Start Preparing <Utensils className="h-4 w-4 ml-2" />
-                </>
-              )}
-              {nextStatus === "READY" && (
-                <>
-                  Mark Ready <Check className="h-4 w-4 ml-2" />
-                </>
-              )}
-              {nextStatus === "SERVING" && (
-                <>
-                  Start Serving <ArrowRight className="h-4 w-4 ml-2" />
-                </>
-              )}
-              {nextStatus === "COMPLETED" && (
-                <>
-                  Complete <Check className="h-4 w-4 ml-2" />
-                </>
-              )}
-            </Button>
-          )}
+                      {nextStatus && (
+              <Button
+                size="sm"
+                onClick={() => onStatusUpdate(order.id, nextStatus)}
+              >
+                {nextStatus === "ACCEPTED" && (
+                  <>
+                    Accept Order <Check className="h-4 w-4 ml-2" />
+                  </>
+                )}
+                {nextStatus === "IN_PREP" && (
+                  <>
+                    Start Preparing <Utensils className="h-4 w-4 ml-2" />
+                  </>
+                )}
+                {nextStatus === "READY" && (
+                  <>
+                    Mark Ready <Check className="h-4 w-4 ml-2" />
+                  </>
+                )}
+                {nextStatus === "OUT_FOR_DELIVERY" && (
+                  <>
+                    Out for Delivery <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+                {nextStatus === "SERVING" && (
+                  <>
+                    Start Serving <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+                {nextStatus === "COMPLETED" && (
+                  <>
+                    Complete <Check className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            )}
         </div>
       </CardFooter>
     </Card>

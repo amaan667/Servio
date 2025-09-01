@@ -14,7 +14,7 @@ interface Order {
   customer_name: string;
   customer_phone?: string;
   customer_email?: string;
-  status: string;
+  order_status: string;
   total_amount: number;
   notes?: string;
   payment_method?: string;
@@ -71,11 +71,11 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
     console.log('[LIVE ORDERS DEBUG] fetchOrders called for venueId:', venueId);
     try {
       const { data, error } = await supabase()
-        .from('orders')
+        .from('orders_with_totals')
         .select('*')
         .eq('venue_id', venueId)
-        .in('status', ['pending', 'preparing', 'ready'])
-        .order('created_at', { ascending: false });
+        .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
+        .order('updated_at', { ascending: false });
 
       if (error) {
         console.error('[LIVE ORDERS DEBUG] Error fetching orders:', error);
@@ -106,17 +106,23 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
     try {
       const { error } = await supabase()
         .from('orders')
-        .update({ status })
+        .update({ 
+          order_status: status,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', orderId);
 
       if (error) {
         console.error('Error updating order status:', error);
-      } else {
-        // Update local state
-        setOrders(prev => prev.map(order => 
-          order.id === orderId ? { ...order, status } : order
-        ));
+        return;
       }
+      
+      // Update local state
+      setOrders(prev => prev.map(order => 
+        order.id === orderId ? { ...order, order_status: status } : order
+      ));
+      
+      console.log('[LIVE ORDERS DEBUG] Order status updated successfully');
     } catch (error) {
       console.error('Error updating order status:', error);
     }
@@ -124,12 +130,20 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'PLACED':
         return <Clock className="w-4 h-4 text-yellow-500" />;
-      case 'preparing':
-        return <AlertCircle className="w-4 h-4 text-blue-500" />;
-      case 'ready':
+      case 'ACCEPTED':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'IN_PREP':
+        return <AlertCircle className="w-4 h-4 text-blue-500" />;
+      case 'READY':
+        return <CheckCircle className="w-4 h-4 text-orange-500" />;
+      case 'OUT_FOR_DELIVERY':
+        return <CheckCircle className="w-4 h-4 text-purple-500" />;
+      case 'SERVING':
+        return <CheckCircle className="w-4 h-4 text-indigo-500" />;
+      case 'COMPLETED':
+        return <CheckCircle className="w-4 h-4 text-gray-500" />;
       default:
         return <XCircle className="w-4 h-4 text-gray-500" />;
     }
@@ -137,12 +151,20 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'PLACED':
         return 'bg-yellow-100 text-yellow-800';
-      case 'preparing':
-        return 'bg-blue-100 text-blue-800';
-      case 'ready':
+      case 'ACCEPTED':
         return 'bg-green-100 text-green-800';
+      case 'IN_PREP':
+        return 'bg-blue-100 text-blue-800';
+      case 'READY':
+        return 'bg-orange-100 text-orange-800';
+      case 'OUT_FOR_DELIVERY':
+        return 'bg-purple-100 text-purple-800';
+      case 'SERVING':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'COMPLETED':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -185,7 +207,7 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     Order #{order.id.slice(0, 8)}
-                    {getStatusIcon(order.status)}
+                    {getStatusIcon(order.order_status)}
                   </CardTitle>
                   <p className="text-sm text-gray-600">
                     Table {order.table_number} • {order.customer_name}
@@ -195,8 +217,8 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge className={getStatusColor(order.status)}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  <Badge className={getStatusColor(order.order_status)}>
+                    {order.order_status.replace(/_/g, ' ')}
                   </Badge>
                   <span className="font-semibold">
                     £{order.total_amount.toFixed(2)}
@@ -223,23 +245,47 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
               </div>
               
               <div className="flex gap-2 mt-4 pt-4 border-t">
-                {order.status === 'pending' && (
+                {order.order_status === 'PLACED' && (
                   <Button 
                     size="sm" 
-                    onClick={() => updateOrderStatus(order.id, 'preparing')}
+                    onClick={() => updateOrderStatus(order.id, 'ACCEPTED')}
+                  >
+                    Accept Order
+                  </Button>
+                )}
+                {order.order_status === 'ACCEPTED' && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
                   >
                     Start Preparing
                   </Button>
                 )}
-                {order.status === 'preparing' && (
+                {order.order_status === 'IN_PREP' && (
                   <Button 
                     size="sm" 
-                    onClick={() => updateOrderStatus(order.id, 'ready')}
+                    onClick={() => updateOrderStatus(order.id, 'READY')}
                   >
                     Mark Ready
                   </Button>
                 )}
-                {order.status === 'ready' && (
+                {order.order_status === 'READY' && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => updateOrderStatus(order.id, 'OUT_FOR_DELIVERY')}
+                  >
+                    Out for Delivery
+                  </Button>
+                )}
+                {order.order_status === 'OUT_FOR_DELIVERY' && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => updateOrderStatus(order.id, 'SERVING')}
+                  >
+                    Start Serving
+                  </Button>
+                )}
+                {order.order_status === 'SERVING' && (
                   <Button 
                     size="sm" 
                     variant="outline"
