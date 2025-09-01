@@ -145,7 +145,6 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .select("*")
         .eq("venue_id", venueId)
         .in("order_status", ACTIVE_STATUSES)
-        .or(`scheduled_for.is.null,scheduled_for.lte.${prepWindow}`)
         .order("updated_at", { ascending: false });
 
       if (ordersError) {
@@ -192,7 +191,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
-        .or(`created_at.gte.${today.toISOString()},scheduled_for.gte.${today.toISOString()}`)
+        .gte("created_at", today.toISOString())
         .lt("created_at", tomorrow.toISOString())
         .order("created_at", { ascending: false });
 

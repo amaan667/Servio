@@ -48,6 +48,7 @@ interface GroupedHistoryOrders {
 
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
   console.log('[LIVE ORDERS DEBUG] LiveOrdersClient mounted with venueId:', venueId);
+  console.log('[LIVE ORDERS DEBUG] Props received:', { venueId, venueNameProp });
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -80,25 +81,32 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       const window = todayWindowForTZ(venueTimezone);
       setTodayWindow(window);
       console.log('[LIVE ORDERS DEBUG] Today window set:', window);
+      console.log('[LIVE ORDERS DEBUG] Window start:', window.startUtcISO);
+      console.log('[LIVE ORDERS DEBUG] Window end:', window.endUtcISO);
       
       // Load live orders (non-terminal statuses with scheduled_for logic)
       console.log('[LIVE ORDERS DEBUG] Fetching live orders for venueId:', venueId);
+      console.log('[LIVE ORDERS DEBUG] LIVE_STATUSES:', LIVE_STATUSES);
+      console.log('[LIVE ORDERS DEBUG] prepLeadMs:', prepLeadMs);
+      console.log('[LIVE ORDERS DEBUG] Current time:', new Date().toISOString());
+      console.log('[LIVE ORDERS DEBUG] Prep window end:', new Date(Date.now() + prepLeadMs).toISOString());
       
+      // Simplified query - just get orders with live statuses
       const { data: liveData, error: liveError } = await createClient()
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
         .in('order_status', LIVE_STATUSES)
-        .or(`scheduled_for.is.null,scheduled_for.lte.${new Date(Date.now() + prepLeadMs).toISOString()}`)
         .order('updated_at', { ascending: false });
 
       // Load all orders from today (venue timezone aware)
       console.log('[LIVE ORDERS DEBUG] Fetching all today orders with window:', window);
+      // Simplified query - just get orders from today
       const { data: allData, error: allError } = await createClient()
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .or(`created_at.gte.${window.startUtcISO},scheduled_for.gte.${window.startUtcISO}`)
+        .gte('created_at', window.startUtcISO)
         .lt('created_at', window.endUtcISO)
         .order('created_at', { ascending: false });
 
@@ -111,6 +119,36 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .lt('created_at', window.startUtcISO)
         .order('created_at', { ascending: false })
         .limit(100); // Limit to last 100 orders
+
+      // Debug all responses
+      console.log('[LIVE ORDERS DEBUG] === FETCH RESULTS ===');
+      console.log('Live orders response:', { data: liveData, error: liveError, count: liveData?.length || 0 });
+      console.log('All today orders response:', { data: allData, error: allError, count: allData?.length || 0 });
+      console.log('History orders response:', { data: historyData, error: historyError, count: historyData?.length || 0 });
+      
+      // Also check if there are any orders at all for this venue
+      const { data: allVenueOrders, error: allVenueError } = await createClient()
+        .from('orders')
+        .select('id, venue_id, order_status, created_at')
+        .eq('venue_id', venueId)
+        .limit(5);
+      
+      console.log('[LIVE ORDERS DEBUG] All venue orders check:', { 
+        data: allVenueOrders, 
+        error: allVenueError, 
+        count: allVenueOrders?.length || 0,
+        venueId: venueId
+      });
+      
+      if (liveError) {
+        console.error('[LIVE ORDERS DEBUG] Live orders error:', liveError);
+      }
+      if (allError) {
+        console.error('[LIVE ORDERS DEBUG] All today orders error:', allError);
+      }
+      if (historyError) {
+        console.error('[LIVE ORDERS DEBUG] History orders error:', historyError);
+      }
 
       if (!liveError && liveData) {
         console.log('[LIVE ORDERS DEBUG] Live orders fetched successfully:', {
@@ -160,6 +198,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         setGroupedHistoryOrders(grouped);
       }
       setLoading(false);
+      
+      // Debug state after setting
+      console.log('[LIVE ORDERS DEBUG] === STATE AFTER SETTING ===');
+      console.log('Orders state set to:', liveData?.length || 0, 'orders');
+      console.log('AllOrders state set to:', allData?.length || 0, 'orders');
+      console.log('HistoryOrders state set to:', historyData?.length || 0, 'orders');
     };
 
     loadVenueAndOrders();
@@ -465,6 +509,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
           <TabsContent value="live" className="mt-6">
             <div className="grid gap-6">
+              {console.log('[LIVE ORDERS DEBUG] Rendering live tab with orders:', orders.length, 'orders:', orders)}
               {orders.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
@@ -481,6 +526,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
           <TabsContent value="all" className="mt-6">
             <div className="grid gap-6">
+              {console.log('[LIVE ORDERS DEBUG] Rendering all today tab with orders:', allOrders.length, 'orders:', allOrders)}
               {allOrders.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
