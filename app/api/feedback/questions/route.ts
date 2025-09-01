@@ -51,14 +51,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    // For now, total count is the same as questions count since we don't have soft delete
-    // TODO: Implement proper soft delete with is_deleted column
+    // Calculate total count (all questions) and active count
     const totalCount = questions?.length || 0;
+    const activeCount = questions?.filter(q => q.is_active).length || 0;
 
-    console.log(`[FEEDBACK:Q] list venue=${venueId} count=${questions?.length || 0} total=${totalCount}`);
+    console.log(`[FEEDBACK:Q] list venue=${venueId} count=${questions?.length || 0} total=${totalCount} active=${activeCount}`);
     return NextResponse.json({ 
       questions: questions || [],
-      totalCount: totalCount
+      totalCount: totalCount,
+      activeCount: activeCount
     });
 
   } catch (error: any) {

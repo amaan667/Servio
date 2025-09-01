@@ -19,6 +19,7 @@ interface OrderFeedbackFormProps {
 export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFormProps) {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -71,15 +72,18 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
         const data = await response.json();
         console.log('[FEEDBACK DEBUG] API response:', data);
         console.log('[FEEDBACK DEBUG] Total questions from API:', data.totalCount);
+        console.log('[FEEDBACK DEBUG] Active questions from API:', data.activeCount);
         console.log('[FEEDBACK DEBUG] All questions:', data.questions?.length || 0);
         
         const activeQuestions = (data.questions || []).filter((q: FeedbackQuestion) => q.is_active);
-        console.log('[FEEDBACK DEBUG] Active questions:', activeQuestions.length);
+        console.log('[FEEDBACK DEBUG] Client-side active questions:', activeQuestions.length);
         
         setQuestions(activeQuestions);
         setTotalCount(data.totalCount || 0);
+        setActiveCount(data.activeCount || 0);
         
         console.log('[FEEDBACK DEBUG] Set totalCount to:', data.totalCount || 0);
+        console.log('[FEEDBACK DEBUG] Set activeCount to:', data.activeCount || 0);
       }
     } catch (error) {
       console.error('[FEEDBACK] Error fetching questions:', error);
@@ -230,7 +234,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           className="w-full"
         >
           <Send className="h-4 w-4 mr-2" />
-          Answer Feedback Questions ({totalCount}) - Active: {questions.length}
+          Answer Feedback Questions ({totalCount}) - API Active: {activeCount} - Client Active: {questions.length}
         </Button>
       ) : (
         <Card>
