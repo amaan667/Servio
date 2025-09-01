@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase/client";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 import OrderFeedbackForm from "@/components/OrderFeedbackForm";
+import { useRouter } from "next/navigation";
 
 interface MenuItem {
   id: string;
@@ -42,8 +43,6 @@ export default function CustomerOrderPage() {
   const [menuError, setMenuError] = useState<string | null>(null);
   const [isDemoFallback, setIsDemoFallback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderSubmitted, setOrderSubmitted] = useState(false);
-  const [submittedOrder, setSubmittedOrder] = useState<any>(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
@@ -51,6 +50,8 @@ export default function CustomerOrderPage() {
   });
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [session, setSession] = useState<any>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     const getSession = async () => {
@@ -208,15 +209,48 @@ export default function CustomerOrderPage() {
       // For demo orders, create immediately
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
         console.log('[ORDER DEBUG] Processing demo order');
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setOrderSubmitted(true);
-        setSubmittedOrder({ id: null, items: cart, total: getTotalPrice(), table_number: safeTable, venue_id: venueSlug });
-        setCart([]);
-        setShowCheckout(false);
+        
+        // Create demo order with demo-cafe venue
+        const demoOrderData = {
+          venue_id: 'demo-cafe',
+          table_number: safeTable,
+          customer_name: customerInfo.name.trim(),
+          customer_phone: customerInfo.phone.trim(),
+          items: cart.map((item) => ({
+            menu_item_id: null, // Demo items don't have real IDs
+            quantity: item.quantity,
+            price: item.price,
+            item_name: item.name,
+            special_instructions: item.specialInstructions || null,
+          })),
+          total_amount: getTotalPrice(),
+          notes: cart
+            .filter((item) => item.specialInstructions)
+            .map((item) => `${item.name}: ${item.specialInstructions}`)
+            .join("; "),
+        };
+
+        // Create the demo order
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(demoOrderData),
+        });
+        const out = await res.json().catch(() => ({} as any));
+        
+        if (!res.ok || !out?.ok) {
+          console.error('Demo order creation failed:', out);
+          throw new Error(out?.error || 'Failed to create demo order. Please try again.');
+        }
+        
+        console.log('Demo order created successfully:', out);
+        
+        // Redirect to order summary page
+        router.replace(`/order/demo-cafe/${tableNumber}/summary/${out?.order?.id}`);
         return;
       }
 
-      // For real orders, store order data and show payment first
+      // For real orders, create the order immediately
       const orderData = {
         venue_id: venueSlug,
         table_number: safeTable,
@@ -240,31 +274,7 @@ export default function CustomerOrderPage() {
       console.log('[ORDER DEBUG] Total price from getTotalPrice():', getTotalPrice());
       console.log('[ORDER DEBUG] Cart total calculation:', cart.reduce((sum, item) => sum + (item.price * item.quantity), 0));
 
-      // Store order data for payment confirmation
-      setSubmittedOrder({ 
-        id: null, 
-        items: cart, 
-        total: getTotalPrice(), 
-        table_number: safeTable, 
-        venue_id: venueSlug,
-        pendingOrderData: orderData 
-      });
-      setOrderSubmitted(true);
-      setCart([]);
-      setShowCheckout(false);
-    } catch (error) {
-      console.error("Error preparing order:", error);
-      alert("Failed to prepare order. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handlePaymentSuccess = async (orderData: any) => {
-    try {
-      console.log('[ORDER DEBUG] Starting payment success flow with data:', orderData);
-      
-      // Now create the actual order in the database
+      // Create the order immediately
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -276,123 +286,24 @@ export default function CustomerOrderPage() {
       
       if (!res.ok || !out?.ok) {
         console.error('Order API failed', out);
-        alert(out?.error || 'Failed to confirm order. Please contact support.');
-        return;
+        throw new Error(out?.error || 'Failed to create order. Please contact support.');
       }
       
-      console.log('Order confirmed after payment', out);
+      console.log('Order created successfully:', out);
       
-      // Update the submitted order with the real ID
-      setSubmittedOrder((prev: any) => ({ 
-        ...prev, 
-        id: out?.order?.id,
-        pendingOrderData: undefined 
-      }));
-      
-      console.log('[ORDER DEBUG] Order successfully confirmed, redirecting to summary page');
-      
-      // Redirect to order summary page
+      // Redirect directly to order summary page
       router.replace(`/order/${venueSlug}/${tableNumber}/summary/${out?.order?.id}`);
-      
     } catch (error) {
-      console.error("Error confirming order:", error);
-      alert("Failed to confirm order. Please contact support.");
-      // Don't throw the error to prevent redirects
+      console.error("Error preparing order:", error);
+      alert("Failed to prepare order. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (orderSubmitted) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {submittedOrder?.id ? 'Order Confirmed' : 'Complete Payment'}
-              </CardTitle>
-              <CardDescription>
-                {submittedOrder?.id 
-                  ? 'Thank you! Your order is on its way.' 
-                  : 'Please complete payment to confirm your order.'
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h3 className="font-semibold mb-2">Order Summary</h3>
-                <div className="space-y-2">
-                  {(submittedOrder?.items || []).map((it: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm">
-                      <div>
-                        <span className="font-medium">{it.name}</span>
-                        <span className="ml-2 text-gray-500">× {it.quantity}</span>
-                      </div>
-                      <div>£{(it.price * it.quantity).toFixed(2)}</div>
-                    </div>
-                  ))}
-                  <div className="flex justify-between border-t pt-2 mt-2 font-semibold">
-                    <span>Total</span>
-                    <span>£{Number(submittedOrder?.total || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
 
-              {!submittedOrder?.id && submittedOrder?.pendingOrderData ? (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="font-semibold">Order Submitted</h3>
-                    <p className="text-sm text-gray-600">Your order has been submitted successfully. Please complete payment to confirm your order.</p>
-                  </div>
-                  
-                  <Button
-                    onClick={async () => {
-                      if (submittedOrder?.pendingOrderData) {
-                        try {
-                          await handlePaymentSuccess(submittedOrder.pendingOrderData);
-                        } catch (error) {
-                          console.error('[ORDER DEBUG] Payment simulation failed:', error);
-                          // Don't redirect, just show an error message
-                          alert('Payment simulation failed. Please try again.');
-                        }
-                      }
-                    }}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing Payment...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Simulate Payment & Confirm Order
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ) : null}
 
-              {submittedOrder?.id ? (
-                <OrderFeedbackForm venueId={submittedOrder.venue_id} orderId={submittedOrder.id} />
-              ) : null}
 
-              <div className="pt-2">
-                <Button
-                  onClick={() => { setOrderSubmitted(false); setSubmittedOrder(null); loadMenuItems(); }}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Place Another Order
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
