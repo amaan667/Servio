@@ -43,14 +43,13 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
            endOfDay.setDate(startOfDay.getDate() + 1);
            const endUtc = new Date(endOfDay.getTime() - (endOfDay.getTimezoneOffset() * 60000)).toISOString();
            
-           console.log(`[LIVE_ORDERS] Timezone calculation for ${tz}:`, {
-             now: now.toISOString(),
-             venueDate: venueDate.toISOString(),
-             startOfDay: startOfDay.toISOString(),
-             startUtc,
-             endOfDay: endOfDay.toISOString(),
-             endUtc
-           });
+                 console.log(`[LIVE_ORDERS] Timezone calculation for ${tz}:`);
+      console.log(`  - now: ${now.toISOString()}`);
+      console.log(`  - venueDate: ${venueDate.toISOString()}`);
+      console.log(`  - startOfDay: ${startOfDay.toISOString()}`);
+      console.log(`  - startUtc: ${startUtc}`);
+      console.log(`  - endOfDay: ${endOfDay.toISOString()}`);
+      console.log(`  - endUtc: ${endUtc}`);
            
            return { startUtc, endUtc };
          }, []);
@@ -69,7 +68,9 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
       const { startUtc, endUtc } = todayBounds(venueTimezone);
       console.log(`[LIVE_ORDERS] Fetching ${tab} orders for venue:`, venueId);
-      console.log(`[LIVE_ORDERS] Time bounds:`, { startUtc, endUtc });
+      console.log(`[LIVE_ORDERS] Time bounds:`);
+      console.log(`  - startUtc: ${startUtc}`);
+      console.log(`  - endUtc: ${endUtc}`);
 
       // First, let's check what orders exist in the database for this venue
       console.log(`[LIVE_ORDERS] Checking all orders for venue ${venueId}...`);
@@ -118,13 +119,12 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       }
 
       console.log(`[LIVE_ORDERS] Executing query for ${tab}...`);
-      console.log(`[LIVE_ORDERS] Query details:`, {
-        tab,
-        venueId,
-        startUtc,
-        endUtc,
-        statuses: tab === 'live' ? ACTIVE_STATUSES : tab === 'earlier' ? TERMINAL_TODAY : ['SERVED', 'COMPLETED']
-      });
+      console.log(`[LIVE_ORDERS] Query details:`);
+      console.log(`  - tab: ${tab}`);
+      console.log(`  - venueId: ${venueId}`);
+      console.log(`  - startUtc: ${startUtc}`);
+      console.log(`  - endUtc: ${endUtc}`);
+      console.log(`  - statuses:`, tab === 'live' ? ACTIVE_STATUSES : tab === 'earlier' ? TERMINAL_TODAY : ['SERVED', 'COMPLETED']);
       
       const { data, error: queryError } = await query;
 
@@ -198,12 +198,21 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         return;
       }
 
-      console.log(`[LIVE_ORDERS] ${tab} query result:`, { 
-        orderCount: data?.length || 0, 
-        orders: data?.slice(0, 2), // Log first 2 orders for debugging
-        statuses: data?.map(o => o.order_status || o.status), // Check what status values we're getting
-        rawData: data // Log the raw data to see what we're actually getting
-      });
+      console.log(`[LIVE_ORDERS] ${tab} query result:`);
+      console.log(`  - orderCount: ${data?.length || 0}`);
+      console.log(`  - rawData type: ${typeof data}`);
+      console.log(`  - rawData:`, data);
+      
+      if (data && Array.isArray(data)) {
+        console.log(`  - data is array: true`);
+        console.log(`  - data length: ${data.length}`);
+        if (data.length > 0) {
+          console.log(`  - first order:`, data[0]);
+        }
+      } else {
+        console.log(`  - data is array: false`);
+        console.log(`  - data value:`, data);
+      }
       
       if (data && data.length > 0) {
         console.log(`[LIVE_ORDERS] ${tab} - Orders found:`, data.length);
