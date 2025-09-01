@@ -21,6 +21,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'live' | 'earlier' | 'history'>('live');
 
+  console.log('[LIVE_ORDERS] Component mounted with venueId:', venueId);
+
   const ACTIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING'];
   const TERMINAL_TODAY = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
 
@@ -51,11 +53,24 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       }
 
       const { startUtc, endUtc } = todayBounds(venueTimezone);
+      console.log(`[LIVE_ORDERS] Fetching ${tab} orders for venue:`, venueId);
+      console.log(`[LIVE_ORDERS] Time bounds:`, { startUtc, endUtc });
 
-      let query = supabase
-        .from('orders_with_totals')
-        .select('*')
-        .eq('venue_id', venueId);
+      // Try to use orders_with_totals view first, fallback to orders table
+      let query;
+      try {
+        query = supabase
+          .from('orders_with_totals')
+          .select('*')
+          .eq('venue_id', venueId);
+        console.log(`[LIVE_ORDERS] Using orders_with_totals view`);
+      } catch (viewError) {
+        console.log(`[LIVE_ORDERS] View not available, using orders table:`, viewError);
+        query = supabase
+          .from('orders')
+          .select('*')
+          .eq('venue_id', venueId);
+      }
 
       if (tab === 'live') {
         query = query
@@ -63,24 +78,34 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           .gte('created_at', startUtc)
           .lt('created_at', endUtc)
           .order('updated_at', { ascending: false });
+        console.log(`[LIVE_ORDERS] Live query with statuses:`, ACTIVE_STATUSES);
       } else if (tab === 'earlier') {
         query = query
           .in('order_status', TERMINAL_TODAY)
           .gte('created_at', startUtc)
           .lt('created_at', endUtc)
           .order('created_at', { ascending: false });
+        console.log(`[LIVE_ORDERS] Earlier query with statuses:`, TERMINAL_TODAY);
       } else if (tab === 'history') {
         query = query
           .eq('order_status', 'SERVED')
           .lt('created_at', startUtc)
           .order('created_at', { ascending: false });
+        console.log(`[LIVE_ORDERS] History query for SERVED orders before:`, startUtc);
       }
 
+      console.log(`[LIVE_ORDERS] Executing query for ${tab}...`);
       const { data, error: queryError } = await query;
 
       if (queryError) {
+        console.error(`[LIVE_ORDERS] Query error for ${tab}:`, queryError);
         throw queryError;
       }
+
+      console.log(`[LIVE_ORDERS] ${tab} query result:`, { 
+        orderCount: data?.length || 0, 
+        orders: data?.slice(0, 2) // Log first 2 orders for debugging
+      });
 
       setOrders(data || []);
       logger.info(`LIVE_ORDERS: ${tab} orders fetched successfully`, {
@@ -89,6 +114,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         venueId
       });
     } catch (error: any) {
+      console.error(`[LIVE_ORDERS] Failed to fetch ${activeTab} orders:`, error);
       logger.error(`LIVE_ORDERS: Failed to fetch ${activeTab} orders`, { error: error.message });
       setError(`Failed to load ${activeTab} orders: ${error.message}`);
     } finally {
@@ -184,25 +210,27 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        {(['live', 'earlier', 'history'] as const).map((tab) => (
-          <Button
-            key={tab}
-            variant={activeTab === tab ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setActiveTab(tab)}
-            className="flex items-center space-x-2"
-          >
-            {getTabIcon(tab)}
-            <span>{getTabLabel(tab)}</span>
-            {orders.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {orders.length}
-              </Badge>
-            )}
-          </Button>
-        ))}
+      {/* Tab Navigation - Centered with proper spacing */}
+      <div className="flex justify-center mb-6">
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg shadow-sm">
+          {(['live', 'earlier', 'history'] as const).map((tab) => (
+            <Button
+              key={tab}
+              variant={activeTab === tab ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab(tab)}
+              className="flex items-center space-x-2 px-4 py-2 min-w-[120px] justify-center"
+            >
+              {getTabIcon(tab)}
+              <span className="font-medium">{getTabLabel(tab)}</span>
+              {orders.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {orders.length}
+                </Badge>
+              )}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Tab Content */}
