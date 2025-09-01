@@ -1,239 +1,289 @@
 "use client";
 
-import type { OrderWithItems as Order, OrderItem } from "@/lib/supabase";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Clock, User, Hash, Utensils, Check, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, CheckCircle, XCircle, AlertTriangle, User, Hash } from "lucide-react";
+
+
+export type Order = {
+  id: string;
+  venue_id: string;
+  table_number: number;
+  customer_name: string;
+  customer_phone?: string;
+  customer_email?: string;
+  order_status: 'PLACED'|'IN_PREP'|'READY'|'SERVING'|'SERVED'|'CANCELLED'|'REFUNDED'|'EXPIRED';
+  payment_status: 'UNPAID'|'PAID'|'REFUNDED';
+  total_amount: number;
+  calc_total_amount?: number;
+  notes?: string;
+  payment_method?: string;
+  scheduled_for?: string;
+  prep_lead_minutes?: number;
+  items: Array<{
+    menu_item_id: string;
+    quantity: number;
+    price: number;
+    item_name: string;
+    specialInstructions?: string;
+  }>;
+  created_at: string;
+  updated_at: string;
+};
 
 interface OrderCardProps {
   order: Order;
-  onStatusUpdate: (orderId: string, orderStatus: Order["order_status"]) => void;
+  onUpdate: () => void;
+  venueCurrency?: string;
 }
 
-export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
-  const timeAgo = (date: string) => {
-    const seconds = Math.floor(
-      (new Date().getTime() - new Date(date).getTime()) / 1000,
-    );
-    let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " years ago";
-    interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " months ago";
-    interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " days ago";
-    interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " hours ago";
-    interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " minutes ago";
-    return Math.floor(seconds) + " seconds ago";
-  };
+export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardProps) {
+  const [updating, setUpdating] = useState(false);
 
-  const getNextStatus = (): Order["order_status"] | null => {
-    switch (order.order_status) {
-      case "PLACED":
-        return "ACCEPTED";
-      case "ACCEPTED":
-        return "IN_PREP";
-      case "IN_PREP":
-        return "READY";
-      case "READY":
-        return "OUT_FOR_DELIVERY";
-      case "OUT_FOR_DELIVERY":
-        return "SERVING";
-      case "SERVING":
-        return "COMPLETED";
-      default:
-        return null;
-    }
-  };
-
-  const getPreviousStatus = (): Order["order_status"] | null => {
-    switch (order.order_status) {
-      case "ACCEPTED":
-        return "PLACED";
-      case "IN_PREP":
-        return "ACCEPTED";
-      case "READY":
-        return "IN_PREP";
-      case "OUT_FOR_DELIVERY":
-        return "READY";
-      case "SERVING":
-        return "OUT_FOR_DELIVERY";
-      case "COMPLETED":
-        return "SERVING";
-      default:
-        return null;
-    }
-  };
-
-  const nextStatus = getNextStatus();
-  const previousStatus = getPreviousStatus();
-
-  const getStatusDisplay = (status: string) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
-      case "PLACED":
-        return { label: "PLACED", color: "bg-yellow-100 text-yellow-800" };
-      case "ACCEPTED":
-        return { label: "ACCEPTED", color: "bg-green-100 text-green-800" };
-      case "IN_PREP":
-        return { label: "IN PREP", color: "bg-blue-100 text-blue-800" };
-      case "READY":
-        return { label: "READY", color: "bg-orange-100 text-orange-800" };
-      case "OUT_FOR_DELIVERY":
-        return { label: "OUT FOR DELIVERY", color: "bg-purple-100 text-purple-800" };
-      case "SERVING":
-        return { label: "SERVING", color: "bg-indigo-100 text-indigo-800" };
-      case "COMPLETED":
-        return { label: "COMPLETED", color: "bg-gray-100 text-gray-800" };
-      case "CANCELLED":
-        return { label: "CANCELLED", color: "bg-red-100 text-red-800" };
-      case "REFUNDED":
-        return { label: "REFUNDED", color: "bg-red-100 text-red-800" };
-      case "EXPIRED":
-        return { label: "EXPIRED", color: "bg-red-100 text-red-800" };
+      case 'PLACED':
+        return <Clock className="h-3 w-3" />;
+      case 'IN_PREP':
+        return <AlertTriangle className="h-3 w-3" />;
+      case 'READY':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'SERVING':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'SERVED':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'CANCELLED':
+        return <XCircle className="h-3 w-3" />;
+      case 'REFUNDED':
+        return <XCircle className="h-3 w-3" />;
+      case 'EXPIRED':
+        return <AlertTriangle className="h-3 w-3" />;
       default:
-        return { label: status.toUpperCase(), color: "bg-gray-100 text-gray-800" };
+        return <Clock className="h-3 w-3" />;
     }
   };
 
-  const statusDisplay = getStatusDisplay(order.order_status);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PLACED':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'IN_PREP':
+        return 'bg-blue-100 text-blue-800';
+      case 'READY':
+        return 'bg-orange-100 text-orange-800';
+      case 'SERVING':
+        return 'bg-purple-100 text-purple-800';
+      case 'SERVED':
+        return 'bg-green-100 text-green-800';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800';
+      case 'REFUNDED':
+        return 'bg-red-100 text-red-800';
+      case 'EXPIRED':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'PAID':
+        return 'bg-green-100 text-green-800';
+      case 'UNPAID':
+        return 'bg-red-100 text-red-800';
+      case 'REFUNDED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: currency,
+    }).format(amount);
+  };
+
+  // Primary action button logic as specified
+  function primaryActionFor(order: Order) {
+    if (['SERVED','CANCELLED','REFUNDED','EXPIRED'].includes(order.order_status)) return null;
+
+    if (order.payment_status !== 'PAID') {
+      return { label: 'Mark Paid', onClick: () => markOrderPaid(order.id) };
+    }
+
+    switch (order.order_status) {
+      case 'PLACED':   return { label: 'Start Preparing', onClick: () => setOrderStatus(order.id, 'IN_PREP') };
+      case 'IN_PREP':  return { label: 'Mark Ready',      onClick: () => setOrderStatus(order.id, 'READY') };
+      case 'READY':    return { label: 'Start Serving',   onClick: () => setOrderStatus(order.id, 'SERVING') };
+      case 'SERVING':  return { label: 'Mark Served',     onClick: () => setOrderStatus(order.id, 'SERVED') };
+      default:         return null;
+    }
+  }
+
+  const primaryAction = primaryActionFor(order);
+
+  const markOrderPaid = async (orderId: string) => {
+    try {
+      const response = await fetch('/api/orders/mark-paid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to mark order as paid');
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const setOrderStatus = async (orderId: string, status: string) => {
+    try {
+      const response = await fetch('/api/orders/set-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to set order status');
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleAction = async (action: () => Promise<void>) => {
+    try {
+      setUpdating(true);
+      await action();
+      onUpdate();
+    } catch (error) {
+      console.error('Action failed:', error);
+      // You might want to show a toast notification here
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const amount = order.calc_total_amount ?? order.total_amount ?? 0;
 
   return (
-    <Card className="bg-white shadow-sm">
-      <CardHeader>
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">
-              Table {order.table_number}
+          <div className="flex-1">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Hash className="h-4 w-4 text-gray-500" />
+              Order #{order.id.slice(0, 8)}
             </CardTitle>
-            <CardDescription className="flex items-center space-x-2 text-xs">
-              <Hash className="h-3 w-3" />
-              <span>{order.id.slice(0, 8)}</span>
-            </CardDescription>
+            <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
+              <User className="h-3 w-3" />
+              {order.customer_name}
+              {order.customer_phone && (
+                <>
+                  <span>•</span>
+                  {order.customer_phone}
+                </>
+              )}
+            </div>
           </div>
           <div className="text-right">
-            <p className="font-bold text-lg text-servio-purple">
-              £{order.total_amount.toFixed(2)}
-            </p>
-            <p className="text-xs text-gray-500 flex items-center justify-end space-x-1">
-              <Clock className="h-3 w-3" />
-              <span>{timeAgo(order.created_at)}</span>
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <User className="h-4 w-4" />
-            <span>{order.customer_name}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge className={statusDisplay.color}>
-              {statusDisplay.label}
-            </Badge>
-            {order.payment_status && (
-              <Badge className={
-                order.payment_status === 'PAID' 
-                  ? 'bg-green-100 text-green-800' 
-                  : order.payment_status === 'IN_PROGRESS'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-red-100 text-red-800'
-              }>
-                {order.payment_status}
-              </Badge>
-            )}
+            <div className="text-2xl font-bold text-servio-purple">
+              {formatCurrency(amount, venueCurrency)}
+            </div>
+            <div className="text-sm text-gray-500">
+              Table {order.table_number}
+            </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <Separator />
-        <ul className="space-y-2 py-3">
-          {order.items && order.items.length > 0 ? (
-            order.items.map((item: any, index: number) => (
-              <li key={index} className="flex justify-between text-sm">
-                <span>
-                  {item.quantity} x {item.item_name}
-                </span>
-                <span>£{(item.price * item.quantity).toFixed(2)}</span>
-              </li>
-            ))
-          ) : (
-            <li className="text-sm text-gray-500">
-              No items found for this order.
-            </li>
-          )}
-        </ul>
-        <Separator />
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <div className="flex space-x-2">
-          {!['CANCELLED', 'COMPLETED', 'REFUNDED', 'EXPIRED'].includes(order.order_status) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onStatusUpdate(order.id, "CANCELLED")}
-            >
-              Cancel
-            </Button>
-          )}
-          {previousStatus && order.order_status !== "PLACED" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onStatusUpdate(order.id, previousStatus)}
-            >
-              ← Back
-            </Button>
-          )}
+      <CardContent className="pt-0">
+        {/* Status Badges */}
+        <div className="flex items-center gap-2 mb-4">
+          <Badge className={getStatusColor(order.order_status)}>
+            {getStatusIcon(order.order_status)}
+            <span className="ml-1">{order.order_status.replace('_', ' ')}</span>
+          </Badge>
+          <Badge className={getPaymentStatusColor(order.payment_status)}>
+            {order.payment_status}
+          </Badge>
         </div>
-        <div className="flex space-x-2">
-                      {nextStatus && (
-              <Button
-                size="sm"
-                onClick={() => onStatusUpdate(order.id, nextStatus)}
-              >
-                {nextStatus === "ACCEPTED" && (
-                  <>
-                    Accept Order <Check className="h-4 w-4 ml-2" />
-                  </>
+
+        {/* Order Items */}
+        <div className="space-y-2 mb-4">
+          {order.items.map((item, index) => (
+            <div key={index} className="flex justify-between items-start text-sm">
+              <div className="flex-1">
+                <div className="font-medium">
+                  {item.quantity} × {item.item_name}
+                </div>
+                {item.specialInstructions && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Note: {item.specialInstructions}
+                  </div>
                 )}
-                {nextStatus === "IN_PREP" && (
-                  <>
-                    Start Preparing <Utensils className="h-4 w-4 ml-2" />
-                  </>
-                )}
-                {nextStatus === "READY" && (
-                  <>
-                    Mark Ready <Check className="h-4 w-4 ml-2" />
-                  </>
-                )}
-                {nextStatus === "OUT_FOR_DELIVERY" && (
-                  <>
-                    Out for Delivery <ArrowRight className="h-4 w-4 ml-2" />
-                  </>
-                )}
-                {nextStatus === "SERVING" && (
-                  <>
-                    Start Serving <ArrowRight className="h-4 w-4 ml-2" />
-                  </>
-                )}
-                {nextStatus === "COMPLETED" && (
-                  <>
-                    Complete <Check className="h-4 w-4 ml-2" />
-                  </>
-                )}
-              </Button>
+              </div>
+              <div className="text-right font-medium">
+                {formatCurrency(item.price * item.quantity, venueCurrency)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Notes */}
+        {order.notes && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <div className="text-sm font-medium text-gray-900 mb-1">Special Instructions</div>
+            <div className="text-sm text-gray-600">{order.notes}</div>
+          </div>
+        )}
+
+        {/* Timestamps */}
+        <div className="text-xs text-gray-500 mb-4">
+          <div>Created: {new Date(order.created_at).toLocaleString('en-GB')}</div>
+          <div>Updated: {new Date(order.updated_at).toLocaleString('en-GB')}</div>
+        </div>
+
+        {/* Primary Action Button */}
+        {primaryAction && (
+          <Button
+            onClick={() => handleAction(primaryAction.onClick)}
+            disabled={updating}
+            className="w-full"
+            variant="default"
+          >
+            {updating ? (
+              <>
+                <Clock className="h-4 w-4 mr-2 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              primaryAction.label
             )}
-        </div>
-      </CardFooter>
+          </Button>
+        )}
+
+        {/* Cancel Button (only for non-terminal states) */}
+        {!['SERVED','CANCELLED','REFUNDED','EXPIRED'].includes(order.order_status) && (
+          <Button
+            onClick={() => handleAction(() => setOrderStatus(order.id, 'CANCELLED'))}
+            disabled={updating}
+            className="w-full mt-2"
+            variant="outline"
+          >
+            Cancel Order
+          </Button>
+        )}
+      </CardContent>
     </Card>
   );
 }
