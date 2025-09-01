@@ -163,7 +163,7 @@ export default function VenueDashboardClient({ venueId, userId, activeTables: ac
 
       // Calculate active tables (orders that are not served or paid AND created today)
       const todayOrders = (orders ?? []).filter((o: any) => {
-        return o.status !== 'served' && o.status !== 'paid';
+        return o.order_status !== 'SERVED' && o.payment_status !== 'PAID';
       });
 
       const activeTableSet = new Set(

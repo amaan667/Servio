@@ -8,7 +8,7 @@ import { log } from '@/lib/debug';
 import DashboardClient from './page.client';
 
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
-  console.log('[VENUE PAGE] Checking venue access for:', params.venueId);
+  console.log('[VENUE PAGE] Starting venue page load for venueId:', params.venueId);
   
   try {
     // Check for auth cookies before making auth calls
@@ -75,18 +75,20 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       }
     }
 
+    console.log('[VENUE PAGE] Venue found, proceeding with dashboard setup');
+
     // Get timezone-aware today window (default to Europe/London until migration is run)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    // Compute unique active tables today (open tickets): status != 'served' and != 'paid' AND created today
+    // Compute unique active tables today (open tickets): status != 'SERVED' and != 'PAID' AND created today
     const { data: activeRows } = await supabase
       .from('orders')
-      .select('table_number, status, payment_status, created_at')
+      .select('table_number, order_status, payment_status, created_at')
       .eq('venue_id', params.venueId)
-      .not('status', 'in', '(served,paid)')
+      .not('order_status', 'in', '(SERVED,PAID)')
       .gte('created_at', today.toISOString())
       .lt('created_at', tomorrow.toISOString());
     const uniqueActiveTables = new Set((activeRows ?? []).map((r: any) => r.table_number).filter((t: any) => t != null)).size;
@@ -96,6 +98,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       activeTables: uniqueActiveTables 
     });
 
+    console.log('[VENUE PAGE] Rendering dashboard client');
     return (
       <DashboardClient 
         venueId={params.venueId} 
