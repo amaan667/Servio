@@ -21,6 +21,7 @@ interface QuestionsClientProps {
 
 export default function QuestionsClient({ venueId, venueName, mode = 'full' }: QuestionsClientProps) {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         const data = await response.json();
         console.log('[FEEDBACK DEBUG] Fetched questions:', data);
         setQuestions(data.questions || []);
+        setTotalCount(data.totalCount || 0);
       } else {
         console.error('[FEEDBACK DEBUG] Fetch failed:', response.status);
         toast({
@@ -393,7 +395,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <MessageSquare className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">{questions.length} feedback questions</span>
+            <span className="text-sm text-muted-foreground">{totalCount} feedback questions</span>
           </div>
           <span className="text-sm text-muted-foreground">•</span>
           <span className="text-sm text-muted-foreground">

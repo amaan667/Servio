@@ -37,12 +37,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Get questions
+    // Get questions (excluding soft-deleted ones)
     const serviceClient = getServiceClient();
     const { data: questions, error } = await serviceClient
       .from('feedback_questions')
       .select('*')
       .eq('venue_id', venueId)
+      .is('is_deleted', null) // Exclude soft-deleted questions
       .order('sort_index', { ascending: true })
       .order('created_at', { ascending: true });
 
@@ -51,8 +52,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:Q] list venue=${venueId} count=${questions?.length || 0}`);
-    return NextResponse.json({ questions: questions || [] });
+    // Get total count including deleted questions
+    const { data: totalCount, error: countError } = await serviceClient
+      .from('feedback_questions')
+      .select('id', { count: 'exact' })
+      .eq('venue_id', venueId);
+
+    if (countError) {
+      console.error('[FEEDBACK:Q] count error:', countError.message);
+    }
+
+    console.log(`[FEEDBACK:Q] list venue=${venueId} count=${questions?.length || 0} total=${totalCount?.length || 0}`);
+    return NextResponse.json({ 
+      questions: questions || [],
+      totalCount: totalCount?.length || 0
+    });
 
   } catch (error: any) {
     console.error('[FEEDBACK:Q] list exception:', error.message);
@@ -275,9 +289,10 @@ export async function DELETE(req: Request) {
     }
 
     const serviceClient = getServiceClient();
+    // Soft delete by setting is_deleted=true instead of actually deleting
     const { error } = await serviceClient
       .from('feedback_questions')
-      .delete()
+      .update({ is_deleted: true })
       .eq('id', id);
 
     if (error) {
