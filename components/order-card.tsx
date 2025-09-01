@@ -129,9 +129,20 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
             <User className="h-4 w-4" />
             <span>{order.customer_name}</span>
           </div>
-          <Badge className={statusDisplay.color}>
-            {statusDisplay.label}
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge className={statusDisplay.color}>
+              {statusDisplay.label}
+            </Badge>
+            {order.payment_status && (
+              <Badge className={
+                order.payment_status === 'PAID' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }>
+                {order.payment_status}
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>

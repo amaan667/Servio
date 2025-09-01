@@ -18,11 +18,13 @@ interface OrderWithItems {
   customer_name: string;
   customer_phone?: string;
   customer_email?: string;
-  status: string;
+  order_status: string;
   total_amount: number;
   notes?: string;
   payment_method?: string;
   payment_status?: string;
+  scheduled_for?: string;
+  prep_lead_minutes?: number;
   items: Array<{
     menu_item_id: string;
     quantity: number;
@@ -43,6 +45,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
     revenue: 0,
     orderCount: 0,
     activeTables: 0,
+    unpaidOrders: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -60,7 +63,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
 
       if (ordersError) {
         console.error("Error fetching orders:", ordersError);
-        setStats({ revenue: 0, orderCount: 0, activeTables: 0 });
+        setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0 });
         return;
       }
 
@@ -68,7 +71,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       const todaysOrders = orders.filter((order) => {
         const orderDate = new Date(order.created_at).toDateString();
         const today = new Date().toDateString();
-        return orderDate === today && order.status !== "cancelled";
+        return orderDate === today && order.order_status !== "CANCELLED";
       });
 
       const revenue = todaysOrders.reduce(
@@ -76,16 +79,21 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         0,
       );
       const orderCount = todaysOrders.length;
+      
+      // Active tables are those with orders not fully processed (not COMPLETED)
       const activeTables = new Set(
         todaysOrders
-          .filter((o) => o.status !== "completed")
+          .filter((o) => o.order_status !== "COMPLETED")
           .map((o) => o.table_number),
       ).size;
 
-      setStats({ revenue, orderCount, activeTables });
+      // Count unpaid orders
+      const unpaidOrders = todaysOrders.filter((o) => o.payment_status === "UNPAID").length;
+
+      setStats({ revenue, orderCount, activeTables, unpaidOrders });
     } catch (error) {
       console.error("Error calculating stats:", error);
-      setStats({ revenue: 0, orderCount: 0, activeTables: 0 });
+      setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0 });
     } finally {
       setLoading(false);
     }
@@ -100,6 +108,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
     value,
     icon: Icon,
     formatAsCurrency = false,
+    subtitle,
   }: any) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -116,6 +125,9 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             value
           )}
         </div>
+        {subtitle && (
+          <p className="text-xs text-red-600 mt-1">{subtitle}</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -141,6 +153,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             value={stats.revenue}
             icon={TrendingUp}
             formatAsCurrency
+            subtitle={stats.unpaidOrders > 0 ? `${stats.unpaidOrders} unpaid` : undefined}
           />
           <StatCard
             title="Today's Orders"
