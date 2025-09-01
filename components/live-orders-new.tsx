@@ -23,8 +23,9 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
   console.log('[LIVE_ORDERS] Component mounted with venueId:', venueId);
 
-  const ACTIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING'];
-  const TERMINAL_TODAY = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
+  // Handle both old and new status values until migration is complete
+  const ACTIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'ACCEPTED', 'OUT_FOR_DELIVERY'];
+  const TERMINAL_TODAY = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED', 'COMPLETED'];
 
   // Helper function to get today bounds in UTC for venue timezone
   const todayBounds = useCallback((tz: string) => {
@@ -56,6 +57,20 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       console.log(`[LIVE_ORDERS] Fetching ${tab} orders for venue:`, venueId);
       console.log(`[LIVE_ORDERS] Time bounds:`, { startUtc, endUtc });
 
+      // First, let's check what orders exist in the database for this venue
+      console.log(`[LIVE_ORDERS] Checking all orders for venue ${venueId}...`);
+      const { data: allOrders, error: allOrdersError } = await supabase
+        .from('orders')
+        .select('id, order_status, payment_status, created_at, total_amount')
+        .eq('venue_id', venueId)
+        .limit(10);
+
+      if (allOrdersError) {
+        console.error(`[LIVE_ORDERS] Error fetching all orders:`, allOrdersError);
+      } else {
+        console.log(`[LIVE_ORDERS] All orders found:`, allOrders);
+      }
+
       // Try to use orders_with_totals view first, fallback to orders table
       let query;
       try {
@@ -74,24 +89,24 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
       if (tab === 'live') {
         query = query
-          .in('order_status', ACTIVE_STATUSES)
+          .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
           .gte('created_at', startUtc)
           .lt('created_at', endUtc)
           .order('updated_at', { ascending: false });
         console.log(`[LIVE_ORDERS] Live query with statuses:`, ACTIVE_STATUSES);
       } else if (tab === 'earlier') {
         query = query
-          .in('order_status', TERMINAL_TODAY)
+          .or(`order_status.in.(${TERMINAL_TODAY.join(',')}),status.in.(${TERMINAL_TODAY.join(',')})`)
           .gte('created_at', startUtc)
           .lt('created_at', endUtc)
           .order('created_at', { ascending: false });
         console.log(`[LIVE_ORDERS] Earlier query with statuses:`, TERMINAL_TODAY);
       } else if (tab === 'history') {
         query = query
-          .eq('order_status', 'SERVED')
+          .or(`order_status.in.(SERVED,COMPLETED),status.in.(SERVED,COMPLETED)`)
           .lt('created_at', startUtc)
           .order('created_at', { ascending: false });
-        console.log(`[LIVE_ORDERS] History query for SERVED orders before:`, startUtc);
+        console.log(`[LIVE_ORDERS] History query for SERVED/COMPLETED orders before:`, startUtc);
       }
 
       console.log(`[LIVE_ORDERS] Executing query for ${tab}...`);
@@ -104,7 +119,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
       console.log(`[LIVE_ORDERS] ${tab} query result:`, { 
         orderCount: data?.length || 0, 
-        orders: data?.slice(0, 2) // Log first 2 orders for debugging
+        orders: data?.slice(0, 2), // Log first 2 orders for debugging
+        statuses: data?.map(o => o.order_status || o.status) // Check what status values we're getting
       });
 
       setOrders(data || []);
