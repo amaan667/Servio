@@ -191,6 +191,10 @@ export default function CustomerOrderPage() {
       alert("Please enter your name.");
       return;
     }
+    if (!customerInfo.phone.trim()) {
+      alert("Please enter your phone number.");
+      return;
+    }
 
     console.log('[ORDER DEBUG] Starting order submission');
     setIsSubmitting(true);
@@ -213,7 +217,7 @@ export default function CustomerOrderPage() {
         venue_id: venueSlug,
         table_number: safeTable,
         customer_name: customerInfo.name.trim(),
-        customer_phone: customerInfo.phone || undefined,
+        customer_phone: customerInfo.phone.trim(),
         items: cart.map((item) => ({
           menu_item_id: item.id && item.id.startsWith('demo-') ? null : item.id,
           quantity: item.quantity,
@@ -282,6 +286,7 @@ export default function CustomerOrderPage() {
     } catch (error) {
       console.error("Error confirming order:", error);
       alert("Failed to confirm order. Please contact support.");
+      // Don't throw the error to prevent redirects
     }
   };
 
@@ -331,7 +336,13 @@ export default function CustomerOrderPage() {
                   <Button
                     onClick={async () => {
                       if (submittedOrder?.pendingOrderData) {
-                        await handlePaymentSuccess(submittedOrder.pendingOrderData);
+                        try {
+                          await handlePaymentSuccess(submittedOrder.pendingOrderData);
+                        } catch (error) {
+                          console.error('[ORDER DEBUG] Payment simulation failed:', error);
+                          // Don't redirect, just show an error message
+                          alert('Payment simulation failed. Please try again.');
+                        }
                       }
                     }}
                     className="w-full bg-green-600 hover:bg-green-700"
@@ -735,7 +746,7 @@ export default function CustomerOrderPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number (optional)
+                  Phone Number *
                 </label>
                 <Input
                   value={customerInfo.phone}
@@ -766,7 +777,7 @@ export default function CustomerOrderPage() {
                   <Button
                     onClick={submitOrder}
                     className="flex-1"
-                    disabled={isSubmitting || !customerInfo.name.trim()}
+                    disabled={isSubmitting || !customerInfo.name.trim() || !customerInfo.phone.trim()}
                   >
                     {isSubmitting ? (
                       <>
