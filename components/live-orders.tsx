@@ -33,11 +33,13 @@ interface OrderWithItems {
   customer_name: string;
   customer_phone?: string;
   customer_email?: string;
-  status: string;
+  order_status: string;
   total_amount: number;
   notes?: string;
   payment_method?: string;
   payment_status?: string;
+  scheduled_for?: string;
+  prep_lead_minutes?: number;
   items: Array<{
     menu_item_id: string;
     quantity: number;
@@ -59,14 +61,15 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'live' | 'today' | 'history'>('live');
 
-  const fetchOrders = useCallback(async () => {
+  const ACTIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
+  const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
+
+  const fetchLiveOrders = useCallback(async () => {
     const supabase = createClient();
     
-    logger.info("LIVE_ORDERS: Fetching orders", {
-      venueId,
-      hasSupabase: !!supabase,
-    });
+    logger.info("LIVE_ORDERS: Fetching live orders", { venueId });
 
     setLoading(true);
     setError(null);
@@ -79,37 +82,147 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     }
 
     try {
+      // Get orders that are active and within prep window
+      const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
+      const prepWindow = new Date(Date.now() + prepLeadMs).toISOString();
+
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
-        .order("created_at", { ascending: false });
+        .in("order_status", ACTIVE_STATUSES)
+        .or(`scheduled_for.is.null,scheduled_for.lte.${prepWindow}`)
+        .order("updated_at", { ascending: false });
 
       if (ordersError) {
-        logger.error("LIVE_ORDERS: Failed to fetch orders from Supabase", {
-          error: ordersError.message,
-          code: ordersError.code,
-          venueId,
-        });
+        logger.error("LIVE_ORDERS: Failed to fetch live orders", { error: ordersError.message });
         setError("Failed to load orders.");
       } else {
-        logger.info("LIVE_ORDERS: Orders fetched successfully", {
+        logger.info("LIVE_ORDERS: Live orders fetched successfully", {
           orderCount: ordersData?.length || 0,
-          statuses: ordersData?.map((order) => order.status) || [],
+          statuses: ordersData?.map((order) => order.order_status) || [],
         });
         setOrders((ordersData || []) as OrderWithItems[]);
       }
     } catch (error: any) {
-      logger.error("LIVE_ORDERS: Unexpected error fetching orders", error);
+      logger.error("LIVE_ORDERS: Unexpected error fetching live orders", error);
       setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
   }, [venueId]);
 
+  const fetchTodayOrders = useCallback(async () => {
+    const supabase = createClient();
+    
+    logger.info("LIVE_ORDERS: Fetching today's orders", { venueId });
+
+    setLoading(true);
+    setError(null);
+
+    if (!supabase) {
+      logger.error("LIVE_ORDERS: Supabase not configured");
+      setError("Service is not configured.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Get today's business date bounds (UTC)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const { data: ordersData, error: ordersError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .or(`created_at.gte.${today.toISOString()},scheduled_for.gte.${today.toISOString()}`)
+        .lt("created_at", tomorrow.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (ordersError) {
+        logger.error("LIVE_ORDERS: Failed to fetch today's orders", { error: ordersError.message });
+        setError("Failed to load orders.");
+      } else {
+        logger.info("LIVE_ORDERS: Today's orders fetched successfully", {
+          orderCount: ordersData?.length || 0,
+        });
+        setOrders((ordersData || []) as OrderWithItems[]);
+      }
+    } catch (error: any) {
+      logger.error("LIVE_ORDERS: Unexpected error fetching today's orders", error);
+      setError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  }, [venueId]);
+
+  const fetchHistoryOrders = useCallback(async () => {
+    const supabase = createClient();
+    
+    logger.info("LIVE_ORDERS: Fetching historical orders", { venueId });
+
+    setLoading(true);
+    setError(null);
+
+    if (!supabase) {
+      logger.error("LIVE_ORDERS: Supabase not configured");
+      setError("Service is not configured.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Get today's start for comparison
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data: ordersData, error: ordersError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .in("order_status", TERMINAL_STATUSES)
+        .lt("created_at", today.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (ordersError) {
+        logger.error("LIVE_ORDERS: Failed to fetch historical orders", { error: ordersError.message });
+        setError("Failed to load orders.");
+      } else {
+        logger.info("LIVE_ORDERS: Historical orders fetched successfully", {
+          orderCount: ordersData?.length || 0,
+        });
+        setOrders((ordersData || []) as OrderWithItems[]);
+      }
+    } catch (error: any) {
+      logger.error("LIVE_ORDERS: Unexpected error fetching historical orders", error);
+      setError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  }, [venueId]);
+
+  const fetchOrders = useCallback(async () => {
+    switch (activeTab) {
+      case 'live':
+        await fetchLiveOrders();
+        break;
+      case 'today':
+        await fetchTodayOrders();
+        break;
+      case 'history':
+        await fetchHistoryOrders();
+        break;
+    }
+  }, [activeTab, fetchLiveOrders, fetchTodayOrders, fetchHistoryOrders]);
+
   useEffect(() => {
     fetchOrders();
+  }, [activeTab, fetchOrders]);
 
+  useEffect(() => {
     const supabase = createClient();
     if (!supabase) return;
 
@@ -129,7 +242,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             "LIVE_ORDERS: Real-time change detected, refetching orders",
             payload,
           );
-          fetchOrders();
+          // Only refetch if we're on the live tab, as other tabs don't need real-time updates
+          if (activeTab === 'live') {
+            fetchOrders();
+          }
         },
       )
       .subscribe((status: any) => {
@@ -144,8 +260,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     };
   }, [fetchOrders, venueId]);
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    logger.info("LIVE_ORDERS: Updating order status", { orderId, newStatus });
+  const updateOrderStatus = async (orderId: string, newOrderStatus: string) => {
+    logger.info("LIVE_ORDERS: Updating order status", { orderId, newOrderStatus });
 
     const supabase = createClient();
     if (!supabase) return;
@@ -155,13 +271,13 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     try {
       const { error } = await supabase
         .from("orders")
-        .update({ status: newStatus })
+        .update({ order_status: newOrderStatus })
         .eq("id", orderId);
 
       if (error) {
         logger.error("LIVE_ORDERS: Failed to update order status", {
           orderId,
-          newStatus,
+          newOrderStatus,
           error: error.message,
           code: error.code,
         });
@@ -169,7 +285,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       } else {
         logger.info("LIVE_ORDERS: Order status updated successfully", {
           orderId,
-          newStatus,
+          newOrderStatus,
         });
         // Real-time subscription will handle the UI update
       }
@@ -184,38 +300,36 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "preparing":
-        return "bg-blue-100 text-blue-800";
-      case "ready":
-        return "bg-green-100 text-green-800";
-      case "completed":
-        return "bg-gray-100 text-gray-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  // Get badge counts for each tab
+  const getLiveOrdersCount = () => {
+    return orders.filter(order => 
+      ACTIVE_STATUSES.includes(order.order_status) && 
+      (!order.scheduled_for || new Date(order.scheduled_for) <= new Date(Date.now() + 30 * 60 * 1000))
+    ).length;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Clock className="h-4 w-4" />;
-      case "preparing":
-        return <RefreshCw className="h-4 w-4" />;
-      case "ready":
-        return <CheckCircle className="h-4 w-4" />;
-      case "completed":
-        return <CheckCircle className="h-4 w-4" />;
-      case "cancelled":
-        return <XCircle className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
+  const getTodayOrdersCount = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      const scheduledDate = order.scheduled_for ? new Date(order.scheduled_for) : null;
+      return (orderDate >= today && orderDate < tomorrow) || 
+             (scheduledDate && scheduledDate >= today && scheduledDate < tomorrow);
+    }).length;
+  };
+
+  const getHistoryOrdersCount = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return orders.filter(order => 
+      TERMINAL_STATUSES.includes(order.order_status) && 
+      new Date(order.created_at) < today
+    ).length;
   };
 
   return (
@@ -232,7 +346,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Live Orders ({orders.length})</span>
+            <span>Order Management</span>
             <Button
               variant="outline"
               size="sm"
@@ -245,9 +359,61 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
               Refresh
             </Button>
           </CardTitle>
+          
+          {/* Tab Navigation */}
+          <div className="flex space-x-1 border-b">
+            <button
+              onClick={() => setActiveTab('live')}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                activeTab === 'live'
+                  ? 'bg-servio-purple text-white border-b-2 border-servio-purple'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              Live (In Progress)
+              {getLiveOrdersCount() > 0 && (
+                <span className="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
+                  {getLiveOrdersCount()}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('today')}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                activeTab === 'today'
+                  ? 'bg-servio-purple text-white border-b-2 border-servio-purple'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              Today (All Orders)
+              {getTodayOrdersCount() > 0 && (
+                <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                  {getTodayOrdersCount()}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                activeTab === 'history'
+                  ? 'bg-servio-purple text-white border-b-2 border-servio-purple'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              History
+              {getHistoryOrdersCount() > 0 && (
+                <span className="ml-2 bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                  {getHistoryOrdersCount()}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Tab Description */}
           <CardDescription>
-            Manage incoming orders in real-time. Orders will appear here
-            automatically as customers place them.
+            {activeTab === 'live' && "Orders currently requiring action (prep/serve/pay)."}
+            {activeTab === 'today' && "All orders for today's business date."}
+            {activeTab === 'history' && "Completed and cancelled orders from previous days."}
           </CardDescription>
         </CardHeader>
         <CardContent>

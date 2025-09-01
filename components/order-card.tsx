@@ -16,7 +16,7 @@ import { Clock, User, Hash, Utensils, Check, ArrowRight } from "lucide-react";
 
 interface OrderCardProps {
   order: Order;
-  onStatusUpdate: (orderId: string, status: Order["status"]) => void;
+  onStatusUpdate: (orderId: string, orderStatus: Order["order_status"]) => void;
 }
 
 export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
@@ -37,27 +37,35 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
     return Math.floor(seconds) + " seconds ago";
   };
 
-  const getNextStatus = (): Order["status"] | null => {
-    switch (order.status) {
-      case "pending":
-        return "paid";
-      case "paid":
-        return "preparing";
-      case "preparing":
-        return "served";
+  const getNextStatus = (): Order["order_status"] | null => {
+    switch (order.order_status) {
+      case "PLACED":
+        return "ACCEPTED";
+      case "ACCEPTED":
+        return "IN_PREP";
+      case "IN_PREP":
+        return "READY";
+      case "READY":
+        return "SERVING";
+      case "SERVING":
+        return "COMPLETED";
       default:
         return null;
     }
   };
 
-  const getPreviousStatus = (): Order["status"] | null => {
-    switch (order.status) {
-      case "paid":
-        return "pending";
-      case "preparing":
-        return "paid";
-      case "served":
-        return "preparing";
+  const getPreviousStatus = (): Order["order_status"] | null => {
+    switch (order.order_status) {
+      case "ACCEPTED":
+        return "PLACED";
+      case "IN_PREP":
+        return "ACCEPTED";
+      case "READY":
+        return "IN_PREP";
+      case "SERVING":
+        return "READY";
+      case "COMPLETED":
+        return "SERVING";
       default:
         return null;
     }
@@ -68,20 +76,30 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
-      case "pending":
-        return { label: "PENDING", color: "bg-yellow-100 text-yellow-800" };
-      case "paid":
-        return { label: "PAID", color: "bg-green-100 text-green-800" };
-      case "preparing":
-        return { label: "PREPARING", color: "bg-blue-100 text-blue-800" };
-      case "served":
-        return { label: "SERVED", color: "bg-purple-100 text-purple-800" };
+      case "PLACED":
+        return { label: "PLACED", color: "bg-yellow-100 text-yellow-800" };
+      case "ACCEPTED":
+        return { label: "ACCEPTED", color: "bg-green-100 text-green-800" };
+      case "IN_PREP":
+        return { label: "IN PREP", color: "bg-blue-100 text-blue-800" };
+      case "READY":
+        return { label: "READY", color: "bg-orange-100 text-orange-800" };
+      case "SERVING":
+        return { label: "SERVING", color: "bg-purple-100 text-purple-800" };
+      case "COMPLETED":
+        return { label: "COMPLETED", color: "bg-gray-100 text-gray-800" };
+      case "CANCELLED":
+        return { label: "CANCELLED", color: "bg-red-100 text-red-800" };
+      case "REFUNDED":
+        return { label: "REFUNDED", color: "bg-red-100 text-red-800" };
+      case "EXPIRED":
+        return { label: "EXPIRED", color: "bg-red-100 text-red-800" };
       default:
         return { label: status.toUpperCase(), color: "bg-gray-100 text-gray-800" };
     }
   };
 
-  const statusDisplay = getStatusDisplay(order.status);
+  const statusDisplay = getStatusDisplay(order.order_status);
 
   return (
     <Card className="bg-white shadow-sm">
@@ -138,16 +156,16 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
       </CardContent>
       <CardFooter className="flex justify-between">
         <div className="flex space-x-2">
-          {order.status !== "cancelled" && (
+          {!['CANCELLED', 'COMPLETED', 'REFUNDED', 'EXPIRED'].includes(order.order_status) && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onStatusUpdate(order.id, "cancelled")}
+              onClick={() => onStatusUpdate(order.id, "CANCELLED")}
             >
               Cancel
             </Button>
           )}
-          {previousStatus && order.status !== "pending" && (
+          {previousStatus && order.order_status !== "PLACED" && (
             <Button
               variant="outline"
               size="sm"
@@ -163,19 +181,29 @@ export default function OrderCard({ order, onStatusUpdate }: OrderCardProps) {
               size="sm"
               onClick={() => onStatusUpdate(order.id, nextStatus)}
             >
-              {nextStatus === "paid" && (
+              {nextStatus === "ACCEPTED" && (
                 <>
-                  Mark as Paid <Check className="h-4 w-4 ml-2" />
+                  Accept Order <Check className="h-4 w-4 ml-2" />
                 </>
               )}
-              {nextStatus === "preparing" && (
+              {nextStatus === "IN_PREP" && (
                 <>
                   Start Preparing <Utensils className="h-4 w-4 ml-2" />
                 </>
               )}
-              {nextStatus === "served" && (
+              {nextStatus === "READY" && (
                 <>
-                  Mark as Served <ArrowRight className="h-4 w-4 ml-2" />
+                  Mark Ready <Check className="h-4 w-4 ml-2" />
+                </>
+              )}
+              {nextStatus === "SERVING" && (
+                <>
+                  Start Serving <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+              {nextStatus === "COMPLETED" && (
+                <>
+                  Complete <Check className="h-4 w-4 ml-2" />
                 </>
               )}
             </Button>

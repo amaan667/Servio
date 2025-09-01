@@ -41,11 +41,13 @@ export interface Order {
   customer_name: string;
   customer_phone?: string;
   customer_email?: string;
-  status: string;
+  order_status: string;
   total_amount: number;
   notes?: string;
   payment_method?: string;
   payment_status?: string;
+  scheduled_for?: string;
+  prep_lead_minutes?: number;
   items: Array<{
     menu_item_id: string;
     quantity: number;

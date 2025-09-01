@@ -19,8 +19,10 @@ type OrderPayload = {
   items: OrderItem[];
   total_amount: number;
   notes?: string | null;
-  status?: string;
+  order_status?: string;
   payment_status?: string;
+  scheduled_for?: string | null;
+  prep_lead_minutes?: number;
 };
 
 function bad(msg: string, status = 400) {
@@ -90,13 +92,14 @@ export async function POST(req: Request) {
       items: safeItems,
       total_amount: finalTotal,
       notes: body.notes ?? null,
-      status: 'paid', // Set initial status as paid since payment is confirmed
-      payment_status: 'paid', // Also set payment status
+      order_status: 'ACCEPTED', // Set initial status as accepted since payment is confirmed
+      payment_status: 'PAID', // Also set payment status
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
       table_number: payload.table_number,
-      status: payload.status,
+      order_status: payload.order_status,
+      payment_status: payload.payment_status,
       total_amount: payload.total_amount,
       itemsCount: payload.items.length,
     });
