@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ShoppingCart, Plus, Minus, X } from "lucide-react";
+import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
@@ -314,9 +314,33 @@ export default function CustomerOrderPage() {
               </div>
 
               {!submittedOrder?.id && submittedOrder?.pendingOrderData ? (
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Order Submitted</h3>
-                  <p className="text-sm text-gray-600">Your order has been submitted successfully. Payment will be handled at the venue.</p>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-semibold">Order Submitted</h3>
+                    <p className="text-sm text-gray-600">Your order has been submitted successfully. Please complete payment to confirm your order.</p>
+                  </div>
+                  
+                  <Button
+                    onClick={async () => {
+                      if (submittedOrder?.pendingOrderData) {
+                        await handlePaymentSuccess(submittedOrder.pendingOrderData);
+                      }
+                    }}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processing Payment...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Simulate Payment & Confirm Order
+                      </>
+                    )}
+                  </Button>
                 </div>
               ) : null}
 
