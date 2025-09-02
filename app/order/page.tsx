@@ -451,6 +451,7 @@ export default function CustomerOrderPage() {
                                 <div className="flex space-x-4">
                                   {/* Item Image */}
                                   <div className="flex-shrink-0">
+                                    {console.log('[MENU DEBUG] Item image:', item.image, 'for item:', item.name)}
                                     <MenuItemImage 
                                       src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=80&h=80&fit=crop&crop=center"} 
                                       alt={item.name}

@@ -14,22 +14,14 @@ export default function MenuItemImage({
   src, 
   alt, 
   className = "w-20 h-20 rounded-lg object-cover border border-gray-200",
-  fallbackIcon = <UtensilsCrossed className="w-8 h-8 text-gray-400" />
+  fallbackIcon = <UtensilsCrossed className="w-8 w-8 text-gray-400" />
 }: MenuItemImageProps) {
-  const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
-  const handleImageLoad = () => {
-    setImageLoading(false);
-    setImageError(false);
-  };
+  console.log('[IMAGE DEBUG] Rendering image:', { src, alt, hasError });
 
-  const handleImageError = () => {
-    setImageError(true);
-    setImageLoading(false);
-  };
-
-  if (imageError) {
+  if (hasError) {
+    console.log('[IMAGE DEBUG] Showing fallback for:', src);
     return (
       <div className={`${className} bg-gray-100 flex items-center justify-center`}>
         {fallbackIcon}
@@ -38,20 +30,16 @@ export default function MenuItemImage({
   }
 
   return (
-    <div className="relative">
-      {imageLoading && (
-        <div className={`${className} bg-gray-100 flex items-center justify-center`}>
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-        </div>
-      )}
-      <img
-        src={src}
-        alt={alt}
-        className={`${className} ${imageLoading ? 'hidden' : ''}`}
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-        loading="lazy"
-      />
-    </div>
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => {
+        console.log('[IMAGE DEBUG] Image failed to load:', src);
+        setHasError(true);
+      }}
+      onLoad={() => console.log('[IMAGE DEBUG] Image loaded successfully:', src)}
+      loading="lazy"
+    />
   );
 }
