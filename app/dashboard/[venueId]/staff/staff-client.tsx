@@ -316,26 +316,55 @@ export default function StaffClient({
       // Calculate column start (1-7, where 1 = Sunday)
       const colStart = startDate.getDay() + 1;
       
-      // Calculate how many columns to span
+      // Calculate how many columns to span - limit to actual days spanned
       const endDate = new Date(end);
       const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-      const spanCols = Math.min(7 - colStart + 1, daysDiff + 1);
+      // Ensure we don't span more than the actual days difference + 1
+      const spanCols = Math.min(7 - colStart + 1, Math.max(1, daysDiff + 1));
+      
+      console.log('[CALENDAR DEBUG] Grid placement:', {
+        shift: `${start.toLocaleDateString()} → ${end.toLocaleDateString()}`,
+        startDayOfWeek,
+        daysFromStart,
+        weekRow,
+        colStart,
+        daysDiff,
+        spanCols,
+        result: { row: weekRow + 1, colStart, spanCols }
+      });
       
       return { row: weekRow + 1, colStart, spanCols };
     };
 
-    // Get all shifts for the current month view
+    // Get all shifts for the current month view - be more inclusive
     const getShiftsForMonth = () => {
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
       
-      return allShifts.filter(shift => {
+      const filteredShifts = allShifts.filter(shift => {
         const shiftStart = new Date(shift.start_time);
         const shiftEnd = new Date(shift.end_time);
         
-        // Include shift if it overlaps with the month view
-        return shiftStart <= endOfMonth && shiftEnd >= startOfMonth;
+        // Include shift if it starts, ends, or overlaps with the month view
+        const startsInMonth = shiftStart >= startOfMonth && shiftStart <= endOfMonth;
+        const endsInMonth = shiftEnd >= startOfMonth && shiftEnd <= endOfMonth;
+        const spansMonth = shiftStart < startOfMonth && shiftEnd > endOfMonth;
+        
+        return startsInMonth || endsInMonth || spansMonth;
       });
+      
+      console.log('[CALENDAR DEBUG] Month shifts:', {
+        month: `${startOfMonth.toLocaleDateString()} - ${endOfMonth.toLocaleDateString()}`,
+        totalShifts: allShifts.length,
+        filteredShifts: filteredShifts.length,
+        shifts: filteredShifts.map(s => ({
+          name: s.staff_name,
+          start: s.start_time,
+          end: s.end_time
+        }))
+      });
+      
+      return filteredShifts;
     };
 
     const monthShifts = getShiftsForMonth();
@@ -397,6 +426,21 @@ export default function StaffClient({
                 const isOvernight = start.toDateString() !== end.toDateString();
                 const { row, colStart, spanCols } = computeGridPlacement(start, end);
                 
+                // Calculate position more accurately
+                const cellWidth = 100 / 7; // Each day cell width as percentage
+                const left = (colStart - 1) * cellWidth;
+                const width = Math.min(spanCols * cellWidth, 100 - left); // Don't exceed right edge
+                const top = (row - 1) * 120 + 40; // 120px day height + 40px header offset
+                
+                console.log('[CALENDAR DEBUG] Shift positioning:', {
+                  shift: shift.staff_name,
+                  colStart,
+                  spanCols,
+                  left: `${left}%`,
+                  width: `${width}%`,
+                  top: `${top}px`
+                });
+                
                 return (
                   <div
                     key={shift.id}
@@ -404,10 +448,10 @@ export default function StaffClient({
                       isOvernight ? 'overnight' : ''
                     }`}
                     style={{
-                      left: `${(colStart - 1) * (100 / 7)}%`,
-                      width: `${spanCols * (100 / 7)}%`,
-                      top: `${(row - 1) * 120 + 40}px`, // 120px day height + 40px header offset
-                      height: '80px', // Fixed height for shift pills
+                      left: `${left}%`,
+                      width: `${width}%`,
+                      top: `${top}px`,
+                      height: '80px',
                       zIndex: isOvernight ? 20 : 10
                     }}
                     title={`${shift.staff_name} (${shift.staff_role}) - ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? ` - ${shift.area}` : ''}${isOvernight ? ' - Overnight Shift' : ''}`}
@@ -435,6 +479,19 @@ export default function StaffClient({
                   </div>
                 );
               })}
+            </div>
+            
+            {/* Debug info - remove this after testing */}
+            <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs">
+              <div className="font-semibold mb-2">Debug Info:</div>
+              <div>Total shifts: {allShifts.length}</div>
+              <div>Month shifts: {monthShifts.length}</div>
+              <div>Current month: {currentMonth.toLocaleDateString()}</div>
+              {monthShifts.map(shift => (
+                <div key={shift.id} className="mt-1">
+                  {shift.staff_name}: {new Date(shift.start_time).toLocaleDateString()} {formatTime(shift.start_time)} - {formatTime(shift.end_time)}
+                </div>
+              ))}
             </div>
           </div>
         </CardContent>
