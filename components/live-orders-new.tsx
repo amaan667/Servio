@@ -298,6 +298,12 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     }
   };
 
+  const getTabCount = (tab: 'live' | 'earlier' | 'history') => {
+    // This is a placeholder - we'll need to implement proper count calculation
+    // For now, return 0 to avoid showing incorrect counts
+    return 0;
+  };
+
   const getTabLabel = (tab: string) => {
     switch (tab) {
       case 'live':
@@ -318,7 +324,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       case 'earlier':
         return "Today's completed, cancelled, and refunded orders";
       case 'history':
-        return "Served orders from previous days";
+        return "All orders from previous days";
       default:
         return "Today's active orders that need attention";
     }
@@ -348,9 +354,9 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             >
               {getTabIcon(tab)}
               <span className="font-medium">{getTabLabel(tab)}</span>
-              {orders.length > 0 && (
+              {getTabCount(tab) > 0 && (
                 <Badge variant="secondary" className="ml-1">
-                  {orders.length}
+                  {getTabCount(tab)}
                 </Badge>
               )}
             </Button>
