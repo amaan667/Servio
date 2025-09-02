@@ -453,7 +453,7 @@ export default function CustomerOrderPage() {
                                   <div className="flex-shrink-0">
                                     {console.log('[MENU DEBUG] Item image:', item.image, 'for item:', item.name)}
                                     <MenuItemImage 
-                                      src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=80&h=80&fit=crop&crop=center"} 
+                                      src={item.image || "https://images.unsplash.com/photo-1544025162-d76694265947?w=80&h=80&fit=crop&crop=center"} 
                                       alt={item.name}
                                       className="w-20 h-20 rounded-lg object-cover border border-gray-200"
                                     />
@@ -520,7 +520,7 @@ export default function CustomerOrderPage() {
                           {/* Cart Item Image */}
                           <div className="flex-shrink-0">
                             <MenuItemImage 
-                              src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=60&h=60&fit=crop&crop=center"} 
+                              src={item.image || "https://images.unsplash.com/photo-1544025162-d76694265947?w=60&h=60&fit=crop&crop=center"} 
                               alt={item.name}
                               className="w-16 h-16 rounded-lg object-cover border border-gray-200"
                             />
@@ -653,7 +653,7 @@ export default function CustomerOrderPage() {
                           {/* Mobile Cart Item Image */}
                           <div className="flex-shrink-0">
                             <MenuItemImage 
-                              src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=60&h=60&fit=crop&crop=center"} 
+                              src={item.image || "https://images.unsplash.com/photo-1544025162-d76694265947?w=60&h=60&fit=crop&crop=center"} 
                               alt={item.name}
                               className="w-16 h-16 rounded-lg object-cover border border-gray-200"
                             />

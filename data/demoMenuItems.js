@@ -114,14 +114,14 @@ export const demoMenuItems = [
     description: "Spaghetti with eggs, cheese, pancetta, black pepper",
     price: 13.25,
     category: "Main Courses",
-    image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=300&h=200&fit=crop&crop=center",
+    image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&h=200&fit=crop&crop=center",
   },
   {
     name: "Fish & Chips",
     description: "Beer-battered cod with hand-cut chips",
     price: 15.50,
     category: "Main Courses",
-    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop&crop=center",
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=300&h=200&fit=crop&crop=center",
   },
   {
     name: "Vegetarian Curry",
@@ -197,7 +197,7 @@ export const demoMenuItems = [
     description: "Daily pasta creation with seasonal ingredients",
     price: 16.50,
     category: "Specials",
-    image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=300&h=200&fit=crop&crop=center",
+    image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&h=200&fit=crop&crop=center",
   },
   {
     name: "Grilled Ribeye Steak",

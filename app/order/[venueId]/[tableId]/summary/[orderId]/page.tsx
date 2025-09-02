@@ -286,7 +286,7 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
                       {/* Item Image */}
                       <div className="flex-shrink-0">
                         <MenuItemImage 
-                          src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=80&h=80&fit=crop&crop=center"} 
+                          src={item.image || "https://images.unsplash.com/photo-1544025162-d76694265947?w=80&h=80&fit=crop&crop=center"} 
                           alt={item.item_name}
                           className="w-16 h-16 rounded-lg object-cover border border-gray-200"
                         />
