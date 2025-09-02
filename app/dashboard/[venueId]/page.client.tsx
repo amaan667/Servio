@@ -442,17 +442,7 @@ export default function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/settings`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                  <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Settings</h3>
-                <p className="text-muted-foreground text-xs sm:text-sm">Configure your venue and account preferences</p>
-              </CardContent>
-            </Card>
-          </Link>
+
         </div>
 
         {/* Getting Started Section */}
