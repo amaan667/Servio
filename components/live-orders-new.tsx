@@ -24,10 +24,10 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   const [activeTab, setActiveTab] = useState<'live' | 'earlier' | 'history'>('live');
 
   // Use the new RPC-based tab counts
-  const { data: tabCounts, isLoading: countsLoading } = useTabCounts(venueId, venueTimezone, 30);
+  const { data: tabCounts, isLoading: countsLoading, refetch: refetchCounts } = useTabCounts(venueId, venueTimezone, 30);
   
   // Set up realtime updates for counts
-  useCountsRealtime(venueId, venueTimezone);
+  useCountsRealtime(venueId, venueTimezone, refetchCounts);
 
   console.log('[LIVE_ORDERS] Component mounted with venueId:', venueId);
 

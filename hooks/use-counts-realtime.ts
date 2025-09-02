@@ -1,10 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useQueryClient } from '@tanstack/react-query'
 
-export function useCountsRealtime(venueId: string, tz: string) {
+export function useCountsRealtime(venueId: string, tz: string, onOrderChange?: () => void) {
   const supabase = createClient()
-  const queryClient = useQueryClient()
+  const onOrderChangeRef = useRef(onOrderChange)
+
+  useEffect(() => {
+    onOrderChangeRef.current = onOrderChange
+  }, [onOrderChange])
 
   useEffect(() => {
     if (!venueId || !tz) return
@@ -17,10 +20,10 @@ export function useCountsRealtime(venueId: string, tz: string) {
         table: 'orders',
         filter: `venue_id=eq.${venueId}`,
       }, () => {
-        console.log('[COUNTS_REALTIME] Order changed, invalidating tab counts')
-        queryClient.invalidateQueries({ 
-          queryKey: ['tab-counts', venueId, tz] 
-        })
+        console.log('[COUNTS_REALTIME] Order changed, refreshing tab counts')
+        if (onOrderChangeRef.current) {
+          onOrderChangeRef.current()
+        }
       })
       .subscribe()
 
@@ -28,5 +31,5 @@ export function useCountsRealtime(venueId: string, tz: string) {
       console.log('[COUNTS_REALTIME] Cleaning up channel')
       supabase.removeChannel(channel) 
     }
-  }, [venueId, tz, queryClient])
+  }, [venueId, tz])
 }

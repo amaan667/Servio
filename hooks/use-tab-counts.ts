@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect, useCallback } from 'react'
 
 export interface TabCounts {
   live_count: number
@@ -8,12 +8,19 @@ export interface TabCounts {
 }
 
 export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
-  const supabase = createClient()
-  
-  return useQuery({
-    queryKey: ['tab-counts', venueId, tz, liveWindowMins],
-    queryFn: async (): Promise<TabCounts> => {
-      const { data, error } = await supabase
+  const [data, setData] = useState<TabCounts | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchCounts = useCallback(async () => {
+    if (!venueId || !tz) return
+    
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const supabase = createClient()
+      const { data: result, error: rpcError } = await supabase
         .rpc('orders_tab_counts', { 
           p_venue_id: venueId, 
           p_tz: tz, 
@@ -21,16 +28,25 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
         })
         .single()
       
-      if (error) {
-        console.error('[TAB_COUNTS] RPC error:', error)
-        throw error
+      if (rpcError) {
+        console.error('[TAB_COUNTS] RPC error:', rpcError)
+        setError(rpcError.message)
+        return
       }
       
-      console.log('[TAB_COUNTS] RPC result:', data)
-      return data
-    },
-    refetchOnWindowFocus: false,
-    staleTime: 10000, // 10 seconds
-    enabled: !!venueId && !!tz,
-  })
+      console.log('[TAB_COUNTS] RPC result:', result)
+      setData(result)
+    } catch (err) {
+      console.error('[TAB_COUNTS] Fetch error:', err)
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [venueId, tz, liveWindowMins])
+
+  useEffect(() => {
+    fetchCounts()
+  }, [fetchCounts])
+
+  return { data, isLoading, error, refetch: fetchCounts }
 }
