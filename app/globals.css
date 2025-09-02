@@ -163,6 +163,53 @@
   }
 }
 
+/* Calendar Shift Pills */
+.shift-pill {
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.shift-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.shift-pill.overnight {
+  border-radius: 8px;
+}
+
+/* Ensure proper z-index layering for calendar */
+.event-overlay {
+  pointer-events: none;
+}
+
+.event-overlay .shift-pill {
+  pointer-events: auto;
+}
+
+/* Handle edge cases for pills that span week boundaries */
+.shift-pill.week-boundary {
+  border-radius: 8px;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .shift-pill {
+    font-size: 0.7rem;
+    padding: 0.25rem;
+  }
+  
+  .shift-pill .font-medium {
+    font-size: 0.7rem;
+  }
+  
+  .shift-pill {
+    height: 60px !important;
+  }
+}
+
 /* Loading spinner */
 .loading-spinner {
   border: 2px solid #f3f3f3;

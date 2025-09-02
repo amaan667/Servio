@@ -303,6 +303,43 @@ export default function StaffClient({
       setCurrentMonth(new Date());
     };
 
+    // Helper function to compute grid placement for shifts
+    const computeGridPlacement = (start: Date, end: Date) => {
+      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const startDayOfWeek = startOfMonth.getDay();
+      
+      // Calculate week row index (0-based)
+      const startDate = new Date(start);
+      const daysFromStart = Math.floor((startDate.getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24));
+      const weekRow = Math.floor((daysFromStart + startDayOfWeek) / 7);
+      
+      // Calculate column start (1-7, where 1 = Sunday)
+      const colStart = startDate.getDay() + 1;
+      
+      // Calculate how many columns to span
+      const endDate = new Date(end);
+      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const spanCols = Math.min(7 - colStart + 1, daysDiff + 1);
+      
+      return { row: weekRow + 1, colStart, spanCols };
+    };
+
+    // Get all shifts for the current month view
+    const getShiftsForMonth = () => {
+      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      
+      return allShifts.filter(shift => {
+        const shiftStart = new Date(shift.start_time);
+        const shiftEnd = new Date(shift.end_time);
+        
+        // Include shift if it overlaps with the month view
+        return shiftStart <= endOfMonth && shiftEnd >= startOfMonth;
+      });
+    };
+
+    const monthShifts = getShiftsForMonth();
+
     return (
       <Card>
         <CardHeader>
@@ -323,92 +360,82 @@ export default function StaffClient({
           <div className="text-2xl font-bold text-center">{monthName}</div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-7 gap-2">
-            {/* Day headers */}
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="p-2 text-center text-sm font-semibold text-gray-600">
-                {day}
-              </div>
-            ))}
-            
-            {/* Calendar days */}
-            {days.map((day, index) => {
-              const shifts = getShiftsForDate(day.date);
-              return (
-                <div
-                  key={index}
-                  className={`min-h-[120px] p-2 border ${
-                    day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                  } ${day.isToday ? 'ring-2 ring-purple-500' : ''}`}
-                >
-                  <div className={`text-xs p-1 text-right ${
-                    day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                  } ${day.isToday ? 'font-bold' : ''}`}>
-                    {day.date.getDate()}
-                  </div>
-                  
-                  {/* Shifts for this day */}
-                  <div className="space-y-1.5">
-                    {shifts.slice(0, 4).map(shift => {
-                      const overnight = isOvernightShift(shift);
-                      const isStartDay = new Date(shift.start_time).toLocaleDateString('en-CA') === day.date.toLocaleDateString('en-CA');
-                      const isEndDay = new Date(shift.end_time).toLocaleDateString('en-CA') === day.date.toLocaleDateString('en-CA');
-                      
-                      return (
-                        <div
-                          key={shift.id}
-                          className={`text-xs p-1.5 rounded-md truncate ${
-                            overnight 
-                              ? 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border border-orange-300 shadow-sm' 
-                              : 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border border-purple-300 shadow-sm'
-                          } ${
-                            overnight && isStartDay ? 'border-l-4 border-l-orange-500 -ml-3' : ''
-                          } ${
-                            overnight && isEndDay ? 'border-r-4 border-r-orange-500 -mr-3' : ''
-                          } ${
-                            overnight ? 'relative z-20' : ''
-                          } ${
-                            overnight && isStartDay ? 'shadow-xl shadow-orange-300' : ''
-                          } ${
-                            overnight && isEndDay ? 'shadow-xl shadow-orange-300' : ''
-                          } ${
-                            overnight ? 'transform scale-105' : ''
-                          }`}
-                          title={`${shift.staff_name} (${shift.staff_role}) - ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? ` - ${shift.area}` : ''}${overnight ? ' - Overnight Shift' : ''}`}
-                        >
-                          <div className="font-medium truncate flex items-center gap-1 mb-1">
-                            {shift.staff_name}
-                            {overnight && (
-                              <span className="text-orange-600" title="Overnight Shift">🌙</span>
-                            )}
-                          </div>
-                          <div className={`truncate text-xs ${overnight ? 'text-orange-600' : 'text-purple-600'}`}>
-                            {formatTime(shift.start_time)} - {formatTime(shift.end_time)}
-                          </div>
-                          {shift.area && (
-                            <div className={`truncate text-xs mt-0.5 ${overnight ? 'text-orange-500' : 'text-purple-500'}`}>
-                              {shift.area}
-                            </div>
-                          )}
-                          {overnight && (
-                            <div className="flex items-center justify-center mt-1">
-                              <div className="text-xs text-orange-500 font-medium">
-                                {isStartDay ? '→' : '←'}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {shifts.length > 4 && (
-                      <div className="text-xs text-gray-500 text-center py-1 bg-gray-100 rounded">
-                        +{shifts.length - 4} more
-                      </div>
-                    )}
-                  </div>
+          <div className="relative">
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-2">
+              {/* Day headers */}
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="p-2 text-center text-sm font-semibold text-gray-600">
+                  {day}
                 </div>
-              );
-            })}
+              ))}
+              
+              {/* Calendar days */}
+              {days.map((day, index) => {
+                return (
+                  <div
+                    key={index}
+                    className={`min-h-[120px] p-2 border ${
+                      day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                    } ${day.isToday ? 'ring-2 ring-purple-500' : ''}`}
+                  >
+                    <div className={`text-xs p-1 text-right ${
+                      day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                    } ${day.isToday ? 'font-bold' : ''}`}>
+                      {day.date.getDate()}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Event Overlay for Shifts */}
+            <div className="event-overlay absolute inset-0 pointer-events-none">
+              {monthShifts.map(shift => {
+                const start = new Date(shift.start_time);
+                const end = new Date(shift.end_time);
+                const isOvernight = start.toDateString() !== end.toDateString();
+                const { row, colStart, spanCols } = computeGridPlacement(start, end);
+                
+                return (
+                  <div
+                    key={shift.id}
+                    className={`shift-pill absolute pointer-events-auto ${
+                      isOvernight ? 'overnight' : ''
+                    }`}
+                    style={{
+                      left: `${(colStart - 1) * (100 / 7)}%`,
+                      width: `${spanCols * (100 / 7)}%`,
+                      top: `${(row - 1) * 120 + 40}px`, // 120px day height + 40px header offset
+                      height: '80px', // Fixed height for shift pills
+                      zIndex: isOvernight ? 20 : 10
+                    }}
+                    title={`${shift.staff_name} (${shift.staff_role}) - ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? ` - ${shift.area}` : ''}${isOvernight ? ' - Overnight Shift' : ''}`}
+                  >
+                    <div className={`h-full rounded-lg p-2 shadow-sm border ${
+                      isOvernight 
+                        ? 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-orange-300' 
+                        : 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border-purple-300'
+                    }`}>
+                      <div className="font-medium text-xs truncate mb-1 flex items-center gap-1">
+                        {shift.staff_name}
+                        {isOvernight && (
+                          <span className="text-orange-600" title="Overnight Shift">🌙</span>
+                        )}
+                      </div>
+                      <div className={`text-xs ${isOvernight ? 'text-orange-600' : 'text-purple-600'}`}>
+                        {formatTime(shift.start_time)} - {formatTime(shift.end_time)}
+                      </div>
+                      {shift.area && (
+                        <div className={`text-xs mt-1 truncate ${isOvernight ? 'text-orange-500' : 'text-purple-500'}`}>
+                          {shift.area}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>
