@@ -40,12 +40,19 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   };
 
   const handlePrint = () => {
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`
+    // Create a hidden iframe for printing instead of opening a new window
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'absolute';
+    printFrame.style.left = '-9999px';
+    printFrame.style.top = '-9999px';
+    document.body.appendChild(printFrame);
+    
+    const printContent = printFrame.contentDocument || printFrame.contentWindow?.document;
+    if (printContent) {
+      printContent.write(`
         <html>
           <head>
-            <title>QR Codes - ${venueName}</title>
+            <title>QR Code - Table ${tableNumber}</title>
             <style>
               @media print {
                 body { margin: 0; padding: 0; }
@@ -157,12 +164,6 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
                 border-top: 1px solid #eee;
                 padding-top: 20px;
               }
-              
-              @media screen {
-                .qr-grid { 
-                  grid-template-columns: repeat(2, 1fr); 
-                }
-              }
             </style>
           </head>
           <body>
@@ -202,24 +203,32 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
           </body>
         </html>
       `);
-      printWindow.document.close();
+      printContent.close();
       
-      // Wait for images to load before printing
-      printWindow.onload = () => {
+      // Wait for images to load, then print and remove iframe
+      setTimeout(() => {
+        printFrame.contentWindow?.print();
         setTimeout(() => {
-          printWindow.print();
-        }, 500);
-      };
+          document.body.removeChild(printFrame);
+        }, 1000);
+      }, 500);
     }
   };
 
   const handlePrintMultiple = () => {
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
+    // Create a hidden iframe for printing instead of opening a new window
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'absolute';
+    printFrame.style.left = '-9999px';
+    printFrame.style.top = '-9999px';
+    document.body.appendChild(printFrame);
+    
+    const printContent = printFrame.contentDocument || printFrame.contentWindow?.document;
+    if (printContent) {
       // Generate multiple QR codes for tables 1-10 (or adjust as needed)
       const tables = Array.from({length: 10}, (_, i) => i + 1);
       
-      printWindow.document.write(`
+      printContent.write(`
         <html>
           <head>
             <title>Multiple QR Codes - ${venueName}</title>
@@ -311,12 +320,6 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
                 border-top: 1px solid #eee;
                 padding-top: 20px;
               }
-              
-              @media screen {
-                .qr-grid { 
-                  grid-template-columns: repeat(2, 1fr); 
-                }
-              }
             </style>
           </head>
           <body>
@@ -347,14 +350,15 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
           </body>
         </html>
       `);
-      printWindow.document.close();
+      printContent.close();
       
-      // Wait for images to load before printing
-      printWindow.onload = () => {
+      // Wait for images to load, then print and remove iframe
+      setTimeout(() => {
+        printFrame.contentWindow?.print();
         setTimeout(() => {
-          printWindow.print();
+          document.body.removeChild(printFrame);
         }, 1000);
-      };
+      }, 1000);
     }
   };
 
