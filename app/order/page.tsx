@@ -80,17 +80,16 @@ export default function CustomerOrderPage() {
     // Explicit demo only
     if (isDemo) {
       console.log("Loading demo menu items");
-      const mappedItems = demoMenuItems.map((item, idx) => ({
-        ...item,
-        id: `demo-${idx}`,
-        available: true,
-        price:
-          typeof item.price === "number"
-            ? item.price
-            : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
-      }));
-      console.log('[DEMO DEBUG] Mapped demo items:', mappedItems);
-      setMenuItems(mappedItems);
+              const mappedItems = demoMenuItems.map((item, idx) => ({
+          ...item,
+          id: `demo-${idx}`,
+          available: true,
+          price:
+            typeof item.price === "number"
+              ? item.price
+              : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
+        }));
+        setMenuItems(mappedItems);
       setLoadingMenu(false);
       return;
     }
@@ -162,46 +161,33 @@ export default function CustomerOrderPage() {
   }, [isDemo]);
 
   const addToCart = (item: MenuItem) => {
-    console.log('[CART DEBUG] Adding item to cart:', item);
     setCart((prev) => {
       const existing = prev.find((cartItem) => cartItem.id === item.id);
       if (existing) {
-        const updated = prev.map((cartItem) =>
+        return prev.map((cartItem) =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
-        console.log('[CART DEBUG] Updated existing item, new cart:', updated);
-        return updated;
       }
-      const newCart = [...prev, { ...item, quantity: 1 }];
-      console.log('[CART DEBUG] Added new item, new cart:', newCart);
-      return newCart;
+      return [...prev, { ...item, quantity: 1 }];
     });
   };
 
   const removeFromCart = (itemId: string) => {
-    console.log('[CART DEBUG] Removing item from cart:', itemId);
-    setCart((prev) => {
-      const filtered = prev.filter((item) => item.id !== itemId);
-      console.log('[CART DEBUG] Item removed, new cart:', filtered);
-      return filtered;
-    });
+    setCart((prev) => prev.filter((item) => item.id !== itemId));
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
-    console.log('[CART DEBUG] Updating quantity for item:', itemId, 'to:', quantity);
     if (quantity <= 0) {
       removeFromCart(itemId);
       return;
     }
-    setCart((prev) => {
-      const updated = prev.map((item) =>
+    setCart((prev) =>
+      prev.map((item) =>
         item.id === itemId ? { ...item, quantity } : item
-      );
-      console.log('[CART DEBUG] Quantity updated, new cart:', updated);
-      return updated;
-    });
+      )
+    );
   };
 
   const updateSpecialInstructions = (itemId: string, instructions: string) => {
@@ -451,7 +437,6 @@ export default function CustomerOrderPage() {
                                 <div className="flex space-x-4">
                                   {/* Item Image */}
                                   <div className="flex-shrink-0">
-                                    {console.log('[MENU DEBUG] Item image:', item.image, 'for item:', item.name)}
                                     <MenuItemImage 
                                       src={item.image || "https://images.unsplash.com/photo-1544025162-d76694265947?w=80&h=80&fit=crop&crop=center"} 
                                       alt={item.name}
@@ -507,7 +492,6 @@ export default function CustomerOrderPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {console.log('[CART DEBUG] Rendering cart with items:', cart)}
                 {cart.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
                     Your cart is empty. Add some items to get started!
@@ -640,7 +624,6 @@ export default function CustomerOrderPage() {
               </div>
               
               <div className="p-4">
-                {console.log('[CART DEBUG] Rendering mobile cart with items:', cart)}
                 {cart.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
                     Your cart is empty. Add some items to get started!

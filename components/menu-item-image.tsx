@@ -1,30 +1,53 @@
 "use client";
 
 import { useState } from "react";
-import { UtensilsCrossed } from "lucide-react";
+import { UtensilsCrossed, ImageOff } from "lucide-react";
 
 interface MenuItemImageProps {
   src: string;
   alt: string;
   className?: string;
   fallbackIcon?: React.ReactNode;
+  showLoadingState?: boolean;
 }
 
 export default function MenuItemImage({ 
   src, 
   alt, 
   className = "w-20 h-20 rounded-lg object-cover border border-gray-200",
-  fallbackIcon = <UtensilsCrossed className="w-8 w-8 text-gray-400" />
+  fallbackIcon = <UtensilsCrossed className="w-8 w-8 text-gray-400" />,
+  showLoadingState = true
 }: MenuItemImageProps) {
   const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  console.log('[IMAGE DEBUG] Rendering image:', { src, alt, hasError });
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
+  };
 
-  if (hasError) {
-    console.log('[IMAGE DEBUG] Showing fallback for:', src);
+  const handleImageError = () => {
+    setHasError(true);
+    setIsLoading(false);
+  };
+
+  // Show loading state
+  if (showLoadingState && isLoading) {
     return (
       <div className={`${className} bg-gray-100 flex items-center justify-center`}>
-        {fallbackIcon}
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (hasError) {
+    return (
+      <div className={`${className} bg-gray-100 flex items-center justify-center`}>
+        <div className="text-center">
+          <ImageOff className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+          <span className="text-xs text-gray-500">Image unavailable</span>
+        </div>
       </div>
     );
   }
@@ -34,12 +57,13 @@ export default function MenuItemImage({
       src={src}
       alt={alt}
       className={className}
-      onError={() => {
-        console.log('[IMAGE DEBUG] Image failed to load:', src);
-        setHasError(true);
-      }}
-      onLoad={() => console.log('[IMAGE DEBUG] Image loaded successfully:', src)}
+      onLoad={handleImageLoad}
+      onError={handleImageError}
       loading="lazy"
+      style={{ 
+        transition: 'opacity 0.2s ease-in-out',
+        opacity: isLoading ? 0 : 1 
+      }}
     />
   );
 }
