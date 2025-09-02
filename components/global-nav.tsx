@@ -107,7 +107,7 @@ export default function GlobalNav() {
   // Don't render navigation items while loading
   if (loading) {
     return (
-      <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
+      <nav className="bg-background border-b border-border shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
           <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
             {/* Logo */}
@@ -126,7 +126,7 @@ export default function GlobalNav() {
             
             {/* Loading indicator */}
             <div className="flex items-center">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
             </div>
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function GlobalNav() {
   }
 
   return (
-    <nav className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-50">
+    <nav className="bg-background border-b border-border shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
         <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
           {/* Logo */}
@@ -153,25 +153,25 @@ export default function GlobalNav() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden md:flex items-center space-x-2">
             {isAuthenticated ? (
               // Signed in navigation - modern SaaS style
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-2">
                 {(isOnDashboard || isOnQRPage) ? (
                   // On dashboard pages and QR pages: Home, Settings, Sign Out
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
-                      <Home className="mr-2 h-4 w-4" />
+                      <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
-                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
-                      <Settings className="mr-2 h-4 w-4" />
+                      <Settings className="mr-3 h-5 w-5" />
                       Settings
                     </Link>
                   </>
@@ -180,16 +180,16 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
-                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
-                      <Home className="mr-2 h-4 w-4" />
+                      <Home className="mr-3 h-5 w-5" />
                       Home
                     </Link>
                   </>
@@ -198,55 +198,55 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
-                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
-                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
-                      <Settings className="mr-2 h-4 w-4" />
+                      <Settings className="mr-3 h-5 w-5" />
                       Settings
                     </Link>
                   </>
                 )}
-                <div className="w-px h-6 bg-gray-300 mx-2"></div>
+                <div className="w-px h-8 bg-border mx-2"></div>
                 <Button
                   variant="ghost"
                   onClick={handleSignOut}
-                  className="flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all duration-200"
+                  className="flex items-center px-4 py-3 text-base font-medium text-destructive hover:text-destructive hover:bg-destructive/10 rounded-md transition-all duration-200"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-3 h-5 w-5" />
                   Sign Out
                 </Button>
               </div>
             ) : (
               // Not signed in navigation - modern SaaS style
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-2">
                 <Link
                   href="/"
-                  className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                  className="px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                 >
                   Home
                 </Link>
                 <Link
                   href="#features"
-                  className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                  className="px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                 >
                   Features
                 </Link>
                 <Link
                   href="#pricing"
-                  className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
+                  className="px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                 >
                   Pricing
                 </Link>
-                <div className="w-px h-6 bg-gray-300 mx-2"></div>
+                <div className="w-px h-8 bg-border mx-2"></div>
                 <Button
                   onClick={() => router.push('/sign-in')}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 shadow-sm"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 text-base font-medium rounded-md transition-all duration-200 shadow-sm"
                 >
                   Sign In
                 </Button>
@@ -259,12 +259,12 @@ export default function GlobalNav() {
             <Button
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+              className="p-3 text-foreground hover:text-primary hover:bg-accent rounded-md"
             >
               {mobileMenuOpen ? (
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               ) : (
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" />
               )}
             </Button>
           </div>
@@ -273,7 +273,7 @@ export default function GlobalNav() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
+        <div className="md:hidden border-t border-border bg-background">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {isAuthenticated ? (
               // Signed in mobile navigation
@@ -282,18 +282,18 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/"
-                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      className="flex items-center px-4 py-3 text-lg font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Home className="mr-3 h-5 w-5" />
+                      <Home className="mr-4 h-6 w-6" />
                       Home
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
-                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      className="flex items-center px-4 py-3 text-lg font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Settings className="mr-3 h-5 w-5" />
+                      <Settings className="mr-4 h-6 w-6" />
                       Settings
                     </Link>
                   </>
@@ -301,18 +301,18 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
-                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      className="flex items-center px-4 py-3 text-lg font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5" />
+                      <LayoutDashboard className="mr-4 h-6 w-6" />
                       Dashboard
                     </Link>
                     <Link
                       href="/"
-                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      className="flex items-center px-4 py-3 text-lg font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Home className="mr-3 h-5 w-5" />
+                      <Home className="mr-4 h-6 w-6" />
                       Home
                     </Link>
                   </>
@@ -320,32 +320,29 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
-                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      className="flex items-center px-4 py-3 text-lg font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5" />
+                      <LayoutDashboard className="mr-4 h-6 w-6" />
                       Dashboard
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
-                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                      className="flex items-center px-4 py-3 text-lg font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Settings className="mr-3 h-5 w-5" />
+                      <Settings className="mr-4 h-6 w-6" />
                       Settings
                     </Link>
                   </>
                 )}
-                <div className="border-t border-gray-200 my-2"></div>
+                <div className="w-full h-px bg-border my-2"></div>
                 <Button
                   variant="ghost"
-                  onClick={() => {
-                    handleSignOut();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="flex items-center w-full justify-start px-3 py-2 text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                  onClick={handleSignOut}
+                  className="flex items-center w-full px-4 py-3 text-lg font-medium text-destructive hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                 >
-                  <LogOut className="mr-3 h-5 w-5" />
+                  <LogOut className="mr-4 h-6 w-6" />
                   Sign Out
                 </Button>
               </>
@@ -354,29 +351,35 @@ export default function GlobalNav() {
               <>
                 <Link
                   href="/"
-                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                  className="block px-4 py-3 text-lg font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Home
                 </Link>
                 <Link
                   href="#features"
-                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                  className="block px-4 py-3 text-lg font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Features
                 </Link>
                 <Link
                   href="#pricing"
-                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                  className="block px-4 py-3 text-lg font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Pricing
                 </Link>
-                <div className="border-t border-gray-200 my-2"></div>
-                <div onClick={() => setMobileMenuOpen(false)}>
-                  <SignInButton />
-                </div>
+                <div className="w-full h-px bg-border my-2"></div>
+                <Button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    router.push('/sign-in');
+                  }}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 text-lg font-medium rounded-md transition-all duration-200 shadow-sm"
+                >
+                  Sign In
+                </Button>
               </>
             )}
           </div>

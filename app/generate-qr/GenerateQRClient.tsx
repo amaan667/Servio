@@ -410,31 +410,31 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   }, [venueId]);
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Tables (today)</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalTablesToday}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Tables (today)</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.totalTablesToday}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active QR Codes (now)</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.activeTablesNow}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active QR Codes (now)</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.activeTablesNow}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         <Card>
           <CardHeader>
             <CardTitle>QR Code Settings</CardTitle>
@@ -447,7 +447,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               <Label>Table Numbers</Label>
               <div className="mt-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-muted-foreground">
                     Currently generating QR codes for <span className="font-semibold">{selectedTables.length}</span> table{selectedTables.length !== 1 ? 's' : ''}
                   </div>
                   {selectedTables.length > 1 && (
@@ -462,7 +462,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
                   )}
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
                     onClick={addTable}
@@ -483,9 +483,9 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
 
             <div>
               <Label>Venue</Label>
-              <div className="mt-1 p-3 bg-gray-50 rounded-md">
+              <div className="mt-1 p-3 bg-muted rounded-md">
                 <p className="font-medium">{venueName || "My Venue"}</p>
-                <p className="text-sm text-gray-600">Venue ID: {venueId}</p>
+                <p className="text-sm text-muted-foreground">Venue ID: {venueId}</p>
               </div>
             </div>
 
@@ -496,11 +496,11 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               </Label>
               <div className="mt-2 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">QR Code Size:</span>
+                  <span className="text-sm text-muted-foreground">QR Code Size:</span>
                   <select 
                     value={printSettings.qrSize} 
                     onChange={(e) => setPrintSettings(prev => ({...prev, qrSize: parseInt(e.target.value)}))}
-                    className="text-sm border rounded px-2 py-1"
+                    className="text-sm border rounded px-2 py-1 bg-background text-foreground"
                   >
                     <option value={120}>Small (120px)</option>
                     <option value={150}>Medium (150px)</option>
@@ -508,7 +508,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
                   </select>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Include Instructions:</span>
+                  <span className="text-sm text-muted-foreground">Include Instructions:</span>
                   <input 
                     type="checkbox" 
                     checked={printSettings.includeInstructions}
@@ -517,7 +517,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Include Venue Info:</span>
+                  <span className="text-sm text-muted-foreground">Include Venue Info:</span>
                   <input 
                     type="checkbox" 
                     checked={printSettings.includeVenueInfo}
@@ -538,22 +538,22 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
               {selectedTables.map((tableNumber, index) => {
                 const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`;
                 return (
-                  <div key={index} className="text-center p-3 border rounded-lg bg-white">
-                    <div className="bg-white p-2 rounded-lg shadow-sm inline-block">
+                  <div key={index} className="text-center p-2 sm:p-3 border rounded-lg bg-card">
+                    <div className="bg-card p-2 rounded-lg shadow-sm inline-block">
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 120)}x${Math.min(printSettings.qrSize, 120)}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2`}
                         alt={`QR Code for Table ${tableNumber}`}
-                        className="w-24 h-24"
+                        className="w-20 h-20 sm:w-24 sm:h-24"
                       />
                     </div>
                     <div className="mt-2">
                       <Badge variant="secondary">Table {tableNumber}</Badge>
                     </div>
-                    <div className="mt-2 text-xs text-gray-600 break-all">
+                    <div className="mt-2 text-xs text-muted-foreground break-all">
                       <code className="text-xs">{tableOrderUrl}</code>
                     </div>
                   </div>
@@ -561,7 +561,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               })}
             </div>
 
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button onClick={handleCopy} variant="outline" className="flex-1">
                 {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                 {copied ? "Copied!" : "Copy URL"}
@@ -597,7 +597,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               </div>
               <div>
                 <h4 className="font-medium">Generate QR Codes</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Create a QR code for each table in your venue
                 </p>
               </div>
@@ -608,7 +608,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               </div>
               <div>
                 <h4 className="font-medium">Print and Display</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Print the QR codes and place them on each table
                 </p>
               </div>
@@ -619,7 +619,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               </div>
               <div>
                 <h4 className="font-medium">Customers Order</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Customers scan the QR code to view your menu and place orders
                 </p>
               </div>

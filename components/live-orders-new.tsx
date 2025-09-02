@@ -414,24 +414,26 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         </div>
       )}
       
-      {/* Tab Navigation - Centered with proper spacing */}
+      {/* Tab Navigation - Mobile responsive with horizontal scroll */}
       <div className="flex justify-center mb-6">
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg shadow-sm">
-          {(['live', 'earlier', 'history'] as const).map((tab) => (
-            <Button
-              key={tab}
-              variant={activeTab === tab ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab(tab)}
-              className="flex items-center space-x-2 px-4 py-2 min-w-[120px] justify-center"
-            >
-              {getTabIcon(tab)}
-              <span className="font-medium">{getTabLabel(tab)}</span>
-              <Badge variant="secondary" className="ml-1">
-                {countsLoading ? '...' : tabCounts ? getTabCount(tab) : '?'}
-              </Badge>
-            </Button>
-          ))}
+        <div className="w-full max-w-md md:max-w-none overflow-x-auto">
+          <div className="flex space-x-1 bg-muted p-1 rounded-lg shadow-sm min-w-max md:min-w-0">
+            {(['live', 'earlier', 'history'] as const).map((tab) => (
+              <Button
+                key={tab}
+                variant={activeTab === tab ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab(tab)}
+                className="flex items-center space-x-2 px-3 py-2 md:px-4 md:py-2 min-w-[100px] md:min-w-[120px] justify-center whitespace-nowrap"
+              >
+                {getTabIcon(tab)}
+                <span className="font-medium text-sm md:text-base">{getTabLabel(tab)}</span>
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {countsLoading ? '...' : tabCounts ? getTabCount(tab) : '?'}
+                </Badge>
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
