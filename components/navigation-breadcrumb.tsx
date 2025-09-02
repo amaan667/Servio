@@ -35,8 +35,11 @@ export default function NavigationBreadcrumb({
     [params?.venueId, pathname, propVenueId]
   );
   
-  // [NAV] Determine home link - route to dashboard if we have a venueId, otherwise home
-  const homeLink = venueId ? `/dashboard/${venueId}` : '/';
+  // [NAV] Determine home link - always route to actual home page
+  const homeLink = '/';
+  
+  // [NAV] Determine dashboard link - route to dashboard if we have a venueId
+  const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
 
   console.log('[NAV] NavigationBreadcrumb', { venueId, homeLink, pathname });
 
@@ -68,14 +71,14 @@ export default function NavigationBreadcrumb({
   const isSignUpPage = pathname.includes("/sign-up");
   const isGenerateQRPage = pathname.includes("/generate-qr");
 
-  // For sign-in/sign-up pages: Home → Sign In/Sign Up (current)
+  // For sign-in/sign-up pages: Home ← Sign In/Sign Up (current)
   if ((isSignInPage || isSignUpPage) && !showBackButton) {
     return (
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
             <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href="/dashboard">
+              <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
                   <span className="hidden sm:inline">Home</span>
@@ -90,7 +93,7 @@ export default function NavigationBreadcrumb({
     );
   }
 
-  // Dashboard root: Home → Dashboard (current)
+  // Dashboard root: Home ← Dashboard (current)
   if (isDashboardRoot) {
     return (
       <nav aria-label="Breadcrumb" className="mb-4">
