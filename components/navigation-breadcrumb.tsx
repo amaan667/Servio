@@ -49,7 +49,7 @@ export default function NavigationBreadcrumb({
       if (pathname.includes("/menu")) return "Menu Management";
       if (pathname.includes("/menu-management")) return "Menu Management";
       if (pathname.includes("/qr-codes")) return "QR Codes";
-      if (pathname.includes("/qr/")) return "QR Codes";
+      if (pathname.includes("/generate-qr")) return "QR Codes";
       if (pathname.includes("/analytics")) return "Analytics";
       if (pathname.includes("/staff")) return "Staff Management";
       if (pathname.includes("/settings")) return "Settings";

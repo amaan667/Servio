@@ -327,7 +327,7 @@ export default function VenueDashboardClient({
             </Card>
           </Link>
 
-           <Link href={`/dashboard/${venueId}/qr-codes`}>
+           <Link href={`/generate-qr?venue=${venueId}`}>
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">

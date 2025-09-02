@@ -43,7 +43,7 @@ export default function GlobalNav() {
   const isOnDashboard = pathname?.startsWith('/dashboard');
   const isOnHomePage = pathname === '/';
   const isOnSettings = pathname?.includes('/settings');
-  const isOnQRPage = pathname?.includes('/generate-qr') || pathname?.includes('/qr');
+  const isOnQRPage = pathname?.includes('/generate-qr');
   
   // Extract venueId from pathname for venue-specific navigation
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
