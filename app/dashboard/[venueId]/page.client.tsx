@@ -406,6 +406,42 @@ export default function VenueDashboardClient({
             </Card>
           </Link>
 
+          <Link href={`/dashboard/${venueId}/analytics`}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4 sm:p-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                </div>
+                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Analytics</h3>
+                <p className="text-muted-foreground text-xs sm:text-sm">View detailed reports and business insights</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href={`/dashboard/${venueId}/feedback`}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4 sm:p-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
+                </div>
+                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Feedback</h3>
+                <p className="text-muted-foreground text-xs sm:text-sm">See customer reviews and ratings</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href={`/dashboard/${venueId}/staff`}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4 sm:p-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
+                </div>
+                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Staff Management</h3>
+                <p className="text-muted-foreground text-xs sm:text-sm">Add staff and manage roles</p>
+              </CardContent>
+            </Card>
+          </Link>
+
           <Link href={`/dashboard/${venueId}/settings`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
