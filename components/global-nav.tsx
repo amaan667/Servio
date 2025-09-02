@@ -43,6 +43,7 @@ export default function GlobalNav() {
   const isOnDashboard = pathname?.startsWith('/dashboard');
   const isOnHomePage = pathname === '/';
   const isOnSettings = pathname?.includes('/settings');
+  const isOnQRPage = pathname?.includes('/generate-qr') || pathname?.includes('/qr');
   
   // Extract venueId from pathname for venue-specific navigation
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
@@ -157,17 +158,17 @@ export default function GlobalNav() {
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-1">
                 {isOnDashboard ? (
-                  // On dashboard pages: Dashboard, Settings, Sign Out
+                  // On dashboard pages: Home, Settings, Sign Out
                   <>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      href="/"
                       className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
                     >
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      Dashboard
+                      <Home className="mr-2 h-4 w-4" />
+                      Home
                     </Link>
                     <Link
-                      href="/settings"
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
                     >
                       <Settings className="mr-2 h-4 w-4" />
@@ -178,9 +179,10 @@ export default function GlobalNav() {
                   // On settings pages: Dashboard, Home, Sign Out
                   <>
                     <Link
-                      href="/dashboard"
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
                       className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
                     >
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
                     </Link>
                     <Link
@@ -192,12 +194,13 @@ export default function GlobalNav() {
                     </Link>
                   </>
                 ) : (
-                  // On home page: Dashboard, Settings, Sign Out
+                  // On home page and QR pages: Dashboard, Settings, Sign Out
                   <>
                     <Link
-                      href="/dashboard"
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
                       className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
                     >
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
                     </Link>
                     <Link
@@ -278,12 +281,12 @@ export default function GlobalNav() {
                 {isOnDashboard ? (
                   <>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      href="/"
                       className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <LayoutDashboard className="mr-3 h-5 w-5" />
-                      Dashboard
+                      <Home className="mr-3 h-5 w-5" />
+                      Home
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
@@ -297,10 +300,11 @@ export default function GlobalNav() {
                 ) : isOnSettings ? (
                   <>
                     <Link
-                      href="/dashboard"
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
                       className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
+                      <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
@@ -315,10 +319,11 @@ export default function GlobalNav() {
                 ) : (
                   <>
                     <Link
-                      href="/dashboard"
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
                       className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
+                      <LayoutDashboard className="mr-3 h-5 w-5" />
                       Dashboard
                     </Link>
                     <Link
