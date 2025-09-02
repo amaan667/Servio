@@ -299,9 +299,42 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   };
 
   const getTabCount = (tab: 'live' | 'earlier' | 'history') => {
-    // This is a placeholder - we'll need to implement proper count calculation
-    // For now, return 0 to avoid showing incorrect counts
-    return 0;
+    if (!orders || orders.length === 0) return 0;
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    switch (tab) {
+      case 'live':
+        // Live orders: active statuses from today (should be 0 on Sep 2nd)
+        return orders.filter(order => {
+          const orderDate = new Date(order.created_at);
+          const isToday = orderDate >= today && orderDate < tomorrow;
+          const isActive = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'ACCEPTED', 'OUT_FOR_DELIVERY'].includes(order.order_status);
+          return isToday && isActive;
+        }).length;
+        
+      case 'earlier':
+        // Earlier today: terminal statuses from today (should be 0 on Sep 2nd)
+        return orders.filter(order => {
+          const orderDate = new Date(order.created_at);
+          const isToday = orderDate >= today && orderDate < tomorrow;
+          const isTerminal = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED', 'COMPLETED'].includes(order.order_status);
+          return isToday && isTerminal;
+        }).length;
+        
+      case 'history':
+        // History: all orders from previous days (should be 19 on Sep 2nd)
+        return orders.filter(order => {
+          const orderDate = new Date(order.created_at);
+          return orderDate < today;
+        }).length;
+        
+      default:
+        return 0;
+    }
   };
 
   const getTabLabel = (tab: string) => {
@@ -354,11 +387,9 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             >
               {getTabIcon(tab)}
               <span className="font-medium">{getTabLabel(tab)}</span>
-              {getTabCount(tab) > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {getTabCount(tab)}
-                </Badge>
-              )}
+              <Badge variant="secondary" className="ml-1">
+                {getTabCount(tab)}
+              </Badge>
             </Button>
           ))}
         </div>
