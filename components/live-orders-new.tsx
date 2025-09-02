@@ -114,12 +114,11 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           .order('created_at', { ascending: false });
         console.log(`[LIVE_ORDERS] Earlier query with statuses:`, TERMINAL_TODAY);
       } else if (tab === 'history') {
-        // History: SERVED/COMPLETED orders from previous days
+        // History: All orders from previous days (regardless of status)
         query = query
-          .or(`order_status.in.(SERVED,COMPLETED),status.in.(SERVED,COMPLETED)`)
           .lt('created_at', startUtc)
           .order('created_at', { ascending: false });
-        console.log(`[LIVE_ORDERS] History query for SERVED/COMPLETED orders before:`, startUtc);
+        console.log(`[LIVE_ORDERS] History query for all orders before:`, startUtc);
       }
 
       console.log(`[LIVE_ORDERS] Executing query for ${tab}...`);
