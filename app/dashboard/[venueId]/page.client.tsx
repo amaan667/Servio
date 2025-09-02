@@ -18,13 +18,20 @@ interface DashboardCounts {
   active_tables_count: number;
 }
 
+interface DashboardStats {
+  revenue: number;
+  menuItems: number;
+  unpaid: number;
+}
+
 export default function VenueDashboardClient({ 
   venueId, 
   userId, 
   venue: initialVenue, 
   userName,
   venueTz,
-  initialCounts
+  initialCounts,
+  initialStats
 }: { 
   venueId: string; 
   userId: string; 
@@ -32,6 +39,7 @@ export default function VenueDashboardClient({
   userName: string;
   venueTz: string;
   initialCounts?: DashboardCounts;
+  initialStats?: DashboardStats;
 }) {
   const [venue, setVenue] = useState<any>(initialVenue);
   const [loading, setLoading] = useState(!initialVenue); // Start with loading false if we have initial venue data
@@ -42,7 +50,7 @@ export default function VenueDashboardClient({
     today_orders_count: 0,
     active_tables_count: 0
   });
-  const [stats, setStats] = useState({ revenue: 0, menuItems: 0, unpaid: 0 });
+  const [stats, setStats] = useState<DashboardStats>(initialStats || { revenue: 0, menuItems: 0, unpaid: 0 });
   const [todayWindow, setTodayWindow] = useState<any>(null);
   const router = useRouter();
 
