@@ -78,8 +78,13 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             }, []);
 
   const fetchOrders = useCallback(async (tab: 'live' | 'earlier' | 'history') => {
-    if (!venueId) return;
+    if (!venueId) {
+      console.log('[LIVE_ORDERS] No venueId, returning early');
+      setLoading(false);
+      return;
+    }
 
+    console.log(`[LIVE_ORDERS] Starting fetchOrders for tab: ${tab}, venueId: ${venueId}`);
     setLoading(true);
     setError(null);
 
@@ -88,7 +93,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       console.error(`[LIVE_ORDERS] Query timeout for ${tab}`);
       setError(`Query timeout - taking too long to load ${tab} orders`);
       setLoading(false);
-    }, 30000); // 30 second timeout
+    }, 15000); // Reduced to 15 seconds
 
     try {
       const supabase = createClient();
@@ -96,11 +101,11 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         throw new Error('Supabase client not available');
       }
 
+      console.log(`[LIVE_ORDERS] Supabase client created successfully`);
+
       const { startUtc, endUtc } = todayBoundsCorrected(venueTimezone);
       console.log(`[LIVE_ORDERS] Fetching ${tab} orders for venue:`, venueId);
-      console.log(`[LIVE_ORDERS] Time bounds:`);
-      console.log(`  - startUtc: ${startUtc}`);
-      console.log(`  - endUtc: ${endUtc}`);
+      console.log(`[LIVE_ORDERS] Time bounds:`, { startUtc, endUtc });
 
       // First, let's check what orders exist in the database for this venue
       console.log(`[LIVE_ORDERS] Checking all orders for venue ${venueId}...`);
@@ -128,8 +133,6 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
         console.log(`[LIVE_ORDERS] Live tab - Current time: ${new Date().toISOString()}`);
         console.log(`[LIVE_ORDERS] Live tab - 30 minutes ago: ${thirtyMinutesAgo}`);
-        console.log(`[LIVE_ORDERS] Live tab - Order e60e7d0c created at: 2025-09-02T12:27:46.027Z`);
-        console.log(`[LIVE_ORDERS] Live tab - Should be excluded: ${new Date('2025-09-02T12:27:46.027Z') < new Date(thirtyMinutesAgo)}`);
         
         query = query
           .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
@@ -155,14 +158,10 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       }
 
       console.log(`[LIVE_ORDERS] Executing query for ${tab}...`);
-      console.log(`[LIVE_ORDERS] Query details:`);
-      console.log(`  - tab: ${tab}`);
-      console.log(`  - venueId: ${venueId}`);
-      console.log(`  - startUtc: ${startUtc}`);
-      console.log(`  - endUtc: ${endUtc}`);
-      console.log(`  - statuses:`, tab === 'live' ? ACTIVE_STATUSES : tab === 'earlier' ? TERMINAL_TODAY : ['SERVED', 'COMPLETED']);
+      console.log(`[LIVE_ORDERS] Query details:`, { tab, venueId, startUtc, endUtc });
       
       const { data, error: queryError } = await query;
+      console.log(`[LIVE_ORDERS] Query completed, checking for errors...`);
 
       if (queryError) {
         console.error(`[LIVE_ORDERS] Query error for ${tab}:`, queryError);
@@ -246,23 +245,13 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         return;
       }
 
-      console.log(`[LIVE_ORDERS] ${tab} query result:`);
-      console.log(`  - orderCount: ${data?.length || 0}`);
-      console.log(`  - rawData type: ${typeof data}`);
-      console.log(`  - rawData:`, data);
+      console.log(`[LIVE_ORDERS] ${tab} query result:`, { 
+        orderCount: data?.length || 0,
+        rawData: data,
+        isArray: Array.isArray(data)
+      });
       
       if (data && Array.isArray(data)) {
-        console.log(`  - data is array: true`);
-        console.log(`  - data length: ${data.length}`);
-        if (data.length > 0) {
-          console.log(`  - first order:`, data[0]);
-        }
-      } else {
-        console.log(`  - data is array: false`);
-        console.log(`  - data value:`, data);
-      }
-      
-      if (data && data.length > 0) {
         console.log(`[LIVE_ORDERS] ${tab} - Orders found:`, data.length);
         data.forEach((order, index) => {
           console.log(`[LIVE_ORDERS] ${tab} - Order ${index + 1}:`, {
@@ -464,6 +453,19 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
             <span className="ml-2 text-gray-600">Loading orders...</span>
           </div>
+        ) : error ? (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <Alert variant="destructive" className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+              <Button onClick={() => fetchOrders(activeTab)} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
         ) : orders.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">
