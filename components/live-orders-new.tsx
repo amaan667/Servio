@@ -413,15 +413,57 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {orders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onUpdate={handleOrderUpdate}
-                venueCurrency="GBP"
-              />
-            ))}
+          <div className="space-y-8">
+            {(() => {
+              // Group orders by date
+              const ordersByDate = orders.reduce((acc, order) => {
+                const orderDate = new Date(order.created_at);
+                const dateKey = orderDate.toLocaleDateString('en-GB', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                });
+                
+                if (!acc[dateKey]) {
+                  acc[dateKey] = [];
+                }
+                acc[dateKey].push(order);
+                return acc;
+              }, {} as Record<string, typeof orders>);
+
+              // Sort dates (most recent first)
+              const sortedDates = Object.keys(ordersByDate).sort((a, b) => {
+                const dateA = new Date(ordersByDate[a][0].created_at);
+                const dateB = new Date(ordersByDate[b][0].created_at);
+                return dateB.getTime() - dateA.getTime();
+              });
+
+              return sortedDates.map((dateKey) => (
+                <div key={dateKey} className="space-y-4">
+                  {/* Date Header */}
+                  <div className="flex items-center space-x-3">
+                    <div className="h-px flex-1 bg-gray-200"></div>
+                    <h3 className="text-lg font-semibold text-gray-700 bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
+                      {dateKey}
+                    </h3>
+                    <div className="h-px flex-1 bg-gray-200"></div>
+                  </div>
+                  
+                  {/* Orders Grid for this date */}
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {ordersByDate[dateKey].map((order) => (
+                      <OrderCard
+                        key={order.id}
+                        order={order}
+                        onUpdate={handleOrderUpdate}
+                        venueCurrency="GBP"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
         )}
       </div>
