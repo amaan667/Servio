@@ -362,15 +362,17 @@ export default function StaffClient({
                               ? 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border border-orange-300 shadow-sm' 
                               : 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border border-purple-300 shadow-sm'
                           } ${
-                            overnight && isStartDay ? 'border-l-4 border-l-orange-500 -ml-1' : ''
+                            overnight && isStartDay ? 'border-l-4 border-l-orange-500 -ml-3' : ''
                           } ${
-                            overnight && isEndDay ? 'border-r-4 border-r-orange-500 -mr-1' : ''
+                            overnight && isEndDay ? 'border-r-4 border-r-orange-500 -mr-3' : ''
                           } ${
-                            overnight ? 'relative z-10' : ''
+                            overnight ? 'relative z-20' : ''
                           } ${
-                            overnight && isStartDay ? 'shadow-lg shadow-orange-200' : ''
+                            overnight && isStartDay ? 'shadow-xl shadow-orange-300' : ''
                           } ${
-                            overnight && isEndDay ? 'shadow-lg shadow-orange-200' : ''
+                            overnight && isEndDay ? 'shadow-xl shadow-orange-300' : ''
+                          } ${
+                            overnight ? 'transform scale-105' : ''
                           }`}
                           title={`${shift.staff_name} (${shift.staff_role}) - ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? ` - ${shift.area}` : ''}${overnight ? ' - Overnight Shift' : ''}`}
                         >
@@ -389,12 +391,9 @@ export default function StaffClient({
                             </div>
                           )}
                           {overnight && (
-                            <div className="flex items-center justify-between mt-1">
+                            <div className="flex items-center justify-center mt-1">
                               <div className="text-xs text-orange-500 font-medium">
                                 {isStartDay ? '→' : '←'}
-                              </div>
-                              <div className="text-xs text-orange-400">
-                                {isStartDay ? 'Overnight' : 'Overnight'}
                               </div>
                             </div>
                           )}
@@ -602,7 +601,7 @@ export default function StaffClient({
                 <div className="flex items-center gap-2 text-sm text-orange-700">
                   <span>🌙</span>
                   <span className="font-medium">Overnight Shifts:</span>
-                  <span>Shifts that span multiple days are shown on both start and end dates with orange styling and moon icon</span>
+                  <span>Shifts that span multiple days visually break through calendar boundaries with enhanced shadows and extended borders</span>
                 </div>
               </CardContent>
             </Card>
