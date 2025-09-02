@@ -83,6 +83,13 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     setLoading(true);
     setError(null);
 
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.error(`[LIVE_ORDERS] Query timeout for ${tab}`);
+      setError(`Query timeout - taking too long to load ${tab} orders`);
+      setLoading(false);
+    }, 30000); // 30 second timeout
+
     try {
       const supabase = createClient();
       if (!supabase) {
@@ -133,25 +140,12 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         console.log(`[LIVE_ORDERS] Live query with statuses:`, ACTIVE_STATUSES);
         console.log(`[LIVE_ORDERS] Live query time filter: >= ${thirtyMinutesAgo}`);
       } else if (tab === 'earlier') {
-        // Earlier today: terminal statuses from today OR expired live orders (older than 30 minutes)
-        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-        console.log(`[LIVE_ORDERS] Earlier tab - Current time: ${new Date().toISOString()}`);
-        console.log(`[LIVE_ORDERS] Earlier tab - 30 minutes ago: ${thirtyMinutesAgo}`);
-        console.log(`[LIVE_ORDERS] Earlier tab - Order e60e7d0c created at: 2025-09-02T12:27:46.027Z`);
-        console.log(`[LIVE_ORDERS] Earlier tab - Should be included: ${new Date('2025-09-02T12:27:46.027Z') < new Date(thirtyMinutesAgo)}`);
-        
+        // Earlier today: use simple query and filter in JavaScript for complex logic
         query = query
           .gte('created_at', startUtc)
           .lt('created_at', endUtc)
-          .and(`(
-            order_status.in.(${TERMINAL_TODAY.join(',')}) OR 
-            status.in.(${TERMINAL_TODAY.join(',')}) OR
-            (order_status.in.(${ACTIVE_STATUSES.join(',')}) AND created_at < '${thirtyMinutesAgo}') OR
-            (status.in.(${ACTIVE_STATUSES.join(',')}) AND created_at < '${thirtyMinutesAgo}')
-          )`)
           .order('created_at', { ascending: false });
-        console.log(`[LIVE_ORDERS] Earlier query with statuses:`, TERMINAL_TODAY);
-        console.log(`[LIVE_ORDERS] Earlier query time filter: < ${thirtyMinutesAgo}`);
+        console.log(`[LIVE_ORDERS] Earlier query - will filter in JavaScript for expired live orders`);
       } else if (tab === 'history') {
         // History: All orders from previous days (regardless of status)
         query = query
@@ -246,7 +240,9 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           orders: filteredOrders.slice(0, 2)
         });
         
+        clearTimeout(timeoutId);
         setOrders(filteredOrders);
+        setLoading(false);
         return;
       }
 
@@ -281,6 +277,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         console.log(`[LIVE_ORDERS] ${tab} - No orders returned from query`);
       }
 
+      clearTimeout(timeoutId);
       setOrders(data || []);
       logger.info(`LIVE_ORDERS: ${tab} orders fetched successfully`, {
         orderCount: data?.length || 0,
@@ -292,6 +289,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       logger.error(`LIVE_ORDERS: Failed to fetch ${activeTab} orders`, { error: error.message });
       setError(`Failed to load ${activeTab} orders: ${error.message}`);
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   }, [venueId, venueTimezone, todayBoundsCorrected]);
