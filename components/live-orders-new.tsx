@@ -29,6 +29,17 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   // Set up realtime updates for counts
   useCountsRealtime(venueId, venueTimezone, refetchCounts);
 
+  // Auto-refresh orders every minute to handle aging orders
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('[LIVE_ORDERS] Auto-refreshing orders due to time passage...');
+      fetchOrders(activeTab);
+      refetchCounts();
+    }, 60000); // Every minute
+
+    return () => clearInterval(interval);
+  }, [fetchOrders, activeTab, refetchCounts]);
+
   console.log('[LIVE_ORDERS] Component mounted with venueId:', venueId);
 
   // Handle both old and new status values until migration is complete
@@ -106,21 +117,41 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       console.log(`[LIVE_ORDERS] Using orders table directly`);
 
       if (tab === 'live') {
-        // Live orders: active statuses from today
+        // Live orders: active statuses from today AND within 30 minutes
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+        console.log(`[LIVE_ORDERS] Live tab - Current time: ${new Date().toISOString()}`);
+        console.log(`[LIVE_ORDERS] Live tab - 30 minutes ago: ${thirtyMinutesAgo}`);
+        console.log(`[LIVE_ORDERS] Live tab - Order e60e7d0c created at: 2025-09-02T12:27:46.027Z`);
+        console.log(`[LIVE_ORDERS] Live tab - Should be excluded: ${new Date('2025-09-02T12:27:46.027Z') < new Date(thirtyMinutesAgo)}`);
+        
         query = query
           .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
           .gte('created_at', startUtc)
           .lt('created_at', endUtc)
+          .gte('created_at', thirtyMinutesAgo) // Only orders created within last 30 minutes
           .order('updated_at', { ascending: false });
         console.log(`[LIVE_ORDERS] Live query with statuses:`, ACTIVE_STATUSES);
+        console.log(`[LIVE_ORDERS] Live query time filter: >= ${thirtyMinutesAgo}`);
       } else if (tab === 'earlier') {
-        // Earlier today: terminal statuses from today
+        // Earlier today: terminal statuses from today OR expired live orders (older than 30 minutes)
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+        console.log(`[LIVE_ORDERS] Earlier tab - Current time: ${new Date().toISOString()}`);
+        console.log(`[LIVE_ORDERS] Earlier tab - 30 minutes ago: ${thirtyMinutesAgo}`);
+        console.log(`[LIVE_ORDERS] Earlier tab - Order e60e7d0c created at: 2025-09-02T12:27:46.027Z`);
+        console.log(`[LIVE_ORDERS] Earlier tab - Should be included: ${new Date('2025-09-02T12:27:46.027Z') < new Date(thirtyMinutesAgo)}`);
+        
         query = query
-          .or(`order_status.in.(${TERMINAL_TODAY.join(',')}),status.in.(${TERMINAL_TODAY.join(',')})`)
           .gte('created_at', startUtc)
           .lt('created_at', endUtc)
+          .and(`(
+            order_status.in.(${TERMINAL_TODAY.join(',')}) OR 
+            status.in.(${TERMINAL_TODAY.join(',')}) OR
+            (order_status.in.(${ACTIVE_STATUSES.join(',')}) AND created_at < '${thirtyMinutesAgo}') OR
+            (status.in.(${ACTIVE_STATUSES.join(',')}) AND created_at < '${thirtyMinutesAgo}')
+          )`)
           .order('created_at', { ascending: false });
         console.log(`[LIVE_ORDERS] Earlier query with statuses:`, TERMINAL_TODAY);
+        console.log(`[LIVE_ORDERS] Earlier query time filter: < ${thirtyMinutesAgo}`);
       } else if (tab === 'history') {
         // History: All orders from previous days (regardless of status)
         query = query
