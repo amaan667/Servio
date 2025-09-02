@@ -323,7 +323,7 @@ export default function StaffClient({
           <div className="text-2xl font-bold text-center">{monthName}</div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-2">
             {/* Day headers */}
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
               <div key={day} className="p-2 text-center text-sm font-semibold text-gray-600">
@@ -337,7 +337,7 @@ export default function StaffClient({
               return (
                 <div
                   key={index}
-                  className={`min-h-[80px] p-1 border ${
+                  className={`min-h-[120px] p-2 border ${
                     day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                   } ${day.isToday ? 'ring-2 ring-purple-500' : ''}`}
                 >
@@ -348,8 +348,8 @@ export default function StaffClient({
                   </div>
                   
                   {/* Shifts for this day */}
-                  <div className="space-y-1">
-                    {shifts.slice(0, 3).map(shift => {
+                  <div className="space-y-1.5">
+                    {shifts.slice(0, 4).map(shift => {
                       const overnight = isOvernightShift(shift);
                       const isStartDay = new Date(shift.start_time).toLocaleDateString('en-CA') === day.date.toLocaleDateString('en-CA');
                       const isEndDay = new Date(shift.end_time).toLocaleDateString('en-CA') === day.date.toLocaleDateString('en-CA');
@@ -357,42 +357,53 @@ export default function StaffClient({
                       return (
                         <div
                           key={shift.id}
-                          className={`text-xs p-1 rounded truncate ${
+                          className={`text-xs p-1.5 rounded-md truncate ${
                             overnight 
-                              ? 'bg-orange-100 text-orange-800 border-2 border-orange-300' 
-                              : 'bg-purple-100 text-purple-800'
+                              ? 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border border-orange-300 shadow-sm' 
+                              : 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border border-purple-300 shadow-sm'
                           } ${
-                            overnight && isStartDay ? 'border-l-4 border-l-orange-500' : ''
+                            overnight && isStartDay ? 'border-l-4 border-l-orange-500 -ml-1' : ''
                           } ${
-                            overnight && isEndDay ? 'border-r-4 border-r-orange-500' : ''
+                            overnight && isEndDay ? 'border-r-4 border-r-orange-500 -mr-1' : ''
+                          } ${
+                            overnight ? 'relative z-10' : ''
+                          } ${
+                            overnight && isStartDay ? 'shadow-lg shadow-orange-200' : ''
+                          } ${
+                            overnight && isEndDay ? 'shadow-lg shadow-orange-200' : ''
                           }`}
                           title={`${shift.staff_name} (${shift.staff_role}) - ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? ` - ${shift.area}` : ''}${overnight ? ' - Overnight Shift' : ''}`}
                         >
-                          <div className="font-medium truncate flex items-center gap-1">
+                          <div className="font-medium truncate flex items-center gap-1 mb-1">
                             {shift.staff_name}
                             {overnight && (
                               <span className="text-orange-600" title="Overnight Shift">🌙</span>
                             )}
                           </div>
-                          <div className={`truncate ${overnight ? 'text-orange-600' : 'text-purple-600'}`}>
+                          <div className={`truncate text-xs ${overnight ? 'text-orange-600' : 'text-purple-600'}`}>
                             {formatTime(shift.start_time)} - {formatTime(shift.end_time)}
                           </div>
                           {shift.area && (
-                            <div className={`truncate ${overnight ? 'text-orange-500' : 'text-purple-500'}`}>
+                            <div className={`truncate text-xs mt-0.5 ${overnight ? 'text-orange-500' : 'text-purple-500'}`}>
                               {shift.area}
                             </div>
                           )}
                           {overnight && (
-                            <div className="text-xs text-orange-600 mt-1">
-                              {isStartDay ? '→ continues tomorrow' : '← started yesterday'}
+                            <div className="flex items-center justify-between mt-1">
+                              <div className="text-xs text-orange-500 font-medium">
+                                {isStartDay ? '→' : '←'}
+                              </div>
+                              <div className="text-xs text-orange-400">
+                                {isStartDay ? 'Overnight' : 'Overnight'}
+                              </div>
                             </div>
                           )}
                         </div>
                       );
                     })}
-                    {shifts.length > 3 && (
-                      <div className="text-xs text-gray-500 text-center">
-                        +{shifts.length - 3} more
+                    {shifts.length > 4 && (
+                      <div className="text-xs text-gray-500 text-center py-1 bg-gray-100 rounded">
+                        +{shifts.length - 4} more
                       </div>
                     )}
                   </div>
