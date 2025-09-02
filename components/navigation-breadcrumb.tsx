@@ -112,7 +112,7 @@ export default function NavigationBreadcrumb({
     );
   }
 
-  // Generate QR page: Home → Dashboard → QR Codes (current)
+  // Generate QR page: Home ← QR Codes (simplified)
   if (isGenerateQRPage && venueId) {
     return (
       <nav aria-label="Breadcrumb" className="mb-4">
@@ -128,24 +128,13 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-gray-400">←</li>
-          <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href={homeLink}>
-                <>
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Dashboard</span>
-                </>
-              </Link>
-            </Button>
-          </li>
-          <li className="text-gray-400">←</li>
           <li className="text-gray-700 font-medium">{pageTitle}</li>
         </ol>
       </nav>
     );
   }
 
-  // Subpages: Home → Dashboard (Back) → Current Page
+  // Subpages: Home ← Current Page (simplified)
   return (
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center gap-2 text-sm">
@@ -159,25 +148,7 @@ export default function NavigationBreadcrumb({
             </Link>
           </Button>
         </li>
-        <li className="text-gray-400">→</li>
-        <li>
-          {customBackPath ? (
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <Link href={customBackPath}>
-                <>
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
-                </>
-              </Link>
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={() => window.history.back()} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">{customBackLabel || "Dashboard"}</span>
-            </Button>
-          )}
-        </li>
-        <li className="text-gray-400">→</li>
+        <li className="text-gray-400">←</li>
         <li className="text-gray-700 font-medium">{pageTitle}</li>
       </ol>
     </nav>
