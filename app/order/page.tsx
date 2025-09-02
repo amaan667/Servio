@@ -141,6 +141,23 @@ export default function CustomerOrderPage() {
     loadMenuItems();
   }, [venueSlug, isLoggedIn]);
 
+  // Auto-reset demo after 2 minutes for next user
+  useEffect(() => {
+    if (isDemo) {
+      const resetTimer = setTimeout(() => {
+        console.log('[DEMO] Auto-resetting demo for next user');
+        setCart([]);
+        setCustomerInfo({ name: '', phone: '' });
+        setShowCheckout(false);
+        setShowMobileCart(false);
+        // Show a notification
+        alert('Demo has been reset for the next user. Feel free to try again!');
+      }, 120000); // 2 minutes
+
+      return () => clearTimeout(resetTimer);
+    }
+  }, [isDemo]);
+
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
       const existing = prev.find((cartItem) => cartItem.id === item.id);
@@ -210,9 +227,12 @@ export default function CustomerOrderPage() {
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
         console.log('[ORDER DEBUG] Processing demo order');
         
-        // Create demo order with demo-cafe venue
+        // For demo orders, simulate the complete flow without database
+        // Store order data in localStorage for the demo summary page
         const demoOrderData = {
+          id: `demo-${Date.now()}`, // Generate a demo order ID
           venue_id: 'demo-cafe',
+          venue_name: 'Demo Cafe',
           table_number: safeTable,
           customer_name: customerInfo.name.trim(),
           customer_phone: customerInfo.phone.trim(),
@@ -221,32 +241,26 @@ export default function CustomerOrderPage() {
             quantity: item.quantity,
             price: item.price,
             item_name: item.name,
-            special_instructions: item.specialInstructions || null,
+            specialInstructions: item.specialInstructions || null,
           })),
           total_amount: getTotalPrice(),
           notes: cart
             .filter((item) => item.specialInstructions)
             .map((item) => `${item.name}: ${item.specialInstructions}`)
             .join("; "),
+          order_status: 'PLACED',
+          payment_status: 'PAID', // Demo orders are automatically "paid"
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         };
 
-        // Create the demo order
-        const res = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(demoOrderData),
-        });
-        const out = await res.json().catch(() => ({} as any));
+        // Store demo order data for the summary page
+        localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
         
-        if (!res.ok || !out?.ok) {
-          console.error('Demo order creation failed:', out);
-          throw new Error(out?.error || 'Failed to create demo order. Please try again.');
-        }
+        console.log('Demo order data prepared:', demoOrderData);
         
-        console.log('Demo order created successfully:', out);
-        
-        // Redirect to order summary page
-        router.replace(`/order/demo-cafe/${tableNumber}/summary/${out?.order?.id}`);
+        // Redirect to demo order summary page
+        router.replace(`/order/demo-cafe/${tableNumber}/summary/${demoOrderData.id}`);
         return;
       }
 
@@ -309,11 +323,27 @@ export default function CustomerOrderPage() {
     <div className="min-h-screen bg-gray-50">
         {/* Demo Fallback Notification */}
         {isDemo && (
-          <div className="bg-blue-50 border-b border-blue-200">
-            <div className="max-w-7xl mx-auto px-4 py-2">
-              <div className="flex items-center justify-center text-sm text-blue-700">
-                <span className="font-medium">Demo Mode:</span>
-                <span className="ml-1">You're viewing a sample menu.</span>
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-purple-200">
+            <div className="max-w-7xl mx-auto px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center text-sm">
+                  <span className="font-medium text-purple-700">🎯 Demo Mode:</span>
+                  <span className="ml-2 text-purple-600">Experience the full ordering flow without creating real orders</span>
+                  <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Interactive Preview</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCart([]);
+                    setCustomerInfo({ name: '', phone: '' });
+                    setShowCheckout(false);
+                    setShowMobileCart(false);
+                  }}
+                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                >
+                  🔄 Reset Demo
+                </Button>
               </div>
             </div>
           </div>

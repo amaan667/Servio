@@ -5,12 +5,12 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Clock, User, Hash, ArrowLeft } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import { CheckCircle, Clock, User, Hash } from "lucide-react";
 
 interface OrderSummary {
   id: string;
   venue_id: string;
+  venue_name?: string;
   table_number: number;
   customer_name: string;
   customer_phone?: string;
@@ -30,10 +30,47 @@ interface OrderSummary {
 export default function OrderSummaryPage() {
   const router = useRouter();
   const params = useParams();
+  
+  if (!params) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L3.732 16.5c-.77-.833-1.964-.833-2.732 0L3.732 16.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Invalid URL</h2>
+          <p className="text-gray-600 mb-4">The order URL is invalid.</p>
+          <button 
+            onClick={() => router.push('/')} 
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
   const venueId = params.venueId as string;
   const tableId = params.tableId as string;
   const orderId = params.orderId as string;
+  
+  // Check if this is a demo order
+  const isDemo = venueId === 'demo-cafe' || orderId.startsWith('demo-');
+  
+  if (isDemo) {
+    return <DemoOrderSummaryClient venueId={venueId} tableId={tableId} orderId={orderId} />;
+  }
+  
+  // For real orders, redirect to the server-side page
+  // This will be handled by the server component
+  return <RealOrderSummaryClient venueId={venueId} tableId={tableId} orderId={orderId} />;
+}
 
+function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string; tableId: string; orderId: string }) {
+  const router = useRouter();
   const [order, setOrder] = useState<OrderSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,36 +83,18 @@ export default function OrderSummaryPage() {
         setLoading(true);
         setError(null);
 
-        // Try to fetch from orders table directly
-        let { data, error: viewError } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('id', orderId)
-          .single();
-
-        if (viewError) {
-          // Fallback to regular orders table
-          const { data: orderData, error: orderError } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', orderId)
-            .single();
-
-          if (orderError) {
-            throw new Error('Order not found');
-          }
-
-          data = orderData;
+        // Get demo order data from localStorage
+        const demoOrderData = localStorage.getItem('demo-order-data');
+        
+        if (!demoOrderData) {
+          throw new Error('Demo order data not found');
         }
 
-        if (!data) {
-          throw new Error('Order not found');
-        }
-
-        setOrder(data as OrderSummary);
+        const orderData = JSON.parse(demoOrderData);
+        setOrder(orderData);
       } catch (err: any) {
-        console.error('[ORDER SUMMARY] Error fetching order:', err);
-        setError(err.message || 'Failed to load order');
+        console.error('[DEMO ORDER SUMMARY] Error fetching demo order:', err);
+        setError(err.message || 'Failed to load demo order');
       } finally {
         setLoading(false);
       }
@@ -85,8 +104,41 @@ export default function OrderSummaryPage() {
   }, [orderId]);
 
   const handleOrderAgain = () => {
-    router.replace(`/order/${venueId}/${tableId}`);
+    router.replace(`/order?demo=1`);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading demo order...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L3.732 16.5c-.77-.833-1.964-.833-2.732 0L3.732 16.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Demo order not found</h2>
+          <p className="text-gray-600 mb-4">{error || 'The demo order could not be loaded.'}</p>
+          <button 
+            onClick={() => router.push('/order?demo=1')} 
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          >
+            Try Demo Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
@@ -120,38 +172,6 @@ export default function OrderSummaryPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-servio-purple mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your order...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !order) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md w-full mx-4">
-          <CardHeader>
-            <CardTitle className="text-red-600">Order Not Found</CardTitle>
-            <CardDescription>
-              {error || "The order you're looking for doesn't exist or you don't have permission to view it."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleOrderAgain} className="w-full">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Menu
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const statusDisplay = getStatusDisplay(order.order_status);
   const paymentStatusDisplay = getPaymentStatusDisplay(order.payment_status);
   const StatusIcon = statusDisplay.icon;
@@ -176,14 +196,14 @@ export default function OrderSummaryPage() {
                 <CardTitle className="text-xl">Order #{order.id.slice(0, 8)}</CardTitle>
                 <CardDescription className="flex items-center space-x-2 mt-2">
                   <Hash className="h-4 w-4" />
-                  <span>Table {order.table_number}</span>
+                  <span>Demo Cafe - Table {order.table_number}</span>
                   <span>•</span>
                   <Clock className="h-4 w-4" />
                   <span>{new Date(order.created_at).toLocaleString('en-GB')}</span>
                 </CardDescription>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-servio-purple">
+                <div className="text-2xl font-bold text-purple-600">
                   £{(() => {
                     // Calculate total from items if total_amount is 0 or missing
                     let amount = order.total_amount;
@@ -205,7 +225,7 @@ export default function OrderSummaryPage() {
             <div className="flex items-center space-x-2 mb-4">
               <Badge className={statusDisplay.color}>
                 <StatusIcon className="h-3 w-3 mr-1" />
-                {statusDisplay.label}
+                <span>{statusDisplay.label}</span>
               </Badge>
               <Badge className={paymentStatusDisplay.color}>
                 {paymentStatusDisplay.label}
@@ -249,7 +269,7 @@ export default function OrderSummaryPage() {
             {/* Total */}
             <div className="flex justify-between items-center pt-4 border-t border-gray-200 mt-4">
               <span className="text-lg font-semibold text-gray-900">Total</span>
-              <span className="text-2xl font-bold text-servio-purple">
+              <span className="text-2xl font-bold text-purple-600">
                 £{(() => {
                   // Calculate total from items if total_amount is 0 or missing
                   let amount = order.total_amount;
@@ -277,16 +297,36 @@ export default function OrderSummaryPage() {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          <Button onClick={handleOrderAgain} className="w-full bg-servio-purple hover:bg-servio-purple/90">
+          <Button onClick={handleOrderAgain} className="w-full bg-purple-600 hover:bg-purple-700">
             Order Again
           </Button>
           
           <div className="text-center">
             <p className="text-sm text-gray-500">
-              Need help? Contact the staff.
+              This is a demo order. In a real scenario, your order would be sent to the kitchen.
             </p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string; tableId: string; orderId: string }) {
+  // This component will handle real orders from the database
+  // For now, redirect to the server-side page
+  const router = useRouter();
+  
+  useEffect(() => {
+    // Redirect to the server-side page for real orders
+    router.replace(`/order/${venueId}/${tableId}/summary/${orderId}?real=true`);
+  }, [venueId, tableId, orderId, router]);
+  
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+        <p className="mt-2 text-gray-600">Loading real order...</p>
       </div>
     </div>
   );
