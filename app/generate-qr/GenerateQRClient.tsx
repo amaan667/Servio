@@ -53,6 +53,10 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
     }
   };
 
+  const clearAllTables = () => {
+    setSelectedTables(["1"]);
+  };
+
   const removeTable = (tableNumber: string) => {
     if (selectedTables.length > 1) {
       setSelectedTables(selectedTables.filter(t => t !== tableNumber));
@@ -441,28 +445,23 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
           <CardContent className="space-y-4">
             <div>
               <Label>Table Numbers</Label>
-              <div className="mt-2 space-y-2">
-                {selectedTables.map((tableNumber, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={tableNumber}
-                      onChange={(e) => updateTableNumber(tableNumber, e.target.value)}
-                      min="1"
-                      className="flex-1"
-                    />
-                    {selectedTables.length > 1 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeTable(tableNumber)}
-                        className="px-2"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
+              <div className="mt-2 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Currently generating QR codes for <span className="font-semibold">{selectedTables.length}</span> table{selectedTables.length !== 1 ? 's' : ''}
                   </div>
-                ))}
+                  {selectedTables.length > 1 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllTables}
+                      className="text-xs"
+                    >
+                      Reset to 1
+                    </Button>
+                  )}
+                </div>
+                
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -553,19 +552,19 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               {selectedTables.map((tableNumber, index) => {
                 const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`;
                 return (
-                  <div key={index} className="text-center p-4 border rounded-lg">
-                    <div className="bg-white p-4 rounded-lg shadow-sm inline-block">
+                  <div key={index} className="text-center p-3 border rounded-lg bg-white">
+                    <div className="bg-white p-2 rounded-lg shadow-sm inline-block">
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2`}
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 120)}x${Math.min(printSettings.qrSize, 120)}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2`}
                         alt={`QR Code for Table ${tableNumber}`}
-                        className="w-48 h-48"
+                        className="w-24 h-24"
                       />
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-2">
                       <Badge variant="secondary">Table {tableNumber}</Badge>
                     </div>
                   </div>
@@ -573,7 +572,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               })}
             </div>
 
-            <div className="flex space-x-2 mt-4">
+            <div className="flex space-x-2">
               <Button onClick={handleCopy} variant="outline" className="flex-1">
                 {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                 {copied ? "Copied!" : "Copy URL"}
