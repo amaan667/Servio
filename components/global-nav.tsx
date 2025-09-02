@@ -25,6 +25,31 @@ export default function GlobalNav() {
   // Also add additional checks to ensure session is valid
   const isAuthenticated = !loading && !!session?.user && !!session?.access_token;
 
+  // Determine if we're on an authenticated route that supports dark mode
+  const isAuthenticatedRoute = pathname?.startsWith('/dashboard') || 
+                               pathname?.startsWith('/generate-qr') || 
+                               pathname?.startsWith('/settings') ||
+                               pathname?.startsWith('/complete-profile') ||
+                               pathname?.startsWith('/sign-in') ||
+                               pathname?.startsWith('/sign-up');
+
+  // Use theme-aware colors for authenticated routes, light mode colors for public pages
+  const navClasses = isAuthenticatedRoute 
+    ? "bg-background border-b border-border shadow-sm sticky top-0 z-50"
+    : "bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50";
+
+  const textClasses = isAuthenticatedRoute
+    ? "text-foreground hover:text-primary hover:bg-accent"
+    : "text-gray-700 hover:text-gray-900 hover:bg-gray-50";
+
+  const borderClasses = isAuthenticatedRoute
+    ? "border-border"
+    : "border-gray-200";
+
+  const primaryButtonClasses = isAuthenticatedRoute
+    ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+    : "bg-purple-600 hover:bg-purple-700 text-white";
+
   // Debug logging for authentication state
   useEffect(() => {
     console.log('[NAV DEBUG] Authentication state changed:', {
@@ -135,7 +160,7 @@ export default function GlobalNav() {
   }
 
   return (
-    <nav className="bg-background border-b border-border shadow-sm sticky top-0 z-50">
+    <nav className={navClasses}>
       <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
         <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
           {/* Logo */}
@@ -227,26 +252,26 @@ export default function GlobalNav() {
               <div className="flex items-center space-x-2">
                 <Link
                   href="/"
-                  className="px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                  className={`px-4 py-3 text-base font-medium rounded-md transition-all duration-200 ${textClasses}`}
                 >
                   Home
                 </Link>
                 <Link
                   href="#features"
-                  className="px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                  className={`px-4 py-3 text-base font-medium rounded-md transition-all duration-200 ${textClasses}`}
                 >
                   Features
                 </Link>
                 <Link
                   href="#pricing"
-                  className="px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                  className={`px-4 py-3 text-base font-medium rounded-md transition-all duration-200 ${textClasses}`}
                 >
                   Pricing
                 </Link>
-                <div className="w-px h-8 bg-border mx-2"></div>
+                <div className={`w-px h-8 mx-2 ${borderClasses}`}></div>
                 <Button
                   onClick={() => router.push('/sign-in')}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 text-base font-medium rounded-md transition-all duration-200 shadow-sm"
+                  className={`px-6 py-3 text-base font-medium rounded-md transition-all duration-200 shadow-sm ${primaryButtonClasses}`}
                 >
                   Sign In
                 </Button>
