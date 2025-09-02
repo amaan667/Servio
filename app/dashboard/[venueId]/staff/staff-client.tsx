@@ -232,9 +232,18 @@ export default function StaffClient({
   const getShiftsForDate = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
     return allShifts.filter(shift => {
-      const shiftDate = new Date(shift.start_time).toISOString().split('T')[0];
-      return shiftDate === dateStr;
+      const shiftStartDate = new Date(shift.start_time).toISOString().split('T')[0];
+      const shiftEndDate = new Date(shift.end_time).toISOString().split('T')[0];
+      
+      // Include shift if it starts on this date OR if it's an overnight shift that ends on this date
+      return shiftStartDate === dateStr || shiftEndDate === dateStr;
     });
+  };
+
+  const isOvernightShift = (shift: Shift) => {
+    const startDate = new Date(shift.start_time).toISOString().split('T')[0];
+    const endDate = new Date(shift.end_time).toISOString().split('T')[0];
+    return startDate !== endDate;
   };
 
   const formatTime = (timeString: string) => {
@@ -307,21 +316,35 @@ export default function StaffClient({
                   
                   {/* Shifts for this day */}
                   <div className="space-y-1">
-                    {shifts.slice(0, 3).map(shift => (
-                      <div
-                        key={shift.id}
-                        className="text-xs p-1 bg-purple-100 text-purple-800 rounded truncate"
-                        title={`${shift.staff_name} (${shift.staff_role}) - ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? ` - ${shift.area}` : ''}`}
-                      >
-                        <div className="font-medium truncate">{shift.staff_name}</div>
-                        <div className="text-purple-600 truncate">
-                          {formatTime(shift.start_time)} - {formatTime(shift.end_time)}
+                    {shifts.slice(0, 3).map(shift => {
+                      const overnight = isOvernightShift(shift);
+                      return (
+                        <div
+                          key={shift.id}
+                          className={`text-xs p-1 rounded truncate ${
+                            overnight 
+                              ? 'bg-orange-100 text-orange-800 border-2 border-orange-300' 
+                              : 'bg-purple-100 text-purple-800'
+                          }`}
+                          title={`${shift.staff_name} (${shift.staff_role}) - ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? ` - ${shift.area}` : ''}${overnight ? ' - Overnight Shift' : ''}`}
+                        >
+                          <div className="font-medium truncate flex items-center gap-1">
+                            {shift.staff_name}
+                            {overnight && (
+                              <span className="text-orange-600" title="Overnight Shift">🌙</span>
+                            )}
+                          </div>
+                          <div className={`truncate ${overnight ? 'text-orange-600' : 'text-purple-600'}`}>
+                            {formatTime(shift.start_time)} - {formatTime(shift.end_time)}
+                          </div>
+                          {shift.area && (
+                            <div className={`truncate ${overnight ? 'text-orange-500' : 'text-purple-500'}`}>
+                              {shift.area}
+                            </div>
+                          )}
                         </div>
-                        {shift.area && (
-                          <div className="text-purple-500 truncate">{shift.area}</div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                     {shifts.length > 3 && (
                       <div className="text-xs text-gray-500 text-center">
                         +{shifts.length - 3} more
@@ -517,6 +540,17 @@ export default function StaffClient({
           </TabsContent>
 
           <TabsContent value="calendar" className="space-y-6">
+            {/* Overnight Shift Legend */}
+            <Card className="bg-orange-50 border-orange-200">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 text-sm text-orange-700">
+                  <span>🌙</span>
+                  <span className="font-medium">Overnight Shifts:</span>
+                  <span>Shifts that span multiple days are shown on both start and end dates with orange styling and moon icon</span>
+                </div>
+              </CardContent>
+            </Card>
+            
             <CalendarView />
             
             {/* All Shifts List */}
@@ -531,21 +565,37 @@ export default function StaffClient({
                     {allShifts
                       .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
                       .map((shift) => {
+                        const overnight = isOvernightShift(shift);
                         return (
-                          <div key={shift.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div key={shift.id} className={`flex items-center justify-between p-3 rounded-lg ${
+                            overnight ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50'
+                          }`}>
                             <div className="flex-1">
                               <div className="flex items-center gap-3">
-                                <span className="font-medium text-purple-600">{shift.staff_name}</span>
+                                <span className={`font-medium ${overnight ? 'text-orange-700' : 'text-purple-600'}`}>
+                                  {shift.staff_name}
+                                  {overnight && <span className="ml-1" title="Overnight Shift">🌙</span>}
+                                </span>
                                 <Badge variant="outline">{shift.staff_role}</Badge>
+                                {overnight && (
+                                  <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-100">
+                                    Overnight
+                                  </Badge>
+                                )}
                                 {isShiftActive(shift) && (
                                   <Badge variant="default" className="bg-green-100 text-green-800">
                                     Active Now
                                   </Badge>
                                 )}
                               </div>
-                              <div className="text-sm text-gray-600 mt-1">
+                              <div className={`text-sm mt-1 ${overnight ? 'text-orange-600' : 'text-gray-600'}`}>
                                 {new Date(shift.start_time).toLocaleDateString()} • {formatTime(shift.start_time)} – {formatTime(shift.end_time)}
                                 {shift.area && <> • {shift.area}</>}
+                                {overnight && (
+                                  <span className="ml-2 text-orange-500">
+                                    (spans {new Date(shift.start_time).toLocaleDateString()} to {new Date(shift.end_time).toLocaleDateString()})
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <Button
