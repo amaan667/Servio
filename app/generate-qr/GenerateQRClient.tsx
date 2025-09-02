@@ -489,20 +489,6 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               </div>
             </div>
 
-            <div>
-              <Label>Order URLs</Label>
-              <div className="mt-1 space-y-2">
-                {selectedTables.map((tableNumber, index) => (
-                  <div key={index} className="p-3 bg-gray-50 rounded-md">
-                    <p className="text-sm font-medium mb-1">Table {tableNumber}:</p>
-                    <code className="text-xs break-all">
-                      {`${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`}
-                    </code>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="pt-4 border-t">
               <Label className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
@@ -566,6 +552,9 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
                     </div>
                     <div className="mt-2">
                       <Badge variant="secondary">Table {tableNumber}</Badge>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-600 break-all">
+                      <code className="text-xs">{tableOrderUrl}</code>
                     </div>
                   </div>
                 );
