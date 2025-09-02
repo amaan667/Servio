@@ -25,8 +25,8 @@ type Shift = {
   start_time: string; 
   end_time: string; 
   area?: string;
-  staff_name?: string;
-  staff_role?: string;
+  staff_name: string;
+  staff_role: string;
 };
 
 export default function StaffClient({
@@ -46,6 +46,47 @@ export default function StaffClient({
   const [allShifts, setAllShifts] = useState<Shift[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState('staff');
+
+  // Load staff data on component mount
+  useEffect(() => {
+    const loadStaff = async () => {
+      try {
+        console.log('[AUTH DEBUG] Loading staff for venue:', venueId);
+        const res = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
+        const j = await res.json().catch(() => ({}));
+        if (res.ok && !j?.error) {
+          console.log('[AUTH DEBUG] Staff loaded:', j.staff?.length || 0, 'members');
+          setStaff(j.staff || []);
+        } else {
+          console.error('[AUTH DEBUG] Failed to load staff:', j?.error);
+        }
+      } catch (e) {
+        console.error('[AUTH DEBUG] Failed to load staff:', e);
+      }
+    };
+
+    // Only load if no initial staff provided
+    if (!initialStaff || initialStaff.length === 0) {
+      loadStaff();
+    }
+  }, [venueId, initialStaff]);
+
+  // Load shifts on component mount (no need to wait for staff data)
+  useEffect(() => {
+    const loadShifts = async () => {
+      console.log('[AUTH DEBUG] Loading shifts for venue:', venueId);
+      const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && !j?.error) {
+        const shifts = j.shifts || [];
+        console.log('[AUTH DEBUG] Shifts loaded:', shifts.length, 'shifts');
+        setAllShifts(shifts);
+      } else {
+        console.error('[AUTH DEBUG] Failed to load shifts:', j?.error);
+      }
+    };
+    loadShifts();
+  }, [venueId]);
 
   const onAdd = async () => {
     setError(null);
@@ -123,22 +164,13 @@ export default function StaffClient({
     const j = await res.json().catch(() => ({}));
     if (res.ok && !j?.error) {
       const shifts = j.shifts || [];
-      // Enrich shifts with staff information
-      const enrichedShifts = shifts.map((shift: Shift) => {
-        const staffMember = staff.find(s => s.id === shift.staff_id);
-        return {
-          ...shift,
-          staff_name: staffMember?.name || 'Unknown',
-          staff_role: staffMember?.role || 'Unknown'
-        };
-      });
-      setAllShifts(enrichedShifts);
+      // Shifts are now enriched by the API, no need to enrich on client side
+      setAllShifts(shifts);
     }
-  }, [venueId, staff]);
+  }, [venueId]);
 
-  useEffect(() => {
-    reloadAllShifts();
-  }, [reloadAllShifts]);
+  // Removed this useEffect as it was causing shifts to load before staff data
+  // Shifts are now loaded after staff data is available
 
   const grouped = useMemo(() => {
     const by: Record<string, StaffRow[]> = {};
@@ -459,7 +491,12 @@ export default function StaffClient({
             </Card>
 
             {roles.length === 0 ? (
-              <p className="text-gray-500">No staff yet.</p>
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-4">No staff members added yet.</p>
+                <p className="text-sm text-gray-400 mb-4">
+                  Add staff members above to see their names instead of "Unknown Unknown" in shifts.
+                </p>
+              </div>
             ) : (
               roles.map((r) => (
                 <Card key={r} className="mb-4">
@@ -494,13 +531,12 @@ export default function StaffClient({
                     {allShifts
                       .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
                       .map((shift) => {
-                        const person = staff.find(p => p.id === shift.staff_id);
                         return (
                           <div key={shift.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div className="flex-1">
                               <div className="flex items-center gap-3">
-                                <span className="font-medium text-purple-600">{person?.name || 'Unknown'}</span>
-                                <Badge variant="outline">{person?.role || 'Unknown'}</Badge>
+                                <span className="font-medium text-purple-600">{shift.staff_name}</span>
+                                <Badge variant="outline">{shift.staff_role}</Badge>
                                 {isShiftActive(shift) && (
                                   <Badge variant="default" className="bg-green-100 text-green-800">
                                     Active Now
@@ -538,7 +574,14 @@ export default function StaffClient({
                       })}
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-500">No shifts scheduled yet.</div>
+                  <div className="text-center py-8">
+                    <p className="text-sm text-gray-500 mb-2">No shifts scheduled yet.</p>
+                    {staff.length === 0 && (
+                      <p className="text-xs text-gray-400">
+                        Note: Add staff members first to create shifts with proper names.
+                      </p>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>

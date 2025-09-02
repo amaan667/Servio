@@ -12,14 +12,30 @@ export async function GET(req: Request) {
   const admin = await createClient();
 
   let q = admin.from('staff_shifts')
-    .select('id, staff_id, venue_id, start_time, end_time, area')
+    .select(`
+      id, 
+      staff_id, 
+      venue_id, 
+      start_time, 
+      end_time, 
+      area,
+      staff:staff_id(name, role)
+    `)
     .eq('venue_id', venue_id)
     .order('start_time', { ascending: false });
   if (staff_id) q = q.eq('staff_id', staff_id);
 
   const { data, error } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true, shifts: data ?? [] });
+  
+  // Transform the data to flatten the nested staff object
+  const transformedShifts = data?.map(shift => ({
+    ...shift,
+    staff_name: shift.staff?.name || 'Unknown',
+    staff_role: shift.staff?.role || 'Unknown'
+  })) || [];
+  
+  return NextResponse.json({ ok: true, shifts: transformedShifts });
 }
 
 
