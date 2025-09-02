@@ -9,6 +9,8 @@ import { RefreshCw, Clock, CheckCircle, XCircle, AlertTriangle, History, Calenda
 import { createClient } from "@/lib/supabase/client";
 import { OrderCard, type Order } from "@/components/order-card";
 import { logger } from "@/lib/logger";
+import { useTabCounts } from '@/hooks/use-tab-counts';
+import { useCountsRealtime } from '@/hooks/use-counts-realtime';
 
 interface LiveOrdersProps {
   venueId: string;
@@ -20,6 +22,12 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'live' | 'earlier' | 'history'>('live');
+
+  // Use the new RPC-based tab counts
+  const { data: tabCounts, isLoading: countsLoading } = useTabCounts(venueId, venueTimezone, 30);
+  
+  // Set up realtime updates for counts
+  useCountsRealtime(venueId, venueTimezone);
 
   console.log('[LIVE_ORDERS] Component mounted with venueId:', venueId);
 
@@ -257,37 +265,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     }
   }, [venueId, venueTimezone, todayBoundsCorrected]);
 
-  // Fetch all orders for accurate tab counts
-  const fetchAllOrders = useCallback(async () => {
-    if (!venueId) return;
-    
-    try {
-      const supabase = createClient();
-      if (!supabase) return;
-      
-      const { data: allOrders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('[LIVE_ORDERS] Error fetching all orders for counts:', error);
-        return;
-      }
-      
-      // Update orders state with all orders for accurate tab counts
-      setOrders(allOrders || []);
-      console.log('[LIVE_ORDERS] All orders fetched for tab counts:', allOrders?.length || 0);
-    } catch (error) {
-      console.error('[LIVE_ORDERS] Failed to fetch all orders for counts:', error);
-    }
-  }, [venueId]);
 
-  // Fetch all orders on mount and when venueId changes
-  useEffect(() => {
-    fetchAllOrders();
-  }, [fetchAllOrders]);
 
   // Fetch orders when tab changes
   useEffect(() => {
@@ -314,8 +292,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         () => {
           // Refresh orders when any order changes
           fetchOrders(activeTab);
-          // Also refresh all orders for accurate tab counts
-          fetchAllOrders();
+          // Tab counts are automatically updated via useCountsRealtime
         }
       )
       .subscribe();
@@ -342,56 +319,17 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     }
   };
 
+  // Get tab count from RPC results
   const getTabCount = (tab: 'live' | 'earlier' | 'history') => {
-    if (!venueId || !orders || orders.length === 0) return 0;
+    if (!tabCounts) return 0;
     
-    const now = new Date();
-    const venueDate = new Date(now.toLocaleString("en-US", { timeZone: venueTimezone || "Europe/London" }));
-    const today = new Date(venueDate.getFullYear(), venueDate.getMonth(), venueDate.getDate());
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    // Filter orders based on tab requirements
     switch (tab) {
       case 'live':
-        // Live orders: active statuses from today, NOT older than 30 minutes
-        return orders.filter(order => {
-          const orderDate = new Date(order.created_at);
-          const isToday = orderDate >= today && orderDate < tomorrow;
-          const isActive = ['PLACED', 'ACCEPTED', 'READY'].includes(order.order_status || order.status);
-          
-          // Check if order is older than 30 minutes
-          const orderAge = now.getTime() - orderDate.getTime();
-          const thirtyMinutes = 30 * 60 * 1000; // 30 minutes in milliseconds
-          const isNotExpired = orderAge < thirtyMinutes;
-          
-          return isToday && isActive && isNotExpired;
-        }).length;
-        
+        return tabCounts.live_count;
       case 'earlier':
-        // Earlier today: orders from today that are either terminal status OR expired live orders
-        return orders.filter(order => {
-          const orderDate = new Date(order.created_at);
-          const isToday = orderDate >= today && orderDate < tomorrow;
-          
-          // Terminal status orders
-          const isTerminal = ['SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(order.order_status || order.status);
-          
-          // Expired live orders (older than 30 minutes)
-          const orderAge = now.getTime() - orderDate.getTime();
-          const thirtyMinutes = 30 * 60 * 1000;
-          const isExpiredLive = orderAge >= thirtyMinutes && ['PLACED', 'ACCEPTED', 'READY'].includes(order.order_status || order.status);
-          
-          return isToday && (isTerminal || isExpiredLive);
-        }).length;
-        
+        return tabCounts.earlier_today_count;
       case 'history':
-        // History: all orders from previous days
-        return orders.filter(order => {
-          const orderDate = new Date(order.created_at);
-          return orderDate < today;
-        }).length;
-        
+        return tabCounts.history_count;
       default:
         return 0;
     }
@@ -448,7 +386,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
               {getTabIcon(tab)}
               <span className="font-medium">{getTabLabel(tab)}</span>
               <Badge variant="secondary" className="ml-1">
-                {getTabCount(tab)}
+                {countsLoading ? '...' : getTabCount(tab)}
               </Badge>
             </Button>
           ))}
