@@ -11,6 +11,181 @@ import TimeField, { TimeValue } from '@/components/inputs/TimeField';
 import { to24h, buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import { Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
+// Shift pill styles
+const shiftPillStyles = `
+  /* Calendar container */
+  .calendar {
+    position: relative;
+  }
+
+  /* Base pill */
+  .shift-pill {
+    position: relative;
+    z-index: 2;
+    border: 1px solid #e5e7eb;
+    background: #faf5ff;
+    color: #111827;
+    box-shadow: 0 6px 16px rgba(17,24,39,0.06);
+    overflow: hidden;
+    border-radius: 0;
+    font-weight: 500;
+  }
+
+  /* Inner layout */
+  .shift-pill-inner {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 2px;
+    padding: 8px 10px;
+    font-size: 12px;
+    line-height: 1.1;
+    white-space: nowrap;
+    height: 100%;
+  }
+
+  .shift-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 16px;
+    align-items: center;
+  }
+
+  .shift-title {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+  }
+
+  .shift-time {
+    opacity: 0.85;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .shift-role {
+    opacity: 0.7;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+  }
+
+  /* Rounded ends only where visible */
+  .shift-pill.is-start {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+  }
+
+  .shift-pill.is-end {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+
+  /* Overnight flavor */
+  .shift-pill.shift-overnight {
+    background: linear-gradient(90deg, #fff7ed 0%, #faf5ff 100%);
+    border-color: #f59e0b22;
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.15);
+  }
+
+  /* Role-based color coding */
+  .shift-pill[data-role="Kitchen"] {
+    border-left: 3px solid #10b981;
+    background: linear-gradient(90deg, #ecfdf5 0%, #faf5ff 100%);
+  }
+
+  .shift-pill[data-role="Front of House"] {
+    border-left: 3px solid #6366f1;
+    background: linear-gradient(90deg, #eef2ff 0%, #faf5ff 100%);
+  }
+
+  .shift-pill[data-role="Bar"] {
+    border-left: 3px solid #f59e0b;
+    background: linear-gradient(90deg, #fffbeb 0%, #faf5ff 100%);
+  }
+
+  /* Hover state */
+  .shift-pill:hover {
+    filter: brightness(1.02);
+    box-shadow: 0 10px 22px rgba(17,24,39,0.10);
+    transform: translateY(-1px);
+  }
+
+  /* Focus ring for accessibility */
+  .shift-pill:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+  }
+
+  /* Smooth transitions */
+  .shift-pill {
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+  }
+
+  /* Active state for better feedback */
+  .shift-pill:active {
+    transform: scale(0.98);
+  }
+
+  /* Prevent clipping under cell content */
+  .event-overlay {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+  }
+
+  .shift-pill {
+    pointer-events: auto;
+  }
+
+  /* Ensure day cells don't clip shift pills */
+  .calendar .grid {
+    position: relative;
+  }
+
+  .calendar .grid > div {
+    overflow: visible;
+  }
+
+  /* Calendar day cells */
+  .calendar .grid > div {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Ensure proper spacing between calendar elements */
+  .calendar .grid {
+    gap: 2px;
+  }
+
+  /* Small screens: truncate time, keep title */
+  @media (max-width: 900px) {
+    .shift-time {
+      display: none;
+    }
+    .shift-role {
+      display: none;
+    }
+  }
+
+  /* Very small screens: minimal display */
+  @media (max-width: 600px) {
+    .shift-pill-inner {
+      padding: 4px 6px;
+      font-size: 11px;
+    }
+    .shift-title {
+      font-size: 10px;
+    }
+  }
+`;
+
 type StaffRow = {
   id: string;
   name: string;
@@ -303,6 +478,79 @@ export default function StaffClient({
       setCurrentMonth(new Date());
     };
 
+    // Helper function to split shifts into week-sized spans for proper rendering
+    const splitShiftIntoWeekSpans = (shift: Shift) => {
+      const start = new Date(shift.start_time);
+      const end = new Date(shift.end_time);
+      const isOvernight = start.toDateString() !== end.toDateString();
+      
+      if (!isOvernight) {
+        // Single day shift - render once
+        const { row, colStart, spanCols } = computeGridPlacement(start, end);
+        return [{
+          id: shift.id,
+          shift,
+          weekIndex: row - 1,
+          colStart,
+          spanCols,
+          isOvernight: false,
+          isFirstInSpan: true,
+          isLastInSpan: true,
+          start,
+          end
+        }];
+      }
+
+      // Multi-day shift - split into week spans
+      const spans = [];
+      let currentDate = new Date(start);
+      let weekIndex = 0;
+      let isFirst = true;
+
+      while (currentDate <= end) {
+        const weekStart = new Date(currentDate);
+        const weekEnd = new Date(currentDate);
+        
+        // Find the end of this week (Saturday)
+        while (weekEnd.getDay() !== 6 && weekEnd < end) {
+          weekEnd.setDate(weekEnd.getDate() + 1);
+        }
+        
+        // If this is the last span, use the actual end date
+        if (weekEnd >= end) {
+          weekEnd.setTime(end.getTime());
+        }
+
+        // Ensure we don't exceed the actual end date
+        if (weekEnd > end) {
+          weekEnd.setTime(end.getTime());
+        }
+
+        const { row, colStart, spanCols } = computeGridPlacement(weekStart, weekEnd);
+        
+        spans.push({
+          id: `${shift.id}-${weekIndex}`,
+          shift,
+          weekIndex: row - 1,
+          colStart,
+          spanCols,
+          isOvernight: true,
+          isFirstInSpan: isFirst,
+          isLastInSpan: weekEnd >= end,
+          start: weekStart,
+          end: weekEnd
+        });
+
+        // Move to next week
+        currentDate = new Date(weekEnd);
+        currentDate.setDate(currentDate.getDate() + 1);
+        weekIndex++;
+        isFirst = false;
+      }
+
+      return spans;
+    };
+
     // Helper function to compute grid placement for shifts
     const computeGridPlacement = (start: Date, end: Date) => {
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -321,17 +569,6 @@ export default function StaffClient({
       const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
       // Ensure we don't span more than the actual days difference + 1
       const spanCols = Math.min(7 - colStart + 1, Math.max(1, daysDiff + 1));
-      
-      console.log('[CALENDAR DEBUG] Grid placement:', {
-        shift: `${start.toLocaleDateString()} → ${end.toLocaleDateString()}`,
-        startDayOfWeek,
-        daysFromStart,
-        weekRow,
-        colStart,
-        daysDiff,
-        spanCols,
-        result: { row: weekRow + 1, colStart, spanCols }
-      });
       
       return { row: weekRow + 1, colStart, spanCols };
     };
@@ -353,21 +590,11 @@ export default function StaffClient({
         return startsInMonth || endsInMonth || spansMonth;
       });
       
-      console.log('[CALENDAR DEBUG] Month shifts:', {
-        month: `${startOfMonth.toLocaleDateString()} - ${endOfMonth.toLocaleDateString()}`,
-        totalShifts: allShifts.length,
-        filteredShifts: filteredShifts.length,
-        shifts: filteredShifts.map(s => ({
-          name: s.staff_name,
-          start: s.start_time,
-          end: s.end_time
-        }))
-      });
-      
       return filteredShifts;
     };
 
     const monthShifts = getShiftsForMonth();
+    const shiftSpans = monthShifts.flatMap(splitShiftIntoWeekSpans);
 
     return (
       <Card>
@@ -389,7 +616,7 @@ export default function StaffClient({
           <div className="text-2xl font-bold text-center">{monthName}</div>
         </CardHeader>
         <CardContent>
-          <div className="relative">
+          <div className="relative calendar">
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-2">
               {/* Day headers */}
@@ -419,79 +646,56 @@ export default function StaffClient({
             </div>
 
             {/* Event Overlay for Shifts */}
-            <div className="event-overlay absolute inset-0 pointer-events-none">
-              {monthShifts.map(shift => {
-                const start = new Date(shift.start_time);
-                const end = new Date(shift.end_time);
-                const isOvernight = start.toDateString() !== end.toDateString();
-                const { row, colStart, spanCols } = computeGridPlacement(start, end);
-                
-                // Calculate position more accurately
+            <div className="event-overlay">
+              {shiftSpans.map(span => {
                 const cellWidth = 100 / 7; // Each day cell width as percentage
-                const left = (colStart - 1) * cellWidth;
-                const width = Math.min(spanCols * cellWidth, 100 - left); // Don't exceed right edge
-                const top = (row - 1) * 120 + 40; // 120px day height + 40px header offset
-                
-                console.log('[CALENDAR DEBUG] Shift positioning:', {
-                  shift: shift.staff_name,
-                  colStart,
-                  spanCols,
-                  left: `${left}%`,
-                  width: `${width}%`,
-                  top: `${top}px`
-                });
+                const left = (span.colStart - 1) * cellWidth;
+                const width = Math.min(span.spanCols * cellWidth, 100 - left); // Don't exceed right edge
+                const top = span.weekIndex * 120 + 40; // 120px day height + 40px header offset
                 
                 return (
                   <div
-                    key={shift.id}
+                    key={span.id}
                     className={`shift-pill absolute pointer-events-auto ${
-                      isOvernight ? 'overnight' : ''
-                    }`}
+                      span.isOvernight ? 'shift-overnight' : ''
+                    } ${span.isFirstInSpan ? 'is-start' : ''} ${span.isLastInSpan ? 'is-end' : ''}`}
                     style={{
                       left: `${left}%`,
                       width: `${width}%`,
                       top: `${top}px`,
-                      height: '80px',
-                      zIndex: isOvernight ? 20 : 10
+                      height: '80px'
                     }}
-                    title={`${shift.staff_name} (${shift.staff_role}) - ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? ` - ${shift.area}` : ''}${isOvernight ? ' - Overnight Shift' : ''}`}
+                    title={`${span.shift.staff_name} (${span.shift.staff_role}) - ${formatTime(span.shift.start_time)} - ${formatTime(span.shift.end_time)}${span.shift.area ? ` - ${span.shift.area}` : ''}${span.isOvernight ? ' - Overnight Shift' : ''}`}
+                    data-role={span.shift.area || span.shift.staff_role}
+                    onClick={() => {
+                      // Could open shift details modal here
+                      console.log('[AUTH DEBUG] Shift clicked:', span.shift);
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        console.log('[AUTH DEBUG] Shift activated:', span.shift);
+                      }
+                    }}
                   >
-                    <div className={`h-full rounded-lg p-2 shadow-sm border ${
-                      isOvernight 
-                        ? 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-orange-300' 
-                        : 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border-purple-300'
-                    }`}>
-                      <div className="font-medium text-xs truncate mb-1 flex items-center gap-1">
-                        {shift.staff_name}
-                        {isOvernight && (
-                          <span className="text-orange-600" title="Overnight Shift">🌙</span>
-                        )}
+                    <div className="shift-pill-inner">
+                      <div className="shift-line">
+                        <span className="shift-title">
+                          {span.isOvernight ? '🌙 ' : ''}{span.shift.staff_name}
+                        </span>
+                        <span className="shift-time">
+                          {formatTime(span.shift.start_time)} – {formatTime(span.shift.end_time)}
+                        </span>
                       </div>
-                      <div className={`text-xs ${isOvernight ? 'text-orange-600' : 'text-purple-600'}`}>
-                        {formatTime(shift.start_time)} - {formatTime(shift.end_time)}
+                      <div className="shift-role">
+                        {span.shift.area || span.shift.staff_role}
                       </div>
-                      {shift.area && (
-                        <div className={`text-xs mt-1 truncate ${isOvernight ? 'text-orange-500' : 'text-purple-500'}`}>
-                          {shift.area}
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
               })}
-            </div>
-            
-            {/* Debug info - remove this after testing */}
-            <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs">
-              <div className="font-semibold mb-2">Debug Info:</div>
-              <div>Total shifts: {allShifts.length}</div>
-              <div>Month shifts: {monthShifts.length}</div>
-              <div>Current month: {currentMonth.toLocaleDateString()}</div>
-              {monthShifts.map(shift => (
-                <div key={shift.id} className="mt-1">
-                  {shift.staff_name}: {new Date(shift.start_time).toLocaleDateString()} {formatTime(shift.start_time)} - {formatTime(shift.end_time)}
-                </div>
-              ))}
             </div>
           </div>
         </CardContent>
@@ -592,6 +796,9 @@ export default function StaffClient({
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Inject shift pill styles */}
+      <style dangerouslySetInnerHTML={{ __html: shiftPillStyles }} />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Staff Stats */}
         <div className="mb-6 flex items-center justify-between">
@@ -685,7 +892,7 @@ export default function StaffClient({
                 <div className="flex items-center gap-2 text-sm text-orange-700">
                   <span>🌙</span>
                   <span className="font-medium">Overnight Shifts:</span>
-                  <span>Shifts that span multiple days visually break through calendar boundaries with enhanced shadows and extended borders</span>
+                  <span>Shifts spanning multiple days show as continuous pills with rounded edges only at week boundaries. Each pill has proper contrast and hover effects for easy interaction.</span>
                 </div>
               </CardContent>
             </Card>

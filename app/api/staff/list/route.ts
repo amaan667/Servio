@@ -1,0 +1,30 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+
+export const runtime = 'nodejs';
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const venue_id = searchParams.get('venue_id');
+
+    if (!venue_id) {
+      return NextResponse.json({ error: 'venue_id is required' }, { status: 400 });
+    }
+
+    const admin = await createClient();
+    const { data, error } = await admin
+      .from('staff')
+      .select('*')
+      .eq('venue_id', venue_id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, staff: data || [] });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 });
+  }
+}
