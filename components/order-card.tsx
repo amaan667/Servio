@@ -108,6 +108,20 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
     }).format(amount);
   };
 
+  // Calculate total from items if total_amount is 0 or missing
+  const calculateTotalFromItems = (items: Array<{ quantity: number; price: number }>) => {
+    return items.reduce((sum, item) => {
+      const quantity = Number(item.quantity) || 0;
+      const price = Number(item.price) || 0;
+      return sum + (quantity * price);
+    }, 0);
+  };
+
+  // Use calculated total from items if total_amount is 0 or missing
+  const amount = order.total_amount && order.total_amount > 0 
+    ? order.total_amount 
+    : calculateTotalFromItems(order.items);
+
   // Primary action button logic as specified
   function primaryActionFor(order: Order) {
     if (['SERVED','CANCELLED','REFUNDED','EXPIRED'].includes(order.order_status)) return null;
@@ -173,8 +187,6 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
       setUpdating(false);
     }
   };
-
-  const amount = order.calc_total_amount ?? order.total_amount ?? 0;
 
   return (
     <Card className="hover:shadow-md transition-shadow">

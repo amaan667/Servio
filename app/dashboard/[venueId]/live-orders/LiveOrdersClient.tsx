@@ -477,7 +477,18 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               </Badge>
             )}
             <div className="text-lg font-bold">
-              £{order.total_amount.toFixed(2)}
+              £{(() => {
+                // Calculate total from items if total_amount is 0 or missing
+                let amount = order.total_amount;
+                if (!amount || amount <= 0) {
+                  amount = order.items.reduce((sum, item) => {
+                    const quantity = Number(item.quantity) || 0;
+                    const price = Number(item.price) || 0;
+                    return sum + (quantity * price);
+                  }, 0);
+                }
+                return amount.toFixed(2);
+              })()}
             </div>
           </div>
         </div>

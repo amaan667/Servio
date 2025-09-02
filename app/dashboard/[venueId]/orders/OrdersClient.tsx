@@ -52,10 +52,21 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
         if (ordersData) {
           setOrders(ordersData as Order[]);
           
-          // Calculate stats
+          // Calculate stats with fallback to items calculation
           setStats({
             todayOrders: ordersData.length,
-            revenue: ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0)
+            revenue: ordersData.reduce((sum, order) => {
+              let amount = order.total_amount;
+              if (!amount || amount <= 0) {
+                // Calculate from items if total_amount is 0 or missing
+                amount = order.items.reduce((itemSum, item) => {
+                  const quantity = Number(item.quantity) || 0;
+                  const price = Number(item.price) || 0;
+                  return itemSum + (quantity * price);
+                }, 0);
+              }
+              return sum + amount;
+            }, 0)
           });
         }
 
@@ -130,7 +141,18 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
                         <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleTimeString()}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">£{order.total_amount.toFixed(2)}</p>
+                        <p className="font-bold">£{(() => {
+                          // Calculate total from items if total_amount is 0 or missing
+                          let amount = order.total_amount;
+                          if (!amount || amount <= 0) {
+                            amount = order.items.reduce((sum, item) => {
+                              const quantity = Number(item.quantity) || 0;
+                              const price = Number(item.price) || 0;
+                              return sum + (quantity * price);
+                            }, 0);
+                          }
+                          return amount.toFixed(2);
+                        })()}</p>
                         <p className="text-sm">{order.status}</p>
                       </div>
                     </div>

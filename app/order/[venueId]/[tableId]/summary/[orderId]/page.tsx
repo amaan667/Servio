@@ -184,7 +184,18 @@ export default function OrderSummaryPage() {
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-servio-purple">
-                  £{order.total_amount.toFixed(2)}
+                  £{(() => {
+                    // Calculate total from items if total_amount is 0 or missing
+                    let amount = order.total_amount;
+                    if (!amount || amount <= 0) {
+                      amount = order.items.reduce((sum, item) => {
+                        const quantity = Number(item.quantity) || 0;
+                        const price = Number(item.price) || 0;
+                        return sum + (quantity * price);
+                      }, 0);
+                    }
+                    return amount.toFixed(2);
+                  })()}
                 </div>
               </div>
             </div>
@@ -239,7 +250,18 @@ export default function OrderSummaryPage() {
             <div className="flex justify-between items-center pt-4 border-t border-gray-200 mt-4">
               <span className="text-lg font-semibold text-gray-900">Total</span>
               <span className="text-2xl font-bold text-servio-purple">
-                £{order.total_amount.toFixed(2)}
+                £{(() => {
+                  // Calculate total from items if total_amount is 0 or missing
+                  let amount = order.total_amount;
+                  if (!amount || amount <= 0) {
+                    amount = order.items.reduce((sum, item) => {
+                      const quantity = Number(item.quantity) || 0;
+                      const price = Number(item.price) || 0;
+                      return sum + (quantity * price);
+                    }, 0);
+                  }
+                  return amount.toFixed(2);
+                })()}
               </span>
             </div>
 

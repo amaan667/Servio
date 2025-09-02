@@ -74,10 +74,19 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         return orderDate === today && order.order_status !== "CANCELLED";
       });
 
-      const revenue = todaysOrders.reduce(
-        (acc, order) => acc + order.total_amount,
-        0,
-      );
+      // Calculate revenue with fallback to items calculation
+      const revenue = todaysOrders.reduce((acc, order) => {
+        let amount = order.total_amount;
+        if (!amount || amount <= 0) {
+          // Calculate from items if total_amount is 0 or missing
+          amount = order.items.reduce((sum, item) => {
+            const quantity = Number(item.quantity) || 0;
+            const price = Number(item.price) || 0;
+            return sum + (quantity * price);
+          }, 0);
+        }
+        return acc + amount;
+      }, 0);
       const orderCount = todaysOrders.length;
       
       // Active tables are those with orders not fully processed (not COMPLETED)

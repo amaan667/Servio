@@ -218,10 +218,21 @@ export default function LiveOrdersPageClient({ venueId }: { venueId: string }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className={getStatusColor(order.order_status)}>
-                    {order.order_status.replace(/_/g, ' ')}
+                    {order.order_status.replace(/_/g, ' ')
                   </Badge>
                   <span className="font-semibold">
-                    £{order.total_amount.toFixed(2)}
+                    £{(() => {
+                      // Calculate total from items if total_amount is 0 or missing
+                      let amount = order.total_amount;
+                      if (!amount || amount <= 0) {
+                        amount = order.items.reduce((sum, item) => {
+                          const quantity = Number(item.quantity) || 0;
+                          const price = Number(item.price) || 0;
+                          return sum + (quantity * price);
+                        }, 0);
+                      }
+                      return amount.toFixed(2);
+                    })()}
                   </span>
                 </div>
               </div>
