@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Printer, Copy, Check, Download, Settings } from "lucide-react";
+import { Printer, Copy, Check, Download, Settings, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
 
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function GenerateQRClient({ venueId, venueName }: Props) {
-  const [tableNumber, setTableNumber] = useState("1");
+  const [selectedTables, setSelectedTables] = useState<string[]>(["1"]);
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({ totalTablesToday: 0, activeTablesNow: 0 });
   const [printSettings, setPrintSettings] = useState({
@@ -27,7 +27,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   });
   const router = useRouter();
 
-  const orderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`;
+  const orderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${selectedTables[0]}`;
 
   const handleCopy = async () => {
     try {
@@ -36,6 +36,23 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
+    }
+  };
+
+  const addTable = () => {
+    const nextTableNumber = Math.max(...selectedTables.map(t => parseInt(t)), 0) + 1;
+    setSelectedTables([...selectedTables, nextTableNumber.toString()]);
+  };
+
+  const removeTable = (tableNumber: string) => {
+    if (selectedTables.length > 1) {
+      setSelectedTables(selectedTables.filter(t => t !== tableNumber));
+    }
+  };
+
+  const updateTableNumber = (oldTableNumber: string, newTableNumber: string) => {
+    if (newTableNumber && !selectedTables.includes(newTableNumber)) {
+      setSelectedTables(selectedTables.map(t => t === oldTableNumber ? newTableNumber : t));
     }
   };
 
@@ -52,7 +69,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
       printContent.write(`
         <html>
           <head>
-            <title>QR Code - Table ${tableNumber}</title>
+            <title>QR Code - Table ${selectedTables[0]}</title>
             <style>
               @media print {
                 body { margin: 0; padding: 0; }
@@ -174,9 +191,9 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
             
             <div class="qr-grid">
               <div class="qr-item">
-                <div class="table-number">Table ${tableNumber}</div>
+                <div class="table-number">Table ${selectedTables[0]}</div>
                 <div class="qr-code">
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(orderUrl)}&format=png&margin=2" alt="QR Code for Table ${tableNumber}" />
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(orderUrl)}&format=png&margin=2" alt="QR Code for Table ${selectedTables[0]}" />
                 </div>
                 <div class="scan-text">Scan to order</div>
                 <div class="venue-info">${venueName || "My Venue"}</div>
@@ -215,7 +232,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
     }
   };
 
-  const handlePrintMultiple = () => {
+  const handlePrintAll = () => {
     // Create a hidden iframe for printing instead of opening a new window
     const printFrame = document.createElement('iframe');
     printFrame.style.position = 'absolute';
@@ -225,9 +242,6 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
     
     const printContent = printFrame.contentDocument || printFrame.contentWindow?.document;
     if (printContent) {
-      // Generate multiple QR codes for tables 1-10 (or adjust as needed)
-      const tables = Array.from({length: 10}, (_, i) => i + 1);
-      
       printContent.write(`
         <html>
           <head>
@@ -325,10 +339,10 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
           <body>
             <div class="header">
               <div class="venue-name">${venueName || "My Venue"}</div>
-              <div class="venue-subtitle">QR Code Ordering System - All Tables</div>
+              <div class="venue-subtitle">QR Code Ordering System - Tables ${selectedTables.join(', ')}</div>
             </div>
             
-            ${tables.map((tableNum, index) => {
+            ${selectedTables.map((tableNum, index) => {
               const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNum}`;
               return `
                 <div class="qr-item">
@@ -339,7 +353,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
                   <div class="scan-text">Scan to order</div>
                   <div class="venue-info">${venueName || "My Venue"}</div>
                 </div>
-                ${(index + 1) % 4 === 0 && index < tables.length - 1 ? '<div class="page-break"></div>' : ''}
+                ${(index + 1) % 4 === 0 && index < selectedTables.length - 1 ? '<div class="page-break"></div>' : ''}
               `;
             }).join('')}
             
@@ -417,15 +431,37 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="tableNumber">Table Number</Label>
-              <Input
-                id="tableNumber"
-                type="number"
-                value={tableNumber}
-                onChange={(e) => setTableNumber(e.target.value)}
-                min="1"
-                className="mt-1"
-              />
+              <Label>Table Numbers</Label>
+              <div className="mt-2 space-y-2">
+                {selectedTables.map((tableNumber, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={tableNumber}
+                      onChange={(e) => updateTableNumber(tableNumber, e.target.value)}
+                      min="1"
+                      className="flex-1"
+                    />
+                    {selectedTables.length > 1 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeTable(tableNumber)}
+                        className="px-2"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  onClick={addTable}
+                  className="w-full"
+                >
+                  + Add Another Table
+                </Button>
+              </div>
             </div>
 
             <div>
@@ -437,9 +473,16 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
             </div>
 
             <div>
-              <Label>Order URL</Label>
-              <div className="mt-1 p-3 bg-gray-50 rounded-md">
-                <code className="text-sm break-all">{orderUrl}</code>
+              <Label>Order URLs</Label>
+              <div className="mt-1 space-y-2">
+                {selectedTables.map((tableNumber, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm font-medium mb-1">Table {tableNumber}:</p>
+                    <code className="text-xs break-all">
+                      {`${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`}
+                    </code>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -488,21 +531,28 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
           <CardHeader>
             <CardTitle>QR Code Preview</CardTitle>
             <CardDescription>
-              Preview and download your QR code
+              Preview and download your QR codes
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center">
-              <div className="bg-white p-4 rounded-lg shadow-sm inline-block">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(orderUrl)}&format=png&margin=2`}
-                  alt="QR Code"
-                  className="w-48 h-48"
-                />
-              </div>
-              <div className="mt-4">
-                <Badge variant="secondary">Table {tableNumber}</Badge>
-              </div>
+            <div className="space-y-4">
+              {selectedTables.map((tableNumber, index) => {
+                const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`;
+                return (
+                  <div key={index} className="text-center p-4 border rounded-lg">
+                    <div className="bg-white p-4 rounded-lg shadow-sm inline-block">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2`}
+                        alt={`QR Code for Table ${tableNumber}`}
+                        className="w-48 h-48"
+                      />
+                    </div>
+                    <div className="mt-4">
+                      <Badge variant="secondary">Table {tableNumber}</Badge>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex space-x-2 mt-4">
@@ -510,17 +560,17 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
                 {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                 {copied ? "Copied!" : "Copy URL"}
               </Button>
-              <Button onClick={handlePrint} variant="outline" className="flex-1">
-                <Printer className="mr-2 h-4 w-4" />
-                Print Single
-              </Button>
-            </div>
-            
-            <div className="mt-3">
-              <Button onClick={handlePrintMultiple} variant="default" className="w-full">
-                <Printer className="mr-2 h-4 w-4" />
-                Print All Tables (1-10)
-              </Button>
+              {selectedTables.length === 1 ? (
+                <Button onClick={handlePrint} variant="outline" className="flex-1">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Single
+                </Button>
+              ) : (
+                <Button onClick={handlePrintAll} variant="default" className="flex-1">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print All Tables ({selectedTables.join(', ')})
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
