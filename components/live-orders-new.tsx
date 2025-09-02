@@ -321,18 +321,31 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
   // Get tab count from RPC results
   const getTabCount = (tab: 'live' | 'earlier' | 'history') => {
-    if (!tabCounts) return 0;
+    console.log(`[TAB_COUNT_DEBUG] Getting count for tab: ${tab}`);
+    console.log(`[TAB_COUNT_DEBUG] tabCounts:`, tabCounts);
     
+    if (!tabCounts) {
+      console.log(`[TAB_COUNT_DEBUG] No tabCounts, returning 0`);
+      return 0;
+    }
+    
+    let count = 0;
     switch (tab) {
       case 'live':
-        return tabCounts.live_count;
+        count = tabCounts.live_count;
+        break;
       case 'earlier':
-        return tabCounts.earlier_today_count;
+        count = tabCounts.earlier_today_count;
+        break;
       case 'history':
-        return tabCounts.history_count;
+        count = tabCounts.history_count;
+        break;
       default:
-        return 0;
+        count = 0;
     }
+    
+    console.log(`[TAB_COUNT_DEBUG] Tab ${tab} count: ${count}`);
+    return count;
   };
 
   const getTabLabel = (tab: string) => {
@@ -372,6 +385,19 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
   return (
     <div className="space-y-6">
+      {/* Debug Panel - Remove this after fixing */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <h3 className="text-sm font-semibold text-yellow-800 mb-2">Debug Info</h3>
+          <div className="text-xs text-yellow-700 space-y-1">
+            <div>Tab Counts: {JSON.stringify(tabCounts)}</div>
+            <div>Loading: {countsLoading ? 'Yes' : 'No'}</div>
+            <div>Error: {error || 'None'}</div>
+            <div>Orders Length: {orders.length}</div>
+          </div>
+        </div>
+      )}
+      
       {/* Tab Navigation - Centered with proper spacing */}
       <div className="flex justify-center mb-6">
         <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg shadow-sm">
@@ -386,7 +412,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
               {getTabIcon(tab)}
               <span className="font-medium">{getTabLabel(tab)}</span>
               <Badge variant="secondary" className="ml-1">
-                {countsLoading ? '...' : getTabCount(tab)}
+                {countsLoading ? '...' : tabCounts ? getTabCount(tab) : '?'}
               </Badge>
             </Button>
           ))}
