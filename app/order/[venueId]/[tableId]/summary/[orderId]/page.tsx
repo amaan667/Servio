@@ -5,7 +5,9 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Clock, User, Hash } from "lucide-react";
+import { CheckCircle, Clock, User, Hash, ChefHat, UtensilsCrossed, Truck, Coffee } from "lucide-react";
+import QRCodeDisplay from "@/components/qr-code-display";
+import PaymentSimulation from "@/components/payment-simulation";
 
 interface OrderSummary {
   id: string;
@@ -22,6 +24,7 @@ interface OrderSummary {
     quantity: number;
     price: number;
     specialInstructions?: string;
+    image?: string;
   }>;
   created_at: string;
   notes?: string;
@@ -74,6 +77,9 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
   const [order, setOrder] = useState<OrderSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentStatus, setCurrentStatus] = useState<string>("PLACED");
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   useEffect(() => {
     if (!orderId) return;
@@ -103,8 +109,35 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
     fetchOrder();
   }, [orderId]);
 
+  // Simulate order status progression
+  useEffect(() => {
+    if (!order) return;
+
+    const statusProgression = [
+      { status: "ACCEPTED", delay: 5000, label: "Order Accepted" },
+      { status: "IN_PREP", delay: 15000, label: "In Preparation" },
+      { status: "READY", delay: 30000, label: "Ready for Pickup" },
+      { status: "SERVING", delay: 45000, label: "Being Served" },
+      { status: "COMPLETED", delay: 60000, label: "Order Completed" }
+    ];
+
+    statusProgression.forEach(({ status, delay, label }) => {
+      const timer = setTimeout(() => {
+        setCurrentStatus(status);
+        console.log(`[DEMO STATUS] ${label}`);
+      }, delay);
+
+      return () => clearTimeout(timer);
+    });
+  }, [order]);
+
   const handleOrderAgain = () => {
     router.replace(`/order?demo=1`);
+  };
+
+  const handlePaymentComplete = () => {
+    setPaymentCompleted(true);
+    setShowPayment(false);
   };
 
   if (loading) {
@@ -147,11 +180,11 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
       case "ACCEPTED":
         return { label: "Order Accepted", color: "bg-green-100 text-green-800", icon: CheckCircle };
       case "IN_PREP":
-        return { label: "In Preparation", color: "bg-blue-100 text-blue-800", icon: Clock };
+        return { label: "In Preparation", color: "bg-blue-100 text-blue-800", icon: ChefHat };
       case "READY":
-        return { label: "Ready for Pickup", color: "bg-orange-100 text-orange-800", icon: CheckCircle };
+        return { label: "Ready for Pickup", color: "bg-orange-100 text-orange-800", icon: UtensilsCrossed };
       case "SERVING":
-        return { label: "Being Served", color: "bg-purple-100 text-purple-800", icon: CheckCircle };
+        return { label: "Being Served", color: "bg-purple-100 text-purple-800", icon: Truck };
       case "COMPLETED":
         return { label: "Order Completed", color: "bg-gray-100 text-gray-800", icon: CheckCircle };
       default:
@@ -172,139 +205,200 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
     }
   };
 
-  const statusDisplay = getStatusDisplay(order.order_status);
+  const statusDisplay = getStatusDisplay(currentStatus);
   const paymentStatusDisplay = getPaymentStatusDisplay(order.payment_status);
   const StatusIcon = statusDisplay.icon;
 
+  // Calculate total amount
+  const totalAmount = order.total_amount > 0 ? order.total_amount : 
+    order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header with Branding */}
         <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full mb-4 shadow-lg">
+            <Coffee className="h-10 w-10 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Servio Café</h1>
+          <p className="text-lg text-purple-600 font-medium mb-2">Modern Bistro & Coffee House</p>
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h2>
           <p className="text-gray-600">Thank you for your order. We'll start preparing it right away.</p>
         </div>
 
-        {/* Order Summary Card */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-xl">Order #{order.id.slice(0, 8)}</CardTitle>
-                <CardDescription className="flex items-center space-x-2 mt-2">
-                  <Hash className="h-4 w-4" />
-                  <span>Demo Cafe - Table {order.table_number}</span>
-                  <span>•</span>
-                  <Clock className="h-4 w-4" />
-                  <span>{new Date(order.created_at).toLocaleString('en-GB')}</span>
-                </CardDescription>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-purple-600">
-                  £{(() => {
-                    // Calculate total from items if total_amount is 0 or missing
-                    let amount = order.total_amount;
-                    if (!amount || amount <= 0) {
-                      amount = order.items.reduce((sum, item) => {
-                        const quantity = Number(item.quantity) || 0;
-                        const price = Number(item.price) || 0;
-                        return sum + (quantity * price);
-                      }, 0);
-                    }
-                    return amount.toFixed(2);
-                  })()}
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Status Badges */}
-            <div className="flex items-center space-x-2 mb-4">
-              <Badge className={statusDisplay.color}>
-                <StatusIcon className="h-3 w-3 mr-1" />
-                <span>{statusDisplay.label}</span>
-              </Badge>
-              <Badge className={paymentStatusDisplay.color}>
-                {paymentStatusDisplay.label}
-              </Badge>
-            </div>
-
-            {/* Customer Info */}
-            <div className="flex items-center space-x-2 mb-4 text-sm text-gray-600">
-              <User className="h-4 w-4" />
-              <span>{order.customer_name}</span>
-              {order.customer_phone && (
-                <>
-                  <span>•</span>
-                  <span>{order.customer_phone}</span>
-                </>
-              )}
-            </div>
-
-            {/* Order Items */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-gray-900">Order Items</h3>
-              {order.items.map((item, index) => (
-                <div key={index} className="flex justify-between items-start py-2 border-b border-gray-100 last:border-b-0">
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">
-                      {item.quantity} × {item.item_name}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Order Summary */}
+          <div className="lg:col-span-2">
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-xl">Order #{order.id.slice(0, 8)}</CardTitle>
+                    <CardDescription className="flex items-center space-x-2 mt-2">
+                      <Hash className="h-4 w-4" />
+                      <span>Servio Café - Table {order.table_number}</span>
+                      <span>•</span>
+                      <Clock className="h-4 w-4" />
+                      <span>{new Date(order.created_at).toLocaleString('en-GB')}</span>
+                    </CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-purple-600">
+                      £{totalAmount.toFixed(2)}
                     </div>
-                    {item.specialInstructions && (
-                      <div className="text-sm text-gray-500 mt-1">
-                        Note: {item.specialInstructions}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right font-medium text-gray-900">
-                    £{(item.price * item.quantity).toFixed(2)}
                   </div>
                 </div>
-              ))}
-            </div>
+              </CardHeader>
+              <CardContent>
+                {/* Status Badges */}
+                <div className="flex items-center space-x-2 mb-4">
+                  <Badge className={statusDisplay.color}>
+                    <StatusIcon className="h-3 w-3 mr-1" />
+                    <span>{statusDisplay.label}</span>
+                  </Badge>
+                  <Badge className={paymentStatusDisplay.color}>
+                    {paymentStatusDisplay.label}
+                  </Badge>
+                </div>
 
-            {/* Total */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-200 mt-4">
-              <span className="text-lg font-semibold text-gray-900">Total</span>
-              <span className="text-2xl font-bold text-purple-600">
-                £{(() => {
-                  // Calculate total from items if total_amount is 0 or missing
-                  let amount = order.total_amount;
-                  if (!amount || amount <= 0) {
-                    amount = order.items.reduce((sum, item) => {
-                      const quantity = Number(item.quantity) || 0;
-                      const price = Number(item.price) || 0;
-                      return sum + (quantity * price);
-                    }, 0);
-                  }
-                  return amount.toFixed(2);
-                })()}
-              </span>
-            </div>
+                {/* Customer Info */}
+                <div className="flex items-center space-x-2 mb-4 text-sm text-gray-600">
+                  <User className="h-4 w-4" />
+                  <span>{order.customer_name}</span>
+                  {order.customer_phone && (
+                    <>
+                      <span>•</span>
+                      <span>{order.customer_phone}</span>
+                    </>
+                  )}
+                </div>
 
-            {/* Notes */}
-            {order.notes && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-1">Special Instructions</h4>
-                <p className="text-sm text-gray-600">{order.notes}</p>
+                {/* Order Items with Images */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-gray-900">Order Items</h3>
+                  {order.items.map((item, index) => (
+                    <div key={index} className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-b-0">
+                      {/* Item Image */}
+                      <div className="flex-shrink-0">
+                        <img 
+                          src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=80&h=80&fit=crop&crop=center"} 
+                          alt={item.item_name}
+                          className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                        />
+                      </div>
+                      
+                      {/* Item Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900">
+                          {item.quantity} × {item.item_name}
+                        </div>
+                        {item.specialInstructions && (
+                          <div className="text-sm text-gray-500 mt-1">
+                            Note: {item.specialInstructions}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Item Price */}
+                      <div className="text-right font-medium text-gray-900 flex-shrink-0">
+                        £{(item.price * item.quantity).toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total */}
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200 mt-4">
+                  <span className="text-lg font-semibold text-gray-900">Total</span>
+                  <span className="text-2xl font-bold text-purple-600">
+                    £{totalAmount.toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Notes */}
+                {order.notes && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-1">Special Instructions</h4>
+                    <p className="text-sm text-gray-600">{order.notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button onClick={handleOrderAgain} className="w-full bg-purple-600 hover:bg-purple-700">
+                Order Again
+              </Button>
+              
+              <div className="text-center">
+                <p className="text-sm text-gray-500">
+                  This is a demo order. In a real scenario, your order would be sent to the kitchen.
+                </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          <Button onClick={handleOrderAgain} className="w-full bg-purple-600 hover:bg-purple-700">
-            Order Again
-          </Button>
-          
-          <div className="text-center">
-            <p className="text-sm text-gray-500">
-              This is a demo order. In a real scenario, your order would be sent to the kitchen.
-            </p>
+          {/* Right Sidebar */}
+          <div className="space-y-6">
+            {/* Payment Simulation */}
+            {!paymentCompleted && (
+              <PaymentSimulation 
+                amount={totalAmount} 
+                onPaymentComplete={handlePaymentComplete}
+              />
+            )}
+
+            {/* QR Code for Mobile Testing */}
+            <QRCodeDisplay 
+              currentUrl={typeof window !== 'undefined' ? window.location.href : ''}
+              venueName="Servio Café"
+            />
+
+            {/* Order Status Timeline */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Order Timeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { status: "PLACED", label: "Order Placed", time: "Now", icon: Clock },
+                    { status: "ACCEPTED", label: "Order Accepted", time: "+5s", icon: CheckCircle },
+                    { status: "IN_PREP", label: "In Preparation", time: "+15s", icon: ChefHat },
+                    { status: "READY", label: "Ready for Pickup", time: "+30s", icon: UtensilsCrossed },
+                    { status: "SERVING", label: "Being Served", time: "+45s", icon: Truck },
+                    { status: "COMPLETED", label: "Order Completed", time: "+60s", icon: CheckCircle }
+                  ].map((step, index) => {
+                    const isActive = currentStatus === step.status;
+                    const isCompleted = ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(step.status) <= 
+                      ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(currentStatus);
+                    
+                    return (
+                      <div key={step.status} className="flex items-center space-x-3">
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                          isCompleted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                        }`}>
+                          {isCompleted ? <CheckCircle className="h-4 w-4" /> : <step.icon className="h-4 w-4" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-sm font-medium ${
+                            isActive ? 'text-purple-600' : isCompleted ? 'text-gray-900' : 'text-gray-500'
+                          }`}>
+                            {step.label}
+                          </div>
+                          <div className="text-xs text-gray-400">{step.time}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

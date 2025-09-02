@@ -232,7 +232,7 @@ export default function CustomerOrderPage() {
         const demoOrderData = {
           id: `demo-${Date.now()}`, // Generate a demo order ID
           venue_id: 'demo-cafe',
-          venue_name: 'Demo Cafe',
+          venue_name: 'Servio Café',
           table_number: safeTable,
           customer_name: customerInfo.name.trim(),
           customer_phone: customerInfo.phone.trim(),
@@ -242,6 +242,7 @@ export default function CustomerOrderPage() {
             price: item.price,
             item_name: item.name,
             specialInstructions: item.specialInstructions || null,
+            image: item.image || null,
           })),
           total_amount: getTotalPrice(),
           notes: cart
@@ -249,7 +250,7 @@ export default function CustomerOrderPage() {
             .map((item) => `${item.name}: ${item.specialInstructions}`)
             .join("; "),
           order_status: 'PLACED',
-          payment_status: 'PAID', // Demo orders are automatically "paid"
+          payment_status: 'UNPAID', // Demo orders start as unpaid for payment simulation
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -328,7 +329,7 @@ export default function CustomerOrderPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm">
                   <span className="font-medium text-purple-700">🎯 Demo Mode:</span>
-                  <span className="ml-2 text-purple-600">Experience the full ordering flow without creating real orders</span>
+                  <span className="ml-2 text-purple-600">Experience Servio Café's full ordering flow with payment simulation</span>
                   <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Interactive Preview</span>
                 </div>
                 <Button
@@ -355,7 +356,7 @@ export default function CustomerOrderPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                {isDemo ? "Demo Cafe" : (menuItems[0]?.venue_name || 'Our Venue')}
+                {isDemo ? "Servio Café" : (menuItems[0]?.venue_name || 'Our Venue')}
               </h1>
               <p className="text-gray-600">Table {tableNumber}</p>
             </div>
@@ -416,7 +417,17 @@ export default function CustomerOrderPage() {
                           .map((item) => (
                             <Card key={item.id} className="hover:shadow-md transition-shadow">
                               <CardContent className="p-4">
-                                <div className="flex justify-between items-start">
+                                <div className="flex space-x-4">
+                                  {/* Item Image */}
+                                  <div className="flex-shrink-0">
+                                    <img 
+                                      src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=80&h=80&fit=crop&crop=center"} 
+                                      alt={item.name}
+                                      className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                                    />
+                                  </div>
+                                  
+                                  {/* Item Details */}
                                   <div className="flex-1">
                                     <h3 className="font-semibold text-gray-900">
                                       {item.name}
@@ -430,6 +441,8 @@ export default function CustomerOrderPage() {
                                       £{item.price.toFixed(2)}
                                     </p>
                                   </div>
+                                  
+                                  {/* Add to Cart Button */}
                                   <Button
                                     onClick={() => addToCart(item)}
                                     size="sm"
@@ -470,7 +483,17 @@ export default function CustomerOrderPage() {
                   <div className="space-y-4">
                     {cart.map((item) => (
                       <div key={item.id} className="border-b pb-4 last:border-b-0">
-                        <div className="flex justify-between items-start">
+                        <div className="flex space-x-3">
+                          {/* Cart Item Image */}
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=60&h=60&fit=crop&crop=center"} 
+                              alt={item.name}
+                              className="w-15 h-15 rounded-lg object-cover border border-gray-200"
+                            />
+                          </div>
+                          
+                          {/* Cart Item Details */}
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-900">
                               {item.name}
@@ -592,7 +615,17 @@ export default function CustomerOrderPage() {
                   <div className="space-y-4">
                     {cart.map((item) => (
                       <div key={item.id} className="border-b pb-4 last:border-b-0">
-                        <div className="flex justify-between items-start">
+                        <div className="flex space-x-3">
+                          {/* Mobile Cart Item Image */}
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=60&h=60&fit=crop&crop=center"} 
+                              alt={item.name}
+                              className="w-15 h-15 rounded-lg object-cover border border-gray-200"
+                            />
+                          </div>
+                          
+                          {/* Mobile Cart Item Details */}
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-900">
                               {item.name}
