@@ -157,14 +157,14 @@ export default function GlobalNav() {
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-1">
                 {isOnDashboard ? (
-                  // On dashboard pages: Home, Settings, Sign Out
+                  // On dashboard pages: Dashboard, Settings, Sign Out
                   <>
                     <Link
                       href="/"
                       className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200"
                     >
                       <Home className="mr-2 h-4 w-4" />
-                      Home
+                      Dashboard
                     </Link>
                     <Link
                       href="/settings"
@@ -283,7 +283,7 @@ export default function GlobalNav() {
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <Home className="mr-3 h-5 w-5" />
-                      Home
+                      Dashboard
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}

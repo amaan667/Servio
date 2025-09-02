@@ -83,7 +83,7 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">→</li>
+          <li className="text-gray-400">←</li>
           <li className="text-gray-700 font-medium">{pageTitle}</li>
         </ol>
       </nav>
@@ -105,7 +105,7 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">→</li>
+          <li className="text-gray-400">←</li>
           <li className="text-gray-700 font-medium">Dashboard</li>
         </ol>
       </nav>
@@ -127,7 +127,7 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">→</li>
+          <li className="text-gray-400">←</li>
           <li>
             <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
               <Link href={homeLink}>
@@ -138,7 +138,7 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-400">→</li>
+          <li className="text-gray-400">←</li>
           <li className="text-gray-700 font-medium">{pageTitle}</li>
         </ol>
       </nav>
