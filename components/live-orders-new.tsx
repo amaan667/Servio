@@ -247,6 +247,38 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     }
   }, [venueId, venueTimezone, todayBoundsCorrected]);
 
+  // Fetch all orders for accurate tab counts
+  const fetchAllOrders = useCallback(async () => {
+    if (!venueId) return;
+    
+    try {
+      const supabase = createClient();
+      if (!supabase) return;
+      
+      const { data: allOrders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('[LIVE_ORDERS] Error fetching all orders for counts:', error);
+        return;
+      }
+      
+      // Update orders state with all orders for accurate tab counts
+      setOrders(allOrders || []);
+      console.log('[LIVE_ORDERS] All orders fetched for tab counts:', allOrders?.length || 0);
+    } catch (error) {
+      console.error('[LIVE_ORDERS] Failed to fetch all orders for counts:', error);
+    }
+  }, [venueId]);
+
+  // Fetch all orders on mount and when venueId changes
+  useEffect(() => {
+    fetchAllOrders();
+  }, [fetchAllOrders]);
+
   // Fetch orders when tab changes
   useEffect(() => {
     fetchOrders(activeTab);
@@ -272,6 +304,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         () => {
           // Refresh orders when any order changes
           fetchOrders(activeTab);
+          // Also refresh all orders for accurate tab counts
+          fetchAllOrders();
         }
       )
       .subscribe();
@@ -299,29 +333,40 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   };
 
   const getTabCount = (tab: 'live' | 'earlier' | 'history') => {
-    // We need to get all orders for the venue to calculate accurate counts
-    // This should be independent of the current tab's filtered orders
-    if (!venueId) return 0;
+    if (!venueId || !orders || orders.length === 0) return 0;
     
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const venueDate = new Date(now.toLocaleString("en-US", { timeZone: venueTimezone || "Europe/London" }));
+    const today = new Date(venueDate.getFullYear(), venueDate.getMonth(), venueDate.getDate());
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    // For now, return hardcoded counts based on what we know from the debug script
-    // In a real implementation, we'd fetch all orders once and cache the counts
+    // Filter orders based on tab requirements
     switch (tab) {
       case 'live':
-        // Live orders: active statuses from today (should be 0 on Sep 2nd)
-        return 0;
+        // Live orders: active statuses from today
+        return orders.filter(order => {
+          const orderDate = new Date(order.created_at);
+          const isToday = orderDate >= today && orderDate < tomorrow;
+          const isActive = ['PLACED', 'ACCEPTED', 'READY'].includes(order.order_status || order.status);
+          return isToday && isActive;
+        }).length;
         
       case 'earlier':
-        // Earlier today: terminal statuses from today (should be 0 on Sep 2nd)
-        return 0;
+        // Earlier today: terminal statuses from today
+        return orders.filter(order => {
+          const orderDate = new Date(order.created_at);
+          const isToday = orderDate >= today && orderDate < tomorrow;
+          const isTerminal = ['SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(order.order_status || order.status);
+          return isToday && isTerminal;
+        }).length;
         
       case 'history':
-        // History: all orders from previous days (should be 19 on Sep 2nd)
-        return 19;
+        // History: all orders from previous days
+        return orders.filter(order => {
+          const orderDate = new Date(order.created_at);
+          return orderDate < today;
+        }).length;
         
       default:
         return 0;
