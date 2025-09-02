@@ -169,8 +169,14 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             const created = new Date(order.created_at);
             const isActive = ACTIVE_STATUSES.includes(status);
             const isToday = created >= today && created < tomorrow;
-            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isActive=${isActive}, isToday=${isToday}`);
-            return isActive && isToday;
+            
+            // Check if order is older than 30 minutes
+            const orderAge = now.getTime() - created.getTime();
+            const thirtyMinutes = 30 * 60 * 1000;
+            const isNotExpired = orderAge < thirtyMinutes;
+            
+            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isActive=${isActive}, isToday=${isToday}, isNotExpired=${isNotExpired}`);
+            return isActive && isToday && isNotExpired;
           });
         } else if (tab === 'earlier') {
           filteredOrders = filteredOrders.filter(order => {
@@ -178,17 +184,21 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             const created = new Date(order.created_at);
             const isTerminal = TERMINAL_TODAY.includes(status);
             const isToday = created >= today && created < tomorrow;
-            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isTerminal=${isTerminal}, isToday=${isToday}`);
-            return isTerminal && isToday;
+            
+            // Include expired live orders (older than 30 minutes)
+            const orderAge = now.getTime() - created.getTime();
+            const thirtyMinutes = 30 * 60 * 1000;
+            const isExpiredLive = orderAge >= thirtyMinutes && ACTIVE_STATUSES.includes(status);
+            
+            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isTerminal=${isTerminal}, isToday=${isToday}, isExpiredLive=${isExpiredLive}`);
+            return isToday && (isTerminal || isExpiredLive);
           });
         } else if (tab === 'history') {
           filteredOrders = filteredOrders.filter(order => {
-            const status = order.order_status || order.status;
             const created = new Date(order.created_at);
-            const isHistory = ['SERVED', 'COMPLETED'].includes(status);
             const isBeforeToday = created < today;
-            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isHistory=${isHistory}, isBeforeToday=${isBeforeToday}`);
-            return isHistory && isBeforeToday;
+            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${order.order_status || order.status}, created=${created.toISOString()}, isBeforeToday=${isBeforeToday}`);
+            return isBeforeToday; // Show all orders from previous days regardless of status
           });
         }
         
@@ -344,21 +354,35 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     // Filter orders based on tab requirements
     switch (tab) {
       case 'live':
-        // Live orders: active statuses from today
+        // Live orders: active statuses from today, NOT older than 30 minutes
         return orders.filter(order => {
           const orderDate = new Date(order.created_at);
           const isToday = orderDate >= today && orderDate < tomorrow;
           const isActive = ['PLACED', 'ACCEPTED', 'READY'].includes(order.order_status || order.status);
-          return isToday && isActive;
+          
+          // Check if order is older than 30 minutes
+          const orderAge = now.getTime() - orderDate.getTime();
+          const thirtyMinutes = 30 * 60 * 1000; // 30 minutes in milliseconds
+          const isNotExpired = orderAge < thirtyMinutes;
+          
+          return isToday && isActive && isNotExpired;
         }).length;
         
       case 'earlier':
-        // Earlier today: terminal statuses from today
+        // Earlier today: orders from today that are either terminal status OR expired live orders
         return orders.filter(order => {
           const orderDate = new Date(order.created_at);
           const isToday = orderDate >= today && orderDate < tomorrow;
+          
+          // Terminal status orders
           const isTerminal = ['SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(order.order_status || order.status);
-          return isToday && isTerminal;
+          
+          // Expired live orders (older than 30 minutes)
+          const orderAge = now.getTime() - orderDate.getTime();
+          const thirtyMinutes = 30 * 60 * 1000;
+          const isExpiredLive = orderAge >= thirtyMinutes && ['PLACED', 'ACCEPTED', 'READY'].includes(order.order_status || order.status);
+          
+          return isToday && (isTerminal || isExpiredLive);
         }).length;
         
       case 'history':
