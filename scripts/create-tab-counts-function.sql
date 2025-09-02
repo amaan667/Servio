@@ -46,10 +46,10 @@ earlier as (
   )
 ),
 hist as (
+  -- All orders from previous days (not just SERVED)
   select count(*)::int c
   from public.orders o, b
   where o.venue_id = p_venue_id
-    and upper(o.order_status) = 'SERVED'
     and o.created_at < b.start_utc
 ),
 active_tables as (
