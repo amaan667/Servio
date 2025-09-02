@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home, ArrowLeft, LayoutDashboard } from "lucide-react";
 import Link from 'next/link';
 import { useMemo } from 'react';
 
