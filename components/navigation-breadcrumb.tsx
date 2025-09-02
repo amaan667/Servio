@@ -112,7 +112,7 @@ export default function NavigationBreadcrumb({
     );
   }
 
-  // Generate QR page: Home ← QR Codes (simplified)
+  // Generate QR page: Home ← Dashboard ← QR Codes
   if (isGenerateQRPage && venueId) {
     return (
       <nav aria-label="Breadcrumb" className="mb-4">
@@ -128,13 +128,24 @@ export default function NavigationBreadcrumb({
             </Button>
           </li>
           <li className="text-gray-400">←</li>
+          <li>
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+              <Link href={dashboardLink}>
+                <>
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </>
+              </Link>
+            </Button>
+          </li>
+          <li className="text-gray-400">←</li>
           <li className="text-gray-700 font-medium">{pageTitle}</li>
         </ol>
       </nav>
     );
   }
 
-  // Subpages: Home ← Current Page (simplified)
+  // Subpages: Home ← Dashboard ← Current Page
   return (
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center gap-2 text-sm">
@@ -144,6 +155,17 @@ export default function NavigationBreadcrumb({
               <>
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Home</span>
+              </>
+            </Link>
+          </Button>
+        </li>
+        <li className="text-gray-400">←</li>
+        <li>
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+            <Link href={dashboardLink}>
+              <>
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden sm:inline">Dashboard</span>
               </>
             </Link>
           </Button>
