@@ -77,35 +77,32 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
     console.log('[VENUE PAGE] Venue found, proceeding with dashboard setup');
 
-    // Get timezone-aware today window (default to Europe/London until migration is run)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    // Compute unique active tables today (open tickets): status != 'SERVED' and != 'PAID' AND created today
-    const { data: activeRows } = await supabase
-      .from('orders')
-      .select('table_number, order_status, payment_status, created_at')
-      .eq('venue_id', params.venueId)
-      .not('order_status', 'in', '(SERVED,PAID)')
-      .gte('created_at', today.toISOString())
-      .lt('created_at', tomorrow.toISOString());
-    const uniqueActiveTables = new Set((activeRows ?? []).map((r: any) => r.table_number).filter((t: any) => t != null)).size;
+    // Get authoritative dashboard counts from the new RPC function
+    const venueTz = 'Europe/London'; // pull from DB/config if you store it
+    const { data: counts, error: countsError } = await supabase
+      .rpc('dashboard_counts', { 
+        p_venue_id: params.venueId, 
+        p_tz: venueTz, 
+        p_live_window_mins: 30 
+      })
+      .single();
 
-    console.log('[VENUE PAGE] Active tables:', { 
-      venueId: params.venueId, 
-      activeTables: uniqueActiveTables 
-    });
+    if (countsError) {
+      console.error('[VENUE PAGE] Error fetching dashboard counts:', countsError);
+      // Continue with default counts rather than failing
+    }
+
+    console.log('[VENUE PAGE] Dashboard counts:', counts);
 
     console.log('[VENUE PAGE] Rendering dashboard client');
     return (
       <DashboardClient 
         venueId={params.venueId} 
         userId={user.id}
-        activeTables={uniqueActiveTables}
         venue={venue}
         userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+        venueTz={venueTz}
+        initialCounts={counts}
       />
     );
   } catch (error) {

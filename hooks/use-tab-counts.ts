@@ -5,6 +5,8 @@ export interface TabCounts {
   live_count: number
   earlier_today_count: number
   history_count: number
+  today_orders_count: number
+  active_tables_count: number
 }
 
 export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
@@ -21,7 +23,7 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
     try {
       const supabase = createClient()
       const { data: result, error: rpcError } = await supabase
-        .rpc('orders_tab_counts', { 
+        .rpc('dashboard_counts', { 
           p_venue_id: venueId, 
           p_tz: tz, 
           p_live_window_mins: liveWindowMins 
