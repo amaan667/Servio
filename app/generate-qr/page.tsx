@@ -11,7 +11,6 @@ export default async function GenerateQRPage() {
   // Check for auth cookies before making auth calls
   const hasAuthCookie = await hasServerAuthCookie();
   if (!hasAuthCookie) {
-    console.log('[GENERATE-QR] No auth cookie found, redirecting to sign-in');
     redirect('/sign-in');
   }
 

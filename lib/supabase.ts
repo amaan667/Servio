@@ -212,31 +212,21 @@ export async function signInWithGoogle() {
 
 // Handle Google OAuth sign-up and create venue
 export async function handleGoogleSignUp(userId: string, userEmail: string, fullName?: string) {
-  console.log('[AUTH DEBUG] handleGoogleSignUp called with:', { userId, userEmail, fullName });
-  
   try {
-    console.log('[AUTH DEBUG] Creating venue for Google sign-up user:', userId);
-    
     // Check if user already has a venue
-    console.log('[AUTH DEBUG] Checking for existing venue');
     const { data: existingVenue, error: checkError } = await supabase
       .from("venues")
       .select("*")
       .eq("owner_id", userId)
       .single();
 
-    console.log('[AUTH DEBUG] Existing venue check result:', { existingVenue, checkError });
-
     if (existingVenue && !checkError) {
-      console.log('[AUTH DEBUG] User already has venue:', existingVenue.venue_id);
       return { success: true, venue: existingVenue };
     }
 
     // Create default venue for new Google user
-    const venueId = `venue-${userId.slice(0, 8)}`;
+    const venueId = `venue-${userId.slice(0,8)}`;
     const venueName = fullName ? `${fullName}'s Business` : "My Business";
-    
-    console.log('[AUTH DEBUG] Creating new venue with:', { venueId, venueName, userId });
     
     const { data: newVenue, error: createError } = await supabase
       .from("venues")
@@ -251,17 +241,12 @@ export async function handleGoogleSignUp(userId: string, userEmail: string, full
       .select()
       .single();
 
-    console.log('[AUTH DEBUG] Venue creation result:', { newVenue, createError });
-
     if (createError) {
-      console.log('[AUTH DEBUG] Failed to create venue for Google user:', createError);
       return { success: false, error: createError.message };
     }
 
-    console.log('[AUTH DEBUG] Created venue for Google user:', newVenue.venue_id);
     return { success: true, venue: newVenue };
   } catch (error) {
-    console.log('[AUTH DEBUG] Error in handleGoogleSignUp:', error);
     return { success: false, error: "Failed to create venue" };
   }
 }

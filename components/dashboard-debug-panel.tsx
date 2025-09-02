@@ -11,8 +11,6 @@ export default function DashboardDebugPanel() {
   const [isVisible, setIsVisible] = useState(false);
 
   const collectDebugInfo = async () => {
-    console.log('[AUTH DEBUG] === COLLECTING DEBUG INFO ===');
-    
     try {
       // Get current session
       const { data: sessionData, error: sessionError } = await supabase().auth.getSession();
@@ -95,23 +93,19 @@ export default function DashboardDebugPanel() {
         environment: envInfo,
       };
       
-      console.log('[AUTH DEBUG] Debug info collected:', info);
       setDebugInfo(info);
       
     } catch (error) {
-      console.error('[AUTH DEBUG] Error collecting debug info:', error);
+      console.error('Error collecting debug info:', error);
       setDebugInfo({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
   const clearAuthState = async () => {
-    console.log('[AUTH DEBUG] === CLEARING AUTH STATE ===');
-    
     try {
       // Clear localStorage BUT preserve PKCE verifier
       Object.keys(localStorage).forEach((k) => {
         if ((k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth")) {
-          console.log('[AUTH DEBUG] Clearing localStorage key:', k);
           localStorage.removeItem(k);
         }
       });
@@ -119,7 +113,6 @@ export default function DashboardDebugPanel() {
       // Clear sessionStorage BUT preserve PKCE verifier
       Object.keys(sessionStorage).forEach((k) => {
         if ((k.includes("pkce") && !k.includes("token-code-verifier")) || k.includes("auth")) {
-          console.log('[AUTH DEBUG] Clearing sessionStorage key:', k);
           sessionStorage.removeItem(k);
         }
       });
@@ -127,16 +120,14 @@ export default function DashboardDebugPanel() {
       // Sign out from Supabase
       const { error } = await supabase().auth.signOut();
       if (error) {
-        console.log('[AUTH DEBUG] Sign out error:', error);
-      } else {
-        console.log('[AUTH DEBUG] Sign out successful');
+        console.error('Sign out error:', error);
       }
       
       // Reload page
       window.location.reload();
       
     } catch (error) {
-      console.error('[AUTH DEBUG] Error clearing auth state:', error);
+      console.error('Error clearing auth state:', error);
     }
   };
 

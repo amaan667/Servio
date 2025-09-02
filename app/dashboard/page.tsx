@@ -39,18 +39,15 @@ export default async function DashboardPage() {
     .limit(1);
 
   if (venueError) {
-    console.error('[DASHBOARD] Error fetching venues:', venueError);
+    console.error('Error fetching venues:', venueError);
     redirect('/complete-profile');
   }
 
   if (!venues || venues.length === 0) {
-    console.log('[DASHBOARD] No venues found, redirecting to complete profile');
     redirect('/complete-profile');
   }
 
   const venueId = venues[0].venue_id;
-  console.log('[DASHBOARD] Found venue:', { venueId, venueName: venues[0].name });
-  console.log('[DASHBOARD] About to redirect to:', `/dashboard/${venueId}`);
   
   // Redirect to the primary venue's dashboard
   redirect(`/dashboard/${venueId}`);

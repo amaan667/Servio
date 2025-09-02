@@ -101,8 +101,6 @@ export default function GlobalNav() {
 
   const handleSignOut = async () => {
     try {
-      console.log('[AUTH DEBUG] Starting sign out process');
-      
       // Call unified API signout to clear cookies server-side
       const response = await fetch('/api/auth/signout', { 
         method: 'POST', 
@@ -110,9 +108,7 @@ export default function GlobalNav() {
       });
       
       if (!response.ok) {
-        console.log('[AUTH DEBUG] Server-side sign out failed');
-      } else {
-        console.log('[AUTH DEBUG] Server-side sign out successful');
+        console.error('Server-side sign out failed');
       }
       
       // Use the auth provider's signOut method
@@ -120,10 +116,8 @@ export default function GlobalNav() {
       
       // Force redirect to home page
       router.replace('/');
-      
-      console.log('[AUTH DEBUG] Sign out completed, redirected to home');
     } catch (error) {
-      console.error('[AUTH DEBUG] Sign out error:', error);
+      console.error('Sign out error:', error);
       // Force redirect even if there's an error
       router.replace('/');
     }

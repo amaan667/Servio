@@ -9,13 +9,10 @@ import DashboardClient from './page.client';
 import { todayWindowForTZ } from '@/lib/time';
 
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
-  console.log('[VENUE PAGE] Starting venue page load for venueId:', params.venueId);
-  
   try {
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
     if (!hasAuthCookie) {
-      console.log('[VENUE PAGE] No auth cookie found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -25,16 +22,14 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     log('VENUE PAGE SSR user', { hasUser: !!user, error: userError?.message });
     
     if (userError) {
-      console.error('[VENUE PAGE] Auth error:', userError);
+      console.error('Auth error:', userError);
       redirect('/sign-in');
     }
     
     if (!user) {
-      console.log('[VENUE PAGE] No user found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
-    console.log('[VENUE PAGE] Querying venue:', params.venueId);
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('*')
@@ -42,22 +37,12 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .eq('owner_id', user.id)
       .maybeSingle();
 
-    console.log('[VENUE PAGE] Venue query result:', { 
-      hasVenue: !!venue, 
-      venueId: venue?.venue_id,
-      venueName: venue?.name,
-      error: venueError?.message,
-      userId: user.id,
-      requestedVenueId: params.venueId
-    });
-
     if (venueError) {
-      console.error('[VENUE PAGE] Database error:', venueError);
+      console.error('Database error:', venueError);
       redirect('/?auth_error=database_error');
     }
     
     if (!venue) {
-      console.log('[VENUE PAGE] Venue not found - user may not have access or venue does not exist');
       // Check if user has any venues at all before redirecting to sign-in
       const { data: userVenues } = await supabase
         .from('venues')
@@ -67,16 +52,12 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       
       if (userVenues && userVenues.length > 0) {
         // User has venues but not this specific one - redirect to their first venue
-        console.log('[VENUE PAGE] User has other venues, redirecting to first venue');
         redirect(`/dashboard/${userVenues[0].venue_id}`);
       } else {
         // User has no venues - redirect to complete profile
-        console.log('[VENUE PAGE] User has no venues, redirecting to complete profile');
         redirect('/complete-profile');
       }
     }
-
-    console.log('[VENUE PAGE] Venue found, proceeding with dashboard setup');
 
     // Get authoritative dashboard counts from the new RPC function
     const venueTz = 'Europe/London'; // pull from DB/config if you store it
@@ -89,7 +70,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .single();
 
     if (countsError) {
-      console.error('[VENUE PAGE] Error fetching dashboard counts:', countsError);
+      console.error('Error fetching dashboard counts:', countsError);
       // Continue with default counts rather than failing
     }
 

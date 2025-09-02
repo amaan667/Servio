@@ -24,7 +24,6 @@ function SignInPageContent() {
   useEffect(() => {
     // Check if user is already authenticated
     if (!loading && session?.user) {
-      console.log('[AUTH DEBUG] User already authenticated, redirecting to dashboard');
       router.replace('/dashboard');
       return;
     }
@@ -34,7 +33,6 @@ function SignInPageContent() {
     const errorParam = urlParams.get('error');
     
     if (errorParam) {
-      console.log('[AUTH DEBUG] Error parameter found:', errorParam);
       switch (errorParam) {
         case 'pkce_error':
           setError('Authentication failed due to security verification. Please try signing in again.');
@@ -50,21 +48,14 @@ function SignInPageContent() {
 
   const signInWithGoogle = async () => {
     if (isSigningIn) {
-      console.log('[AUTH DEBUG] Sign-in already in progress, ignoring click');
       return;
     }
     
     try {
       setIsSigningIn(true);
 
-      console.log('[AUTH DEBUG] ===== STARTING GOOGLE OAUTH =====');
-      console.log('[AUTH DEBUG] Starting Google OAuth sign in');
-      console.log('[AUTH DEBUG] Platform:', isMobile() ? 'Mobile' : 'Desktop');
-      
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
-      console.log('[AUTH DEBUG] Redirect URL:', redirectTo);
-      console.log('[AUTH DEBUG] Current origin:', typeof window !== 'undefined' ? window.location.origin : 'SSR');
       
       const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
         provider: 'google',
@@ -80,98 +71,136 @@ function SignInPageContent() {
         },
       });
       
-      console.log('[AUTH DEBUG] OAuth signInWithOAuth result:', {
-        hasData: !!data,
-        hasUrl: !!data?.url,
-        error: error?.message,
-        errorCode: error?.status
-      });
-      
       if (error) {
-        console.error('[AUTH DEBUG] OAuth sign in error:', error);
-        console.error('[AUTH DEBUG] Error details:', {
-          message: error.message,
-          status: error.status,
-          name: error.name
-        });
+        console.error('OAuth sign in error:', error);
         alert(`Sign in failed: ${error.message}`);
         setIsSigningIn(false);
         return;
       }
       
-      console.log('[AUTH DEBUG] OAuth sign in initiated successfully:', data);
-      
       // The redirect should happen automatically, but if it doesn't, we'll handle it
       if (data.url) {
-        console.log('[AUTH DEBUG] OAuth URL received, redirecting...');
-        console.log('[AUTH DEBUG] OAuth URL:', data.url);
-        
         // On desktop, use window.location.href for full page redirect
-        // On mobile, this might work better with the OAuth flow
-        if (isMobile()) {
-          console.log('[AUTH DEBUG] Mobile platform detected, using window.location.href');
+        if (!isMobile()) {
+          window.location.href = data.url;
         } else {
-          console.log('[AUTH DEBUG] Desktop platform detected, using window.location.href');
+          // On mobile, try to use the OAuth URL directly
+          window.location.href = data.url;
         }
-        
-        console.log('[AUTH DEBUG] About to redirect to OAuth URL...');
-        window.location.href = data.url;
-      } else {
-        console.error('[AUTH DEBUG] No OAuth URL received');
-        console.error('[AUTH DEBUG] Data received:', data);
-        alert('Failed to start OAuth flow - no redirect URL received');
-        setIsSigningIn(false);
       }
-    } catch (err: any) {
-      console.error('[AUTH DEBUG] Unexpected error during OAuth sign in:', err);
-      console.error('[AUTH DEBUG] Error details:', {
-        message: err.message,
-        name: err.name,
-        stack: err.stack
-      });
-      alert(`Unexpected error: ${err.message}`);
+    } catch (error) {
+      console.error('Sign in error:', error);
+      alert('Sign in failed. Please try again.');
       setIsSigningIn(false);
     }
   };
 
-  // Show loading while checking authentication
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
       </div>
     );
   }
 
-  // If already authenticated, redirect immediately without showing loading
   if (session?.user) {
-    // Redirect immediately without showing loading screen
-    router.replace('/dashboard');
-    return null;
+    return null; // Will redirect in useEffect
   }
 
   return (
-    <>
-      <SignInForm 
-        onGoogleSignIn={signInWithGoogle} 
-        isLoading={isSigningIn}
-        error={error}
-        onClearError={() => setError(null)}
-      />
-    </>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+            Welcome to Servio
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to manage your restaurant
+          </p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Sign in failed
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  {error}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <button
+            onClick={signInWithGoogle}
+            disabled={isSigningIn}
+            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSigningIn ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            ) : (
+              <>
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+                Sign in with Google
+              </>
+            )}
+          </button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-gradient-to-br from-purple-50 to-indigo-100 text-gray-500">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <SignInForm />
+        </div>
+
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <a href="/sign-up" className="font-medium text-purple-600 hover:text-purple-500">
+              Sign up
+            </a>
+          </p>
+        </div>
+
+        <PkceDebugComponent />
+      </div>
+    </div>
   );
 }
 
 export default function SignInPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
       </div>
     }>
       <SignInPageContent />
