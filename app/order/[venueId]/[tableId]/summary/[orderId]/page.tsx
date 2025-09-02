@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, User, Hash, ChefHat, UtensilsCrossed, Truck, Coffee } from "lucide-react";
 import QRCodeDisplay from "@/components/qr-code-display";
 import PaymentSimulation from "@/components/payment-simulation";
+import MenuItemImage from "@/components/menu-item-image";
 
 interface OrderSummary {
   id: string;
@@ -284,7 +285,7 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
                     <div key={index} className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-b-0">
                       {/* Item Image */}
                       <div className="flex-shrink-0">
-                        <img 
+                        <MenuItemImage 
                           src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=80&h=80&fit=crop&crop=center"} 
                           alt={item.item_name}
                           className="w-16 h-16 rounded-lg object-cover border border-gray-200"

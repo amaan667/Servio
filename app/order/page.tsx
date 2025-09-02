@@ -14,6 +14,7 @@ import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 import OrderFeedbackForm from "@/components/OrderFeedbackForm";
 import { useRouter } from "next/navigation";
+import MenuItemImage from "@/components/menu-item-image";
 
 interface MenuItem {
   id: string;
@@ -24,11 +25,13 @@ interface MenuItem {
   available: boolean;
   venue_name?: string; // added for display in header when loaded with join
   options?: Array<{ label: string; values: string[] }>; // modifiers/options
+  image?: string; // added for menu item images
 }
 
 interface CartItem extends MenuItem {
   quantity: number;
   specialInstructions?: string;
+  image?: string; // ensure image is included in cart items
 }
 
 export default function CustomerOrderPage() {
@@ -77,17 +80,17 @@ export default function CustomerOrderPage() {
     // Explicit demo only
     if (isDemo) {
       console.log("Loading demo menu items");
-      setMenuItems(
-        demoMenuItems.map((item, idx) => ({
-          ...item,
-          id: `demo-${idx}`,
-          available: true,
-          price:
-            typeof item.price === "number"
-              ? item.price
-              : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
-        }))
-      );
+      const mappedItems = demoMenuItems.map((item, idx) => ({
+        ...item,
+        id: `demo-${idx}`,
+        available: true,
+        price:
+          typeof item.price === "number"
+            ? item.price
+            : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
+      }));
+      console.log('[DEMO DEBUG] Mapped demo items:', mappedItems);
+      setMenuItems(mappedItems);
       setLoadingMenu(false);
       return;
     }
@@ -159,33 +162,46 @@ export default function CustomerOrderPage() {
   }, [isDemo]);
 
   const addToCart = (item: MenuItem) => {
+    console.log('[CART DEBUG] Adding item to cart:', item);
     setCart((prev) => {
       const existing = prev.find((cartItem) => cartItem.id === item.id);
       if (existing) {
-        return prev.map((cartItem) =>
+        const updated = prev.map((cartItem) =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
+        console.log('[CART DEBUG] Updated existing item, new cart:', updated);
+        return updated;
       }
-      return [...prev, { ...item, quantity: 1 }];
+      const newCart = [...prev, { ...item, quantity: 1 }];
+      console.log('[CART DEBUG] Added new item, new cart:', newCart);
+      return newCart;
     });
   };
 
   const removeFromCart = (itemId: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== itemId));
+    console.log('[CART DEBUG] Removing item from cart:', itemId);
+    setCart((prev) => {
+      const filtered = prev.filter((item) => item.id !== itemId);
+      console.log('[CART DEBUG] Item removed, new cart:', filtered);
+      return filtered;
+    });
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
+    console.log('[CART DEBUG] Updating quantity for item:', itemId, 'to:', quantity);
     if (quantity <= 0) {
       removeFromCart(itemId);
       return;
     }
-    setCart((prev) =>
-      prev.map((item) =>
+    setCart((prev) => {
+      const updated = prev.map((item) =>
         item.id === itemId ? { ...item, quantity } : item
-      )
-    );
+      );
+      console.log('[CART DEBUG] Quantity updated, new cart:', updated);
+      return updated;
+    });
   };
 
   const updateSpecialInstructions = (itemId: string, instructions: string) => {
@@ -202,6 +218,11 @@ export default function CustomerOrderPage() {
 
   const getTotalItems = () => {
     return cart.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  const resetCart = () => {
+    console.log('[CART DEBUG] Resetting cart');
+    setCart([]);
   };
 
   const submitOrder = async () => {
@@ -326,29 +347,39 @@ export default function CustomerOrderPage() {
         {isDemo && (
           <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-purple-200">
             <div className="max-w-7xl mx-auto px-4 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center text-sm">
-                  <span className="font-medium text-purple-700">🎯 Demo Mode:</span>
-                  <span className="ml-2 text-purple-600">Experience Servio Café's full ordering flow with payment simulation</span>
-                  <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Interactive Preview</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-sm">
+                    <span className="font-medium text-purple-700">🎯 Demo Mode:</span>
+                    <span className="ml-2 text-purple-600">Experience Servio Café's full ordering flow with payment simulation</span>
+                    <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Interactive Preview</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetCart}
+                      className="text-xs"
+                    >
+                      Reset Cart
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCart([]);
+                        setCustomerInfo({ name: '', phone: '' });
+                        setShowCheckout(false);
+                        setShowMobileCart(false);
+                      }}
+                      className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                    >
+                      🔄 Reset Demo
+                    </Button>
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setCart([]);
-                    setCustomerInfo({ name: '', phone: '' });
-                    setShowCheckout(false);
-                    setShowMobileCart(false);
-                  }}
-                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                >
-                  🔄 Reset Demo
-                </Button>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
@@ -420,7 +451,7 @@ export default function CustomerOrderPage() {
                                 <div className="flex space-x-4">
                                   {/* Item Image */}
                                   <div className="flex-shrink-0">
-                                    <img 
+                                    <MenuItemImage 
                                       src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=80&h=80&fit=crop&crop=center"} 
                                       alt={item.name}
                                       className="w-20 h-20 rounded-lg object-cover border border-gray-200"
@@ -475,6 +506,7 @@ export default function CustomerOrderPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {console.log('[CART DEBUG] Rendering cart with items:', cart)}
                 {cart.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
                     Your cart is empty. Add some items to get started!
@@ -486,10 +518,10 @@ export default function CustomerOrderPage() {
                         <div className="flex space-x-3">
                           {/* Cart Item Image */}
                           <div className="flex-shrink-0">
-                            <img 
+                            <MenuItemImage 
                               src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=60&h=60&fit=crop&crop=center"} 
                               alt={item.name}
-                              className="w-15 h-15 rounded-lg object-cover border border-gray-200"
+                              className="w-16 h-16 rounded-lg object-cover border border-gray-200"
                             />
                           </div>
                           
@@ -607,6 +639,7 @@ export default function CustomerOrderPage() {
               </div>
               
               <div className="p-4">
+                {console.log('[CART DEBUG] Rendering mobile cart with items:', cart)}
                 {cart.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
                     Your cart is empty. Add some items to get started!
@@ -618,10 +651,10 @@ export default function CustomerOrderPage() {
                         <div className="flex space-x-3">
                           {/* Mobile Cart Item Image */}
                           <div className="flex-shrink-0">
-                            <img 
+                            <MenuItemImage 
                               src={item.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=60&h=60&fit=crop&crop=center"} 
                               alt={item.name}
-                              className="w-15 h-15 rounded-lg object-cover border border-gray-200"
+                              className="w-16 h-16 rounded-lg object-cover border border-gray-200"
                             />
                           </div>
                           
