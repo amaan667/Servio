@@ -230,20 +230,53 @@ export default function StaffClient({
   };
 
   const getShiftsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return allShifts.filter(shift => {
-      const shiftStartDate = new Date(shift.start_time).toISOString().split('T')[0];
-      const shiftEndDate = new Date(shift.end_time).toISOString().split('T')[0];
+    // Get the date string for the calendar day we're checking
+    const dateStr = date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    
+    const shiftsForDay = allShifts.filter(shift => {
+      // Parse shift dates using local time to avoid timezone issues
+      const shiftStartDate = new Date(shift.start_time).toLocaleDateString('en-CA');
+      const shiftEndDate = new Date(shift.end_time).toLocaleDateString('en-CA');
       
       // Include shift if it starts on this date OR if it's an overnight shift that ends on this date
-      return shiftStartDate === dateStr || shiftEndDate === dateStr;
+      const shouldInclude = shiftStartDate === dateStr || shiftEndDate === dateStr;
+      
+      if (shouldInclude) {
+        console.log('[AUTH DEBUG] Shift included for date:', {
+          date: dateStr,
+          shift_id: shift.id,
+          staff_name: shift.staff_name,
+          start_date: shiftStartDate,
+          end_date: shiftEndDate,
+          reason: shiftStartDate === dateStr ? 'starts_here' : 'ends_here'
+        });
+      }
+      
+      return shouldInclude;
     });
+    
+    return shiftsForDay;
   };
 
   const isOvernightShift = (shift: Shift) => {
-    const startDate = new Date(shift.start_time).toISOString().split('T')[0];
-    const endDate = new Date(shift.end_time).toISOString().split('T')[0];
-    return startDate !== endDate;
+    // Parse the dates properly, handling timezone issues
+    const startDate = new Date(shift.start_time);
+    const endDate = new Date(shift.end_time);
+    
+    // Get local date strings to avoid timezone issues
+    const startDateStr = startDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    const endDateStr = endDate.toLocaleDateString('en-CA');
+    
+    console.log('[AUTH DEBUG] Shift overnight check:', {
+      shift_id: shift.id,
+      start_time: shift.start_time,
+      end_time: shift.end_time,
+      start_date: startDateStr,
+      end_date: endDateStr,
+      is_overnight: startDateStr !== endDateStr
+    });
+    
+    return startDateStr !== endDateStr;
   };
 
   const formatTime = (timeString: string) => {
@@ -318,6 +351,9 @@ export default function StaffClient({
                   <div className="space-y-1">
                     {shifts.slice(0, 3).map(shift => {
                       const overnight = isOvernightShift(shift);
+                      const isStartDay = new Date(shift.start_time).toLocaleDateString('en-CA') === day.date.toLocaleDateString('en-CA');
+                      const isEndDay = new Date(shift.end_time).toLocaleDateString('en-CA') === day.date.toLocaleDateString('en-CA');
+                      
                       return (
                         <div
                           key={shift.id}
@@ -325,6 +361,10 @@ export default function StaffClient({
                             overnight 
                               ? 'bg-orange-100 text-orange-800 border-2 border-orange-300' 
                               : 'bg-purple-100 text-purple-800'
+                          } ${
+                            overnight && isStartDay ? 'border-l-4 border-l-orange-500' : ''
+                          } ${
+                            overnight && isEndDay ? 'border-r-4 border-r-orange-500' : ''
                           }`}
                           title={`${shift.staff_name} (${shift.staff_role}) - ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? ` - ${shift.area}` : ''}${overnight ? ' - Overnight Shift' : ''}`}
                         >
@@ -340,6 +380,11 @@ export default function StaffClient({
                           {shift.area && (
                             <div className={`truncate ${overnight ? 'text-orange-500' : 'text-purple-500'}`}>
                               {shift.area}
+                            </div>
+                          )}
+                          {overnight && (
+                            <div className="text-xs text-orange-600 mt-1">
+                              {isStartDay ? '→ continues tomorrow' : '← started yesterday'}
                             </div>
                           )}
                         </div>
