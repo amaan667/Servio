@@ -157,8 +157,8 @@ export default function GlobalNav() {
             {isAuthenticated ? (
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-1">
-                {isOnDashboard ? (
-                  // On dashboard pages: Home, Settings, Sign Out
+                {(isOnDashboard || isOnQRPage) ? (
+                  // On dashboard pages and QR pages: Home, Settings, Sign Out
                   <>
                     <Link
                       href="/"
@@ -194,7 +194,7 @@ export default function GlobalNav() {
                     </Link>
                   </>
                 ) : (
-                  // On home page and QR pages: Dashboard, Settings, Sign Out
+                  // On home page only: Dashboard, Settings, Sign Out
                   <>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
@@ -278,7 +278,7 @@ export default function GlobalNav() {
             {isAuthenticated ? (
               // Signed in mobile navigation
               <>
-                {isOnDashboard ? (
+                {(isOnDashboard || isOnQRPage) ? (
                   <>
                     <Link
                       href="/"
