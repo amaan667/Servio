@@ -44,6 +44,15 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
     setSelectedTables([...selectedTables, nextTableNumber.toString()]);
   };
 
+  const addMultipleTables = () => {
+    const count = parseInt(prompt("How many tables would you like to add?") || "0");
+    if (count > 0 && count <= 50) { // Limit to reasonable number
+      const startNumber = Math.max(...selectedTables.map(t => parseInt(t)), 0) + 1;
+      const newTables = Array.from({length: count}, (_, i) => (startNumber + i).toString());
+      setSelectedTables([...selectedTables, ...newTables]);
+    }
+  };
+
   const removeTable = (tableNumber: string) => {
     if (selectedTables.length > 1) {
       setSelectedTables(selectedTables.filter(t => t !== tableNumber));
@@ -454,13 +463,22 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
                     )}
                   </div>
                 ))}
-                <Button
-                  variant="outline"
-                  onClick={addTable}
-                  className="w-full"
-                >
-                  + Add Another Table
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={addTable}
+                    className="flex-1"
+                  >
+                    + Add 1 Table
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={addMultipleTables}
+                    className="flex-1"
+                  >
+                    + Add Multiple Tables
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -568,7 +586,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               ) : (
                 <Button onClick={handlePrintAll} variant="default" className="flex-1">
                   <Printer className="mr-2 h-4 w-4" />
-                  Print All Tables ({selectedTables.join(', ')})
+                  Print All Tables
                 </Button>
               )}
             </div>
