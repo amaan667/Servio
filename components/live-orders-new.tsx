@@ -29,19 +29,6 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   // Set up realtime updates for counts
   useCountsRealtime(venueId, venueTimezone, refetchCounts);
 
-  // Auto-refresh orders every minute to handle aging orders
-  useEffect(() => {
-    const interval = setInterval(() => {
-      console.log('[LIVE_ORDERS] Auto-refreshing orders due to time passage...');
-      fetchOrders(activeTab);
-      refetchCounts();
-    }, 60000); // Every minute
-
-    return () => clearInterval(interval);
-  }, [fetchOrders, activeTab, refetchCounts]);
-
-  console.log('[LIVE_ORDERS] Component mounted with venueId:', venueId);
-
   // Handle both old and new status values until migration is complete
   const ACTIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'ACCEPTED', 'OUT_FOR_DELIVERY'];
   const TERMINAL_TODAY = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED', 'COMPLETED'];
@@ -283,7 +270,18 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     }
   }, [venueId, venueTimezone, todayBoundsCorrected]);
 
+  // Auto-refresh orders every minute to handle aging orders
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('[LIVE_ORDERS] Auto-refreshing orders due to time passage...');
+      fetchOrders(activeTab);
+      refetchCounts();
+    }, 60000); // Every minute
 
+    return () => clearInterval(interval);
+  }, [fetchOrders, activeTab, refetchCounts]);
+
+  console.log('[LIVE_ORDERS] Component mounted with venueId:', venueId);
 
   // Fetch orders when tab changes
   useEffect(() => {
