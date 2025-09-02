@@ -1,7 +1,7 @@
 -- counts for: Live (active ≤ 30m), Earlier Today (today but not Live),
 -- History (served before today). TZ-aware.
 create or replace function public.orders_tab_counts(
-  p_venue_id uuid,
+  p_venue_id text,
   p_tz text,
   p_live_window_mins int default 30
 ) returns table(live_count int, earlier_today_count int, history_count int)
@@ -45,4 +45,4 @@ select live.c, earlier.c, hist.c
 from live, earlier, hist;
 $$;
 
-grant execute on function public.orders_tab_counts(uuid,text,int) to anon, authenticated;
+grant execute on function public.orders_tab_counts(text,text,int) to anon, authenticated;
