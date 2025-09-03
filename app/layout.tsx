@@ -7,7 +7,7 @@ import { hasSupabaseAuthCookies } from '@/lib/auth/utils';
 import AuthProvider from '@/app/auth/AuthProvider';
 import Providers from "./providers";
 import ThemeToggleFloat from "@/components/ThemeToggleFloat";
-import AppHeader from "@/components/AppHeader";
+import ConditionalHeader from "@/components/ConditionalHeader";
 import { ErrorBoundary } from "@/components/error-boundary";
 // import DashboardDebugPanel from "@/components/dashboard-debug-panel";
 
@@ -40,7 +40,7 @@ export default async function RootLayout({
         <ErrorBoundary>
           <AuthProvider initialSession={session}>
             <Providers>
-              <AppHeader />
+              <ConditionalHeader />
               {children}
               <ThemeToggleFloat />
               {/* <DashboardDebugPanel /> */}
