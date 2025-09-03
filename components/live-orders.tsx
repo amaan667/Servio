@@ -443,8 +443,14 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     return orders.filter(order => {
       const orderDate = new Date(order.created_at);
       const scheduledDate = order.scheduled_for ? new Date(order.scheduled_for) : null;
-      return (orderDate >= today && orderDate < tomorrow) || 
-             (scheduledDate && scheduledDate >= today && scheduledDate < tomorrow);
+      const isTodayOrder = (orderDate >= today && orderDate < tomorrow) || 
+                          (scheduledDate && scheduledDate >= today && scheduledDate < tomorrow);
+      
+      // Count orders that were created today OR completed today (for orders that moved from live to completed)
+      const completedToday = TERMINAL_STATUSES.includes(order.order_status) && 
+                           new Date(order.updated_at || order.created_at) >= today;
+      
+      return isTodayOrder || completedToday;
     }).length;
   };
 
@@ -717,13 +723,26 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                     {order.order_status === "READY" && (
                       <Button
                         size="sm"
+                        onClick={() => updateOrderStatus(order.id, "SERVING")}
+                        disabled={updating === order.id}
+                      >
+                        {updating === order.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Mark as Served"
+                        )}
+                      </Button>
+                    )}
+                    {order.order_status === "SERVING" && (
+                      <Button
+                        size="sm"
                         onClick={() => updateOrderStatus(order.id, "COMPLETED")}
                         disabled={updating === order.id}
                       >
                         {updating === order.id ? (
                           <RefreshCw className="h-4 w-4 animate-spin" />
                         ) : (
-                          "Complete"
+                          "Complete Order"
                         )}
                       </Button>
                     )}

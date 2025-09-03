@@ -133,8 +133,14 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId, isDemo }: { venueId
         (payload: any) => {
           console.log('[DEMO ORDER SUMMARY] Order status updated via real-time:', payload);
           if (payload.new && payload.new.order_status) {
+            console.log('[DEMO ORDER SUMMARY] Previous status:', currentStatus, 'New status:', payload.new.order_status);
             setCurrentStatus(payload.new.order_status);
             console.log('[DEMO ORDER SUMMARY] Updated status to:', payload.new.order_status);
+            
+            // Additional debugging for COMPLETED status
+            if (payload.new.order_status === 'COMPLETED') {
+              console.log('[DEMO ORDER SUMMARY] 🎉 Order marked as COMPLETED!');
+            }
           }
         }
       )
@@ -522,8 +528,14 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
         (payload: any) => {
           console.log('[REAL ORDER SUMMARY] Order status updated via real-time:', payload);
           if (payload.new && payload.new.order_status) {
+            console.log('[REAL ORDER SUMMARY] Previous status:', currentStatus, 'New status:', payload.new.order_status);
             setCurrentStatus(payload.new.order_status);
             console.log('[REAL ORDER SUMMARY] Updated status to:', payload.new.order_status);
+            
+            // Additional debugging for COMPLETED status
+            if (payload.new.order_status === 'COMPLETED') {
+              console.log('[REAL ORDER SUMMARY] 🎉 Order marked as COMPLETED!');
+            }
             
             // Also update the order object with the new status
             setOrder(prevOrder => {
