@@ -170,6 +170,86 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     lastOrderCountRef.current = orders.length;
   }, [orders.length]);
 
+  // Test dashboard counts function
+  useEffect(() => {
+    const testDashboardCounts = async () => {
+      try {
+        const supabase = createClient();
+        if (!supabase) return;
+
+        logger.info("LIVE_ORDERS: Testing dashboard_counts function");
+        
+        const { data: countsData, error: countsError } = await supabase
+          .rpc('dashboard_counts', { 
+            p_venue_id: venueId, 
+            p_tz: 'Europe/London', 
+            p_live_window_mins: 30 
+          })
+          .single();
+        
+        if (countsError) {
+          logger.error("LIVE_ORDERS: dashboard_counts function test failed", { 
+            error: countsError.message, 
+            code: countsError.code 
+          });
+        } else {
+          logger.info("LIVE_ORDERS: dashboard_counts function test successful", countsData);
+        }
+      } catch (error) {
+        logger.error("LIVE_ORDERS: dashboard_counts function test exception", error);
+      }
+    };
+
+    testDashboardCounts();
+  }, [venueId]);
+
+  // Debug function to test basic database connectivity
+  useEffect(() => {
+    const debugDatabase = async () => {
+      try {
+        const supabase = createClient();
+        if (!supabase) return;
+
+        logger.info("LIVE_ORDERS: Testing basic database connectivity");
+        
+        // Test 1: Check if we can connect to orders table
+        const { data: ordersTest, error: ordersError } = await supabase
+          .from("orders")
+          .select("id, venue_id, order_status")
+          .limit(5);
+        
+        if (ordersError) {
+          logger.error("LIVE_ORDERS: Orders table test failed", { error: ordersError.message, code: ordersError.code });
+        } else {
+          logger.info("LIVE_ORDERS: Orders table test successful", { 
+            count: ordersTest?.length || 0,
+            sample: ordersTest?.slice(0, 2) || []
+          });
+        }
+
+        // Test 2: Check if we can connect to venues table
+        const { data: venuesTest, error: venuesError } = await supabase
+          .from("venues")
+          .select("venue_id, name")
+          .limit(5);
+        
+        if (venuesError) {
+          logger.error("LIVE_ORDERS: Venues table test failed", { error: venuesError.message, code: venuesError.code });
+        } else {
+          logger.info("LIVE_ORDERS: Venues table test successful", { 
+            count: venuesTest?.length || 0,
+            sample: venuesTest?.slice(0, 2) || []
+          });
+        }
+
+      } catch (error) {
+        logger.error("LIVE_ORDERS: Database debug test exception", error);
+      }
+    };
+
+    debugDatabase();
+  }, [venueId]);
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'PLACED':
@@ -766,10 +846,21 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             </div>
           ) : orders.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">
-                No orders yet. Orders will appear here when customers place
-                them.
+              <div className="text-gray-400 mb-4">
+                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p className="text-gray-600 mb-2 font-medium">No orders found</p>
+              <p className="text-gray-500 text-sm mb-4">
+                {activeTab === 'live' && "No active orders requiring attention at the moment."}
+                {activeTab === 'today' && "No orders have been placed today yet."}
+                {activeTab === 'history' && "No historical orders found."}
               </p>
+              <div className="text-xs text-gray-400">
+                <p>Venue ID: {venueId}</p>
+                <p>Last checked: {lastUpdate.toLocaleTimeString()}</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-4 max-h-96 overflow-y-auto">
