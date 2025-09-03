@@ -16,7 +16,7 @@ export default function LiveOrdersPage({ params }: { params: { venueId: string }
           </p>
         </div>
         
-        <LiveOrders venueId={params.venueId} session={null as any} />
+        <LiveOrders venueId={params.venueId} />
       </div>
     </div>
   );

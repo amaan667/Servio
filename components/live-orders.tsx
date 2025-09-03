@@ -56,7 +56,7 @@ interface OrderWithItems {
 
 interface LiveOrdersProps {
   venueId: string; // This is the text-based slug
-  session: Session;
+  session?: Session; // Make session optional since it's not used
 }
 
 export function LiveOrders({ venueId, session }: LiveOrdersProps) {
