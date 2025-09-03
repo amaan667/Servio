@@ -116,7 +116,7 @@ export default function CustomerOrderPage() {
       }
 
       // Fetch menu items using the API endpoint (bypasses RLS)
-      const apiUrl = `/api/menu/${venueSlug}`;
+      const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
       console.log('[MENU DEBUG] Calling API:', apiUrl);
       
       const response = await fetch(apiUrl);
