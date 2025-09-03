@@ -198,28 +198,41 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         })) || []
       });
 
-      // Now filter for live orders
+      // Now filter for live orders - ONLY ACTIVE orders, NEVER completed ones
       const liveOrders = allVenueOrders?.filter(order => {
         const orderCreatedAt = new Date(order.created_at);
         
-        // Only include ACTIVE orders in live tab (not completed ones)
+        // CRITICAL: Completed/terminal orders should NEVER appear in live tab
+        if (['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'].includes(order.order_status)) {
+          console.log("LIVE_ORDERS: Excluding terminal order from live tab", {
+            id: order.id,
+            status: order.order_status,
+            reason: 'terminal status - belongs in Today/History tabs only'
+          });
+          return false;
+        }
+        
+        // Only include ACTIVE orders within 30 minutes
         const isActive = ACTIVE_STATUSES.includes(order.order_status) && 
                         orderCreatedAt >= new Date(thirtyMinutesAgo);
-        
-        // Don't include completed orders in live tab - they should only be in "Earlier Today"
-        // This fixes the issue where orders appear in both tabs
         
         if (isActive) {
           console.log("LIVE_ORDERS: Order included in live tab", {
             id: order.id,
             status: order.order_status,
             created: order.created_at,
-            age: Math.round((Date.now() - orderCreatedAt.getTime()) / (1000 * 60 * 60 * 24)) + ' days ago',
             reason: 'active status within 30 minutes'
+          });
+        } else {
+          console.log("LIVE_ORDERS: Order excluded from live tab", {
+            id: order.id,
+            status: order.order_status,
+            created: order.created_at,
+            reason: 'inactive status or older than 30 minutes'
           });
         }
         
-        return isActive; // Only return active orders, not completed ones
+        return isActive;
       }) || [];
 
       console.log("LIVE_ORDERS: Live orders filtering results", {
@@ -502,6 +515,21 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         return;
       }
       
+      // Skip auto-refresh if we have any completed orders in the last 30 minutes
+      // This prevents overwriting completed order statuses
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+      const hasRecentCompletedOrders = allOrders.some(order => {
+        const orderCreatedAt = new Date(order.created_at);
+        const isRecent = orderCreatedAt >= thirtyMinutesAgo;
+        const isCompleted = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'].includes(order.order_status);
+        return isRecent && isCompleted;
+      });
+      
+      if (hasRecentCompletedOrders) {
+        console.log("LIVE_ORDERS: Skipping auto-refresh - recent completed orders detected (protecting status)");
+        return;
+      }
+      
       // Only refetch if we don't have recent optimistic updates
       // This prevents overwriting order status changes
       const now = Date.now();
@@ -518,7 +546,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         return;
       }
       
-      console.log("LIVE_ORDERS: Proceeding with auto-refresh");
+      console.log("LIVE_ORDERS: Proceeding with auto-refresh - safe to refresh");
       fetchOrdersRef.current();
     }, refreshInterval);
 
@@ -650,21 +678,46 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           // Handle different event types properly
           if (payload.eventType === 'UPDATE') {
             // For updates, merge the changes instead of refetching
+            // BUT: Never overwrite completed orders - they should stay completed forever
             setOrders(prevOrders => 
-              prevOrders.map(order => 
-                order.id === payload.new.id 
-                  ? { ...order, ...payload.new }
-                  : order
-              )
+              prevOrders.map(order => {
+                if (order.id === payload.new.id) {
+                  // PROTECTION: If order was completed, never change it back
+                  if (['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'].includes(order.order_status)) {
+                    console.log("LIVE_ORDERS: Protecting completed order from status change", {
+                      orderId: order.id,
+                      currentStatus: order.order_status,
+                      attemptedStatus: payload.new.order_status,
+                      reason: 'completed orders should never change status'
+                    });
+                    return order; // Keep the completed status
+                  }
+                  
+                  // For active orders, allow updates
+                  const updatedOrder = { ...order, ...payload.new };
+                  console.log("LIVE_ORDERS: Updated active order", {
+                    orderId: order.id,
+                    oldStatus: order.order_status,
+                    newStatus: updatedOrder.order_status
+                  });
+                  return updatedOrder;
+                }
+                return order;
+              })
             );
             
             // Also update allOrders to keep counts accurate
             setAllOrders(prevAllOrders => 
-              prevAllOrders.map(order => 
-                order.id === payload.new.id 
-                  ? { ...order, ...payload.new }
-                  : order
-              )
+              prevAllOrders.map(order => {
+                if (order.id === payload.new.id) {
+                  // Same protection for allOrders
+                  if (['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'].includes(order.order_status)) {
+                    return order; // Keep completed status
+                  }
+                  return { ...order, ...payload.new };
+                }
+                return order;
+              })
             );
           } else if (payload.eventType === 'INSERT') {
             // For new orders, add them to the appropriate lists
