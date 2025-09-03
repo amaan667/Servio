@@ -130,14 +130,14 @@ export default function GlobalNav() {
         <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
           <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
             {/* Logo */}
-            <div className="flex-shrink-0 -ml-4">
+            <div className="flex-shrink-0">
               <Link href="/" className="flex items-center group">
                 <Image
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-36 sm:h-42 md:h-48 lg:h-54 xl:h-60 w-auto transition-all duration-300 group-hover:scale-105"
+                  className="h-40 sm:h-44 md:h-48 lg:h-52 xl:h-56 w-auto transition-all duration-300 group-hover:scale-105"
                   priority
                 />
               </Link>
@@ -157,21 +157,21 @@ export default function GlobalNav() {
     <nav className={navClasses}>
       <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
         <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
-          {/* Logo */}
-          <div className="flex-shrink-0 -ml-4">
+          {/* Logo - Bigger and positioned in top left */}
+          <div className="flex-shrink-0">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-36 sm:h-42 md:h-48 lg:h-54 xl:h-60 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-40 sm:h-44 md:h-48 lg:h-52 xl:h-56 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Properly aligned to right corner */}
           <div className="hidden md:flex items-center space-x-2">
             {isAuthenticated ? (
               // Signed in navigation - modern SaaS style
