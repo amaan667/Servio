@@ -6,6 +6,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
 import { EnhancedFeedbackSystem } from '@/components/enhanced-feedback-system';
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 export default async function FeedbackPage({ params }: { params: { venueId: string } }) {
   try {
@@ -60,6 +61,8 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <NavigationBreadcrumb venueId={params.venueId} />
+          
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Customer Feedback</h1>
             <p className="mt-2 text-gray-600">

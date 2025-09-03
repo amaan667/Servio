@@ -68,7 +68,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'feedback' | 'responses'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'feedback' | 'create'>('overview');
   const [filters, setFilters] = useState({
     rating: 0,
     sentiment: 'all',
@@ -78,6 +78,13 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showResponseForm, setShowResponseForm] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
+  const [newQuestion, setNewQuestion] = useState({
+    prompt: '',
+    type: 'stars' as 'stars' | 'multiple_choice' | 'paragraph',
+    choices: [] as string[],
+    is_active: true
+  });
+  const [creatingQuestion, setCreatingQuestion] = useState(false);
 
   const fetchFeedback = useCallback(async () => {
     setLoading(true);
@@ -305,7 +312,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="feedback">All Feedback</TabsTrigger>
-              <TabsTrigger value="responses">Responses</TabsTrigger>
+              <TabsTrigger value="create">Create Questions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -586,41 +593,71 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               </div>
             </TabsContent>
 
-            <TabsContent value="responses" className="space-y-4">
+            <TabsContent value="create" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Response Management</CardTitle>
+                  <CardTitle>Create New Question</CardTitle>
                   <CardDescription>
-                    Track your responses to customer feedback
+                    Add a new question to your feedback system.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {feedback.filter(f => f.response).map((item) => (
-                      <div key={item.id} className="p-4 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">{item.customer_name}</span>
-                          <span className="text-sm text-gray-500">
-                            {new Date(item.responded_at!).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="mb-2">
-                          <p className="text-sm text-gray-600 mb-1">Customer Feedback:</p>
-                          <p className="text-gray-800">{item.comment}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Your Response:</p>
-                          <p className="text-gray-800">{item.response}</p>
-                        </div>
-                      </div>
-                    ))}
-
-                    {feedback.filter(f => f.response).length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p>No responses yet. Start responding to customer feedback!</p>
+                    <div>
+                      <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-1">
+                        Question Prompt
+                      </label>
+                      <Input
+                        id="prompt"
+                        value={newQuestion.prompt}
+                        onChange={(e) => setNewQuestion(prev => ({ ...prev, prompt: e.target.value }))}
+                        placeholder="e.g., How was your overall experience?"
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+                        Question Type
+                      </label>
+                      <select
+                        id="type"
+                        value={newQuestion.type}
+                        onChange={(e) => setNewQuestion(prev => ({ ...prev, type: e.target.value as 'stars' | 'multiple_choice' | 'paragraph' }))}
+                        className="border rounded px-3 py-2 text-sm w-full"
+                      >
+                        <option value="stars">Stars (1-5)</option>
+                        <option value="multiple_choice">Multiple Choice</option>
+                        <option value="paragraph">Paragraph</option>
+                      </select>
+                    </div>
+                    {newQuestion.type === 'multiple_choice' && (
+                      <div>
+                        <label htmlFor="choices" className="block text-sm font-medium text-gray-700 mb-1">
+                          Choices (comma-separated)
+                        </label>
+                        <Input
+                          id="choices"
+                          value={newQuestion.choices.join(', ')}
+                          onChange={(e) => setNewQuestion(prev => ({ ...prev, choices: e.target.value.split(',').map(c => c.trim()) }))}
+                          placeholder="e.g., Great, Good, Poor"
+                          className="w-full"
+                        />
                       </div>
                     )}
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={() => {
+                          setCreatingQuestion(true);
+                          // In a real app, you'd send this to your backend to save
+                          console.log('Creating question:', newQuestion);
+                          setNewQuestion({ prompt: '', type: 'stars', choices: [], is_active: true });
+                          setCreatingQuestion(false);
+                        }}
+                        disabled={!newQuestion.prompt.trim() || (newQuestion.type === 'multiple_choice' && !newQuestion.choices.length)}
+                      >
+                        {creatingQuestion ? 'Creating...' : 'Create Question'}
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

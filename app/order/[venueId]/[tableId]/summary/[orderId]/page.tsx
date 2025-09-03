@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, User, Hash, ChefHat, UtensilsCrossed, Truck, Coffee } from "lucide-react";
-import QRCodeDisplay from "@/components/qr-code-display";
 import PaymentSimulation from "@/components/payment-simulation";
 import SimpleFeedbackForm from "@/components/SimpleFeedbackForm";
 
@@ -356,52 +355,48 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
               />
             )}
 
-            {/* QR Code for Mobile Testing */}
-            <QRCodeDisplay 
-              currentUrl={typeof window !== 'undefined' ? window.location.href : ''}
-              venueName="Servio Café"
-            />
-
-            {/* Order Status Timeline */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Order Timeline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { status: "PLACED", label: "Order Placed", time: "Now", icon: Clock },
-                    { status: "ACCEPTED", label: "Order Accepted", time: "+5s", icon: CheckCircle },
-                    { status: "IN_PREP", label: "In Preparation", time: "+15s", icon: ChefHat },
-                    { status: "READY", label: "Ready for Pickup", time: "+30s", icon: UtensilsCrossed },
-                    { status: "SERVING", label: "Being Served", time: "+45s", icon: Truck },
-                    { status: "COMPLETED", label: "Order Completed", time: "+60s", icon: CheckCircle }
-                  ].map((step, index) => {
-                    const isActive = currentStatus === step.status;
-                    const isCompleted = ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(step.status) <= 
-                      ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(currentStatus);
-                    
-                    return (
-                      <div key={step.status} className="flex items-center space-x-3">
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                          isCompleted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
-                        }`}>
-                          {isCompleted ? <CheckCircle className="h-4 w-4" /> : <step.icon className="h-4 w-4" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className={`text-sm font-medium ${
-                            isActive ? 'text-purple-600' : isCompleted ? 'text-gray-900' : 'text-gray-500'
+            {/* Order Status Timeline - Only show after payment completion */}
+            {paymentCompleted && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Order Timeline</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      { status: "PLACED", label: "Order Placed", time: "Now", icon: Clock },
+                      { status: "ACCEPTED", label: "Order Accepted", time: "+5s", icon: CheckCircle },
+                      { status: "IN_PREP", label: "In Preparation", time: "+15s", icon: ChefHat },
+                      { status: "READY", label: "Ready for Pickup", time: "+30s", icon: UtensilsCrossed },
+                      { status: "SERVING", label: "Being Served", time: "+45s", icon: Truck },
+                      { status: "COMPLETED", label: "Order Completed", time: "+60s", icon: CheckCircle }
+                    ].map((step, index) => {
+                      const isActive = currentStatus === step.status;
+                      const isCompleted = ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(step.status) <= 
+                        ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(currentStatus);
+                      
+                      return (
+                        <div key={step.status} className="flex items-center space-x-3">
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                            isCompleted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
                           }`}>
-                            {step.label}
+                            {isCompleted ? <CheckCircle className="h-4 w-4" /> : <step.icon className="h-4 w-4" />}
                           </div>
-                          <div className="text-xs text-gray-400">{step.time}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-sm font-medium ${
+                              isActive ? 'text-purple-600' : isCompleted ? 'text-gray-900' : 'text-gray-500'
+                            }`}>
+                              {step.label}
+                            </div>
+                            <div className="text-xs text-gray-400">{step.time}</div>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
@@ -660,11 +655,48 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
               />
             )}
 
-            {/* QR Code for Mobile Testing */}
-            <QRCodeDisplay 
-              currentUrl={typeof window !== 'undefined' ? window.location.href : ''}
-              venueName={order.venue_name || 'Our Venue'}
-            />
+            {/* Order Status Timeline - Only show after payment completion */}
+            {paymentCompleted && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Order Timeline</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      { status: "PLACED", label: "Order Placed", time: "Now", icon: Clock },
+                      { status: "ACCEPTED", label: "Order Accepted", time: "+5s", icon: CheckCircle },
+                      { status: "IN_PREP", label: "In Preparation", time: "+15s", icon: ChefHat },
+                      { status: "READY", label: "Ready for Pickup", time: "+30s", icon: UtensilsCrossed },
+                      { status: "SERVING", label: "Being Served", time: "+45s", icon: Truck },
+                      { status: "COMPLETED", label: "Order Completed", time: "+60s", icon: CheckCircle }
+                    ].map((step, index) => {
+                      const isActive = currentStatus === step.status;
+                      const isCompleted = ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(step.status) <= 
+                        ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(currentStatus);
+                      
+                      return (
+                        <div key={step.status} className="flex items-center space-x-3">
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                            isCompleted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                          }`}>
+                            {isCompleted ? <CheckCircle className="h-4 w-4" /> : <step.icon className="h-4 w-4" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-sm font-medium ${
+                              isActive ? 'text-purple-600' : isCompleted ? 'text-gray-900' : 'text-gray-500'
+                            }`}>
+                              {step.label}
+                            </div>
+                            <div className="text-xs text-gray-400">{step.time}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
