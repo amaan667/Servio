@@ -51,6 +51,7 @@ export default function VenueDashboardClient({
     active_tables_count: 0
   });
   const [stats, setStats] = useState<DashboardStats>(initialStats || { revenue: 0, menuItems: 0, unpaid: 0 });
+  const [statsLoaded, setStatsLoaded] = useState(false);
   const [todayWindow, setTodayWindow] = useState<any>(null);
   const router = useRouter();
 
@@ -124,6 +125,33 @@ export default function VenueDashboardClient({
     }
   }, [venue, todayWindow, venueTz]);
 
+  // Reset stats when day changes to ensure fresh data
+  useEffect(() => {
+    if (todayWindow) {
+      const checkDayChange = () => {
+        const now = new Date();
+        const currentDay = now.toDateString();
+        const lastDay = new Date(todayWindow.startUtcISO).toDateString();
+        
+        if (currentDay !== lastDay) {
+          console.log('[DASHBOARD] Day changed, resetting stats cache');
+          setStatsLoaded(false);
+          setStats({ revenue: 0, menuItems: 0, unpaid: 0 });
+          // Reload stats for new day
+          if (venue) {
+            const newWindow = todayWindowForTZ(venueTz);
+            setTodayWindow(newWindow);
+            loadStats(venue.venue_id, newWindow);
+          }
+        }
+      };
+      
+      // Check every minute for day change
+      const interval = setInterval(checkDayChange, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [todayWindow, venue, venueTz]);
+
   // Set up real-time subscription for orders to update counts
   useEffect(() => {
     if (!venue || !todayWindow) {
@@ -166,7 +194,11 @@ export default function VenueDashboardClient({
           if (isInTodayWindow) {
             console.log('Refreshing counts for today\'s order change');
             await refreshCounts();
-            await loadStats(venue.venue_id, todayWindow);
+            
+            // Update revenue incrementally for new orders to prevent flickering
+            if (payload.event === 'INSERT' && payload.new) {
+              updateRevenueIncrementally(payload.new);
+            }
           } else {
             console.log('Ignoring historical order change, not refreshing counts');
           }
@@ -204,7 +236,41 @@ export default function VenueDashboardClient({
     }
   };
 
+  // Function to update revenue incrementally when new orders come in
+  const updateRevenueIncrementally = (newOrder: any) => {
+    if (!newOrder || !statsLoaded) return;
+    
+    try {
+      let amount = Number(newOrder.total_amount) || parseFloat(newOrder.total_amount as any) || 0;
+      if (!Number.isFinite(amount) || amount <= 0) {
+        if (Array.isArray(newOrder.items)) {
+          amount = newOrder.items.reduce((s: number, it: any) => {
+            const unit = Number(it.unit_price ?? it.price ?? 0);
+            const qty = Number(it.quantity ?? it.qty ?? 0);
+            return s + (Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : 0);
+          }, 0);
+        }
+      }
+      
+      if (amount > 0) {
+        setStats(prev => ({
+          ...prev,
+          revenue: prev.revenue + amount
+        }));
+        console.log('[DASHBOARD] Revenue updated incrementally:', amount);
+      }
+    } catch (error) {
+      console.error('[DASHBOARD] Error updating revenue incrementally:', error);
+    }
+  };
+
   const loadStats = async (vId: string, window: any) => {
+    // Only load stats once per day to prevent flickering
+    if (statsLoaded) {
+      console.log('[DASHBOARD] Stats already loaded, skipping to prevent flickering');
+      return;
+    }
+
     try {
       console.log('[DASHBOARD] Loading stats for today:', window.startUtcISO, 'to', window.endUtcISO);
 
@@ -244,6 +310,9 @@ export default function VenueDashboardClient({
         menuItems: menuItems?.length || 0,
         unpaid: 0, // All orders are now paid since they only appear after payment
       });
+      
+      setStatsLoaded(true);
+      console.log('[DASHBOARD] Stats loaded and cached for today');
     } catch (error) {
       console.error("Error loading stats:", error);
     }
