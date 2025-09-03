@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 
 export interface TabCounts {
   live_count: number
-  earlier_today_count: number
+  today_count: number
   history_count: number
   today_orders_count: number
   active_tables_count: number
