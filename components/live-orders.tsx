@@ -1145,165 +1145,192 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
               <RefreshCw className="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4" />
               <p className="text-gray-600">Loading orders...</p>
             </div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-gray-400 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <p className="text-gray-600 mb-2 font-medium">No orders found</p>
-              <p className="text-gray-500 text-sm mb-4">
-                {activeTab === 'live' && "No active orders requiring attention at the moment."}
-                {activeTab === 'today' && "No orders have been placed today yet."}
-                {activeTab === 'history' && "No historical orders found."}
-              </p>
-              <div className="text-xs text-gray-400">
-                <p>Venue ID: {venueId}</p>
-                <p>Last checked: {lastUpdate.toLocaleTimeString()}</p>
-              </div>
-            </div>
           ) : (
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              {orders.map((order: OrderWithItems) => (
-                <div
-                  key={order.id}
-                  className={`border p-4 rounded-lg hover:bg-gray-50 transition-all duration-200 ${
-                    updating === order.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <h3 className="font-semibold text-lg">
-                        Order #{order.id.slice(0, 8)}
-                      </h3>
-                      <Badge className={getStatusColor(order.order_status)}>
-                        {getStatusIcon(order.order_status)}
-                        <span className="ml-1 capitalize">{order.order_status.replace('_', ' ').toLowerCase()}</span>
-                      </Badge>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">
-                        Table {order.table_number}
+              {/* Render orders based on active tab */}
+              {(() => {
+                let ordersToShow: OrderWithItems[] = [];
+                
+                if (activeTab === 'live') {
+                  // Live tab: Only show live orders (active orders within 30 minutes)
+                  ordersToShow = orders;
+                  console.log("LIVE_ORDERS: Rendering live tab with", ordersToShow.length, "orders");
+                } else if (activeTab === 'today') {
+                  // Today tab: Show all today's orders (including completed ones)
+                  ordersToShow = allOrders;
+                  console.log("LIVE_ORDERS: Rendering today tab with", ordersToShow.length, "orders");
+                } else if (activeTab === 'history') {
+                  // History tab: Show orders from previous days
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  ordersToShow = allOrders.filter(order => 
+                    new Date(order.created_at) < today
+                  );
+                  console.log("LIVE_ORDERS: Rendering history tab with", ordersToShow.length, "orders");
+                }
+                
+                if (ordersToShow.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 mb-4">
+                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-600 mb-2 font-medium">No orders found</p>
+                      <p className="text-gray-500 text-sm mb-4">
+                        {activeTab === 'live' && "No active orders requiring attention at the moment."}
+                        {activeTab === 'today' && "No orders have been placed today yet."}
+                        {activeTab === 'history' && "No historical orders found."}
                       </p>
-                      <p className="text-lg font-bold text-green-600">
-                        £{(() => {
-                          // Calculate total from items if total_amount is 0 or missing
-                          let amount = order.total_amount;
-                          if (!amount || amount <= 0) {
-                            amount = order.items.reduce((sum, item) => {
-                              const quantity = Number(item.quantity) || 0;
-                              const price = Number(item.price) || 0;
-                              return sum + (quantity * price);
-                            }, 0);
-                          }
-                          return amount.toFixed(2);
-                        })()}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-600">
-                      Customer: {order.customer_name}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Placed: {new Date(order.created_at).toLocaleString()}
-                    </p>
-                  </div>
-
-                  {order.items && order.items.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="font-medium mb-2">Items:</h4>
-                      <div className="space-y-1">
-                        {order.items.map((item, index) => (
-                          <div
-                            key={index}
-                            className="flex justify-between text-sm"
-                          >
-                            <span>
-                              {item.quantity}x {item.item_name}
-                            </span>
-                            <span>
-                              £{(item.price * item.quantity).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
+                      <div className="text-xs text-gray-400">
+                        <p>Venue ID: {venueId}</p>
+                        <p>Last checked: {lastUpdate.toLocaleTimeString()}</p>
                       </div>
                     </div>
-                  )}
+                  );
+                }
+                
+                return ordersToShow.map((order: OrderWithItems) => (
+                  <div
+                    key={order.id}
+                    className={`border p-4 rounded-lg hover:bg-gray-50 transition-all duration-200 ${
+                      updating === order.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <h3 className="font-semibold text-lg">
+                          Order #{order.id.slice(0, 8)}
+                        </h3>
+                        <Badge className={getStatusColor(order.order_status)}>
+                          {getStatusIcon(order.order_status)}
+                          <span className="ml-1 capitalize">{order.order_status.replace('_', ' ').toLowerCase()}</span>
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">
+                          Table {order.table_number}
+                        </p>
+                        <p className="text-lg font-bold text-green-600">
+                          £{(() => {
+                            // Calculate total from items if total_amount is 0 or missing
+                            let amount = order.total_amount;
+                            if (!amount || amount <= 0) {
+                              amount = order.items.reduce((sum, item) => {
+                                const quantity = Number(item.quantity) || 0;
+                                const price = Number(item.price) || 0;
+                                return sum + (quantity * price);
+                              }, 0);
+                            }
+                            return amount.toFixed(2);
+                          })()}
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="flex space-x-2">
-                    {order.order_status === "PLACED" && (
-                      <Button
-                        size="sm"
-                        onClick={() => updateOrderStatus(order.id, "IN_PREP")}
-                        disabled={updating === order.id}
-                      >
-                        {updating === order.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Start Preparing"
-                        )}
-                      </Button>
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-600">
+                        Customer: {order.customer_name}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Placed: {new Date(order.created_at).toLocaleString()}
+                      </p>
+                    </div>
+
+                    {order.items && order.items.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="font-medium mb-2">Items:</h4>
+                        <div className="space-y-1">
+                          {order.items.map((item, index) => (
+                            <div
+                              key={index}
+                              className="flex justify-between text-sm"
+                            >
+                              <span>
+                                {item.quantity}x {item.item_name}
+                              </span>
+                              <span>
+                                £{(item.price * item.quantity).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
-                    {order.order_status === "IN_PREP" && (
-                      <Button
-                        size="sm"
-                        onClick={() => updateOrderStatus(order.id, "READY")}
-                        disabled={updating === order.id}
-                      >
-                        {updating === order.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Mark Ready"
-                        )}
-                      </Button>
-                    )}
-                    {order.order_status === "READY" && (
-                      <Button
-                        size="sm"
-                        onClick={() => updateOrderStatus(order.id, "SERVING")}
-                        disabled={updating === order.id}
-                      >
-                        {updating === order.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Mark as Served"
-                        )}
-                      </Button>
-                    )}
-                    {order.order_status === "SERVING" && (
-                      <Button
-                        size="sm"
-                        onClick={() => updateOrderStatus(order.id, "COMPLETED")}
-                        disabled={updating === order.id}
-                      >
-                        {updating === order.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Complete Order"
-                        )}
-                      </Button>
-                    )}
-                    {(order.order_status === "PLACED" ||
-                      order.order_status === "IN_PREP") && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => updateOrderStatus(order.id, "CANCELLED")}
-                        disabled={updating === order.id}
-                      >
-                        {updating === order.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Cancel"
-                        )}
-                      </Button>
-                    )}
+
+                    <div className="flex space-x-2">
+                      {order.order_status === "PLACED" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, "IN_PREP")}
+                          disabled={updating === order.id}
+                        >
+                          {updating === order.id ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Start Preparing"
+                          )}
+                        </Button>
+                      )}
+                      {order.order_status === "IN_PREP" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, "READY")}
+                          disabled={updating === order.id}
+                        >
+                          {updating === order.id ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Mark Ready"
+                          )}
+                        </Button>
+                      )}
+                      {order.order_status === "READY" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, "SERVING")}
+                          disabled={updating === order.id}
+                        >
+                          {updating === order.id ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Mark as Served"
+                          )}
+                        </Button>
+                      )}
+                      {order.order_status === "SERVING" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, "COMPLETED")}
+                          disabled={updating === order.id}
+                        >
+                          {updating === order.id ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Complete Order"
+                          )}
+                        </Button>
+                      )}
+                      {(order.order_status === "PLACED" ||
+                        order.order_status === "IN_PREP") && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => updateOrderStatus(order.id, "CANCELLED")}
+                          disabled={updating === order.id}
+                        >
+                          {updating === order.id ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Cancel"
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           )}
         </CardContent>
