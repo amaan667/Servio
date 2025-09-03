@@ -517,8 +517,9 @@ export default function CustomerOrderPage() {
                   ));
                 })()}
               </div>
-            )}
-          </div>
+            );
+          })()}
+        </div>
 
           {/* Desktop Cart */}
           <div className="hidden lg:block">
