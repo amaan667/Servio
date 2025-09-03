@@ -89,7 +89,7 @@ export default function CustomerOrderPage() {
           price:
             typeof item.price === "number"
               ? item.price
-              : parseFloat(String(item.price).replace(/[^0-9.]/g, "")) || 0,
+              : Number(item.price) || 0,
         }));
         setMenuItems(mappedItems);
       setLoadingMenu(false);
