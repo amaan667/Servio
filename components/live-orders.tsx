@@ -59,6 +59,7 @@ interface LiveOrdersProps {
 
 export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
+  const [allOrders, setAllOrders] = useState<OrderWithItems[]>([]); // New state for all orders
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -304,6 +305,29 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     }
   }, [venueId]);
 
+  // New function to fetch ALL orders for counting purposes
+  const fetchAllOrders = useCallback(async () => {
+    const supabase = createClient();
+    
+    if (!supabase) return;
+
+    try {
+      const { data: allOrdersData, error: allOrdersError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("created_at", { ascending: false })
+        .throwOnError();
+
+      if (!allOrdersError && allOrdersData) {
+        setAllOrders(allOrdersData as OrderWithItems[]);
+        console.log("LIVE_ORDERS: All orders fetched for counting", { count: allOrdersData.length });
+      }
+    } catch (error) {
+      console.error("LIVE_ORDERS: Failed to fetch all orders for counting", error);
+    }
+  }, [venueId]);
+
   const fetchOrders = useCallback(async () => {
     // Add timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
@@ -324,10 +348,13 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           await fetchHistoryOrders();
           break;
       }
+      
+      // Always fetch all orders for accurate counting
+      await fetchAllOrders();
     } finally {
       clearTimeout(timeoutId);
     }
-  }, [activeTab, fetchLiveOrders, fetchTodayOrders, fetchHistoryOrders]);
+  }, [activeTab, fetchLiveOrders, fetchTodayOrders, fetchHistoryOrders, fetchAllOrders]);
 
   // Store fetchOrders in a ref to avoid circular dependencies
   const fetchOrdersRef = useRef(fetchOrders);
@@ -609,11 +636,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     }
   };
 
-  // Get badge counts for each tab - FIXED LOGIC
+  // Get badge counts for each tab - FIXED LOGIC using allOrders
   const getLiveOrdersCount = () => {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
-    return orders.filter(order => {
+    return allOrders.filter(order => {
       // Count only truly active orders
       if (ACTIVE_STATUSES.includes(order.order_status)) {
         return true;
@@ -635,7 +662,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    return orders.filter(order => {
+    return allOrders.filter(order => {
       const orderDate = new Date(order.created_at);
       const scheduledDate = order.scheduled_for ? new Date(order.scheduled_for) : null;
       const isTodayOrder = (orderDate >= today && orderDate < tomorrow) || 
@@ -650,7 +677,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    return orders.filter(order => {
+    return allOrders.filter(order => {
       // Only count terminal status orders from previous days
       if (!TERMINAL_STATUSES.includes(order.order_status)) {
         return false;
