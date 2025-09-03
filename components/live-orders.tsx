@@ -199,22 +199,25 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       // Now filter for live orders
       const liveOrders = allVenueOrders?.filter(order => {
         const orderCreatedAt = new Date(order.created_at);
+        
+        // Only include ACTIVE orders in live tab (not completed ones)
         const isActive = ACTIVE_STATUSES.includes(order.order_status) && 
                         orderCreatedAt >= new Date(thirtyMinutesAgo);
-        const isRecentCompleted = order.order_status === 'COMPLETED' && 
-                                orderCreatedAt >= new Date(thirtyMinutesAgo);
         
-        if (isActive || isRecentCompleted) {
+        // Don't include completed orders in live tab - they should only be in "Earlier Today"
+        // This fixes the issue where orders appear in both tabs
+        
+        if (isActive) {
           console.log("LIVE_ORDERS: Order included in live tab", {
             id: order.id,
             status: order.order_status,
             created: order.created_at,
             age: Math.round((Date.now() - orderCreatedAt.getTime()) / (1000 * 60 * 60 * 24)) + ' days ago',
-            reason: isActive ? 'active status within 30 minutes' : 'recently completed within 30 minutes'
+            reason: 'active status within 30 minutes'
           });
         }
         
-        return isActive || isRecentCompleted;
+        return isActive; // Only return active orders, not completed ones
       }) || [];
 
       console.log("LIVE_ORDERS: Live orders filtering results", {
@@ -748,14 +751,15 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       const orderCreatedAt = new Date(order.created_at);
       
       // Count only truly active orders within the last 30 minutes
+      // Don't count completed orders in live tab - they belong in "Earlier Today"
       if (ACTIVE_STATUSES.includes(order.order_status)) {
         return orderCreatedAt >= thirtyMinutesAgo;
       }
       
-      // Count only very recent completed orders (within last 30 minutes)
-      if (order.order_status === 'COMPLETED') {
-        return orderCreatedAt >= thirtyMinutesAgo;
-      }
+      // Remove this logic - completed orders should not be counted in live orders
+      // if (order.order_status === 'COMPLETED') {
+      //   return orderCreatedAt >= thirtyMinutesAgo;
+      // }
       
       return false;
     }).length;

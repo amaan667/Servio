@@ -148,10 +148,21 @@ export default function PaymentPage() {
             <Button
               onClick={() =>
                 router.push(
-                  `/order?venue=${checkoutData.venueId}&table=${checkoutData.tableNumber}`,
+                  `/order-tracking/${orderNumber}`,
                 )
               }
               className="w-full bg-servio-purple hover:bg-servio-purple-dark"
+            >
+              Track Your Order
+            </Button>
+            <Button
+              onClick={() =>
+                router.push(
+                  `/order?venue=${checkoutData.venueId}&table=${checkoutData.tableNumber}`,
+                )
+              }
+              variant="outline"
+              className="w-full"
             >
               Place Another Order
             </Button>
