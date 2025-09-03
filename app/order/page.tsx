@@ -51,6 +51,7 @@ export default function CustomerOrderPage() {
   });
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [session, setSession] = useState<any>(null);
+  const [venueName, setVenueName] = useState<string>('Our Venue');
 
   const router = useRouter();
 
@@ -117,6 +118,9 @@ export default function CustomerOrderPage() {
         setLoadingMenu(false);
         return;
       }
+      
+      // Set venue name immediately
+      setVenueName(venue.name || 'Our Venue');
 
       // Fetch menu items using the API endpoint (bypasses RLS)
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
@@ -169,6 +173,17 @@ export default function CustomerOrderPage() {
     console.log('[MENU DEBUG] venueSlug:', venueSlug);
     console.log('[MENU DEBUG] isLoggedIn:', isLoggedIn);
     loadMenuItems();
+    
+    // Add timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (loadingMenu) {
+        console.log('[MENU DEBUG] Loading timeout reached, forcing stop');
+        setLoadingMenu(false);
+        setMenuError("Loading timeout - please refresh the page");
+      }
+    }, 10000); // 10 second timeout
+    
+    return () => clearTimeout(timeout);
   }, [venueSlug, isLoggedIn]);
 
   // Debug state changes
@@ -408,7 +423,7 @@ export default function CustomerOrderPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                {isDemo ? "Servio Café" : (menuItems[0]?.venue_name || 'Our Venue')}
+                {isDemo ? "Servio Café" : venueName}
               </h1>
               <p className="text-gray-600">Table {tableNumber}</p>
             </div>
