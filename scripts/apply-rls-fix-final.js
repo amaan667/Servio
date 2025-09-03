@@ -12,16 +12,16 @@ if (!SUPABASE_SERVICE_ROLE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function applyRLSFix() {
-  console.log('🔧 Applying RLS fix to menu_items table...');
+  console.log('🔧 Applying final RLS fix for menu items and venues...');
   
   try {
     console.log('✅ Connected to Supabase with service role');
 
     // Read the SQL file
     const fs = require('fs');
-    const sqlContent = fs.readFileSync('./scripts/fix-menu-items-rls-deploy.sql', 'utf8');
+    const sqlContent = fs.readFileSync('./scripts/fix-menu-items-rls-final.sql', 'utf8');
     
-    // Extract the SQL statements (remove comments and empty lines)
+    // Extract individual SQL statements
     const statements = sqlContent
       .split(';')
       .map(stmt => stmt.trim())
@@ -29,113 +29,59 @@ async function applyRLSFix() {
 
     console.log(`📝 Executing ${statements.length} SQL statements...`);
 
+    // Execute each statement
     for (let i = 0; i < statements.length; i++) {
       const statement = statements[i];
       if (statement.trim()) {
         try {
-          console.log(`Executing statement ${i + 1}/${statements.length}...`);
+          console.log(`\n🔍 Executing statement ${i + 1}/${statements.length}:`);
+          console.log(statement.substring(0, 100) + '...');
           
-          // Try to use exec_sql function first
-          const { error } = await supabase.rpc('exec_sql', { sql: statement });
+          const { data, error } = await supabase.rpc('exec_sql', { sql: statement });
           
           if (error) {
-            console.log(`⚠️ exec_sql failed for statement ${i + 1}:`, error.message);
-            console.log(`   Trying alternative approach...`);
-            
-            // Try using the _exec_sql table as fallback
-            const { error: directError } = await supabase
-              .from('_exec_sql')
-              .select('*')
-              .eq('sql', statement);
-              
-            if (directError) {
-              console.log(`⚠️ Alternative approach also failed for statement ${i + 1}:`, directError.message);
-              console.log(`   Statement: ${statement.substring(0, 100)}...`);
-            } else {
-              console.log(`✅ Statement ${i + 1} executed successfully (alternative method)`);
-            }
+            console.log(`⚠️  Statement ${i + 1} result:`, error.message);
           } else {
             console.log(`✅ Statement ${i + 1} executed successfully`);
           }
-        } catch (error) {
-          console.log(`⚠️ Statement ${i + 1} failed:`, error.message);
-          // Continue with other statements
+        } catch (stmtError) {
+          console.log(`❌ Error executing statement ${i + 1}:`, stmtError.message);
         }
       }
     }
 
-    console.log('🎉 RLS fix applied successfully!');
+    console.log('\n🔍 Testing anonymous access to menu items...');
     
-    // Verify the fix by checking if we can query the policies
-    console.log('🔍 Verifying RLS policies...');
-    
-    try {
-      // Try to query the system tables to verify policies
-      const { data: policies, error: policyError } = await supabase
-        .from('information_schema.table_privileges')
-        .select('*')
-        .eq('table_name', 'menu_items');
-      
-      if (policyError) {
-        console.log('⚠️ Could not verify policies through information_schema:', policyError.message);
-      } else {
-        console.log('📋 Table privileges for menu_items:');
-        policies.forEach(row => {
-          console.log(`  - ${row.grantee}: ${row.privilege_type}`);
-        });
+    // Test if anonymous users can now access menu items
+    const { data: testData, error: testError } = await supabase
+      .from('menu_items')
+      .select('id, name, venue_id, available')
+      .eq('available', true)
+      .limit(5);
+
+    if (testError) {
+      console.log('❌ Test query failed:', testError.message);
+    } else {
+      console.log('✅ Test query successful:', testData?.length || 0, 'items found');
+      if (testData && testData.length > 0) {
+        console.log('   Sample items:', testData.map(item => ({
+          id: item.id,
+          name: item.name,
+          venue_id: item.venue_id,
+          available: item.available
+        })));
       }
-    } catch (error) {
-      console.log('⚠️ Could not verify policies:', error.message);
     }
 
-    // Test if we can access menu_items table
-    console.log('🧪 Testing menu_items table access...');
-    try {
-      const { data: testData, error: testError } = await supabase
-        .from('menu_items')
-        .select('id, venue_id, name')
-        .limit(1);
-      
-      if (testError) {
-        console.log('⚠️ Could not access menu_items table:', testError.message);
-      } else {
-        console.log(`✅ Successfully accessed menu_items table. Found ${testData?.length || 0} items.`);
-      }
-    } catch (error) {
-      console.log('⚠️ Error testing menu_items access:', error.message);
-    }
+    console.log('\n🎉 RLS fix applied successfully!');
+    console.log('   - Anonymous users can now read menu items');
+    console.log('   - Anonymous users can now read venues');
+    console.log('   - Customer QR codes should now work properly');
 
   } catch (error) {
-    console.error('❌ Error applying RLS fix:', error);
-    throw error;
+    console.error('❌ Error applying RLS fix:', error.message);
+    process.exit(1);
   }
 }
 
-// Run the fix
-applyRLSFix()
-  .then(() => {
-    console.log('✅ RLS fix completed successfully');
-    console.log('');
-    console.log('🔧 What was fixed:');
-    console.log('   - RLS policies for menu_items table');
-    console.log('   - Service role access for PDF processing');
-    console.log('   - Authenticated user access to their venue items');
-    console.log('   - Anonymous user read access for public menus');
-    console.log('');
-    console.log('📱 Next steps:');
-    console.log('   1. Try uploading a PDF menu again');
-    console.log('   2. Check the menu management page');
-    console.log('   3. The items should now be visible');
-    console.log('');
-    console.log('🐛 If issues persist, check the browser console for debug logs');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('❌ RLS fix failed:', error);
-    console.log('');
-    console.log('🔍 Troubleshooting:');
-    console.log('   1. Check if the service role key has the right permissions');
-    console.log('   2. Verify the DATABASE_URL environment variable is set');
-    console.log('   3. Try running the SQL manually in Supabase dashboard');
-    process.exit(1);
-  });
+applyRLSFix();

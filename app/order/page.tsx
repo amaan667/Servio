@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 
@@ -110,23 +111,26 @@ export default function CustomerOrderPage() {
         return;
       }
 
-      // Fetch menu items for the venue
-      const { data, error } = await supabase
-        .from("menu_items")
-        .select("*, venues!inner(name)")
-        .eq("venue_id", venueSlug)
-        .eq("available", true);
-
-      if (error) {
-        setMenuError(`Error loading menu: ${error.message}`);
+      // Fetch menu items using the API endpoint (bypasses RLS)
+      const response = await fetch(`/api/menu/${venueSlug}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        setMenuError(`Error loading menu: ${errorData.error || 'Failed to load menu'}`);
         setLoadingMenu(false);
         return;
       }
 
+      const data = await response.json();
+      
       // Attach venue_name for display
-      const normalized = (data || []).map((mi: any) => ({ ...mi, venue_name: mi.venues?.name }));
+      const normalized = (data.menuItems || []).map((mi: any) => ({ 
+        ...mi, 
+        venue_name: data.venue?.name 
+      }));
+      
       setMenuItems(normalized);
-      if (!data || data.length === 0) {
+      if (!data.menuItems || data.menuItems.length === 0) {
         setMenuError("This venue has no available menu items yet.");
       }
       setLoadingMenu(false);

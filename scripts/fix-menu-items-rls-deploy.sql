@@ -81,6 +81,12 @@ CREATE POLICY "Allow anon users to read menu items" ON public.menu_items
     TO anon
     USING (true);
 
+-- Policy 7: Allow anon users to read venues (needed for menu item queries with joins)
+CREATE POLICY "Allow anon users to read venues" ON public.venues
+    FOR SELECT
+    TO anon
+    USING (true);
+
 -- Step 4: Verify the setup
 -- Check RLS status
 SELECT 
