@@ -171,36 +171,71 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         activeStatuses: ACTIVE_STATUSES 
       });
 
-      const { data: ordersData, error: ordersError } = await supabase
+      // First, let's get ALL orders for this venue to see what we're working with
+      const { data: allVenueOrders, error: allOrdersError } = await supabase
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
-        .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),and(order_status.eq.COMPLETED,created_at.gte.${thirtyMinutesAgo})`)
-        .order("updated_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .throwOnError();
 
-      if (ordersError) {
-        console.error("LIVE_ORDERS: Failed to fetch live orders", { error: ordersError.message, code: ordersError.code });
+      if (allOrdersError) {
+        console.error("LIVE_ORDERS: Failed to fetch all venue orders", { error: allOrdersError.message });
+        setError(`Failed to load orders: ${allOrdersError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      console.log("LIVE_ORDERS: All venue orders fetched", {
+        totalCount: allVenueOrders?.length || 0,
+        statuses: allVenueOrders?.map(order => ({ 
+          id: order.id, 
+          status: order.order_status, 
+          created: order.created_at,
+          age: Math.round((Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' days ago'
+        })) || []
+      });
+
+      // Now filter for live orders
+      const liveOrders = allVenueOrders?.filter(order => {
+        const isActive = ACTIVE_STATUSES.includes(order.order_status);
+        const isRecentCompleted = order.order_status === 'COMPLETED' && 
+                                new Date(order.created_at) >= new Date(thirtyMinutesAgo);
         
-        // Check if it's a 503 service unavailable error
-        if (ordersError.message.includes('503') || ordersError.message.includes('Service Unavailable')) {
-          setServiceStatus('down');
-          // Reduce retry frequency for service issues
-          setRefreshInterval(60000); // 1 minute instead of 15 seconds
-        } else {
-          setServiceStatus('degraded');
+        if (isActive || isRecentCompleted) {
+          console.log("LIVE_ORDERS: Order included in live tab", {
+            id: order.id,
+            status: order.order_status,
+            created: order.created_at,
+            age: Math.round((Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' days ago',
+            reason: isActive ? 'active status' : 'recently completed'
+          });
         }
         
-        setError(`Failed to load orders: ${ordersError.message}`);
-      } else {
-        console.log("LIVE_ORDERS: Live orders fetched successfully", {
-          orderCount: ordersData?.length || 0,
-          statuses: ordersData?.map((order) => order.order_status) || [],
-          firstOrder: ordersData?.[0] ? { id: ordersData[0].id, status: ordersData[0].order_status } : null
-        });
-        setOrders((ordersData || []) as OrderWithItems[]);
-        setLastUpdate(new Date());
-      }
+        return isActive || isRecentCompleted;
+      }) || [];
+
+      console.log("LIVE_ORDERS: Live orders filtering results", {
+        totalOrders: allVenueOrders?.length || 0,
+        liveOrdersCount: liveOrders.length,
+        activeOrdersCount: liveOrders.filter(o => ACTIVE_STATUSES.includes(o.order_status)).length,
+        recentCompletedCount: liveOrders.filter(o => o.order_status === 'COMPLETED').length,
+        liveOrders: liveOrders.map(o => ({
+          id: o.id,
+          status: o.order_status,
+          created: o.created_at,
+          age: Math.round((Date.now() - new Date(o.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' days ago'
+        }))
+      });
+
+      setOrders(liveOrders as OrderWithItems[]);
+      setLastUpdate(new Date());
+      
+      console.log("LIVE_ORDERS: Live orders set successfully", {
+        liveOrdersCount: liveOrders.length,
+        expectedCount: 0 // Based on your requirement
+      });
+
     } catch (error: any) {
       console.error("LIVE_ORDERS: Unexpected error fetching live orders", error);
       setError(`An unexpected error occurred: ${error.message}`);
@@ -231,6 +266,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
+      console.log("LIVE_ORDERS: Today's date range", {
+        today: today.toISOString(),
+        tomorrow: tomorrow.toISOString()
+      });
+
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
         .select("*")
@@ -246,6 +286,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       } else {
         console.log("LIVE_ORDERS: Today's orders fetched successfully", {
           orderCount: ordersData?.length || 0,
+          orders: ordersData?.map(o => ({
+            id: o.id,
+            status: o.order_status,
+            created: o.created_at,
+            age: Math.round((Date.now() - new Date(o.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' days ago'
+          })) || []
         });
         setOrders((ordersData || []) as OrderWithItems[]);
         setLastUpdate(new Date());
@@ -278,6 +324,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      console.log("LIVE_ORDERS: History date threshold", {
+        today: today.toISOString()
+      });
+
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
         .select("*")
@@ -293,6 +343,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       } else {
         console.log("LIVE_ORDERS: Historical orders fetched successfully", {
           orderCount: ordersData?.length || 0,
+          orders: ordersData?.map(o => ({
+            id: o.id,
+            status: o.order_status,
+            created: o.created_at,
+            age: Math.round((Date.now() - new Date(o.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' days ago'
+          })) || []
         });
         setOrders((ordersData || []) as OrderWithItems[]);
         setLastUpdate(new Date());
@@ -312,6 +368,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     if (!supabase) return;
 
     try {
+      console.log("LIVE_ORDERS: Fetching all orders for counting");
+      
       const { data: allOrdersData, error: allOrdersError } = await supabase
         .from("orders")
         .select("*")
@@ -321,7 +379,51 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
       if (!allOrdersError && allOrdersData) {
         setAllOrders(allOrdersData as OrderWithItems[]);
-        console.log("LIVE_ORDERS: All orders fetched for counting", { count: allOrdersData.length });
+        
+        // Log detailed breakdown for counting
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const liveCount = allOrdersData.filter(order => {
+          const isActive = ACTIVE_STATUSES.includes(order.order_status);
+          const isRecentCompleted = order.order_status === 'COMPLETED' && 
+                                  new Date(order.created_at) >= thirtyMinutesAgo;
+          return isActive || isRecentCompleted;
+        }).length;
+        
+        const todayCount = allOrdersData.filter(order => {
+          const orderDate = new Date(order.created_at);
+          return orderDate >= today;
+        }).length;
+        
+        const historyCount = allOrdersData.filter(order => {
+          if (!TERMINAL_STATUSES.includes(order.order_status)) return false;
+          const orderDate = new Date(order.created_at);
+          return orderDate < today;
+        }).length;
+        
+        console.log("LIVE_ORDERS: All orders fetched for counting", { 
+          totalCount: allOrdersData.length,
+          breakdown: {
+            live: liveCount,
+            today: todayCount,
+            history: historyCount
+          },
+          statusBreakdown: allOrdersData.reduce((acc, order) => {
+            acc[order.order_status] = (acc[order.order_status] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>),
+          ageBreakdown: allOrdersData.reduce((acc, order) => {
+            const age = Math.round((Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60 * 24));
+            if (age === 0) acc['today'] = (acc['today'] || 0) + 1;
+            else if (age === 1) acc['yesterday'] = (acc['yesterday'] || 0) + 1;
+            else if (age <= 7) acc['this week'] = (acc['this week'] || 0) + 1;
+            else if (age <= 30) acc['this month'] = (acc['this month'] || 0) + 1;
+            else acc['older'] = (acc['older'] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>)
+        });
       }
     } catch (error) {
       console.error("LIVE_ORDERS: Failed to fetch all orders for counting", error);
