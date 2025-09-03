@@ -460,7 +460,7 @@ export default function CustomerOrderPage() {
                 {(() => {
                   const categoryPriority = [
                     "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course",
-                    "mains", "main", "salads", "salad", "sides", "side dishes", "desserts", "dessert",
+                    "mains", "main", "salads", "salad", "sides", "side", "desserts", "dessert",
                     "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
                   ];
                   const categories = Array.from(new Set(menuItems.map((i) => i.category)));
