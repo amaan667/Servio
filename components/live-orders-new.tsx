@@ -40,8 +40,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   // Handle both old and new status values until migration is complete
   const ACTIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'ACCEPTED', 'OUT_FOR_DELIVERY'];
   const TERMINAL_TODAY = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED', 'COMPLETED'];
-  // Recent terminal states that should still appear in Live for 30 minutes
-  const RECENT_TERMINAL_IN_LIVE = ['SERVED', 'COMPLETED'];
+  // CRITICAL: No terminal states should appear in Live orders - they belong in Earlier Today only
+  const RECENT_TERMINAL_IN_LIVE: string[] = [];
 
   // Helper function to get today bounds in UTC for venue timezone
   const todayBoundsCorrected = useCallback((tz: string) => {
@@ -220,7 +220,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             const isNotExpired = orderAge < thirtyMinutes;
 
             console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isActive=${isActive}, isRecentTerminal=${isRecentTerminal}, isToday=${isToday}, isNotExpired=${isNotExpired}`);
-            return (isActive || isRecentTerminal) && isToday && isNotExpired;
+            // CRITICAL: Only active orders should appear in live tab, never terminal orders
+            return isActive && isToday && isNotExpired;
           });
         } else if (tab === 'earlier') {
           filteredOrders = filteredOrders.filter(order => {
@@ -236,8 +237,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             const isRecentTerminal = RECENT_TERMINAL_IN_LIVE.includes(status) && orderAge < thirtyMinutes;
 
             console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isTerminal=${isTerminal}, isToday=${isToday}, isExpiredLive=${isExpiredLive}, isRecentTerminal=${isRecentTerminal}`);
-            // Earlier Today should NOT include recent served/completed orders (those stay in Live)
-            return isToday && ((isTerminal && !isRecentTerminal) || isExpiredLive);
+            // Earlier Today includes ALL today's orders that are not currently in live (terminal orders + expired active orders)
+            return isToday && (isTerminal || isExpiredLive);
           });
         } else if (tab === 'history') {
           filteredOrders = filteredOrders.filter(order => {
