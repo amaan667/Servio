@@ -235,15 +235,14 @@ export default function VenueDashboardClient({
             }, 0);
           }
         }
-        const ps = String(order.payment_status ?? '').toLowerCase();
-        const st = String(order.status ?? '').toLowerCase();
-        return (ps === 'paid' || st === 'paid') ? sum + amount : sum;
+        // All orders are now paid since they only appear after payment
+        return sum + amount;
       }, 0);
 
       setStats({
         revenue: todayRevenue,
         menuItems: menuItems?.length || 0,
-        unpaid: (orders ?? []).filter((o: any) => String(o.payment_status ?? '').toLowerCase() !== 'paid' && String(o.status ?? '').toLowerCase() !== 'paid').length,
+        unpaid: 0, // All orders are now paid since they only appear after payment
       });
     } catch (error) {
       console.error("Error loading stats:", error);
@@ -328,9 +327,7 @@ export default function VenueDashboardClient({
                     <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                   </div>
                 </div>
-                {stats.unpaid > 0 && (
-                  <div className="mt-2 text-xs text-red-600">{stats.unpaid} unpaid</div>
-                )}
+                {/* Remove unpaid count since all orders are now paid */}
               </CardContent>
             </Card>
           </Link>

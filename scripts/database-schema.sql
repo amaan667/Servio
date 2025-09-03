@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS orders (
     total_amount DECIMAL(10,2) NOT NULL,
   order_status TEXT DEFAULT 'PLACED' CHECK (order_status IN ('PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING', 'COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED')),
   payment_method TEXT,
-  payment_status TEXT DEFAULT 'UNPAID' CHECK (payment_status IN ('UNPAID', 'IN_PROGRESS', 'PAID', 'REFUNDED')),
+  payment_status TEXT DEFAULT 'PAID' CHECK (payment_status IN ('UNPAID', 'IN_PROGRESS', 'PAID', 'REFUNDED')),
   scheduled_for TIMESTAMP WITH TIME ZONE,
   prep_lead_minutes INTEGER DEFAULT 30,
   items JSONB NOT NULL, -- Array of order items with quantities and special instructions

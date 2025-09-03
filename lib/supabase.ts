@@ -391,7 +391,7 @@ export async function createOrder(orderData: {
         customer_name: orderData.customer_name,
         customer_phone: orderData.customer_phone,
         order_status: "PLACED",
-        payment_status: "UNPAID",
+        payment_status: "PAID",
         total_amount: calculatedTotal, // Always use calculated total
         notes: orderData.notes,
         items: orderData.items, // Store items as JSONB
