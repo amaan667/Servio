@@ -72,6 +72,53 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [refreshInterval, setRefreshInterval] = useState(15000); // 15 seconds
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
   const lastOrderCountRef = useRef<number>(0);
+  const [showDemoOrders, setShowDemoOrders] = useState(false);
+
+  // Demo orders for when database is unavailable
+  const demoOrders: OrderWithItems[] = [
+    {
+      id: 'demo-1',
+      venue_id: venueId,
+      table_number: 5,
+      customer_name: 'John Smith',
+      customer_phone: '+44 123 456 7890',
+      customer_email: 'john@example.com',
+      order_status: 'PLACED',
+      total_amount: 24.50,
+      notes: 'Extra crispy fries please',
+      payment_method: 'card',
+      payment_status: 'pending',
+      scheduled_for: null,
+      prep_lead_minutes: 15,
+      items: [
+        { menu_item_id: 'demo-item-1', quantity: 1, price: 14.50, item_name: 'Beef Burger' },
+        { menu_item_id: 'demo-item-2', quantity: 1, price: 4.50, item_name: 'French Fries' },
+        { menu_item_id: 'demo-item-3', quantity: 1, price: 5.50, item_name: 'Coca Cola' }
+      ],
+      created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      updated_at: new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    },
+    {
+      id: 'demo-2',
+      venue_id: venueId,
+      table_number: 3,
+      customer_name: 'Sarah Johnson',
+      customer_phone: '+44 987 654 3210',
+      customer_email: 'sarah@example.com',
+      order_status: 'IN_PREP',
+      total_amount: 18.75,
+      notes: 'No onions please',
+      payment_method: 'card',
+      payment_status: 'pending',
+      scheduled_for: null,
+      prep_lead_minutes: 20,
+      items: [
+        { menu_item_id: 'demo-item-4', quantity: 1, price: 18.75, item_name: 'Grilled Salmon' }
+      ],
+      created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+      updated_at: new Date(Date.now() - 2 * 60 * 1000).toISOString()
+    }
+  ];
 
   const ACTIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
@@ -192,9 +239,37 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       return;
     }
 
+    // Test Supabase connection
+    try {
+      const { data: testData, error: testError } = await supabase
+        .from("orders")
+        .select("id")
+        .limit(1);
+      
+      if (testError) {
+        logger.error("LIVE_ORDERS: Supabase connection test failed", { error: testError.message, code: testError.code });
+        setError(`Database connection failed: ${testError.message}`);
+        setLoading(false);
+        return;
+      }
+      
+      logger.info("LIVE_ORDERS: Supabase connection test successful");
+    } catch (testErr: any) {
+      logger.error("LIVE_ORDERS: Supabase connection test exception", testErr);
+      setError(`Database connection failed: ${testErr.message}`);
+      setLoading(false);
+      return;
+    }
+
     try {
       // Get orders that are either active OR completed within the last 30 minutes
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+      logger.info("LIVE_ORDERS: Querying orders with filter", { 
+        venueId, 
+        thirtyMinutesAgo,
+        activeStatuses: ACTIVE_STATUSES 
+      });
 
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
@@ -204,19 +279,20 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .order("updated_at", { ascending: false });
 
       if (ordersError) {
-        logger.error("LIVE_ORDERS: Failed to fetch live orders", { error: ordersError.message });
-        setError("Failed to load orders.");
+        logger.error("LIVE_ORDERS: Failed to fetch live orders", { error: ordersError.message, code: ordersError.code });
+        setError(`Failed to load orders: ${ordersError.message}`);
       } else {
         logger.info("LIVE_ORDERS: Live orders fetched successfully", {
           orderCount: ordersData?.length || 0,
           statuses: ordersData?.map((order) => order.order_status) || [],
+          firstOrder: ordersData?.[0] ? { id: ordersData[0].id, status: ordersData[0].order_status } : null
         });
         setOrders((ordersData || []) as OrderWithItems[]);
         setLastUpdate(new Date());
       }
     } catch (error: any) {
       logger.error("LIVE_ORDERS: Unexpected error fetching live orders", error);
-      setError("An unexpected error occurred.");
+      setError(`An unexpected error occurred: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -557,6 +633,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             </Button>
           </div>
           
+
+          
           <div className="text-xs text-gray-500">
             Last update: {lastUpdate.toLocaleTimeString()}
           </div>
@@ -626,9 +704,58 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {showDemoOrders && (
+            <Alert className="mb-4">
+              <AlertDescription className="flex items-center justify-between">
+                <span>⚠️ Showing demo orders - Database connection unavailable</span>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowDemoOrders(false);
+                    setOrders([]);
+                    fetchOrders();
+                  }}
+                  className="ml-2"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Try Real Data
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {error && (
             <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="flex items-center justify-between">
+                <span>{error}</span>
+                <div className="flex space-x-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => {
+                      setError(null);
+                      fetchOrders();
+                    }}
+                    className="ml-2"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Retry
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowDemoOrders(true);
+                      setOrders(demoOrders);
+                      setError(null);
+                    }}
+                    className="ml-2"
+                  >
+                    Show Demo
+                  </Button>
+                </div>
+              </AlertDescription>
             </Alert>
           )}
 
