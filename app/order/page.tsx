@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -419,12 +420,14 @@ export default function CustomerOrderPage() {
             <div className="flex items-center space-x-4">
               {/* Servio Logo */}
               <div className="flex items-center">
-                <div className="text-2xl font-bold text-purple-600 mr-2">
-                  <div className="w-8 h-8 bg-purple-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">
-                    S
-                  </div>
-                </div>
-                <span className="text-xl font-bold text-gray-900">Servio</span>
+                <Image
+                  src="/assets/servio-logo-updated.png"
+                  alt="Servio"
+                  width={200}
+                  height={60}
+                  className="h-12 w-auto"
+                  priority
+                />
               </div>
               
               {/* Business Name and Table */}
