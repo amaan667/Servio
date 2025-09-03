@@ -198,17 +198,19 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
       // Now filter for live orders
       const liveOrders = allVenueOrders?.filter(order => {
-        const isActive = ACTIVE_STATUSES.includes(order.order_status);
+        const orderCreatedAt = new Date(order.created_at);
+        const isActive = ACTIVE_STATUSES.includes(order.order_status) && 
+                        orderCreatedAt >= new Date(thirtyMinutesAgo);
         const isRecentCompleted = order.order_status === 'COMPLETED' && 
-                                new Date(order.created_at) >= new Date(thirtyMinutesAgo);
+                                orderCreatedAt >= new Date(thirtyMinutesAgo);
         
         if (isActive || isRecentCompleted) {
           console.log("LIVE_ORDERS: Order included in live tab", {
             id: order.id,
             status: order.order_status,
             created: order.created_at,
-            age: Math.round((Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' days ago',
-            reason: isActive ? 'active status' : 'recently completed'
+            age: Math.round((Date.now() - orderCreatedAt.getTime()) / (1000 * 60 * 60 * 24)) + ' days ago',
+            reason: isActive ? 'active status within 30 minutes' : 'recently completed within 30 minutes'
           });
         }
         
@@ -386,9 +388,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         today.setHours(0, 0, 0, 0);
         
         const liveCount = allOrdersData.filter(order => {
-          const isActive = ACTIVE_STATUSES.includes(order.order_status);
+          const orderCreatedAt = new Date(order.created_at);
+          const isActive = ACTIVE_STATUSES.includes(order.order_status) && 
+                          orderCreatedAt >= thirtyMinutesAgo;
           const isRecentCompleted = order.order_status === 'COMPLETED' && 
-                                  new Date(order.created_at) >= thirtyMinutesAgo;
+                                  orderCreatedAt >= thirtyMinutesAgo;
           return isActive || isRecentCompleted;
         }).length;
         
@@ -743,14 +747,15 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
     return allOrders.filter(order => {
-      // Count only truly active orders
+      const orderCreatedAt = new Date(order.created_at);
+      
+      // Count only truly active orders within the last 30 minutes
       if (ACTIVE_STATUSES.includes(order.order_status)) {
-        return true;
+        return orderCreatedAt >= thirtyMinutesAgo;
       }
       
       // Count only very recent completed orders (within last 30 minutes)
       if (order.order_status === 'COMPLETED') {
-        const orderCreatedAt = new Date(order.created_at);
         return orderCreatedAt >= thirtyMinutesAgo;
       }
       
