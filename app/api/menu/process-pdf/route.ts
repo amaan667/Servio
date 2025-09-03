@@ -23,11 +23,12 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   try {
     console.log('[OCR] Starting PDF text extraction...');
     
-    // For now, use a simple text extraction approach
-    // TODO: Implement Google Vision OCR when credentials are properly configured
-    
-    // Simulate OCR processing
-    const mockText = `
+    // Check if Google Vision credentials are available
+    if (!process.env.GOOGLE_CREDENTIALS_B64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      console.log('[OCR] No Google Vision credentials found, using fallback text extraction');
+      
+      // Fallback to basic text extraction for development
+      const mockText = `
 STARTERS
 1. Soup of the Day - £5.50
 2. Garlic Bread - £3.50
@@ -47,12 +48,21 @@ BEVERAGES
 1. Coffee - £2.50
 2. Tea - £2.00
 3. Soft Drinks - £3.00
-    `.trim();
+      `.trim();
 
-    console.log('[OCR] Text extraction completed (mock), length:', mockText.length);
-    console.log('[OCR] Text preview:', mockText.substring(0, 200));
+      console.log('[OCR] Text extraction completed (fallback), length:', mockText.length);
+      return mockText;
+    }
     
-    return mockText;
+    // Use real Google Vision OCR
+    console.log('[OCR] Using Google Vision OCR...');
+    const { extractTextFromPdf } = await import('@/lib/googleVisionOCR');
+    const extractedText = await extractTextFromPdf(pdfBuffer, 'uploaded-menu.pdf');
+    
+    console.log('[OCR] Text extraction completed (Google Vision), length:', extractedText.length);
+    console.log('[OCR] Text preview:', extractedText.substring(0, 200));
+    
+    return extractedText;
     
   } catch (error: any) {
     console.error('[OCR] Text extraction failed:', error);

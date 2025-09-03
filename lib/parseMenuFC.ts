@@ -219,7 +219,7 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
 async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT> {
   console.log('[MENU PARSE] Using fallback parsing method...');
   
-  // Use the old method as fallback
+  // Enhanced fallback method that tries to extract more items
   const system = [
     "You extract venue menus from OCR text.",
     "Return ONLY a JSON object that matches the schema:",
@@ -233,6 +233,10 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
     "- Preserve category names and menu order as they appear.",
     "- Include only items with prices; convert £/€ to numbers (no symbols).",
     "- Extract EVERY single menu item with a price - do not miss any.",
+    "- Look for price patterns like £X.XX, €X.XX, $X.XX, or just numbers.",
+    "- If no clear categories exist, group items logically (e.g., 'FOOD', 'DRINKS').",
+    "- Be thorough - extract ALL items, even if they seem incomplete.",
+    "- For items without clear categories, assign a default category based on context.",
   ].join("\n");
 
   const user = `OCR TEXT:\n${sanitizeText(ocrText)}`;
@@ -242,7 +246,7 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
     model: "gpt-4o-mini",
     response_format: { type: "json_object" },
     temperature: 0,
-    max_tokens: 4000,
+    max_tokens: 8000, // Increased token limit for larger menus
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
