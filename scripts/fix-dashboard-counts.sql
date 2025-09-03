@@ -32,25 +32,19 @@ today as (
     and o.created_at <  b.end_utc
 ),
 live as (
-  -- Orders that are currently active AND created within the live window
+  -- Orders that are currently active OR recently served/completed (≤ window)
   select count(*)::int c
   from today t, b
-  where t.status in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING')
+  where t.status in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING','SERVED','COMPLETED')
     and t.created_at >= b.now_utc - make_interval(mins => p_live_window_mins)
 ),
 earlier as (
-  -- Orders from today that are either:
-  -- 1. Completed/cancelled/expired, OR
-  -- 2. Active but older than the live window
+  -- Orders from today that are NOT in the live set (today minus live window set)
   select count(*)::int c
   from today t, b
-  where (
-    -- Completed/cancelled/expired orders
-    t.status not in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING')
-    OR
-    -- Active orders that are older than live window
-    (t.status in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING') 
-     AND t.created_at < b.now_utc - make_interval(mins => p_live_window_mins))
+  where not (
+    t.status in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING','SERVED','COMPLETED')
+    and t.created_at >= b.now_utc - make_interval(mins => p_live_window_mins)
   )
 ),
 hist as (

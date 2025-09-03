@@ -32,6 +32,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   // Handle both old and new status values until migration is complete
   const ACTIVE_STATUSES = ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'ACCEPTED', 'OUT_FOR_DELIVERY'];
   const TERMINAL_TODAY = ['SERVED', 'CANCELLED', 'REFUNDED', 'EXPIRED', 'COMPLETED'];
+  // Recent terminal states that should still appear in Live for 30 minutes
+  const RECENT_TERMINAL_IN_LIVE = ['SERVED', 'COMPLETED'];
 
   // Helper function to get today bounds in UTC for venue timezone
   const todayBoundsCorrected = useCallback((tz: string) => {
@@ -122,7 +124,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         console.log(`[LIVE_ORDERS] Live tab - 30 minutes ago: ${thirtyMinutesAgo}`);
         
         query = query
-          .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
+          .or(`order_status.in.(${[...ACTIVE_STATUSES, ...RECENT_TERMINAL_IN_LIVE].join(',')}),status.in.(${[...ACTIVE_STATUSES, ...RECENT_TERMINAL_IN_LIVE].join(',')})`)
           .gte('created_at', startUtc)
           .lt('created_at', endUtc)
           .gte('created_at', thirtyMinutesAgo) // Only orders created within last 30 minutes
@@ -187,15 +189,16 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             const status = order.order_status || order.status;
             const created = new Date(order.created_at);
             const isActive = ACTIVE_STATUSES.includes(status);
+            const isRecentTerminal = RECENT_TERMINAL_IN_LIVE.includes(status);
             const isToday = created >= today && created < tomorrow;
-            
+
             // Check if order is older than 30 minutes
             const orderAge = now.getTime() - created.getTime();
             const thirtyMinutes = 30 * 60 * 1000;
             const isNotExpired = orderAge < thirtyMinutes;
-            
-            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isActive=${isActive}, isToday=${isToday}, isNotExpired=${isNotExpired}`);
-            return isActive && isToday && isNotExpired;
+
+            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isActive=${isActive}, isRecentTerminal=${isRecentTerminal}, isToday=${isToday}, isNotExpired=${isNotExpired}`);
+            return (isActive || isRecentTerminal) && isToday && isNotExpired;
           });
         } else if (tab === 'earlier') {
           filteredOrders = filteredOrders.filter(order => {
@@ -203,14 +206,16 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             const created = new Date(order.created_at);
             const isTerminal = TERMINAL_TODAY.includes(status);
             const isToday = created >= today && created < tomorrow;
-            
+
             // Include expired live orders (older than 30 minutes)
             const orderAge = now.getTime() - created.getTime();
             const thirtyMinutes = 30 * 60 * 1000;
             const isExpiredLive = orderAge >= thirtyMinutes && ACTIVE_STATUSES.includes(status);
-            
-            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isTerminal=${isTerminal}, isToday=${isToday}, isExpiredLive=${isExpiredLive}`);
-            return isToday && (isTerminal || isExpiredLive);
+            const isRecentTerminal = RECENT_TERMINAL_IN_LIVE.includes(status) && orderAge < thirtyMinutes;
+
+            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isTerminal=${isTerminal}, isToday=${isToday}, isExpiredLive=${isExpiredLive}, isRecentTerminal=${isRecentTerminal}`);
+            // Earlier Today should NOT include recent served/completed orders (those stay in Live)
+            return isToday && ((isTerminal && !isRecentTerminal) || isExpiredLive);
           });
         } else if (tab === 'history') {
           filteredOrders = filteredOrders.filter(order => {
@@ -270,13 +275,13 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     }
   }, [venueId, venueTimezone, todayBoundsCorrected]);
 
-  // Auto-refresh orders every minute to handle aging orders
+  // Auto-refresh orders every 15 seconds to handle aging orders
   useEffect(() => {
     const interval = setInterval(() => {
       console.log('[LIVE_ORDERS] Auto-refreshing orders due to time passage...');
       fetchOrders(activeTab);
       refetchCounts();
-    }, 60000); // Every minute
+    }, 15000); // Every 15s
 
     return () => clearInterval(interval);
   }, [fetchOrders, activeTab, refetchCounts]);
@@ -530,18 +535,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         )}
       </div>
 
-      {/* Refresh Button */}
-      <div className="flex justify-center">
-        <Button
-          onClick={() => fetchOrders(activeTab)}
-          disabled={loading}
-          variant="outline"
-          size="sm"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
+      {/* Auto-refresh enabled; manual refresh button removed per product requirement */}
     </div>
   );
 }

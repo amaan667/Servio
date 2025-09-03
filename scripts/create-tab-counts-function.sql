@@ -34,14 +34,14 @@ today as (
 live as (
   select count(*)::int c
   from today t, b
-  where t.status in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING')
+  where t.status in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING','SERVED','COMPLETED')
     and t.created_at >= b.now_utc - make_interval(mins => p_live_window_mins)
 ),
 earlier as (
   select count(*)::int c
   from today t, b
   where not (
-        t.status in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING')
+        t.status in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING','SERVED','COMPLETED')
     and t.created_at >= b.now_utc - make_interval(mins => p_live_window_mins)
   )
 ),
