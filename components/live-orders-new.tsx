@@ -20,10 +20,16 @@ interface LiveOrdersProps {
 export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: LiveOrdersProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'live' | 'earlier' | 'history'>('live');
   // Local counts to ensure UI stays correct even if RPC isn't updated in DB yet
   const [localCounts, setLocalCounts] = useState<{ live_count: number; earlier_today_count: number; history_count: number } | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  const isFetchingRef = (typeof window !== 'undefined') ? (window as any).__liveOrdersFetchingRef || { current: false } : { current: false };
+  if (typeof window !== 'undefined') {
+    (window as any).__liveOrdersFetchingRef = isFetchingRef;
+  }
 
   // Use the new RPC-based tab counts
   const { data: tabCounts, isLoading: countsLoading, refetch: refetchCounts } = useTabCounts(venueId, venueTimezone, 30);
@@ -68,7 +74,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     return { startUtc: startUtc.toISOString(), endUtc: endUtc.toISOString() };
   }, []);
 
-  const fetchOrders = useCallback(async (tab: 'live' | 'earlier' | 'history') => {
+  const fetchOrders = useCallback(async (tab: 'live' | 'earlier' | 'history', background: boolean = false) => {
     if (!venueId) {
       console.log('[LIVE_ORDERS] No venueId, returning early');
       setLoading(false);
@@ -76,14 +82,28 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     }
 
     console.log(`[LIVE_ORDERS] Starting fetchOrders for tab: ${tab}, venueId: ${venueId}`);
-    setLoading(true);
-    setError(null);
+    if (isFetchingRef.current) {
+      // avoid overlapping refreshes which cause flicker
+      console.log('[LIVE_ORDERS] A fetch is already in progress, skipping');
+      return;
+    }
+    isFetchingRef.current = true;
+    if (background) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+      setError(null);
+    }
 
     // Add timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       console.error(`[LIVE_ORDERS] Query timeout for ${tab}`);
-      setError(`Query timeout - taking too long to load ${tab} orders`);
-      setLoading(false);
+      if (!background) {
+        setError(`Query timeout - taking too long to load ${tab} orders`);
+        setLoading(false);
+      }
+      setIsRefreshing(false);
+      isFetchingRef.current = false;
     }, 15000); // Reduced to 15 seconds
 
     try {
@@ -235,7 +255,13 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         
         clearTimeout(timeoutId);
         setOrders(filteredOrders);
-        setLoading(false);
+        if (background) {
+          setIsRefreshing(false);
+        } else {
+          setLoading(false);
+        }
+        setLastUpdatedAt(new Date());
+        isFetchingRef.current = false;
         return;
       }
 
@@ -262,6 +288,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
       clearTimeout(timeoutId);
       setOrders(data || []);
+      setLastUpdatedAt(new Date());
       logger.info(`LIVE_ORDERS: ${tab} orders fetched successfully`, {
         orderCount: data?.length || 0,
         tab,
@@ -270,10 +297,17 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     } catch (error: any) {
       console.error(`[LIVE_ORDERS] Failed to fetch ${activeTab} orders:`, error);
       logger.error(`LIVE_ORDERS: Failed to fetch ${activeTab} orders`, { error: error.message });
-      setError(`Failed to load ${activeTab} orders: ${error.message}`);
+      if (!background) {
+        setError(`Failed to load ${activeTab} orders: ${error.message}`);
+      }
     } finally {
       clearTimeout(timeoutId);
-      setLoading(false);
+      if (background) {
+        setIsRefreshing(false);
+      } else {
+        setLoading(false);
+      }
+      isFetchingRef.current = false;
     }
   }, [venueId, venueTimezone, todayBoundsCorrected]);
 
@@ -331,7 +365,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   useEffect(() => {
     const interval = setInterval(() => {
       console.log('[LIVE_ORDERS] Auto-refreshing orders due to time passage...');
-      fetchOrders(activeTab);
+      fetchOrders(activeTab, true);
       refetchCounts();
       recalcLocalCounts();
     }, 15000); // Every 15s
@@ -343,7 +377,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
   // Fetch orders when tab changes
   useEffect(() => {
-    fetchOrders(activeTab);
+    fetchOrders(activeTab, false);
     recalcLocalCounts();
   }, [activeTab, fetchOrders, recalcLocalCounts]);
 
@@ -366,7 +400,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         },
         () => {
           // Refresh orders when any order changes
-          fetchOrders(activeTab);
+          fetchOrders(activeTab, true);
           // Update counts (both RPC and local)
           refetchCounts();
           recalcLocalCounts();
@@ -380,7 +414,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   }, [venueId, activeTab, fetchOrders]);
 
   const handleOrderUpdate = useCallback(() => {
-    fetchOrders(activeTab);
+    fetchOrders(activeTab, true);
   }, [fetchOrders, activeTab]);
 
   const getTabIcon = (tab: string) => {
@@ -520,7 +554,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         </div>
 
         {/* Orders List */}
-        {loading ? (
+        {(loading && !isRefreshing) ? (
           <div className="flex items-center justify-center py-8">
             <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
             <span className="ml-2 text-gray-600">Loading orders...</span>
@@ -550,6 +584,11 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           </Card>
         ) : (
           <div className="space-y-8">
+            {isRefreshing && (
+              <div className="flex items-center justify-center text-xs text-gray-500">
+                <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Updating...
+              </div>
+            )}
             {(() => {
               // Group orders by date
               const ordersByDate = orders.reduce((acc, order) => {
