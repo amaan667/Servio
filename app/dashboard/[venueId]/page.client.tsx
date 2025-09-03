@@ -265,6 +265,14 @@ export default function VenueDashboardClient({
   };
 
   const loadStats = async (vId: string, window: any) => {
+    // If we have initial stats from SSR, use those and skip client-side calculation
+    if (initialStats && initialStats.revenue > 0) {
+      console.log('[DASHBOARD] Using initial stats from SSR, skipping client calculation');
+      setStats(initialStats);
+      setStatsLoaded(true);
+      return;
+    }
+
     // Only load stats once per day to prevent flickering
     if (statsLoaded) {
       console.log('[DASHBOARD] Stats already loaded, skipping to prevent flickering');

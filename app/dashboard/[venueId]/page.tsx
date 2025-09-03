@@ -83,7 +83,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       .gte("created_at", todayWindow.startUtcISO)
       .lt("created_at", todayWindow.endUtcISO);
 
-    // Calculate revenue from today's paid orders only
+    // Calculate revenue from today's orders (all are now paid since they only appear after payment)
     const todayRevenue = (todayOrders ?? []).reduce((sum: number, order: any) => {
       let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
       if (!Number.isFinite(amount) || amount <= 0) {
@@ -95,9 +95,8 @@ export default async function VenuePage({ params }: { params: { venueId: string 
           }, 0);
         }
       }
-      const ps = String(order.payment_status ?? '').toLowerCase();
-      const st = String(order.status ?? '').toLowerCase();
-      return (ps === 'paid' || st === 'paid') ? sum + amount : sum;
+      // All orders are now paid since they only appear after payment
+      return sum + amount;
     }, 0);
 
     // Get menu items count
@@ -110,10 +109,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const initialStats = {
       revenue: todayRevenue,
       menuItems: menuItems?.length || 0,
-      unpaid: (todayOrders ?? []).filter((o: any) => 
-        String(o.payment_status ?? '').toLowerCase() !== 'paid' && 
-        String(o.status ?? '').toLowerCase() !== 'paid'
-      ).length,
+      unpaid: 0, // All orders are now paid since they only appear after payment
     };
 
     console.log('[VENUE PAGE] Dashboard counts:', counts);
