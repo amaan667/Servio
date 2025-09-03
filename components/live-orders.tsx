@@ -122,187 +122,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const ACTIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
 
-  // Network status monitoring
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Auto-refresh functionality
-  useEffect(() => {
-    if (!autoRefreshEnabled) {
-      if (autoRefreshRef.current) {
-        clearInterval(autoRefreshRef.current);
-        autoRefreshRef.current = null;
-      }
-      return;
-    }
-
-    autoRefreshRef.current = setInterval(() => {
-      console.log("LIVE_ORDERS: Auto-refreshing orders");
-      fetchOrders();
-    }, refreshInterval);
-
-    return () => {
-      if (autoRefreshRef.current) {
-        clearInterval(autoRefreshRef.current);
-        autoRefreshRef.current = null;
-      }
-    };
-  }, [autoRefreshEnabled, refreshInterval, fetchOrders]);
-
-  // Check for new orders
-  useEffect(() => {
-    if (orders.length > lastOrderCountRef.current && lastOrderCountRef.current > 0) {
-      setHasNewOrders(true);
-      // Auto-clear notification after 5 seconds
-      setTimeout(() => setHasNewOrders(false), 5000);
-    }
-    lastOrderCountRef.current = orders.length;
-  }, [orders.length]);
-
-  // Test dashboard counts function
-  useEffect(() => {
-    const testDashboardCounts = async () => {
-      try {
-        const supabase = createClient();
-        if (!supabase) return;
-
-        console.log("LIVE_ORDERS: Testing dashboard_counts function");
-        
-        const { data: countsData, error: countsError } = await supabase
-          .rpc('dashboard_counts', { 
-            p_venue_id: venueId, 
-            p_tz: 'Europe/London', 
-            p_live_window_mins: 30 
-          })
-          .single();
-        
-        if (countsError) {
-          console.error("LIVE_ORDERS: dashboard_counts function test failed", { 
-            error: countsError.message, 
-            code: countsError.code 
-          });
-        } else {
-          console.log("LIVE_ORDERS: dashboard_counts function test successful", countsData);
-        }
-      } catch (error) {
-        console.error("LIVE_ORDERS: dashboard_counts function test exception", error);
-      }
-    };
-
-    testDashboardCounts();
-  }, [venueId]);
-
-  // Debug function to test basic database connectivity
-  useEffect(() => {
-    const debugDatabase = async () => {
-      try {
-        const supabase = createClient();
-        if (!supabase) return;
-
-        console.log("LIVE_ORDERS: Testing basic database connectivity");
-        
-        // Test 1: Check if we can connect to orders table
-        const { data: ordersTest, error: ordersError } = await supabase
-          .from("orders")
-          .select("id, venue_id, order_status")
-          .limit(5);
-        
-        if (ordersError) {
-          console.error("LIVE_ORDERS: Orders table test failed", { error: ordersError.message, code: ordersError.code });
-        } else {
-          console.log("LIVE_ORDERS: Orders table test successful", { 
-            count: ordersTest?.length || 0,
-            sample: ordersTest?.slice(0, 2) || []
-          });
-        }
-
-        // Test 2: Check if we can connect to venues table
-        const { data: venuesTest, error: venuesError } = await supabase
-          .from("venues")
-          .select("venue_id, name")
-          .limit(5);
-        
-        if (venuesError) {
-          console.error("LIVE_ORDERS: Venues table test failed", { error: venuesError.message, code: venuesError.code });
-        } else {
-          console.log("LIVE_ORDERS: Venues table test successful", { 
-            count: venuesTest?.length || 0,
-            sample: venuesTest?.slice(0, 2) || []
-          });
-        }
-
-      } catch (error) {
-        console.error("LIVE_ORDERS: Database debug test exception", error);
-      }
-    };
-
-    debugDatabase();
-  }, [venueId]);
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'PLACED':
-        return <Clock className="h-3 w-3" />;
-      case 'ACCEPTED':
-        return <CheckCircle className="h-3 w-3" />;
-      case 'IN_PREP':
-        return <RefreshCw className="h-3 w-3" />;
-      case 'READY':
-        return <CheckCircle className="h-3 w-3" />;
-      case 'OUT_FOR_DELIVERY':
-        return <Clock className="h-3 w-3" />;
-      case 'SERVING':
-        return <CheckCircle className="h-3 w-3" />;
-      case 'COMPLETED':
-        return <CheckCircle className="h-3 w-3" />;
-      case 'CANCELLED':
-        return <XCircle className="h-3 w-3" />;
-      case 'REFUNDED':
-        return <XCircle className="h-3 w-3" />;
-      case 'EXPIRED':
-        return <AlertTriangle className="h-3 w-3" />;
-      default:
-        return <Clock className="h-3 w-3" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PLACED':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'ACCEPTED':
-        return 'bg-blue-100 text-blue-800';
-      case 'IN_PREP':
-        return 'bg-orange-100 text-orange-800';
-      case 'READY':
-        return 'bg-green-100 text-green-800';
-      case 'OUT_FOR_DELIVERY':
-        return 'bg-purple-100 text-purple-800';
-      case 'SERVING':
-        return 'bg-green-100 text-green-800';
-      case 'COMPLETED':
-        return 'bg-green-100 text-green-800';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800';
-      case 'REFUNDED':
-        return 'bg-red-100 text-red-800';
-      case 'EXPIRED':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
+  // Define fetch functions first to avoid circular dependencies
   const fetchLiveOrders = useCallback(async () => {
     const supabase = createClient();
     
@@ -509,10 +329,143 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     }
   }, [activeTab, fetchLiveOrders, fetchTodayOrders, fetchHistoryOrders]);
 
+  // Store fetchOrders in a ref to avoid circular dependencies
+  const fetchOrdersRef = useRef(fetchOrders);
+  fetchOrdersRef.current = fetchOrders;
+
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (!autoRefreshEnabled) {
+      if (autoRefreshRef.current) {
+        clearInterval(autoRefreshRef.current);
+        autoRefreshRef.current = null;
+      }
+      return;
+    }
+
+    autoRefreshRef.current = setInterval(() => {
+      console.log("LIVE_ORDERS: Auto-refreshing orders");
+      fetchOrdersRef.current();
+    }, refreshInterval);
+
+    return () => {
+      if (autoRefreshRef.current) {
+        clearInterval(autoRefreshRef.current);
+        autoRefreshRef.current = null;
+      }
+    };
+  }, [autoRefreshEnabled, refreshInterval]);
+
+  // Check for new orders
+  useEffect(() => {
+    if (orders.length > lastOrderCountRef.current && lastOrderCountRef.current > 0) {
+      setHasNewOrders(true);
+      // Auto-clear notification after 5 seconds
+      setTimeout(() => setHasNewOrders(false), 5000);
+    }
+    lastOrderCountRef.current = orders.length;
+  }, [orders.length]);
+
+  // Test dashboard counts function
+  useEffect(() => {
+    const testDashboardCounts = async () => {
+      try {
+        const supabase = createClient();
+        if (!supabase) return;
+
+        console.log("LIVE_ORDERS: Testing dashboard_counts function");
+        
+        const { data: countsData, error: countsError } = await supabase
+          .rpc('dashboard_counts', { 
+            p_venue_id: venueId, 
+            p_tz: 'Europe/London', 
+            p_live_window_mins: 30 
+          })
+          .single();
+        
+        if (countsError) {
+          console.error("LIVE_ORDERS: dashboard_counts function test failed", { 
+            error: countsError.message, 
+            code: countsError.code 
+          });
+        } else {
+          console.log("LIVE_ORDERS: dashboard_counts function test successful", countsData);
+        }
+      } catch (error) {
+        console.error("LIVE_ORDERS: dashboard_counts function test exception", error);
+      }
+    };
+
+    testDashboardCounts();
+  }, [venueId]);
+
+  // Debug function to test basic database connectivity
+  useEffect(() => {
+    const debugDatabase = async () => {
+      try {
+        const supabase = createClient();
+        if (!supabase) return;
+
+        console.log("LIVE_ORDERS: Testing basic database connectivity");
+        
+        // Test 1: Check if we can connect to orders table
+        const { data: ordersTest, error: ordersError } = await supabase
+          .from("orders")
+          .select("id, venue_id, order_status")
+          .limit(5);
+        
+        if (ordersError) {
+          console.error("LIVE_ORDERS: Orders table test failed", { error: ordersError.message, code: ordersError.code });
+        } else {
+          console.log("LIVE_ORDERS: Orders table test successful", { 
+            count: ordersTest?.length || 0,
+            sample: ordersTest?.slice(0, 2) || []
+          });
+        }
+
+        // Test 2: Check if we can connect to venues table
+        const { data: venuesTest, error: venuesError } = await supabase
+          .from("venues")
+          .select("venue_id, name")
+          .limit(5);
+        
+        if (venuesError) {
+          console.error("LIVE_ORDERS: Venues table test failed", { error: venuesError.message, code: venuesError.code });
+        } else {
+          console.log("LIVE_ORDERS: Venues table test successful", { 
+            count: venuesTest?.length || 0,
+            sample: venuesTest?.slice(0, 2) || []
+          });
+        }
+
+      } catch (error) {
+        console.error("LIVE_ORDERS: Database debug test exception", error);
+      }
+    };
+
+    debugDatabase();
+  }, [venueId]);
+
+  // Initial fetch and tab change handling
   useEffect(() => {
     fetchOrders();
   }, [activeTab, fetchOrders]);
 
+  // Real-time subscription
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) return;
@@ -534,7 +487,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             payload,
           );
           // Refetch for all tabs to keep counts accurate
-          fetchOrders();
+          fetchOrdersRef.current();
         },
       )
       .subscribe((status: any) => {
@@ -547,7 +500,61 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         createClient().removeChannel(channel);
       }
     };
-  }, [fetchOrders, venueId]);
+  }, [venueId]);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'PLACED':
+        return <Clock className="h-3 w-3" />;
+      case 'ACCEPTED':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'IN_PREP':
+        return <RefreshCw className="h-3 w-3" />;
+      case 'READY':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'OUT_FOR_DELIVERY':
+        return <Clock className="h-3 w-3" />;
+      case 'SERVING':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'COMPLETED':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'CANCELLED':
+        return <XCircle className="h-3 w-3" />;
+      case 'REFUNDED':
+        return <XCircle className="h-3 w-3" />;
+      case 'EXPIRED':
+        return <AlertTriangle className="h-3 w-3" />;
+      default:
+        return <Clock className="h-3 w-3" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PLACED':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'ACCEPTED':
+        return 'bg-blue-100 text-blue-800';
+      case 'IN_PREP':
+        return 'bg-orange-100 text-orange-800';
+      case 'READY':
+        return 'bg-green-100 text-green-800';
+      case 'OUT_FOR_DELIVERY':
+        return 'bg-purple-100 text-purple-800';
+      case 'SERVING':
+        return 'bg-green-100 text-green-800';
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800';
+      case 'REFUNDED':
+        return 'bg-red-100 text-red-800';
+      case 'EXPIRED':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const updateOrderStatus = async (orderId: string, newOrderStatus: string) => {
     console.log("LIVE_ORDERS: Updating order status", { orderId, newOrderStatus });
@@ -581,7 +588,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         });
         setError(`Failed to update order: ${error.message}`);
         // Revert optimistic update on error
-        fetchOrders();
+        fetchOrdersRef.current();
       } else {
         console.log("LIVE_ORDERS: Order status updated successfully", {
           orderId,
@@ -596,7 +603,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       );
       setError("An unexpected error occurred.");
       // Revert optimistic update on error
-      fetchOrders();
+      fetchOrdersRef.current();
     } finally {
       setUpdating(null);
     }
@@ -832,7 +839,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                   onClick={() => {
                     setShowDemoOrders(false);
                     setOrders([]);
-                    fetchOrders();
+                    fetchOrdersRef.current();
                   }}
                   className="ml-2"
                 >
@@ -858,7 +865,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                     variant="outline" 
                     onClick={() => {
                       setError(null);
-                      fetchOrders();
+                      fetchOrdersRef.current();
                     }}
                     className="ml-2"
                   >
