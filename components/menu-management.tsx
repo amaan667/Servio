@@ -92,18 +92,15 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
 
   const venueUuid = session.venue.id;
 
-  const fetchMenu = useCallback(async () => {
-    logger.info("Fetching menu items", { venueUuid });
-
-    setLoading(true);
-    setError(null);
-
+  const fetchMenu = async () => {
     if (!supabase) {
-      logger.error("Supabase not configured");
-      setError("Service is not configured.");
+      console.log('[AUTH DEBUG] No Supabase client available');
+      setError("Supabase client not available.");
       setLoading(false);
       return;
     }
+
+    console.log('[AUTH DEBUG] Fetching menu for venue:', venueId, 'venueUuid:', venueUuid);
 
     try {
       const { data, error } = await supabase
@@ -113,6 +110,14 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
         .order("position", { ascending: true, nullsFirst: true })
         .order("category", { ascending: true })
         .order("name", { ascending: true });
+
+      console.log('[AUTH DEBUG] Menu query result:', { 
+        dataCount: data?.length || 0, 
+        error: error?.message,
+        venueId,
+        venueUuid,
+        query: `SELECT * FROM menu_items WHERE venue_id = '${venueUuid}'`
+      });
 
       if (error) {
         logger.error("Failed to fetch menu from Supabase", {
@@ -127,6 +132,31 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
           categories: [...new Set(data?.map((item) => item.category) || [])],
         });
         setMenuItems(data || []);
+        
+        // Debug: Log the actual items found
+        if (data && data.length > 0) {
+          console.log('[AUTH DEBUG] Found menu items:', data.map(item => ({
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            venue_id: item.venue_id,
+            created_at: item.created_at
+          })));
+        } else {
+          console.log('[AUTH DEBUG] No menu items found for venue:', venueUuid);
+          
+          // Try to check if there are any menu items at all in the database
+          const { data: allItems, error: allItemsError } = await supabase
+            .from("menu_items")
+            .select("venue_id, COUNT(*)")
+            .group("venue_id");
+          
+          if (allItemsError) {
+            console.log('[AUTH DEBUG] Could not check total items:', allItemsError.message);
+          } else {
+            console.log('[AUTH DEBUG] Total menu items by venue:', allItems);
+          }
+        }
       }
     } catch (error: any) {
       logger.error("Unexpected error fetching menu", { error });
@@ -134,7 +164,7 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
     } finally {
       setLoading(false);
     }
-  }, [venueUuid]);
+  };
 
   useEffect(() => {
     fetchMenu();
