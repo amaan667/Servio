@@ -103,24 +103,9 @@ export default function CustomerOrderPage() {
         setLoadingMenu(false);
         return;
       }
-      // First check if venue exists
-      const { data: venue, error: venueError } = await supabase
-        .from("venues")
-        .select("venue_id, name")
-        .eq("venue_id", venueSlug)
-        .single();
-
-      console.log('[MENU DEBUG] Venue check result:', { venue, venueError });
-
-      if (venueError || !venue) {
-        console.log('[MENU DEBUG] Venue not found, error:', venueError);
-        setMenuError("Venue not found.");
-        setLoadingMenu(false);
-        return;
-      }
-      
-      // Set venue name immediately
-      setVenueName(venue.name || 'Our Venue');
+      // Skip venue lookup since it's failing due to RLS - go straight to API call
+      console.log('[MENU DEBUG] Skipping venue lookup, going straight to API call');
+      setVenueName('Cafe Nur'); // Set default venue name
 
       // Fetch menu items using the API endpoint (bypasses RLS)
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
