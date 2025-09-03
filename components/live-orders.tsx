@@ -119,8 +119,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     }
   ];
 
-  const ACTIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
-  const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
+  const ACTIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY'];
+  const TERMINAL_STATUSES = ['SERVING', 'COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
 
   // Define fetch functions first to avoid circular dependencies
   const fetchLiveOrders = useCallback(async () => {
@@ -609,17 +609,17 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     }
   };
 
-  // Get badge counts for each tab
+  // Get badge counts for each tab - FIXED LOGIC
   const getLiveOrdersCount = () => {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
     return orders.filter(order => {
-      // Count active orders
+      // Count only truly active orders
       if (ACTIVE_STATUSES.includes(order.order_status)) {
         return true;
       }
       
-      // Count completed orders from the last 30 minutes
+      // Count only very recent completed orders (within last 30 minutes)
       if (order.order_status === 'COMPLETED') {
         const orderCreatedAt = new Date(order.created_at);
         return orderCreatedAt >= thirtyMinutesAgo;
@@ -634,7 +634,6 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
     return orders.filter(order => {
       const orderDate = new Date(order.created_at);
@@ -642,19 +641,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       const isTodayOrder = (orderDate >= today && orderDate < tomorrow) || 
                           (scheduledDate && scheduledDate >= today && scheduledDate < tomorrow);
       
-      // For completed orders, only count them in today if they're older than 30 minutes
-      if (order.order_status === 'COMPLETED') {
-        const orderCreatedAt = new Date(order.created_at);
-        // Only count in today if it's older than 30 minutes (otherwise it stays in live)
-        return isTodayOrder && orderCreatedAt < thirtyMinutesAgo;
-      }
-      
-      // For other terminal statuses, count them in today
-      if (TERMINAL_STATUSES.includes(order.order_status)) {
-        return isTodayOrder;
-      }
-      
-      // For active orders, count them in today
+      // Count all orders from today, regardless of status
       return isTodayOrder;
     }).length;
   };
@@ -662,22 +649,14 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const getHistoryOrdersCount = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
     return orders.filter(order => {
-      // Only count terminal status orders
+      // Only count terminal status orders from previous days
       if (!TERMINAL_STATUSES.includes(order.order_status)) {
         return false;
       }
       
       const orderCreatedAt = new Date(order.created_at);
-      
-      // For completed orders, only count them in history if they're older than 30 minutes
-      if (order.order_status === 'COMPLETED') {
-        return orderCreatedAt < thirtyMinutesAgo && orderCreatedAt < today;
-      }
-      
-      // For other terminal statuses, count them in history if they're from previous days
       return orderCreatedAt < today;
     }).length;
   };
