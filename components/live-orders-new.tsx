@@ -22,6 +22,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'live' | 'earlier' | 'history'>('live');
+  // Local counts to ensure UI stays correct even if RPC isn't updated in DB yet
+  const [localCounts, setLocalCounts] = useState<{ live_count: number; earlier_today_count: number; history_count: number } | null>(null);
 
   // Use the new RPC-based tab counts
   const { data: tabCounts, isLoading: countsLoading, refetch: refetchCounts } = useTabCounts(venueId, venueTimezone, 30);
@@ -275,23 +277,75 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     }
   }, [venueId, venueTimezone, todayBoundsCorrected]);
 
-  // Auto-refresh orders every 15 seconds to handle aging orders
+  // Recalculate counts locally (authoritative in UI)
+  const recalcLocalCounts = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      if (!supabase) return;
+
+      const { startUtc, endUtc } = todayBoundsCorrected(venueTimezone);
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+      // Count today total
+      const todayTotalPromise = supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('venue_id', venueId)
+        .gte('created_at', startUtc)
+        .lt('created_at', endUtc);
+
+      // Count live-eligible = active OR recent served/completed within 30m
+      const liveEligiblePromise = supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('venue_id', venueId)
+        .gte('created_at', startUtc)
+        .lt('created_at', endUtc)
+        .gte('created_at', thirtyMinutesAgo)
+        .or(`order_status.in.(${[...ACTIVE_STATUSES, ...RECENT_TERMINAL_IN_LIVE].join(',')}),status.in.(${[...ACTIVE_STATUSES, ...RECENT_TERMINAL_IN_LIVE].join(',')})`);
+
+      // Count history = all orders before today (regardless of status)
+      const historyPromise = supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('venue_id', venueId)
+        .lt('created_at', startUtc);
+
+      const [{ count: todayTotal }, { count: liveEligible }, { count: historyCount }] = await Promise.all([
+        todayTotalPromise,
+        liveEligiblePromise,
+        historyPromise,
+      ]);
+
+      const live_count = liveEligible || 0;
+      const earlier_today_count = Math.max(0, (todayTotal || 0) - (liveEligible || 0));
+      const history_count = historyCount || 0;
+
+      setLocalCounts({ live_count, earlier_today_count, history_count });
+    } catch (err) {
+      console.error('[LIVE_ORDERS] Failed to recalc local counts', err);
+    }
+  }, [venueId, venueTimezone, todayBoundsCorrected, ACTIVE_STATUSES]);
+
+  // Auto-refresh orders and counts every 15 seconds to handle aging orders
   useEffect(() => {
     const interval = setInterval(() => {
       console.log('[LIVE_ORDERS] Auto-refreshing orders due to time passage...');
       fetchOrders(activeTab);
       refetchCounts();
+      recalcLocalCounts();
     }, 15000); // Every 15s
 
     return () => clearInterval(interval);
-  }, [fetchOrders, activeTab, refetchCounts]);
+  }, [fetchOrders, activeTab, refetchCounts, recalcLocalCounts]);
 
   console.log('[LIVE_ORDERS] Component mounted with venueId:', venueId);
 
   // Fetch orders when tab changes
   useEffect(() => {
     fetchOrders(activeTab);
-  }, [activeTab, fetchOrders]);
+    recalcLocalCounts();
+  }, [activeTab, fetchOrders, recalcLocalCounts]);
 
   // Set up real-time subscription
   useEffect(() => {
@@ -313,7 +367,9 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         () => {
           // Refresh orders when any order changes
           fetchOrders(activeTab);
-          // Tab counts are automatically updated via useCountsRealtime
+          // Update counts (both RPC and local)
+          refetchCounts();
+          recalcLocalCounts();
         }
       )
       .subscribe();
@@ -344,7 +400,20 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   const getTabCount = (tab: 'live' | 'earlier' | 'history') => {
     console.log(`[TAB_COUNT_DEBUG] Getting count for tab: ${tab}`);
     console.log(`[TAB_COUNT_DEBUG] tabCounts:`, tabCounts);
-    
+    // Prefer local counts when available to ensure correctness
+    if (localCounts) {
+      switch (tab) {
+        case 'live':
+          return localCounts.live_count;
+        case 'earlier':
+          return localCounts.earlier_today_count;
+        case 'history':
+          return localCounts.history_count;
+        default:
+          return 0;
+      }
+    }
+
     if (!tabCounts) {
       console.log(`[TAB_COUNT_DEBUG] No tabCounts, returning 0`);
       return 0;
@@ -433,7 +502,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
               {getTabIcon(tab)}
               <span className="font-medium">{getTabLabel(tab)}</span>
               <Badge variant="secondary" className="ml-1">
-                {countsLoading ? '...' : tabCounts ? getTabCount(tab) : '?'}
+                {localCounts ? getTabCount(tab) : (countsLoading ? '...' : tabCounts ? getTabCount(tab) : '?')}
               </Badge>
             </Button>
           ))}
