@@ -76,6 +76,34 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [recentlyUpdatedOrders, setRecentlyUpdatedOrders] = useState<Set<string>>(new Set());
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
+  // Add comprehensive logging function
+  const logTabState = useCallback(() => {
+    console.log("🔍 [TAB STATE DEBUG] Current tab state:", {
+      activeTab,
+      liveOrdersCount: orders.length,
+      allOrdersCount: allOrders.length,
+      liveOrders: orders.map(o => ({
+        id: o.id,
+        status: o.order_status,
+        customer: o.customer_name,
+        created: o.created_at,
+        age: Math.round((Date.now() - new Date(o.created_at).getTime()) / (1000 * 60))
+      })),
+      allOrders: allOrders.map(o => ({
+        id: o.id,
+        status: o.order_status,
+        customer: o.customer_name,
+        created: o.created_at,
+        age: Math.round((Date.now() - new Date(o.created_at).getTime()) / (1000 * 60))
+      }))
+    });
+  }, [activeTab, orders, allOrders]);
+
+  // Log state changes whenever orders or allOrders change
+  useEffect(() => {
+    logTabState();
+  }, [orders, allOrders, activeTab, logTabState]);
+
   // Demo orders for when database is unavailable
   const demoOrders: OrderWithItems[] = [
     {
@@ -251,9 +279,14 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       setOrders(liveOrders as OrderWithItems[]);
       setLastUpdate(new Date());
       
-      console.log("LIVE_ORDERS: Live orders set successfully", {
+      console.log("🔍 [FETCH DEBUG] Live orders fetched and set:", {
         liveOrdersCount: liveOrders.length,
-        expectedCount: 0 // Based on your requirement
+        orders: liveOrders.map(o => ({
+          id: o.id,
+          status: o.order_status,
+          customer: o.customer_name,
+          created: o.created_at
+        }))
       });
 
     } catch (error: any) {
@@ -304,16 +337,17 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         console.error("LIVE_ORDERS: Failed to fetch today's orders", { error: ordersError.message });
         setError("Failed to load orders.");
       } else {
-        console.log("LIVE_ORDERS: Today's orders fetched successfully", {
+        console.log("🔍 [FETCH DEBUG] Today's orders fetched and set:", {
           orderCount: ordersData?.length || 0,
           orders: ordersData?.map(o => ({
             id: o.id,
             status: o.order_status,
+            customer: o.customer_name,
             created: o.created_at,
             age: Math.round((Date.now() - new Date(o.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' days ago'
           })) || []
         });
-        setOrders((ordersData || []) as OrderWithItems[]);
+        setAllOrders((ordersData || []) as OrderWithItems[]);
         setLastUpdate(new Date());
       }
     } catch (error: any) {
@@ -1026,7 +1060,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           {/* Tab Navigation */}
           <div className="flex space-x-1 border-b">
             <button
-              onClick={() => setActiveTab('live')}
+              onClick={() => {
+                console.log("🔍 [TAB CLICK] Switching to LIVE tab");
+                setActiveTab('live');
+              }}
               className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
                 activeTab === 'live'
                   ? 'bg-servio-purple text-white border-b-2 border-servio-purple'
@@ -1041,7 +1078,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
               )}
             </button>
             <button
-              onClick={() => setActiveTab('today')}
+              onClick={() => {
+                console.log("🔍 [TAB CLICK] Switching to TODAY tab");
+                setActiveTab('today');
+              }}
               className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
                 activeTab === 'today'
                   ? 'bg-servio-purple text-white border-b-2 border-servio-purple'
@@ -1154,11 +1194,21 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                 if (activeTab === 'live') {
                   // Live tab: Only show live orders (active orders within 30 minutes)
                   ordersToShow = orders;
-                  console.log("LIVE_ORDERS: Rendering live tab with", ordersToShow.length, "orders");
+                  console.log("🔍 [TAB RENDER] LIVE tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
+                    id: o.id,
+                    status: o.order_status,
+                    customer: o.customer_name,
+                    created: o.created_at
+                  })));
                 } else if (activeTab === 'today') {
                   // Today tab: Show all today's orders (including completed ones)
                   ordersToShow = allOrders;
-                  console.log("LIVE_ORDERS: Rendering today tab with", ordersToShow.length, "orders");
+                  console.log("🔍 [TAB RENDER] TODAY tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
+                    id: o.id,
+                    status: o.order_status,
+                    customer: o.customer_name,
+                    created: o.created_at
+                  })));
                 } else if (activeTab === 'history') {
                   // History tab: Show orders from previous days
                   const today = new Date();
@@ -1166,7 +1216,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                   ordersToShow = allOrders.filter(order => 
                     new Date(order.created_at) < today
                   );
-                  console.log("LIVE_ORDERS: Rendering history tab with", ordersToShow.length, "orders");
+                  console.log("🔍 [TAB RENDER] HISTORY tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
+                    id: o.id,
+                    status: o.order_status,
+                    customer: o.customer_name,
+                    created: o.created_at
+                  })));
                 }
                 
                 if (ordersToShow.length === 0) {
