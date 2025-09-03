@@ -147,6 +147,11 @@ export default function CustomerOrderPage() {
       }
       
       setLoadingMenu(false);
+      // Clear the timeout since we successfully loaded the menu
+      if (window.menuLoadTimeout) {
+        clearTimeout(window.menuLoadTimeout);
+        window.menuLoadTimeout = null;
+      }
     } catch (err: any) {
       setMenuError(`Error loading menu: ${err.message}`);
       setLoadingMenu(false);
@@ -160,7 +165,7 @@ export default function CustomerOrderPage() {
     loadMenuItems();
     
     // Add timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
+    window.menuLoadTimeout = setTimeout(() => {
       if (loadingMenu) {
         console.log('[MENU DEBUG] Loading timeout reached, forcing stop');
         setLoadingMenu(false);
@@ -168,7 +173,12 @@ export default function CustomerOrderPage() {
       }
     }, 10000); // 10 second timeout
     
-    return () => clearTimeout(timeout);
+    return () => {
+      if (window.menuLoadTimeout) {
+        clearTimeout(window.menuLoadTimeout);
+        window.menuLoadTimeout = null;
+      }
+    };
   }, [venueSlug, isLoggedIn]);
 
   // Debug state changes
