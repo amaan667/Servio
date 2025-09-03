@@ -139,7 +139,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       console.log('[LIVE ORDERS DEBUG] Window start:', window.startUtcISO);
       console.log('[LIVE ORDERS DEBUG] Window end:', window.endUtcISO);
       
-      // Load live orders - orders placed within the last 30 minutes with live statuses OR completed orders from last 30 minutes
+      // Load live orders - orders placed within the last 30 minutes with ACTIVE statuses only (never completed orders)
       console.log('[LIVE ORDERS DEBUG] Fetching live orders for venueId:', venueId);
       console.log('[LIVE ORDERS DEBUG] LIVE_STATUSES:', LIVE_STATUSES);
       console.log('[LIVE ORDERS DEBUG] Current time:', new Date().toISOString());
@@ -151,7 +151,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .or(`order_status.in.(${LIVE_STATUSES.join(',')}),and(order_status.eq.COMPLETED,created_at.gte.${liveOrdersCutoff})`)
+        .in('order_status', LIVE_STATUSES)
+        .gte('created_at', liveOrdersCutoff)
         .order('created_at', { ascending: false });
 
       // Load all orders from today (venue timezone aware)
@@ -366,9 +367,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             const isLiveOrder = LIVE_STATUSES.includes(newOrder.order_status);
             const orderCreatedAt = new Date(newOrder.created_at);
             const isRecentOrder = orderCreatedAt > new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
-            const isCompletedRecent = newOrder.order_status === 'COMPLETED' && isRecentOrder;
             
-            if ((isLiveOrder && isRecentOrder) || isCompletedRecent) {
+            // CRITICAL: Completed orders should NEVER be in live orders
+            if (isLiveOrder && isRecentOrder) {
               // Add to live orders if not already there
               setOrders(prev => {
                 const exists = prev.find(order => order.id === newOrder.id);
@@ -431,17 +432,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setOrders(prevOrders => {
         const stillLive = prevOrders.filter(order => {
           const orderCreatedAt = new Date(order.created_at);
-          return orderCreatedAt > cutoff;
+          // Keep order in live if it's both recent AND active
+          return orderCreatedAt > cutoff && LIVE_STATUSES.includes(order.order_status);
         });
         
         const movedToAllToday = prevOrders.filter(order => {
           const orderCreatedAt = new Date(order.created_at);
-          return orderCreatedAt <= cutoff;
+          // Move order if it's either old OR completed
+          return orderCreatedAt <= cutoff || !LIVE_STATUSES.includes(order.order_status);
         });
         
-        // Move aged-out orders to all today
+        // Move aged-out or completed orders to all today
         if (movedToAllToday.length > 0) {
-          console.log('[LIVE ORDERS DEBUG] Moving aged orders from live to all today:', movedToAllToday.length);
+          console.log('[LIVE ORDERS DEBUG] Moving orders from live to all today:', movedToAllToday.length);
           setAllTodayOrders(prev => [...movedToAllToday, ...prev]);
         }
         
@@ -669,8 +672,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             <div className="text-sm text-blue-800">
               <p className="font-medium mb-1">Order Categorization:</p>
               <ul className="space-y-1 text-xs">
-                <li><strong>Live Orders:</strong> Orders placed within the last 30 minutes with active status OR completed orders from the last 30 minutes</li>
-                <li><strong>Earlier Today:</strong> Orders from today that are not in live orders (excluding recent completed orders)</li>
+                <li><strong>Live Orders:</strong> Orders placed within the last 30 minutes with ACTIVE status only (never completed orders)</li>
+                <li><strong>Earlier Today:</strong> Orders from today that are not in live orders (including completed orders)</li>
                 <li><strong>History:</strong> Orders from previous days</li>
               </ul>
             </div>
