@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, User, Hash, ChefHat, UtensilsCrossed, Truck, Coffee } from "lucide-react";
 import PaymentSimulation from "@/components/payment-simulation";
 import SimpleFeedbackForm from "@/components/SimpleFeedbackForm";
+import { createClient } from "@/lib/supabase/client";
 
 interface OrderSummary {
   id: string;
@@ -27,6 +28,7 @@ interface OrderSummary {
     image?: string;
   }>;
   created_at: string;
+  updated_at?: string;
   notes?: string;
 }
 
@@ -64,14 +66,14 @@ export default function OrderSummaryPage() {
   const isDemo = venueId === 'demo-cafe' || orderId.startsWith('demo-');
   
   if (isDemo) {
-    return <DemoOrderSummaryClient venueId={venueId} tableId={tableId} orderId={orderId} />;
+    return <DemoOrderSummaryClient venueId={venueId} tableId={tableId} orderId={orderId} isDemo={true} />;
   }
   
   // For real orders, handle them directly
   return <RealOrderSummaryClient venueId={venueId} tableId={tableId} orderId={orderId} />;
 }
 
-function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string; tableId: string; orderId: string }) {
+function DemoOrderSummaryClient({ venueId, tableId, orderId, isDemo }: { venueId: string; tableId: string; orderId: string; isDemo: boolean }) {
   const router = useRouter();
   const [order, setOrder] = useState<OrderSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,27 +111,44 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
     fetchOrder();
   }, [orderId]);
 
-  // Simulate order status progression
+  // Set up real-time subscription for order status updates
   useEffect(() => {
-    if (!order) return;
+    if (!orderId || !venueId) return;
 
-    const statusProgression = [
-      { status: "ACCEPTED", delay: 5000, label: "Order Accepted" },
-      { status: "IN_PREP", delay: 15000, label: "In Preparation" },
-      { status: "READY", delay: 30000, label: "Ready for Pickup" },
-      { status: "SERVING", delay: 45000, label: "Being Served" },
-      { status: "COMPLETED", delay: 60000, label: "Order Completed" }
-    ];
+    const supabase = createClient();
+    if (!supabase) return;
 
-    statusProgression.forEach(({ status, delay, label }) => {
-      const timer = setTimeout(() => {
-        setCurrentStatus(status);
-        console.log(`[DEMO STATUS] ${label}`);
-      }, delay);
+    console.log('[DEMO ORDER SUMMARY] Setting up real-time subscription for order:', orderId);
 
-      return () => clearTimeout(timer);
-    });
-  }, [order]);
+    const channel = supabase
+      .channel(`order-status-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload: any) => {
+          console.log('[DEMO ORDER SUMMARY] Order status updated via real-time:', payload);
+          if (payload.new && payload.new.order_status) {
+            setCurrentStatus(payload.new.order_status);
+            console.log('[DEMO ORDER SUMMARY] Updated status to:', payload.new.order_status);
+          }
+        }
+      )
+      .subscribe((status: any) => {
+        console.log('[DEMO ORDER SUMMARY] Real-time subscription status:', status);
+      });
+
+    return () => {
+      console.log('[DEMO ORDER SUMMARY] Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, venueId]);
+
+  // Real-time updates now handle status progression instead of demo timers
 
   const handleOrderAgain = () => {
     router.replace(`/order?demo=1`);
@@ -324,15 +343,7 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <Button onClick={handleOrderAgain} className="w-full bg-purple-600 hover:bg-purple-700">
-                Order Again
-              </Button>
-              
-              <div className="text-center">
-                <p className="text-sm text-gray-500">
-                  This is a demo order. In a real scenario, your order would be sent to the kitchen.
-                </p>
-              </div>
+              {/* Order Again button is now shown under the feedback form after payment completion */}
             </div>
           </div>
 
@@ -348,11 +359,16 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
 
             {/* Feedback Form */}
             {showFeedback && (
-              <SimpleFeedbackForm 
-                venueId={venueId} 
-                orderId={orderId}
-                onSubmit={() => setShowFeedback(false)}
-              />
+              <div className="space-y-4">
+                <SimpleFeedbackForm 
+                  venueId={venueId} 
+                  orderId={orderId}
+                  onSubmit={() => setShowFeedback(false)}
+                />
+                <Button onClick={handleOrderAgain} className="w-full bg-purple-600 hover:bg-purple-700">
+                  Order Again
+                </Button>
+              </div>
             )}
 
             {/* Order Status Timeline - Only show after payment completion */}
@@ -364,16 +380,48 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
                 <CardContent>
                   <div className="space-y-3">
                     {[
-                      { status: "PLACED", label: "Order Placed", time: "Now", icon: Clock },
-                      { status: "ACCEPTED", label: "Order Accepted", time: "+5s", icon: CheckCircle },
-                      { status: "IN_PREP", label: "In Preparation", time: "+15s", icon: ChefHat },
-                      { status: "READY", label: "Ready for Pickup", time: "+30s", icon: UtensilsCrossed },
-                      { status: "SERVING", label: "Being Served", time: "+45s", icon: Truck },
-                      { status: "COMPLETED", label: "Order Completed", time: "+60s", icon: CheckCircle }
+                      { status: "PLACED", label: "Order Placed", icon: Clock },
+                      { status: "ACCEPTED", label: "Order Accepted", icon: CheckCircle },
+                      { status: "IN_PREP", label: "In Preparation", icon: ChefHat },
+                      { status: "READY", label: "Ready for Pickup", icon: UtensilsCrossed },
+                      { status: "SERVING", label: "Being Served", icon: Truck },
+                      { status: "COMPLETED", label: "Order Completed", icon: CheckCircle }
                     ].map((step, index) => {
                       const isActive = currentStatus === step.status;
                       const isCompleted = ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(step.status) <= 
                         ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(currentStatus);
+                      
+                      // Calculate relative time for completed steps
+                      const getTimeDisplay = (status: string) => {
+                        if (status === "PLACED") return "Now";
+                        if (!isCompleted) return "Pending";
+                        
+                        // For demo orders, show estimated times
+                        if (isDemo) {
+                          const timeMap: { [key: string]: string } = {
+                            "ACCEPTED": "+5s",
+                            "IN_PREP": "+15s", 
+                            "READY": "+30s",
+                            "SERVING": "+45s",
+                            "COMPLETED": "+60s"
+                          };
+                          return timeMap[status] || "Pending";
+                        }
+                        
+                        // For real orders, show actual timestamps if available
+                        if (order && order.updated_at) {
+                          const orderTime = new Date(order.created_at);
+                          const now = new Date();
+                          const diffMs = now.getTime() - orderTime.getTime();
+                          const diffMins = Math.floor(diffMs / 60000);
+                          if (diffMins < 1) return "Just now";
+                          if (diffMins < 60) return `+${diffMins}m`;
+                          const diffHours = Math.floor(diffMins / 60);
+                          return `+${diffHours}h`;
+                        }
+                        
+                        return "Pending";
+                      };
                       
                       return (
                         <div key={step.status} className="flex items-center space-x-3">
@@ -388,7 +436,7 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
                             }`}>
                               {step.label}
                             </div>
-                            <div className="text-xs text-gray-400">{step.time}</div>
+                            <div className="text-xs text-gray-400">{getTimeDisplay(step.status)}</div>
                           </div>
                         </div>
                       );
@@ -430,6 +478,10 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
 
         const orderData = await response.json();
         setOrder(orderData);
+        // Set the current status from the fetched order
+        if (orderData.order_status) {
+          setCurrentStatus(orderData.order_status);
+        }
       } catch (err: any) {
         console.error('[REAL ORDER SUMMARY] Error fetching order:', err);
         setError(err.message || 'Failed to load order');
@@ -440,6 +492,51 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
 
     fetchOrder();
   }, [orderId]);
+
+  // Set up real-time subscription for order status updates
+  useEffect(() => {
+    if (!orderId || !venueId) return;
+
+    const supabase = createClient();
+    if (!supabase) return;
+
+    console.log('[REAL ORDER SUMMARY] Setting up real-time subscription for order:', orderId);
+
+    const channel = supabase
+      .channel(`order-status-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload: any) => {
+          console.log('[REAL ORDER SUMMARY] Order status updated via real-time:', payload);
+          if (payload.new && payload.new.order_status) {
+            setCurrentStatus(payload.new.order_status);
+            console.log('[REAL ORDER SUMMARY] Updated status to:', payload.new.order_status);
+            
+            // Also update the order object with the new status
+            setOrder(prevOrder => {
+              if (prevOrder && prevOrder.id === orderId) {
+                return { ...prevOrder, order_status: payload.new.order_status };
+              }
+              return prevOrder;
+            });
+          }
+        }
+      )
+      .subscribe((status: any) => {
+        console.log('[REAL ORDER SUMMARY] Real-time subscription status:', status);
+      });
+
+    return () => {
+      console.log('[REAL ORDER SUMMARY] Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, venueId]);
 
   const handlePaymentComplete = () => {
     setPaymentCompleted(true);
@@ -630,9 +727,7 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <Button onClick={() => router.push(`/order?venue=${venueId}&table=${tableId}`)} className="w-full bg-purple-600 hover:bg-purple-700">
-                Order Again
-              </Button>
+              {/* Order Again button is now shown under the feedback form after payment completion */}
             </div>
           </div>
 
@@ -648,11 +743,16 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
 
             {/* Feedback Form */}
             {showFeedback && (
-              <SimpleFeedbackForm 
-                venueId={venueId} 
-                orderId={orderId}
-                onSubmit={() => setShowFeedback(false)}
-              />
+              <div className="space-y-4">
+                <SimpleFeedbackForm 
+                  venueId={venueId} 
+                  orderId={orderId}
+                  onSubmit={() => setShowFeedback(false)}
+                />
+                <Button onClick={() => router.push(`/order?venue=${venueId}&table=${tableId}`)} className="w-full bg-purple-600 hover:bg-purple-700">
+                  Order Again
+                </Button>
+              </div>
             )}
 
             {/* Order Status Timeline - Only show after payment completion */}
@@ -664,16 +764,36 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
                 <CardContent>
                   <div className="space-y-3">
                     {[
-                      { status: "PLACED", label: "Order Placed", time: "Now", icon: Clock },
-                      { status: "ACCEPTED", label: "Order Accepted", time: "+5s", icon: CheckCircle },
-                      { status: "IN_PREP", label: "In Preparation", time: "+15s", icon: ChefHat },
-                      { status: "READY", label: "Ready for Pickup", time: "+30s", icon: UtensilsCrossed },
-                      { status: "SERVING", label: "Being Served", time: "+45s", icon: Truck },
-                      { status: "COMPLETED", label: "Order Completed", time: "+60s", icon: CheckCircle }
+                      { status: "PLACED", label: "Order Placed", icon: Clock },
+                      { status: "ACCEPTED", label: "Order Accepted", icon: CheckCircle },
+                      { status: "IN_PREP", label: "In Preparation", icon: ChefHat },
+                      { status: "READY", label: "Ready for Pickup", icon: UtensilsCrossed },
+                      { status: "SERVING", label: "Being Served", icon: Truck },
+                      { status: "COMPLETED", label: "Order Completed", icon: CheckCircle }
                     ].map((step, index) => {
                       const isActive = currentStatus === step.status;
                       const isCompleted = ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(step.status) <= 
                         ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(currentStatus);
+                      
+                      // Calculate relative time for completed steps
+                      const getTimeDisplay = (status: string) => {
+                        if (status === "PLACED") return "Now";
+                        if (!isCompleted) return "Pending";
+                        
+                        // For real orders, show actual timestamps if available
+                        if (order && order.updated_at) {
+                          const orderTime = new Date(order.created_at);
+                          const now = new Date();
+                          const diffMs = now.getTime() - orderTime.getTime();
+                          const diffMins = Math.floor(diffMs / 60000);
+                          if (diffMins < 1) return "Just now";
+                          if (diffMins < 60) return `+${diffMins}m`;
+                          const diffHours = Math.floor(diffMins / 60);
+                          return `+${diffHours}h`;
+                        }
+                        
+                        return "Pending";
+                      };
                       
                       return (
                         <div key={step.status} className="flex items-center space-x-3">
@@ -688,7 +808,7 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
                             }`}>
                               {step.label}
                             </div>
-                            <div className="text-xs text-gray-400">{step.time}</div>
+                            <div className="text-xs text-gray-400">{getTimeDisplay(step.status)}</div>
                           </div>
                         </div>
                       );
