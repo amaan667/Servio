@@ -8,8 +8,10 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { TrendingUp, ShoppingBag, Users, RefreshCw } from "lucide-react";
+import { TrendingUp, ShoppingBag, Users, RefreshCw, Clock, Star, TrendingDown, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Chart, ChartContainer } from "@/components/ui/chart";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 
 interface OrderWithItems {
   id: string;
@@ -40,45 +42,77 @@ interface AnalyticsDashboardProps {
   venueId: string;
 }
 
+interface ChartData {
+  name: string;
+  value: number;
+  revenue?: number;
+  orders?: number;
+}
+
 export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
   const [stats, setStats] = useState({
     revenue: 0,
     orderCount: 0,
     activeTables: 0,
     unpaidOrders: 0,
+    averageOrderValue: 0,
+    completionRate: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
+  const [hourlyData, setHourlyData] = useState<ChartData[]>([]);
+  const [topItems, setTopItems] = useState<ChartData[]>([]);
+  const [customerFrequency, setCustomerFrequency] = useState<ChartData[]>([]);
+  const [revenueTrend, setRevenueTrend] = useState<ChartData[]>([]);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
   const calculateStats = useCallback(async () => {
     setLoading(true);
     try {
       const supabase = createClient();
       
+      // Calculate date range based on selection
+      const now = new Date();
+      let startDate: Date;
+      
+      switch (timeRange) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        default:
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      }
+
       // Fetch orders from database
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
-        .gte("created_at", new Date().toISOString().split('T')[0]); // Today's orders
+        .gte("created_at", startDate.toISOString());
 
       if (ordersError) {
         console.error("Error fetching orders:", ordersError);
-        setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0 });
+        setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
         return;
       }
 
       const orders: OrderWithItems[] = ordersData || [];
-      const todaysOrders = orders.filter((order) => {
-        const orderDate = new Date(order.created_at).toDateString();
-        const today = new Date().toDateString();
-        return orderDate === today && order.order_status !== "CANCELLED";
+      const filteredOrders = orders.filter((order) => {
+        const orderDate = new Date(order.created_at);
+        return orderDate >= startDate && order.order_status !== "CANCELLED";
       });
 
-      // Calculate revenue with fallback to items calculation
-      const revenue = todaysOrders.reduce((acc, order) => {
+      // Calculate basic stats
+      const revenue = filteredOrders.reduce((acc, order) => {
         let amount = order.total_amount;
         if (!amount || amount <= 0) {
-          // Calculate from items if total_amount is 0 or missing
           amount = order.items.reduce((sum, item) => {
             const quantity = Number(item.quantity) || 0;
             const price = Number(item.price) || 0;
@@ -87,26 +121,131 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         }
         return acc + amount;
       }, 0);
-      const orderCount = todaysOrders.length;
+
+      const orderCount = filteredOrders.length;
+      const averageOrderValue = orderCount > 0 ? revenue / orderCount : 0;
       
-      // Active tables are those with orders not fully processed (not COMPLETED)
+      // Active tables calculation
       const activeTables = new Set(
-        todaysOrders
+        filteredOrders
           .filter((o) => o.order_status !== "COMPLETED")
           .map((o) => o.table_number),
       ).size;
 
-      // Count unpaid orders
-      const unpaidOrders = todaysOrders.filter((o) => o.payment_status === "UNPAID").length;
+      // Unpaid orders
+      const unpaidOrders = filteredOrders.filter((o) => o.payment_status === "UNPAID").length;
+      
+      // Completion rate
+      const completedOrders = filteredOrders.filter((o) => o.order_status === "COMPLETED").length;
+      const completionRate = orderCount > 0 ? (completedOrders / orderCount) * 100 : 0;
 
-      setStats({ revenue, orderCount, activeTables, unpaidOrders });
+      setStats({ revenue, orderCount, activeTables, unpaidOrders, averageOrderValue, completionRate });
+
+      // Calculate hourly data
+      const hourlyStats = new Array(24).fill(0).map((_, hour) => ({
+        name: `${hour}:00`,
+        value: 0,
+        revenue: 0,
+        orders: 0,
+      }));
+
+      filteredOrders.forEach(order => {
+        const orderHour = new Date(order.created_at).getHours();
+        hourlyStats[orderHour].value += 1;
+        hourlyStats[orderHour].orders += 1;
+        
+        let amount = order.total_amount;
+        if (!amount || amount <= 0) {
+          amount = order.items.reduce((sum, item) => {
+            const quantity = Number(item.quantity) || 0;
+            const price = Number(item.price) || 0;
+            return sum + (quantity * price);
+          }, 0);
+        }
+        hourlyStats[orderHour].revenue += amount;
+      });
+
+      setHourlyData(hourlyStats);
+
+      // Calculate top-selling items
+      const itemStats: { [key: string]: { quantity: number; revenue: number } } = {};
+      filteredOrders.forEach(order => {
+        order.items.forEach(item => {
+          if (!itemStats[item.item_name]) {
+            itemStats[item.item_name] = { quantity: 0, revenue: 0 };
+          }
+          itemStats[item.item_name].quantity += item.quantity;
+          itemStats[item.item_name].revenue += item.quantity * item.price;
+        });
+      });
+
+      const topItemsData = Object.entries(itemStats)
+        .map(([name, stats]) => ({
+          name,
+          value: stats.quantity,
+          revenue: stats.revenue,
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+
+      setTopItems(topItemsData);
+
+      // Calculate customer frequency
+      const customerStats: { [key: string]: number } = {};
+      filteredOrders.forEach(order => {
+        const customerKey = order.customer_phone || order.customer_email || order.customer_name;
+        customerStats[customerKey] = (customerStats[customerKey] || 0) + 1;
+      });
+
+      const customerFrequencyData = Object.entries(customerStats)
+        .map(([customer, frequency]) => ({
+          name: customer.length > 20 ? customer.substring(0, 20) + '...' : customer,
+          value: frequency,
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+
+      setCustomerFrequency(customerFrequencyData);
+
+      // Calculate revenue trend (last 7 days)
+      if (timeRange === 'week') {
+        const dailyRevenue: { [key: string]: number } = {};
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+          const dateKey = date.toISOString().split('T')[0];
+          dailyRevenue[dateKey] = 0;
+        }
+
+        filteredOrders.forEach(order => {
+          const orderDate = order.created_at.split('T')[0];
+          if (dailyRevenue[orderDate] !== undefined) {
+            let amount = order.total_amount;
+            if (!amount || amount <= 0) {
+              amount = order.items.reduce((sum, item) => {
+                const quantity = Number(item.quantity) || 0;
+                const price = Number(item.price) || 0;
+                return sum + (quantity * price);
+              }, 0);
+            }
+            dailyRevenue[orderDate] += amount;
+          }
+        });
+
+        const revenueTrendData = Object.entries(dailyRevenue).map(([date, revenue]) => ({
+          name: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+          value: revenue,
+        }));
+
+        setRevenueTrend(revenueTrendData);
+      }
+
     } catch (error) {
       console.error("Error calculating stats:", error);
-      setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0 });
+      setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
     } finally {
       setLoading(false);
     }
-  }, [venueId]);
+  }, [venueId, timeRange]);
 
   useEffect(() => {
     calculateStats();
@@ -118,6 +257,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
     icon: Icon,
     formatAsCurrency = false,
     subtitle,
+    trend,
   }: any) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -137,45 +277,196 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         {subtitle && (
           <p className="text-xs text-red-600 mt-1">{subtitle}</p>
         )}
+        {trend && (
+          <div className={`flex items-center text-xs mt-1 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {trend > 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+            {Math.abs(trend)}%
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Today's Analytics
-          <RefreshCw
-            className={`h-4 w-4 text-muted-foreground cursor-pointer ${loading ? "animate-spin" : ""}`}
-            onClick={calculateStats}
-          />
-        </CardTitle>
-        <CardDescription>
-          A real-time summary of today's performance.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard
-            title="Today's Revenue"
-            value={stats.revenue}
-            icon={TrendingUp}
-            formatAsCurrency
-            subtitle={stats.unpaidOrders > 0 ? `${stats.unpaidOrders} unpaid` : undefined}
-          />
-          <StatCard
-            title="Today's Orders"
-            value={stats.orderCount}
-            icon={ShoppingBag}
-          />
-          <StatCard
-            title="Active Tables"
-            value={stats.activeTables}
-            icon={Users}
-          />
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      {/* Time Range Selector */}
+      <div className="flex items-center space-x-4">
+        <span className="text-sm font-medium">Time Range:</span>
+        <select
+          value={timeRange}
+          onChange={(e) => setTimeRange(e.target.value as 'today' | 'week' | 'month')}
+          className="border rounded px-3 py-1 text-sm"
+        >
+          <option value="today">Today</option>
+          <option value="week">Last 7 Days</option>
+          <option value="month">This Month</option>
+        </select>
+      </div>
+
+      {/* Basic Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            {timeRange === 'today' ? "Today's Analytics" : 
+             timeRange === 'week' ? "Last 7 Days Analytics" : "This Month's Analytics"}
+            <RefreshCw
+              className={`h-4 w-4 text-muted-foreground cursor-pointer ${loading ? "animate-spin" : ""}`}
+              onClick={calculateStats}
+            />
+          </CardTitle>
+          <CardDescription>
+            A comprehensive summary of your performance metrics.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+            <StatCard
+              title="Revenue"
+              value={stats.revenue}
+              icon={TrendingUp}
+              formatAsCurrency
+              subtitle={stats.unpaidOrders > 0 ? `${stats.unpaidOrders} unpaid` : undefined}
+            />
+            <StatCard
+              title="Orders"
+              value={stats.orderCount}
+              icon={ShoppingBag}
+            />
+            <StatCard
+              title="Active Tables"
+              value={stats.activeTables}
+              icon={Users}
+            />
+            <StatCard
+              title="Avg Order Value"
+              value={stats.averageOrderValue}
+              icon={Star}
+              formatAsCurrency
+            />
+            <StatCard
+              title="Completion Rate"
+              value={stats.completionRate.toFixed(1)}
+              icon={CheckCircle}
+              subtitle="%"
+            />
+            <StatCard
+              title="Peak Hour"
+              value={hourlyData.length > 0 ? hourlyData.reduce((max, hour) => hour.orders > max.orders ? hour : max).name : 'N/A'}
+              icon={Clock}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Charts Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Hourly Activity Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Hourly Activity</CardTitle>
+            <CardDescription>Orders and revenue by hour</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{
+              orders: { color: "#3b82f6" },
+              revenue: { color: "#10b981" }
+            }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={hourlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Bar yAxisId="left" dataKey="orders" fill="#3b82f6" name="Orders" />
+                  <Bar yAxisId="right" dataKey="revenue" fill="#10b981" name="Revenue" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Top Selling Items */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Selling Items</CardTitle>
+            <CardDescription>Most ordered items by quantity</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{
+              items: { color: "#8b5cf6" }
+            }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topItems} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={80} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#8b5cf6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Revenue Trend (for week view) */}
+        {timeRange === 'week' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue Trend</CardTitle>
+              <CardDescription>Daily revenue over the last 7 days</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={{
+                revenue: { color: "#10b981" }
+              }}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={revenueTrend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Customer Frequency */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Customer Frequency</CardTitle>
+            <CardDescription>Most frequent customers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{
+              customers: { color: "#f59e0b" }
+            }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={customerFrequency}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {customerFrequency.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

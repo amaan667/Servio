@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -17,6 +17,9 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  Wifi,
+  WifiOff,
+  Bell,
 } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -62,9 +65,63 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'live' | 'today' | 'history'>('live');
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [isOnline, setIsOnline] = useState(true);
+  const [hasNewOrders, setHasNewOrders] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(15000); // 15 seconds
+  const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
+  const lastOrderCountRef = useRef<number>(0);
 
   const ACTIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
+
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (!autoRefreshEnabled || activeTab !== 'live') {
+      if (autoRefreshRef.current) {
+        clearInterval(autoRefreshRef.current);
+        autoRefreshRef.current = null;
+      }
+      return;
+    }
+
+    autoRefreshRef.current = setInterval(() => {
+      logger.info("LIVE_ORDERS: Auto-refreshing orders");
+      fetchOrders();
+    }, refreshInterval);
+
+    return () => {
+      if (autoRefreshRef.current) {
+        clearInterval(autoRefreshRef.current);
+        autoRefreshRef.current = null;
+      }
+    };
+  }, [autoRefreshEnabled, activeTab, refreshInterval, fetchOrders]);
+
+  // Check for new orders
+  useEffect(() => {
+    if (orders.length > lastOrderCountRef.current && lastOrderCountRef.current > 0) {
+      setHasNewOrders(true);
+      // Auto-clear notification after 5 seconds
+      setTimeout(() => setHasNewOrders(false), 5000);
+    }
+    lastOrderCountRef.current = orders.length;
+  }, [orders.length]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -156,6 +213,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           statuses: ordersData?.map((order) => order.order_status) || [],
         });
         setOrders((ordersData || []) as OrderWithItems[]);
+        setLastUpdate(new Date());
       }
     } catch (error: any) {
       logger.error("LIVE_ORDERS: Unexpected error fetching live orders", error);
@@ -203,6 +261,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           orderCount: ordersData?.length || 0,
         });
         setOrders((ordersData || []) as OrderWithItems[]);
+        setLastUpdate(new Date());
       }
     } catch (error: any) {
       logger.error("LIVE_ORDERS: Unexpected error fetching today's orders", error);
@@ -248,6 +307,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           orderCount: ordersData?.length || 0,
         });
         setOrders((ordersData || []) as OrderWithItems[]);
+        setLastUpdate(new Date());
       }
     } catch (error: any) {
       logger.error("LIVE_ORDERS: Unexpected error fetching historical orders", error);
@@ -311,7 +371,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         createClient().removeChannel(channel);
       }
     };
-  }, [fetchOrders, venueId]);
+  }, [fetchOrders, venueId, activeTab]);
 
   const updateOrderStatus = async (orderId: string, newOrderStatus: string) => {
     logger.info("LIVE_ORDERS: Updating order status", { orderId, newOrderStatus });
@@ -320,6 +380,15 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     if (!supabase) return;
 
     setUpdating(orderId);
+
+    // Optimistic update
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, order_status: newOrderStatus, updated_at: new Date().toISOString() }
+          : order
+      )
+    );
 
     try {
       const { error } = await supabase
@@ -335,6 +404,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           code: error.code,
         });
         setError(`Failed to update order: ${error.message}`);
+        // Revert optimistic update on error
+        fetchOrders();
       } else {
         logger.info("LIVE_ORDERS: Order status updated successfully", {
           orderId,
@@ -348,6 +419,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         error,
       );
       setError("An unexpected error occurred.");
+      // Revert optimistic update on error
+      fetchOrders();
     } finally {
       setUpdating(null);
     }
@@ -385,6 +458,14 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     ).length;
   };
 
+  const toggleAutoRefresh = () => {
+    setAutoRefreshEnabled(!autoRefreshEnabled);
+  };
+
+  const changeRefreshInterval = (interval: number) => {
+    setRefreshInterval(interval);
+  };
+
   return (
     <div className="space-y-6">
       {!hasSupabaseConfig && (
@@ -395,6 +476,54 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Connection Status & Auto-refresh Controls */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className={`flex items-center space-x-2 ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
+            {isOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+            <span className="text-sm font-medium">
+              {isOnline ? 'Connected' : 'Offline'}
+            </span>
+          </div>
+          
+          {hasNewOrders && (
+            <div className="flex items-center space-x-2 text-orange-600 animate-pulse">
+              <Bell className="h-4 w-4" />
+              <span className="text-sm font-medium">New orders!</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Auto-refresh:</span>
+            <select
+              value={refreshInterval / 1000}
+              onChange={(e) => changeRefreshInterval(Number(e.target.value) * 1000)}
+              className="text-sm border rounded px-2 py-1"
+              disabled={!autoRefreshEnabled}
+            >
+              <option value={5}>5s</option>
+              <option value={10}>10s</option>
+              <option value={15}>15s</option>
+              <option value={30}>30s</option>
+            </select>
+            <Button
+              variant={autoRefreshEnabled ? "default" : "outline"}
+              size="sm"
+              onClick={toggleAutoRefresh}
+              className="text-xs"
+            >
+              {autoRefreshEnabled ? 'ON' : 'OFF'}
+            </Button>
+          </div>
+          
+          <div className="text-xs text-gray-500">
+            Last update: {lastUpdate.toLocaleTimeString()}
+          </div>
+        </div>
+      </div>
 
       <Card>
         <CardHeader>
@@ -493,7 +622,9 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
               {orders.map((order: OrderWithItems) => (
                 <div
                   key={order.id}
-                  className="border p-4 rounded-lg hover:bg-gray-50"
+                  className={`border p-4 rounded-lg hover:bg-gray-50 transition-all duration-200 ${
+                    updating === order.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
