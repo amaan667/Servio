@@ -416,12 +416,27 @@ export default function CustomerOrderPage() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {isDemo ? "Servio Café" : venueName}
-              </h1>
-              <p className="text-gray-600">Table {tableNumber}</p>
+            <div className="flex items-center space-x-4">
+              {/* Servio Logo */}
+              <div className="flex items-center">
+                <div className="text-2xl font-bold text-purple-600 mr-2">
+                  <div className="w-8 h-8 bg-purple-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">
+                    S
+                  </div>
+                </div>
+                <span className="text-xl font-bold text-gray-900">Servio</span>
+              </div>
+              
+              {/* Business Name and Table */}
+              <div className="ml-6">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {isDemo ? "Servio Café" : venueName}
+                </h1>
+                <p className="text-gray-600">Table {tableNumber}</p>
+              </div>
             </div>
+            
+            {/* Mobile Cart Button */}
             <Button
               onClick={() => setShowMobileCart(!showMobileCart)}
               className="md:hidden"
