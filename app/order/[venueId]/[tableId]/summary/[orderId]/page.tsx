@@ -388,8 +388,15 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId, isDemo }: { venueId
                       { status: "COMPLETED", label: "Order Completed", icon: CheckCircle }
                     ].map((step, index) => {
                       const isActive = currentStatus === step.status;
-                      const isCompleted = ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(step.status) <= 
-                        ["ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"].indexOf(currentStatus);
+                      const isCompleted = (() => {
+                        // Define the order progression
+                        const statusOrder = ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING", "COMPLETED"];
+                        const currentIndex = statusOrder.indexOf(currentStatus);
+                        const stepIndex = statusOrder.indexOf(step.status);
+                        
+                        // A step is completed if it comes before or equals the current status
+                        return stepIndex <= currentIndex;
+                      })();
                       
                       // Calculate relative time for completed steps
                       const getTimeDisplay = (status: string) => {
@@ -760,6 +767,9 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Order Timeline</CardTitle>
+                  <div className="text-sm text-gray-500">
+                    Current Status: <span className="font-medium text-purple-600">{currentStatus}</span>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
