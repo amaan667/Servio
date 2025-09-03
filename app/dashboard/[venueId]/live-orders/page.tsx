@@ -1,4 +1,4 @@
-import LiveOrdersList from "@/components/LiveOrdersList";
+import { LiveOrders } from "@/components/live-orders";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 export default function LiveOrdersPage({ params }: { params: { venueId: string } }) {
@@ -12,11 +12,11 @@ export default function LiveOrdersPage({ params }: { params: { venueId: string }
             Live Orders
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground mt-2">
-            Today's active orders that need attention
+            Monitor and manage real-time orders
           </p>
         </div>
         
-        <LiveOrdersList venueId={params.venueId} />
+        <LiveOrders venueId={params.venueId} session={null as any} />
       </div>
     </div>
   );

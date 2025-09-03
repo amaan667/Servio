@@ -357,7 +357,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .select("*")
         .eq("venue_id", venueId)
         .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),and(order_status.eq.COMPLETED,created_at.gte.${thirtyMinutesAgo})`)
-        .order("updated_at", { ascending: false });
+        .order("updated_at", { ascending: false })
+        .throwOnError();
 
       if (ordersError) {
         logger.error("LIVE_ORDERS: Failed to fetch live orders", { error: ordersError.message, code: ordersError.code });
@@ -417,7 +418,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .eq("venue_id", venueId)
         .gte("created_at", today.toISOString())
         .lt("created_at", tomorrow.toISOString())
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .throwOnError();
 
       if (ordersError) {
         logger.error("LIVE_ORDERS: Failed to fetch today's orders", { error: ordersError.message });
@@ -463,7 +465,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .eq("venue_id", venueId)
         .in("order_status", TERMINAL_STATUSES)
         .lt("created_at", today.toISOString())
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .throwOnError();
 
       if (ordersError) {
         logger.error("LIVE_ORDERS: Failed to fetch historical orders", { error: ordersError.message });
@@ -484,16 +487,27 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   }, [venueId]);
 
   const fetchOrders = useCallback(async () => {
-    switch (activeTab) {
-      case 'live':
-        await fetchLiveOrders();
-        break;
-      case 'today':
-        await fetchTodayOrders();
-        break;
-      case 'history':
-        await fetchHistoryOrders();
-        break;
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      logger.error("LIVE_ORDERS: Query timeout - taking too long to load orders");
+      setError("Query timeout - taking too long to load orders");
+      setLoading(false);
+    }, 10000); // 10 second timeout
+
+    try {
+      switch (activeTab) {
+        case 'live':
+          await fetchLiveOrders();
+          break;
+        case 'today':
+          await fetchTodayOrders();
+          break;
+        case 'history':
+          await fetchHistoryOrders();
+          break;
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
   }, [activeTab, fetchLiveOrders, fetchTodayOrders, fetchHistoryOrders]);
 
