@@ -334,7 +334,6 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
-        .in("order_status", TERMINAL_STATUSES)
         .lt("created_at", today.toISOString())
         .order("created_at", { ascending: false })
         .throwOnError();
@@ -402,7 +401,6 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         }).length;
         
         const historyCount = allOrdersData.filter(order => {
-          if (!TERMINAL_STATUSES.includes(order.order_status)) return false;
           const orderDate = new Date(order.created_at);
           return orderDate < today;
         }).length;
@@ -785,11 +783,6 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     today.setHours(0, 0, 0, 0);
     
     return allOrders.filter(order => {
-      // Only count terminal status orders from previous days
-      if (!TERMINAL_STATUSES.includes(order.order_status)) {
-        return false;
-      }
-      
       const orderCreatedAt = new Date(order.created_at);
       return orderCreatedAt < today;
     }).length;
