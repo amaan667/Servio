@@ -92,7 +92,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
   // Auto-refresh functionality
   useEffect(() => {
-    if (!autoRefreshEnabled || activeTab !== 'live') {
+    if (!autoRefreshEnabled) {
       if (autoRefreshRef.current) {
         clearInterval(autoRefreshRef.current);
         autoRefreshRef.current = null;
@@ -111,7 +111,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         autoRefreshRef.current = null;
       }
     };
-  }, [autoRefreshEnabled, activeTab, refreshInterval, fetchOrders]);
+  }, [autoRefreshEnabled, refreshInterval, fetchOrders]);
 
   // Check for new orders
   useEffect(() => {
@@ -193,15 +193,14 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     }
 
     try {
-      // Get orders that are active and within prep window
-      const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
-      const prepWindow = new Date(Date.now() + prepLeadMs).toISOString();
+      // Get orders that are either active OR completed within the last 30 minutes
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
         .select("*")
         .eq("venue_id", venueId)
-        .in("order_status", ACTIVE_STATUSES)
+        .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),and(order_status.eq.COMPLETED,created_at.gte.${thirtyMinutesAgo})`)
         .order("updated_at", { ascending: false });
 
       if (ordersError) {
@@ -355,10 +354,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             "LIVE_ORDERS: Real-time change detected, refetching orders",
             payload,
           );
-          // Only refetch if we're on the live tab, as other tabs don't need real-time updates
-          if (activeTab === 'live') {
-            fetchOrders();
-          }
+          // Refetch for all tabs to keep counts accurate
+          fetchOrders();
         },
       )
       .subscribe((status: any) => {
@@ -371,7 +368,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         createClient().removeChannel(channel);
       }
     };
-  }, [fetchOrders, venueId, activeTab]);
+  }, [fetchOrders, venueId]);
 
   const updateOrderStatus = async (orderId: string, newOrderStatus: string) => {
     logger.info("LIVE_ORDERS: Updating order status", { orderId, newOrderStatus });
@@ -428,10 +425,22 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
   // Get badge counts for each tab
   const getLiveOrdersCount = () => {
-    return orders.filter(order => 
-      ACTIVE_STATUSES.includes(order.order_status) && 
-      (!order.scheduled_for || new Date(order.scheduled_for) <= new Date(Date.now() + 30 * 60 * 1000))
-    ).length;
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    
+    return orders.filter(order => {
+      // Count active orders
+      if (ACTIVE_STATUSES.includes(order.order_status)) {
+        return true;
+      }
+      
+      // Count completed orders from the last 30 minutes
+      if (order.order_status === 'COMPLETED') {
+        const orderCreatedAt = new Date(order.created_at);
+        return orderCreatedAt >= thirtyMinutesAgo;
+      }
+      
+      return false;
+    }).length;
   };
 
   const getTodayOrdersCount = () => {
@@ -439,6 +448,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
     return orders.filter(order => {
       const orderDate = new Date(order.created_at);
@@ -446,22 +456,44 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       const isTodayOrder = (orderDate >= today && orderDate < tomorrow) || 
                           (scheduledDate && scheduledDate >= today && scheduledDate < tomorrow);
       
-      // Count orders that were created today OR completed today (for orders that moved from live to completed)
-      const completedToday = TERMINAL_STATUSES.includes(order.order_status) && 
-                           new Date(order.updated_at || order.created_at) >= today;
+      // For completed orders, only count them in today if they're older than 30 minutes
+      if (order.order_status === 'COMPLETED') {
+        const orderCreatedAt = new Date(order.created_at);
+        // Only count in today if it's older than 30 minutes (otherwise it stays in live)
+        return isTodayOrder && orderCreatedAt < thirtyMinutesAgo;
+      }
       
-      return isTodayOrder || completedToday;
+      // For other terminal statuses, count them in today
+      if (TERMINAL_STATUSES.includes(order.order_status)) {
+        return isTodayOrder;
+      }
+      
+      // For active orders, count them in today
+      return isTodayOrder;
     }).length;
   };
 
   const getHistoryOrdersCount = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
-    return orders.filter(order => 
-      TERMINAL_STATUSES.includes(order.order_status) && 
-      new Date(order.created_at) < today
-    ).length;
+    return orders.filter(order => {
+      // Only count terminal status orders
+      if (!TERMINAL_STATUSES.includes(order.order_status)) {
+        return false;
+      }
+      
+      const orderCreatedAt = new Date(order.created_at);
+      
+      // For completed orders, only count them in history if they're older than 30 minutes
+      if (order.order_status === 'COMPLETED') {
+        return orderCreatedAt < thirtyMinutesAgo && orderCreatedAt < today;
+      }
+      
+      // For other terminal statuses, count them in history if they're from previous days
+      return orderCreatedAt < today;
+    }).length;
   };
 
   const toggleAutoRefresh = () => {
@@ -533,19 +565,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle>
             <span>Order Management</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchOrders}
-              disabled={loading}
-            >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
           </CardTitle>
           
           {/* Tab Navigation */}
@@ -558,7 +579,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
-              Live (In Progress)
+              Live (Last 30 Min)
               {getLiveOrdersCount() > 0 && (
                 <span className="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
                   {getLiveOrdersCount()}
@@ -599,7 +620,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
           {/* Tab Description */}
           <CardDescription>
-            {activeTab === 'live' && "Orders currently requiring action (prep/serve/pay)."}
+            {activeTab === 'live' && "Orders currently requiring action (prep/serve/pay) and completed orders from the last 30 minutes."}
             {activeTab === 'today' && "All orders for today's business date."}
             {activeTab === 'history' && "Completed and cancelled orders from previous days."}
           </CardDescription>
