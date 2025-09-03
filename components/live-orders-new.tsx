@@ -146,7 +146,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         console.log(`[LIVE_ORDERS] Live tab - 30 minutes ago: ${thirtyMinutesAgo}`);
         
         query = query
-          .or(`order_status.in.(${[...ACTIVE_STATUSES, ...RECENT_TERMINAL_IN_LIVE].join(',')}),status.in.(${[...ACTIVE_STATUSES, ...RECENT_TERMINAL_IN_LIVE].join(',')})`)
+          .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
           .gte('created_at', startUtc)
           .lt('created_at', endUtc)
           .gte('created_at', thirtyMinutesAgo) // Only orders created within last 30 minutes
@@ -337,7 +337,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         .gte('created_at', startUtc)
         .lt('created_at', endUtc)
         .gte('created_at', thirtyMinutesAgo)
-        .or(`order_status.in.(${[...ACTIVE_STATUSES, ...RECENT_TERMINAL_IN_LIVE].join(',')}),status.in.(${[...ACTIVE_STATUSES, ...RECENT_TERMINAL_IN_LIVE].join(',')})`);
+        .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`);
 
       // Count history = all orders before today (regardless of status)
       const historyPromise = supabase
