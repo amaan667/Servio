@@ -73,6 +73,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [serviceStatus, setServiceStatus] = useState<'healthy' | 'degraded' | 'down'>('healthy');
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
   const lastOrderCountRef = useRef<number>(0);
+  const [recentlyUpdatedOrders, setRecentlyUpdatedOrders] = useState<Set<string>>(new Set());
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
   // Demo orders for when database is unavailable
   const demoOrders: OrderWithItems[] = [
@@ -493,6 +495,30 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
     autoRefreshRef.current = setInterval(() => {
       console.log("LIVE_ORDERS: Auto-refreshing orders");
+      
+      // Skip auto-refresh if we're currently updating an order
+      if (isUpdatingOrder) {
+        console.log("LIVE_ORDERS: Skipping auto-refresh - order update in progress");
+        return;
+      }
+      
+      // Only refetch if we don't have recent optimistic updates
+      // This prevents overwriting order status changes
+      const now = Date.now();
+      const lastUpdateTime = lastUpdate.getTime();
+      const timeSinceLastUpdate = now - lastUpdateTime;
+      
+      // If we've updated orders in the last 2 minutes, skip the auto-refresh
+      // This prevents the auto-refresh from overwriting recent status changes
+      if (timeSinceLastUpdate < 120000) { // 2 minutes
+        console.log("LIVE_ORDERS: Skipping auto-refresh - recent updates detected", {
+          timeSinceLastUpdate: Math.round(timeSinceLastUpdate / 1000) + 's ago',
+          lastUpdate: lastUpdate.toISOString()
+        });
+        return;
+      }
+      
+      console.log("LIVE_ORDERS: Proceeding with auto-refresh");
       fetchOrdersRef.current();
     }, refreshInterval);
 
@@ -734,6 +760,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     if (!supabase) return;
 
     setUpdating(orderId);
+    setIsUpdatingOrder(true);
 
     // Optimistic update - update both orders and allOrders
     const updateOrderInList = (order: any) => 
@@ -754,6 +781,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       console.log("LIVE_ORDERS: Updated allOrders list:", updated.map(o => ({ id: o.id, status: o.order_status })));
       return updated;
     });
+
+    // Update lastUpdate to prevent auto-refresh from overwriting our changes
+    setLastUpdate(new Date());
+    console.log("LIVE_ORDERS: Updated lastUpdate timestamp to prevent auto-refresh override");
 
     try {
       console.log("LIVE_ORDERS: Sending update to database");
@@ -796,6 +827,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       fetchOrdersRef.current();
     } finally {
       setUpdating(null);
+      setIsUpdatingOrder(false);
     }
   };
 
