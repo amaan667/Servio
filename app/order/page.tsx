@@ -71,6 +71,10 @@ export default function CustomerOrderPage() {
   const isLoggedIn = !!session;
 
   const loadMenuItems = async () => {
+    console.log('[MENU DEBUG] Starting loadMenuItems');
+    console.log('[MENU DEBUG] venueSlug:', venueSlug);
+    console.log('[MENU DEBUG] isDemo:', isDemo);
+    
     setLoadingMenu(true);
     setMenuError(null);
     setIsDemoFallback(false);
@@ -112,7 +116,13 @@ export default function CustomerOrderPage() {
       }
 
       // Fetch menu items using the API endpoint (bypasses RLS)
-      const response = await fetch(`/api/menu/${venueSlug}`);
+      const apiUrl = `/api/menu/${venueSlug}`;
+      console.log('[MENU DEBUG] Calling API:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      
+      console.log('[MENU DEBUG] API response status:', response.status);
+      console.log('[MENU DEBUG] API response ok:', response.ok);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -122,6 +132,9 @@ export default function CustomerOrderPage() {
       }
 
       const data = await response.json();
+      console.log('[MENU DEBUG] API success response:', data);
+      console.log('[MENU DEBUG] Menu items count:', data.menuItems?.length);
+      console.log('[MENU DEBUG] Menu items sample:', data.menuItems?.slice(0, 3));
       
       // Attach venue_name for display
       const normalized = (data.menuItems || []).map((mi: any) => ({ 
@@ -129,10 +142,18 @@ export default function CustomerOrderPage() {
         venue_name: data.venue?.name 
       }));
       
+      console.log('[MENU DEBUG] Normalized menu items count:', normalized.length);
+      console.log('[MENU DEBUG] Setting menu items to state');
+      
       setMenuItems(normalized);
+      
       if (!data.menuItems || data.menuItems.length === 0) {
+        console.log('[MENU DEBUG] No menu items found');
         setMenuError("This venue has no available menu items yet.");
+      } else {
+        console.log('[MENU DEBUG] Successfully loaded', normalized.length, 'menu items');
       }
+      
       setLoadingMenu(false);
     } catch (err: any) {
       setMenuError(`Error loading menu: ${err.message}`);
@@ -141,8 +162,18 @@ export default function CustomerOrderPage() {
   };
 
   useEffect(() => {
+    console.log('[MENU DEBUG] useEffect triggered');
+    console.log('[MENU DEBUG] venueSlug:', venueSlug);
+    console.log('[MENU DEBUG] isLoggedIn:', isLoggedIn);
     loadMenuItems();
   }, [venueSlug, isLoggedIn]);
+
+  // Debug state changes
+  useEffect(() => {
+    console.log('[MENU DEBUG] State changed - menuItems:', menuItems.length);
+    console.log('[MENU DEBUG] State changed - loadingMenu:', loadingMenu);
+    console.log('[MENU DEBUG] State changed - menuError:', menuError);
+  }, [menuItems, loadingMenu, menuError]);
 
   // Auto-reset demo after 2 minutes for next user
   useEffect(() => {
@@ -394,19 +425,37 @@ export default function CustomerOrderPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Menu */}
           <div className="lg:col-span-2">
-        {loadingMenu ? (
+        {(() => {
+          console.log('[MENU DEBUG] Rendering menu section');
+          console.log('[MENU DEBUG] loadingMenu:', loadingMenu);
+          console.log('[MENU DEBUG] menuError:', menuError);
+          console.log('[MENU DEBUG] menuItems.length:', menuItems.length);
+          
+          if (loadingMenu) {
+            return (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
-        ) : menuError ? (
+            );
+          }
+          
+          if (menuError) {
+            return (
               <Alert variant="destructive">
                 <AlertDescription>{menuError}</AlertDescription>
               </Alert>
-        ) : menuItems.length === 0 ? (
+            );
+          }
+          
+          if (menuItems.length === 0) {
+            return (
               <div className="text-center py-12">
                 <p className="text-gray-600">No menu items available.</p>
               </div>
-            ) : (
+            );
+          }
+          
+          return (
               <div className="space-y-6">
                 {(() => {
                   const categoryPriority = [
