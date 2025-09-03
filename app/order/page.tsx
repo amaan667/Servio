@@ -318,7 +318,7 @@ export default function CustomerOrderPage() {
         return;
       }
 
-      // For real orders, create the order immediately
+      // For real orders, store order data temporarily and redirect to payment
       const orderData = {
         venue_id: venueSlug,
         table_number: safeTable,
@@ -327,7 +327,7 @@ export default function CustomerOrderPage() {
         items: cart.map((item) => ({
           menu_item_id: item.id && item.id.startsWith('demo-') ? null : item.id,
           quantity: item.quantity,
-          price: item.price, // Use 'price' instead of 'unit_price' to match API
+          price: item.price,
           item_name: item.name,
           special_instructions: item.specialInstructions || null,
         })),
@@ -338,29 +338,13 @@ export default function CustomerOrderPage() {
           .join("; "),
       };
 
-      console.log('[ORDER DEBUG] Created order data:', orderData);
-      console.log('[ORDER DEBUG] Total price from getTotalPrice():', getTotalPrice());
-      console.log('[ORDER DEBUG] Cart total calculation:', cart.reduce((sum, item) => sum + (item.price * item.quantity), 0));
-
-      // Create the order immediately
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-      const out = await res.json().catch(() => ({} as any));
+      console.log('[ORDER DEBUG] Order data prepared for payment:', orderData);
       
-      console.log('[ORDER DEBUG] Order API response:', { status: res.status, data: out });
+      // Store order data temporarily for payment process
+      localStorage.setItem('pending-order-data', JSON.stringify(orderData));
       
-      if (!res.ok || !out?.ok) {
-        console.error('Order API failed', out);
-        throw new Error(out?.error || 'Failed to create order. Please contact support.');
-      }
-      
-      console.log('Order created successfully:', out);
-      
-      // Redirect directly to order summary page
-      router.replace(`/order/${venueSlug}/${tableNumber}/summary/${out?.order?.id}`);
+      // Redirect to payment page instead of creating order immediately
+      router.replace(`/order/${venueSlug}/${tableNumber}/payment`);
     } catch (error) {
       console.error("Error preparing order:", error);
       alert("Failed to prepare order. Please try again.");

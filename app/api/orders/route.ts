@@ -93,7 +93,7 @@ export async function POST(req: Request) {
       total_amount: finalTotal,
       notes: body.notes ?? null,
       order_status: 'PLACED', // Set initial status as PLACED for live orders
-      payment_status: 'UNPAID', // Set as PAID since order only appears after payment
+              payment_status: 'PAID', // Set as PAID since order only appears after payment
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
