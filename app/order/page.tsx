@@ -105,11 +105,14 @@ export default function CustomerOrderPage() {
       // First check if venue exists
       const { data: venue, error: venueError } = await supabase
         .from("venues")
-        .select("venue_id")
+        .select("venue_id, name")
         .eq("venue_id", venueSlug)
         .single();
 
+      console.log('[MENU DEBUG] Venue check result:', { venue, venueError });
+
       if (venueError || !venue) {
+        console.log('[MENU DEBUG] Venue not found, error:', venueError);
         setMenuError("Venue not found.");
         setLoadingMenu(false);
         return;
@@ -139,7 +142,7 @@ export default function CustomerOrderPage() {
       // Attach venue_name for display
       const normalized = (data.menuItems || []).map((mi: any) => ({ 
         ...mi, 
-        venue_name: data.venue?.name 
+        venue_name: data.venue?.name || venue?.name || 'Our Venue'
       }));
       
       console.log('[MENU DEBUG] Normalized menu items count:', normalized.length);
