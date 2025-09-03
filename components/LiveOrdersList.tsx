@@ -1,3 +1,5 @@
+"use client";
+
 import { useLiveOrders } from '@/hooks/useLiveOrders'
 import { useEffect } from 'react'
 
