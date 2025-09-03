@@ -12,9 +12,8 @@ import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react"
 import { supabase } from "@/lib/supabase/client";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
-import OrderFeedbackForm from "@/components/OrderFeedbackForm";
+
 import { useRouter } from "next/navigation";
-import MenuItemImage from "@/components/menu-item-image";
 
 interface MenuItem {
   id: string;
@@ -25,13 +24,11 @@ interface MenuItem {
   available: boolean;
   venue_name?: string; // added for display in header when loaded with join
   options?: Array<{ label: string; values: string[] }>; // modifiers/options
-  image?: string; // added for menu item images
 }
 
 interface CartItem extends MenuItem {
   quantity: number;
   specialInstructions?: string;
-  image?: string; // ensure image is included in cart items
 }
 
 export default function CustomerOrderPage() {
@@ -435,15 +432,6 @@ export default function CustomerOrderPage() {
                             <Card key={item.id} className="hover:shadow-md transition-shadow">
                               <CardContent className="p-4">
                                 <div className="flex space-x-4">
-                                  {/* Item Image */}
-                                  <div className="flex-shrink-0">
-                                    <MenuItemImage 
-                                      src={item.image || "https://images.unsplash.com/photo-1544025162-d76694265947?w=80&h=80&fit=crop&crop=center"} 
-                                      alt={item.name}
-                                      className="w-20 h-20 rounded-lg object-cover border border-gray-200"
-                                    />
-                                  </div>
-                                  
                                   {/* Item Details */}
                                   <div className="flex-1">
                                     <h3 className="font-semibold text-gray-900">
@@ -501,15 +489,6 @@ export default function CustomerOrderPage() {
                     {cart.map((item) => (
                       <div key={item.id} className="border-b pb-4 last:border-b-0">
                         <div className="flex space-x-3">
-                          {/* Cart Item Image */}
-                          <div className="flex-shrink-0">
-                            <MenuItemImage 
-                              src={item.image || "https://images.unsplash.com/photo-1544025162-d76694265947?w=60&h=60&fit=crop&crop=center"} 
-                              alt={item.name}
-                              className="w-16 h-16 rounded-lg object-cover border border-gray-200"
-                            />
-                          </div>
-                          
                           {/* Cart Item Details */}
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-900">
@@ -633,15 +612,6 @@ export default function CustomerOrderPage() {
                     {cart.map((item) => (
                       <div key={item.id} className="border-b pb-4 last:border-b-0">
                         <div className="flex space-x-3">
-                          {/* Mobile Cart Item Image */}
-                          <div className="flex-shrink-0">
-                            <MenuItemImage 
-                              src={item.image || "https://images.unsplash.com/photo-1544025162-d76694265947?w=60&h=60&fit=crop&crop=center"} 
-                              alt={item.name}
-                              className="w-16 h-16 rounded-lg object-cover border border-gray-200"
-                            />
-                          </div>
-                          
                           {/* Mobile Cart Item Details */}
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-900">

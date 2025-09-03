@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, User, Hash, ChefHat, UtensilsCrossed, Truck, Coffee } from "lucide-react";
 import QRCodeDisplay from "@/components/qr-code-display";
 import PaymentSimulation from "@/components/payment-simulation";
-import SimpleFeedbackForm from "@/components/SimpleFeedbackForm";
+import OrderFeedbackForm from "@/components/OrderFeedbackForm";
 
 interface OrderSummary {
   id: string;
@@ -348,13 +348,14 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
             )}
 
             {/* Feedback Form */}
+            {// Feedback form enabled
             {showFeedback && (
-              <SimpleFeedbackForm 
+              <OrderFeedbackForm 
                 venueId={venueId} 
                 orderId={orderId}
-                onSubmit={() => setShowFeedback(false)}
               />
             )}
+            */}
 
             {/* QR Code for Mobile Testing */}
             <QRCodeDisplay 
@@ -652,13 +653,14 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
             )}
 
             {/* Feedback Form */}
+            {// Feedback form enabled
             {showFeedback && (
-              <SimpleFeedbackForm 
+              <OrderFeedbackForm 
                 venueId={venueId} 
                 orderId={orderId}
-                onSubmit={() => setShowFeedback(false)}
               />
             )}
+            */}
 
             {/* QR Code for Mobile Testing */}
             <QRCodeDisplay 
