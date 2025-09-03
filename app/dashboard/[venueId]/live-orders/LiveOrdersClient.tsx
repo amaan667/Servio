@@ -11,7 +11,7 @@
  * Orders automatically move from "Live Orders" to "Earlier Today" after 30 minutes
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -80,6 +80,42 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Define what constitutes a "live" order - orders placed within the last 30 minutes
   const LIVE_ORDER_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 
+  // Auto-refresh functionality
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(15000); // 15 seconds
+  const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!autoRefreshEnabled) {
+      if (autoRefreshRef.current) {
+        clearInterval(autoRefreshRef.current);
+        autoRefreshRef.current = null;
+      }
+      return;
+    }
+
+    autoRefreshRef.current = setInterval(() => {
+      console.log('[LIVE ORDERS DEBUG] Auto-refreshing orders');
+      loadVenueAndOrders();
+    }, refreshInterval);
+
+    return () => {
+      if (autoRefreshRef.current) {
+        clearInterval(autoRefreshRef.current);
+        autoRefreshRef.current = null;
+      }
+    };
+  }, [autoRefreshEnabled, refreshInterval]);
+
+  const toggleAutoRefresh = () => {
+    setAutoRefreshEnabled(!autoRefreshEnabled);
+  };
+
+  const changeRefreshInterval = (interval: number) => {
+    setRefreshInterval(interval * 1000);
+  };
+
   useEffect(() => {
     const loadVenueAndOrders = async () => {
       let venueTimezone;
@@ -103,7 +139,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       console.log('[LIVE ORDERS DEBUG] Window start:', window.startUtcISO);
       console.log('[LIVE ORDERS DEBUG] Window end:', window.endUtcISO);
       
-      // Load live orders - only orders placed within the last 30 minutes with live statuses
+      // Load live orders - orders placed within the last 30 minutes with live statuses OR completed orders from last 30 minutes
       console.log('[LIVE ORDERS DEBUG] Fetching live orders for venueId:', venueId);
       console.log('[LIVE ORDERS DEBUG] LIVE_STATUSES:', LIVE_STATUSES);
       console.log('[LIVE ORDERS DEBUG] Current time:', new Date().toISOString());
@@ -115,8 +151,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .in('order_status', LIVE_STATUSES)
-        .gte('created_at', liveOrdersCutoff) // Only orders placed within last 30 minutes
+        .or(`order_status.in.(${LIVE_STATUSES.join(',')}),and(order_status.eq.COMPLETED,created_at.gte.${liveOrdersCutoff})`)
         .order('created_at', { ascending: false });
 
       // Load all orders from today (venue timezone aware)
@@ -198,8 +233,26 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         
         // Filter out live orders from all today orders
         // All Today should show orders from today that are NOT in live orders
+        // Also exclude completed orders from the last 30 minutes (they stay in live)
         const liveOrderIds = new Set((liveData || []).map((order: any) => order.id));
-        const allTodayFiltered = allData.filter((order: any) => !liveOrderIds.has(order.id));
+        const thirtyMinutesAgo = new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
+        
+        const allTodayFiltered = allData.filter((order: any) => {
+          // Don't show orders that are already in live orders
+          if (liveOrderIds.has(order.id)) {
+            return false;
+          }
+          
+          // Don't show completed orders from the last 30 minutes (they stay in live)
+          if (order.order_status === 'COMPLETED') {
+            const orderCreatedAt = new Date(order.created_at);
+            if (orderCreatedAt >= thirtyMinutesAgo) {
+              return false;
+            }
+          }
+          
+          return true;
+        });
         
         console.log('[LIVE ORDERS DEBUG] Filtered all today orders (excluding live orders):', {
           originalCount: allData.length,
@@ -270,9 +323,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             const isLiveOrder = LIVE_STATUSES.includes(newOrder.order_status);
             const orderCreatedAt = new Date(newOrder.created_at);
             const isRecentOrder = orderCreatedAt > new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
+            const isCompletedRecent = newOrder.order_status === 'COMPLETED' && isRecentOrder;
             
-            if (isLiveOrder && isRecentOrder) {
-              console.log('[LIVE ORDERS DEBUG] Adding to live orders - recent order with live status');
+            if ((isLiveOrder && isRecentOrder) || isCompletedRecent) {
+              console.log('[LIVE ORDERS DEBUG] Adding to live orders - recent order with live status or recent completed');
               setOrders(prev => [newOrder, ...prev]);
             }
             
@@ -283,7 +337,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             
             if (isInTodayWindow) {
               // Only add to all today if it's NOT already in live orders
-              if (!(isLiveOrder && isRecentOrder)) {
+              if (!((isLiveOrder && isRecentOrder) || isCompletedRecent)) {
                 console.log('[LIVE ORDERS DEBUG] Adding to all today orders - not a live order');
                 setAllTodayOrders(prev => [newOrder, ...prev]);
               }
@@ -312,8 +366,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             const isLiveOrder = LIVE_STATUSES.includes(newOrder.order_status);
             const orderCreatedAt = new Date(newOrder.created_at);
             const isRecentOrder = orderCreatedAt > new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
+            const isCompletedRecent = newOrder.order_status === 'COMPLETED' && isRecentOrder;
             
-            if (isLiveOrder && isRecentOrder) {
+            if ((isLiveOrder && isRecentOrder) || isCompletedRecent) {
               // Add to live orders if not already there
               setOrders(prev => {
                 const exists = prev.find(order => order.id === newOrder.id);
@@ -322,15 +377,24 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 }
                 return prev.map(order => order.id === newOrder.id ? newOrder : order);
               });
+              
+              // Remove from all today orders if it was there
+              setAllTodayOrders(prev => prev.filter(order => order.id !== newOrder.id));
             } else {
               // Remove from live orders if status changed to terminal or not recent
               setOrders(prev => prev.filter(order => order.id !== newOrder.id));
+              
+              // Add to all today orders if it's from today and not recent
+              if (todayWindow && orderCreatedAt >= new Date(todayWindow.startUtcISO) && orderCreatedAt < new Date(todayWindow.endUtcISO)) {
+                setAllTodayOrders(prev => {
+                  const exists = prev.find(order => order.id === newOrder.id);
+                  if (!exists) {
+                    return [newOrder, ...prev];
+                  }
+                  return prev.map(order => order.id === newOrder.id ? newOrder : order);
+                });
+              }
             }
-            
-            // Update in all today orders
-            setAllTodayOrders(prev => prev.map(order => 
-              order.id === newOrder.id ? newOrder : order
-            ));
             
             // Update in history orders
             setHistoryOrders(prev => prev.map(order => 
@@ -569,8 +633,32 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               })}
             </span>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Live orders: last 30 min
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">Auto-refresh:</span>
+              <select
+                value={refreshInterval / 1000}
+                onChange={(e) => changeRefreshInterval(Number(e.target.value))}
+                className="text-sm border rounded px-2 py-1"
+                disabled={!autoRefreshEnabled}
+              >
+                <option value={5}>5s</option>
+                <option value={10}>10s</option>
+                <option value={15}>15s</option>
+                <option value={30}>30s</option>
+              </select>
+              <Button
+                variant={autoRefreshEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={toggleAutoRefresh}
+                className="text-xs"
+              >
+                {autoRefreshEnabled ? 'ON' : 'OFF'}
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Live orders: last 30 min
+            </div>
           </div>
         </div>
 
@@ -581,8 +669,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             <div className="text-sm text-blue-800">
               <p className="font-medium mb-1">Order Categorization:</p>
               <ul className="space-y-1 text-xs">
-                <li><strong>Live Orders:</strong> Orders placed within the last 30 minutes with active status</li>
-                <li><strong>Earlier Today:</strong> Orders from today that are not in live orders</li>
+                <li><strong>Live Orders:</strong> Orders placed within the last 30 minutes with active status OR completed orders from the last 30 minutes</li>
+                <li><strong>Earlier Today:</strong> Orders from today that are not in live orders (excluding recent completed orders)</li>
                 <li><strong>History:</strong> Orders from previous days</li>
               </ul>
             </div>
@@ -593,7 +681,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="live" className="flex items-center space-x-2">
-              <span>Live Orders</span>
+              <span>Live (Last 30 Min)</span>
               {orders.length > 0 && (
                 <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{orders.length}</span>
               )}
