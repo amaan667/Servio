@@ -90,6 +90,8 @@ export default function OrderTrackingPage() {
 
     // Set up real-time subscription for order updates
     if (supabase && orderId) {
+      console.log('Setting up real-time subscription for order:', orderId);
+      
       const channel = supabase
         .channel(`order-tracking-${orderId}`)
         .on(
@@ -102,15 +104,42 @@ export default function OrderTrackingPage() {
           },
           (payload) => {
             console.log('Order update detected:', payload);
+            
             if (payload.eventType === 'UPDATE') {
-              setOrder(prevOrder => prevOrder ? { ...prevOrder, ...payload.new } : null);
+              console.log('Order status updated:', {
+                oldStatus: payload.old?.order_status,
+                newStatus: payload.new?.order_status,
+                orderId: payload.new?.id
+              });
+              
+              // Update the order with new data
+              setOrder(prevOrder => {
+                if (!prevOrder) return null;
+                
+                const updatedOrder = { ...prevOrder, ...payload.new };
+                console.log('Updated order:', updatedOrder);
+                return updatedOrder;
+              });
+              
               setLastUpdate(new Date());
+            } else if (payload.eventType === 'DELETE') {
+              console.log('Order deleted:', payload.old);
+              setError('This order has been cancelled or deleted');
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Real-time subscription status:', status);
+          
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to order updates');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Real-time subscription error');
+          }
+        });
 
       return () => {
+        console.log('Cleaning up real-time subscription');
         supabase.removeChannel(channel);
       };
     }

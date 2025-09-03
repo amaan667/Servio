@@ -617,11 +617,48 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         },
         (payload: any) => {
           console.log(
-            "LIVE_ORDERS: Real-time change detected, refetching orders",
+            "LIVE_ORDERS: Real-time change detected",
             payload,
           );
-          // Refetch for all tabs to keep counts accurate
-          fetchOrdersRef.current();
+          
+          // Handle different event types properly
+          if (payload.eventType === 'UPDATE') {
+            // For updates, merge the changes instead of refetching
+            setOrders(prevOrders => 
+              prevOrders.map(order => 
+                order.id === payload.new.id 
+                  ? { ...order, ...payload.new }
+                  : order
+              )
+            );
+            
+            // Also update allOrders to keep counts accurate
+            setAllOrders(prevAllOrders => 
+              prevAllOrders.map(order => 
+                order.id === payload.new.id 
+                  ? { ...order, ...payload.new }
+                  : order
+              )
+            );
+          } else if (payload.eventType === 'INSERT') {
+            // For new orders, add them to the appropriate lists
+            const newOrder = payload.new;
+            setAllOrders(prev => [newOrder, ...prev]);
+            
+            // Check if it should be in live orders
+            const orderCreatedAt = new Date(newOrder.created_at);
+            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+            const isActive = ACTIVE_STATUSES.includes(newOrder.order_status) && 
+                           orderCreatedAt >= thirtyMinutesAgo;
+            
+            if (isActive) {
+              setOrders(prev => [newOrder, ...prev]);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            // For deletions, remove from both lists
+            setOrders(prev => prev.filter(order => order.id !== payload.old.id));
+            setAllOrders(prev => prev.filter(order => order.id !== payload.old.id));
+          }
         },
       )
       .subscribe((status: any) => {
@@ -698,19 +735,34 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
     setUpdating(orderId);
 
-    // Optimistic update
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { ...order, order_status: newOrderStatus, updated_at: new Date().toISOString() }
-          : order
-      )
-    );
+    // Optimistic update - update both orders and allOrders
+    const updateOrderInList = (order: any) => 
+      order.id === orderId 
+        ? { ...order, order_status: newOrderStatus, updated_at: new Date().toISOString() }
+        : order;
+
+    console.log("LIVE_ORDERS: Applying optimistic update to orders list");
+    setOrders(prevOrders => {
+      const updated = prevOrders.map(updateOrderInList);
+      console.log("LIVE_ORDERS: Updated orders list:", updated.map(o => ({ id: o.id, status: o.order_status })));
+      return updated;
+    });
+    
+    console.log("LIVE_ORDERS: Applying optimistic update to allOrders list");
+    setAllOrders(prevAllOrders => {
+      const updated = prevAllOrders.map(updateOrderInList);
+      console.log("LIVE_ORDERS: Updated allOrders list:", updated.map(o => ({ id: o.id, status: o.order_status })));
+      return updated;
+    });
 
     try {
+      console.log("LIVE_ORDERS: Sending update to database");
       const { error } = await supabase
         .from("orders")
-        .update({ order_status: newOrderStatus })
+        .update({ 
+          order_status: newOrderStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq("id", orderId);
 
       if (error) {
@@ -721,14 +773,17 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           code: error.code,
         });
         setError(`Failed to update order: ${error.message}`);
-        // Revert optimistic update on error
+        // Revert optimistic update on error by refetching
+        console.log("LIVE_ORDERS: Reverting optimistic update due to error");
         fetchOrdersRef.current();
       } else {
-        console.log("LIVE_ORDERS: Order status updated successfully", {
+        console.log("LIVE_ORDERS: Order status updated successfully in database", {
           orderId,
           newOrderStatus,
         });
         // Real-time subscription will handle the UI update
+        // No need to refetch - the optimistic update is already applied
+        console.log("LIVE_ORDERS: Optimistic update confirmed, no refetch needed");
       }
     } catch (error: any) {
       console.error(
@@ -736,7 +791,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         error,
       );
       setError("An unexpected error occurred.");
-      // Revert optimistic update on error
+      // Revert optimistic update on error by refetching
+      console.log("LIVE_ORDERS: Reverting optimistic update due to exception");
       fetchOrdersRef.current();
     } finally {
       setUpdating(null);
