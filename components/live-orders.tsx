@@ -70,9 +70,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [hasNewOrders, setHasNewOrders] = useState(false);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(15000); // 15 seconds
+  const [showDemoOrders, setShowDemoOrders] = useState(false);
+  const [serviceStatus, setServiceStatus] = useState<'healthy' | 'degraded' | 'down'>('healthy');
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
   const lastOrderCountRef = useRef<number>(0);
-  const [showDemoOrders, setShowDemoOrders] = useState(false);
 
   // Demo orders for when database is unavailable
   const demoOrders: OrderWithItems[] = [
@@ -360,6 +361,16 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
       if (ordersError) {
         logger.error("LIVE_ORDERS: Failed to fetch live orders", { error: ordersError.message, code: ordersError.code });
+        
+        // Check if it's a 503 service unavailable error
+        if (ordersError.message.includes('503') || ordersError.message.includes('Service Unavailable')) {
+          setServiceStatus('down');
+          // Reduce retry frequency for service issues
+          setRefreshInterval(60000); // 1 minute instead of 15 seconds
+        } else {
+          setServiceStatus('degraded');
+        }
+        
         setError(`Failed to load orders: ${ordersError.message}`);
       } else {
         logger.info("LIVE_ORDERS: Live orders fetched successfully", {
@@ -681,6 +692,21 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             </span>
           </div>
           
+          {/* Service Status Indicator */}
+          <div className={`flex items-center space-x-2 ${
+            serviceStatus === 'healthy' ? 'text-green-600' : 
+            serviceStatus === 'degraded' ? 'text-yellow-600' : 'text-red-600'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${
+              serviceStatus === 'healthy' ? 'bg-green-500' : 
+              serviceStatus === 'degraded' ? 'bg-yellow-500' : 'bg-red-500'
+            }`}></div>
+            <span className="text-sm font-medium">
+              {serviceStatus === 'healthy' ? 'Service Healthy' : 
+               serviceStatus === 'degraded' ? 'Service Degraded' : 'Service Down'}
+            </span>
+          </div>
+          
           {hasNewOrders && (
             <div className="flex items-center space-x-2 text-orange-600 animate-pulse">
               <Bell className="h-4 w-4" />
@@ -808,7 +834,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription className="flex items-center justify-between">
-                <span>{error}</span>
+                <span>
+                  {error.includes('503') || error.includes('Service Unavailable') 
+                    ? 'Database service temporarily unavailable. Please try again in a few minutes.'
+                    : error
+                  }
+                </span>
                 <div className="flex space-x-2">
                   <Button 
                     size="sm" 
