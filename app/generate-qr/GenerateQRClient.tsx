@@ -19,6 +19,8 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({ activeTablesNow: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [printSettings, setPrintSettings] = useState({
     qrSize: 150,
     qrPerPage: 4,
@@ -398,7 +400,13 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        console.log(`[QR STATS] Loading stats for venue: ${venueId}`);
+        console.log(`[QR STATS] Starting loadStats for venue: ${venueId}`);
+        setLoading(true);
+        setError(null);
+        
+        if (!venueId) {
+          throw new Error('No venueId provided');
+        }
         
         // Get today's orders to calculate active tables (matching main dashboard logic)
         const today = new Date(); 
@@ -417,9 +425,11 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
 
         if (error) {
           console.error('Error loading QR stats:', error);
+          setError(`Database error: ${error.message}`);
           // Set default values on error
           setStats({ activeTablesNow: 0 });
           setSelectedTables([]);
+          setLoading(false);
           return;
         }
 
@@ -456,18 +466,59 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
         }
         
         console.log(`[QR STATS] Active tables: ${activeTables} for venue ${venueId}`);
-      } catch (error) {
+        setLoading(false);
+      } catch (error: any) {
         console.error('Error in loadStats:', error);
+        setError(`Failed to load stats: ${error.message}`);
         // Set default values on error
         setStats({ activeTablesNow: 0 });
         setSelectedTables([]);
+        setLoading(false);
       }
     };
     
     if (venueId) {
       loadStats();
+    } else {
+      setError('No venue ID provided');
+      setLoading(false);
     }
   }, [venueId]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading QR codes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading QR Codes</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
