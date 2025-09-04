@@ -27,7 +27,9 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   });
   const router = useRouter();
 
-  const orderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${selectedTables[0]}`;
+  const orderUrl = selectedTables.length > 0 
+    ? `${siteOrigin()}/order?venue=${venueId}&table=${selectedTables[0]}`
+    : `${siteOrigin()}/order?venue=${venueId}&table=1`;
 
   const handleCopy = async () => {
     try {
@@ -42,7 +44,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   const addTable = () => {
     const nextTableNumber = selectedTables.length === 0 
       ? 1 
-      : Math.max(...selectedTables.map(t => parseInt(t)), 0) + 1;
+      : Math.max(...selectedTables.map(t => parseInt(t) || 0), 0) + 1;
     setSelectedTables([...selectedTables, nextTableNumber.toString()]);
   };
 
@@ -51,7 +53,7 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
     if (count > 0 && count <= 50) { // Limit to reasonable number
       const startNumber = selectedTables.length === 0 
         ? 1 
-        : Math.max(...selectedTables.map(t => parseInt(t)), 0) + 1;
+        : Math.max(...selectedTables.map(t => parseInt(t) || 0), 0) + 1;
       const newTables = Array.from({length: count}, (_, i) => (startNumber + i).toString());
       setSelectedTables([...selectedTables, ...newTables]);
     }
@@ -396,11 +398,15 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   useEffect(() => {
     const loadStats = async () => {
       try {
+        console.log(`[QR STATS] Loading stats for venue: ${venueId}`);
+        
         // Get today's orders to calculate active tables (matching main dashboard logic)
         const today = new Date(); 
         today.setHours(0,0,0,0);
         const startIso = today.toISOString();
         const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
+        
+        console.log(`[QR STATS] Fetching orders from ${startIso} to ${endIso}`);
         
         const { data: orders, error } = await supabase
           .from('orders')
@@ -411,8 +417,13 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
 
         if (error) {
           console.error('Error loading QR stats:', error);
+          // Set default values on error
+          setStats({ activeTablesNow: 0 });
+          setSelectedTables([]);
           return;
         }
+
+        console.log(`[QR STATS] Found ${orders?.length || 0} orders`);
 
         // Calculate active tables using same logic as main dashboard
         // Active tables = tables with orders that are not completed
@@ -447,9 +458,15 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
         console.log(`[QR STATS] Active tables: ${activeTables} for venue ${venueId}`);
       } catch (error) {
         console.error('Error in loadStats:', error);
+        // Set default values on error
+        setStats({ activeTablesNow: 0 });
+        setSelectedTables([]);
       }
     };
-    loadStats();
+    
+    if (venueId) {
+      loadStats();
+    }
   }, [venueId]);
 
   return (
