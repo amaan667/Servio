@@ -34,26 +34,18 @@ interface CartItem extends MenuItem {
 }
 
 export default function CustomerOrderPage() {
-  // IMMEDIATE DEBUG - This should appear in deploy logs if page is accessed
-  console.log('🚨 ORDER PAGE COMPONENT LOADED 🚨');
-  console.log('🚨 TIMESTAMP:', new Date().toISOString());
-  console.log('🚨 This means someone accessed the order page!');
-  
   const searchParams = useSearchParams();
   const venueSlug = searchParams?.get("venue") || "";
   const tableNumber = searchParams?.get("table") || "1";
   const isDemo = searchParams?.get("demo") === "1";
 
-  // Server-side logging for QR code access
-  console.log('[ORDER PAGE SERVER] ===== ORDER PAGE ACCESSED =====');
-  console.log('[ORDER PAGE SERVER] Timestamp:', new Date().toISOString());
-  console.log('[ORDER PAGE SERVER] Venue slug:', venueSlug);
-  console.log('[ORDER PAGE SERVER] Table number:', tableNumber);
-  console.log('[ORDER PAGE SERVER] Is demo:', isDemo);
-  console.log('[ORDER PAGE SERVER] All search params:', Object.fromEntries(searchParams?.entries() || []));
-
   // Log the initial page load and QR scan parameters (client-side only)
   useEffect(() => {
+    // IMMEDIATE DEBUG - This should appear in browser console
+    console.log('🚨 ORDER PAGE COMPONENT LOADED 🚨');
+    console.log('🚨 TIMESTAMP:', new Date().toISOString());
+    console.log('🚨 This means someone accessed the order page!');
+    
     console.log('[QR FLOW DEBUG] ===== CUSTOMER ORDER PAGE LOADED =====');
     console.log('[QR FLOW DEBUG] URL:', window.location.href);
     console.log('[QR FLOW DEBUG] Search params:', window.location.search);
@@ -61,6 +53,18 @@ export default function CustomerOrderPage() {
     console.log('[QR FLOW DEBUG] tableNumber from QR:', tableNumber);
     console.log('[QR FLOW DEBUG] isDemo from QR:', isDemo);
     console.log('[QR FLOW DEBUG] All search params:', Object.fromEntries(searchParams?.entries() || []));
+    
+    // Log to server-side for deploy logs
+    fetch('/api/log-order-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        venueSlug,
+        tableNumber,
+        isDemo,
+        url: window.location.href
+      })
+    }).catch(err => console.log('[QR FLOW DEBUG] Failed to log to server:', err));
   }, [venueSlug, tableNumber, isDemo, searchParams]);
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -173,7 +177,7 @@ export default function CustomerOrderPage() {
       // Attach venue_name for display
       const normalized = (data.menuItems || []).map((mi: any) => ({ 
         ...mi, 
-        venue_name: data.venue?.name || venue?.name || 'Our Venue'
+        venue_name: data.venue?.name || 'Our Venue'
       }));
       
       console.log('[MENU DEBUG] Normalized menu items count:', normalized.length);
