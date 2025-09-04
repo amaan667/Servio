@@ -9,6 +9,9 @@
  * - History: Orders from previous days
  * 
  * Orders automatically move from "Live Orders" to "Earlier Today" after 30 minutes
+ * 
+ * FIXED: Now uses authoritative dashboard_counts function to ensure proper date filtering
+ * and prevent orders from yesterday appearing in "Earlier Today" tab
  */
 
 import { useEffect, useState, useRef } from "react";
@@ -21,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
+import { useTabCounts } from "@/hooks/use-tab-counts";
 
 
 interface Order {
@@ -85,6 +89,23 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [refreshInterval, setRefreshInterval] = useState(15000); // 15 seconds
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Use the authoritative tab counts hook
+  const { data: tabCounts, refetch: refetchCounts } = useTabCounts(venueId, 'Europe/London', 30);
+
+  // Refresh counts when component mounts or venue changes
+  useEffect(() => {
+    if (venueId) {
+      refetchCounts();
+    }
+  }, [venueId, refetchCounts]);
+
+  // Debug log when tab counts change
+  useEffect(() => {
+    if (tabCounts) {
+      console.log('[LIVE ORDERS DEBUG] Tab counts updated:', tabCounts);
+    }
+  }, [tabCounts]);
+
   // Auto-refresh effect
   useEffect(() => {
     if (!autoRefreshEnabled) {
@@ -98,6 +119,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     autoRefreshRef.current = setInterval(() => {
       console.log('[LIVE ORDERS DEBUG] Auto-refreshing orders');
       loadVenueAndOrders();
+      // Also refresh the authoritative counts
+      refetchCounts();
     }, refreshInterval);
 
     return () => {
@@ -165,12 +188,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .lt('created_at', window.endUtcISO)
         .order('created_at', { ascending: false });
 
-      // Load history orders (terminal statuses before today)
+      // Load history orders (all orders before today, not just terminal statuses)
       const { data: historyData, error: historyError } = await createClient()
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .in('order_status', TERMINAL_STATUSES)
         .lt('created_at', window.startUtcISO)
         .order('created_at', { ascending: false })
         .limit(100); // Limit to last 100 orders
@@ -336,26 +358,29 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               orderCreatedAt >= new Date(todayWindow.startUtcISO) && 
               orderCreatedAt < new Date(todayWindow.endUtcISO);
             
-            if (isInTodayWindow) {
-              // Only add to all today if it's NOT already in live orders
-              if (!((isLiveOrder && isRecentOrder) || isCompletedRecent)) {
-                console.log('[LIVE ORDERS DEBUG] Adding to all today orders - not a live order');
-                setAllTodayOrders(prev => [newOrder, ...prev]);
-              }
-            } else {
-              console.log('[LIVE ORDERS DEBUG] Adding to history orders - not from today');
-              setHistoryOrders(prev => [newOrder, ...prev]);
-              // Update grouped history
-              const date = new Date(newOrder.created_at).toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-              });
-              setGroupedHistoryOrders(prev => ({
-                ...prev,
-                [date]: [newOrder, ...(prev[date] || [])]
-              }));
+                      if (isInTodayWindow) {
+            // Only add to all today if it's NOT already in live orders
+            if (!((isLiveOrder && isRecentOrder) || isCompletedRecent)) {
+              console.log('[LIVE ORDERS DEBUG] Adding to all today orders - not a live order');
+              setAllTodayOrders(prev => [newOrder, ...prev]);
             }
+          } else {
+            console.log('[LIVE ORDERS DEBUG] Adding to history orders - not from today');
+            setHistoryOrders(prev => [newOrder, ...prev]);
+            // Update grouped history
+            const date = new Date(newOrder.created_at).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            });
+            setGroupedHistoryOrders(prev => ({
+              ...prev,
+              [date]: [newOrder, ...(prev[date] || [])]
+            }));
+          }
+          
+          // Refresh the authoritative counts
+          refetchCounts();
           } else if (payload.eventType === 'UPDATE') {
             console.log('[LIVE ORDERS DEBUG] Order updated:', {
               orderId: newOrder.id,
@@ -401,6 +426,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             setHistoryOrders(prev => prev.map(order => 
               order.id === newOrder.id ? newOrder : order
             ));
+            
+            // Refresh the authoritative counts
+            refetchCounts();
           } else if (payload.eventType === 'DELETE') {
             const deletedOrder = payload.old as Order;
             console.log('[LIVE ORDERS DEBUG] Order deleted:', {
@@ -411,6 +439,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
             setAllTodayOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
             setHistoryOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+            
+            // Refresh the authoritative counts
+            refetchCounts();
           }
         }
       )
@@ -446,6 +477,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         if (movedToAllToday.length > 0) {
           console.log('[LIVE ORDERS DEBUG] Moving orders from live to all today:', movedToAllToday.length);
           setAllTodayOrders(prev => [...movedToAllToday, ...prev]);
+          
+          // Refresh the authoritative counts after moving orders
+          refetchCounts();
         }
         
         return stillLive;
@@ -472,6 +506,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setAllTodayOrders(prev => prev.map(order => 
         order.id === orderId ? { ...order, order_status: orderStatus } : order
       ));
+      
+      // Refresh the authoritative counts after status update
+      refetchCounts();
     }
   };
 
@@ -680,25 +717,84 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           </div>
         </div>
 
+        {/* Debug Info - Tab Counts */}
+        {tabCounts && (
+          <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-gray-500 rounded-full mt-2"></div>
+              <div className="text-sm text-gray-800">
+                <p className="font-medium mb-1">Current Tab Counts (Debug):</p>
+                <div className="grid grid-cols-3 gap-4 text-xs">
+                  <div>
+                    <strong>Live:</strong> {tabCounts.live_count}
+                  </div>
+                  <div>
+                    <strong>Earlier Today:</strong> {tabCounts.earlier_today_count}
+                  </div>
+                  <div>
+                    <strong>History:</strong> {tabCounts.history_count}
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-gray-600">
+                  <strong>Total Today:</strong> {tabCounts.today_orders_count} | <strong>Active Tables:</strong> {tabCounts.active_tables_count}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Debug Info - Time Window */}
+        {todayWindow && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
+              <div className="text-sm text-yellow-800">
+                <p className="font-medium mb-1">Current Time Window (Debug):</p>
+                <div className="text-xs space-y-1">
+                  <div><strong>Start (UTC):</strong> {todayWindow.startUtcISO}</div>
+                  <div><strong>End (UTC):</strong> {todayWindow.endUtcISO}</div>
+                  <div><strong>Current Time (UTC):</strong> {new Date().toISOString()}</div>
+                  <div><strong>Current Time (Local):</strong> {new Date().toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Manual Refresh Button */}
+        <div className="mb-4 flex justify-center">
+          <Button 
+            onClick={() => {
+              refetchCounts();
+              loadVenueAndOrders();
+            }}
+            variant="outline"
+            size="sm"
+            className="text-xs"
+          >
+            🔄 Refresh Counts & Orders
+          </Button>
+        </div>
+
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="live" className="flex items-center space-x-2">
               <span>Live (Last 30 Min)</span>
-              {orders.length > 0 && (
-                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{orders.length}</span>
+              {tabCounts?.live_count > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{tabCounts.live_count}</span>
               )}
             </TabsTrigger>
             <TabsTrigger value="all" className="flex items-center space-x-2">
               <span>Earlier Today</span>
-              {allTodayOrders.length > 0 && (
-                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">{allTodayOrders.length}</span>
+              {tabCounts?.earlier_today_count > 0 && (
+                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">{tabCounts.earlier_today_count}</span>
               )}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center space-x-2">
               <span>History</span>
-              {historyOrders.length > 0 && (
-                <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded-full">{historyOrders.length}</span>
+              {tabCounts?.history_count > 0 && (
+                <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded-full">{tabCounts.history_count}</span>
               )}
             </TabsTrigger>
           </TabsList>
