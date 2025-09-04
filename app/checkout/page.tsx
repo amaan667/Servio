@@ -183,16 +183,30 @@ export default function CheckoutPage() {
   const isDemo = searchParams?.get('demo') === '1';
 
   useEffect(() => {
+    console.log('[CHECKOUT DEBUG] Loading checkout data...');
+    
     // Get checkout data from localStorage or URL params
     const storedData = localStorage.getItem('pending-order-data');
+    console.log('[CHECKOUT DEBUG] Stored data:', storedData);
+    
     if (storedData) {
-      const data = JSON.parse(storedData);
-      setCheckoutData({
-        ...data,
-        cartId,
-        venueName: data.venueName || 'Restaurant',
-      });
+      try {
+        const data = JSON.parse(storedData);
+        console.log('[CHECKOUT DEBUG] Parsed data:', data);
+        
+        setCheckoutData({
+          ...data,
+          cartId,
+          venueName: data.venueName || 'Restaurant',
+        });
+        console.log('[CHECKOUT DEBUG] Checkout data set successfully');
+      } catch (error) {
+        console.error('[CHECKOUT DEBUG] Error parsing stored data:', error);
+        router.push('/order');
+      }
     } else {
+      console.log('[CHECKOUT DEBUG] No stored data found');
+      
       // Try to get from URL params for demo mode
       const venueId = searchParams?.get('venue') || 'demo-cafe';
       const tableNumber = parseInt(searchParams?.get('table') || '1');
@@ -202,6 +216,7 @@ export default function CheckoutPage() {
       ];
       
       if (isDemo) {
+        console.log('[CHECKOUT DEBUG] Setting up demo data');
         setCheckoutData({
           venueId,
           venueName: 'Demo Restaurant',
@@ -213,6 +228,7 @@ export default function CheckoutPage() {
           cartId,
         });
       } else {
+        console.log('[CHECKOUT DEBUG] No demo mode, redirecting to order page');
         router.push('/order');
       }
     }

@@ -321,11 +321,11 @@ export default function CustomerOrderPage() {
       // For real orders, store order data and redirect to unified checkout page
       // Order will only be created after successful payment
       const orderData = {
-        venue_id: venueSlug,
+        venueId: venueSlug, // Changed from venue_id to venueId
         venueName: 'Restaurant', // You might want to fetch this from the venue data
-        table_number: safeTable,
-        customer_name: customerInfo.name.trim(),
-        customer_phone: customerInfo.phone.trim(),
+        tableNumber: safeTable, // Changed from table_number to tableNumber
+        customerName: customerInfo.name.trim(), // Changed from customer_name to customerName
+        customerPhone: customerInfo.phone.trim(), // Changed from customer_phone to customerPhone
         cart: cart.map((item) => ({
           id: item.id && item.id.startsWith('demo-') ? null : item.id,
           name: item.name,
@@ -345,13 +345,15 @@ export default function CustomerOrderPage() {
       
       // Store order data in localStorage for checkout page
       localStorage.setItem('pending-order-data', JSON.stringify(orderData));
+      console.log('[ORDER DEBUG] Order data stored in localStorage');
       
       // Redirect to unified checkout page - order will be created after successful payment
+      console.log('[ORDER DEBUG] Redirecting to checkout page...');
       router.replace('/checkout');
+      // Don't reset loading state here since we're redirecting
     } catch (error) {
       console.error("Error preparing order:", error);
       alert("Failed to prepare order. Please try again.");
-    } finally {
       setIsSubmitting(false);
     }
   };
