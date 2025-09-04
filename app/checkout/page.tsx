@@ -44,6 +44,7 @@ if (typeof window !== 'undefined') {
 interface CartItem {
   id: string;
   name: string;
+  
   price: number;
   quantity: number;
   specialInstructions?: string;
@@ -416,12 +417,9 @@ function StripePaymentForm({
             <PaymentElement 
               options={{
                 layout: 'tabs',
-                paymentMethodOrder: ['google_pay', 'card', 'paypal'],
+                paymentMethodOrder: ['card', 'paypal'],
                 fields: {
                   billingDetails: 'auto'
-                },
-                wallets: {
-                  googlePay: 'auto'
                 }
               }}
             />
