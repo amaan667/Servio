@@ -210,7 +210,11 @@ export default function CheckoutPage() {
   const isDemo = searchParams?.get('demo') === '1';
 
   useEffect(() => {
+    console.log('[CHECKOUT DEBUG] ===== USEEFFECT STARTED =====');
+    console.log('[CHECKOUT DEBUG] Current state - isClient:', isClient, 'isInitialized:', isInitialized, 'isLoading:', isLoading, 'hasCheckedData:', hasCheckedData);
+    
     // Ensure we're on the client side
+    console.log('[CHECKOUT DEBUG] Setting isClient to true');
     setIsClient(true);
     
     console.log('[CHECKOUT DEBUG] ===== CHECKOUT PAGE LOADING =====');
@@ -223,6 +227,7 @@ export default function CheckoutPage() {
     console.log('[CHECKOUT DEBUG] Search params object:', searchParams);
     
     // Mark as initialized to prevent content flash
+    console.log('[CHECKOUT DEBUG] Setting isInitialized to true');
     setIsInitialized(true);
     
     // Get checkout data from localStorage or URL params
@@ -257,9 +262,13 @@ export default function CheckoutPage() {
         };
         console.log('[CHECKOUT DEBUG] Final checkout data:', checkoutData);
         console.log('[CHECKOUT DEBUG] Setting checkout data state...');
+        console.log('[CHECKOUT DEBUG] About to call setCheckoutData, setIsLoading(false), setHasCheckedData(true)');
         setCheckoutData(checkoutData);
+        console.log('[CHECKOUT DEBUG] setCheckoutData called');
         setIsLoading(false);
+        console.log('[CHECKOUT DEBUG] setIsLoading(false) called');
         setHasCheckedData(true);
+        console.log('[CHECKOUT DEBUG] setHasCheckedData(true) called');
         console.log('[CHECKOUT DEBUG] Checkout data state set successfully');
       } catch (error) {
         console.error('[CHECKOUT DEBUG] Error parsing stored data:', error);
@@ -297,9 +306,13 @@ export default function CheckoutPage() {
           cartId,
         };
         console.log('[CHECKOUT DEBUG] Demo checkout data:', demoCheckoutData);
+        console.log('[CHECKOUT DEBUG] About to set demo data - setCheckoutData, setIsLoading(false), setHasCheckedData(true)');
         setCheckoutData(demoCheckoutData);
+        console.log('[CHECKOUT DEBUG] Demo setCheckoutData called');
         setIsLoading(false);
+        console.log('[CHECKOUT DEBUG] Demo setIsLoading(false) called');
         setHasCheckedData(true);
+        console.log('[CHECKOUT DEBUG] Demo setHasCheckedData(true) called');
         console.log('[CHECKOUT DEBUG] Demo checkout data set successfully');
       } else {
         console.log('[CHECKOUT DEBUG] No demo mode, no stored data - waiting briefly then redirecting to order page');
@@ -326,9 +339,13 @@ export default function CheckoutPage() {
                 venueName: data.venueName || 'Restaurant',
               };
               console.log('[CHECKOUT DEBUG] Setting checkout data from retry...');
+              console.log('[CHECKOUT DEBUG] About to set retry data - setCheckoutData, setIsLoading(false), setHasCheckedData(true)');
               setCheckoutData(checkoutData);
+              console.log('[CHECKOUT DEBUG] Retry setCheckoutData called');
               setIsLoading(false);
+              console.log('[CHECKOUT DEBUG] Retry setIsLoading(false) called');
               setHasCheckedData(true);
+              console.log('[CHECKOUT DEBUG] Retry setHasCheckedData(true) called');
               console.log('[CHECKOUT DEBUG] Checkout data set from retry successfully');
             } catch (error) {
               console.error('[CHECKOUT DEBUG] Error parsing retry data:', error);
@@ -344,6 +361,17 @@ export default function CheckoutPage() {
       }
     }
   }, [router, searchParams, cartId, isDemo]);
+
+  // Track state changes for debugging
+  useEffect(() => {
+    console.log('[CHECKOUT DEBUG] ===== STATE CHANGE DETECTED =====');
+    console.log('[CHECKOUT DEBUG] isClient changed to:', isClient);
+    console.log('[CHECKOUT DEBUG] isInitialized changed to:', isInitialized);
+    console.log('[CHECKOUT DEBUG] isLoading changed to:', isLoading);
+    console.log('[CHECKOUT DEBUG] hasCheckedData changed to:', hasCheckedData);
+    console.log('[CHECKOUT DEBUG] checkoutData changed to:', !!checkoutData);
+    console.log('[CHECKOUT DEBUG] ===== END STATE CHANGE =====');
+  }, [isClient, isInitialized, isLoading, hasCheckedData, checkoutData]);
 
   const handlePaymentSuccess = (orderData: any) => {
     console.log('[CHECKOUT DEBUG] Payment success handler called:', orderData);
@@ -402,7 +430,17 @@ export default function CheckoutPage() {
     }
   };
 
+  // Log render condition every time
+  console.log('[CHECKOUT DEBUG] ===== RENDER CONDITION CHECK =====');
+  console.log('[CHECKOUT DEBUG] isClient:', isClient);
+  console.log('[CHECKOUT DEBUG] isInitialized:', isInitialized);
+  console.log('[CHECKOUT DEBUG] isLoading:', isLoading);
+  console.log('[CHECKOUT DEBUG] hasCheckedData:', hasCheckedData);
+  console.log('[CHECKOUT DEBUG] checkoutData exists:', !!checkoutData);
+  console.log('[CHECKOUT DEBUG] Should show loading?', !isClient || !isInitialized || isLoading || !hasCheckedData || !checkoutData);
+  
   if (!isClient || !isInitialized || isLoading || !hasCheckedData || !checkoutData) {
+    console.log('[CHECKOUT DEBUG] RENDERING LOADING SCREEN');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -416,6 +454,8 @@ export default function CheckoutPage() {
       </div>
     );
   }
+  
+  console.log('[CHECKOUT DEBUG] RENDERING MAIN CHECKOUT CONTENT');
 
   const getTotalPrice = () => {
     return checkoutData.cart.reduce((total, item) => total + (item.price * item.quantity), 0);

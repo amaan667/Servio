@@ -412,8 +412,15 @@ export default function CustomerOrderPage() {
         
         // Use window.location for reliable navigation
         console.log('[ORDER SUBMIT] DEMO FLOW: Using window.location for navigation');
+        console.log('[ORDER SUBMIT] DEMO FLOW: About to navigate to /checkout?demo=1');
+        console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before navigation:', window.location.href);
+        console.log('[ORDER SUBMIT] DEMO FLOW: Window object available:', typeof window !== 'undefined');
         if (typeof window !== 'undefined') {
+          console.log('[ORDER SUBMIT] DEMO FLOW: Setting window.location.href to /checkout?demo=1');
           window.location.href = '/checkout?demo=1';
+          console.log('[ORDER SUBMIT] DEMO FLOW: Navigation command executed');
+        } else {
+          console.log('[ORDER SUBMIT] DEMO FLOW: Window not available, cannot navigate');
         }
         
         console.log('[ORDER SUBMIT] DEMO FLOW: Returning from demo flow');
@@ -476,8 +483,15 @@ export default function CustomerOrderPage() {
       
       // Use window.location for reliable navigation
       console.log('[ORDER SUBMIT] REAL FLOW: Using window.location for navigation');
+      console.log('[ORDER SUBMIT] REAL FLOW: About to navigate to /checkout');
+      console.log('[ORDER SUBMIT] REAL FLOW: Current URL before navigation:', window.location.href);
+      console.log('[ORDER SUBMIT] REAL FLOW: Window object available:', typeof window !== 'undefined');
       if (typeof window !== 'undefined') {
+        console.log('[ORDER SUBMIT] REAL FLOW: Setting window.location.href to /checkout');
         window.location.href = '/checkout';
+        console.log('[ORDER SUBMIT] REAL FLOW: Navigation command executed');
+      } else {
+        console.log('[ORDER SUBMIT] REAL FLOW: Window not available, cannot navigate');
       }
     } catch (error) {
       console.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
