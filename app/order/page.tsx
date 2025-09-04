@@ -258,27 +258,37 @@ export default function CustomerOrderPage() {
   };
 
   const submitOrder = async () => {
+    console.log('[ORDER SUBMIT] ===== STARTING ORDER SUBMISSION =====');
+    console.log('[ORDER SUBMIT] Customer name:', customerInfo.name);
+    console.log('[ORDER SUBMIT] Customer phone:', customerInfo.phone);
+    console.log('[ORDER SUBMIT] Cart length:', cart.length);
+    console.log('[ORDER SUBMIT] Venue slug:', venueSlug);
+    console.log('[ORDER SUBMIT] Table number:', tableNumber);
+    console.log('[ORDER SUBMIT] Is demo:', isDemo);
+    console.log('[ORDER SUBMIT] Is demo fallback:', isDemoFallback);
+    
     if (!customerInfo.name.trim()) {
+      console.log('[ORDER SUBMIT] ERROR: No customer name provided');
       alert("Please enter your name.");
       return;
     }
     if (!customerInfo.phone.trim()) {
+      console.log('[ORDER SUBMIT] ERROR: No customer phone provided');
       alert("Please enter your phone number.");
       return;
     }
 
-          console.log('[ORDER DEBUG] Starting order submission');
-      console.log('[ORDER DEBUG] Cart items:', cart);
-      console.log('[ORDER DEBUG] Customer info:', customerInfo);
-      console.log('[ORDER DEBUG] Venue slug:', venueSlug);
-      console.log('[ORDER DEBUG] Table number:', tableNumber);
-      setIsSubmitting(true);
+    console.log('[ORDER SUBMIT] Validation passed, setting submitting state');
+    setIsSubmitting(true);
       try {
         const safeTable = parseInt(tableNumber) || 1;
 
       // For demo orders, redirect to checkout with demo mode
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
-        console.log('[ORDER DEBUG] Processing demo order - redirecting to checkout');
+        console.log('[ORDER SUBMIT] DEMO FLOW: Processing demo order');
+        console.log('[ORDER SUBMIT] DEMO FLOW: isDemo =', isDemo);
+        console.log('[ORDER SUBMIT] DEMO FLOW: isDemoFallback =', isDemoFallback);
+        console.log('[ORDER SUBMIT] DEMO FLOW: venueSlug =', venueSlug);
         
         // For demo orders, use the same flow as real orders but with demo mode
         const orderData = {
@@ -302,19 +312,33 @@ export default function CustomerOrderPage() {
             .join("; "),
         };
 
-        console.log('[ORDER DEBUG] Storing demo order data for checkout:', orderData);
+        console.log('[ORDER SUBMIT] DEMO FLOW: Storing demo order data for checkout:', orderData);
         
         // Store order data in localStorage for checkout page
         localStorage.setItem('pending-order-data', JSON.stringify(orderData));
-        console.log('[ORDER DEBUG] Demo order data stored in localStorage');
+        console.log('[ORDER SUBMIT] DEMO FLOW: Demo order data stored in localStorage');
         
         // Redirect to checkout page with demo mode
-        console.log('[ORDER DEBUG] Redirecting to checkout page with demo mode...');
-        router.replace('/checkout?demo=1');
+        console.log('[ORDER SUBMIT] DEMO FLOW: About to redirect to /checkout?demo=1');
+        console.log('[ORDER SUBMIT] DEMO FLOW: Router object:', router);
+        console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before redirect:', window.location.href);
+        
+        try {
+          router.replace('/checkout?demo=1');
+          console.log('[ORDER SUBMIT] DEMO FLOW: Router.replace called successfully');
+        } catch (routerError) {
+          console.error('[ORDER SUBMIT] DEMO FLOW: Router error:', routerError);
+        }
+        
+        console.log('[ORDER SUBMIT] DEMO FLOW: Returning from demo flow');
         return;
       }
 
       // For real orders, store order data and redirect to unified checkout page
+      console.log('[ORDER SUBMIT] REAL FLOW: Processing real order');
+      console.log('[ORDER SUBMIT] REAL FLOW: venueSlug =', venueSlug);
+      console.log('[ORDER SUBMIT] REAL FLOW: safeTable =', safeTable);
+      
       // Order will only be created after successful payment
       const orderData = {
         venueId: venueSlug, // Changed from venue_id to venueId
@@ -337,18 +361,28 @@ export default function CustomerOrderPage() {
           .join("; "),
       };
 
-      console.log('[ORDER DEBUG] Storing order data for checkout:', orderData);
+      console.log('[ORDER SUBMIT] REAL FLOW: Storing order data for checkout:', orderData);
       
       // Store order data in localStorage for checkout page
       localStorage.setItem('pending-order-data', JSON.stringify(orderData));
-      console.log('[ORDER DEBUG] Order data stored in localStorage');
+      console.log('[ORDER SUBMIT] REAL FLOW: Order data stored in localStorage');
       
       // Redirect to unified checkout page - order will be created after successful payment
-      console.log('[ORDER DEBUG] Redirecting to checkout page...');
-      router.replace('/checkout');
+      console.log('[ORDER SUBMIT] REAL FLOW: About to redirect to /checkout');
+      console.log('[ORDER SUBMIT] REAL FLOW: Router object:', router);
+      console.log('[ORDER SUBMIT] REAL FLOW: Current URL before redirect:', window.location.href);
+      
+      try {
+        router.replace('/checkout');
+        console.log('[ORDER SUBMIT] REAL FLOW: Router.replace called successfully');
+      } catch (routerError) {
+        console.error('[ORDER SUBMIT] REAL FLOW: Router error:', routerError);
+      }
+      
       // Don't reset loading state here since we're redirecting
     } catch (error) {
-      console.error("Error preparing order:", error);
+      console.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
+      console.error('[ORDER SUBMIT] ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       alert("Failed to prepare order. Please try again.");
       setIsSubmitting(false);
     }

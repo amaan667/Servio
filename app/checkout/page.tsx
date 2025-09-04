@@ -183,22 +183,28 @@ export default function CheckoutPage() {
   const isDemo = searchParams?.get('demo') === '1';
 
   useEffect(() => {
-    console.log('[CHECKOUT DEBUG] Loading checkout data...');
+    console.log('[CHECKOUT DEBUG] ===== CHECKOUT PAGE LOADING =====');
+    console.log('[CHECKOUT DEBUG] URL:', window.location.href);
+    console.log('[CHECKOUT DEBUG] Search params:', window.location.search);
+    console.log('[CHECKOUT DEBUG] Is demo mode:', isDemo);
+    console.log('[CHECKOUT DEBUG] Cart ID:', cartId);
     
     // Get checkout data from localStorage or URL params
     const storedData = localStorage.getItem('pending-order-data');
-    console.log('[CHECKOUT DEBUG] Stored data:', storedData);
+    console.log('[CHECKOUT DEBUG] Raw stored data:', storedData);
     
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
         console.log('[CHECKOUT DEBUG] Parsed data:', data);
         
-        setCheckoutData({
+        const checkoutData = {
           ...data,
           cartId,
           venueName: data.venueName || 'Restaurant',
-        });
+        };
+        console.log('[CHECKOUT DEBUG] Setting checkout data:', checkoutData);
+        setCheckoutData(checkoutData);
         console.log('[CHECKOUT DEBUG] Checkout data set successfully');
       } catch (error) {
         console.error('[CHECKOUT DEBUG] Error parsing stored data:', error);
