@@ -32,20 +32,35 @@ function bad(msg: string, status = 400) {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Partial<OrderPayload>;
-    console.log('[ORDERS POST] raw body', body);
+    console.log('[ORDERS POST] ===== ORDER SUBMISSION API CALLED =====');
+    console.log('[ORDERS POST] Request received at:', new Date().toISOString());
+    console.log('[ORDERS POST] Raw request body:', JSON.stringify(body, null, 2));
+    console.log('[ORDERS POST] Request headers:', {
+      'user-agent': req.headers.get('user-agent'),
+      'referer': req.headers.get('referer'),
+      'origin': req.headers.get('origin'),
+    });
 
+    console.log('[ORDERS POST] Starting validation...');
+    
     if (!body.venue_id || typeof body.venue_id !== 'string') {
+      console.log('[ORDERS POST] VALIDATION FAILED: venue_id is required');
       return bad('venue_id is required');
     }
     if (!body.customer_name || !body.customer_name.trim()) {
+      console.log('[ORDERS POST] VALIDATION FAILED: customer_name is required');
       return bad('customer_name is required');
     }
     if (!Array.isArray(body.items) || body.items.length === 0) {
+      console.log('[ORDERS POST] VALIDATION FAILED: items must be a non-empty array');
       return bad('items must be a non-empty array');
     }
     if (typeof body.total_amount !== 'number' || isNaN(body.total_amount)) {
+      console.log('[ORDERS POST] VALIDATION FAILED: total_amount must be a number');
       return bad('total_amount must be a number');
     }
+    
+    console.log('[ORDERS POST] Validation passed successfully');
 
     const tn = body.table_number;
     const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
@@ -104,20 +119,39 @@ export async function POST(req: Request) {
       itemsCount: payload.items.length,
     });
 
+    console.log('[ORDERS POST] Attempting database insertion...');
+    console.log('[ORDERS POST] Payload for insertion:', JSON.stringify(payload, null, 2));
+    
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')
       .insert(payload)
       .select('id, created_at');
 
-    if (insertErr) return bad(`Insert failed: ${insertErr.message}`, 400);
-    console.log('[ORDERS POST] order inserted', inserted?.[0]);
+    if (insertErr) {
+      console.log('[ORDERS POST] DATABASE INSERT FAILED:', insertErr);
+      return bad(`Insert failed: ${insertErr.message}`, 400);
+    }
+    
+    console.log('[ORDERS POST] Database insertion successful');
+    console.log('[ORDERS POST] Inserted order:', inserted?.[0]);
 
     console.log('[ORDERS POST] inserting order_items for order_id', inserted?.[0]?.id);
     // Note: items are embedded in orders payload in this schema; if you also mirror rows in order_items elsewhere, log success after that insert
     console.log('[ORDERS POST] order_items insert success (embedded items)');
-    return NextResponse.json({ ok: true, order: inserted?.[0] ?? null });
+    
+    const response = { ok: true, order: inserted?.[0] ?? null };
+    console.log('[ORDERS POST] ===== ORDER SUBMISSION COMPLETED SUCCESSFULLY =====');
+    console.log('[ORDERS POST] Final response:', JSON.stringify(response, null, 2));
+    console.log('[ORDERS POST] Response sent at:', new Date().toISOString());
+    
+    return NextResponse.json(response);
   } catch (e: any) {
     const msg = e?.message || (typeof e === 'string' ? e : 'Unknown server error');
+    console.log('[ORDERS POST] ===== ORDER SUBMISSION FAILED =====');
+    console.log('[ORDERS POST] Error occurred at:', new Date().toISOString());
+    console.log('[ORDERS POST] Error message:', msg);
+    console.log('[ORDERS POST] Error stack:', e?.stack);
+    console.log('[ORDERS POST] Error details:', e);
     return bad(`Server error: ${msg}`, 500);
   }
 }
