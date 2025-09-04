@@ -82,30 +82,6 @@ function StripePaymentForm({
 
   // Debug Stripe and Elements loading
   useEffect(() => {
-  // Handle payment success from URL parameters
-  useEffect(() => {
-    if (!isMounted) return;
-    
-    const success = searchParams?.get('success');
-    const paymentIntent = searchParams?.get('payment_intent');
-    
-    if (success === 'true' && paymentIntent) {
-      console.log('[PAYMENT SUCCESS] Payment completed successfully, progressing to feedback phase');
-      console.log('[PAYMENT SUCCESS] Payment intent:', paymentIntent);
-      
-      // Set success state and progress to feedback phase
-      setPaymentStatus('success');
-      setPhase('feedback');
-      
-      // Clear URL parameters to avoid re-triggering
-      const url = new URL(window.location.href);
-      url.searchParams.delete('success');
-      url.searchParams.delete('payment_intent');
-      url.searchParams.delete('payment_intent_client_secret');
-      window.history.replaceState({}, document.title, url.toString());
-    }
-  }, [isMounted, searchParams]);
-
     console.log('[STRIPE ELEMENTS INIT] Stripe Elements initialization check');
     console.log('[STRIPE ELEMENTS INIT] Stripe loaded:', !!stripe);
     console.log('[STRIPE ELEMENTS INIT] Elements loaded:', !!elements);
@@ -526,7 +502,64 @@ export default function CheckoutPage() {
   const [showCardForm, setShowCardForm] = useState(false);
 
   // Handle client-side mounting
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
+  // Handle payment success from URL parameters
+  useEffect(() => {
+    if (!isMounted) return;
+    
+    const success = searchParams?.get('success');
+    const paymentIntent = searchParams?.get('payment_intent');
+    
+    if (success === 'true' && paymentIntent) {
+      console.log('[PAYMENT SUCCESS] Payment completed successfully, progressing to feedback phase');
+      console.log('[PAYMENT SUCCESS] Payment intent:', paymentIntent);
+      
+      // Set success state and progress to feedback phase
+      setPaymentStatus('success');
+      setPhase('feedback');
+      
+      // Clear URL parameters to avoid re-triggering
+      const url = new URL(window.location.href);
+      url.searchParams.delete('success');
+      url.searchParams.delete('payment_intent');
+      url.searchParams.delete('payment_intent_client_secret');
+      window.history.replaceState({}, document.title, url.toString());
+    }
+  }, [isMounted, searchParams]);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    console.log('[CHECKOUT] Loading checkout data...');
+    
+    // Get checkout data from localStorage
+    const pendingData = localStorage.getItem('pending-order-data');
+    const checkoutData = localStorage.getItem('servio-checkout-data');
+    const storedData = pendingData || checkoutData;
+    
+    if (storedData) {
+      try {
+        const data = JSON.parse(storedData);
+        const checkoutData = {
+          ...data,
+          cartId,
+          venueName: data.venueName || 'Restaurant',
+        };
+        setCheckoutData(checkoutData);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('[CHECKOUT] Error parsing stored data:', error);
+        setError('Invalid order data');
+        setIsLoading(false);
+      }
+    } else if (isDemo) {
+      // Demo mode - create demo data
+      const demoCart = [
+        { id: 'demo-1', name: 'Demo Item 1', price: 12.00, quantity: 1 },
+        { id: 'demo-2', name: 'Demo Item 2', price: 8.00, quantity: 2 },
       ];
       const demoCheckoutData = {
         venueId: 'demo-cafe',
