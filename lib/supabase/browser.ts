@@ -144,7 +144,7 @@ export const clearSupabaseAuth = async () => {
 export const checkAuthStatus = async () => {
   try {
     const supabase = supabaseBrowser();
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
       console.error('[SUPABASE] Error checking auth status:', error);
@@ -152,9 +152,9 @@ export const checkAuthStatus = async () => {
     }
     
     return { 
-      isAuthenticated: !!session, 
-      session,
-      user: session?.user || null 
+      isAuthenticated: !!user, 
+      user,
+      session: null // We don't need session data for authentication check
     };
   } catch (error) {
     console.error('[SUPABASE] Error checking auth status:', error);

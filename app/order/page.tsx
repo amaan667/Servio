@@ -102,11 +102,11 @@ export default function CustomerOrderPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setSession(user ? { user } : null);
     };
-    getSession();
+    getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);

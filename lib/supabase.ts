@@ -111,10 +111,10 @@ export async function signUpUser(
       };
     }
 
-    // Check for session (user is authenticated if session exists)
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      // No session means email confirmation is required
+    // Check for user (user is authenticated if user exists)
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      // No user means email confirmation is required
       return {
         success: true,
         message:
@@ -186,13 +186,13 @@ export async function signInUser(email: string, password: string) {
     
     logger.info("Sign in successful", { userId: data.user.id });
     
-    // Ensure session is properly set
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      logger.error("No session after sign in");
+    // Ensure user is properly authenticated
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      logger.error("No user after sign in");
       return {
         success: false,
-        message: "Authentication failed - no session created",
+        message: "Authentication failed - user not authenticated",
       };
     }
     
