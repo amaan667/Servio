@@ -318,34 +318,36 @@ export default function CustomerOrderPage() {
         return;
       }
 
-      // For real orders, store order data and redirect to payment page
+      // For real orders, store order data and redirect to unified checkout page
       // Order will only be created after successful payment
       const orderData = {
         venue_id: venueSlug,
+        venueName: 'Restaurant', // You might want to fetch this from the venue data
         table_number: safeTable,
         customer_name: customerInfo.name.trim(),
         customer_phone: customerInfo.phone.trim(),
-        items: cart.map((item) => ({
-          menu_item_id: item.id && item.id.startsWith('demo-') ? null : item.id,
-          quantity: item.quantity,
+        cart: cart.map((item) => ({
+          id: item.id && item.id.startsWith('demo-') ? null : item.id,
+          name: item.name,
           price: item.price,
-          item_name: item.name,
-          special_instructions: item.specialInstructions || null,
+          quantity: item.quantity,
+          specialInstructions: item.specialInstructions || null,
+          image: item.image || null,
         })),
-        total_amount: getTotalPrice(),
+        total: getTotalPrice(),
         notes: cart
           .filter((item) => item.specialInstructions)
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
       };
 
-      console.log('[ORDER DEBUG] Storing order data for payment:', orderData);
+      console.log('[ORDER DEBUG] Storing order data for checkout:', orderData);
       
-      // Store order data in localStorage for payment page
+      // Store order data in localStorage for checkout page
       localStorage.setItem('pending-order-data', JSON.stringify(orderData));
       
-      // Redirect to payment page - order will be created after successful payment
-      router.replace(`/order/${venueSlug}/${tableNumber}/payment`);
+      // Redirect to unified checkout page - order will be created after successful payment
+      router.replace('/checkout');
     } catch (error) {
       console.error("Error preparing order:", error);
       alert("Failed to prepare order. Please try again.");
