@@ -34,6 +34,12 @@ import { v4 as uuidv4 } from "uuid";
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
+// Debug Stripe initialization
+if (typeof window !== 'undefined') {
+  console.log('[STRIPE DEBUG] Publishable key available:', !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+  console.log('[STRIPE DEBUG] Publishable key starts with:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 7));
+}
+
 interface CartItem {
   id: string;
   name: string;
@@ -70,21 +76,71 @@ function StripePaymentForm({
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Debug Stripe and Elements loading
+  useEffect(() => {
+    console.log('[STRIPE ELEMENTS INIT] Stripe Elements initialization check');
+    console.log('[STRIPE ELEMENTS INIT] Stripe loaded:', !!stripe);
+    console.log('[STRIPE ELEMENTS INIT] Elements loaded:', !!elements);
+    console.log('[STRIPE ELEMENTS INIT] Checkout data available:', !!checkoutData);
+    console.log('[STRIPE ELEMENTS INIT] Current loading state:', isLoading);
+    
+    if (stripe && elements) {
+      console.log('[STRIPE ELEMENTS INIT] Both Stripe and Elements are ready');
+      console.log('[STRIPE ELEMENTS INIT] Setting loading to false');
+      setIsLoading(false);
+      console.log('[STRIPE ELEMENTS INIT] Stripe Elements initialization complete');
+    } else {
+      console.log('[STRIPE ELEMENTS INIT] Still waiting for Stripe Elements to load');
+      if (!stripe) console.log('[STRIPE ELEMENTS INIT] Stripe not yet loaded');
+      if (!elements) console.log('[STRIPE ELEMENTS INIT] Elements not yet loaded');
+    }
+  }, [stripe, elements, checkoutData, isLoading]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    
+    console.log('[STRIPE PAYMENT SUBMISSION] Payment form submitted');
+    console.log('[STRIPE PAYMENT SUBMISSION] Timestamp:', new Date().toISOString());
+    console.log('[STRIPE PAYMENT SUBMISSION] Stripe available:', !!stripe);
+    console.log('[STRIPE PAYMENT SUBMISSION] Elements available:', !!elements);
+    console.log('[STRIPE PAYMENT SUBMISSION] Checkout data:', {
+      venueId: checkoutData.venueId,
+      venueName: checkoutData.venueName,
+      tableNumber: checkoutData.tableNumber,
+      customerName: checkoutData.customerName,
+      customerPhone: checkoutData.customerPhone,
+      cartId: checkoutData.cartId,
+      total: checkoutData.total,
+      itemsCount: checkoutData.cart.length,
+      items: checkoutData.cart.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      }))
+    });
 
     if (!stripe || !elements) {
+      console.error('[STRIPE PAYMENT SUBMISSION] Missing Stripe or Elements:', {
+        stripe: !!stripe,
+        elements: !!elements
+      });
       return;
     }
 
+    console.log('[STRIPE PAYMENT SUBMISSION] Starting payment processing...');
     setIsProcessing(true);
     setError(null);
 
     try {
       // Convert total from pounds to pence for Stripe
       const totalInPence = Math.round(checkoutData.total * 100);
-      console.log('[STRIPE] Creating payment intent for amount:', totalInPence);
+      console.log('[STRIPE PAYMENT INTENT] Creating payment intent');
+      console.log('[STRIPE PAYMENT INTENT] Original amount (GBP):', checkoutData.total);
+      console.log('[STRIPE PAYMENT INTENT] Converted amount (pence):', totalInPence);
+      console.log('[STRIPE PAYMENT INTENT] Conversion rate: 1 GBP = 100 pence');
       
       // Create payment intent
       const requestBody = {
@@ -97,6 +153,19 @@ function StripePaymentForm({
         customerPhone: checkoutData.customerPhone,
       };
 
+      console.log('[STRIPE PAYMENT INTENT] Request body prepared:', {
+        cartId: requestBody.cartId,
+        venueId: requestBody.venueId,
+        tableNumber: requestBody.tableNumber,
+        totalAmount: requestBody.totalAmount,
+        customerName: requestBody.customerName,
+        customerPhone: requestBody.customerPhone,
+        itemsCount: requestBody.items.length
+      });
+
+      console.log('[STRIPE PAYMENT INTENT] Making API call to /api/payments/create-intent');
+      const startTime = Date.now();
+      
       const response = await fetch('/api/payments/create-intent', {
         method: 'POST',
         headers: {
@@ -105,62 +174,179 @@ function StripePaymentForm({
         body: JSON.stringify(requestBody),
       });
 
+      const endTime = Date.now();
+      console.log('[STRIPE PAYMENT INTENT] API call completed in:', endTime - startTime, 'ms');
+      console.log('[STRIPE PAYMENT INTENT] Response status:', response.status);
+      console.log('[STRIPE PAYMENT INTENT] Response ok:', response.ok);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[STRIPE PAYMENT INTENT] API error response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const { clientSecret } = await response.json();
-      console.log('[STRIPE] Payment intent created, client secret received');
+      const responseData = await response.json();
+      console.log('[STRIPE PAYMENT INTENT] Response data received:', {
+        hasClientSecret: !!responseData.clientSecret,
+        clientSecretLength: responseData.clientSecret?.length,
+        otherFields: Object.keys(responseData).filter(key => key !== 'clientSecret')
+      });
+      
+      const { clientSecret } = responseData;
+      console.log('[STRIPE PAYMENT INTENT] Client secret extracted successfully');
 
       // Confirm payment
+      console.log('[STRIPE PAYMENT CONFIRMATION] Starting payment confirmation');
+      console.log('[STRIPE PAYMENT CONFIRMATION] Return URL:', `${window.location.origin}/checkout?success=true`);
+      console.log('[STRIPE PAYMENT CONFIRMATION] Client secret available:', !!clientSecret);
+      
+      const confirmationStartTime = Date.now();
       const { error: stripeError } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout?success=true`,
         },
       });
+      const confirmationEndTime = Date.now();
+      
+      console.log('[STRIPE PAYMENT CONFIRMATION] Confirmation completed in:', confirmationEndTime - confirmationStartTime, 'ms');
 
       if (stripeError) {
-        console.error('[STRIPE] Payment error:', stripeError);
+        console.error('[STRIPE PAYMENT CONFIRMATION] Payment error occurred:', {
+          type: stripeError.type,
+          code: stripeError.code,
+          message: stripeError.message,
+          decline_code: stripeError.decline_code,
+          payment_intent: stripeError.payment_intent
+        });
         throw new Error(stripeError.message || 'Payment failed');
       }
 
-      console.log('[STRIPE] Payment confirmed successfully');
+      console.log('[STRIPE PAYMENT CONFIRMATION] Payment confirmed successfully');
+      console.log('[STRIPE PAYMENT CONFIRMATION] No Stripe errors detected');
       
       // Create order from paid intent
+      console.log('[STRIPE ORDER CREATION] Starting order creation from paid intent');
+      console.log('[STRIPE ORDER CREATION] Payment confirmed, now creating order record');
+      
+      const orderRequestBody = {
+        cartId: checkoutData.cartId,
+        venueId: checkoutData.venueId,
+        tableNumber: checkoutData.tableNumber,
+        items: checkoutData.cart,
+        totalAmount: totalInPence,
+        customerName: checkoutData.customerName,
+        customerPhone: checkoutData.customerPhone,
+      };
+      
+      console.log('[STRIPE ORDER CREATION] Order request body:', {
+        cartId: orderRequestBody.cartId,
+        venueId: orderRequestBody.venueId,
+        tableNumber: orderRequestBody.tableNumber,
+        totalAmount: orderRequestBody.totalAmount,
+        customerName: orderRequestBody.customerName,
+        customerPhone: orderRequestBody.customerPhone,
+        itemsCount: orderRequestBody.items.length
+      });
+      
+      console.log('[STRIPE ORDER CREATION] Making API call to /api/orders/createFromPaidIntent');
+      const orderStartTime = Date.now();
+      
       const orderResponse = await fetch('/api/orders/createFromPaidIntent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          cartId: checkoutData.cartId,
-          venueId: checkoutData.venueId,
-          tableNumber: checkoutData.tableNumber,
-          items: checkoutData.cart,
-          totalAmount: totalInPence,
-          customerName: checkoutData.customerName,
-          customerPhone: checkoutData.customerPhone,
-        }),
+        body: JSON.stringify(orderRequestBody),
       });
 
+      const orderEndTime = Date.now();
+      console.log('[STRIPE ORDER CREATION] Order API call completed in:', orderEndTime - orderStartTime, 'ms');
+      console.log('[STRIPE ORDER CREATION] Order response status:', orderResponse.status);
+      console.log('[STRIPE ORDER CREATION] Order response ok:', orderResponse.ok);
+
       if (!orderResponse.ok) {
+        const orderErrorText = await orderResponse.text();
+        console.error('[STRIPE ORDER CREATION] Order creation failed:', {
+          status: orderResponse.status,
+          error: orderErrorText
+        });
         throw new Error(`Failed to create order: ${orderResponse.status}`);
       }
 
       const orderData = await orderResponse.json();
-      console.log('[STRIPE] Order created successfully:', orderData);
+      console.log('[STRIPE ORDER CREATION] Order created successfully:', {
+        orderId: orderData.id,
+        status: orderData.status,
+        total: orderData.total,
+        createdAt: orderData.createdAt,
+        hasAllRequiredFields: !!(orderData.id && orderData.status && orderData.total)
+      });
       
+      console.log('[STRIPE PAYMENT FLOW] Complete payment flow successful');
+      console.log('[STRIPE PAYMENT FLOW] Calling onSuccess callback with order data');
       onSuccess(orderData);
     } catch (err) {
-      console.error('[STRIPE] Payment error:', err);
+      console.error('[STRIPE PAYMENT ERROR] Payment flow failed:', {
+        error: err,
+        errorMessage: err instanceof Error ? err.message : 'Payment failed',
+        errorType: err instanceof Error ? err.constructor.name : typeof err,
+        timestamp: new Date().toISOString(),
+        checkoutData: {
+          venueId: checkoutData.venueId,
+          total: checkoutData.total,
+          cartId: checkoutData.cartId
+        }
+      });
+      
       const errorMessage = err instanceof Error ? err.message : 'Payment failed';
+      console.log('[STRIPE PAYMENT ERROR] Setting error state and calling onError callback');
       setError(errorMessage);
       onError(errorMessage);
     } finally {
+      console.log('[STRIPE PAYMENT FLOW] Payment processing completed, setting isProcessing to false');
       setIsProcessing(false);
     }
   };
+
+  // Show loading state while Stripe Elements are loading
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
+          <p className="text-gray-600">Loading secure payment form...</p>
+          <p className="text-sm text-gray-500 mt-2">Please wait while we initialize Stripe</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if Stripe failed to load
+  if (!stripe || !elements) {
+    return (
+      <div className="space-y-4">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+            <div>
+              <h3 className="text-sm font-medium text-red-800">Payment System Error</h3>
+              <p className="text-sm text-red-700 mt-1">
+                Unable to load secure payment form. Please try again or use demo mode.
+              </p>
+            </div>
+          </div>
+        </div>
+        <Button
+          onClick={() => onError('Stripe failed to load')}
+          variant="outline"
+          className="w-full"
+        >
+          Try Demo Mode Instead
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -168,7 +354,11 @@ function StripePaymentForm({
         <div>
           <Label htmlFor="card-element">Payment Information</Label>
           <div className="mt-2 p-4 border rounded-lg">
-            <PaymentElement />
+            <PaymentElement 
+              options={{
+                layout: 'tabs'
+              }}
+            />
           </div>
         </div>
         
@@ -183,6 +373,17 @@ function StripePaymentForm({
         type="submit"
         disabled={!stripe || isProcessing}
         className="w-full bg-purple-600 hover:bg-purple-700"
+        onClick={() => {
+          console.log('[STRIPE PAYMENT BUTTON] Real payment button clicked');
+          console.log('[STRIPE PAYMENT BUTTON] Button state:', {
+            stripeAvailable: !!stripe,
+            isProcessing: isProcessing,
+            elementsAvailable: !!elements,
+            totalAmount: checkoutData.total,
+            buttonDisabled: !stripe || isProcessing
+          });
+          console.log('[STRIPE PAYMENT BUTTON] About to submit payment form');
+        }}
       >
         {isProcessing ? (
           <>
@@ -281,6 +482,25 @@ export default function CheckoutPage() {
   }, [isMounted, cartId, isDemo]);
 
   const handlePaymentMethodSelect = (method: 'stripe' | 'simulation') => {
+    console.log('[PAYMENT METHOD SELECTION] User selected payment method:', method);
+    console.log('[PAYMENT METHOD SELECTION] Checkout data available:', !!checkoutData);
+    console.log('[PAYMENT METHOD SELECTION] Total amount:', checkoutData?.total);
+    console.log('[PAYMENT METHOD SELECTION] Cart items count:', checkoutData?.cart?.length);
+    console.log('[PAYMENT METHOD SELECTION] Customer info:', {
+      name: checkoutData?.customerName,
+      phone: checkoutData?.customerPhone,
+      venue: checkoutData?.venueName,
+      table: checkoutData?.tableNumber
+    });
+    
+    if (method === 'stripe') {
+      console.log('[STRIPE PAYMENT SELECTED] Real payment method chosen');
+      console.log('[STRIPE PAYMENT SELECTED] Stripe publishable key available:', !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+      console.log('[STRIPE PAYMENT SELECTED] Stripe publishable key prefix:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 7));
+    } else {
+      console.log('[SIMULATION PAYMENT SELECTED] Demo mode chosen');
+    }
+    
     setPaymentMethod(method);
   };
 
@@ -294,18 +514,43 @@ export default function CheckoutPage() {
   };
 
   const handleStripePaymentSuccess = (orderData: any) => {
-    console.log('[CHECKOUT] Stripe payment success:', orderData);
+    console.log('[STRIPE PAYMENT SUCCESS] Payment completed successfully');
+    console.log('[STRIPE PAYMENT SUCCESS] Order data received:', {
+      orderId: orderData.id,
+      status: orderData.status,
+      total: orderData.total,
+      createdAt: orderData.createdAt,
+      venueId: orderData.venueId,
+      tableNumber: orderData.tableNumber,
+      customerName: orderData.customerName
+    });
+    console.log('[STRIPE PAYMENT SUCCESS] Setting order state and transitioning to confirmed phase');
+    
     setOrder(orderData);
     setPhase('confirmed');
     setPaymentStatus('success');
     
+    console.log('[STRIPE PAYMENT SUCCESS] Clearing stored checkout data from localStorage');
     // Clear stored data
     localStorage.removeItem('pending-order-data');
     localStorage.removeItem('servio-checkout-data');
+    console.log('[STRIPE PAYMENT SUCCESS] Checkout data cleared, payment flow complete');
   };
 
   const handleStripePaymentError = (error: string) => {
-    console.error('[CHECKOUT] Stripe payment error:', error);
+    console.error('[STRIPE PAYMENT ERROR] Payment failed with error:', error);
+    console.error('[STRIPE PAYMENT ERROR] Error details:', {
+      errorMessage: error,
+      timestamp: new Date().toISOString(),
+      checkoutData: {
+        venueId: checkoutData?.venueId,
+        total: checkoutData?.total,
+        cartId: checkoutData?.cartId,
+        customerName: checkoutData?.customerName
+      }
+    });
+    console.log('[STRIPE PAYMENT ERROR] Setting error state and transitioning to error phase');
+    
     setError(error);
     setPhase('error');
     setPaymentStatus('failed');
@@ -820,7 +1065,7 @@ export default function CheckoutPage() {
                       <Button 
                         onClick={simulatePayment}
                         className="w-full bg-purple-600 hover:bg-purple-700"
-                        disabled={paymentStatus === 'processing'}
+                        disabled={paymentStatus !== 'pending'}
                       >
                         <Lock className="h-4 w-4 mr-2" />
                         Pay £{getTotalPrice().toFixed(2)}
