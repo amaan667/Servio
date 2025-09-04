@@ -152,7 +152,7 @@ function StripePaymentForm({
       
       // Create payment intent
       const requestBody = {
-        cartId: checkoutData.cartId,
+        cartId: checkoutData.cartId || `cart-${Date.now()}`, // Use cartId from checkoutData or generate one
         venueId: checkoutData.venueId,
         tableNumber: checkoutData.tableNumber,
         items: checkoutData.cart,
@@ -160,6 +160,42 @@ function StripePaymentForm({
         customerName: checkoutData.customerName,
         customerPhone: checkoutData.customerPhone,
       };
+
+      // Debug: Log the complete request body to identify missing fields
+      console.log('[STRIPE PAYMENT INTENT] Complete request body:', {
+        cartId: requestBody.cartId,
+        venueId: requestBody.venueId,
+        tableNumber: requestBody.tableNumber,
+        itemsCount: requestBody.items?.length,
+        items: requestBody.items,
+        totalAmount: requestBody.totalAmount,
+        customerName: requestBody.customerName,
+        customerPhone: requestBody.customerPhone,
+        allFieldsPresent: {
+          cartId: !!requestBody.cartId,
+          venueId: !!requestBody.venueId,
+          tableNumber: requestBody.tableNumber !== undefined,
+          items: !!requestBody.items && requestBody.items.length > 0,
+          totalAmount: requestBody.totalAmount > 0,
+          customerName: !!requestBody.customerName,
+          customerPhone: !!requestBody.customerPhone,
+        }
+      });
+
+      // Validate required fields before making API call
+      const missingFields = [];
+      if (!requestBody.cartId) missingFields.push('cartId');
+      if (!requestBody.venueId) missingFields.push('venueId');
+      if (requestBody.tableNumber === undefined) missingFields.push('tableNumber');
+      if (!requestBody.items || requestBody.items.length === 0) missingFields.push('items');
+      if (!requestBody.totalAmount || requestBody.totalAmount <= 0) missingFields.push('totalAmount');
+      if (!requestBody.customerName) missingFields.push('customerName');
+      if (!requestBody.customerPhone) missingFields.push('customerPhone');
+
+      if (missingFields.length > 0) {
+        console.error('[STRIPE PAYMENT INTENT] Missing required fields:', missingFields);
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
 
       console.log('[STRIPE PAYMENT INTENT] Request body prepared:', {
         cartId: requestBody.cartId,
@@ -190,7 +226,22 @@ function StripePaymentForm({
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[STRIPE PAYMENT INTENT] API error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        
+        // Try to parse error as JSON for better error message
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error) {
+            errorMessage = errorJson.error;
+          }
+        } catch (e) {
+          // If not JSON, use the text as is
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const responseData = await response.json();
