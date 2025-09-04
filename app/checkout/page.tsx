@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import Image from "next/image";
-import OrderFeedbackForm from "@/components/OrderFeedbackForm";
+// import OrderFeedbackForm from "@/components/OrderFeedbackForm";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -973,10 +973,13 @@ export default function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <OrderFeedbackForm 
-                venueId={checkoutData?.venueId || ''} 
-                orderId={order?.id || ''} 
-              />
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Feedback form will be available soon!</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Thank you for your order! We appreciate your business.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
