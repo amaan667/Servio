@@ -27,14 +27,14 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Get the actual session from the server efficiently
+  // Get the actual session from the server efficiently using secure method
   let session = null;
   try {
     const supabase = await createServerSupabase();
-    const { data } = await supabase.auth.getSession();
-    session = data.session;
+    const { data: { user } } = await supabase.auth.getUser();
+    session = user ? { user } : null;
   } catch (error) {
-    console.log('[LAYOUT] Error getting session:', error);
+    console.log('[LAYOUT] Error getting user:', error);
   }
 
   return (

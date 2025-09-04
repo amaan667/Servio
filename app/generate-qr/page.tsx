@@ -39,8 +39,13 @@ export default async function GenerateQRPage() {
     console.log('[QR PAGE] Venue data:', venue);
     console.log('[QR PAGE] Venue error:', error);
     
-    if (!venue || error) {
-      console.log('[QR PAGE] No venue or error, redirecting to complete-profile');
+    if (error) {
+      console.error('[QR PAGE] Database error:', error);
+      redirect('/complete-profile');
+    }
+    
+    if (!venue) {
+      console.log('[QR PAGE] No venue found, redirecting to complete-profile');
       redirect('/complete-profile');
     }
 

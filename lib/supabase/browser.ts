@@ -22,6 +22,7 @@ export const supabaseBrowser = () => {
       return {
         auth: {
           getSession: async () => ({ data: { session: null }, error: null }),
+          getUser: async () => ({ data: { user: null }, error: null }),
           onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
           signOut: async () => ({ error: null }),
           refreshSession: async () => ({ data: { session: null }, error: null })
