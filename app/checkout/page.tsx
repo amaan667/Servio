@@ -214,9 +214,10 @@ export default function CheckoutPage() {
     console.log('[CHECKOUT DEBUG] Search params object:', searchParams);
     
     // Get checkout data from localStorage or URL params
-    const storedData = localStorage.getItem('pending-order-data');
+    const storedData = localStorage.getItem('pending-order-data') || localStorage.getItem('servio-checkout-data');
     console.log('[CHECKOUT DEBUG] Raw stored data:', storedData);
     console.log('[CHECKOUT DEBUG] Stored data length:', storedData?.length || 0);
+    console.log('[CHECKOUT DEBUG] Checked both pending-order-data and servio-checkout-data keys');
     
     if (storedData) {
       try {
@@ -275,8 +276,29 @@ export default function CheckoutPage() {
         setCheckoutData(demoCheckoutData);
         console.log('[CHECKOUT DEBUG] Demo checkout data set successfully');
       } else {
-        console.log('[CHECKOUT DEBUG] No demo mode, no stored data - redirecting to order page');
-        router.push('/order');
+        console.log('[CHECKOUT DEBUG] No demo mode, no stored data - waiting briefly then redirecting to order page');
+        // Add a small delay to allow localStorage to be available
+        setTimeout(() => {
+          const retryData = localStorage.getItem('pending-order-data') || localStorage.getItem('servio-checkout-data');
+          if (retryData) {
+            console.log('[CHECKOUT DEBUG] Found data on retry, processing...');
+            try {
+              const data = JSON.parse(retryData);
+              const checkoutData = {
+                ...data,
+                cartId,
+                venueName: data.venueName || 'Restaurant',
+              };
+              setCheckoutData(checkoutData);
+            } catch (error) {
+              console.error('[CHECKOUT DEBUG] Error parsing retry data:', error);
+              router.push('/order');
+            }
+          } else {
+            console.log('[CHECKOUT DEBUG] Still no data after retry - redirecting to order page');
+            router.push('/order');
+          }
+        }, 100);
       }
     }
   }, [router, searchParams, cartId, isDemo]);
