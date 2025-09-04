@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,
       currency: 'gbp',
-      payment_method_types: ['card', 'paypal'],
+      automatic_payment_methods: { enabled: true },
       metadata: {
         cart_id: cartId,
         venue_id: venueId,
