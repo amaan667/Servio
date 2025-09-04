@@ -82,6 +82,7 @@ function CheckoutForm({
       // Convert total from pounds to pence for Stripe
       const totalInPence = Math.round(checkoutData.total * 100);
       console.log('[CHECKOUT DEBUG] ===== AMOUNT CONVERSION DEBUG =====');
+      console.log('[CHECKOUT DEBUG] VERSION: 2024-12-19-amount-conversion-fix');
       console.log('[CHECKOUT DEBUG] Original total from checkoutData:', checkoutData.total);
       console.log('[CHECKOUT DEBUG] Original total type:', typeof checkoutData.total);
       console.log('[CHECKOUT DEBUG] Calculated total in pence:', totalInPence);
@@ -208,6 +209,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     console.log('[CHECKOUT DEBUG] ===== CHECKOUT PAGE LOADING =====');
+    console.log('[CHECKOUT DEBUG] VERSION: 2024-12-19-amount-conversion-fix');
     console.log('[CHECKOUT DEBUG] URL:', window.location.href);
     console.log('[CHECKOUT DEBUG] Search params:', window.location.search);
     console.log('[CHECKOUT DEBUG] Is demo mode:', isDemo);
