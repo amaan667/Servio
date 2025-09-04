@@ -76,6 +76,14 @@ function CheckoutForm({
     setError(null);
 
     try {
+      // Convert total from pounds to pence for Stripe
+      const totalInPence = Math.round(checkoutData.total * 100);
+      console.log('[CHECKOUT DEBUG] Amount conversion:', {
+        originalTotal: checkoutData.total,
+        totalInPence: totalInPence,
+        originalType: typeof checkoutData.total
+      });
+      
       // Create payment intent
       const response = await fetch('/api/payments/create-intent', {
         method: 'POST',
@@ -87,7 +95,7 @@ function CheckoutForm({
           venueId: checkoutData.venueId,
           tableNumber: checkoutData.tableNumber,
           items: checkoutData.cart,
-          totalAmount: checkoutData.total,
+          totalAmount: totalInPence, // Convert pounds to pence
           customerName: checkoutData.customerName,
           customerPhone: checkoutData.customerPhone,
         }),
@@ -164,7 +172,7 @@ function CheckoutForm({
         ) : (
           <>
             <CreditCard className="w-4 h-4 mr-2" />
-            Pay £{(checkoutData.total / 100).toFixed(2)}
+            Pay £{checkoutData.total.toFixed(2)}
           </>
         )}
       </Button>
@@ -229,8 +237,8 @@ export default function CheckoutPage() {
       const venueId = searchParams?.get('venue') || 'demo-cafe';
       const tableNumber = parseInt(searchParams?.get('table') || '1');
       const demoCart = [
-        { id: 'demo-1', name: 'Demo Item 1', price: 1200, quantity: 1 },
-        { id: 'demo-2', name: 'Demo Item 2', price: 800, quantity: 2 },
+        { id: 'demo-1', name: 'Demo Item 1', price: 12.00, quantity: 1 },
+        { id: 'demo-2', name: 'Demo Item 2', price: 8.00, quantity: 2 },
       ];
       
       console.log('[CHECKOUT DEBUG] Demo mode check - isDemo:', isDemo);
@@ -395,7 +403,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium">
-                        £{((item.price * item.quantity) / 100).toFixed(2)}
+                        £{(item.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -405,7 +413,7 @@ export default function CheckoutPage() {
                 
                 <div className="flex justify-between items-center text-lg font-semibold">
                   <span>Total</span>
-                  <span>£{(getTotalPrice() / 100).toFixed(2)}</span>
+                  <span>£{getTotalPrice().toFixed(2)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -512,7 +520,7 @@ export default function CheckoutPage() {
                       Order ID: {order.id}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Total: £{(order.total_amount / 100).toFixed(2)}
+                      Total: £{order.total_amount.toFixed(2)}
                     </p>
                     <p className="text-sm text-gray-600">
                       Status: {order.order_status}
