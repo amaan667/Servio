@@ -23,9 +23,12 @@ import {
   ArrowLeft,
   ShoppingCart,
   Receipt,
-  X
+  X,
+  MessageSquare,
+  Clock
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -49,7 +52,7 @@ interface CheckoutData {
   customerPhone: string;
 }
 
-type CheckoutPhase = 'review' | 'processing' | 'confirmed' | 'error';
+type CheckoutPhase = 'review' | 'processing' | 'confirmed' | 'feedback' | 'timeline' | 'error';
 
 function CheckoutForm({ 
   checkoutData, 
@@ -188,6 +191,8 @@ export default function CheckoutPage() {
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [cartId] = useState(() => uuidv4());
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const isDemo = searchParams?.get('demo') === '1';
 
   useEffect(() => {
@@ -273,6 +278,17 @@ export default function CheckoutPage() {
     setPhase('confirmed');
     // Clear stored data
     localStorage.removeItem('pending-order-data');
+    localStorage.removeItem('servio-checkout-data');
+  };
+
+  const handleFeedbackSubmitted = () => {
+    setFeedbackSubmitted(true);
+    setPhase('timeline');
+  };
+
+  const handleShowFeedback = () => {
+    setShowFeedback(true);
+    setPhase('feedback');
   };
 
   const handlePaymentError = (errorMessage: string) => {
@@ -529,6 +545,21 @@ export default function CheckoutPage() {
 
                   <div className="space-y-3">
                     <Button
+                      onClick={handleShowFeedback}
+                      className="w-full bg-servio-purple hover:bg-servio-purple/90"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Share Your Experience
+                    </Button>
+                    <Button
+                      onClick={() => router.push(`/order-tracking/${order.id}`)}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      Track Your Order
+                    </Button>
+                    <Button
                       onClick={() => router.push(`/order/${checkoutData.venueId}/${checkoutData.tableNumber}`)}
                       className="w-full"
                       variant="outline"
@@ -537,7 +568,84 @@ export default function CheckoutPage() {
                     </Button>
                     <Button
                       onClick={() => router.push('/')}
+                      className="w-full"
+                      variant="ghost"
+                    >
+                      Return to Home
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {phase === 'feedback' && order && (
+              <Card>
+                <CardContent className="py-8">
+                  <div className="text-center mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      How was your experience?
+                    </h3>
+                    <p className="text-gray-600">
+                      Your feedback helps us improve our service
+                    </p>
+                  </div>
+                  
+                  <CustomerFeedbackForm
+                    venueId={checkoutData.venueId}
+                    orderId={order.id}
+                    customerName={checkoutData.customerName}
+                    customerPhone={checkoutData.customerPhone}
+                    onFeedbackSubmitted={handleFeedbackSubmitted}
+                  />
+                  
+                  <div className="mt-6 text-center">
+                    <Button
+                      onClick={() => setPhase('timeline')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Skip Feedback & Track Order
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {phase === 'timeline' && order && (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Clock className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {feedbackSubmitted ? 'Thank you for your feedback!' : 'Track Your Order'}
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    {feedbackSubmitted 
+                      ? 'Now you can track your order in real-time'
+                      : 'Follow your order from preparation to delivery'
+                    }
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => router.push(`/order-tracking/${order.id}`)}
                       className="w-full bg-servio-purple hover:bg-servio-purple/90"
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      View Order Timeline
+                    </Button>
+                    <Button
+                      onClick={() => router.push(`/order/${checkoutData.venueId}/${checkoutData.tableNumber}`)}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      Order Again
+                    </Button>
+                    <Button
+                      onClick={() => router.push('/')}
+                      className="w-full"
+                      variant="ghost"
                     >
                       Return to Home
                     </Button>
