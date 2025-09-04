@@ -1,0 +1,12 @@
+# Apple Pay Domain Verification File
+# 
+# IMPORTANT: This is a placeholder file. You need to:
+# 1. Go to Stripe Dashboard → Settings → Payment methods → Apple Pay
+# 2. Add your domain: servio-production.up.railway.app
+# 3. Download the actual verification file from Stripe
+# 4. Replace this file with the downloaded content
+#
+# The file should be accessible at:
+# https://servio-production.up.railway.app/.well-known/apple-developer-merchantid-domain-association
+#
+# Once you upload the real file, Apple Pay should work properly.
