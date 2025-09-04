@@ -106,6 +106,21 @@ export async function POST(req: Request) {
       ? textAnswers.map(a => a.answer_text).join('\n\n')
       : '';
 
+    // Calculate sentiment based on rating
+    let sentimentLabel: 'positive' | 'negative' | 'neutral';
+    let sentimentScore: number;
+    
+    if (averageRating >= 4) {
+      sentimentLabel = 'positive';
+      sentimentScore = 0.8 + (averageRating - 4) * 0.1;
+    } else if (averageRating <= 2) {
+      sentimentLabel = 'negative';
+      sentimentScore = 0.2 - (2 - averageRating) * 0.1;
+    } else {
+      sentimentLabel = 'neutral';
+      sentimentScore = 0.5;
+    }
+
     // Create single feedback entry
     const feedbackData = {
       venue_id,
@@ -116,9 +131,8 @@ export async function POST(req: Request) {
       rating: averageRating,
       comment: comment || 'No additional comments',
       category: 'structured',
-      feedback_type: 'structured',
-      sentiment_score: null,
-      sentiment_label: null,
+      sentiment_score: sentimentScore,
+      sentiment_label: sentimentLabel,
       response: null,
       responded_at: null
     };
