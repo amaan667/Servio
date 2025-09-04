@@ -944,7 +944,7 @@ export default function CheckoutPage() {
                         Change Method
                       </Button>
                     </div>
-                    <Elements stripe={stripePromise}>
+                    <Elements stripe={stripePromise} options={{ mode: 'payment' }}>
                       <StripePaymentForm
                         checkoutData={checkoutData!}
                         onSuccess={handleStripePaymentSuccess}
