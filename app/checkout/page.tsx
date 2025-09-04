@@ -416,12 +416,11 @@ function StripePaymentForm({
             <PaymentElement 
               options={{
                 layout: 'tabs',
-                paymentMethodOrder: ['apple_pay', 'google_pay', 'card', 'paypal'],
+                paymentMethodOrder: ['google_pay', 'card', 'paypal'],
                 fields: {
                   billingDetails: 'auto'
                 },
                 wallets: {
-                  applePay: 'auto',
                   googlePay: 'auto'
                 }
               }}
