@@ -25,7 +25,8 @@ import {
   BarChart3,
   Send,
   RefreshCw,
-  Edit3
+  Edit3,
+  Plus
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { logger } from "@/lib/logger";
@@ -66,6 +67,7 @@ interface FeedbackSystemProps {
 export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'feedback' | 'create'>('overview');
@@ -85,6 +87,18 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     is_active: true
   });
   const [creatingQuestion, setCreatingQuestion] = useState(false);
+
+  const fetchQuestions = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setQuestions(data.questions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+    }
+  }, [venueId]);
 
   const fetchFeedback = useCallback(async () => {
     setLoading(true);
@@ -281,7 +295,8 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
   useEffect(() => {
     fetchFeedback();
-  }, [fetchFeedback]);
+    fetchQuestions();
+  }, [fetchFeedback, fetchQuestions]);
 
   if (loading) {
     return (
@@ -426,6 +441,64 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   </Card>
                 </>
               )}
+
+              {/* Questions Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <MessageSquare className="h-5 w-5 mr-2" />
+                    Current Feedback Questions
+                  </CardTitle>
+                  <CardDescription>
+                    These are the questions customers see when leaving feedback
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {questions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 mb-4">No custom questions created yet</p>
+                      <p className="text-sm text-gray-500">
+                        Customers will see generic questions until you create custom ones.
+                      </p>
+                      <Button 
+                        onClick={() => setActiveTab('create')} 
+                        className="mt-4"
+                      >
+                        Create Your First Question
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {questions.map((question, index) => (
+                        <div key={question.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
+                              <span className="font-medium">{question.prompt}</span>
+                              <Badge variant={question.is_active ? "default" : "secondary"}>
+                                {question.type}
+                              </Badge>
+                              {!question.is_active && (
+                                <Badge variant="outline">Inactive</Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="pt-4 border-t">
+                        <Button 
+                          onClick={() => setActiveTab('create')} 
+                          variant="outline"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add More Questions
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="feedback" className="space-y-4">

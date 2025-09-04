@@ -111,21 +111,28 @@ function FeedbackForm({ venueId, orderId }: { venueId: string; orderId?: string 
 
   const fetchQuestions = async () => {
     try {
-      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
+      console.log('[FEEDBACK] Fetching questions for venue:', venueId);
+      const response = await fetch(`/api/feedback/questions/public?venueId=${venueId}`);
+      console.log('[FEEDBACK] Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        const activeQuestions = (data.questions || []).filter((q: any) => q.is_active);
+        console.log('[FEEDBACK] API response:', data);
+        const activeQuestions = data.questions || [];
         
         if (activeQuestions.length === 0) {
+          console.log('[FEEDBACK] No custom questions found, using generic questions');
           setQuestions(genericQuestions);
         } else {
+          console.log('[FEEDBACK] Using custom questions:', activeQuestions.length);
           setQuestions(activeQuestions);
         }
       } else {
+        console.log('[FEEDBACK] API failed, using generic questions');
         setQuestions(genericQuestions);
       }
     } catch (error) {
-      console.error('Error fetching questions:', error);
+      console.error('[FEEDBACK] Error fetching questions:', error);
       setQuestions(genericQuestions);
     } finally {
       setLoading(false);
@@ -429,7 +436,7 @@ function StripePaymentForm({
 
       console.log('[STRIPE PAYMENT INTENT] Making API call to /api/payments/create-intent');
       const startTime = Date.now();
-      
+
       const response = await fetch('/api/payments/create-intent', {
         method: 'POST',
         headers: {
@@ -519,13 +526,13 @@ function StripePaymentForm({
       console.log('[STRIPE ORDER CREATION] Payment confirmed, now creating order record');
       
       const orderRequestBody = {
-        cartId: checkoutData.cartId,
-        venueId: checkoutData.venueId,
-        tableNumber: checkoutData.tableNumber,
-        items: checkoutData.cart,
-        totalAmount: totalInPence,
-        customerName: checkoutData.customerName,
-        customerPhone: checkoutData.customerPhone,
+          cartId: checkoutData.cartId,
+          venueId: checkoutData.venueId,
+          tableNumber: checkoutData.tableNumber,
+          items: checkoutData.cart,
+          totalAmount: totalInPence,
+          customerName: checkoutData.customerName,
+          customerPhone: checkoutData.customerPhone,
       };
       
       console.log('[STRIPE ORDER CREATION] Order request body:', {
@@ -879,24 +886,24 @@ export default function CheckoutPage() {
     
     try {
       console.log('[DEMO PAYMENT] Starting demo payment processing...');
-      
-      // Simulate payment processing delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate 95% success rate
-      const isSuccess = Math.random() > 0.05;
-      
-      if (isSuccess) {
+    
+    // Simulate payment processing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Simulate 95% success rate
+    const isSuccess = Math.random() > 0.05;
+    
+    if (isSuccess) {
         console.log('[DEMO PAYMENT] Payment simulation successful, creating real order...');
-        
+      
         // Create real order using the same API as Stripe payments
         const orderRequestBody = {
-          venueId: checkoutData?.venueId,
-          tableNumber: checkoutData?.tableNumber,
-          customerName: checkoutData?.customerName,
-          customerPhone: checkoutData?.customerPhone,
-          items: checkoutData?.cart || [],
-          total: checkoutData?.total || 0,
+        venueId: checkoutData?.venueId,
+        tableNumber: checkoutData?.tableNumber,
+        customerName: checkoutData?.customerName,
+        customerPhone: checkoutData?.customerPhone,
+        items: checkoutData?.cart || [],
+        total: checkoutData?.total || 0,
           paymentMethod: 'demo',
           paymentStatus: 'paid'
         };
@@ -937,18 +944,18 @@ export default function CheckoutPage() {
         });
         
         setPaymentStatus('success');
-        setOrder(orderData);
+      setOrder(orderData);
         setPhase('complete');
-        
-        // Clear stored data
-        localStorage.removeItem('pending-order-data');
-        localStorage.removeItem('servio-checkout-data');
+      
+      // Clear stored data
+      localStorage.removeItem('pending-order-data');
+      localStorage.removeItem('servio-checkout-data');
         
         console.log('[DEMO PAYMENT] Demo payment completed successfully with real order');
-      } else {
+    } else {
         console.log('[DEMO PAYMENT] Payment simulation failed (5% failure rate)');
-        setPaymentStatus('failed');
-        setPhase('error');
+      setPaymentStatus('failed');
+      setPhase('error');
         setError('Payment simulation failed. Please try again.');
       }
     } catch (error) {
@@ -1335,7 +1342,7 @@ export default function CheckoutPage() {
                 />
               </div>
             </div>
-            <Button
+          <Button
               onClick={() => {
                 if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
                   const data = checkoutData as CheckoutData;
@@ -1344,12 +1351,12 @@ export default function CheckoutPage() {
                   router.push('/order');
                 }
               }}
-              variant="ghost"
+            variant="ghost"
               className="flex items-center"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Order
-            </Button>
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Order
+          </Button>
           </div>
         </div>
       </div>
