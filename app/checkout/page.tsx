@@ -207,7 +207,16 @@ export default function CheckoutPage() {
   const [hasCheckedData, setHasCheckedData] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const isDemo = searchParams?.get('demo') === '1';
+
+  // Handle client-side mounting to prevent SSR flash
+  useEffect(() => {
+    console.log('[CHECKOUT DEBUG] ===== MOUNTING USEEFFECT =====');
+    console.log('[CHECKOUT DEBUG] Setting isMounted to true');
+    setIsMounted(true);
+    console.log('[CHECKOUT DEBUG] Component is now mounted on client-side');
+  }, []);
 
   useEffect(() => {
     console.log('[CHECKOUT DEBUG] ===== USEEFFECT STARTED =====');
@@ -365,13 +374,14 @@ export default function CheckoutPage() {
   // Track state changes for debugging
   useEffect(() => {
     console.log('[CHECKOUT DEBUG] ===== STATE CHANGE DETECTED =====');
+    console.log('[CHECKOUT DEBUG] isMounted changed to:', isMounted);
     console.log('[CHECKOUT DEBUG] isClient changed to:', isClient);
     console.log('[CHECKOUT DEBUG] isInitialized changed to:', isInitialized);
     console.log('[CHECKOUT DEBUG] isLoading changed to:', isLoading);
     console.log('[CHECKOUT DEBUG] hasCheckedData changed to:', hasCheckedData);
     console.log('[CHECKOUT DEBUG] checkoutData changed to:', !!checkoutData);
     console.log('[CHECKOUT DEBUG] ===== END STATE CHANGE =====');
-  }, [isClient, isInitialized, isLoading, hasCheckedData, checkoutData]);
+  }, [isMounted, isClient, isInitialized, isLoading, hasCheckedData, checkoutData]);
 
   const handlePaymentSuccess = (orderData: any) => {
     console.log('[CHECKOUT DEBUG] Payment success handler called:', orderData);
@@ -432,14 +442,15 @@ export default function CheckoutPage() {
 
   // Log render condition every time
   console.log('[CHECKOUT DEBUG] ===== RENDER CONDITION CHECK =====');
+  console.log('[CHECKOUT DEBUG] isMounted:', isMounted);
   console.log('[CHECKOUT DEBUG] isClient:', isClient);
   console.log('[CHECKOUT DEBUG] isInitialized:', isInitialized);
   console.log('[CHECKOUT DEBUG] isLoading:', isLoading);
   console.log('[CHECKOUT DEBUG] hasCheckedData:', hasCheckedData);
   console.log('[CHECKOUT DEBUG] checkoutData exists:', !!checkoutData);
-  console.log('[CHECKOUT DEBUG] Should show loading?', !isClient || !isInitialized || isLoading || !hasCheckedData || !checkoutData);
+  console.log('[CHECKOUT DEBUG] Should show loading?', !isMounted || !isClient || !isInitialized || isLoading || !hasCheckedData || !checkoutData);
   
-  if (!isClient || !isInitialized || isLoading || !hasCheckedData || !checkoutData) {
+  if (!isMounted || !isClient || !isInitialized || isLoading || !hasCheckedData || !checkoutData) {
     console.log('[CHECKOUT DEBUG] RENDERING LOADING SCREEN');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -448,7 +459,7 @@ export default function CheckoutPage() {
           <p className="text-gray-600">Loading checkout...</p>
           <p className="text-sm text-gray-500 mt-2">Preparing your order details...</p>
           <p className="text-xs text-gray-400 mt-1">
-            {!isClient ? 'Starting...' : !isInitialized ? 'Initializing...' : !hasCheckedData ? 'Checking for order data...' : 'Loading order details...'}
+            {!isMounted ? 'Mounting...' : !isClient ? 'Starting...' : !isInitialized ? 'Initializing...' : !hasCheckedData ? 'Checking for order data...' : 'Loading order details...'}
           </p>
         </div>
       </div>

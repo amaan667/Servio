@@ -217,9 +217,9 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
             userId: user?.id,
             userEmail: user?.email
           });
-          // Get session for the authenticated user
-          const { data: { session } } = await supabase.auth.getSession();
-          await validateAndUpdateSession(session);
+          // Get user for the authenticated user (more secure than getSession)
+          const { data: { user: verifiedUser } } = await supabase.auth.getUser();
+          await validateAndUpdateSession(verifiedUser ? { user: verifiedUser } : null);
         } else {
           console.log('[AUTH PROVIDER] No authenticated user found');
           await validateAndUpdateSession(null);

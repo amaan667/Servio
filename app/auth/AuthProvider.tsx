@@ -48,17 +48,17 @@ export default function AuthProvider({
     // Get initial session quickly
     const getInitialSession = async () => {
       try {
-        console.log('[AUTH DEBUG] Getting initial session');
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log('[AUTH DEBUG] Getting initial user');
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
         
-        console.log('[AUTH DEBUG] Initial session:', {
-          hasSession: !!currentSession,
-          userId: currentSession?.user?.id,
+        console.log('[AUTH DEBUG] Initial user:', {
+          hasUser: !!currentUser,
+          userId: currentUser?.id,
           timestamp: new Date().toISOString()
         });
         
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+        setSession(currentUser ? { user: currentUser } : null);
+        setUser(currentUser);
         setLoading(false);
       } catch (error) {
         console.log('[AUTH DEBUG] Error getting initial session:', error);
