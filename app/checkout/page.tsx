@@ -203,6 +203,7 @@ export default function CheckoutPage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedData, setHasCheckedData] = useState(false);
   const isDemo = searchParams?.get('demo') === '1';
 
   useEffect(() => {
@@ -248,11 +249,13 @@ export default function CheckoutPage() {
         console.log('[CHECKOUT DEBUG] Setting checkout data state...');
         setCheckoutData(checkoutData);
         setIsLoading(false);
+        setHasCheckedData(true);
         console.log('[CHECKOUT DEBUG] Checkout data state set successfully');
       } catch (error) {
         console.error('[CHECKOUT DEBUG] Error parsing stored data:', error);
         console.error('[CHECKOUT DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
         console.log('[CHECKOUT DEBUG] Redirecting to order page due to parse error');
+        setHasCheckedData(true);
         router.push('/order');
       }
     } else {
@@ -286,6 +289,7 @@ export default function CheckoutPage() {
         console.log('[CHECKOUT DEBUG] Demo checkout data:', demoCheckoutData);
         setCheckoutData(demoCheckoutData);
         setIsLoading(false);
+        setHasCheckedData(true);
         console.log('[CHECKOUT DEBUG] Demo checkout data set successfully');
       } else {
         console.log('[CHECKOUT DEBUG] No demo mode, no stored data - waiting briefly then redirecting to order page');
@@ -314,13 +318,16 @@ export default function CheckoutPage() {
               console.log('[CHECKOUT DEBUG] Setting checkout data from retry...');
               setCheckoutData(checkoutData);
               setIsLoading(false);
+              setHasCheckedData(true);
               console.log('[CHECKOUT DEBUG] Checkout data set from retry successfully');
             } catch (error) {
               console.error('[CHECKOUT DEBUG] Error parsing retry data:', error);
+              setHasCheckedData(true);
               router.push('/order');
             }
           } else {
             console.log('[CHECKOUT DEBUG] Still no data after retry - redirecting to order page');
+            setHasCheckedData(true);
             router.push('/order');
           }
         }, 100);
@@ -385,13 +392,16 @@ export default function CheckoutPage() {
     }
   };
 
-  if (isLoading || !checkoutData) {
+  if (isLoading || !hasCheckedData || !checkoutData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-servio-purple" />
           <p className="text-gray-600">Loading checkout...</p>
           <p className="text-sm text-gray-500 mt-2">Preparing your order details...</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {!hasCheckedData ? 'Checking for order data...' : 'Loading order details...'}
+          </p>
         </div>
       </div>
     );
