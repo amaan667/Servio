@@ -74,7 +74,7 @@ function FeedbackForm({ venueId, orderId }: { venueId: string; orderId?: string 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [answers, setAnswers] = useState<{[key: string]: any}>({});
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(true);
 
   // Generic feedback questions
   const genericQuestions = [
@@ -177,6 +177,13 @@ function FeedbackForm({ venueId, orderId }: { venueId: string; orderId?: string 
         return;
       }
 
+      console.log('[FEEDBACK] Submitting feedback:', {
+        venue_id: venueId,
+        order_id: orderId,
+        answersCount: feedbackAnswers.length,
+        answers: feedbackAnswers
+      });
+
       const response = await fetch('/api/feedback-responses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -187,12 +194,17 @@ function FeedbackForm({ venueId, orderId }: { venueId: string; orderId?: string 
         })
       });
 
+      console.log('[FEEDBACK] Response status:', response.status);
+      console.log('[FEEDBACK] Response ok:', response.ok);
+
       if (response.ok) {
         alert('Thank you for your feedback!');
         setShowForm(false);
         setAnswers({});
       } else {
-        alert('Failed to submit feedback. Please try again.');
+        const errorText = await response.text();
+        console.error('[FEEDBACK] Error response:', errorText);
+        alert(`Failed to submit feedback: ${errorText}`);
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
