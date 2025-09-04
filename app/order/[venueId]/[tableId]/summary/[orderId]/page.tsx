@@ -162,28 +162,16 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId, isDemo }: { venueId
 
   const handlePaymentComplete = async () => {
     try {
-      // Update order payment status to PAID
-      const response = await fetch(`/api/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          payment_status: 'PAID',
-          order_status: 'PLACED' // Ensure order is in PLACED status
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update payment status');
-      }
+      // Since the order is already created with payment_status: 'PAID' in the order creation API,
+      // we don't need to update it again. Just mark payment as completed in the UI.
 
       setPaymentCompleted(true);
       setShowPayment(false);
       // Show feedback form after payment
       setShowFeedback(true);
     } catch (error) {
-      console.error('Error updating payment status:', error);
-      alert('Payment completed but failed to update order status. Please contact support.');
-      // Still show success UI even if update failed
+      console.error('Error completing payment:', error);
+      // Even if there's an error, show success UI since payment was processed
       setPaymentCompleted(true);
       setShowPayment(false);
       setShowFeedback(true);
@@ -582,28 +570,16 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
 
   const handlePaymentComplete = async () => {
     try {
-      // Update order payment status to PAID
-      const response = await fetch(`/api/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          payment_status: 'PAID',
-          order_status: 'PLACED' // Ensure order is in PLACED status
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update payment status');
-      }
+      // Since the order is already created with payment_status: 'PAID' in the order creation API,
+      // we don't need to update it again. Just mark payment as completed in the UI.
 
       setPaymentCompleted(true);
       setShowPayment(false);
       // Show feedback form after payment
       setShowFeedback(true);
     } catch (error) {
-      console.error('Error updating payment status:', error);
-      alert('Payment completed but failed to update order status. Please contact support.');
-      // Still show success UI even if update failed
+      console.error('Error completing payment:', error);
+      // Even if there's an error, show success UI since payment was processed
       setPaymentCompleted(true);
       setShowPayment(false);
       setShowFeedback(true);
