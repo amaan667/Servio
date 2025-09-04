@@ -202,6 +202,7 @@ export default function CheckoutPage() {
   const [cartId] = useState(() => uuidv4());
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const isDemo = searchParams?.get('demo') === '1';
 
   useEffect(() => {
@@ -214,10 +215,19 @@ export default function CheckoutPage() {
     console.log('[CHECKOUT DEBUG] Search params object:', searchParams);
     
     // Get checkout data from localStorage or URL params
-    const storedData = localStorage.getItem('pending-order-data') || localStorage.getItem('servio-checkout-data');
+    console.log('[CHECKOUT DEBUG] ===== LOCALSTORAGE DEBUG =====');
+    console.log('[CHECKOUT DEBUG] Checking localStorage keys...');
+    const pendingData = localStorage.getItem('pending-order-data');
+    const checkoutData = localStorage.getItem('servio-checkout-data');
+    console.log('[CHECKOUT DEBUG] pending-order-data exists:', !!pendingData);
+    console.log('[CHECKOUT DEBUG] servio-checkout-data exists:', !!checkoutData);
+    console.log('[CHECKOUT DEBUG] pending-order-data length:', pendingData?.length || 0);
+    console.log('[CHECKOUT DEBUG] servio-checkout-data length:', checkoutData?.length || 0);
+    
+    const storedData = pendingData || checkoutData;
+    console.log('[CHECKOUT DEBUG] Using stored data from:', pendingData ? 'pending-order-data' : 'servio-checkout-data');
     console.log('[CHECKOUT DEBUG] Raw stored data:', storedData);
     console.log('[CHECKOUT DEBUG] Stored data length:', storedData?.length || 0);
-    console.log('[CHECKOUT DEBUG] Checked both pending-order-data and servio-checkout-data keys');
     
     if (storedData) {
       try {
@@ -237,6 +247,7 @@ export default function CheckoutPage() {
         console.log('[CHECKOUT DEBUG] Final checkout data:', checkoutData);
         console.log('[CHECKOUT DEBUG] Setting checkout data state...');
         setCheckoutData(checkoutData);
+        setIsLoading(false);
         console.log('[CHECKOUT DEBUG] Checkout data state set successfully');
       } catch (error) {
         console.error('[CHECKOUT DEBUG] Error parsing stored data:', error);
@@ -274,22 +285,36 @@ export default function CheckoutPage() {
         };
         console.log('[CHECKOUT DEBUG] Demo checkout data:', demoCheckoutData);
         setCheckoutData(demoCheckoutData);
+        setIsLoading(false);
         console.log('[CHECKOUT DEBUG] Demo checkout data set successfully');
       } else {
         console.log('[CHECKOUT DEBUG] No demo mode, no stored data - waiting briefly then redirecting to order page');
         // Add a small delay to allow localStorage to be available
         setTimeout(() => {
-          const retryData = localStorage.getItem('pending-order-data') || localStorage.getItem('servio-checkout-data');
+          console.log('[CHECKOUT DEBUG] ===== RETRY LOCALSTORAGE DEBUG =====');
+          const retryPendingData = localStorage.getItem('pending-order-data');
+          const retryCheckoutData = localStorage.getItem('servio-checkout-data');
+          console.log('[CHECKOUT DEBUG] Retry - pending-order-data exists:', !!retryPendingData);
+          console.log('[CHECKOUT DEBUG] Retry - servio-checkout-data exists:', !!retryCheckoutData);
+          console.log('[CHECKOUT DEBUG] Retry - pending-order-data length:', retryPendingData?.length || 0);
+          console.log('[CHECKOUT DEBUG] Retry - servio-checkout-data length:', retryCheckoutData?.length || 0);
+          
+          const retryData = retryPendingData || retryCheckoutData;
           if (retryData) {
             console.log('[CHECKOUT DEBUG] Found data on retry, processing...');
+            console.log('[CHECKOUT DEBUG] Retry data source:', retryPendingData ? 'pending-order-data' : 'servio-checkout-data');
             try {
               const data = JSON.parse(retryData);
+              console.log('[CHECKOUT DEBUG] Retry parsed data:', data);
               const checkoutData = {
                 ...data,
                 cartId,
                 venueName: data.venueName || 'Restaurant',
               };
+              console.log('[CHECKOUT DEBUG] Setting checkout data from retry...');
               setCheckoutData(checkoutData);
+              setIsLoading(false);
+              console.log('[CHECKOUT DEBUG] Checkout data set from retry successfully');
             } catch (error) {
               console.error('[CHECKOUT DEBUG] Error parsing retry data:', error);
               router.push('/order');
@@ -360,12 +385,13 @@ export default function CheckoutPage() {
     }
   };
 
-  if (!checkoutData) {
+  if (isLoading || !checkoutData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-servio-purple" />
           <p className="text-gray-600">Loading checkout...</p>
+          <p className="text-sm text-gray-500 mt-2">Preparing your order details...</p>
         </div>
       </div>
     );
