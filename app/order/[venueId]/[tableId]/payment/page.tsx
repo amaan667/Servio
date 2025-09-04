@@ -41,6 +41,8 @@ export default function PaymentPage() {
       try {
         const orderData = JSON.parse(storedOrderData);
         setPendingOrder(orderData);
+        // Automatically start payment processing
+        handlePayment();
       } catch (error) {
         console.error('Error parsing stored order data:', error);
         router.replace('/order');
@@ -99,112 +101,44 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center space-x-4">
-            {/* Servio Logo */}
-            <div className="flex items-center">
-              <Image
-                src="/assets/servio-logo-updated.png"
-                alt="Servio"
-                width={200}
-                height={60}
-                className="h-12 w-auto"
-                priority
-              />
-            </div>
-            
-            {/* Business Name and Table */}
-            <div className="ml-6">
-              <h1 className="text-2xl font-bold text-gray-900">Payment</h1>
-              <p className="text-gray-600">Table {tableId}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <Card className="w-full max-w-md text-center">
+        <CardContent className="p-8">
+          {paymentStatus === 'processing' && (
+            <>
+              <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Processing Payment</h2>
+              <p className="text-gray-600">Please wait while we process your order...</p>
+            </>
+          )}
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CreditCard className="mr-2 h-5 w-5" />
-              Complete Your Payment
-            </CardTitle>
-            <CardDescription>
-              Your order total: £{pendingOrder.total_amount.toFixed(2)}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Order Summary */}
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold mb-3">Order Summary</h3>
-              <div className="space-y-2">
-                {pendingOrder.items.map((item, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span>{item.quantity}x {item.item_name}</span>
-                    <span>£{(item.quantity * item.price).toFixed(2)}</span>
-                  </div>
-                ))}
-                <div className="border-t pt-2 mt-3">
-                  <div className="flex justify-between font-semibold">
-                    <span>Total</span>
-                    <span>£{pendingOrder.total_amount.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {paymentStatus === 'completed' && (
+            <>
+              <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Payment Successful!</h2>
+              <p className="text-gray-600">Order #{orderId} has been created</p>
+              <p className="text-gray-500 text-sm mt-2">Redirecting to order summary...</p>
+            </>
+          )}
 
-            {/* Payment Status */}
-            {paymentStatus === 'pending' && (
-              <div className="text-center">
-                <p className="text-gray-600 mb-4">
-                  Click the button below to complete your payment
-                </p>
-                <Button 
-                  onClick={handlePayment}
-                  className="w-full"
-                  size="lg"
-                >
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Pay £{pendingOrder.total_amount.toFixed(2)}
-                </Button>
+          {paymentStatus === 'failed' && (
+            <>
+              <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-red-600 text-xl">!</span>
               </div>
-            )}
-
-            {paymentStatus === 'processing' && (
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
-                <p className="text-gray-600">Processing payment...</p>
-              </div>
-            )}
-
-            {paymentStatus === 'completed' && (
-              <div className="text-center">
-                <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <p className="text-green-600 font-semibold mb-2">Payment Successful!</p>
-                <p className="text-gray-600">Order #{orderId} has been created</p>
-                <p className="text-gray-500 text-sm mt-2">Redirecting to order summary...</p>
-              </div>
-            )}
-
-            {paymentStatus === 'failed' && (
-              <div className="text-center">
-                <p className="text-red-600 font-semibold mb-4">Payment Failed</p>
-                <p className="text-gray-600 mb-4">Please try again or contact support</p>
-                <Button 
-                  onClick={handlePayment}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Try Again
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              <h2 className="text-xl font-semibold mb-2 text-red-600">Payment Failed</h2>
+              <p className="text-gray-600 mb-4">Please try again or contact support</p>
+              <Button 
+                onClick={handlePayment}
+                variant="outline"
+                className="w-full"
+              >
+                Try Again
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, User, Hash, ChefHat, UtensilsCrossed, Truck, Coffee } from "lucide-react";
-import PaymentSimulation from "@/components/payment-simulation";
 import SimpleFeedbackForm from "@/components/SimpleFeedbackForm";
 import { createClient } from "@/lib/supabase/client";
 
@@ -80,8 +79,8 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId, isDemo }: { venueId
   const [error, setError] = useState<string | null>(null);
   const [currentStatus, setCurrentStatus] = useState<string>("PLACED");
   const [showPayment, setShowPayment] = useState(false);
-  const [paymentCompleted, setPaymentCompleted] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(true); // Always show as completed since order is created after payment
+  const [showFeedback, setShowFeedback] = useState(true); // Always show feedback form
 
   useEffect(() => {
     if (!orderId) return;
@@ -160,23 +159,6 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId, isDemo }: { venueId
     router.replace(`/order?demo=1`);
   };
 
-  const handlePaymentComplete = async () => {
-    try {
-      // Since the order is already created with payment_status: 'PAID' in the order creation API,
-      // we don't need to update it again. Just mark payment as completed in the UI.
-
-      setPaymentCompleted(true);
-      setShowPayment(false);
-      // Show feedback form after payment
-      setShowFeedback(true);
-    } catch (error) {
-      console.error('Error completing payment:', error);
-      // Even if there's an error, show success UI since payment was processed
-      setPaymentCompleted(true);
-      setShowPayment(false);
-      setShowFeedback(true);
-    }
-  };
 
   if (loading) {
     return (
@@ -366,13 +348,7 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId, isDemo }: { venueId
 
           {/* Right Sidebar */}
           <div className="space-y-6">
-            {/* Payment Simulation */}
-            {!paymentCompleted && (
-              <PaymentSimulation 
-                amount={totalAmount} 
-                onPaymentComplete={handlePaymentComplete}
-              />
-            )}
+            {/* Payment is already completed - order was created after payment */}
 
             {/* Feedback Form */}
             {showFeedback && (
@@ -483,8 +459,8 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
   const [error, setError] = useState<string | null>(null);
   const [currentStatus, setCurrentStatus] = useState<string>("PLACED");
   const [showPayment, setShowPayment] = useState(false);
-  const [paymentCompleted, setPaymentCompleted] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(true); // Always show as completed since order is created after payment
+  const [showFeedback, setShowFeedback] = useState(true); // Always show feedback form
 
   useEffect(() => {
     if (!orderId) return;
@@ -568,23 +544,6 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
     };
   }, [orderId, venueId]);
 
-  const handlePaymentComplete = async () => {
-    try {
-      // Since the order is already created with payment_status: 'PAID' in the order creation API,
-      // we don't need to update it again. Just mark payment as completed in the UI.
-
-      setPaymentCompleted(true);
-      setShowPayment(false);
-      // Show feedback form after payment
-      setShowFeedback(true);
-    } catch (error) {
-      console.error('Error completing payment:', error);
-      // Even if there's an error, show success UI since payment was processed
-      setPaymentCompleted(true);
-      setShowPayment(false);
-      setShowFeedback(true);
-    }
-  };
 
   if (loading) {
     return (
@@ -774,13 +733,7 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
 
           {/* Right Sidebar */}
           <div className="space-y-6">
-            {/* Payment Simulation */}
-            {!paymentCompleted && (
-              <PaymentSimulation 
-                amount={totalAmount} 
-                onPaymentComplete={handlePaymentComplete}
-              />
-            )}
+            {/* Payment is already completed - order was created after payment */}
 
             {/* Feedback Form */}
             {showFeedback && (
