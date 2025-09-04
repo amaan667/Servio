@@ -121,16 +121,34 @@ export async function POST(req: Request) {
       sentimentScore = 0.5;
     }
 
+    // Get customer name from order if available
+    let customerName = 'Customer';
+    if (order_id) {
+      try {
+        const { data: orderData } = await serviceClient
+          .from('orders')
+          .select('customer_name')
+          .eq('id', order_id)
+          .single();
+        
+        if (orderData?.customer_name) {
+          customerName = orderData.customer_name;
+        }
+      } catch (error) {
+        console.log('[FEEDBACK] Could not fetch customer name from order:', error);
+      }
+    }
+
     // Create single feedback entry
     const feedbackData = {
       venue_id,
       order_id: order_id || null,
-      customer_name: 'Customer',
+      customer_name: customerName,
       customer_email: null,
       customer_phone: null,
       rating: averageRating,
       comment: comment || 'No additional comments',
-      category: 'structured',
+      category: 'Customer Experience',
       sentiment_score: sentimentScore,
       sentiment_label: sentimentLabel,
       response: null,
