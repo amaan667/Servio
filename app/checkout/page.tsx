@@ -356,7 +356,11 @@ function StripePaymentForm({
           <div className="mt-2 p-4 border rounded-lg">
             <PaymentElement 
               options={{
-                layout: 'tabs'
+                layout: 'tabs',
+                paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
+                fields: {
+                  billingDetails: 'auto'
+                }
               }}
             />
           </div>
