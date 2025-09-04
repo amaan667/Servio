@@ -67,6 +67,13 @@ export async function GET(req: Request) {
     } else if (scope === 'earlier') {
       // Earlier today: orders from today but more than 30 minutes ago
       const timeWindow = earlierTodayWindow(venue?.timezone);
+      console.log('[DEBUG] Earlier today filtering:', {
+        scope,
+        timezone: venue?.timezone,
+        timeWindow,
+        startUtcISO: timeWindow.startUtcISO,
+        endUtcISO: timeWindow.endUtcISO
+      });
       q = q.gte('created_at', timeWindow.startUtcISO).lt('created_at', timeWindow.endUtcISO);
     } else if (scope === 'history') {
       // History: orders from yesterday and earlier
@@ -78,6 +85,19 @@ export async function GET(req: Request) {
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
+
+    // Debug logging for all scopes
+    console.log('[DEBUG] Query results:', {
+      scope,
+      venueId,
+      timezone: venue?.timezone,
+      orderCount: data?.length || 0,
+      orders: data?.map(order => ({
+        id: order.id,
+        created_at: order.created_at,
+        status: order.status
+      })) || []
+    });
 
     return NextResponse.json({
       ok: true,

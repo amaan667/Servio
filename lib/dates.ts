@@ -48,21 +48,41 @@ export function liveOrdersWindow() {
   const now = new Date();
   const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes ago
   
-  return {
+  const result = {
     startUtcISO: thirtyMinutesAgo.toISOString(),
     endUtcISO: now.toISOString(),
   };
+  
+  console.log('[DEBUG] liveOrdersWindow calculation:', {
+    now: now.toISOString(),
+    thirtyMinutesAgo: thirtyMinutesAgo.toISOString(),
+    result
+  });
+  
+  return result;
 }
 
 // Get the time window for "earlier today" - orders from today but more than 30 minutes ago
 export function earlierTodayWindow(tz?: string) {
   const { startUtcISO, endUtcISO } = todayWindowForTZ(tz);
-  const { startUtcISO: liveStart } = liveOrdersWindow();
   
-  return {
+  // Get the live window to use its start time as our end time (exclusive)
+  const liveWindow = liveOrdersWindow();
+  
+  const result = {
     startUtcISO: startUtcISO, // Start of today
-    endUtcISO: liveStart,     // 30 minutes ago (exclusive)
+    endUtcISO: liveWindow.startUtcISO, // Start of live window (exclusive)
   };
+  
+  console.log('[DEBUG] earlierTodayWindow calculation:', {
+    tz,
+    todayStart: startUtcISO,
+    todayEnd: endUtcISO,
+    liveWindowStart: liveWindow.startUtcISO,
+    result
+  });
+  
+  return result;
 }
 
 // Get the time window for "history" - orders from yesterday and earlier
