@@ -39,14 +39,16 @@ export default function CustomerOrderPage() {
   const tableNumber = searchParams?.get("table") || "1";
   const isDemo = searchParams?.get("demo") === "1";
 
-  // Log the initial page load and QR scan parameters
-  console.log('[QR FLOW DEBUG] ===== CUSTOMER ORDER PAGE LOADED =====');
-  console.log('[QR FLOW DEBUG] URL:', window.location.href);
-  console.log('[QR FLOW DEBUG] Search params:', window.location.search);
-  console.log('[QR FLOW DEBUG] venueSlug from QR:', venueSlug);
-  console.log('[QR FLOW DEBUG] tableNumber from QR:', tableNumber);
-  console.log('[QR FLOW DEBUG] isDemo from QR:', isDemo);
-  console.log('[QR FLOW DEBUG] All search params:', Object.fromEntries(searchParams?.entries() || []));
+  // Log the initial page load and QR scan parameters (client-side only)
+  useEffect(() => {
+    console.log('[QR FLOW DEBUG] ===== CUSTOMER ORDER PAGE LOADED =====');
+    console.log('[QR FLOW DEBUG] URL:', window.location.href);
+    console.log('[QR FLOW DEBUG] Search params:', window.location.search);
+    console.log('[QR FLOW DEBUG] venueSlug from QR:', venueSlug);
+    console.log('[QR FLOW DEBUG] tableNumber from QR:', tableNumber);
+    console.log('[QR FLOW DEBUG] isDemo from QR:', isDemo);
+    console.log('[QR FLOW DEBUG] All search params:', Object.fromEntries(searchParams?.entries() || []));
+  }, [venueSlug, tableNumber, isDemo, searchParams]);
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -385,7 +387,7 @@ export default function CustomerOrderPage() {
         // Redirect to checkout page with demo mode
         console.log('[ORDER SUBMIT] DEMO FLOW: About to redirect to /checkout?demo=1');
         console.log('[ORDER SUBMIT] DEMO FLOW: Router object:', router);
-        console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before redirect:', window.location.href);
+        console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before redirect:', typeof window !== 'undefined' ? window.location.href : 'SSR');
         
         try {
           console.log('[ORDER SUBMIT] DEMO FLOW: Attempting navigation to /checkout?demo=1');
@@ -395,7 +397,7 @@ export default function CustomerOrderPage() {
           // Use a more reliable navigation method as fallback
           setTimeout(() => {
             console.log('[ORDER SUBMIT] DEMO FLOW: Checking if navigation worked...');
-            if (window.location.pathname === '/order') {
+            if (typeof window !== 'undefined' && window.location.pathname === '/order') {
               console.log('[ORDER SUBMIT] DEMO FLOW: Navigation failed, using window.location');
               window.location.href = '/checkout?demo=1';
             } else {
@@ -408,7 +410,9 @@ export default function CustomerOrderPage() {
         } catch (routerError) {
           console.error('[ORDER SUBMIT] DEMO FLOW: Router error:', routerError);
           console.log('[ORDER SUBMIT] DEMO FLOW: Using window.location as fallback');
-          window.location.href = '/checkout?demo=1';
+          if (typeof window !== 'undefined') {
+            window.location.href = '/checkout?demo=1';
+          }
         }
         
         console.log('[ORDER SUBMIT] DEMO FLOW: Returning from demo flow');
@@ -463,7 +467,7 @@ export default function CustomerOrderPage() {
       // Redirect to unified checkout page - order will be created after successful payment
       console.log('[ORDER SUBMIT] REAL FLOW: About to redirect to /checkout');
       console.log('[ORDER SUBMIT] REAL FLOW: Router object:', router);
-      console.log('[ORDER SUBMIT] REAL FLOW: Current URL before redirect:', window.location.href);
+      console.log('[ORDER SUBMIT] REAL FLOW: Current URL before redirect:', typeof window !== 'undefined' ? window.location.href : 'SSR');
       
       try {
         console.log('[ORDER SUBMIT] REAL FLOW: Attempting navigation to /checkout');
@@ -473,7 +477,7 @@ export default function CustomerOrderPage() {
         // Use a more reliable navigation method as fallback
         setTimeout(() => {
           console.log('[ORDER SUBMIT] REAL FLOW: Checking if navigation worked...');
-          if (window.location.pathname === '/order') {
+          if (typeof window !== 'undefined' && window.location.pathname === '/order') {
             console.log('[ORDER SUBMIT] REAL FLOW: Navigation failed, using window.location');
             window.location.href = '/checkout';
           } else {
@@ -486,7 +490,9 @@ export default function CustomerOrderPage() {
       } catch (routerError) {
         console.error('[ORDER SUBMIT] REAL FLOW: Router error:', routerError);
         console.log('[ORDER SUBMIT] REAL FLOW: Using window.location as fallback');
-        window.location.href = '/checkout';
+        if (typeof window !== 'undefined') {
+          window.location.href = '/checkout';
+        }
       }
       
       // Don't reset loading state here since we're redirecting
