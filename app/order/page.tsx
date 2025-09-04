@@ -557,9 +557,9 @@ export default function CustomerOrderPage() {
                 <Image
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
-                  width={200}
-                  height={60}
-                  className="h-12 w-auto"
+                  width={300}
+                  height={90}
+                  className="h-16 w-auto"
                   priority
                 />
               </div>

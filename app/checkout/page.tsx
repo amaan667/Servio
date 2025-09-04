@@ -30,6 +30,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import Image from "next/image";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -575,38 +576,85 @@ export default function CheckoutPage() {
     setPaymentStatus('processing');
     setPhase('processing');
     
-    // Simulate payment processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Simulate 95% success rate
-    const isSuccess = Math.random() > 0.05;
-    
-    if (isSuccess) {
-      setPaymentStatus('success');
+    try {
+      console.log('[DEMO PAYMENT] Starting demo payment processing...');
       
-      // Create order data
-      const orderData = {
-        id: `order-${Date.now()}`,
-        venueId: checkoutData?.venueId,
-        tableNumber: checkoutData?.tableNumber,
-        customerName: checkoutData?.customerName,
-        customerPhone: checkoutData?.customerPhone,
-        items: checkoutData?.cart || [],
-        total: checkoutData?.total || 0,
-        status: 'confirmed',
-        createdAt: new Date().toISOString(),
-      };
+      // Simulate payment processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setOrder(orderData);
-      setPhase('confirmed');
+      // Simulate 95% success rate
+      const isSuccess = Math.random() > 0.05;
       
-      // Clear stored data
-      localStorage.removeItem('pending-order-data');
-      localStorage.removeItem('servio-checkout-data');
-    } else {
+      if (isSuccess) {
+        console.log('[DEMO PAYMENT] Payment simulation successful, creating real order...');
+        
+        // Create real order using the same API as Stripe payments
+        const orderRequestBody = {
+          venueId: checkoutData?.venueId,
+          tableNumber: checkoutData?.tableNumber,
+          customerName: checkoutData?.customerName,
+          customerPhone: checkoutData?.customerPhone,
+          items: checkoutData?.cart || [],
+          total: checkoutData?.total || 0,
+          paymentMethod: 'demo',
+          paymentStatus: 'paid'
+        };
+        
+        console.log('[DEMO ORDER CREATION] Creating real order from demo payment:', {
+          venueId: orderRequestBody.venueId,
+          tableNumber: orderRequestBody.tableNumber,
+          customerName: orderRequestBody.customerName,
+          customerPhone: orderRequestBody.customerPhone,
+          itemsCount: orderRequestBody.items.length,
+          total: orderRequestBody.total
+        });
+        
+        const orderResponse = await fetch('/api/orders/createFromPaidIntent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderRequestBody),
+        });
+
+        console.log('[DEMO ORDER CREATION] Order API response status:', orderResponse.status);
+
+        if (!orderResponse.ok) {
+          const orderErrorText = await orderResponse.text();
+          console.error('[DEMO ORDER CREATION] Order creation failed:', {
+            status: orderResponse.status,
+            error: orderErrorText
+          });
+          throw new Error(`Failed to create order: ${orderResponse.status}`);
+        }
+
+        const orderData = await orderResponse.json();
+        console.log('[DEMO ORDER CREATION] Real order created successfully:', {
+          orderId: orderData.id,
+          status: orderData.status,
+          total: orderData.total
+        });
+        
+        setPaymentStatus('success');
+        setOrder(orderData);
+        setPhase('confirmed');
+        
+        // Clear stored data
+        localStorage.removeItem('pending-order-data');
+        localStorage.removeItem('servio-checkout-data');
+        
+        console.log('[DEMO PAYMENT] Demo payment completed successfully with real order');
+      } else {
+        console.log('[DEMO PAYMENT] Payment simulation failed (5% failure rate)');
+        setPaymentStatus('failed');
+        setPhase('error');
+        setError('Payment simulation failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('[DEMO PAYMENT] Error during demo payment:', error);
       setPaymentStatus('failed');
-      setError('Payment failed. Please try again.');
       setPhase('error');
+      setError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
     }
   };
 
@@ -829,24 +877,45 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with Logo */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              {/* Servio Logo */}
+              <div className="flex items-center">
+                <Image
+                  src="/assets/servio-logo-updated.png"
+                  alt="Servio"
+                  width={200}
+                  height={60}
+                  className="h-12 w-auto"
+                  priority
+                />
+              </div>
+            </div>
+            <Button
+              onClick={() => {
+                if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
+                  const data = checkoutData as CheckoutData;
+                  router.push(`/order?venue=${data.venueId}&table=${data.tableNumber}`);
+                } else {
+                  router.push('/order');
+                }
+              }}
+              variant="ghost"
+              className="flex items-center"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Order
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <Button
-            onClick={() => {
-              if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
-                const data = checkoutData as CheckoutData;
-                router.push(`/order?venue=${data.venueId}&table=${data.tableNumber}`);
-              } else {
-                router.push('/order');
-              }
-            }}
-            variant="ghost"
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Order
-          </Button>
           <h1 className="text-3xl font-bold text-gray-900">Checkout</h1>
           <p className="text-gray-600 mt-2">Review your order and complete payment</p>
         </div>
