@@ -105,27 +105,38 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     setError(null);
 
     try {
-      const supabase = createClient();
-      if (!supabase) throw new Error('Supabase client not available');
+      console.log('[FEEDBACK] Fetching aggregated feedback for venue:', venueId);
+      const response = await fetch(`/api/feedback/aggregated?venueId=${venueId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch feedback: ${response.status}`);
+      }
 
-      let query = supabase
-        .from('feedback')
-        .select('*')
-        .eq('venue_id', venueId)
-        .order('created_at', { ascending: false });
+      const data = await response.json();
+      console.log('[FEEDBACK] Aggregated feedback response:', data);
+      
+      let allFeedback = data.feedback || [];
+      setStats(data.stats || null);
 
-      // Apply filters
+      // Apply filters to the aggregated data
+      let filteredFeedback = allFeedback;
+
+      // Apply rating filter
       if (filters.rating > 0) {
-        query = query.eq('rating', filters.rating);
-      }
-      if (filters.sentiment !== 'all') {
-        query = query.eq('sentiment_label', filters.sentiment);
-      }
-      if (filters.category !== 'all') {
-        query = query.eq('category', filters.category);
+        filteredFeedback = filteredFeedback.filter(f => f.rating === filters.rating);
       }
 
-      // Apply date range
+      // Apply sentiment filter
+      if (filters.sentiment !== 'all') {
+        filteredFeedback = filteredFeedback.filter(f => f.sentiment_label === filters.sentiment);
+      }
+
+      // Apply category filter
+      if (filters.category !== 'all') {
+        filteredFeedback = filteredFeedback.filter(f => f.category === filters.category);
+      }
+
+      // Apply date range filter
       const now = new Date();
       let startDate = new Date();
       switch (filters.dateRange) {
@@ -142,13 +153,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
           startDate.setFullYear(now.getFullYear() - 1);
           break;
       }
-      query = query.gte('created_at', startDate.toISOString());
-
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw new Error(fetchError.message);
-
-      let filteredFeedback = data || [];
+      filteredFeedback = filteredFeedback.filter(f => new Date(f.created_at) >= startDate);
 
       // Apply search filter
       if (searchQuery.trim()) {
@@ -160,7 +165,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       }
 
       setFeedback(filteredFeedback);
-      calculateStats(filteredFeedback);
 
     } catch (err: any) {
       logger.error('Failed to fetch feedback', { error: err.message, venueId });
