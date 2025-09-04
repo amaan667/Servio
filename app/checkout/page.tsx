@@ -944,7 +944,14 @@ export default function CheckoutPage() {
                         Change Method
                       </Button>
                     </div>
-                    <Elements stripe={stripePromise} options={{ mode: 'payment' }}>
+                    <Elements 
+                      stripe={stripePromise} 
+                      options={{ 
+                        mode: 'payment',
+                        amount: Math.round(checkoutData!.total * 100), // Convert to pence
+                        currency: 'gbp'
+                      }}
+                    >
                       <StripePaymentForm
                         checkoutData={checkoutData!}
                         onSuccess={handleStripePaymentSuccess}
