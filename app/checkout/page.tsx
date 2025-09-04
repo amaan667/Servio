@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Check, 
   CreditCard, 
@@ -27,7 +28,9 @@ import {
   Clock,
   Lock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Star,
+  Send
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import Image from "next/image";
@@ -64,6 +67,221 @@ interface CheckoutData {
 }
 
 type CheckoutPhase = 'review' | 'processing' | 'confirmed' | 'feedback' | 'timeline' | 'complete' | 'error';
+
+// Simple Feedback Form Component
+function FeedbackForm({ venueId, orderId }: { venueId: string; orderId?: string }) {
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [answers, setAnswers] = useState<{[key: string]: any}>({});
+  const [showForm, setShowForm] = useState(false);
+
+  // Generic feedback questions
+  const genericQuestions = [
+    {
+      id: 'generic-food-quality',
+      prompt: 'How would you rate the food quality?',
+      type: 'stars'
+    },
+    {
+      id: 'generic-service',
+      prompt: 'How would you rate the service?',
+      type: 'stars'
+    },
+    {
+      id: 'generic-value',
+      prompt: 'How would you rate the value for money?',
+      type: 'stars'
+    },
+    {
+      id: 'generic-overall',
+      prompt: 'How would you rate your overall experience?',
+      type: 'stars'
+    },
+    {
+      id: 'generic-comments',
+      prompt: 'Any additional comments or suggestions?',
+      type: 'paragraph'
+    }
+  ];
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [venueId]);
+
+  const fetchQuestions = async () => {
+    try {
+      const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
+      if (response.ok) {
+        const data = await response.json();
+        const activeQuestions = (data.questions || []).filter((q: any) => q.is_active);
+        
+        if (activeQuestions.length === 0) {
+          setQuestions(genericQuestions);
+        } else {
+          setQuestions(activeQuestions);
+        }
+      } else {
+        setQuestions(genericQuestions);
+      }
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      setQuestions(genericQuestions);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const feedbackAnswers = questions.map(question => {
+        const answer = answers[question.id];
+        
+        switch (question.type) {
+          case 'stars':
+            return {
+              question_id: question.id,
+              type: 'stars',
+              answer_stars: answer || 0,
+              order_id: orderId
+            };
+          case 'paragraph':
+            return {
+              question_id: question.id,
+              type: 'paragraph',
+              answer_text: answer || '',
+              order_id: orderId
+            };
+          default:
+            return null;
+        }
+      }).filter(answer => {
+        if (!answer) return false;
+        if (answer.type === 'stars') return answer.answer_stars > 0;
+        if (answer.type === 'paragraph') return answer.answer_text.trim() !== '';
+        return false;
+      });
+
+      if (feedbackAnswers.length === 0) {
+        alert('Please answer at least one question');
+        return;
+      }
+
+      const response = await fetch('/api/feedback-responses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: venueId,
+          order_id: orderId,
+          answers: feedbackAnswers
+        })
+      });
+
+      if (response.ok) {
+        alert('Thank you for your feedback!');
+        setShowForm(false);
+        setAnswers({});
+      } else {
+        alert('Failed to submit feedback. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert('Failed to submit feedback. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-4">
+        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-600" />
+        <p className="text-sm text-gray-600">Loading feedback form...</p>
+      </div>
+    );
+  }
+
+  if (!showForm) {
+    return (
+      <div className="text-center py-6">
+        <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600 mb-4">We'd love to hear about your experience!</p>
+        <Button onClick={() => setShowForm(true)}>
+          <MessageSquare className="w-4 h-4 mr-2" />
+          Leave Feedback
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {questions.map((question) => (
+        <div key={question.id} className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700">
+            {question.prompt}
+          </label>
+          
+          {question.type === 'stars' ? (
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setAnswers(prev => ({ ...prev, [question.id]: star }))}
+                  className="transition-colors hover:scale-110"
+                >
+                  <Star
+                    className={`h-6 w-6 ${
+                      star <= (answers[question.id] || 0)
+                        ? 'text-yellow-400 fill-current'
+                        : 'text-gray-300'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          ) : question.type === 'paragraph' ? (
+            <Textarea
+              value={answers[question.id] || ''}
+              onChange={(e) => setAnswers(prev => ({ ...prev, [question.id]: e.target.value }))}
+              placeholder="Share your thoughts..."
+              rows={3}
+              maxLength={600}
+            />
+          ) : null}
+        </div>
+      ))}
+      
+      <div className="flex gap-3 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowForm(false)}
+          disabled={submitting}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            <>
+              <Send className="mr-2 h-4 w-4" />
+              Submit Feedback
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 // Stripe Payment Form Component
 function StripePaymentForm({ 
@@ -973,13 +1191,10 @@ export default function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Feedback form will be available soon!</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Thank you for your order! We appreciate your business.
-                </p>
-              </div>
+              <FeedbackForm 
+                venueId={checkoutData?.venueId || ''} 
+                orderId={order?.id || ''} 
+              />
             </CardContent>
           </Card>
 
