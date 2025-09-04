@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import Image from "next/image";
+import OrderFeedbackForm from "@/components/OrderFeedbackForm";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -62,7 +63,7 @@ interface CheckoutData {
   cartId?: string;
 }
 
-type CheckoutPhase = 'review' | 'processing' | 'confirmed' | 'feedback' | 'timeline' | 'error';
+type CheckoutPhase = 'review' | 'processing' | 'confirmed' | 'feedback' | 'timeline' | 'complete' | 'error';
 
 // Stripe Payment Form Component
 function StripePaymentForm({ 
@@ -517,9 +518,9 @@ export default function CheckoutPage() {
       console.log('[PAYMENT SUCCESS] Payment completed successfully, progressing to feedback phase');
       console.log('[PAYMENT SUCCESS] Payment intent:', paymentIntent);
       
-      // Set success state and progress to feedback phase
+      // Set success state and progress to complete phase
       setPaymentStatus('success');
-      setPhase('feedback');
+      setPhase('complete');
       
       // Clear URL parameters to avoid re-triggering
       const url = new URL(window.location.href);
@@ -625,7 +626,7 @@ export default function CheckoutPage() {
     console.log('[STRIPE PAYMENT SUCCESS] Setting order state and transitioning to confirmed phase');
     
     setOrder(orderData);
-    setPhase('confirmed');
+    setPhase('complete');
     setPaymentStatus('success');
     
     console.log('[STRIPE PAYMENT SUCCESS] Clearing stored checkout data from localStorage');
@@ -719,7 +720,7 @@ export default function CheckoutPage() {
         
         setPaymentStatus('success');
         setOrder(orderData);
-        setPhase('confirmed');
+        setPhase('complete');
         
         // Clear stored data
         localStorage.removeItem('pending-order-data');
@@ -879,6 +880,145 @@ export default function CheckoutPage() {
     );
   }
 
+  if (phase === 'complete') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header with Logo */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                {/* Servio Logo */}
+                <div className="flex items-center">
+                  <Image
+                    src="/assets/servio-logo-updated.png"
+                    alt="Servio"
+                    width={300}
+                    height={90}
+                    className="h-20 w-auto"
+                    priority
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
+                    const data = checkoutData as CheckoutData;
+                    router.push(`/order?venue=${data.venueId}&table=${data.tableNumber}`);
+                  } else {
+                    router.push('/order');
+                  }
+                }}
+                variant="ghost"
+                className="flex items-center"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Order
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* Payment Success Message */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="w-8 h-8 text-green-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+            <p className="text-gray-600">Your order has been confirmed and payment processed.</p>
+          </div>
+
+          {/* Order Summary */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Receipt className="w-5 h-5 mr-2" />
+                Order Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Order ID:</span>
+                  <span className="font-medium">{order?.id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Venue:</span>
+                  <span className="font-medium">{checkoutData?.venueName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Table:</span>
+                  <span className="font-medium">{checkoutData?.tableNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Customer:</span>
+                  <span className="font-medium">{checkoutData?.customerName}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-lg font-semibold">
+                  <span>Total:</span>
+                  <span>£{order?.total?.toFixed(2) || checkoutData?.total?.toFixed(2)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Feedback Form */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2" />
+                Share Your Experience
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OrderFeedbackForm 
+                venueId={checkoutData?.venueId || ''} 
+                orderId={order?.id || ''} 
+              />
+            </CardContent>
+          </Card>
+
+          {/* Order Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Clock className="w-5 h-5 mr-2" />
+                Order Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <div>
+                    <p className="font-medium text-green-600">Order Confirmed</p>
+                    <p className="text-sm text-gray-500">Payment processed successfully</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div>
+                    <p className="font-medium text-yellow-600">Preparing</p>
+                    <p className="text-sm text-gray-500">Your order is being prepared</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                  <div>
+                    <p className="font-medium text-gray-500">Ready</p>
+                    <p className="text-sm text-gray-500">Your order will be ready soon</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === 'feedback') {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -970,9 +1110,9 @@ export default function CheckoutPage() {
                 <Image
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
-                  width={200}
-                  height={60}
-                  className="h-12 w-auto"
+                  width={300}
+                  height={90}
+                  className="h-20 w-auto"
                   priority
                 />
               </div>

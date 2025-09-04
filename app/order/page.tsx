@@ -559,7 +559,7 @@ export default function CustomerOrderPage() {
                   alt="Servio"
                   width={300}
                   height={90}
-                  className="h-16 w-auto"
+                  className="h-20 w-auto"
                   priority
                 />
               </div>
