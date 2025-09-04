@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
 
 export const runtime = 'nodejs';
 
@@ -8,7 +9,7 @@ export async function GET(req: Request) {
   const venueId = searchParams.get('venueId');
   const status = searchParams.get('status') || 'all';
   const limit = parseInt(searchParams.get('limit') || '50');
-  const scope = searchParams.get('scope') || 'today';
+  const scope = searchParams.get('scope') || 'live';
 
   if (!venueId) {
     return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
@@ -49,10 +50,18 @@ export async function GET(req: Request) {
   }
 
   // Apply date scope filter
-  if (scope === 'today') {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    query = query.gte('created_at', today.toISOString());
+  if (scope === 'live') {
+    // Live orders: last 30 minutes only
+    const timeWindow = liveOrdersWindow();
+    query = query.gte('created_at', timeWindow.startUtcISO);
+  } else if (scope === 'earlier') {
+    // Earlier today: orders from today but more than 30 minutes ago
+    const timeWindow = earlierTodayWindow();
+    query = query.gte('created_at', timeWindow.startUtcISO).lt('created_at', timeWindow.endUtcISO);
+  } else if (scope === 'history') {
+    // History: orders from yesterday and earlier
+    const timeWindow = historyWindow();
+    query = query.lt('created_at', timeWindow.endUtcISO);
   }
 
   const { data: orders, error } = await query;
@@ -62,15 +71,25 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 
-  // Get active tables count for today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const { data: activeTables } = await supabase
+  // Get active tables count based on scope
+  let activeTablesQuery = supabase
     .from('orders')
     .select('table_number')
     .eq('venue_id', venueId)
-    .gte('created_at', today.toISOString())
     .not('table_number', 'is', null);
+
+  if (scope === 'live') {
+    const timeWindow = liveOrdersWindow();
+    activeTablesQuery = activeTablesQuery.gte('created_at', timeWindow.startUtcISO);
+  } else if (scope === 'earlier') {
+    const timeWindow = earlierTodayWindow();
+    activeTablesQuery = activeTablesQuery.gte('created_at', timeWindow.startUtcISO).lt('created_at', timeWindow.endUtcISO);
+  } else if (scope === 'history') {
+    const timeWindow = historyWindow();
+    activeTablesQuery = activeTablesQuery.lt('created_at', timeWindow.endUtcISO);
+  }
+
+  const { data: activeTables } = await activeTablesQuery;
 
   const activeTablesToday = new Set(activeTables?.map((o: any) => o.table_number) || []).size;
 

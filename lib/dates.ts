@@ -32,4 +32,47 @@ export function isWithinToday(iso: string, tz?: string) {
   return iso >= startUtcISO && iso < endUtcISO;
 }
 
+// Get the time window for "today + 30 minutes" - only orders from the last 30 minutes
+export function todayPlus30MinWindow() {
+  const now = new Date();
+  const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes ago
+  
+  return {
+    startUtcISO: thirtyMinutesAgo.toISOString(),
+    endUtcISO: now.toISOString(),
+  };
+}
+
+// Get the time window for "live orders" - only orders from the last 30 minutes
+export function liveOrdersWindow() {
+  const now = new Date();
+  const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes ago
+  
+  return {
+    startUtcISO: thirtyMinutesAgo.toISOString(),
+    endUtcISO: now.toISOString(),
+  };
+}
+
+// Get the time window for "earlier today" - orders from today but more than 30 minutes ago
+export function earlierTodayWindow(tz?: string) {
+  const { startUtcISO, endUtcISO } = todayWindowForTZ(tz);
+  const { startUtcISO: liveStart } = liveOrdersWindow();
+  
+  return {
+    startUtcISO: startUtcISO, // Start of today
+    endUtcISO: liveStart,     // 30 minutes ago (exclusive)
+  };
+}
+
+// Get the time window for "history" - orders from yesterday and earlier
+export function historyWindow(tz?: string) {
+  const { startUtcISO } = todayWindowForTZ(tz);
+  
+  return {
+    startUtcISO: null,        // No start limit (all history)
+    endUtcISO: startUtcISO,   // Before start of today (exclusive)
+  };
+}
+
 

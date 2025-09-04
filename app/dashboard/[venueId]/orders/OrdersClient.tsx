@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import { todayWindowForTZ } from "@/lib/time";
+import { liveOrdersWindow } from "@/lib/dates";
 
 type OrdersClientProps = {
   venueId: string;
@@ -37,16 +37,15 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Get venue timezone (default to Europe/London)
-        const window = todayWindowForTZ('Europe/London');
+        // Get time window for live orders (last 30 minutes)
+        const timeWindow = liveOrdersWindow();
         
-        // Fetch today's orders
+        // Fetch live orders from last 30 minutes
         const { data: ordersData } = await supabase
           .from('orders')
           .select('*')
           .eq('venue_id', venueId)
-          .gte('created_at', window.startUtcISO)
-          .lt('created_at', window.endUtcISO)
+          .gte('created_at', timeWindow.startUtcISO)
           .order('created_at', { ascending: false });
 
         if (ordersData) {
@@ -98,7 +97,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Today's Orders</p>
+                  <p className="text-sm font-medium text-gray-600">Live Orders (30 min)</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -112,7 +111,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
+                  <p className="text-sm font-medium text-gray-600">Live Revenue (30 min)</p>
                   <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -130,7 +129,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
           </CardHeader>
           <CardContent>
             {orders.length === 0 ? (
-              <p>No orders for today</p>
+              <p>No live orders in the last 30 minutes</p>
             ) : (
               <div className="space-y-4">
                 {orders.map(order => (

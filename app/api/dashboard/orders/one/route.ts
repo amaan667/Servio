@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { todayWindowForTZ } from '@/lib/time';
+import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
 import { cookieAdapter } from '@/lib/server/supabase';
 
 type OrderRow = {
@@ -22,8 +23,8 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const venueId = url.searchParams.get('venueId');
-    // scope: 'all' (today, all statuses) | 'live' (today, pending/preparing) | 'history' (before today)
-    const scope = (url.searchParams.get('scope') || 'all') as 'all' | 'live' | 'history';
+    // scope: 'live' (last 30 minutes) | 'earlier' (today but more than 30 min ago) | 'history' (yesterday and earlier)
+    const scope = (url.searchParams.get('scope') || 'live') as 'live' | 'earlier' | 'history';
 
     if (!venueId) {
       return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
@@ -59,18 +60,18 @@ export async function GET(req: Request) {
       .eq('venue_id', venueId)
       .order('created_at', { ascending: false });
 
-    if (scope === 'all') {
-      // Today only, ALL statuses  ✅ (Requirement #3)
-      q = q.gte('created_at', startUtcISO).lt('created_at', endUtcISO);
-    } else if (scope === 'live') {
-      // optional: live view (today + active)
-      q = q
-        .gte('created_at', startUtcISO)
-        .lt('created_at', endUtcISO)
-        .in('status', ['pending', 'preparing']);
+    if (scope === 'live') {
+      // Live orders: last 30 minutes only
+      const timeWindow = liveOrdersWindow();
+      q = q.gte('created_at', timeWindow.startUtcISO);
+    } else if (scope === 'earlier') {
+      // Earlier today: orders from today but more than 30 minutes ago
+      const timeWindow = earlierTodayWindow(venue?.timezone);
+      q = q.gte('created_at', timeWindow.startUtcISO).lt('created_at', timeWindow.endUtcISO);
     } else if (scope === 'history') {
-      // before today
-      q = q.lt('created_at', startUtcISO).limit(500);
+      // History: orders from yesterday and earlier
+      const timeWindow = historyWindow(venue?.timezone);
+      q = q.lt('created_at', timeWindow.endUtcISO).limit(500);
     }
 
     const { data, error } = await q;
