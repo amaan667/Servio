@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function GenerateQRClient({ venueId, venueName }: Props) {
-  const [selectedTables, setSelectedTables] = useState<string[]>(["1"]);
+  const [selectedTables, setSelectedTables] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({ activeTablesNow: 0 });
   const [printSettings, setPrintSettings] = useState({
@@ -40,21 +40,25 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
   };
 
   const addTable = () => {
-    const nextTableNumber = Math.max(...selectedTables.map(t => parseInt(t)), 0) + 1;
+    const nextTableNumber = selectedTables.length === 0 
+      ? 1 
+      : Math.max(...selectedTables.map(t => parseInt(t)), 0) + 1;
     setSelectedTables([...selectedTables, nextTableNumber.toString()]);
   };
 
   const addMultipleTables = () => {
     const count = parseInt(prompt("How many tables would you like to add?") || "0");
     if (count > 0 && count <= 50) { // Limit to reasonable number
-      const startNumber = Math.max(...selectedTables.map(t => parseInt(t)), 0) + 1;
+      const startNumber = selectedTables.length === 0 
+        ? 1 
+        : Math.max(...selectedTables.map(t => parseInt(t)), 0) + 1;
       const newTables = Array.from({length: count}, (_, i) => (startNumber + i).toString());
       setSelectedTables([...selectedTables, ...newTables]);
     }
   };
 
   const clearAllTables = () => {
-    setSelectedTables(["1"]);
+    setSelectedTables([]);
   };
 
   const removeTable = (tableNumber: string) => {
@@ -420,6 +424,26 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
         ).size;
 
         setStats({ activeTablesNow: activeTables });
+        
+        // Auto-generate QR codes based on active table count
+        if (activeTables > 0) {
+          // Get the actual table numbers that are active
+          const activeTableNumbers = Array.from(new Set(
+            (orders ?? [])
+              .filter((o) => o.order_status !== "COMPLETED" && o.order_status !== "CANCELLED")
+              .map((o) => o.table_number)
+              .filter((t) => t != null)
+              .sort((a, b) => a - b) // Sort numerically
+          ));
+          
+          setSelectedTables(activeTableNumbers.map(t => t.toString()));
+          console.log(`[QR STATS] Auto-generated QR codes for active tables: ${activeTableNumbers.join(', ')}`);
+        } else {
+          // No active tables, show no QR codes
+          setSelectedTables([]);
+          console.log(`[QR STATS] No active tables, showing no QR codes`);
+        }
+        
         console.log(`[QR STATS] Active tables: ${activeTables} for venue ${venueId}`);
       } catch (error) {
         console.error('Error in loadStats:', error);
@@ -458,19 +482,36 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
               <div className="mt-2 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    Currently generating QR codes for <span className="font-semibold">{selectedTables.length}</span> table{selectedTables.length !== 1 ? 's' : ''}
+                    {selectedTables.length === 0 
+                      ? "No active tables - QR codes will auto-generate when orders are placed"
+                      : `Currently generating QR codes for ${selectedTables.length} active table${selectedTables.length !== 1 ? 's' : ''}`
+                    }
                   </div>
-                  {selectedTables.length > 1 && (
+                  {selectedTables.length > 0 && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={clearAllTables}
                       className="text-xs"
                     >
-                      Reset to 1
+                      Clear All
                     </Button>
                   )}
                 </div>
+                
+                {selectedTables.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTables.map((tableNumber, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        Table {tableNumber}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                <p className="text-xs text-muted-foreground">
+                  💡 QR codes automatically match your active table count
+                </p>
                 
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button
@@ -548,28 +589,42 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
-              {selectedTables.map((tableNumber, index) => {
-                const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`;
-                return (
-                  <div key={index} className="text-center p-2 sm:p-3 border rounded-lg bg-card">
-                    <div className="bg-card p-2 rounded-lg shadow-sm inline-block">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 120)}x${Math.min(printSettings.qrSize, 120)}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2`}
-                        alt={`QR Code for Table ${tableNumber}`}
-                        className="w-20 h-20 sm:w-24 sm:h-24"
-                      />
+            {selectedTables.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-muted-foreground mb-4">
+                  <QrCode className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-lg font-medium">No Active Tables</p>
+                  <p className="text-sm">QR codes will appear here when tables have active orders</p>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <p>• Tables with active orders will automatically show QR codes</p>
+                  <p>• You can manually add tables using the buttons on the left</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
+                {selectedTables.map((tableNumber, index) => {
+                  const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`;
+                  return (
+                    <div key={index} className="text-center p-2 sm:p-3 border rounded-lg bg-card">
+                      <div className="bg-card p-2 rounded-lg shadow-sm inline-block">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 120)}x${Math.min(printSettings.qrSize, 120)}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2`}
+                          alt={`QR Code for Table ${tableNumber}`}
+                          className="w-20 h-20 sm:w-24 sm:h-24"
+                        />
+                      </div>
+                      <div className="mt-2">
+                        <Badge variant="secondary">Table {tableNumber}</Badge>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground break-all">
+                        <code className="text-xs">{tableOrderUrl}</code>
+                      </div>
                     </div>
-                    <div className="mt-2">
-                      <Badge variant="secondary">Table {tableNumber}</Badge>
-                    </div>
-                    <div className="mt-2 text-xs text-muted-foreground break-all">
-                      <code className="text-xs">{tableOrderUrl}</code>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-2">
               <Button onClick={handleCopy} variant="outline" className="flex-1">
