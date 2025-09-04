@@ -2,6 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +30,9 @@ import {
   AlertCircle
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+
+// Initialize Stripe
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface CartItem {
   id: string;
@@ -46,6 +56,150 @@ interface CheckoutData {
 
 type CheckoutPhase = 'review' | 'processing' | 'confirmed' | 'feedback' | 'timeline' | 'error';
 
+// Stripe Payment Form Component
+function StripePaymentForm({ 
+  checkoutData, 
+  onSuccess, 
+  onError 
+}: { 
+  checkoutData: CheckoutData;
+  onSuccess: (order: any) => void;
+  onError: (error: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Convert total from pounds to pence for Stripe
+      const totalInPence = Math.round(checkoutData.total * 100);
+      console.log('[STRIPE] Creating payment intent for amount:', totalInPence);
+      
+      // Create payment intent
+      const requestBody = {
+        cartId: checkoutData.cartId,
+        venueId: checkoutData.venueId,
+        tableNumber: checkoutData.tableNumber,
+        items: checkoutData.cart,
+        totalAmount: totalInPence,
+        customerName: checkoutData.customerName,
+        customerPhone: checkoutData.customerPhone,
+      };
+
+      const response = await fetch('/api/payments/create-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const { clientSecret } = await response.json();
+      console.log('[STRIPE] Payment intent created, client secret received');
+
+      // Confirm payment
+      const { error: stripeError } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout?success=true`,
+        },
+      });
+
+      if (stripeError) {
+        console.error('[STRIPE] Payment error:', stripeError);
+        throw new Error(stripeError.message || 'Payment failed');
+      }
+
+      console.log('[STRIPE] Payment confirmed successfully');
+      
+      // Create order from paid intent
+      const orderResponse = await fetch('/api/orders/createFromPaidIntent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cartId: checkoutData.cartId,
+          venueId: checkoutData.venueId,
+          tableNumber: checkoutData.tableNumber,
+          items: checkoutData.cart,
+          totalAmount: totalInPence,
+          customerName: checkoutData.customerName,
+          customerPhone: checkoutData.customerPhone,
+        }),
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error(`Failed to create order: ${orderResponse.status}`);
+      }
+
+      const orderData = await orderResponse.json();
+      console.log('[STRIPE] Order created successfully:', orderData);
+      
+      onSuccess(orderData);
+    } catch (err) {
+      console.error('[STRIPE] Payment error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Payment failed';
+      setError(errorMessage);
+      onError(errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="card-element">Payment Information</Label>
+          <div className="mt-2 p-4 border rounded-lg">
+            <PaymentElement />
+          </div>
+        </div>
+        
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+      </div>
+
+      <Button
+        type="submit"
+        disabled={!stripe || isProcessing}
+        className="w-full bg-purple-600 hover:bg-purple-700"
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processing Payment...
+          </>
+        ) : (
+          <>
+            <CreditCard className="mr-2 h-4 w-4" />
+            Pay £{checkoutData.total.toFixed(2)}
+          </>
+        )}
+      </Button>
+    </form>
+  );
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,15 +212,18 @@ export default function CheckoutPage() {
   const [isMounted, setIsMounted] = useState(false);
   const isDemo = searchParams?.get('demo') === '1';
 
-  // Payment simulation states
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'digital-wallet' | null>(null);
+  // Payment method selection
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'simulation' | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'success' | 'failed'>('pending');
+  
+  // Simulation states (for demo mode)
+  const [simulationMethod, setSimulationMethod] = useState<'card' | 'digital-wallet' | null>(null);
   const [cardDetails, setCardDetails] = useState({
     number: '',
     expiry: '',
     cvv: '',
     name: ''
   });
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'success' | 'failed'>('pending');
   const [showCardForm, setShowCardForm] = useState(false);
 
   // Handle client-side mounting
@@ -123,13 +280,35 @@ export default function CheckoutPage() {
     }
   }, [isMounted, cartId, isDemo]);
 
-  const handlePaymentMethodSelect = (method: 'card' | 'digital-wallet') => {
+  const handlePaymentMethodSelect = (method: 'stripe' | 'simulation') => {
     setPaymentMethod(method);
+  };
+
+  const handleSimulationMethodSelect = (method: 'card' | 'digital-wallet') => {
+    setSimulationMethod(method);
     if (method === 'card') {
       setShowCardForm(true);
     } else {
       setShowCardForm(false);
     }
+  };
+
+  const handleStripePaymentSuccess = (orderData: any) => {
+    console.log('[CHECKOUT] Stripe payment success:', orderData);
+    setOrder(orderData);
+    setPhase('confirmed');
+    setPaymentStatus('success');
+    
+    // Clear stored data
+    localStorage.removeItem('pending-order-data');
+    localStorage.removeItem('servio-checkout-data');
+  };
+
+  const handleStripePaymentError = (error: string) => {
+    console.error('[CHECKOUT] Stripe payment error:', error);
+    setError(error);
+    setPhase('error');
+    setPaymentStatus('failed');
   };
 
   const simulatePayment = async () => {
@@ -210,13 +389,13 @@ export default function CheckoutPage() {
 
   if (!isMounted || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
-          <p className="text-gray-600">Loading checkout...</p>
-          <p className="text-sm text-gray-500 mt-2">Preparing your order details...</p>
-        </div>
+        <p className="text-gray-600">Loading checkout...</p>
+        <p className="text-sm text-gray-500 mt-2">Preparing your order details...</p>
       </div>
+    </div>
     );
   }
 
@@ -474,31 +653,100 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Payment Methods */}
-                {paymentStatus === 'pending' && (
+                {/* Payment Method Selection */}
+                {paymentStatus === 'pending' && !paymentMethod && (
                   <div className="space-y-3">
+                    <div className="text-center mb-4">
+                      <p className="text-sm text-gray-600">Choose your payment method</p>
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <Button
-                        variant={paymentMethod === 'card' ? 'default' : 'outline'}
-                        onClick={() => handlePaymentMethodSelect('card')}
+                        variant="outline"
+                        onClick={() => handlePaymentMethodSelect('stripe')}
                         className="h-20 flex-col gap-2"
                       >
                         <CreditCard className="h-6 w-6" />
-                        <span className="text-sm">Credit Card</span>
+                        <span className="text-sm">Real Payment</span>
+                        <span className="text-xs text-gray-500">Stripe</span>
                       </Button>
                       
                       <Button
-                        variant={paymentMethod === 'digital-wallet' ? 'default' : 'outline'}
-                        onClick={() => handlePaymentMethodSelect('digital-wallet')}
+                        variant="outline"
+                        onClick={() => handlePaymentMethodSelect('simulation')}
                         className="h-20 flex-col gap-2"
                       >
                         <div className="flex gap-1">
                           <div className="w-6 h-6 bg-black rounded"></div>
                           <div className="w-6 h-6 bg-blue-600 rounded"></div>
                         </div>
-                        <span className="text-sm">Digital Wallet</span>
+                        <span className="text-sm">Demo Mode</span>
+                        <span className="text-xs text-gray-500">Simulation</span>
                       </Button>
                     </div>
+                  </div>
+                )}
+
+                {/* Stripe Payment Form */}
+                {paymentMethod === 'stripe' && paymentStatus === 'pending' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Secure Payment</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPaymentMethod(null)}
+                      >
+                        Change Method
+                      </Button>
+                    </div>
+                    <Elements stripe={stripePromise}>
+                      <StripePaymentForm
+                        checkoutData={checkoutData!}
+                        onSuccess={handleStripePaymentSuccess}
+                        onError={handleStripePaymentError}
+                      />
+                    </Elements>
+                  </div>
+                )}
+
+                {/* Simulation Payment Methods */}
+                {paymentMethod === 'simulation' && paymentStatus === 'pending' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Demo Payment</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPaymentMethod(null)}
+                      >
+                        Change Method
+                      </Button>
+                    </div>
+                    
+                    {!simulationMethod && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleSimulationMethodSelect('card')}
+                          className="h-20 flex-col gap-2"
+                        >
+                          <CreditCard className="h-6 w-6" />
+                          <span className="text-sm">Credit Card</span>
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          onClick={() => handleSimulationMethodSelect('digital-wallet')}
+                          className="h-20 flex-col gap-2"
+                        >
+                          <div className="flex gap-1">
+                            <div className="w-6 h-6 bg-black rounded"></div>
+                            <div className="w-6 h-6 bg-blue-600 rounded"></div>
+                          </div>
+                          <span className="text-sm">Digital Wallet</span>
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Card Form */}
                     {showCardForm && (
@@ -551,7 +799,7 @@ export default function CheckoutPage() {
                     )}
 
                     {/* Digital Wallet Simulation */}
-                    {paymentMethod === 'digital-wallet' && !showCardForm && (
+                    {simulationMethod === 'digital-wallet' && !showCardForm && (
                       <div className="p-4 border rounded-lg bg-gray-50 text-center">
                         <div className="flex justify-center gap-4 mb-4">
                           <div className="w-12 h-8 bg-black rounded flex items-center justify-center text-white text-xs font-bold">
@@ -568,7 +816,7 @@ export default function CheckoutPage() {
                     )}
 
                     {/* Pay Button */}
-                    {paymentMethod && (
+                    {simulationMethod && (
                       <Button 
                         onClick={simulatePayment}
                         className="w-full bg-purple-600 hover:bg-purple-700"
@@ -608,8 +856,17 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="text-xs text-gray-500 text-center pt-2 border-t">
-                  <p>This is a payment simulation for demo purposes</p>
-                  <p>No real charges will be made</p>
+                  {paymentMethod === 'simulation' ? (
+                    <>
+                      <p>This is a payment simulation for demo purposes</p>
+                      <p>No real charges will be made</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>Powered by Stripe - Secure payment processing</p>
+                      <p>Your payment information is encrypted and secure</p>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
