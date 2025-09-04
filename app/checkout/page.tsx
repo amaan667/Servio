@@ -81,27 +81,36 @@ function CheckoutForm({
     try {
       // Convert total from pounds to pence for Stripe
       const totalInPence = Math.round(checkoutData.total * 100);
-      console.log('[CHECKOUT DEBUG] Amount conversion:', {
-        originalTotal: checkoutData.total,
-        totalInPence: totalInPence,
-        originalType: typeof checkoutData.total
-      });
+      console.log('[CHECKOUT DEBUG] ===== AMOUNT CONVERSION DEBUG =====');
+      console.log('[CHECKOUT DEBUG] Original total from checkoutData:', checkoutData.total);
+      console.log('[CHECKOUT DEBUG] Original total type:', typeof checkoutData.total);
+      console.log('[CHECKOUT DEBUG] Calculated total in pence:', totalInPence);
+      console.log('[CHECKOUT DEBUG] Conversion calculation:', `${checkoutData.total} * 100 = ${totalInPence}`);
+      console.log('[CHECKOUT DEBUG] Is totalInPence a number?', typeof totalInPence === 'number');
+      console.log('[CHECKOUT DEBUG] Is totalInPence valid?', !isNaN(totalInPence) && isFinite(totalInPence));
       
       // Create payment intent
+      const requestBody = {
+        cartId: checkoutData.cartId,
+        venueId: checkoutData.venueId,
+        tableNumber: checkoutData.tableNumber,
+        items: checkoutData.cart,
+        totalAmount: totalInPence, // Convert pounds to pence
+        customerName: checkoutData.customerName,
+        customerPhone: checkoutData.customerPhone,
+      };
+      
+      console.log('[CHECKOUT DEBUG] ===== PAYMENT INTENT REQUEST =====');
+      console.log('[CHECKOUT DEBUG] Request body:', requestBody);
+      console.log('[CHECKOUT DEBUG] totalAmount in request:', requestBody.totalAmount);
+      console.log('[CHECKOUT DEBUG] totalAmount type:', typeof requestBody.totalAmount);
+      
       const response = await fetch('/api/payments/create-intent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          cartId: checkoutData.cartId,
-          venueId: checkoutData.venueId,
-          tableNumber: checkoutData.tableNumber,
-          items: checkoutData.cart,
-          totalAmount: totalInPence, // Convert pounds to pence
-          customerName: checkoutData.customerName,
-          customerPhone: checkoutData.customerPhone,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const { clientSecret } = await response.json();
