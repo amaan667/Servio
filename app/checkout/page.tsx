@@ -319,10 +319,10 @@ function StripePaymentForm({
         itemsCount: orderRequestBody.items.length
       });
       
-      console.log('[STRIPE ORDER CREATION] Making API call to /api/orders/createFromPaidIntent');
+      console.log('[STRIPE ORDER CREATION] Making API call to /api/orders');
       const orderStartTime = Date.now();
       
-      const orderResponse = await fetch('/api/orders/createFromPaidIntent', {
+      const orderResponse = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -667,7 +667,7 @@ export default function CheckoutPage() {
           total: orderRequestBody.total
         });
         
-        const orderResponse = await fetch('/api/orders/createFromPaidIntent', {
+        const orderResponse = await fetch('/api/orders', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
