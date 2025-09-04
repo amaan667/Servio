@@ -8,6 +8,14 @@ export async function GET(
   try {
     const venueId = params.venueId;
     
+    // Enhanced logging for customer menu access
+    console.log('[MENU API] ===== MENU REQUEST RECEIVED =====');
+    console.log('[MENU API] Timestamp:', new Date().toISOString());
+    console.log('[MENU API] Venue ID:', venueId);
+    console.log('[MENU API] Request URL:', request.url);
+    console.log('[MENU API] User Agent:', request.headers.get('user-agent'));
+    console.log('[MENU API] Referer:', request.headers.get('referer'));
+    
     if (!venueId) {
       return NextResponse.json(
         { error: 'Venue ID is required' },

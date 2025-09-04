@@ -39,6 +39,14 @@ export default function CustomerOrderPage() {
   const tableNumber = searchParams?.get("table") || "1";
   const isDemo = searchParams?.get("demo") === "1";
 
+  // Server-side logging for QR code access
+  console.log('[ORDER PAGE SERVER] ===== ORDER PAGE ACCESSED =====');
+  console.log('[ORDER PAGE SERVER] Timestamp:', new Date().toISOString());
+  console.log('[ORDER PAGE SERVER] Venue slug:', venueSlug);
+  console.log('[ORDER PAGE SERVER] Table number:', tableNumber);
+  console.log('[ORDER PAGE SERVER] Is demo:', isDemo);
+  console.log('[ORDER PAGE SERVER] All search params:', Object.fromEntries(searchParams?.entries() || []));
+
   // Log the initial page load and QR scan parameters (client-side only)
   useEffect(() => {
     console.log('[QR FLOW DEBUG] ===== CUSTOMER ORDER PAGE LOADED =====');
