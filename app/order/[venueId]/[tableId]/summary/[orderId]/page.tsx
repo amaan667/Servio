@@ -160,11 +160,34 @@ function DemoOrderSummaryClient({ venueId, tableId, orderId, isDemo }: { venueId
     router.replace(`/order?demo=1`);
   };
 
-  const handlePaymentComplete = () => {
-    setPaymentCompleted(true);
-    setShowPayment(false);
-    // Show feedback form after payment
-    setShowFeedback(true);
+  const handlePaymentComplete = async () => {
+    try {
+      // Update order payment status to PAID
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          payment_status: 'PAID',
+          order_status: 'PLACED' // Ensure order is in PLACED status
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update payment status');
+      }
+
+      setPaymentCompleted(true);
+      setShowPayment(false);
+      // Show feedback form after payment
+      setShowFeedback(true);
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      alert('Payment completed but failed to update order status. Please contact support.');
+      // Still show success UI even if update failed
+      setPaymentCompleted(true);
+      setShowPayment(false);
+      setShowFeedback(true);
+    }
   };
 
   if (loading) {
@@ -557,11 +580,34 @@ function RealOrderSummaryClient({ venueId, tableId, orderId }: { venueId: string
     };
   }, [orderId, venueId]);
 
-  const handlePaymentComplete = () => {
-    setPaymentCompleted(true);
-    setShowPayment(false);
-    // Show feedback form after payment
-    setShowFeedback(true);
+  const handlePaymentComplete = async () => {
+    try {
+      // Update order payment status to PAID
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          payment_status: 'PAID',
+          order_status: 'PLACED' // Ensure order is in PLACED status
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update payment status');
+      }
+
+      setPaymentCompleted(true);
+      setShowPayment(false);
+      // Show feedback form after payment
+      setShowFeedback(true);
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      alert('Payment completed but failed to update order status. Please contact support.');
+      // Still show success UI even if update failed
+      setPaymentCompleted(true);
+      setShowPayment(false);
+      setShowFeedback(true);
+    }
   };
 
   if (loading) {

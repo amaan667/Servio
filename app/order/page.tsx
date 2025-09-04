@@ -318,7 +318,7 @@ export default function CustomerOrderPage() {
         return;
       }
 
-      // For real orders, store order data temporarily and redirect to payment
+      // For real orders, create order immediately but mark as unpaid
       const orderData = {
         venue_id: venueSlug,
         table_number: safeTable,
@@ -336,15 +336,26 @@ export default function CustomerOrderPage() {
           .filter((item) => item.specialInstructions)
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
+        payment_status: 'UNPAID', // Mark as unpaid initially
       };
 
-      console.log('[ORDER DEBUG] Order data prepared for payment:', orderData);
+      console.log('[ORDER DEBUG] Creating order with unpaid status:', orderData);
       
-      // Store order data temporarily for payment process
-      localStorage.setItem('pending-order-data', JSON.stringify(orderData));
+      // Create the order immediately but mark as unpaid
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      const result = await response.json();
       
-      // Redirect to payment page instead of creating order immediately
-      router.replace(`/order/${venueSlug}/${tableNumber}/payment`);
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || 'Failed to create order');
+      }
+      
+      // Redirect directly to summary page for payment
+      router.replace(`/order/${venueSlug}/${tableNumber}/summary/${result.order.id}`);
     } catch (error) {
       console.error("Error preparing order:", error);
       alert("Failed to prepare order. Please try again.");
