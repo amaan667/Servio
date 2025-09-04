@@ -466,7 +466,7 @@ export default function CheckoutPage() {
                       </Button>
                     </div>
                   ) : (
-                    <Elements stripe={stripePromise}>
+                    <Elements stripe={stripePromise} options={{ mode: 'payment' }}>
                       <CheckoutForm
                         checkoutData={checkoutData}
                         onSuccess={handlePaymentSuccess}
