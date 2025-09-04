@@ -261,6 +261,15 @@ function StripePaymentForm({
       console.log('[STRIPE PAYMENT CONFIRMATION] Client secret available:', !!clientSecret);
       
       const confirmationStartTime = Date.now();
+      
+      // Submit elements before confirming payment
+      console.log("[STRIPE PAYMENT CONFIRMATION] Submitting elements...");
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        console.error("[STRIPE PAYMENT CONFIRMATION] Elements submit error:", submitError);
+        throw new Error(submitError.message || "Failed to submit payment form");
+      }
+      console.log("[STRIPE PAYMENT CONFIRMATION] Elements submitted successfully");
       const { error: stripeError } = await stripe.confirmPayment({
         clientSecret,
         elements,
