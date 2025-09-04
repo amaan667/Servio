@@ -39,6 +39,15 @@ export default function CustomerOrderPage() {
   const tableNumber = searchParams?.get("table") || "1";
   const isDemo = searchParams?.get("demo") === "1";
 
+  // Log the initial page load and QR scan parameters
+  console.log('[QR FLOW DEBUG] ===== CUSTOMER ORDER PAGE LOADED =====');
+  console.log('[QR FLOW DEBUG] URL:', window.location.href);
+  console.log('[QR FLOW DEBUG] Search params:', window.location.search);
+  console.log('[QR FLOW DEBUG] venueSlug from QR:', venueSlug);
+  console.log('[QR FLOW DEBUG] tableNumber from QR:', tableNumber);
+  console.log('[QR FLOW DEBUG] isDemo from QR:', isDemo);
+  console.log('[QR FLOW DEBUG] All search params:', Object.fromEntries(searchParams?.entries() || []));
+
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
@@ -53,10 +62,17 @@ export default function CustomerOrderPage() {
 
   // Add logging for customer info changes
   const updateCustomerInfo = (field: 'name' | 'phone', value: string) => {
-    console.log(`[ORDER DEBUG] Customer ${field} changed:`, value);
+    console.log(`[CUSTOMER DEBUG] ===== CUSTOMER ${field.toUpperCase()} CHANGED =====`);
+    console.log(`[CUSTOMER DEBUG] Field: ${field}`);
+    console.log(`[CUSTOMER DEBUG] New value: "${value}"`);
+    console.log(`[CUSTOMER DEBUG] Current customer info:`, customerInfo);
+    
     setCustomerInfo(prev => {
       const updated = { ...prev, [field]: value };
-      console.log(`[ORDER DEBUG] Customer info updated:`, updated);
+      console.log(`[CUSTOMER DEBUG] Customer info updated:`, updated);
+      console.log(`[CUSTOMER DEBUG] Form validation - name valid:`, !!updated.name.trim());
+      console.log(`[CUSTOMER DEBUG] Form validation - phone valid:`, !!updated.phone.trim());
+      console.log(`[CUSTOMER DEBUG] Form validation - both valid:`, !!updated.name.trim() && !!updated.phone.trim());
       return updated;
     });
   };
@@ -217,33 +233,57 @@ export default function CustomerOrderPage() {
   }, [isDemo]);
 
   const addToCart = (item: MenuItem) => {
+    console.log('[CART DEBUG] ===== ADDING ITEM TO CART =====');
+    console.log('[CART DEBUG] Item being added:', item);
+    console.log('[CART DEBUG] Current cart before add:', cart);
+    
     setCart((prev) => {
       const existing = prev.find((cartItem) => cartItem.id === item.id);
       if (existing) {
-        return prev.map((cartItem) =>
+        const updated = prev.map((cartItem) =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
+        console.log('[CART DEBUG] Item already in cart, incrementing quantity. New cart:', updated);
+        return updated;
       }
-      return [...prev, { ...item, quantity: 1 }];
+      const newCart = [...prev, { ...item, quantity: 1 }];
+      console.log('[CART DEBUG] New item added to cart. New cart:', newCart);
+      return newCart;
     });
   };
 
   const removeFromCart = (itemId: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== itemId));
+    console.log('[CART DEBUG] ===== REMOVING ITEM FROM CART =====');
+    console.log('[CART DEBUG] Item ID to remove:', itemId);
+    console.log('[CART DEBUG] Current cart before remove:', cart);
+    
+    setCart((prev) => {
+      const newCart = prev.filter((item) => item.id !== itemId);
+      console.log('[CART DEBUG] Item removed from cart. New cart:', newCart);
+      return newCart;
+    });
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
+    console.log('[CART DEBUG] ===== UPDATING ITEM QUANTITY =====');
+    console.log('[CART DEBUG] Item ID:', itemId, 'New quantity:', quantity);
+    console.log('[CART DEBUG] Current cart before update:', cart);
+    
     if (quantity <= 0) {
+      console.log('[CART DEBUG] Quantity is 0 or negative, removing item');
       removeFromCart(itemId);
       return;
     }
-    setCart((prev) =>
-      prev.map((item) =>
+    
+    setCart((prev) => {
+      const newCart = prev.map((item) =>
         item.id === itemId ? { ...item, quantity } : item
-      )
-    );
+      );
+      console.log('[CART DEBUG] Quantity updated. New cart:', newCart);
+      return newCart;
+    });
   };
 
   const updateSpecialInstructions = (itemId: string, instructions: string) => {
@@ -289,7 +329,9 @@ export default function CustomerOrderPage() {
     }
 
     console.log('[ORDER SUBMIT] Validation passed, setting submitting state');
+    console.log('[ORDER SUBMIT] Setting isSubmitting to true');
     setIsSubmitting(true);
+    console.log('[ORDER SUBMIT] isSubmitting state set to true');
       try {
         const safeTable = parseInt(tableNumber) || 1;
 
@@ -325,10 +367,20 @@ export default function CustomerOrderPage() {
         console.log('[ORDER SUBMIT] DEMO FLOW: Storing demo order data for checkout:', orderData);
         
         // Store order data in localStorage for checkout page
+        console.log('[ORDER SUBMIT] DEMO FLOW: Storing data in localStorage...');
+        console.log('[ORDER SUBMIT] DEMO FLOW: Data to store:', orderData);
         localStorage.setItem('pending-order-data', JSON.stringify(orderData));
+        console.log('[ORDER SUBMIT] DEMO FLOW: Stored in pending-order-data key');
         // Also store in the key that payment page expects
         localStorage.setItem('servio-checkout-data', JSON.stringify(orderData));
+        console.log('[ORDER SUBMIT] DEMO FLOW: Stored in servio-checkout-data key');
         console.log('[ORDER SUBMIT] DEMO FLOW: Demo order data stored in localStorage');
+        
+        // Verify storage
+        const storedPending = localStorage.getItem('pending-order-data');
+        const storedCheckout = localStorage.getItem('servio-checkout-data');
+        console.log('[ORDER SUBMIT] DEMO FLOW: Verification - pending-order-data exists:', !!storedPending);
+        console.log('[ORDER SUBMIT] DEMO FLOW: Verification - servio-checkout-data exists:', !!storedCheckout);
         
         // Redirect to checkout page with demo mode
         console.log('[ORDER SUBMIT] DEMO FLOW: About to redirect to /checkout?demo=1');
@@ -348,7 +400,9 @@ export default function CustomerOrderPage() {
               window.location.href = '/checkout?demo=1';
             } else {
               console.log('[ORDER SUBMIT] DEMO FLOW: Navigation successful, clearing loading state');
+              console.log('[ORDER SUBMIT] DEMO FLOW: Setting isSubmitting to false');
               setIsSubmitting(false);
+              console.log('[ORDER SUBMIT] DEMO FLOW: isSubmitting state cleared');
             }
           }, 500);
         } catch (routerError) {
@@ -391,10 +445,20 @@ export default function CustomerOrderPage() {
       console.log('[ORDER SUBMIT] REAL FLOW: Storing order data for checkout:', orderData);
       
       // Store order data in localStorage for checkout page
+      console.log('[ORDER SUBMIT] REAL FLOW: Storing data in localStorage...');
+      console.log('[ORDER SUBMIT] REAL FLOW: Data to store:', orderData);
       localStorage.setItem('pending-order-data', JSON.stringify(orderData));
+      console.log('[ORDER SUBMIT] REAL FLOW: Stored in pending-order-data key');
       // Also store in the key that payment page expects
       localStorage.setItem('servio-checkout-data', JSON.stringify(orderData));
+      console.log('[ORDER SUBMIT] REAL FLOW: Stored in servio-checkout-data key');
       console.log('[ORDER SUBMIT] REAL FLOW: Order data stored in localStorage');
+      
+      // Verify storage
+      const storedPending = localStorage.getItem('pending-order-data');
+      const storedCheckout = localStorage.getItem('servio-checkout-data');
+      console.log('[ORDER SUBMIT] REAL FLOW: Verification - pending-order-data exists:', !!storedPending);
+      console.log('[ORDER SUBMIT] REAL FLOW: Verification - servio-checkout-data exists:', !!storedCheckout);
       
       // Redirect to unified checkout page - order will be created after successful payment
       console.log('[ORDER SUBMIT] REAL FLOW: About to redirect to /checkout');
@@ -414,7 +478,9 @@ export default function CustomerOrderPage() {
             window.location.href = '/checkout';
           } else {
             console.log('[ORDER SUBMIT] REAL FLOW: Navigation successful, clearing loading state');
+            console.log('[ORDER SUBMIT] REAL FLOW: Setting isSubmitting to false');
             setIsSubmitting(false);
+            console.log('[ORDER SUBMIT] REAL FLOW: isSubmitting state cleared');
           }
         }, 500);
       } catch (routerError) {
@@ -428,7 +494,9 @@ export default function CustomerOrderPage() {
       console.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
       console.error('[ORDER SUBMIT] ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       alert("Failed to prepare order. Please try again.");
+      console.log('[ORDER SUBMIT] ERROR: Setting isSubmitting to false due to error');
       setIsSubmitting(false);
+      console.log('[ORDER SUBMIT] ERROR: isSubmitting state cleared due to error');
     }
   };
 
@@ -895,7 +963,22 @@ export default function CustomerOrderPage() {
                     Cancel
                   </Button>
                   <Button
-                    onClick={submitOrder}
+                    onClick={() => {
+                      console.log('[SUBMIT DEBUG] ===== SUBMIT ORDER BUTTON CLICKED =====');
+                      console.log('[SUBMIT DEBUG] Button click event triggered');
+                      console.log('[SUBMIT DEBUG] Current state:');
+                      console.log('[SUBMIT DEBUG] - isSubmitting:', isSubmitting);
+                      console.log('[SUBMIT DEBUG] - customerInfo:', customerInfo);
+                      console.log('[SUBMIT DEBUG] - customerInfo.name.trim():', customerInfo.name.trim());
+                      console.log('[SUBMIT DEBUG] - customerInfo.phone.trim():', customerInfo.phone.trim());
+                      console.log('[SUBMIT DEBUG] - cart length:', cart.length);
+                      console.log('[SUBMIT DEBUG] - cart items:', cart);
+                      console.log('[SUBMIT DEBUG] - venueSlug:', venueSlug);
+                      console.log('[SUBMIT DEBUG] - tableNumber:', tableNumber);
+                      console.log('[SUBMIT DEBUG] - isDemo:', isDemo);
+                      console.log('[SUBMIT DEBUG] Button disabled state:', isSubmitting || !customerInfo.name.trim() || !customerInfo.phone.trim());
+                      submitOrder();
+                    }}
                     className="flex-1"
                     disabled={isSubmitting || !customerInfo.name.trim() || !customerInfo.phone.trim()}
                   >
