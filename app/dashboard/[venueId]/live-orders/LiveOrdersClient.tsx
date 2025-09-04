@@ -182,14 +182,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .gte('created_at', liveOrdersCutoff)
         .order('created_at', { ascending: false });
 
-      // Load all orders from today (venue timezone aware)
-      console.log('[LIVE ORDERS DEBUG] Fetching all today orders with window:', window);
+      // Load earlier today orders (today but more than 30 minutes ago)
+      console.log('[LIVE ORDERS DEBUG] Fetching earlier today orders with window:', window);
       const { data: allData, error: allError } = await createClient()
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
         .gte('created_at', window.startUtcISO)
-        .lt('created_at', window.endUtcISO)
+        .lt('created_at', liveOrdersCutoff)  // Before the live orders cutoff (30 minutes ago)
         .order('created_at', { ascending: false });
 
       // Load history orders (all orders before today, not just terminal statuses)
@@ -204,7 +204,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Debug all responses
       console.log('[LIVE ORDERS DEBUG] === FETCH RESULTS ===');
       console.log('Live orders response:', { data: liveData, error: liveError, count: liveData?.length || 0 });
-      console.log('All today orders response:', { data: allData, error: allError, count: allData?.length || 0 });
+      console.log('Earlier today orders response:', { data: allData, error: allError, count: allData?.length || 0 });
       console.log('History orders response:', { data: historyData, error: historyError, count: historyData?.length || 0 });
       
       // Also check if there are any orders at all for this venue
@@ -225,7 +225,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         console.error('[LIVE ORDERS DEBUG] Live orders error:', liveError);
       }
       if (allError) {
-        console.error('[LIVE ORDERS DEBUG] All today orders error:', allError);
+        console.error('[LIVE ORDERS DEBUG] Earlier today orders error:', allError);
       }
       if (historyError) {
         console.error('[LIVE ORDERS DEBUG] History orders error:', historyError);
@@ -248,7 +248,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         setOrders(liveData as Order[]);
       }
       if (!allError && allData) {
-        console.log('[LIVE ORDERS DEBUG] All today orders fetched:', {
+        console.log('[LIVE ORDERS DEBUG] Earlier today orders fetched:', {
           count: allData.length,
           orders: allData.map((order: any) => ({
             id: order.id,
@@ -258,8 +258,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           }))
         });
         
-        // Filter out live orders from all today orders
-        // All Today should show orders from today that are NOT in live orders
+        // Earlier Today shows orders from today that are older than 30 minutes
         // Also exclude completed orders from the last 30 minutes (they stay in live)
         const liveOrderIds = new Set((liveData || []).map((order: any) => order.id));
         const thirtyMinutesAgo = new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
@@ -312,9 +311,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       // Debug state after setting
       console.log('[LIVE ORDERS DEBUG] === STATE AFTER SETTING ===');
-      console.log('Orders state set to:', liveData?.length || 0, 'orders');
-      console.log('AllTodayOrders state set to:', allData?.length || 0, 'orders');
-      console.log('HistoryOrders state set to:', historyData?.length || 0, 'orders');
+      console.log('Live Orders state set to:', liveData?.length || 0, 'orders');
+      console.log('Earlier Today Orders state set to:', allData?.length || 0, 'orders');
+      console.log('History Orders state set to:', historyData?.length || 0, 'orders');
       
       console.log('[LIVE_ORDERS_CLIENT] ===== END LOADING VENUE AND ORDERS =====');
       console.log('[LIVE_ORDERS_CLIENT] Final State:', {

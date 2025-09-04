@@ -1,4 +1,4 @@
-import { LiveOrdersNew } from "@/components/live-orders-new";
+import LiveOrdersClient from "./LiveOrdersClient";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 export default function LiveOrdersPage({ params }: { params: { venueId: string } }) {
@@ -16,7 +16,7 @@ export default function LiveOrdersPage({ params }: { params: { venueId: string }
           </p>
         </div>
         
-        <LiveOrdersNew venueId={params.venueId} venueTimezone="Europe/London" />
+        <LiveOrdersClient venueId={params.venueId} />
       </div>
     </div>
   );
