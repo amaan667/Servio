@@ -276,45 +276,41 @@ export default function CustomerOrderPage() {
       try {
         const safeTable = parseInt(tableNumber) || 1;
 
-      // For demo orders, create immediately
+      // For demo orders, redirect to checkout with demo mode
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
-        console.log('[ORDER DEBUG] Processing demo order');
+        console.log('[ORDER DEBUG] Processing demo order - redirecting to checkout');
         
-        // For demo orders, simulate the complete flow without database
-        // Store order data in localStorage for the demo summary page
-        const demoOrderData = {
-          id: `demo-${Date.now()}`, // Generate a demo order ID
-          venue_id: 'demo-cafe',
-          venue_name: 'Servio Café',
-          table_number: safeTable,
-          customer_name: customerInfo.name.trim(),
-          customer_phone: customerInfo.phone.trim(),
-          items: cart.map((item) => ({
-            menu_item_id: null, // Demo items don't have real IDs
-            quantity: item.quantity,
+        // For demo orders, use the same flow as real orders but with demo mode
+        const orderData = {
+          venueId: 'demo-cafe',
+          venueName: 'Servio Café',
+          tableNumber: safeTable,
+          customerName: customerInfo.name.trim(),
+          customerPhone: customerInfo.phone.trim(),
+          cart: cart.map((item) => ({
+            id: item.id && item.id.startsWith('demo-') ? null : item.id,
+            name: item.name,
             price: item.price,
-            item_name: item.name,
+            quantity: item.quantity,
             specialInstructions: item.specialInstructions || null,
             image: item.image || null,
           })),
-          total_amount: getTotalPrice(),
+          total: getTotalPrice(),
           notes: cart
             .filter((item) => item.specialInstructions)
             .map((item) => `${item.name}: ${item.specialInstructions}`)
             .join("; "),
-          order_status: 'PLACED',
-          payment_status: 'UNPAID', // Demo orders start as unpaid for payment simulation
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         };
 
-        // Store demo order data for the summary page
-        localStorage.setItem('demo-order-data', JSON.stringify(demoOrderData));
+        console.log('[ORDER DEBUG] Storing demo order data for checkout:', orderData);
         
-        console.log('Demo order data prepared:', demoOrderData);
+        // Store order data in localStorage for checkout page
+        localStorage.setItem('pending-order-data', JSON.stringify(orderData));
+        console.log('[ORDER DEBUG] Demo order data stored in localStorage');
         
-        // Redirect to demo order summary page
-        router.replace(`/order/demo-cafe/${tableNumber}/summary/${demoOrderData.id}`);
+        // Redirect to checkout page with demo mode
+        console.log('[ORDER DEBUG] Redirecting to checkout page with demo mode...');
+        router.replace('/checkout?demo=1');
         return;
       }
 
