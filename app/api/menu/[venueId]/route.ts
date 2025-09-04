@@ -9,6 +9,7 @@ export async function GET(
     const venueId = params.venueId;
     
     // Enhanced logging for customer menu access
+    console.log('🍕 MENU API CALLED 🍕');
     console.log('[MENU API] ===== MENU REQUEST RECEIVED =====');
     console.log('[MENU API] Timestamp:', new Date().toISOString());
     console.log('[MENU API] Venue ID:', venueId);

@@ -34,6 +34,11 @@ interface CartItem extends MenuItem {
 }
 
 export default function CustomerOrderPage() {
+  // IMMEDIATE DEBUG - This should appear in deploy logs if page is accessed
+  console.log('🚨 ORDER PAGE COMPONENT LOADED 🚨');
+  console.log('🚨 TIMESTAMP:', new Date().toISOString());
+  console.log('🚨 This means someone accessed the order page!');
+  
   const searchParams = useSearchParams();
   const venueSlug = searchParams?.get("venue") || "";
   const tableNumber = searchParams?.get("table") || "1";
