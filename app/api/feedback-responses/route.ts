@@ -94,30 +94,39 @@ export async function POST(req: Request) {
       }
     }
 
-    // Prepare response data
-    const responseData = answers.map((answer: FeedbackAnswer) => {
-      const base = {
-        venue_id,
-        order_id: order_id || null,
-        question_id: answer.question_id
-      };
+    // Calculate average rating from star responses
+    const starAnswers = answers.filter(a => a.type === 'stars' && a.answer_stars > 0);
+    const averageRating = starAnswers.length > 0 
+      ? Math.round(starAnswers.reduce((sum, a) => sum + a.answer_stars, 0) / starAnswers.length)
+      : 3; // Default rating
 
-      switch (answer.type) {
-        case 'stars':
-          return { ...base, answer_stars: answer.answer_stars };
-        case 'multiple_choice':
-          return { ...base, answer_choice: answer.answer_choice };
-        case 'paragraph':
-          return { ...base, answer_text: answer.answer_text };
-        default:
-          throw new Error('Invalid answer type');
-      }
-    });
+    // Combine text responses into comment
+    const textAnswers = answers.filter(a => a.type === 'paragraph' && a.answer_text?.trim());
+    const comment = textAnswers.length > 0 
+      ? textAnswers.map(a => a.answer_text).join('\n\n')
+      : '';
 
-    // Insert responses
+    // Create single feedback entry
+    const feedbackData = {
+      venue_id,
+      order_id: order_id || null,
+      customer_name: 'Customer',
+      customer_email: null,
+      customer_phone: null,
+      rating: averageRating,
+      comment: comment || 'No additional comments',
+      category: 'structured',
+      feedback_type: 'structured',
+      sentiment_score: null,
+      sentiment_label: null,
+      response: null,
+      responded_at: null
+    };
+
+    // Insert feedback
     const { data, error } = await serviceClient
-      .from('feedback_responses')
-      .insert(responseData)
+      .from('feedback')
+      .insert(feedbackData)
       .select('id');
 
     if (error) {
