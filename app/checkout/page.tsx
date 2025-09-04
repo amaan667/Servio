@@ -666,7 +666,14 @@ export default function CheckoutPage() {
           <X className="w-8 h-8 text-red-600 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <Button onClick={() => router.push('/order')}>
+          <Button onClick={() => {
+            if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
+              const data = checkoutData as CheckoutData;
+              router.push(`/order?venue=${data.venueId}&table=${data.tableNumber}`);
+            } else {
+              router.push('/order');
+            }
+          }}>
             Back to Order
           </Button>
         </div>
@@ -803,7 +810,14 @@ export default function CheckoutPage() {
               Try Again
             </Button>
             <Button
-              onClick={() => router.push('/order')}
+              onClick={() => {
+                if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
+                  const data = checkoutData as CheckoutData;
+                  router.push(`/order?venue=${data.venueId}&table=${data.tableNumber}`);
+                } else {
+                  router.push('/order');
+                }
+              }}
               className="flex-1"
             >
               Back to Order
@@ -819,7 +833,14 @@ export default function CheckoutPage() {
       <div className="max-w-4xl mx-auto px-4">
         <div className="mb-6">
           <Button
-            onClick={() => router.push('/order')}
+            onClick={() => {
+              if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
+                const data = checkoutData as CheckoutData;
+                router.push(`/order?venue=${data.venueId}&table=${data.tableNumber}`);
+              } else {
+                router.push('/order');
+              }
+            }}
             variant="ghost"
             className="mb-4"
           >
