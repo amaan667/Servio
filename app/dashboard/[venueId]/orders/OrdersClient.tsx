@@ -40,11 +40,12 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
         // Get time window for live orders (last 30 minutes)
         const timeWindow = liveOrdersWindow();
         
-        // Fetch live orders from last 30 minutes
+        // Fetch live orders from last 30 minutes - only paid orders
         const { data: ordersData } = await supabase
           .from('orders')
           .select('*')
           .eq('venue_id', venueId)
+          .eq('payment_status', 'PAID') // Only show paid orders
           .gte('created_at', timeWindow.startUtcISO)
           .order('created_at', { ascending: false });
 

@@ -58,6 +58,7 @@ export async function GET(req: Request) {
         'id, venue_id, table_number, customer_name, items, total_amount, created_at, status, payment_status'
       )
       .eq('venue_id', venueId)
+      .eq('payment_status', 'PAID') // Only show paid orders
       .order('created_at', { ascending: false });
 
     if (scope === 'live') {

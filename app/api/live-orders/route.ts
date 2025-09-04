@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 
-  // Get live orders
+  // Get live orders - only show paid orders
   const { data: orders, error } = await supabase
     .from('orders')
     .select(`
@@ -38,6 +38,7 @@ export async function GET(req: Request) {
       total_amount, order_status, payment_status, notes, created_at, items
     `)
     .eq('venue_id', venueId)
+    .eq('payment_status', 'PAID') // Only show paid orders
     .in('order_status', ['PLACED', 'IN_PREP', 'READY'])
     .order('created_at', { ascending: false });
 
