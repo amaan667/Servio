@@ -141,6 +141,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   useEffect(() => {
     const loadVenueAndOrders = async () => {
+      console.log('[LIVE_ORDERS_CLIENT] ===== LOADING VENUE AND ORDERS =====');
+      console.log('[LIVE_ORDERS_CLIENT] Venue ID:', venueId);
+      console.log('[LIVE_ORDERS_CLIENT] Active Tab:', activeTab);
+      console.log('[LIVE_ORDERS_CLIENT] Current Orders Count:', orders.length);
       let venueTimezone;
       if (!venueNameProp) {
         const { data: venueData } = await createClient()
@@ -311,6 +315,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       console.log('Orders state set to:', liveData?.length || 0, 'orders');
       console.log('AllTodayOrders state set to:', allData?.length || 0, 'orders');
       console.log('HistoryOrders state set to:', historyData?.length || 0, 'orders');
+      
+      console.log('[LIVE_ORDERS_CLIENT] ===== END LOADING VENUE AND ORDERS =====');
+      console.log('[LIVE_ORDERS_CLIENT] Final State:', {
+        liveOrders: liveData?.length || 0,
+        allTodayOrders: allData?.length || 0,
+        historyOrders: historyData?.length || 0,
+        activeTab: activeTab,
+        venueId: venueId
+      });
     };
 
     loadVenueAndOrders();
@@ -777,7 +790,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(newTab) => {
+          console.log('[LIVE_ORDERS_CLIENT] ===== TAB SELECTED =====');
+          console.log('[LIVE_ORDERS_CLIENT] Previous Tab:', activeTab);
+          console.log('[LIVE_ORDERS_CLIENT] New Tab:', newTab);
+          console.log('[LIVE_ORDERS_CLIENT] Venue ID:', venueId);
+          console.log('[LIVE_ORDERS_CLIENT] Current Orders Count:', orders.length);
+          console.log('[LIVE_ORDERS_CLIENT] Tab Counts:', tabCounts);
+          console.log('[LIVE_ORDERS_CLIENT] ===== END TAB SELECTION =====');
+          setActiveTab(newTab);
+        }} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="live" className="flex items-center space-x-2">
               <span>Live (Last 30 Min)</span>

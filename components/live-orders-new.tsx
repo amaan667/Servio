@@ -75,6 +75,12 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
   }, []);
 
   const fetchOrders = useCallback(async (tab: 'live' | 'earlier' | 'history', background: boolean = false) => {
+    console.log('[FETCH_ORDERS] ===== FETCHING ORDERS =====');
+    console.log('[FETCH_ORDERS] Tab:', tab.toUpperCase());
+    console.log('[FETCH_ORDERS] Venue ID:', venueId);
+    console.log('[FETCH_ORDERS] Venue Timezone:', venueTimezone);
+    console.log('[FETCH_ORDERS] Background:', background);
+    console.log('[FETCH_ORDERS] Current Orders Count:', orders.length);
     if (!venueId) {
       console.log('[LIVE_ORDERS] No venueId, returning early');
       setLoading(false);
@@ -290,6 +296,19 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       clearTimeout(timeoutId);
       setOrders(data || []);
       setLastUpdatedAt(new Date());
+      
+      // Log fetch results
+      console.log('[FETCH_ORDERS] ===== FETCH RESULTS =====');
+      console.log('[FETCH_ORDERS] Tab:', tab.toUpperCase());
+      console.log('[FETCH_ORDERS] Orders Fetched:', (data || []).length);
+      console.log('[FETCH_ORDERS] Sample Orders (first 2):');
+      (data || []).slice(0, 2).forEach((order, index) => {
+        const orderDate = new Date(order.created_at);
+        const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
+        console.log(`[FETCH_ORDERS]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.order_status || order.status}`);
+      });
+      console.log('[FETCH_ORDERS] ===== END FETCH RESULTS =====');
+      
       logger.info(`LIVE_ORDERS: ${tab} orders fetched successfully`, {
         orderCount: data?.length || 0,
         tab,
@@ -531,7 +550,21 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
               key={tab}
               variant={activeTab === tab ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                console.log('[TAB_SELECTION] ===== TAB SELECTED =====');
+                console.log('[TAB_SELECTION] Previous Tab:', activeTab);
+                console.log('[TAB_SELECTION] New Tab:', tab);
+                console.log('[TAB_SELECTION] Venue ID:', venueId);
+                console.log('[TAB_SELECTION] Venue Timezone:', venueTimezone);
+                console.log('[TAB_SELECTION] Current Order Count:', orders.length);
+                console.log('[TAB_SELECTION] Tab Counts:', {
+                  live: getTabCount('live'),
+                  earlier: getTabCount('earlier'),
+                  history: getTabCount('history')
+                });
+                console.log('[TAB_SELECTION] ===== END TAB SELECTION =====');
+                setActiveTab(tab);
+              }}
               className="flex items-center space-x-2 px-4 py-2 min-w-[120px] justify-center"
             >
               {getTabIcon(tab)}

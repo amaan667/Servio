@@ -86,18 +86,45 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    // Debug logging for all scopes
-    console.log('[DEBUG] Query results:', {
-      scope,
-      venueId,
-      timezone: venue?.timezone,
-      orderCount: data?.length || 0,
-      orders: data?.map(order => ({
-        id: order.id,
-        created_at: order.created_at,
-        status: order.status
-      })) || []
-    });
+    // Detailed logging for Railway deployment monitoring
+    console.log('[TAB_FILTERING] ===== TAB SELECTION DEBUG =====');
+    console.log('[TAB_FILTERING] Tab:', scope.toUpperCase());
+    console.log('[TAB_FILTERING] Venue ID:', venueId);
+    console.log('[TAB_FILTERING] Venue Timezone:', venue?.timezone || 'UTC');
+    console.log('[TAB_FILTERING] Order Count:', data?.length || 0);
+    
+    if (data && data.length > 0) {
+      console.log('[TAB_FILTERING] Sample Orders (first 3):');
+      data.slice(0, 3).forEach((order, index) => {
+        const orderDate = new Date(order.created_at);
+        const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
+        console.log(`[TAB_FILTERING]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.status}`);
+      });
+      
+      // Age distribution analysis
+      const ageDistribution = data.reduce((acc, order) => {
+        const orderDate = new Date(order.created_at);
+        const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
+        if (ageMinutes < 30) acc['<30min'] = (acc['<30min'] || 0) + 1;
+        else if (ageMinutes < 60) acc['30-60min'] = (acc['30-60min'] || 0) + 1;
+        else if (ageMinutes < 1440) acc['1-24hrs'] = (acc['1-24hrs'] || 0) + 1;
+        else acc['>24hrs'] = (acc['>24hrs'] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.log('[TAB_FILTERING] Age Distribution:', ageDistribution);
+      
+      // Status distribution
+      const statusDistribution = data.reduce((acc, order) => {
+        acc[order.status] = (acc[order.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.log('[TAB_FILTERING] Status Distribution:', statusDistribution);
+    } else {
+      console.log('[TAB_FILTERING] No orders found for this tab');
+    }
+    console.log('[TAB_FILTERING] ===== END TAB DEBUG =====');
 
     return NextResponse.json({
       ok: true,
