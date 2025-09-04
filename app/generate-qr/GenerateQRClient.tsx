@@ -18,7 +18,7 @@ interface Props {
 export default function GenerateQRClient({ venueId, venueName }: Props) {
   const [selectedTables, setSelectedTables] = useState<string[]>(["1"]);
   const [copied, setCopied] = useState(false);
-  const [stats, setStats] = useState({ totalTablesToday: 0, activeTablesNow: 0 });
+  const [stats, setStats] = useState({ activeTablesNow: 0 });
   const [printSettings, setPrintSettings] = useState({
     qrSize: 150,
     qrPerPage: 4,
@@ -391,43 +391,53 @@ export default function GenerateQRClient({ venueId, venueName }: Props) {
 
   useEffect(() => {
     const loadStats = async () => {
-      // Today window
-      const today = new Date(); today.setHours(0,0,0,0);
-      const startIso = today.toISOString();
-      const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
-      // Any tables that interacted today (orders placed). If qr_scans table exists, union here later.
-      const { data: anyOrders } = await supabase
-        .from('orders')
-        .select('table_number,status,created_at')
-        .eq('venue_id', venueId)
-        .gte('created_at', startIso)
-        .lt('created_at', endIso);
-      const totalTablesToday = new Set((anyOrders ?? []).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
-      const activeTablesNow = new Set((anyOrders ?? []).filter((o:any)=>['pending','preparing'].includes(String(o.status))).map((o:any)=>o.table_number).filter((t:any)=>t!=null)).size;
-      setStats({ totalTablesToday, activeTablesNow });
+      try {
+        // Get today's orders to calculate active tables (matching main dashboard logic)
+        const today = new Date(); 
+        today.setHours(0,0,0,0);
+        const startIso = today.toISOString();
+        const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
+        
+        const { data: orders, error } = await supabase
+          .from('orders')
+          .select('table_number, order_status, created_at')
+          .eq('venue_id', venueId)
+          .gte('created_at', startIso)
+          .lt('created_at', endIso);
+
+        if (error) {
+          console.error('Error loading QR stats:', error);
+          return;
+        }
+
+        // Calculate active tables using same logic as main dashboard
+        // Active tables = tables with orders that are not completed
+        const activeTables = new Set(
+          (orders ?? [])
+            .filter((o) => o.order_status !== "COMPLETED" && o.order_status !== "CANCELLED")
+            .map((o) => o.table_number)
+            .filter((t) => t != null)
+        ).size;
+
+        setStats({ activeTablesNow: activeTables });
+        console.log(`[QR STATS] Active tables: ${activeTables} for venue ${venueId}`);
+      } catch (error) {
+        console.error('Error in loadStats:', error);
+      }
     };
     loadStats();
   }, [venueId]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6">
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Tables (today)</p>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.totalTablesToday}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active QR Codes (now)</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Tables (now)</p>
                 <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.activeTablesNow}</p>
+                <p className="text-xs text-muted-foreground mt-1">Tables with active orders</p>
               </div>
             </div>
           </CardContent>
