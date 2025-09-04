@@ -1,0 +1,33 @@
+
+> servio-mvp@0.1.0 start
+> next start -p 3002
+
+   ▲ Next.js 15.5.2
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.0.147:3002
+
+ ✓ Starting...
+ ⚠ Invalid next.config.mjs options detected: 
+ ⚠     Unrecognized key(s) in object: 'staticGenerationAsyncStorage' at "experimental"
+ ⚠     Unrecognized key(s) in object: 'generateStaticParams'
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ✓ Ready in 197ms
+🔧 PROD AUTH CONFIG: Using production URL: https://servio-production.up.railway.app
+🔧 AUTH CONFIG: {
+  APP_URL: 'https://servio-production.up.railway.app',
+  NEXT_PUBLIC_APP_URL: 'https://servio-production.up.railway.app',
+  NEXT_PUBLIC_SITE_URL: 'https://servio-production.up.railway.app',
+  NODE_ENV: 'production',
+  IS_PRODUCTION: true,
+  IS_DEVELOPMENT: false
+}
+🔧 PROD AUTH CONFIG: Using production URL: https://servio-production.up.railway.app
+🔧 AUTH CONFIG: {
+  APP_URL: 'https://servio-production.up.railway.app',
+  NEXT_PUBLIC_APP_URL: 'https://servio-production.up.railway.app',
+  NEXT_PUBLIC_SITE_URL: 'https://servio-production.up.railway.app',
+  NODE_ENV: 'production',
+  IS_PRODUCTION: true,
+  IS_DEVELOPMENT: false
+}
+[HOME PAGE] Auth state: { session: false, loading: true, userId: undefined }

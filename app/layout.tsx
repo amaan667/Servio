@@ -19,6 +19,9 @@ export const metadata: Metadata = {
     "Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay - all from their phones.",
 };
 
+// Force dynamic rendering to prevent static generation errors with cookies
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({
   children,
 }: {

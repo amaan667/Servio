@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CreditCard, CheckCircle } from "lucide-react";
@@ -26,8 +26,9 @@ interface PendingOrderData {
 export default function PaymentPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const venueId = searchParams?.get("venueId");
-  const tableNumber = searchParams?.get("tableNumber");
+  const params = useParams();
+  const venueId = params?.venueId as string;
+  const tableId = params?.tableId as string;
   
   const [pendingOrder, setPendingOrder] = useState<PendingOrderData | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending');
@@ -80,7 +81,7 @@ export default function PaymentPage() {
       
       // Redirect to order summary after a short delay
       setTimeout(() => {
-        router.replace(`/order/${venueId}/${tableNumber}/summary/${out?.order?.id}`);
+        router.replace(`/order/${venueId}/${tableId}/summary/${out?.order?.id}`);
       }, 2000);
       
     } catch (error) {
@@ -118,7 +119,7 @@ export default function PaymentPage() {
             {/* Business Name and Table */}
             <div className="ml-6">
               <h1 className="text-2xl font-bold text-gray-900">Payment</h1>
-              <p className="text-gray-600">Table {tableNumber}</p>
+              <p className="text-gray-600">Table {tableId}</p>
             </div>
           </div>
         </div>
