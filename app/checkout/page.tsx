@@ -188,30 +188,42 @@ export default function CheckoutPage() {
     console.log('[CHECKOUT DEBUG] Search params:', window.location.search);
     console.log('[CHECKOUT DEBUG] Is demo mode:', isDemo);
     console.log('[CHECKOUT DEBUG] Cart ID:', cartId);
+    console.log('[CHECKOUT DEBUG] Router object:', router);
+    console.log('[CHECKOUT DEBUG] Search params object:', searchParams);
     
     // Get checkout data from localStorage or URL params
     const storedData = localStorage.getItem('pending-order-data');
     console.log('[CHECKOUT DEBUG] Raw stored data:', storedData);
+    console.log('[CHECKOUT DEBUG] Stored data length:', storedData?.length || 0);
     
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
         console.log('[CHECKOUT DEBUG] Parsed data:', data);
+        console.log('[CHECKOUT DEBUG] Data keys:', Object.keys(data));
+        console.log('[CHECKOUT DEBUG] Customer name from data:', data.customerName);
+        console.log('[CHECKOUT DEBUG] Customer phone from data:', data.customerPhone);
+        console.log('[CHECKOUT DEBUG] Cart from data:', data.cart);
+        console.log('[CHECKOUT DEBUG] Total from data:', data.total);
         
         const checkoutData = {
           ...data,
           cartId,
           venueName: data.venueName || 'Restaurant',
         };
-        console.log('[CHECKOUT DEBUG] Setting checkout data:', checkoutData);
+        console.log('[CHECKOUT DEBUG] Final checkout data:', checkoutData);
+        console.log('[CHECKOUT DEBUG] Setting checkout data state...');
         setCheckoutData(checkoutData);
-        console.log('[CHECKOUT DEBUG] Checkout data set successfully');
+        console.log('[CHECKOUT DEBUG] Checkout data state set successfully');
       } catch (error) {
         console.error('[CHECKOUT DEBUG] Error parsing stored data:', error);
+        console.error('[CHECKOUT DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        console.log('[CHECKOUT DEBUG] Redirecting to order page due to parse error');
         router.push('/order');
       }
     } else {
-      console.log('[CHECKOUT DEBUG] No stored data found');
+      console.log('[CHECKOUT DEBUG] No stored data found in localStorage');
+      console.log('[CHECKOUT DEBUG] Checking for demo mode...');
       
       // Try to get from URL params for demo mode
       const venueId = searchParams?.get('venue') || 'demo-cafe';
@@ -221,9 +233,13 @@ export default function CheckoutPage() {
         { id: 'demo-2', name: 'Demo Item 2', price: 800, quantity: 2 },
       ];
       
+      console.log('[CHECKOUT DEBUG] Demo mode check - isDemo:', isDemo);
+      console.log('[CHECKOUT DEBUG] Demo mode check - venueId:', venueId);
+      console.log('[CHECKOUT DEBUG] Demo mode check - tableNumber:', tableNumber);
+      
       if (isDemo) {
         console.log('[CHECKOUT DEBUG] Setting up demo data');
-        setCheckoutData({
+        const demoCheckoutData = {
           venueId,
           venueName: 'Demo Restaurant',
           tableNumber,
@@ -232,15 +248,19 @@ export default function CheckoutPage() {
           customerName: 'Demo Customer',
           customerPhone: '+1234567890',
           cartId,
-        });
+        };
+        console.log('[CHECKOUT DEBUG] Demo checkout data:', demoCheckoutData);
+        setCheckoutData(demoCheckoutData);
+        console.log('[CHECKOUT DEBUG] Demo checkout data set successfully');
       } else {
-        console.log('[CHECKOUT DEBUG] No demo mode, redirecting to order page');
+        console.log('[CHECKOUT DEBUG] No demo mode, no stored data - redirecting to order page');
         router.push('/order');
       }
     }
   }, [router, searchParams, cartId, isDemo]);
 
   const handlePaymentSuccess = (orderData: any) => {
+    console.log('[CHECKOUT DEBUG] Payment success handler called:', orderData);
     setOrder(orderData);
     setPhase('confirmed');
     // Clear stored data
@@ -274,6 +294,7 @@ export default function CheckoutPage() {
       const orderResult = await orderResponse.json();
 
       if (orderResult.ok) {
+        console.log('[CHECKOUT DEBUG] Demo order created successfully:', orderResult.order);
         handlePaymentSuccess(orderResult.order);
       } else {
         throw new Error(orderResult.message || 'Failed to create demo order');

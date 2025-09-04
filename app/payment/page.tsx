@@ -46,16 +46,32 @@ export default function PaymentPage() {
   }, [router]);
 
   const handlePayment = async () => {
-    if (!checkoutData || !customerName.trim() || !customerPhone.trim()) return;
+    console.log('[PAYMENT DEBUG] ===== PAYMENT HANDLER STARTED =====');
+    console.log('[PAYMENT DEBUG] Checkout data:', checkoutData);
+    console.log('[PAYMENT DEBUG] Customer name:', customerName);
+    console.log('[PAYMENT DEBUG] Customer phone:', customerPhone);
+    console.log('[PAYMENT DEBUG] Form validation - name trimmed:', customerName.trim());
+    console.log('[PAYMENT DEBUG] Form validation - phone trimmed:', customerPhone.trim());
+    
+    if (!checkoutData || !customerName.trim() || !customerPhone.trim()) {
+      console.log('[PAYMENT DEBUG] ERROR: Missing required data');
+      console.log('[PAYMENT DEBUG] - checkoutData exists:', !!checkoutData);
+      console.log('[PAYMENT DEBUG] - customerName valid:', !!customerName.trim());
+      console.log('[PAYMENT DEBUG] - customerPhone valid:', !!customerPhone.trim());
+      return;
+    }
 
+    console.log('[PAYMENT DEBUG] Setting processing state to true');
     setIsProcessing(true);
 
     try {
+      console.log('[PAYMENT DEBUG] Starting payment simulation (2 second delay)');
       // Simulate payment processing
       await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log('[PAYMENT DEBUG] Payment simulation completed');
 
-      // Create the order
-      const orderResult = await createOrder({
+      console.log('[PAYMENT DEBUG] Preparing order data for creation');
+      const orderData = {
         venue_id: checkoutData.venueId,
         table_number: checkoutData.tableNumber,
         customer_name: customerName.trim(),
@@ -67,21 +83,37 @@ export default function PaymentPage() {
           item_name: item.name,
         })),
         total_amount: checkoutData.total,
-      });
+      };
+      console.log('[PAYMENT DEBUG] Order data prepared:', orderData);
+
+      // Create the order
+      console.log('[PAYMENT DEBUG] Calling createOrder function');
+      const orderResult = await createOrder(orderData);
+      console.log('[PAYMENT DEBUG] Order creation result:', orderResult);
 
       if (orderResult.success) {
-        setOrderNumber(orderResult.data?.order_number?.toString() || "ORD-001");
+        console.log('[PAYMENT DEBUG] Order created successfully');
+        const orderNumber = orderResult.data?.order_number?.toString() || "ORD-001";
+        console.log('[PAYMENT DEBUG] Setting order number:', orderNumber);
+        setOrderNumber(orderNumber);
+        console.log('[PAYMENT DEBUG] Setting payment complete to true');
         setPaymentComplete(true);
         // Clear checkout data
+        console.log('[PAYMENT DEBUG] Clearing checkout data from localStorage');
         localStorage.removeItem("servio-checkout-data");
+        console.log('[PAYMENT DEBUG] Payment flow completed successfully');
       } else {
+        console.log('[PAYMENT DEBUG] ERROR: Order creation failed:', orderResult.message);
         throw new Error(orderResult.message);
       }
     } catch (error) {
-      console.error("Payment error:", error);
+      console.error('[PAYMENT DEBUG] Payment error occurred:', error);
+      console.error('[PAYMENT DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       const errorMessage = error instanceof Error ? error.message : "Payment failed. Please try again.";
+      console.log('[PAYMENT DEBUG] Showing error alert:', errorMessage);
       alert(`Payment failed: ${errorMessage}`);
     } finally {
+      console.log('[PAYMENT DEBUG] Setting processing state to false');
       setIsProcessing(false);
     }
   };
@@ -245,7 +277,10 @@ export default function PaymentPage() {
                 id="customerName"
                 type="text"
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                onChange={(e) => {
+                  console.log('[PAYMENT DEBUG] Customer name changed:', e.target.value);
+                  setCustomerName(e.target.value);
+                }}
                 placeholder="Enter your full name"
                 required
               />
@@ -258,7 +293,10 @@ export default function PaymentPage() {
                 id="customerPhone"
                 type="tel"
                 value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
+                onChange={(e) => {
+                  console.log('[PAYMENT DEBUG] Customer phone changed:', e.target.value);
+                  setCustomerPhone(e.target.value);
+                }}
                 placeholder="Enter your phone number"
                 required
               />

@@ -367,37 +367,53 @@ export async function createOrder(orderData: {
   notes?: string;
 }) {
   try {
-    console.log('[ORDER CREATION DEBUG] Creating order with data:', {
-      venueId: orderData.venue_id,
-      tableNumber: orderData.table_number,
-      customerName: orderData.customer_name,
-      itemCount: orderData.items.length,
-      totalAmount: orderData.total_amount,
-      items: orderData.items
-    });
+    console.log('[ORDER CREATION DEBUG] ===== CREATE ORDER FUNCTION CALLED =====');
+    console.log('[ORDER CREATION DEBUG] Raw order data received:', orderData);
+    console.log('[ORDER CREATION DEBUG] Data validation:');
+    console.log('[ORDER CREATION DEBUG] - venue_id:', orderData.venue_id, '(type:', typeof orderData.venue_id, ')');
+    console.log('[ORDER CREATION DEBUG] - table_number:', orderData.table_number, '(type:', typeof orderData.table_number, ')');
+    console.log('[ORDER CREATION DEBUG] - customer_name:', orderData.customer_name, '(type:', typeof orderData.customer_name, ')');
+    console.log('[ORDER CREATION DEBUG] - customer_phone:', orderData.customer_phone, '(type:', typeof orderData.customer_phone, ')');
+    console.log('[ORDER CREATION DEBUG] - items array length:', orderData.items.length);
+    console.log('[ORDER CREATION DEBUG] - total_amount:', orderData.total_amount, '(type:', typeof orderData.total_amount, ')');
+    console.log('[ORDER CREATION DEBUG] - notes:', orderData.notes);
 
     // Calculate total amount from items (always use this, not the passed total_amount)
-    const calculatedTotal = orderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    console.log('[ORDER CREATION DEBUG] Calculating total from items...');
+    const calculatedTotal = orderData.items.reduce((sum, item) => {
+      const itemTotal = item.price * item.quantity;
+      console.log(`[ORDER CREATION DEBUG] Item: ${item.item_name}, price: ${item.price}, qty: ${item.quantity}, total: ${itemTotal}`);
+      return sum + itemTotal;
+    }, 0);
     console.log('[ORDER CREATION DEBUG] Calculated total:', calculatedTotal);
     console.log('[ORDER CREATION DEBUG] Passed total_amount:', orderData.total_amount);
-    console.log('[ORDER CREATION DEBUG] Items for calculation:', orderData.items);
+    console.log('[ORDER CREATION DEBUG] Total difference:', Math.abs(calculatedTotal - orderData.total_amount));
     
     // Create the order with items as JSONB
+    console.log('[ORDER CREATION DEBUG] Preparing database insertion...');
+    const insertData = {
+      venue_id: orderData.venue_id,
+      table_number: orderData.table_number,
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone,
+      order_status: "PLACED",
+      payment_status: "UNPAID",
+      total_amount: calculatedTotal, // Always use calculated total
+      notes: orderData.notes,
+      items: orderData.items, // Store items as JSONB
+    };
+    console.log('[ORDER CREATION DEBUG] Insert data prepared:', insertData);
+    console.log('[ORDER CREATION DEBUG] Calling Supabase insert...');
+    
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .insert({
-        venue_id: orderData.venue_id,
-        table_number: orderData.table_number,
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        order_status: "PLACED",
-        payment_status: "UNPAID",
-        total_amount: calculatedTotal, // Always use calculated total
-        notes: orderData.notes,
-        items: orderData.items, // Store items as JSONB
-      })
+      .insert(insertData)
       .select()
       .single();
+    
+    console.log('[ORDER CREATION DEBUG] Supabase insert completed');
+    console.log('[ORDER CREATION DEBUG] Insert result - data:', order);
+    console.log('[ORDER CREATION DEBUG] Insert result - error:', orderError);
 
     if (orderError || !order) {
       console.error('[ORDER CREATION DEBUG] Failed to create order:', orderError);

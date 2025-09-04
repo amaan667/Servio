@@ -50,6 +50,16 @@ export default function CustomerOrderPage() {
     name: "",
     phone: "",
   });
+
+  // Add logging for customer info changes
+  const updateCustomerInfo = (field: 'name' | 'phone', value: string) => {
+    console.log(`[ORDER DEBUG] Customer ${field} changed:`, value);
+    setCustomerInfo(prev => {
+      const updated = { ...prev, [field]: value };
+      console.log(`[ORDER DEBUG] Customer info updated:`, updated);
+      return updated;
+    });
+  };
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [venueName, setVenueName] = useState<string>('Our Venue');
@@ -813,7 +823,7 @@ export default function CustomerOrderPage() {
                 <Input
                   value={customerInfo.name}
                   onChange={(e) =>
-                    setCustomerInfo({ ...customerInfo, name: e.target.value })
+                    updateCustomerInfo('name', e.target.value)
                   }
                   placeholder="Enter your name"
                   required
@@ -827,7 +837,7 @@ export default function CustomerOrderPage() {
                 <Input
                   value={customerInfo.phone}
                   onChange={(e) =>
-                    setCustomerInfo({ ...customerInfo, phone: e.target.value })
+                    updateCustomerInfo('phone', e.target.value)
                   }
                   placeholder="Enter your phone number"
                   type="tel"
