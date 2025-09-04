@@ -91,6 +91,13 @@ function StripePaymentForm({
       console.log('[STRIPE ELEMENTS INIT] Setting loading to false');
       setIsLoading(false);
       console.log('[STRIPE ELEMENTS INIT] Stripe Elements initialization complete');
+      
+      // Debug payment methods availability
+      console.log('[STRIPE ELEMENTS DEBUG] Checking payment methods availability');
+      console.log('[STRIPE ELEMENTS DEBUG] User agent:', navigator.userAgent);
+      console.log('[STRIPE ELEMENTS DEBUG] Is Safari:', /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent));
+      console.log('[STRIPE ELEMENTS DEBUG] Is Chrome:', /Chrome/.test(navigator.userAgent));
+      console.log('[STRIPE ELEMENTS DEBUG] Is mobile:', /Mobile|Android|iPhone|iPad/.test(navigator.userAgent));
     } else {
       console.log('[STRIPE ELEMENTS INIT] Still waiting for Stripe Elements to load');
       if (!stripe) console.log('[STRIPE ELEMENTS INIT] Stripe not yet loaded');
@@ -357,9 +364,13 @@ function StripePaymentForm({
             <PaymentElement 
               options={{
                 layout: 'tabs',
-                paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
+                paymentMethodOrder: ['apple_pay', 'google_pay', 'card', 'paypal'],
                 fields: {
                   billingDetails: 'auto'
+                },
+                wallets: {
+                  applePay: 'auto',
+                  googlePay: 'auto'
                 }
               }}
             />
