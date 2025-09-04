@@ -262,6 +262,7 @@ function StripePaymentForm({
       
       const confirmationStartTime = Date.now();
       const { error: stripeError } = await stripe.confirmPayment({
+        clientSecret,
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout?success=true`,
