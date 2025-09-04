@@ -406,30 +406,14 @@ export default function CustomerOrderPage() {
         console.log('[ORDER SUBMIT] DEMO FLOW: Router object:', router);
         console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before redirect:', typeof window !== 'undefined' ? window.location.href : 'SSR');
         
-        try {
-          console.log('[ORDER SUBMIT] DEMO FLOW: Attempting navigation to /checkout?demo=1');
-          router.push('/checkout?demo=1');
-          console.log('[ORDER SUBMIT] DEMO FLOW: Router.push called successfully');
-          
-          // Use a more reliable navigation method as fallback
-          setTimeout(() => {
-            console.log('[ORDER SUBMIT] DEMO FLOW: Checking if navigation worked...');
-            if (typeof window !== 'undefined' && window.location.pathname === '/order') {
-              console.log('[ORDER SUBMIT] DEMO FLOW: Navigation failed, using window.location');
-              window.location.href = '/checkout?demo=1';
-            } else {
-              console.log('[ORDER SUBMIT] DEMO FLOW: Navigation successful, clearing loading state');
-              console.log('[ORDER SUBMIT] DEMO FLOW: Setting isSubmitting to false');
-              setIsSubmitting(false);
-              console.log('[ORDER SUBMIT] DEMO FLOW: isSubmitting state cleared');
-            }
-          }, 500);
-        } catch (routerError) {
-          console.error('[ORDER SUBMIT] DEMO FLOW: Router error:', routerError);
-          console.log('[ORDER SUBMIT] DEMO FLOW: Using window.location as fallback');
-          if (typeof window !== 'undefined') {
-            window.location.href = '/checkout?demo=1';
-          }
+        // Clear loading state before navigation
+        console.log('[ORDER SUBMIT] DEMO FLOW: Clearing loading state before navigation');
+        setIsSubmitting(false);
+        
+        // Use window.location for reliable navigation
+        console.log('[ORDER SUBMIT] DEMO FLOW: Using window.location for navigation');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/checkout?demo=1';
         }
         
         console.log('[ORDER SUBMIT] DEMO FLOW: Returning from demo flow');
@@ -486,33 +470,15 @@ export default function CustomerOrderPage() {
       console.log('[ORDER SUBMIT] REAL FLOW: Router object:', router);
       console.log('[ORDER SUBMIT] REAL FLOW: Current URL before redirect:', typeof window !== 'undefined' ? window.location.href : 'SSR');
       
-      try {
-        console.log('[ORDER SUBMIT] REAL FLOW: Attempting navigation to /checkout');
-        router.push('/checkout');
-        console.log('[ORDER SUBMIT] REAL FLOW: Router.push called successfully');
-        
-        // Use a more reliable navigation method as fallback
-        setTimeout(() => {
-          console.log('[ORDER SUBMIT] REAL FLOW: Checking if navigation worked...');
-          if (typeof window !== 'undefined' && window.location.pathname === '/order') {
-            console.log('[ORDER SUBMIT] REAL FLOW: Navigation failed, using window.location');
-            window.location.href = '/checkout';
-          } else {
-            console.log('[ORDER SUBMIT] REAL FLOW: Navigation successful, clearing loading state');
-            console.log('[ORDER SUBMIT] REAL FLOW: Setting isSubmitting to false');
-            setIsSubmitting(false);
-            console.log('[ORDER SUBMIT] REAL FLOW: isSubmitting state cleared');
-          }
-        }, 500);
-      } catch (routerError) {
-        console.error('[ORDER SUBMIT] REAL FLOW: Router error:', routerError);
-        console.log('[ORDER SUBMIT] REAL FLOW: Using window.location as fallback');
-        if (typeof window !== 'undefined') {
-          window.location.href = '/checkout';
-        }
-      }
+      // Clear loading state before navigation
+      console.log('[ORDER SUBMIT] REAL FLOW: Clearing loading state before navigation');
+      setIsSubmitting(false);
       
-      // Don't reset loading state here since we're redirecting
+      // Use window.location for reliable navigation
+      console.log('[ORDER SUBMIT] REAL FLOW: Using window.location for navigation');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/checkout';
+      }
     } catch (error) {
       console.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
       console.error('[ORDER SUBMIT] ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
