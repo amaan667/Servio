@@ -205,9 +205,14 @@ export default function CheckoutPage() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedData, setHasCheckedData] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const isDemo = searchParams?.get('demo') === '1';
 
   useEffect(() => {
+    // Ensure we're on the client side
+    setIsClient(true);
+    
     console.log('[CHECKOUT DEBUG] ===== CHECKOUT PAGE LOADING =====');
     console.log('[CHECKOUT DEBUG] VERSION: 2024-12-19-amount-conversion-fix');
     console.log('[CHECKOUT DEBUG] URL:', window.location.href);
@@ -216,6 +221,9 @@ export default function CheckoutPage() {
     console.log('[CHECKOUT DEBUG] Cart ID:', cartId);
     console.log('[CHECKOUT DEBUG] Router object:', router);
     console.log('[CHECKOUT DEBUG] Search params object:', searchParams);
+    
+    // Mark as initialized to prevent content flash
+    setIsInitialized(true);
     
     // Get checkout data from localStorage or URL params
     console.log('[CHECKOUT DEBUG] ===== LOCALSTORAGE DEBUG =====');
@@ -394,7 +402,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (isLoading || !hasCheckedData || !checkoutData) {
+  if (!isClient || !isInitialized || isLoading || !hasCheckedData || !checkoutData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -402,7 +410,7 @@ export default function CheckoutPage() {
           <p className="text-gray-600">Loading checkout...</p>
           <p className="text-sm text-gray-500 mt-2">Preparing your order details...</p>
           <p className="text-xs text-gray-400 mt-1">
-            {!hasCheckedData ? 'Checking for order data...' : 'Loading order details...'}
+            {!isClient ? 'Starting...' : !isInitialized ? 'Initializing...' : !hasCheckedData ? 'Checking for order data...' : 'Loading order details...'}
           </p>
         </div>
       </div>
