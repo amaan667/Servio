@@ -326,6 +326,8 @@ export default function CustomerOrderPage() {
         
         // Store order data in localStorage for checkout page
         localStorage.setItem('pending-order-data', JSON.stringify(orderData));
+        // Also store in the key that payment page expects
+        localStorage.setItem('servio-checkout-data', JSON.stringify(orderData));
         console.log('[ORDER SUBMIT] DEMO FLOW: Demo order data stored in localStorage');
         
         // Redirect to checkout page with demo mode
@@ -334,10 +336,25 @@ export default function CustomerOrderPage() {
         console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before redirect:', window.location.href);
         
         try {
-          router.replace('/checkout?demo=1');
-          console.log('[ORDER SUBMIT] DEMO FLOW: Router.replace called successfully');
+          console.log('[ORDER SUBMIT] DEMO FLOW: Attempting navigation to /checkout?demo=1');
+          router.push('/checkout?demo=1');
+          console.log('[ORDER SUBMIT] DEMO FLOW: Router.push called successfully');
+          
+          // Use a more reliable navigation method as fallback
+          setTimeout(() => {
+            console.log('[ORDER SUBMIT] DEMO FLOW: Checking if navigation worked...');
+            if (window.location.pathname === '/order') {
+              console.log('[ORDER SUBMIT] DEMO FLOW: Navigation failed, using window.location');
+              window.location.href = '/checkout?demo=1';
+            } else {
+              console.log('[ORDER SUBMIT] DEMO FLOW: Navigation successful, clearing loading state');
+              setIsSubmitting(false);
+            }
+          }, 500);
         } catch (routerError) {
           console.error('[ORDER SUBMIT] DEMO FLOW: Router error:', routerError);
+          console.log('[ORDER SUBMIT] DEMO FLOW: Using window.location as fallback');
+          window.location.href = '/checkout?demo=1';
         }
         
         console.log('[ORDER SUBMIT] DEMO FLOW: Returning from demo flow');
@@ -375,6 +392,8 @@ export default function CustomerOrderPage() {
       
       // Store order data in localStorage for checkout page
       localStorage.setItem('pending-order-data', JSON.stringify(orderData));
+      // Also store in the key that payment page expects
+      localStorage.setItem('servio-checkout-data', JSON.stringify(orderData));
       console.log('[ORDER SUBMIT] REAL FLOW: Order data stored in localStorage');
       
       // Redirect to unified checkout page - order will be created after successful payment
@@ -383,10 +402,25 @@ export default function CustomerOrderPage() {
       console.log('[ORDER SUBMIT] REAL FLOW: Current URL before redirect:', window.location.href);
       
       try {
-        router.replace('/checkout');
-        console.log('[ORDER SUBMIT] REAL FLOW: Router.replace called successfully');
+        console.log('[ORDER SUBMIT] REAL FLOW: Attempting navigation to /checkout');
+        router.push('/checkout');
+        console.log('[ORDER SUBMIT] REAL FLOW: Router.push called successfully');
+        
+        // Use a more reliable navigation method as fallback
+        setTimeout(() => {
+          console.log('[ORDER SUBMIT] REAL FLOW: Checking if navigation worked...');
+          if (window.location.pathname === '/order') {
+            console.log('[ORDER SUBMIT] REAL FLOW: Navigation failed, using window.location');
+            window.location.href = '/checkout';
+          } else {
+            console.log('[ORDER SUBMIT] REAL FLOW: Navigation successful, clearing loading state');
+            setIsSubmitting(false);
+          }
+        }, 500);
       } catch (routerError) {
         console.error('[ORDER SUBMIT] REAL FLOW: Router error:', routerError);
+        console.log('[ORDER SUBMIT] REAL FLOW: Using window.location as fallback');
+        window.location.href = '/checkout';
       }
       
       // Don't reset loading state here since we're redirecting
