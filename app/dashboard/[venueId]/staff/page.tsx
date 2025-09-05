@@ -57,6 +57,29 @@ export default async function StaffPage({
       redirect('/dashboard');
     }
 
+    // Get initial staff data and counts server-side to prevent flickering
+    const { data: initialStaff, error: staffError } = await supabase
+      .from('staff')
+      .select('*')
+      .eq('venue_id', params.venueId)
+      .is('deleted_at', null)  // Only fetch non-deleted staff
+      .order('created_at', { ascending: false });
+
+    if (staffError) {
+      console.error('[STAFF] Error fetching initial staff:', staffError);
+    }
+
+    // Get authoritative staff counts from the new RPC function
+    const { data: initialCounts, error: countsError } = await supabase
+      .rpc('staff_counts', { 
+        p_venue_id: params.venueId
+      })
+      .single();
+
+    if (countsError) {
+      console.error('[STAFF] Error fetching staff counts:', countsError);
+    }
+
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -71,7 +94,12 @@ export default async function StaffPage({
             </p>
           </div>
           
-          <StaffClient venueId={params.venueId} venueName={venue.name} />
+          <StaffClient 
+            venueId={params.venueId} 
+            venueName={venue.name}
+            initialStaff={initialStaff || []}
+            initialCounts={initialCounts}
+          />
         </div>
       </div>
     );

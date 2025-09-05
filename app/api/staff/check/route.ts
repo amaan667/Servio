@@ -13,12 +13,13 @@ export async function GET(req: Request) {
 
   const admin = await createClient();
   try {
-    // If venue_id is provided, return staff for that venue
+    // If venue_id is provided, return staff for that venue (excluding deleted staff)
     if (venue_id) {
       const { data, error } = await admin
         .from('staff')
         .select('*')
         .eq('venue_id', venue_id)
+        .is('deleted_at', null)  // Only return non-deleted staff
         .order('created_at', { ascending: false });
 
       if (error) {

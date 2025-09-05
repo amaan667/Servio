@@ -204,14 +204,23 @@ type Shift = {
   staff_role: string;
 };
 
+interface StaffCounts {
+  total_staff: number;
+  active_staff: number;
+  unique_roles: number;
+  active_shifts_count: number;
+}
+
 export default function StaffClient({
   venueId,
   venueName,
   initialStaff,
+  initialCounts,
 }: {
   venueId: string;
   venueName?: string;
   initialStaff?: StaffRow[];
+  initialCounts?: StaffCounts;
 }) {
   const [staff, setStaff] = useState<StaffRow[]>(initialStaff || []);
   const [name, setName] = useState('');
@@ -392,9 +401,19 @@ export default function StaffClient({
     return allShifts.filter(isShiftActive);
   }, [allShifts, isShiftActive]);
 
-  // Memoize counts to prevent flickering - only calculate when not loading
+  // Memoize counts to prevent flickering - use initial counts when available
   const staffCounts = useMemo(() => {
-    // If we have staff data, show it immediately (even if shifts are still loading)
+    // If we have initial counts from server, use them to prevent flickering
+    if (initialCounts) {
+      return {
+        totalStaff: initialCounts.total_staff,
+        activeStaff: initialCounts.active_staff,
+        uniqueRoles: initialCounts.unique_roles,
+        activeShiftsCount: initialCounts.active_shifts_count
+      };
+    }
+    
+    // Fallback to client-side calculation if no initial counts
     const hasStaffData = staff.length > 0 || (initialStaff && initialStaff.length > 0);
     
     // Return stable values during loading to prevent flickering
@@ -420,7 +439,7 @@ export default function StaffClient({
       uniqueRoles,
       activeShiftsCount
     };
-  }, [staff.length, staff, roles.length, activeShifts.length, loading, initialStaff]);
+  }, [initialCounts, staff.length, staff, roles.length, activeShifts.length, loading, initialStaff]);
 
   // Calendar functions
   const getDaysInMonth = (date: Date) => {
@@ -888,7 +907,7 @@ export default function StaffClient({
                   <div>
                     <p className="text-sm font-medium text-blue-600">Total Staff</p>
                     <p className="text-2xl font-bold text-blue-900">
-                      {loading && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
+                      {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-blue-200 h-8 w-12 rounded"></div>
                       ) : (
                         staffCounts.totalStaff
@@ -908,7 +927,7 @@ export default function StaffClient({
                   <div>
                     <p className="text-sm font-medium text-green-600">Active Staff</p>
                     <p className="text-2xl font-bold text-green-900">
-                      {loading && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
+                      {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-green-200 h-8 w-12 rounded"></div>
                       ) : (
                         staffCounts.activeStaff
@@ -928,7 +947,7 @@ export default function StaffClient({
                   <div>
                     <p className="text-sm font-medium text-purple-600">Roles</p>
                     <p className="text-2xl font-bold text-purple-900">
-                      {loading && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
+                      {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-purple-200 h-8 w-12 rounded"></div>
                       ) : (
                         staffCounts.uniqueRoles
@@ -948,7 +967,7 @@ export default function StaffClient({
                   <div>
                     <p className="text-sm font-medium text-orange-600">Active Shifts</p>
                     <p className="text-2xl font-bold text-orange-900">
-                      {loading && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
+                      {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-orange-200 h-8 w-12 rounded"></div>
                       ) : (
                         staffCounts.activeShiftsCount

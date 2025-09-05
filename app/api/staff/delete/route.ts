@@ -8,7 +8,12 @@ export async function POST(req: Request) {
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
   const admin = await createClient();
 
-  const { error } = await admin.from('staff').delete().eq('id', id);
+  // Use soft deletion instead of hard deletion for forever count
+  const { error } = await admin
+    .from('staff')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+    
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }
