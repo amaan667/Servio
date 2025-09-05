@@ -163,6 +163,26 @@ CREATE POLICY "Users can delete table_sessions for their venues" ON table_sessio
 -- VIEW FOR OPTIMIZED QUERIES
 -- =====================================================
 -- This view combines tables with their latest active session and order info
+-- First ensure qr_version column exists
+DO $$
+BEGIN
+    -- Check if qr_version column exists
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'tables' 
+        AND column_name = 'qr_version'
+    ) THEN
+        -- Add the column
+        ALTER TABLE tables ADD COLUMN qr_version INTEGER DEFAULT 1;
+        RAISE NOTICE 'Added qr_version column to tables table';
+    END IF;
+END $$;
+
+-- Update existing tables to have qr_version = 1 if they're NULL
+UPDATE tables SET qr_version = 1 WHERE qr_version IS NULL;
+
+-- Now create the view
 CREATE OR REPLACE VIEW tables_with_sessions AS
 SELECT 
     t.id,
