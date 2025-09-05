@@ -77,6 +77,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Constants for order statuses
   const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
+  const LIVE_WINDOW_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING', 'COMPLETED']; // Include COMPLETED for 30-min window
   const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
   
   // Define what constitutes a "live" order - orders placed within the last 30 minutes
@@ -154,14 +155,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           endUtcISO: window.endUtcISO
         });
       }
-      // Load live orders - orders placed within the last 30 minutes with ACTIVE statuses only (never completed orders)
+      // Load live orders - orders placed within the last 30 minutes (including completed orders)
       const liveOrdersCutoff = new Date(Date.now() - LIVE_ORDER_WINDOW_MS).toISOString();
       
       const { data: liveData, error: liveError } = await createClient()
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .in('order_status', LIVE_STATUSES)
+        .in('order_status', LIVE_WINDOW_STATUSES)
         .gte('created_at', liveOrdersCutoff)
         .order('created_at', { ascending: false });
 
@@ -210,13 +211,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             return false;
           }
           
-          // Don't show completed orders from the last 30 minutes (they stay in live)
-          if (order.order_status === 'COMPLETED') {
-            const orderCreatedAt = new Date(order.created_at);
-            if (orderCreatedAt >= thirtyMinutesAgo) {
-              return false;
-            }
-          }
+          // Show completed orders in Earlier Today (they move from Live Orders when completed)
+          // No special filtering needed for completed orders
           
           return true;
         });
@@ -282,13 +278,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             });
             
             // Check if order should appear in live orders
-            const isLiveOrder = LIVE_STATUSES.includes(newOrder.order_status);
+            const isLiveOrder = LIVE_WINDOW_STATUSES.includes(newOrder.order_status);
             const orderCreatedAt = new Date(newOrder.created_at);
             const isRecentOrder = orderCreatedAt > new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
-            const isCompletedRecent = newOrder.order_status === 'COMPLETED' && isRecentOrder;
             
-            if ((isLiveOrder && isRecentOrder) || isCompletedRecent) {
-              console.log('[LIVE ORDERS DEBUG] Adding to live orders - recent order with live status or recent completed');
+            // Show orders with live window statuses in live orders (including completed orders within 30 min)
+            if (isLiveOrder && isRecentOrder) {
+              console.log('[LIVE ORDERS DEBUG] Adding to live orders - recent order with live window status');
               setOrders(prev => [newOrder, ...prev]);
             }
             
@@ -299,7 +295,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             
                       if (isInTodayWindow) {
             // Only add to all today if it's NOT already in live orders
-            if (!((isLiveOrder && isRecentOrder) || isCompletedRecent)) {
+            if (!(isLiveOrder && isRecentOrder)) {
               console.log('[LIVE ORDERS DEBUG] Adding to all today orders - not a live order');
               setAllTodayOrders(prev => [newOrder, ...prev]);
             }
@@ -328,11 +324,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             });
             
             // Check if order should be in live orders
-            const isLiveOrder = LIVE_STATUSES.includes(newOrder.order_status);
+            const isLiveOrder = LIVE_WINDOW_STATUSES.includes(newOrder.order_status);
             const orderCreatedAt = new Date(newOrder.created_at);
             const isRecentOrder = orderCreatedAt > new Date(Date.now() - LIVE_ORDER_WINDOW_MS);
             
-            // CRITICAL: Completed orders should NEVER be in live orders
+            // Include completed orders in live orders if within 30-minute window
             if (isLiveOrder && isRecentOrder) {
               // Add to live orders if not already there
               setOrders(prev => {
@@ -347,10 +343,20 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               setAllTodayOrders(prev => prev.filter(order => order.id !== newOrder.id));
             } else {
               // Remove from live orders if status changed to terminal or not recent
+              console.log('[LIVE ORDERS DEBUG] Removing order from live orders:', {
+                orderId: newOrder.id,
+                newStatus: newOrder.order_status,
+                isLiveOrder,
+                isRecentOrder
+              });
               setOrders(prev => prev.filter(order => order.id !== newOrder.id));
               
               // Add to all today orders if it's from today and not recent
               if (todayWindow && orderCreatedAt >= new Date(todayWindow.startUtcISO) && orderCreatedAt < new Date(todayWindow.endUtcISO)) {
+                console.log('[LIVE ORDERS DEBUG] Adding order to all today orders:', {
+                  orderId: newOrder.id,
+                  newStatus: newOrder.order_status
+                });
                 setAllTodayOrders(prev => {
                   const exists = prev.find(order => order.id === newOrder.id);
                   if (!exists) {
@@ -402,14 +408,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setOrders(prevOrders => {
         const stillLive = prevOrders.filter(order => {
           const orderCreatedAt = new Date(order.created_at);
-          // Keep order in live if it's both recent AND active
-          return orderCreatedAt > cutoff && LIVE_STATUSES.includes(order.order_status);
+          // Keep order in live if it's both recent AND in live window statuses (including completed)
+          return orderCreatedAt > cutoff && LIVE_WINDOW_STATUSES.includes(order.order_status);
         });
         
         const movedToAllToday = prevOrders.filter(order => {
           const orderCreatedAt = new Date(order.created_at);
-          // Move order if it's either old OR completed
-          return orderCreatedAt <= cutoff || !LIVE_STATUSES.includes(order.order_status);
+          // Move order if it's either old OR not in live window statuses
+          return orderCreatedAt <= cutoff || !LIVE_WINDOW_STATUSES.includes(order.order_status);
         });
         
         // Move aged-out or completed orders to all today
@@ -486,8 +492,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     }
   };
 
-  const renderOrderCard = (order: Order, showActions: boolean = true) => (
-    <Card key={order.id} className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+  const renderOrderCard = (order: Order, showActions: boolean = true) => {
+    const isCompleted = order.order_status === 'COMPLETED';
+    const borderColor = isCompleted ? 'border-l-green-500' : 'border-l-blue-500';
+    
+    return (
+    <Card key={order.id} className={`hover:shadow-md transition-shadow border-l-4 ${borderColor}`}>
       <CardContent className="p-4 sm:p-6">
         {/* Header - Mobile optimized */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
@@ -537,6 +547,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <Badge className={`${getStatusColor(order.order_status)} text-xs font-medium px-2 py-1`}>
             {order.order_status.replace('_', ' ').toLowerCase()}
           </Badge>
+          {isCompleted && (
+            <Badge className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1">
+              ✓ Completed
+            </Badge>
+          )}
           {order.payment_status && (
             <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-medium px-2 py-1`}>
               {order.payment_status.toUpperCase()}
@@ -558,7 +573,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         </div>
 
         {/* Action Buttons - Mobile optimized */}
-        {showActions && (
+        {showActions && !isCompleted && (
           <div className="flex flex-col sm:flex-row gap-2">
             {order.order_status === 'PLACED' && (
               <Button 
@@ -600,7 +615,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         )}
       </CardContent>
     </Card>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -696,10 +712,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         <Tabs value={activeTab} onValueChange={(newTab) => {
           setActiveTab(newTab);
         }} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 gap-2 p-1 bg-gray-100 rounded-lg">
+          <TabsList className="grid w-full grid-cols-3 mb-6 gap-1 p-1 bg-gray-100 rounded-lg">
             <TabsTrigger 
               value="live" 
-              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:text-red-600 data-[state=inactive]:text-gray-600 hover:text-gray-900"
+              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:text-red-600 data-[state=inactive]:text-gray-600 hover:text-gray-900 hover:bg-gray-50"
             >
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">Live Orders</span>
@@ -711,7 +727,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </TabsTrigger>
             <TabsTrigger 
               value="all" 
-              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:text-blue-600 data-[state=inactive]:text-gray-600 hover:text-gray-900"
+              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:text-blue-600 data-[state=inactive]:text-gray-600 hover:text-gray-900 hover:bg-gray-50"
             >
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">Earlier Today</span>
@@ -723,7 +739,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </TabsTrigger>
             <TabsTrigger 
               value="history" 
-              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:text-gray-700 data-[state=inactive]:text-gray-600 hover:text-gray-900"
+              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:text-gray-700 data-[state=inactive]:text-gray-600 hover:text-gray-900 hover:bg-gray-50"
             >
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">History</span>
@@ -741,7 +757,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                 <span className="text-sm font-medium text-red-800">Live Orders - Last 30 Minutes</span>
               </div>
-              <p className="text-xs text-red-600 mt-1">Orders placed within the last 30 minutes with active statuses</p>
+              <p className="text-xs text-red-600 mt-1">Orders placed within the last 30 minutes (including completed orders)</p>
             </div>
             <div className="grid gap-4">
               {orders.length === 0 ? (
