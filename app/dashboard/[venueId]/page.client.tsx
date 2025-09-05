@@ -348,8 +348,8 @@ export default function VenueDashboardClient({
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">Today's Orders</p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.today_orders_count}</p>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
                 </div>
               </CardContent>
@@ -364,8 +364,8 @@ export default function VenueDashboardClient({
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">Revenue</p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">£{stats.revenue.toFixed(2)}</p>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                   </div>
                 </div>
                 {/* Remove unpaid count since all orders are now paid */}
@@ -397,8 +397,8 @@ export default function VenueDashboardClient({
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">Menu Items</p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.menuItems}</p>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                   </div>
                 </div>
               </CardContent>
@@ -411,8 +411,8 @@ export default function VenueDashboardClient({
           <Link href={`/dashboard/${venueId}/live-orders`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Live Orders</h3>
                 <p className="text-muted-foreground text-xs sm:text-sm">Monitor and manage incoming orders in real-time</p>
@@ -423,8 +423,8 @@ export default function VenueDashboardClient({
           <Link href={`/dashboard/${venueId}/menu`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                  <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Menu Management</h3>
                 <p className="text-muted-foreground text-xs sm:text-sm">Update your menu items and manage categories</p>
@@ -447,8 +447,8 @@ export default function VenueDashboardClient({
           <Link href={`/dashboard/${venueId}/analytics`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Analytics</h3>
                 <p className="text-muted-foreground text-xs sm:text-sm">View detailed reports and business insights</p>
@@ -459,8 +459,8 @@ export default function VenueDashboardClient({
           <Link href={`/dashboard/${venueId}/feedback`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Feedback</h3>
                 <p className="text-muted-foreground text-xs sm:text-sm">See customer reviews and ratings</p>

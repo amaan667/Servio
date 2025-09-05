@@ -403,7 +403,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
                                 <h3 className="text-lg font-semibold">{item.name}</h3>
-                                <span className="text-lg font-bold text-purple-600">
+                                <span className="text-lg font-bold text-green-600">
                                   £{item.price.toFixed(2)}
                                 </span>
                               </div>
