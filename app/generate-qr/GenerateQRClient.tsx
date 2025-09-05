@@ -42,11 +42,13 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
   });
   const router = useRouter();
 
+  // Ensure we always have a valid order URL
   const orderUrl = selectedTables.length > 0 
     ? `${siteOrigin()}/order?venue=${venueId}&table=${selectedTables[0]}`
     : `${siteOrigin()}/order?venue=${venueId}&table=1`;
 
   console.log('🔍 [QR CLIENT] Order URL:', orderUrl);
+  console.log('🔍 [QR CLIENT] Selected tables:', selectedTables);
 
   const handleCopy = async () => {
     try {
@@ -77,12 +79,17 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
   };
 
   const clearAllTables = () => {
-    setSelectedTables([]);
+    // Always keep at least one table (table 1) for QR generation
+    setSelectedTables(['1']);
+    console.log('🔍 [QR CLIENT] Cleared all tables, reset to default table 1');
   };
 
   const removeTable = (tableNumber: string) => {
     if (selectedTables.length > 1) {
       setSelectedTables(selectedTables.filter(t => t !== tableNumber));
+    } else {
+      // If this is the last table, don't remove it - keep at least one
+      console.log('🔍 [QR CLIENT] Cannot remove last table, keeping table', tableNumber);
     }
   };
 
@@ -593,14 +600,14 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
                       : `Currently generating QR codes for ${selectedTables.length} active table${selectedTables.length !== 1 ? 's' : ''}`
                     }
                   </div>
-                  {selectedTables.length > 0 && (
+                  {selectedTables.length > 1 && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={clearAllTables}
                       className="text-xs"
                     >
-                      Clear All
+                      Reset to Default
                     </Button>
                   )}
                 </div>
@@ -699,12 +706,8 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
               <div className="text-center py-8">
                 <div className="text-muted-foreground mb-4">
                   <QrCode className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-lg font-medium">No Active Tables</p>
-                  <p className="text-sm">QR codes will appear here when tables have active orders</p>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  <p>• Tables with active orders will automatically show QR codes</p>
-                  <p>• You can manually add tables using the buttons on the left</p>
+                  <p className="text-lg font-medium">Loading QR Codes...</p>
+                  <p className="text-sm">Please wait while we set up your QR codes</p>
                 </div>
               </div>
             ) : (
