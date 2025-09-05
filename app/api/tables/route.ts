@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venue_id');
 
-    console.log('[TABLES API] Request received for venueId:', venueId, {
+    console.log('[TABLES API] GET request received for venueId:', venueId, {
       timestamp: new Date().toISOString(),
       url: req.url
     });
@@ -17,7 +17,37 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'venue_id is required' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    // Check if user is authenticated
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError || !user) {
+      console.log('[TABLES API] Authentication failed:', authError);
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    console.log('[TABLES API] User authenticated:', user.id);
+
+    // Use admin client to bypass RLS issues
+    const supabase = createAdminClient();
+    
+    // Verify venue exists and user has access
+    const { data: venue, error: venueError } = await supabase
+      .from('venues')
+      .select('venue_id, owner_id')
+      .eq('venue_id', venueId)
+      .single();
+
+    if (venueError || !venue) {
+      console.error('[TABLES API] Venue not found:', venueError);
+      return NextResponse.json({ error: 'Invalid venue_id' }, { status: 400 });
+    }
+
+    // Check if user owns the venue
+    if (venue.owner_id !== user.id) {
+      console.log('[TABLES API] User does not own venue');
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    console.log('[TABLES API] Venue access verified');
     
     // Add timeout protection
     const timeoutPromise = new Promise((_, reject) => {
@@ -116,25 +146,49 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('[TABLES API] POST request received');
+    
     const body = await req.json();
     const { venue_id, label, seat_count, qr_version } = body;
 
+    console.log('[TABLES API] Request body:', { venue_id, label, seat_count, qr_version });
+
     if (!venue_id || !label) {
+      console.log('[TABLES API] Missing required fields');
       return NextResponse.json({ error: 'venue_id and label are required' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    // Check if user is authenticated
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError || !user) {
+      console.log('[TABLES API] Authentication failed:', authError);
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    console.log('[TABLES API] User authenticated:', user.id);
+
+    // Use admin client for table creation to bypass RLS issues
+    const supabase = createAdminClient();
 
     // Verify venue exists and user has access
     const { data: venue, error: venueError } = await supabase
       .from('venues')
-      .select('venue_id')
+      .select('venue_id, owner_id')
       .eq('venue_id', venue_id)
       .single();
 
     if (venueError || !venue) {
+      console.error('[TABLES API] Venue not found:', venueError);
       return NextResponse.json({ error: 'Invalid venue_id' }, { status: 400 });
     }
+
+    // Check if user owns the venue
+    if (venue.owner_id !== user.id) {
+      console.log('[TABLES API] User does not own venue');
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    console.log('[TABLES API] Venue access verified');
 
     // Create table
     const { data: table, error: tableError } = await supabase
@@ -150,36 +204,47 @@ export async function POST(req: NextRequest) {
 
     if (tableError) {
       console.error('[TABLES API] Error creating table:', tableError);
-      return NextResponse.json({ error: 'Failed to create table' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Failed to create table', 
+        details: tableError.message 
+      }, { status: 500 });
     }
 
-    // Create initial FREE session for the table
+    console.log('[TABLES API] Table created successfully:', table.id);
+
+    // The trigger should automatically create the initial session, but let's verify
     const { data: session, error: sessionError } = await supabase
       .from('table_sessions')
-      .insert({
-        venue_id,
-        table_id: table.id,
-        status: 'FREE',
-        opened_at: new Date().toISOString(),
-      })
-      .select()
+      .select('id, status')
+      .eq('table_id', table.id)
+      .eq('status', 'FREE')
       .single();
 
     if (sessionError) {
-      console.error('[TABLES API] Error creating initial session:', sessionError);
-      // Don't fail the entire operation, just log the error
-      // The table was created successfully, session creation is optional
+      console.error('[TABLES API] Error checking initial session:', sessionError);
+      // Don't fail the entire operation, the table was created successfully
+    } else {
+      console.log('[TABLES API] Initial session created:', session.id);
     }
 
-    console.log('[TABLES API] Table created successfully:', {
-      tableId: table.id,
-      label: table.label,
-      sessionId: session?.id || 'none'
-    });
+    console.log('[TABLES API] Table creation completed successfully');
 
-    return NextResponse.json({ table });
+    return NextResponse.json({ 
+      success: true,
+      table: {
+        id: table.id,
+        venue_id: table.venue_id,
+        label: table.label,
+        seat_count: table.seat_count,
+        qr_version: table.qr_version,
+        created_at: table.created_at
+      }
+    });
   } catch (error) {
     console.error('[TABLES API] Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
