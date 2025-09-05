@@ -1450,6 +1450,12 @@ export default function CheckoutPage() {
               />
             </CardContent>
           </Card>
+
+          {/* Order Timeline */}
+          <RealTimeOrderTimeline 
+            orderId={order?.id || ''} 
+            venueId={checkoutData?.venueId || ''} 
+          />
         </div>
       </div>
     );
