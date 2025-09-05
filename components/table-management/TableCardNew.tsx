@@ -33,15 +33,19 @@ import {
 } from '@/components/ui/tooltip';
 import { StatusPill } from './StatusPill';
 import { useTableReservations, TableGridItem } from '@/hooks/useTableReservations';
+import { TableSelectionDialog } from './TableSelectionDialog';
 
 interface TableCardNewProps {
   table: TableGridItem;
   venueId: string;
   onActionComplete?: () => void;
+  availableTables?: TableGridItem[];
 }
 
-export function TableCardNew({ table, venueId, onActionComplete }: TableCardNewProps) {
+export function TableCardNew({ table, venueId, onActionComplete, availableTables = [] }: TableCardNewProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
   const { seatWalkIn, closeTable } = useTableReservations();
 
   const handleSeatWalkIn = async () => {
@@ -147,7 +151,7 @@ export function TableCardNew({ table, venueId, onActionComplete }: TableCardNewP
                     className="h-8 w-8 p-0"
                     asChild
                   >
-                    <a href={`/generate-qr?venue=${venueId}&table=${table.id}`} target="_blank" rel="noopener noreferrer">
+                    <a href={`/generate-qr?venue=${venueId}&table=${table.label}`} target="_blank" rel="noopener noreferrer">
                       <QrCode className="h-4 w-4" />
                     </a>
                   </Button>
@@ -166,11 +170,11 @@ export function TableCardNew({ table, venueId, onActionComplete }: TableCardNewP
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {getContextualActions()}
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
                   <ArrowRight className="h-4 w-4 mr-2" />
                   Move to...
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowMergeDialog(true)}>
                   <MoreHorizontal className="h-4 w-4 mr-2" />
                   Merge with...
                 </DropdownMenuItem>
@@ -216,6 +220,27 @@ export function TableCardNew({ table, venueId, onActionComplete }: TableCardNewP
           )}
         </div>
       </CardContent>
+
+      {/* Table Selection Dialogs */}
+      <TableSelectionDialog
+        isOpen={showMoveDialog}
+        onClose={() => setShowMoveDialog(false)}
+        sourceTable={table}
+        action="move"
+        venueId={venueId}
+        availableTables={availableTables}
+        onActionComplete={onActionComplete}
+      />
+      
+      <TableSelectionDialog
+        isOpen={showMergeDialog}
+        onClose={() => setShowMergeDialog(false)}
+        sourceTable={table}
+        action="merge"
+        venueId={venueId}
+        availableTables={availableTables}
+        onActionComplete={onActionComplete}
+      />
     </Card>
   );
 }

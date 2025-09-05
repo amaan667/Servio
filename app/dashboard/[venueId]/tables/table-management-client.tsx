@@ -204,6 +204,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
                 table={table}
                 venueId={venueId}
                 onActionComplete={handleTableActionComplete}
+                availableTables={tables}
               />
             ))}
           </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 export interface TableActionParams {
-  action: 'start_preparing' | 'mark_ready' | 'mark_served' | 'mark_awaiting_bill' | 'close_table' | 'reserve_table' | 'move_table';
+  action: 'start_preparing' | 'mark_ready' | 'mark_served' | 'mark_awaiting_bill' | 'close_table' | 'reserve_table' | 'move_table' | 'merge_table';
   table_id: string;
   venue_id: string;
   order_id?: string;
@@ -63,6 +63,9 @@ export function useTableActions() {
   const moveTable = (table_id: string, venue_id: string, destination_table_id: string) =>
     executeAction({ action: 'move_table', table_id, venue_id, destination_table_id });
 
+  const mergeTable = (table_id: string, venue_id: string, destination_table_id: string) =>
+    executeAction({ action: 'merge_table', table_id, venue_id, destination_table_id });
+
   return {
     loading,
     error,
@@ -73,6 +76,7 @@ export function useTableActions() {
     closeTable,
     reserveTable,
     moveTable,
+    mergeTable,
     executeAction,
   };
 }

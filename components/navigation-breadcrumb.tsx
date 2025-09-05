@@ -48,6 +48,7 @@ export default function NavigationBreadcrumb({
       if (pathname.includes("/live-orders")) return "Live Orders";
       if (pathname.includes("/menu")) return "Menu Management";
       if (pathname.includes("/menu-management")) return "Menu Management";
+      if (pathname.includes("/tables")) return "Table Management";
       if (pathname.includes("/qr-codes")) return "QR Codes";
       if (pathname.includes("/generate-qr")) return "QR Codes";
       if (pathname.includes("/analytics")) return "Analytics";

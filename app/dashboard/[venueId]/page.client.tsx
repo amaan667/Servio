@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus } from "lucide-react";
+import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus, Table } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
@@ -481,7 +481,7 @@ export default function VenueDashboardClient({
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="p-4 sm:p-6">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
+                    <Table className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
                   </div>
                   <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Table Management</h3>
                   <p className="text-muted-foreground text-xs sm:text-sm">Monitor table status and manage service flow</p>

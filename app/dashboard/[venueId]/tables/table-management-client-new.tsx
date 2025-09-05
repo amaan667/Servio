@@ -219,6 +219,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                 table={table}
                 venueId={venueId}
                 onActionComplete={handleTableActionComplete}
+                availableTables={tables}
               />
             ))}
           </div>
