@@ -18,9 +18,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
@@ -497,8 +495,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     const borderColor = isCompleted ? 'border-l-green-500' : 'border-l-blue-500';
     
     return (
-    <Card key={order.id} className={`hover:shadow-md transition-shadow border-l-4 ${borderColor}`}>
-      <CardContent className="p-4 sm:p-6">
+    <article key={order.id} className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md border-l-4 ${borderColor}`}>
+      <div className="p-4 sm:p-6">
         {/* Header - Mobile optimized */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4">
@@ -613,8 +611,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </article>
     );
   };
 
@@ -634,202 +632,148 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Status Summary */}
-        <div className="mb-6 space-y-4">
-          {/* Mobile-first layout */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-muted-foreground">Real-time monitoring active</span>
-              </div>
-              <div className="hidden sm:flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">•</span>
-                <span className="text-sm text-muted-foreground">
-                  {new Date().toLocaleDateString('en-GB', { 
-                    day: 'numeric', 
-                    month: 'long' 
-                  })} (today)
-                </span>
-                <span className="text-sm text-muted-foreground">•</span>
-                <span className="text-sm text-muted-foreground">
-                  Current time: {new Date().toLocaleTimeString('en-GB', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Auto-refresh:</span>
-                <select
-                  value={refreshInterval / 1000}
-                  onChange={(e) => changeRefreshInterval(Number(e.target.value))}
-                  className="text-sm border rounded px-2 py-1"
-                  disabled={!autoRefreshEnabled}
-                >
-                  <option value={5}>5s</option>
-                  <option value={10}>10s</option>
-                  <option value={15}>15s</option>
-                  <option value={30}>30s</option>
-                </select>
-                <Button
-                  variant={autoRefreshEnabled ? "default" : "outline"}
-                  size="sm"
-                  onClick={toggleAutoRefresh}
-                  className="text-xs"
-                >
-                  {autoRefreshEnabled ? 'ON' : 'OFF'}
-                </Button>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Live orders: last 30 min
-              </div>
+        {/* Modern Header */}
+        <section className="flex flex-col gap-3 mb-6">
+          {/* Status row */}
+          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Real-time monitoring active
+            </span>
+            <span>• {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} (today)</span>
+            <span>• Current time: {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+
+            <div className="ml-auto flex items-center gap-2">
+              <label className="text-slate-500">Auto-refresh:</label>
+              <select
+                className="rounded-md border-slate-200 bg-white px-2 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-200"
+                value={refreshInterval / 1000}
+                onChange={(e) => changeRefreshInterval(Number(e.target.value))}
+                disabled={!autoRefreshEnabled}
+              >
+                {[5,10,15,30,60].map(s => <option key={s} value={s}>{s}s</option>)}
+              </select>
+
+              {/* Switch */}
+              <button
+                onClick={toggleAutoRefresh}
+                className={`
+                  relative inline-flex h-7 w-12 items-center rounded-full transition
+                  ${autoRefreshEnabled ? 'bg-violet-600' : 'bg-slate-200'}
+                `}
+                aria-pressed={autoRefreshEnabled}
+              >
+                <span
+                  className={`
+                    inline-block h-5 w-5 transform rounded-full bg-white shadow transition
+                    ${autoRefreshEnabled ? 'translate-x-6' : 'translate-x-1'}
+                  `}
+                />
+              </button>
             </div>
           </div>
-          
-          {/* Mobile date/time info */}
-          <div className="sm:hidden flex items-center space-x-2 text-sm text-muted-foreground">
-            <span>
-              {new Date().toLocaleDateString('en-GB', { 
-                day: 'numeric', 
-                month: 'long' 
-              })} (today)
-            </span>
-            <span>•</span>
-            <span>
-              Current time: {new Date().toLocaleTimeString('en-GB', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              })}
-            </span>
-          </div>
-        </div>
 
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(newTab) => {
-          setActiveTab(newTab);
-        }} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 gap-1 p-1 bg-gray-100 rounded-lg">
-            <TabsTrigger 
-              value="live" 
-              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:text-red-600 data-[state=inactive]:text-gray-600 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:border hover:border-gray-200"
-            >
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">Live Orders</span>
-                {tabCounts?.live_count > 0 && (
-                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold min-w-[20px] text-center">{tabCounts.live_count}</span>
-                )}
-              </div>
-              <span className="text-xs text-gray-500">Last 30 min</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="all" 
-              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=inactive]:text-gray-600 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:border hover:border-gray-200"
-            >
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">Earlier Today</span>
-                {tabCounts?.earlier_today_count > 0 && (
-                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold min-w-[20px] text-center">{tabCounts.earlier_today_count}</span>
-                )}
-              </div>
-              <span className="text-xs text-gray-500">Today's orders</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="history" 
-              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:text-gray-700 data-[state=inactive]:text-gray-600 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:border hover:border-gray-200"
-            >
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">History</span>
-                {tabCounts?.history_count > 0 && (
-                  <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded-full font-bold min-w-[20px] text-center">{tabCounts.history_count}</span>
-                )}
-              </div>
-              <span className="text-xs text-gray-500">Previous days</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="live" className="mt-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-red-800">Live Orders - Last 30 Minutes</span>
-              </div>
-              <p className="text-xs text-red-600 mt-1">Orders placed within the last 30 minutes (including completed orders)</p>
+          {/* Tabs */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="inline-flex rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
+              {[
+                { key:'live',  label:'Live Orders',    hint:'Last 30 min', count: tabCounts?.live_count || 0 },
+                { key:'all', label:'Earlier Today',  hint:"Today's orders", count: tabCounts?.earlier_today_count || 0 },
+                { key:'history',  label:'History',        hint:'Previous days', count: tabCounts?.history_count || 0 },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`
+                    group relative grid w-[11rem] grid-rows-[1fr_auto] rounded-xl px-4 py-2 text-left transition
+                    ${activeTab === tab.key ? 'bg-violet-600 text-white' : 'text-slate-700 hover:bg-slate-50'}
+                  `}
+                >
+                  <span className="flex items-center justify-between">
+                    <span className="font-medium">{tab.label}</span>
+                    <span className={`
+                      ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs
+                      ${activeTab === tab.key ? 'bg-violet-500/70 text-white' : 'bg-slate-200 text-slate-700'}
+                    `}>
+                      {tab.count}
+                    </span>
+                  </span>
+                  <span className={`
+                    mt-0.5 text-xs
+                    ${activeTab === tab.key ? 'text-violet-100' : 'text-slate-400'}
+                  `}>
+                    {tab.hint}
+                  </span>
+                </button>
+              ))}
             </div>
-            <div className="grid gap-4">
+
+            {/* Slim alert (only for Live tab) */}
+            {activeTab === 'live' && (
+              <div className="hidden md:flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-100">
+                <span className="h-2 w-2 rounded-full bg-rose-500" />
+                <span>Live Orders – last 30 minutes (including completed orders)</span>
+              </div>
+            )}
+          </div>
+        </section>
+
+
+        {/* Content */}
+        <main className="mt-4 space-y-4">
+
+          {/* Content based on active tab */}
+          {activeTab === 'live' && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {orders.length === 0 ? (
-                <Card className="border-dashed border-2 border-gray-200">
-                  <CardContent className="p-8 text-center">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Recent Orders</h3>
-                    <p className="text-gray-500">Orders placed within the last 30 minutes will appear here</p>
-                  </CardContent>
-                </Card>
+                <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
+                  <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No Live Orders</h3>
+                  <p className="text-slate-500">Orders placed within the last 30 minutes will appear here</p>
+                </div>
               ) : (
                 orders.map((order) => renderOrderCard(order, true))
               )}
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="all" className="mt-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-sm font-medium text-blue-800">Earlier Today</span>
-              </div>
-              <p className="text-xs text-blue-600 mt-1">Orders from today that are not in live orders</p>
-            </div>
-            <div className="grid gap-4">
+          {activeTab === 'all' && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {allTodayOrders.length === 0 ? (
-                <Card className="border-dashed border-2 border-gray-200">
-                  <CardContent className="p-8 text-center">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Earlier Orders Today</h3>
-                    <p className="text-gray-500">Orders from earlier today (not in live orders) will appear here</p>
-                  </CardContent>
-                </Card>
+                <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
+                  <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No Earlier Orders Today</h3>
+                  <p className="text-slate-500">Orders from earlier today will appear here</p>
+                </div>
               ) : (
                 allTodayOrders.map((order) => renderOrderCard(order, false))
               )}
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="history" className="mt-4">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                <span className="text-sm font-medium text-gray-800">Order History</span>
-              </div>
-              <p className="text-xs text-gray-600 mt-1">Orders from previous days</p>
-            </div>
+          {activeTab === 'history' && (
             <div className="space-y-6">
               {Object.keys(groupedHistoryOrders).length === 0 ? (
-                <Card className="border-dashed border-2 border-gray-200">
-                  <CardContent className="p-8 text-center">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Historical Orders</h3>
-                    <p className="text-gray-500">Previous orders will appear here</p>
-                  </CardContent>
-                </Card>
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
+                  <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No Historical Orders</h3>
+                  <p className="text-slate-500">Previous orders will appear here</p>
+                </div>
               ) : (
                 Object.entries(groupedHistoryOrders).map(([date, orders]) => (
                   <div key={date} className="space-y-4">
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{date}</h3>
-                      <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">{orders.length} orders</span>
+                      <h3 className="text-lg font-semibold text-slate-900">{date}</h3>
+                      <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full">{orders.length} orders</span>
                     </div>
-                    <div className="grid gap-4">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {orders.map((order) => renderOrderCard(order, false))}
                     </div>
                   </div>
                 ))
               )}
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </main>
       </div>
     </div>
   );
