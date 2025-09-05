@@ -329,6 +329,13 @@ async function handleMoveTable(supabase: any, table_id: string, destination_tabl
 
 async function handleMergeTable(supabase: any, venue_id: string, table_id: string, destination_table_id: string) {
   try {
+    console.log('[TABLE ACTIONS] Starting merge table process:', {
+      venue_id,
+      table_id,
+      destination_table_id,
+      timestamp: new Date().toISOString()
+    });
+
     // Use the database RPC function for proper merge logic
     const { data, error } = await supabase.rpc('api_merge_tables', {
       p_venue_id: venue_id,
@@ -336,11 +343,14 @@ async function handleMergeTable(supabase: any, venue_id: string, table_id: strin
       p_table_b: destination_table_id
     });
 
+    console.log('[TABLE ACTIONS] RPC call result:', { data, error });
+
     if (error) {
       console.error('[TABLE ACTIONS] Error merging tables:', error);
       return NextResponse.json({ error: error.message || 'Failed to merge tables' }, { status: 400 });
     }
 
+    console.log('[TABLE ACTIONS] Merge completed successfully:', data);
     return NextResponse.json({ 
       success: true, 
       data: data 

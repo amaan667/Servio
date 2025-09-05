@@ -81,21 +81,43 @@ export function TableSelectionDialog({
   const filteredTables = getAvailableTables();
 
   const handleConfirm = async () => {
-    if (!selectedTableId) return;
+    if (!selectedTableId) {
+      console.log('[TABLE MERGE] No table selected');
+      return;
+    }
+
+    console.log('[TABLE MERGE] Starting merge process:', {
+      action,
+      sourceTableId: sourceTable.id,
+      sourceTableLabel: sourceTable.label,
+      destinationTableId: selectedTableId,
+      venueId,
+      timestamp: new Date().toISOString()
+    });
 
     try {
       setIsLoading(true);
       
       if (action === 'move') {
+        console.log('[TABLE MERGE] Executing move table action');
         await moveTable(sourceTable.id, venueId, selectedTableId);
       } else {
-        await mergeTable(sourceTable.id, venueId, selectedTableId);
+        console.log('[TABLE MERGE] Executing merge table action');
+        const result = await mergeTable(sourceTable.id, venueId, selectedTableId);
+        console.log('[TABLE MERGE] Merge result:', result);
       }
       
+      console.log('[TABLE MERGE] Action completed successfully');
       onActionComplete?.();
       onClose();
     } catch (error) {
-      console.error(`Failed to ${action} table:`, error);
+      console.error(`[TABLE MERGE] Failed to ${action} table:`, {
+        error,
+        action,
+        sourceTableId: sourceTable.id,
+        destinationTableId: selectedTableId,
+        venueId
+      });
     } finally {
       setIsLoading(false);
     }

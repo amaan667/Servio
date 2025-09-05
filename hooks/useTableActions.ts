@@ -16,6 +16,7 @@ export function useTableActions() {
 
   const executeAction = async (params: TableActionParams) => {
     try {
+      console.log('[TABLE ACTIONS HOOK] Executing action:', params);
       setLoading(true);
       setError(null);
 
@@ -27,7 +28,9 @@ export function useTableActions() {
         body: JSON.stringify(params),
       });
 
+      console.log('[TABLE ACTIONS HOOK] API response status:', response.status);
       const data = await response.json();
+      console.log('[TABLE ACTIONS HOOK] API response data:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to execute action');
