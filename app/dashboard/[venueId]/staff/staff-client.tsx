@@ -874,35 +874,37 @@ export default function StaffClient({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Modern Header with Stats Cards */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Team Management</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Team Management</h1>
               <p className="text-muted-foreground mt-1">Manage your staff, roles, and schedules</p>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               <Button 
                 onClick={() => setActiveTab('staff')} 
                 variant={activeTab === 'staff' ? 'default' : 'outline'}
-                className="px-6"
+                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none"
               >
-                <Users className="w-4 h-4 mr-2" />
-                Staff
+                <Users className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Staff</span>
+                <span className="sm:hidden">Team</span>
               </Button>
               <Button 
                 onClick={() => setActiveTab('calendar')} 
                 variant={activeTab === 'calendar' ? 'default' : 'outline'}
-                className="px-6"
+                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none"
               >
-                <Calendar className="w-4 h-4 mr-2" />
-                Schedule
+                <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Schedule</span>
+                <span className="sm:hidden">Calendar</span>
               </Button>
             </div>
           </div>
 
           {/* Modern Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
             <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50">
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-blue-600">Total Staff</p>
@@ -922,7 +924,7 @@ export default function StaffClient({
             </Card>
 
             <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100/50">
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-green-600">Active Staff</p>
@@ -942,7 +944,7 @@ export default function StaffClient({
             </Card>
 
             <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50">
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-purple-600">Roles</p>
@@ -962,7 +964,7 @@ export default function StaffClient({
             </Card>
 
             <Card className="border-0 shadow-sm bg-gradient-to-br from-orange-50 to-orange-100/50">
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-orange-600">Active Shifts</p>
