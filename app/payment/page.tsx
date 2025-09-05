@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowLeft } from "lucide-react";
 import { createOrder } from "@/lib/supabase";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
+import { OrderTimeline } from "@/components/order-timeline";
 
 interface CheckoutData {
   venueId: string;
@@ -174,6 +175,13 @@ export default function PaymentPage() {
               onFeedbackSubmitted={handleFeedbackSubmitted}
             />
           )}
+
+          {/* Order Timeline */}
+          <OrderTimeline
+            orderId={orderNumber}
+            currentStatus="placed"
+            estimatedTime="15-20 minutes"
+          />
 
           {/* Action Buttons */}
           <div className="space-y-3">

@@ -198,9 +198,9 @@ export default function OrderTrackingPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Tracking</h1>
-          <p className="text-gray-600">Track your order in real-time</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Order Tracking</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Track your order in real-time</p>
         </div>
 
         {/* Order Summary Card */}
@@ -214,7 +214,7 @@ export default function OrderTrackingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="font-medium text-gray-500">Customer:</span>
                 <p className="text-gray-900">{order.customer_name}</p>
@@ -245,13 +245,13 @@ export default function OrderTrackingPage() {
         {/* Order Status Timeline */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
               <span>Order Progress</span>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={fetchOrder}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
               >
                 <RefreshCw className="h-4 w-4" />
                 Refresh

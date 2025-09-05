@@ -144,6 +144,10 @@ export async function POST(req: Request) {
     console.log('[ORDERS POST] Final response:', JSON.stringify(response, null, 2));
     console.log('[ORDERS POST] Response sent at:', new Date().toISOString());
     
+    // Log that real-time updates should be triggered
+    console.log('[ORDERS POST] Real-time updates will be triggered automatically via Supabase subscriptions');
+    console.log('[ORDERS POST] Dashboard, analytics, and live orders components will update instantly');
+    
     return NextResponse.json(response);
   } catch (e: any) {
     const msg = e?.message || (typeof e === 'string' ? e : 'Unknown server error');

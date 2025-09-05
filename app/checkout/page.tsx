@@ -544,23 +544,31 @@ function StripePaymentForm({
       console.log('[STRIPE ORDER CREATION] Payment confirmed, now creating order record');
       
       const orderRequestBody = {
-          cartId: checkoutData.cartId,
-          venueId: checkoutData.venueId,
-          tableNumber: checkoutData.tableNumber,
-          items: checkoutData.cart,
-          totalAmount: totalInPence,
-          customerName: checkoutData.customerName,
-          customerPhone: checkoutData.customerPhone,
+        venue_id: checkoutData.venueId,
+        table_number: checkoutData.tableNumber,
+        customer_name: checkoutData.customerName,
+        customer_phone: checkoutData.customerPhone,
+        items: checkoutData.cart.map(item => ({
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+          specialInstructions: item.specialInstructions || null
+        })),
+        total_amount: totalInPence, // Use pence for consistency
+        order_status: 'PLACED',
+        payment_status: 'PAID',
+        notes: `Stripe payment order - Payment Intent: ${clientSecret?.split('_secret_')[0] || 'unknown'}`
       };
       
       console.log('[STRIPE ORDER CREATION] Order request body:', {
-        cartId: orderRequestBody.cartId,
-        venueId: orderRequestBody.venueId,
-        tableNumber: orderRequestBody.tableNumber,
-        totalAmount: orderRequestBody.totalAmount,
-        customerName: orderRequestBody.customerName,
-        customerPhone: orderRequestBody.customerPhone,
-        itemsCount: orderRequestBody.items.length
+        venue_id: orderRequestBody.venue_id,
+        table_number: orderRequestBody.table_number,
+        customer_name: orderRequestBody.customer_name,
+        customer_phone: orderRequestBody.customer_phone,
+        itemsCount: orderRequestBody.items.length,
+        total_amount: orderRequestBody.total_amount,
+        total_amount_gbp: (orderRequestBody.total_amount / 100).toFixed(2)
       });
       
       console.log('[STRIPE ORDER CREATION] Making API call to /api/orders');
@@ -590,16 +598,27 @@ function StripePaymentForm({
 
       const orderData = await orderResponse.json();
       console.log('[STRIPE ORDER CREATION] Order created successfully:', {
-        orderId: orderData.id,
-        status: orderData.status,
-        total: orderData.total,
-        createdAt: orderData.createdAt,
-        hasAllRequiredFields: !!(orderData.id && orderData.status && orderData.total)
+        orderId: orderData.order?.id,
+        status: orderData.order?.order_status,
+        total: orderData.order?.total_amount
       });
       
       console.log('[STRIPE PAYMENT FLOW] Complete payment flow successful');
       console.log('[STRIPE PAYMENT FLOW] Calling onSuccess callback with order data');
-      onSuccess(orderData);
+      
+      // Format order data to match expected structure
+      const formattedOrderData = {
+        id: orderData.order?.id,
+        orderId: orderData.order?.id,
+        status: orderData.order?.order_status,
+        total: orderData.order?.total_amount ? orderData.order.total_amount / 100 : checkoutData.total, // Convert back to pounds
+        createdAt: orderData.order?.created_at,
+        venueId: orderData.order?.venue_id,
+        tableNumber: orderData.order?.table_number,
+        customerName: orderData.order?.customer_name
+      };
+      
+      onSuccess(formattedOrderData);
     } catch (err) {
       console.error('[STRIPE PAYMENT ERROR] Payment flow failed:', {
         error: err,
@@ -772,7 +791,8 @@ export default function CheckoutPage() {
         try {
           setPaymentStatus('success');
           
-          // Prepare order data
+          // Prepare order data - convert total to pence for consistency
+          const totalInPence = Math.round(checkoutData.total * 100);
           const orderPayload = {
             venue_id: checkoutData.venueId,
             table_number: checkoutData.tableNumber,
@@ -785,9 +805,10 @@ export default function CheckoutPage() {
               item_name: item.name,
               specialInstructions: item.specialInstructions || null
             })),
-            total_amount: checkoutData.total,
+            total_amount: totalInPence, // Use pence for consistency
             order_status: 'PLACED',
-            payment_status: 'PAID'
+            payment_status: 'PAID',
+            notes: `Stripe payment order - Payment Intent: ${paymentIntent}`
           };
 
           console.log('[PAYMENT SUCCESS] Creating order with payload:', orderPayload);
@@ -809,14 +830,14 @@ export default function CheckoutPage() {
 
           // Set the order data and progress to feedback phase
           setOrder({
-            id: orderData.id,
-            orderId: orderData.id,
-            status: orderData.status,
-            total: orderData.total,
-            createdAt: orderData.createdAt,
-            venueId: orderData.venueId,
-            tableNumber: orderData.tableNumber,
-            customerName: orderData.customerName
+            id: orderData.order?.id,
+            orderId: orderData.order?.id,
+            status: orderData.order?.order_status,
+            total: orderData.order?.total_amount ? orderData.order.total_amount / 100 : checkoutData.total, // Convert back to pounds
+            createdAt: orderData.order?.created_at,
+            venueId: orderData.order?.venue_id,
+            tableNumber: orderData.order?.table_number,
+            customerName: orderData.order?.customer_name
           });
           
           setPhase('feedback');
@@ -983,25 +1004,36 @@ export default function CheckoutPage() {
     if (isSuccess) {
         console.log('[DEMO PAYMENT] Payment simulation successful, creating real order...');
       
-        // Create real order using the same API as Stripe payments
+        // Create real order using the same API structure as Stripe payments
+        // Convert total from pounds to pence for consistency with Stripe
+        const totalInPence = Math.round((checkoutData?.total || 0) * 100);
+        
         const orderRequestBody = {
-        venueId: checkoutData?.venueId,
-        tableNumber: checkoutData?.tableNumber,
-        customerName: checkoutData?.customerName,
-        customerPhone: checkoutData?.customerPhone,
-        items: checkoutData?.cart || [],
-        total: checkoutData?.total || 0,
-          paymentMethod: 'demo',
-          paymentStatus: 'paid'
+          venue_id: checkoutData?.venueId,
+          table_number: checkoutData?.tableNumber,
+          customer_name: checkoutData?.customerName,
+          customer_phone: checkoutData?.customerPhone,
+          items: (checkoutData?.cart || []).map(item => ({
+            menu_item_id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            item_name: item.name,
+            specialInstructions: item.specialInstructions || null
+          })),
+          total_amount: totalInPence, // Use pence for consistency with Stripe
+          order_status: 'PLACED',
+          payment_status: 'PAID',
+          notes: 'Demo payment order'
         };
         
         console.log('[DEMO ORDER CREATION] Creating real order from demo payment:', {
-          venueId: orderRequestBody.venueId,
-          tableNumber: orderRequestBody.tableNumber,
-          customerName: orderRequestBody.customerName,
-          customerPhone: orderRequestBody.customerPhone,
+          venue_id: orderRequestBody.venue_id,
+          table_number: orderRequestBody.table_number,
+          customer_name: orderRequestBody.customer_name,
+          customer_phone: orderRequestBody.customer_phone,
           itemsCount: orderRequestBody.items.length,
-          total: orderRequestBody.total
+          total_amount: orderRequestBody.total_amount,
+          total_amount_gbp: (orderRequestBody.total_amount / 100).toFixed(2)
         });
         
         const orderResponse = await fetch('/api/orders', {
@@ -1025,13 +1057,22 @@ export default function CheckoutPage() {
 
         const orderData = await orderResponse.json();
         console.log('[DEMO ORDER CREATION] Real order created successfully:', {
-          orderId: orderData.id,
-          status: orderData.status,
-          total: orderData.total
+          orderId: orderData.order?.id,
+          status: orderData.order?.order_status,
+          total: orderData.order?.total_amount
         });
         
         setPaymentStatus('success');
-      setOrder(orderData);
+        setOrder({
+          id: orderData.order?.id,
+          orderId: orderData.order?.id,
+          status: orderData.order?.order_status,
+          total: orderData.order?.total_amount ? orderData.order.total_amount / 100 : checkoutData?.total, // Convert back to pounds
+          createdAt: orderData.order?.created_at,
+          venueId: orderData.order?.venue_id,
+          tableNumber: orderData.order?.table_number,
+          customerName: orderData.order?.customer_name
+        });
         setPhase('feedback');
         
         // Clear stored data since order is now created in database
