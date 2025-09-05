@@ -687,7 +687,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     fetchOrders();
   }, [activeTab, fetchOrders]);
 
-  // Real-time subscription
+  // Real-time subscription with enhanced logging and dashboard updates
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) return;
@@ -706,7 +706,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         (payload: any) => {
           console.log(
             "LIVE_ORDERS: Real-time change detected",
-            payload,
+            {
+              event: payload.eventType,
+              orderId: payload.new?.id || payload.old?.id,
+              status: payload.new?.order_status,
+              timestamp: new Date().toISOString()
+            }
           );
           
           // Handle different event types properly
@@ -756,6 +761,13 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           } else if (payload.eventType === 'INSERT') {
             // For new orders, add them to the appropriate lists
             const newOrder = payload.new;
+            console.log("LIVE_ORDERS: New order inserted", {
+              orderId: newOrder.id,
+              status: newOrder.order_status,
+              total: newOrder.total_amount,
+              customer: newOrder.customer_name
+            });
+            
             setAllOrders(prev => [newOrder, ...prev]);
             
             // Check if it should be in live orders
@@ -765,10 +777,20 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                            orderCreatedAt >= thirtyMinutesAgo;
             
             if (isActive) {
+              console.log("LIVE_ORDERS: Adding new order to live orders list");
               setOrders(prev => [newOrder, ...prev]);
             }
+            
+            // Trigger a custom event to notify other components
+            window.dispatchEvent(new CustomEvent('orderCreated', { 
+              detail: { 
+                order: newOrder, 
+                venueId: venueId 
+              } 
+            }));
           } else if (payload.eventType === 'DELETE') {
             // For deletions, remove from both lists
+            console.log("LIVE_ORDERS: Order deleted", { orderId: payload.old.id });
             setOrders(prev => prev.filter(order => order.id !== payload.old.id));
             setAllOrders(prev => prev.filter(order => order.id !== payload.old.id));
           }

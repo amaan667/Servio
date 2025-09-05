@@ -90,6 +90,8 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       }
 
+      console.log('[ANALYTICS] Calculating stats for time range:', timeRange, 'from:', startDate.toISOString());
+
       // Fetch orders from database
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
@@ -250,6 +252,64 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
   useEffect(() => {
     calculateStats();
   }, [calculateStats]);
+
+  // Set up real-time subscription for instant analytics updates
+  useEffect(() => {
+    const supabase = createClient();
+    
+    console.log('[ANALYTICS] Setting up real-time subscription for venue:', venueId);
+    
+    const channel = supabase
+      .channel(`analytics-${venueId}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders',
+          filter: `venue_id=eq.${venueId}`
+        }, 
+        (payload) => {
+          console.log('[ANALYTICS] Real-time order change detected:', payload.event, payload.new?.id);
+          
+          // Check if the order is within the current time range
+          const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
+          if (!orderCreatedAt) return;
+          
+          const now = new Date();
+          let startDate: Date;
+          
+          switch (timeRange) {
+            case 'today':
+              startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              break;
+            case 'week':
+              startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+              break;
+            case 'month':
+              startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+              break;
+            default:
+              startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          }
+          
+          const isInTimeRange = new Date(orderCreatedAt) >= startDate;
+          
+          if (isInTimeRange) {
+            console.log('[ANALYTICS] Order is within time range, refreshing analytics');
+            // Debounce the refresh to avoid too many updates
+            setTimeout(() => {
+              calculateStats();
+            }, 500);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('[ANALYTICS] Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [venueId, timeRange, calculateStats]);
 
   const StatCard = ({
     title,
