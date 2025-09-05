@@ -800,112 +800,309 @@ export default function StaffClient({
       <style dangerouslySetInnerHTML={{ __html: shiftPillStyles }} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Staff Stats */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{staff.length} staff members</span>
+        {/* Modern Header with Stats Cards */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Team Management</h1>
+              <p className="text-muted-foreground mt-1">Manage your staff, roles, and schedules</p>
             </div>
-            <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">
-              {staff.filter(s => s.active).length} active
-            </span>
-            <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">
-              {roles.length} roles
-            </span>
-            <span className="text-sm text-muted-foreground">•</span>
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {activeShifts.length} active shifts
-              </span>
+            <div className="flex items-center space-x-3">
+              <Button 
+                onClick={() => setActiveTab('staff')} 
+                variant={activeTab === 'staff' ? 'default' : 'outline'}
+                className="px-6"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Staff
+              </Button>
+              <Button 
+                onClick={() => setActiveTab('calendar')} 
+                variant={activeTab === 'calendar' ? 'default' : 'outline'}
+                className="px-6"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Schedule
+              </Button>
             </div>
           </div>
-        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="staff">Staff Management</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="staff" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="font-semibold">Add Staff</div>
-              </CardHeader>
-              <CardContent className="flex flex-col md:flex-row gap-3">
-                <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="md:w-1/2" />
-                <select className="border rounded px-3 py-2 md:w-1/3" value={role} onChange={(e) => setRole(e.target.value)}>
-                  <option>Server</option>
-                  <option>Barista</option>
-                  <option>Cashier</option>
-                  <option>Kitchen</option>
-                  <option>Manager</option>
-                </select>
-                <div className="flex gap-2">
-                  <Button onClick={onAdd} disabled={adding}>{adding ? 'Adding…' : 'Add'}</Button>
-                  <Button variant="outline" onClick={async ()=>{
-                    if (!confirm('This will delete all staff for this venue. Continue?')) return;
-                    const res = await fetch('/api/staff/clear', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ venue_id: venueId })});
-                    const j = await res.json().catch(()=>({}));
-                    if (!res.ok || j?.error) { alert(j?.error || 'Failed to clear'); return; }
-                    setStaff([]);
-                  }}>Clear</Button>
+          {/* Modern Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600">Total Staff</p>
+                    <p className="text-2xl font-bold text-blue-900">{staff.length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
                 </div>
-                {error && <span className="text-red-600 text-sm">{error}</span>}
               </CardContent>
             </Card>
 
-            {roles.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">No staff members added yet.</p>
-                <p className="text-sm text-gray-400 mb-4">
-                  Add staff members above to see their names instead of "Unknown Unknown" in shifts.
-                </p>
-              </div>
-            ) : (
-              roles.map((r) => (
-                <Card key={r} className="mb-4">
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{r}</span>
-                      <Badge variant="secondary">{grouped[r].length}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {grouped[r].map((row) => (
-                      <StaffRowItem key={row.id} row={row} onDeleteRow={onDelete} onShiftsChanged={reloadAllShifts} />
-                    ))}
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100/50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-600">Active Staff</p>
+                    <p className="text-2xl font-bold text-green-900">{staff.filter(s => s.active).length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <TabsContent value="calendar" className="space-y-6">
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-600">Roles</p>
+                    <p className="text-2xl font-bold text-purple-900">{roles.length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-orange-50 to-orange-100/50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-orange-600">Active Shifts</p>
+                    <p className="text-2xl font-bold text-orange-900">{activeShifts.length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Modern Tab Content */}
+        {activeTab === 'staff' && (
+          <div className="space-y-6">
+            {/* Add Staff Section */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Add Team Member</h3>
+                    <p className="text-sm text-muted-foreground">Add new staff members to your team</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={async ()=>{
+                        if (!confirm('This will delete all staff for this venue. Continue?')) return;
+                        const res = await fetch('/api/staff/clear', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ venue_id: venueId })});
+                        const j = await res.json().catch(()=>({}));
+                        if (!res.ok || j?.error) { alert(j?.error || 'Failed to clear'); return; }
+                        setStaff([]);
+                      }}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col lg:flex-row gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-foreground mb-2">Name</label>
+                    <Input 
+                      placeholder="Enter staff member name" 
+                      value={name} 
+                      onChange={(e) => setName(e.target.value)} 
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="lg:w-48">
+                    <label className="block text-sm font-medium text-foreground mb-2">Role</label>
+                    <select 
+                      className="w-full h-11 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent" 
+                      value={role} 
+                      onChange={(e) => setRole(e.target.value)}
+                    >
+                      <option>Server</option>
+                      <option>Barista</option>
+                      <option>Cashier</option>
+                      <option>Kitchen</option>
+                      <option>Manager</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={onAdd} 
+                      disabled={adding || !name.trim()}
+                      className="h-11 px-8 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                    >
+                      {adding ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Users className="w-4 h-4 mr-2" />
+                          Add Member
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                {error && (
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <span className="text-red-600 text-sm">{error}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Staff List */}
+            {roles.length === 0 ? (
+              <Card className="border-0 shadow-sm">
+                <CardContent className="py-16">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Users className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No team members yet</h3>
+                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                      Start building your team by adding staff members above. You'll be able to assign shifts and manage schedules once you have team members.
+                    </p>
+                    <Button 
+                      onClick={() => {
+                        const nameInput = document.querySelector('input[placeholder="Enter staff member name"]') as HTMLInputElement;
+                        nameInput?.focus();
+                      }}
+                      variant="outline"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Add Your First Member
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {roles.map((role) => (
+                  <Card key={role} className="border-0 shadow-sm">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <Users className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">{role}</h3>
+                            <p className="text-sm text-muted-foreground">{grouped[role].length} team member{grouped[role].length !== 1 ? 's' : ''}</p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="px-3 py-1">
+                          {grouped[role].length}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-3">
+                        {grouped[role].map((row) => (
+                          <div key={row.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                <span className="text-sm font-medium text-gray-600">
+                                  {row.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-foreground">{row.name}</p>
+                                <p className="text-sm text-muted-foreground">{role}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  // Add shift functionality
+                                }}
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                <Clock className="w-4 h-4 mr-1" />
+                                Add Shift
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onDelete(row)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Calendar View */}
+        {activeTab === 'calendar' && (
+          <div className="space-y-6">
+            {/* Schedule Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Schedule Management</h2>
+                <p className="text-muted-foreground mt-1">Manage shifts and schedules for your team</p>
+              </div>
+            </div>
+
             {/* Overnight Shift Legend */}
-            <Card className="bg-orange-50 border-orange-200">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2 text-sm text-orange-700">
-                  <span>🌙</span>
-                  <span className="font-medium">Overnight Shifts:</span>
-                  <span>Shifts spanning multiple days show as continuous pills with rounded edges only at week boundaries. Each pill has proper contrast and hover effects for easy interaction.</span>
+            <Card className="border-0 shadow-sm bg-gradient-to-r from-orange-50 to-orange-100/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-lg">🌙</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-orange-800">Overnight Shifts</span>
+                    <p className="text-orange-700">Shifts spanning multiple days are highlighted with special styling and indicators</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
             
             <CalendarView />
             
-            {/* All Shifts List */}
-            <Card>
-              <CardHeader>
-                <div className="font-semibold">All Shifts</div>
-                <div className="text-sm text-gray-500">Complete list of all scheduled shifts</div>
+            {/* Modern Shifts List */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">All Scheduled Shifts</h3>
+                    <p className="text-sm text-muted-foreground">Complete overview of all team schedules</p>
+                  </div>
+                  <Badge variant="secondary" className="px-3 py-1">
+                    {allShifts.length} shifts
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 {allShifts.length > 0 ? (
                   <div className="space-y-3">
                     {allShifts
@@ -913,41 +1110,69 @@ export default function StaffClient({
                       .map((shift) => {
                         const overnight = isOvernightShift(shift);
                         return (
-                          <div key={shift.id} className={`flex items-center justify-between p-3 rounded-lg ${
-                            overnight ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50'
+                          <div key={shift.id} className={`group flex items-center justify-between p-4 rounded-lg border transition-all hover:shadow-sm ${
+                            overnight 
+                              ? 'bg-gradient-to-r from-orange-50 to-orange-100/50 border-orange-200' 
+                              : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                           }`}>
                             <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <span className={`font-medium ${overnight ? 'text-orange-700' : 'text-purple-600'}`}>
-                                  {shift.staff_name}
-                                  {overnight && <span className="ml-1" title="Overnight Shift">🌙</span>}
-                                </span>
-                                <Badge variant="outline">{shift.staff_role}</Badge>
-                                {overnight && (
-                                  <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-100">
-                                    Overnight
-                                  </Badge>
-                                )}
-                                {isShiftActive(shift) && (
-                                  <Badge variant="default" className="bg-green-100 text-green-800">
-                                    Active Now
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className={`text-sm mt-1 ${overnight ? 'text-orange-600' : 'text-gray-600'}`}>
-                                {new Date(shift.start_time).toLocaleDateString()} • {formatTime(shift.start_time)} – {formatTime(shift.end_time)}
-                                {shift.area && <> • {shift.area}</>}
-                                {overnight && (
-                                  <span className="ml-2 text-orange-500">
-                                    (spans {new Date(shift.start_time).toLocaleDateString()} to {new Date(shift.end_time).toLocaleDateString()})
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                  overnight ? 'bg-orange-500' : 'bg-purple-500'
+                                }`}>
+                                  <span className="text-white text-sm font-medium">
+                                    {shift.staff_name.charAt(0).toUpperCase()}
                                   </span>
+                                </div>
+                                <div>
+                                  <span className={`font-semibold ${overnight ? 'text-orange-800' : 'text-purple-700'}`}>
+                                    {shift.staff_name}
+                                    {overnight && <span className="ml-2" title="Overnight Shift">🌙</span>}
+                                  </span>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="text-xs">
+                                      {shift.staff_role}
+                                    </Badge>
+                                    {overnight && (
+                                      <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-100 text-xs">
+                                        Overnight
+                                      </Badge>
+                                    )}
+                                    {isShiftActive(shift) && (
+                                      <Badge className="bg-green-500 text-white text-xs">
+                                        Active Now
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className={`text-sm ${overnight ? 'text-orange-600' : 'text-gray-600'}`}>
+                                <div className="flex items-center gap-4">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(shift.start_time).toLocaleDateString()}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatTime(shift.start_time)} – {formatTime(shift.end_time)}
+                                  </span>
+                                  {shift.area && (
+                                    <span className="text-muted-foreground">
+                                      • {shift.area}
+                                    </span>
+                                  )}
+                                </div>
+                                {overnight && (
+                                  <div className="mt-1 text-orange-500 text-xs">
+                                    Spans {new Date(shift.start_time).toLocaleDateString()} to {new Date(shift.end_time).toLocaleDateString()}
+                                  </div>
                                 )}
                               </div>
                             </div>
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="text-red-600"
+                              className="text-red-600 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={async () => {
                                 if (!confirm('Delete this shift?')) return;
                                 const res = await fetch('/api/staff/shifts/delete', {
@@ -970,19 +1195,27 @@ export default function StaffClient({
                       })}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-gray-500 mb-2">No shifts scheduled yet.</p>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Calendar className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No shifts scheduled</h3>
+                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                      Start creating shifts for your team members. You can schedule shifts and manage your team's availability.
+                    </p>
                     {staff.length === 0 && (
-                      <p className="text-xs text-gray-400">
-                        Note: Add staff members first to create shifts with proper names.
-                      </p>
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-700">
+                          💡 <strong>Tip:</strong> Add team members first to create shifts with proper names.
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
     </div>
   );
