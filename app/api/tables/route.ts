@@ -153,6 +153,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create table' }, { status: 500 });
     }
 
+    // Create initial FREE session for the table
+    const { data: session, error: sessionError } = await supabase
+      .from('table_sessions')
+      .insert({
+        venue_id,
+        table_id: table.id,
+        status: 'FREE',
+        opened_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (sessionError) {
+      console.error('[TABLES API] Error creating initial session:', sessionError);
+      // Don't fail the entire operation, just log the error
+      // The table was created successfully, session creation is optional
+    }
+
+    console.log('[TABLES API] Table created successfully:', {
+      tableId: table.id,
+      label: table.label,
+      sessionId: session?.id || 'none'
+    });
+
     return NextResponse.json({ table });
   } catch (error) {
     console.error('[TABLES API] Unexpected error:', error);
