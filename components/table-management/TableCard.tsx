@@ -24,6 +24,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { StatusPill } from './StatusPill';
 import { useTableActions } from '@/hooks/useTableActions';
 import { TableWithSession } from '@/hooks/useTablesData';
@@ -188,8 +194,12 @@ export function TableCard({ table, venueId, onActionComplete }: TableCardProps) 
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
-      <CardContent className="p-4">
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <a href={`/generate-qr?venue=${venueId}&table=${table.id}`} target="_blank" rel="noopener noreferrer">
+            <Card className="hover:shadow-md transition-shadow duration-200 cursor-pointer">
+              <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-lg">{table.label}</h3>
@@ -266,5 +276,12 @@ export function TableCard({ table, venueId, onActionComplete }: TableCardProps) 
         </div>
       </CardContent>
     </Card>
+          </a>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Assign QR Code</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
