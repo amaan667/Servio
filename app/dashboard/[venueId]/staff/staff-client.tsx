@@ -221,10 +221,14 @@ export default function StaffClient({
   const [allShifts, setAllShifts] = useState<Shift[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState('staff');
+  const [staffLoaded, setStaffLoaded] = useState(!!initialStaff && initialStaff.length > 0);
+  const [loading, setLoading] = useState(!initialStaff || initialStaff.length === 0);
 
   // Load staff data on component mount
   useEffect(() => {
     const loadStaff = async () => {
+      if (staffLoaded) return; // Prevent multiple loads
+      
       try {
         console.log('[AUTH DEBUG] Loading staff for venue:', venueId);
         const res = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
@@ -232,19 +236,23 @@ export default function StaffClient({
         if (res.ok && !j?.error) {
           console.log('[AUTH DEBUG] Staff loaded:', j.staff?.length || 0, 'members');
           setStaff(j.staff || []);
+          setStaffLoaded(true);
+          setLoading(false);
         } else {
           console.error('[AUTH DEBUG] Failed to load staff:', j?.error);
+          setLoading(false);
         }
       } catch (e) {
         console.error('[AUTH DEBUG] Failed to load staff:', e);
+        setLoading(false);
       }
     };
 
-    // Only load if no initial staff provided
-    if (!initialStaff || initialStaff.length === 0) {
+    // Only load if no initial staff provided and not already loaded
+    if (!staffLoaded) {
       loadStaff();
     }
-  }, [venueId, initialStaff]);
+  }, [venueId, staffLoaded]);
 
   // Load shifts on component mount (no need to wait for staff data)
   useEffect(() => {
@@ -368,6 +376,30 @@ export default function StaffClient({
   const activeShifts = useMemo(() => {
     return allShifts.filter(isShiftActive);
   }, [allShifts, isShiftActive]);
+
+  // Memoize counts to prevent flickering
+  const staffCounts = useMemo(() => {
+    if (loading) {
+      return {
+        totalStaff: 0,
+        activeStaff: 0,
+        uniqueRoles: 0,
+        activeShiftsCount: 0
+      };
+    }
+    
+    const totalStaff = staff.length;
+    const activeStaff = staff.filter(s => s.active === true).length;
+    const uniqueRoles = roles.length;
+    const activeShiftsCount = activeShifts.length;
+    
+    return {
+      totalStaff,
+      activeStaff,
+      uniqueRoles,
+      activeShiftsCount
+    };
+  }, [staff, roles, activeShifts, loading]);
 
   // Calendar functions
   const getDaysInMonth = (date: Date) => {
@@ -834,7 +866,9 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-blue-600">Total Staff</p>
-                    <p className="text-2xl font-bold text-blue-900">{staff.length}</p>
+                    <p className="text-2xl font-bold text-blue-900">
+                      {loading ? '...' : staffCounts.totalStaff}
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
                     <Users className="h-6 w-6 text-white" />
@@ -848,7 +882,9 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-green-600">Active Staff</p>
-                    <p className="text-2xl font-bold text-green-900">{staff.filter(s => s.active).length}</p>
+                    <p className="text-2xl font-bold text-green-900">
+                      {loading ? '...' : staffCounts.activeStaff}
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
                     <Users className="h-6 w-6 text-white" />
@@ -862,7 +898,9 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-purple-600">Roles</p>
-                    <p className="text-2xl font-bold text-purple-900">{roles.length}</p>
+                    <p className="text-2xl font-bold text-purple-900">
+                      {loading ? '...' : staffCounts.uniqueRoles}
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
                     <Users className="h-6 w-6 text-white" />
@@ -876,7 +914,9 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-orange-600">Active Shifts</p>
-                    <p className="text-2xl font-bold text-orange-900">{activeShifts.length}</p>
+                    <p className="text-2xl font-bold text-orange-900">
+                      {loading ? '...' : staffCounts.activeShiftsCount}
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
                     <Clock className="h-6 w-6 text-white" />
