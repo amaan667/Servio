@@ -29,6 +29,15 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const { tables, loading, error, refetch } = useTablesData(venueId);
 
+  // Debug logging
+  console.log('[TABLE MANAGEMENT] Component rendering:', { 
+    venueId, 
+    loading, 
+    error, 
+    tablesCount: tables?.length || 0,
+    timestamp: new Date().toISOString()
+  });
+
   const filteredTables = useMemo(() => {
     let filtered = tables;
 

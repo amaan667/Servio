@@ -29,16 +29,23 @@ export function useTablesData(venueId: string) {
     if (!venueId) return;
 
     try {
+      console.log('[TABLES HOOK] Starting fetch for venueId:', venueId);
       setLoading(true);
       setError(null);
 
+      const startTime = Date.now();
       const response = await fetch(`/api/tables?venue_id=${encodeURIComponent(venueId)}`);
+      const fetchTime = Date.now() - startTime;
+      
+      console.log('[TABLES HOOK] Fetch completed in:', fetchTime + 'ms');
+      
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch tables');
       }
 
+      console.log('[TABLES HOOK] Tables fetched:', data.tables?.length || 0);
       setTables(data.tables || []);
     } catch (err) {
       console.error('[TABLES HOOK] Error fetching tables:', err);
