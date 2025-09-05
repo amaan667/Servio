@@ -36,6 +36,22 @@ export default async function GenerateQRPage() {
       .limit(1)
       .maybeSingle();
 
+    // Get today's orders to calculate active tables for QR codes
+    const today = new Date(); 
+    today.setHours(0,0,0,0);
+    const startIso = today.toISOString();
+    const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
+    
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('table_number, order_status, created_at')
+      .eq('venue_id', venue.venue_id)
+      .gte('created_at', startIso)
+      .lt('created_at', endIso);
+
+    console.log('[QR PAGE] Orders data:', orders?.length || 0, 'orders found');
+    console.log('[QR PAGE] Orders error:', ordersError);
+
     console.log('[QR PAGE] Venue data:', venue);
     console.log('[QR PAGE] Venue error:', error);
     
@@ -63,7 +79,11 @@ export default async function GenerateQRPage() {
           </p>
         </div>
         
-        <GenerateQRClient venueId={venue.venue_id} venueName={venue.name} />
+        <GenerateQRClient 
+          venueId={venue.venue_id} 
+          venueName={venue.name} 
+          initialOrders={orders || []}
+        />
       </div>
     </div>
   );
