@@ -21,6 +21,14 @@ export default function GlobalNav() {
   const pathname = usePathname();
   const supabase = createClient();
 
+  // Debug logging
+  console.log('[GLOBAL NAV] Component rendering:', { 
+    loading, 
+    hasSession: !!session, 
+    pathname,
+    timestamp: new Date().toISOString()
+  });
+
   // Ensure we don't show authenticated navigation while loading
   // Also add additional checks to ensure session is valid
   const isAuthenticated = !loading && !!session?.user && !!session?.access_token;
