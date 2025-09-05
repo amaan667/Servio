@@ -42,20 +42,20 @@ CREATE POLICY "Users can manage table links for their venues" ON table_session_l
 
 -- 5. Merge Tables Function
 CREATE OR REPLACE FUNCTION api_merge_tables(
-  p_venue_id UUID,
-  p_table_a UUID,
-  p_table_b UUID
+  p_venue_id TEXT,
+  p_table_a TEXT,
+  p_table_b TEXT
 ) RETURNS JSON
 LANGUAGE plpgsql
 AS $$
 DECLARE
   v_status_a TEXT;
   v_status_b TEXT;
-  v_session_a UUID;
-  v_session_b UUID;
-  v_primary_table UUID;
-  v_secondary_table UUID;
-  v_primary_session UUID;
+  v_session_a TEXT;
+  v_session_b TEXT;
+  v_primary_table TEXT;
+  v_secondary_table TEXT;
+  v_primary_session TEXT;
   v_table_a_label TEXT;
   v_table_b_label TEXT;
   v_primary_label TEXT;
