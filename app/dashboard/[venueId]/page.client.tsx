@@ -476,17 +476,19 @@ export default function VenueDashboardClient({
             </Card>
           </Link>
 
-          <Link href={`/dashboard/${venueId}/tables`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 sm:p-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Table Management</h3>
-                <p className="text-muted-foreground text-xs sm:text-sm">Monitor table status and manage service flow</p>
-              </CardContent>
-            </Card>
-          </Link>
+          {venue?.has_tables !== false && (
+            <Link href={`/dashboard/${venueId}/tables`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Table Management</h3>
+                  <p className="text-muted-foreground text-xs sm:text-sm">Monitor table status and manage service flow</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
 
           <Link href={`/dashboard/${venueId}/analytics`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
