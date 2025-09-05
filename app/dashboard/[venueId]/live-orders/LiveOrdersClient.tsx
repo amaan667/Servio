@@ -487,15 +487,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   };
 
   const renderOrderCard = (order: Order, showActions: boolean = true) => (
-    <Card key={order.id} className="hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-500">
-              {formatTime(order.created_at)}
-            </div>
-            <div className="font-medium">
-              Table {order.table_number || 'Takeaway'}
+    <Card key={order.id} className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+      <CardContent className="p-4 sm:p-6">
+        {/* Header - Mobile optimized */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className="text-sm font-medium text-gray-900">
+                {formatTime(order.created_at)}
+              </div>
+              <div className="text-sm text-gray-500">•</div>
+              <div className="font-semibold text-gray-900">
+                Table {order.table_number || 'Takeaway'}
+              </div>
             </div>
             {order.customer_name && (
               <div className="flex items-center text-sm text-gray-600">
@@ -510,16 +514,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               </div>
             )}
           </div>
-          <div className="flex items-center space-x-2">
-            <Badge className={getStatusColor(order.order_status)}>
-              {order.order_status.replace('_', ' ').toLowerCase()}
-            </Badge>
-            {order.payment_status && (
-              <Badge className={getPaymentStatusColor(order.payment_status)}>
-                {order.payment_status.toUpperCase()}
-              </Badge>
-            )}
-            <div className="text-lg font-bold">
+          <div className="flex items-center justify-between sm:justify-end space-x-2">
+            <div className="text-lg font-bold text-gray-900">
               £{(() => {
                 // Calculate total from items if total_amount is 0 or missing
                 let amount = order.total_amount;
@@ -536,26 +532,39 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           </div>
         </div>
 
-        {/* Order Items */}
+        {/* Status badges - Mobile optimized */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Badge className={`${getStatusColor(order.order_status)} text-xs font-medium px-2 py-1`}>
+            {order.order_status.replace('_', ' ').toLowerCase()}
+          </Badge>
+          {order.payment_status && (
+            <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-medium px-2 py-1`}>
+              {order.payment_status.toUpperCase()}
+            </Badge>
+          )}
+        </div>
+
+        {/* Order Items - Mobile optimized */}
         <div className="space-y-2 mb-4">
           {order.items.map((item, index) => {
             console.log('[LIVE ORDERS DEBUG] Rendering item:', item);
             return (
-              <div key={index} className="flex justify-between text-sm">
-                <span>{item.quantity}x {item.item_name}</span>
-                <span>£{(item.quantity * item.price).toFixed(2)}</span>
+              <div key={index} className="flex justify-between items-center text-sm bg-gray-50 rounded-md p-2">
+                <span className="font-medium text-gray-900">{item.quantity}x {item.item_name}</span>
+                <span className="font-semibold text-gray-700">£{(item.quantity * item.price).toFixed(2)}</span>
               </div>
             );
           })}
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Mobile optimized */}
         {showActions && (
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             {order.order_status === 'PLACED' && (
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
               >
                 Start Preparing
               </Button>
@@ -564,6 +573,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'READY')}
+                className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
               >
                 Mark Ready
               </Button>
@@ -668,31 +678,56 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         <Tabs value={activeTab} onValueChange={(newTab) => {
           setActiveTab(newTab);
         }} className="w-full">
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6 gap-1">
-            <TabsTrigger value="live" className="flex items-center justify-center space-x-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
-              <span className="truncate">Live (30 Min)</span>
-              {tabCounts?.live_count > 0 && (
-                <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">{tabCounts.live_count}</span>
-              )}
+          <TabsList className="grid w-full grid-cols-3 mb-6 gap-2 p-1 bg-gray-100 rounded-lg">
+            <TabsTrigger 
+              value="live" 
+              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-red-600 data-[state=inactive]:text-gray-600 hover:text-gray-900"
+            >
+              <div className="flex items-center space-x-2">
+                <span className="font-semibold">Live Orders</span>
+                {tabCounts?.live_count > 0 && (
+                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold min-w-[20px] text-center">{tabCounts.live_count}</span>
+                )}
+              </div>
+              <span className="text-xs text-gray-500">Last 30 min</span>
             </TabsTrigger>
-            <TabsTrigger value="all" className="flex items-center justify-center space-x-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
-              <span className="truncate">Earlier Today</span>
-              {tabCounts?.earlier_today_count > 0 && (
-                <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">{tabCounts.earlier_today_count}</span>
-              )}
+            <TabsTrigger 
+              value="all" 
+              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-blue-600 data-[state=inactive]:text-gray-600 hover:text-gray-900"
+            >
+              <div className="flex items-center space-x-2">
+                <span className="font-semibold">Earlier Today</span>
+                {tabCounts?.earlier_today_count > 0 && (
+                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold min-w-[20px] text-center">{tabCounts.earlier_today_count}</span>
+                )}
+              </div>
+              <span className="text-xs text-gray-500">Today's orders</span>
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center justify-center space-x-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
-              <span className="truncate">History</span>
-              {tabCounts?.history_count > 0 && (
-                <span className="bg-gray-500 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">{tabCounts.history_count}</span>
-              )}
+            <TabsTrigger 
+              value="history" 
+              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-gray-700 data-[state=inactive]:text-gray-600 hover:text-gray-900"
+            >
+              <div className="flex items-center space-x-2">
+                <span className="font-semibold">History</span>
+                {tabCounts?.history_count > 0 && (
+                  <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded-full font-bold min-w-[20px] text-center">{tabCounts.history_count}</span>
+                )}
+              </div>
+              <span className="text-xs text-gray-500">Previous days</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="live" className="mt-6">
-            <div className="grid gap-6">
+          <TabsContent value="live" className="mt-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-red-800">Live Orders - Last 30 Minutes</span>
+              </div>
+              <p className="text-xs text-red-600 mt-1">Orders placed within the last 30 minutes with active statuses</p>
+            </div>
+            <div className="grid gap-4">
               {orders.length === 0 ? (
-                <Card>
+                <Card className="border-dashed border-2 border-gray-200">
                   <CardContent className="p-8 text-center">
                     <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Recent Orders</h3>
@@ -705,10 +740,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </div>
           </TabsContent>
 
-          <TabsContent value="all" className="mt-6">
-            <div className="grid gap-6">
+          <TabsContent value="all" className="mt-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-sm font-medium text-blue-800">Earlier Today</span>
+              </div>
+              <p className="text-xs text-blue-600 mt-1">Orders from today that are not in live orders</p>
+            </div>
+            <div className="grid gap-4">
               {allTodayOrders.length === 0 ? (
-                <Card>
+                <Card className="border-dashed border-2 border-gray-200">
                   <CardContent className="p-8 text-center">
                     <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Earlier Orders Today</h3>
@@ -721,10 +763,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </div>
           </TabsContent>
 
-          <TabsContent value="history" className="mt-6">
-            <div className="space-y-8">
+          <TabsContent value="history" className="mt-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <span className="text-sm font-medium text-gray-800">Order History</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">Orders from previous days</p>
+            </div>
+            <div className="space-y-6">
               {Object.keys(groupedHistoryOrders).length === 0 ? (
-                <Card>
+                <Card className="border-dashed border-2 border-gray-200">
                   <CardContent className="p-8 text-center">
                     <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Historical Orders</h3>
@@ -733,9 +782,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 </Card>
               ) : (
                 Object.entries(groupedHistoryOrders).map(([date, orders]) => (
-                  <div key={date}>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{date}</h3>
-                    <div className="grid gap-6">
+                  <div key={date} className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-gray-900">{date}</h3>
+                      <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">{orders.length} orders</span>
+                    </div>
+                    <div className="grid gap-4">
                       {orders.map((order) => renderOrderCard(order, false))}
                     </div>
                   </div>
