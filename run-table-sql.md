@@ -5,11 +5,14 @@ The Table Management feature requires database tables to be created. Please run 
 ## Steps:
 1. Go to your Supabase dashboard
 2. Navigate to the SQL Editor
-3. Copy and paste the contents of `scripts/create-table-management-tables.sql`
+3. Copy and paste the contents of `scripts/create-table-management-tables-safe.sql`
 4. Run the SQL script
 
 ## Alternative: Use the SQL file directly
-The SQL script is located at: `scripts/create-table-management-tables.sql`
+The safe SQL script is located at: `scripts/create-table-management-tables-safe.sql`
+
+## If you get policy errors:
+If you see "policy already exists" errors, use the safe version which handles existing policies gracefully by dropping and recreating them.
 
 ## What this creates:
 - `tables` table with columns: id, venue_id, label, seat_count, is_active, qr_version, created_at, updated_at
