@@ -21,6 +21,14 @@ interface Props {
 }
 
 export default function GenerateQRClient({ venueId, venueName, initialOrders = [] }: Props) {
+  console.log('🔍 [QR CLIENT] ===== GenerateQRClient Component Initialized =====');
+  console.log('🔍 [QR CLIENT] Props received:', {
+    venueId,
+    venueName,
+    initialOrdersCount: initialOrders.length,
+    initialOrders: initialOrders
+  });
+
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({ activeTablesNow: 0 });
@@ -37,6 +45,8 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
   const orderUrl = selectedTables.length > 0 
     ? `${siteOrigin()}/order?venue=${venueId}&table=${selectedTables[0]}`
     : `${siteOrigin()}/order?venue=${venueId}&table=1`;
+
+  console.log('🔍 [QR CLIENT] Order URL:', orderUrl);
 
   const handleCopy = async () => {
     try {
@@ -405,8 +415,13 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
   useEffect(() => {
     const loadStats = () => {
       try {
-        console.log(`[QR STATS] Starting loadStats for venue: ${venueId}`);
-        console.log(`[QR STATS] Using initial orders:`, initialOrders.length);
+        console.log('🔍 [QR CLIENT] ===== Starting loadStats =====');
+        console.log('🔍 [QR CLIENT] loadStats inputs:', {
+          venueId,
+          initialOrdersCount: initialOrders.length,
+          initialOrders: initialOrders
+        });
+        
         setLoading(true);
         setError(null);
         
@@ -416,16 +431,33 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
 
         // Use the initial orders data passed from server
         const orders = initialOrders;
-        console.log(`[QR STATS] Found ${orders?.length || 0} orders`);
+        console.log('🔍 [QR CLIENT] Processing orders:', {
+          totalOrders: orders?.length || 0,
+          orders: orders
+        });
 
         // Calculate active tables using same logic as main dashboard
         // Active tables = tables with orders that are not completed
+        const nonCompletedOrders = (orders ?? []).filter((o) => o.order_status !== "COMPLETED" && o.order_status !== "CANCELLED");
+        console.log('🔍 [QR CLIENT] Non-completed orders:', {
+          count: nonCompletedOrders.length,
+          orders: nonCompletedOrders
+        });
+
         const activeTables = new Set(
-          (orders ?? [])
-            .filter((o) => o.order_status !== "COMPLETED" && o.order_status !== "CANCELLED")
+          nonCompletedOrders
             .map((o) => o.table_number)
             .filter((t) => t != null)
         ).size;
+
+        console.log('🔍 [QR CLIENT] Active tables calculation:', {
+          activeTablesCount: activeTables,
+          activeTableNumbers: Array.from(new Set(
+            nonCompletedOrders
+              .map((o) => o.table_number)
+              .filter((t) => t != null)
+          ))
+        });
 
         setStats({ activeTablesNow: activeTables });
         
@@ -433,25 +465,34 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
         if (activeTables > 0) {
           // Get the actual table numbers that are active
           const activeTableNumbers = Array.from(new Set(
-            (orders ?? [])
-              .filter((o) => o.order_status !== "COMPLETED" && o.order_status !== "CANCELLED")
+            nonCompletedOrders
               .map((o) => o.table_number)
               .filter((t) => t != null)
               .sort((a, b) => a - b) // Sort numerically
           ));
           
           setSelectedTables(activeTableNumbers.map(t => t.toString()));
-          console.log(`[QR STATS] Auto-generated QR codes for active tables: ${activeTableNumbers.join(', ')}`);
+          console.log('🔍 [QR CLIENT] Auto-generated QR codes for active tables:', activeTableNumbers.join(', '));
         } else {
-          // No active tables, show no QR codes
+          // No active tables, but still allow manual QR code generation
           setSelectedTables([]);
-          console.log(`[QR STATS] No active tables, showing no QR codes`);
+          console.log('🔍 [QR CLIENT] No active tables, but allowing manual QR code generation');
         }
         
-        console.log(`[QR STATS] Active tables: ${activeTables} for venue ${venueId}`);
+        console.log('🔍 [QR CLIENT] Final stats:', {
+          activeTables,
+          selectedTables: activeTables > 0 ? Array.from(new Set(
+            nonCompletedOrders
+              .map((o) => o.table_number)
+              .filter((t) => t != null)
+              .sort((a, b) => a - b)
+          )).map(t => t.toString()) : []
+        });
+        
         setLoading(false);
+        console.log('🔍 [QR CLIENT] ===== loadStats completed successfully =====');
       } catch (error: any) {
-        console.error('Error in loadStats:', error);
+        console.error('🔍 [QR CLIENT] Error in loadStats:', error);
         setError(`Failed to load stats: ${error.message}`);
         // Set default values on error
         setStats({ activeTablesNow: 0 });
@@ -463,6 +504,7 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
     if (venueId) {
       loadStats();
     } else {
+      console.log('🔍 [QR CLIENT] No venue ID provided, setting error');
       setError('No venue ID provided');
       setLoading(false);
     }
@@ -470,6 +512,7 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
 
   // Show loading state
   if (loading) {
+    console.log('🔍 [QR CLIENT] Rendering loading state');
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
@@ -482,6 +525,7 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
 
   // Show error state
   if (error) {
+    console.log('🔍 [QR CLIENT] Rendering error state:', error);
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
@@ -502,6 +546,16 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
       </div>
     );
   }
+
+  console.log('🔍 [QR CLIENT] ===== Rendering main QR interface =====');
+  console.log('🔍 [QR CLIENT] Current state:', {
+    loading,
+    error,
+    stats,
+    selectedTables,
+    venueId,
+    venueName
+  });
 
   return (
     <div className="space-y-4 sm:space-y-6">
