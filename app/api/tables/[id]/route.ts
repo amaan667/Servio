@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params;
+    const body = await req.json();
+    const { label, seat_count, is_active } = body;
+
+    const supabase = await createClient();
+
+    // Update table
+    const { data: table, error } = await supabase
+      .from('tables')
+      .update({
+        label: label?.trim(),
+        seat_count,
+        is_active,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[TABLES API] Error updating table:', error);
+      return NextResponse.json({ error: 'Failed to update table' }, { status: 500 });
+    }
+
+    return NextResponse.json({ table });
+  } catch (error) {
+    console.error('[TABLES API] Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params;
+
+    const supabase = await createClient();
+
+    // Delete table (this will cascade to table_sessions)
+    const { error } = await supabase
+      .from('tables')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('[TABLES API] Error deleting table:', error);
+      return NextResponse.json({ error: 'Failed to delete table' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[TABLES API] Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

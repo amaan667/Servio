@@ -385,24 +385,19 @@ export default function CustomerOrderPage() {
 
         console.log('[ORDER SUBMIT] DEMO FLOW: Storing demo order data for checkout:', orderData);
         
-        // Store order data in localStorage for checkout page
+        // Store order data in localStorage for order summary page
         console.log('[ORDER SUBMIT] DEMO FLOW: Storing data in localStorage...');
         console.log('[ORDER SUBMIT] DEMO FLOW: Data to store:', orderData);
-        localStorage.setItem('pending-order-data', JSON.stringify(orderData));
-        console.log('[ORDER SUBMIT] DEMO FLOW: Stored in pending-order-data key');
-        // Also store in the key that payment page expects
-        localStorage.setItem('servio-checkout-data', JSON.stringify(orderData));
-        console.log('[ORDER SUBMIT] DEMO FLOW: Stored in servio-checkout-data key');
+        localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
+        console.log('[ORDER SUBMIT] DEMO FLOW: Stored in servio-pending-order key');
         console.log('[ORDER SUBMIT] DEMO FLOW: Demo order data stored in localStorage');
         
         // Verify storage
-        const storedPending = localStorage.getItem('pending-order-data');
-        const storedCheckout = localStorage.getItem('servio-checkout-data');
-        console.log('[ORDER SUBMIT] DEMO FLOW: Verification - pending-order-data exists:', !!storedPending);
-        console.log('[ORDER SUBMIT] DEMO FLOW: Verification - servio-checkout-data exists:', !!storedCheckout);
+        const storedPending = localStorage.getItem('servio-pending-order');
+        console.log('[ORDER SUBMIT] DEMO FLOW: Verification - servio-pending-order exists:', !!storedPending);
         
-        // Redirect to checkout page with demo mode
-        console.log('[ORDER SUBMIT] DEMO FLOW: About to redirect to /checkout?demo=1');
+        // Redirect to order summary page
+        console.log('[ORDER SUBMIT] DEMO FLOW: About to redirect to /order-summary');
         console.log('[ORDER SUBMIT] DEMO FLOW: Router object:', router);
         console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before redirect:', typeof window !== 'undefined' ? window.location.href : 'SSR');
         
@@ -412,12 +407,12 @@ export default function CustomerOrderPage() {
         
         // Use window.location for reliable navigation
         console.log('[ORDER SUBMIT] DEMO FLOW: Using window.location for navigation');
-        console.log('[ORDER SUBMIT] DEMO FLOW: About to navigate to /checkout?demo=1');
+        console.log('[ORDER SUBMIT] DEMO FLOW: About to navigate to /order-summary');
         console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before navigation:', window.location.href);
         console.log('[ORDER SUBMIT] DEMO FLOW: Window object available:', typeof window !== 'undefined');
         if (typeof window !== 'undefined') {
-          console.log('[ORDER SUBMIT] DEMO FLOW: Setting window.location.href to /checkout?demo=1');
-          window.location.href = '/checkout?demo=1';
+          console.log('[ORDER SUBMIT] DEMO FLOW: Setting window.location.href to /order-summary');
+          window.location.href = '/order-summary';
           console.log('[ORDER SUBMIT] DEMO FLOW: Navigation command executed');
         } else {
           console.log('[ORDER SUBMIT] DEMO FLOW: Window not available, cannot navigate');
@@ -456,24 +451,19 @@ export default function CustomerOrderPage() {
 
       console.log('[ORDER SUBMIT] REAL FLOW: Storing order data for checkout:', orderData);
       
-      // Store order data in localStorage for checkout page
+      // Store order data in localStorage for order summary page
       console.log('[ORDER SUBMIT] REAL FLOW: Storing data in localStorage...');
       console.log('[ORDER SUBMIT] REAL FLOW: Data to store:', orderData);
-      localStorage.setItem('pending-order-data', JSON.stringify(orderData));
-      console.log('[ORDER SUBMIT] REAL FLOW: Stored in pending-order-data key');
-      // Also store in the key that payment page expects
-      localStorage.setItem('servio-checkout-data', JSON.stringify(orderData));
-      console.log('[ORDER SUBMIT] REAL FLOW: Stored in servio-checkout-data key');
+      localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
+      console.log('[ORDER SUBMIT] REAL FLOW: Stored in servio-pending-order key');
       console.log('[ORDER SUBMIT] REAL FLOW: Order data stored in localStorage');
       
       // Verify storage
-      const storedPending = localStorage.getItem('pending-order-data');
-      const storedCheckout = localStorage.getItem('servio-checkout-data');
-      console.log('[ORDER SUBMIT] REAL FLOW: Verification - pending-order-data exists:', !!storedPending);
-      console.log('[ORDER SUBMIT] REAL FLOW: Verification - servio-checkout-data exists:', !!storedCheckout);
+      const storedPending = localStorage.getItem('servio-pending-order');
+      console.log('[ORDER SUBMIT] REAL FLOW: Verification - servio-pending-order exists:', !!storedPending);
       
-      // Redirect to unified checkout page - order will be created after successful payment
-      console.log('[ORDER SUBMIT] REAL FLOW: About to redirect to /checkout');
+      // Redirect to order summary page - customer can choose to pay now or later
+      console.log('[ORDER SUBMIT] REAL FLOW: About to redirect to /order-summary');
       console.log('[ORDER SUBMIT] REAL FLOW: Router object:', router);
       console.log('[ORDER SUBMIT] REAL FLOW: Current URL before redirect:', typeof window !== 'undefined' ? window.location.href : 'SSR');
       
@@ -483,12 +473,12 @@ export default function CustomerOrderPage() {
       
       // Use window.location for reliable navigation
       console.log('[ORDER SUBMIT] REAL FLOW: Using window.location for navigation');
-      console.log('[ORDER SUBMIT] REAL FLOW: About to navigate to /checkout');
+      console.log('[ORDER SUBMIT] REAL FLOW: About to navigate to /order-summary');
       console.log('[ORDER SUBMIT] REAL FLOW: Current URL before navigation:', window.location.href);
       console.log('[ORDER SUBMIT] REAL FLOW: Window object available:', typeof window !== 'undefined');
       if (typeof window !== 'undefined') {
-        console.log('[ORDER SUBMIT] REAL FLOW: Setting window.location.href to /checkout');
-        window.location.href = '/checkout';
+        console.log('[ORDER SUBMIT] REAL FLOW: Setting window.location.href to /order-summary');
+        window.location.href = '/order-summary';
         console.log('[ORDER SUBMIT] REAL FLOW: Navigation command executed');
       } else {
         console.log('[ORDER SUBMIT] REAL FLOW: Window not available, cannot navigate');
