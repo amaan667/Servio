@@ -38,7 +38,16 @@ export function useTableManagement() {
       console.log('[TABLE MANAGEMENT HOOK] API response data:', data);
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create table');
+        const errorMessage = data.error || 'Failed to create table';
+        const errorDetails = data.details || '';
+        const errorCode = data.code || '';
+        
+        // Create a more detailed error object
+        const error = new Error(errorMessage);
+        (error as any).details = errorDetails;
+        (error as any).code = errorCode;
+        
+        throw error;
       }
 
       console.log('[TABLE MANAGEMENT HOOK] Table created successfully:', data.table);

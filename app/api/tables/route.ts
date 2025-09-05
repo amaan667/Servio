@@ -191,7 +191,8 @@ export async function POST(req: NextRequest) {
     console.log('[TABLES API] Venue access verified');
 
     // Create table
-    const { data: table, error: tableError } = await supabase
+    let table, tableError;
+    const { data: initialTable, error: initialError } = await supabase
       .from('tables')
       .insert({
         venue_id,
@@ -202,8 +203,32 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
+    table = initialTable;
+    tableError = initialError;
+
     if (tableError) {
       console.error('[TABLES API] Error creating table:', tableError);
+      
+      // Check if it's the constraint error we're dealing with
+      if (tableError.code === '23505' && tableError.message.includes('uniq_open_session_per_table')) {
+        console.log('[TABLES API] Constraint error detected - this is a known database schema issue');
+        console.log('[TABLES API] The unique constraint is preventing table creation due to trigger conflicts');
+        
+        // Return a more user-friendly error message
+        return NextResponse.json({ 
+          error: 'Table creation temporarily unavailable', 
+          details: 'There is a database constraint issue preventing table creation. Please try again in a few moments or contact support if the issue persists.',
+          code: 'CONSTRAINT_ERROR'
+        }, { status: 503 });
+      } else {
+        return NextResponse.json({ 
+          error: 'Failed to create table', 
+          details: tableError.message 
+        }, { status: 500 });
+      }
+    }
+
+    if (tableError) {
       return NextResponse.json({ 
         error: 'Failed to create table', 
         details: tableError.message 

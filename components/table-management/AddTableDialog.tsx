@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, AlertTriangle } from 'lucide-react';
 import { useTableManagement } from '@/hooks/useTableManagement';
 
 interface AddTableDialogProps {
@@ -25,12 +26,15 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState('');
   const [seatCount, setSeatCount] = useState(2);
+  const [error, setError] = useState<string | null>(null);
   const { createTable, loading } = useTableManagement();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!label.trim()) return;
+
+    setError(null); // Clear any previous errors
 
     console.log('[ADD TABLE DIALOG] Creating table:', {
       venue_id: venueId,
@@ -52,8 +56,15 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
       setSeatCount(2);
       setOpen(false);
       onTableAdded?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ADD TABLE DIALOG] Failed to create table:', error);
+      
+      // Handle specific constraint error
+      if (error.message?.includes('CONSTRAINT_ERROR') || error.message?.includes('temporarily unavailable')) {
+        setError('Table creation is temporarily unavailable due to a database constraint issue. Please try again in a few moments.');
+      } else {
+        setError(error.message || 'Failed to create table. Please try again.');
+      }
     }
   };
 
@@ -74,6 +85,12 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="label" className="text-right">
                 Label
