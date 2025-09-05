@@ -87,25 +87,25 @@ const shiftPillStyles = `
 
   /* Overnight flavor */
   .shift-pill.shift-overnight {
-    background: linear-gradient(90deg, #fff7ed 0%, #faf5ff 100%);
-    border-color: #f59e0b22;
-    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.15);
+    background: linear-gradient(90deg, #faf5ff 0%, #f3e8ff 100%);
+    border-color: #a855f722;
+    box-shadow: 0 8px 20px rgba(168, 85, 247, 0.15);
   }
 
-  /* Role-based color coding */
+  /* Role-based color coding - all purple variations */
   .shift-pill[data-role="Kitchen"] {
-    border-left: 3px solid #10b981;
-    background: linear-gradient(90deg, #ecfdf5 0%, #faf5ff 100%);
+    border-left: 3px solid #a855f7;
+    background: linear-gradient(90deg, #faf5ff 0%, #f3e8ff 100%);
   }
 
   .shift-pill[data-role="Front of House"] {
-    border-left: 3px solid #6366f1;
-    background: linear-gradient(90deg, #eef2ff 0%, #faf5ff 100%);
+    border-left: 3px solid #a855f7;
+    background: linear-gradient(90deg, #faf5ff 0%, #f3e8ff 100%);
   }
 
   .shift-pill[data-role="Bar"] {
-    border-left: 3px solid #f59e0b;
-    background: linear-gradient(90deg, #fffbeb 0%, #faf5ff 100%);
+    border-left: 3px solid #a855f7;
+    background: linear-gradient(90deg, #faf5ff 0%, #f3e8ff 100%);
   }
 
   /* Hover state */
@@ -901,40 +901,40 @@ export default function StaffClient({
 
           {/* Modern Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50">
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-600">Total Staff</p>
-                    <p className="text-2xl font-bold text-blue-900">
+                    <p className="text-sm font-medium text-purple-600">Total Staff</p>
+                    <p className="text-2xl font-bold text-purple-900">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
-                        <div className="animate-pulse bg-blue-200 h-8 w-12 rounded"></div>
+                        <div className="animate-pulse bg-purple-200 h-8 w-12 rounded"></div>
                       ) : (
                         staffCounts.totalStaff
                       )}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
                     <Users className="h-6 w-6 text-white" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100/50">
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-green-600">Active Staff</p>
-                    <p className="text-2xl font-bold text-green-900">
+                    <p className="text-sm font-medium text-purple-600">Active Staff</p>
+                    <p className="text-2xl font-bold text-purple-900">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
-                        <div className="animate-pulse bg-green-200 h-8 w-12 rounded"></div>
+                        <div className="animate-pulse bg-purple-200 h-8 w-12 rounded"></div>
                       ) : (
                         staffCounts.activeStaff
                       )}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
                     <Users className="h-6 w-6 text-white" />
                   </div>
                 </div>
@@ -961,20 +961,20 @@ export default function StaffClient({
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm bg-gradient-to-br from-orange-50 to-orange-100/50">
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-orange-600">Active Shifts</p>
-                    <p className="text-2xl font-bold text-orange-900">
+                    <p className="text-sm font-medium text-purple-600">Active Shifts</p>
+                    <p className="text-2xl font-bold text-purple-900">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
-                        <div className="animate-pulse bg-orange-200 h-8 w-12 rounded"></div>
+                        <div className="animate-pulse bg-purple-200 h-8 w-12 rounded"></div>
                       ) : (
                         staffCounts.activeShiftsCount
                       )}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
                     <Clock className="h-6 w-6 text-white" />
                   </div>
                 </div>
@@ -1132,7 +1132,7 @@ export default function StaffClient({
                                 onClick={() => {
                                   // Add shift functionality
                                 }}
-                                className="text-blue-600 hover:text-blue-700"
+                                className="text-purple-600 hover:text-purple-700"
                               >
                                 <Clock className="w-4 h-4 mr-1" />
                                 Add Shift
@@ -1169,15 +1169,15 @@ export default function StaffClient({
             </div>
 
             {/* Overnight Shift Legend */}
-            <Card className="border-0 shadow-sm bg-gradient-to-r from-orange-50 to-orange-100/50">
+            <Card className="border-0 shadow-sm bg-gradient-to-r from-purple-50 to-purple-100/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
                     <span className="text-white text-lg">🌙</span>
                   </div>
                   <div>
-                    <span className="font-medium text-orange-800">Overnight Shifts</span>
-                    <p className="text-orange-700">Shifts spanning multiple days are highlighted with special styling and indicators</p>
+                    <span className="font-medium text-purple-800">Overnight Shifts</span>
+                    <p className="text-purple-700">Shifts spanning multiple days are highlighted with special styling and indicators</p>
                   </div>
                 </div>
               </CardContent>
@@ -1208,20 +1208,20 @@ export default function StaffClient({
                         return (
                           <div key={shift.id} className={`group flex items-center justify-between p-4 rounded-lg border transition-all hover:shadow-sm ${
                             overnight 
-                              ? 'bg-gradient-to-r from-orange-50 to-orange-100/50 border-orange-200' 
+                              ? 'bg-gradient-to-r from-purple-50 to-purple-100/50 border-purple-200' 
                               : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                           }`}>
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                  overnight ? 'bg-orange-500' : 'bg-purple-500'
+                                  overnight ? 'bg-purple-500' : 'bg-purple-500'
                                 }`}>
                                   <span className="text-white text-sm font-medium">
                                     {shift.staff_name.charAt(0).toUpperCase()}
                                   </span>
                                 </div>
                                 <div>
-                                  <span className={`font-semibold ${overnight ? 'text-orange-800' : 'text-purple-700'}`}>
+                                  <span className={`font-semibold ${overnight ? 'text-purple-800' : 'text-purple-700'}`}>
                                     {shift.staff_name}
                                     {overnight && <span className="ml-2" title="Overnight Shift">🌙</span>}
                                   </span>
@@ -1230,19 +1230,19 @@ export default function StaffClient({
                                       {shift.staff_role}
                                     </Badge>
                                     {overnight && (
-                                      <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-100 text-xs">
+                                      <Badge variant="outline" className="border-purple-300 text-purple-700 bg-purple-100 text-xs">
                                         Overnight
                                       </Badge>
                                     )}
                                     {isShiftActive(shift) && (
-                                      <Badge className="bg-green-500 text-white text-xs">
+                                      <Badge className="bg-purple-500 text-white text-xs">
                                         Active Now
                                       </Badge>
                                     )}
                                   </div>
                                 </div>
                               </div>
-                              <div className={`text-sm ${overnight ? 'text-orange-600' : 'text-gray-600'}`}>
+                              <div className={`text-sm ${overnight ? 'text-purple-600' : 'text-gray-600'}`}>
                                 <div className="flex items-center gap-4">
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
@@ -1259,7 +1259,7 @@ export default function StaffClient({
                                   )}
                                 </div>
                                 {overnight && (
-                                  <div className="mt-1 text-orange-500 text-xs">
+                                  <div className="mt-1 text-purple-500 text-xs">
                                     Spans {new Date(shift.start_time).toLocaleDateString()} to {new Date(shift.end_time).toLocaleDateString()}
                                   </div>
                                 )}
@@ -1300,8 +1300,8 @@ export default function StaffClient({
                       Start creating shifts for your team members. You can schedule shifts and manage your team's availability.
                     </p>
                     {staff.length === 0 && (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-700">
+                      <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                        <p className="text-sm text-purple-700">
                           💡 <strong>Tip:</strong> Add team members first to create shifts with proper names.
                         </p>
                       </div>

@@ -101,8 +101,8 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
                   <p className="text-sm font-medium text-gray-600">Live Orders (30 min)</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-blue-600" />
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>
@@ -115,8 +115,8 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
                   <p className="text-sm font-medium text-gray-600">Live Revenue (30 min)</p>
                   <p className="text-2xl font-bold text-gray-900">£{stats.revenue.toFixed(2)}</p>
                 </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-green-600" />
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>
