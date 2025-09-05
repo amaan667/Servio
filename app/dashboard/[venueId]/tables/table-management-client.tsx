@@ -38,6 +38,25 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
     timestamp: new Date().toISOString()
   });
 
+  // Additional detailed logging for navigation debugging
+  useEffect(() => {
+    console.log('[TABLE MANAGEMENT] Navigation debug - Component mounted:', {
+      venueId,
+      timestamp: new Date().toISOString(),
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
+      url: typeof window !== 'undefined' ? window.location.href : 'server'
+    });
+  }, [venueId]);
+
+  useEffect(() => {
+    console.log('[TABLE MANAGEMENT] Loading state changed:', {
+      loading,
+      error,
+      tablesCount: tables?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+  }, [loading, error, tables]);
+
   const filteredTables = useMemo(() => {
     let filtered = tables;
 

@@ -55,12 +55,12 @@ hist as (
     and o.created_at < b.start_utc
 ),
 active_tables as (
-  -- distinct tables that currently qualify as "live" (same 30-min window + active statuses)
-  select count(distinct t.table_number)::int c
-  from today t, b
-  where t.table_number is not null
-    and t.status in ('PLACED','ACCEPTED','IN_PREP','READY','SERVING')
-    and t.created_at >= b.now_utc - make_interval(mins => p_live_window_mins)
+  -- Tables Set Up: Count of tables you've created and enabled in Table Management
+  -- Source: tables.is_active = true (regardless of orders)
+  select count(*)::int c
+  from public.tables t
+  where t.venue_id = p_venue_id
+    and t.is_active = true
 )
 select
   live.c,

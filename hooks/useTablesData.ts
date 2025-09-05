@@ -26,7 +26,10 @@ export function useTablesData(venueId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTables = useCallback(async () => {
-    if (!venueId) return;
+    if (!venueId) {
+      console.log('[TABLES HOOK] No venueId provided, skipping fetch');
+      return;
+    }
 
     try {
       console.log('[TABLES HOOK] Starting fetch for venueId:', venueId);
@@ -34,23 +37,51 @@ export function useTablesData(venueId: string) {
       setError(null);
 
       const startTime = Date.now();
-      const response = await fetch(`/api/tables?venue_id=${encodeURIComponent(venueId)}`);
+      const url = `/api/tables?venue_id=${encodeURIComponent(venueId)}`;
+      console.log('[TABLES HOOK] Fetching from URL:', url);
+      
+      const response = await fetch(url);
       const fetchTime = Date.now() - startTime;
       
-      console.log('[TABLES HOOK] Fetch completed in:', fetchTime + 'ms');
+      console.log('[TABLES HOOK] Fetch completed in:', fetchTime + 'ms', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[TABLES HOOK] Response not OK:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       
       const data = await response.json();
+      console.log('[TABLES HOOK] Response data:', {
+        tablesCount: data.tables?.length || 0,
+        hasError: !!data.error,
+        error: data.error
+      });
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch tables');
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      console.log('[TABLES HOOK] Tables fetched:', data.tables?.length || 0);
+      console.log('[TABLES HOOK] Tables fetched successfully:', data.tables?.length || 0);
       setTables(data.tables || []);
     } catch (err) {
-      console.error('[TABLES HOOK] Error fetching tables:', err);
+      console.error('[TABLES HOOK] Error fetching tables:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        venueId,
+        timestamp: new Date().toISOString()
+      });
       setError(err instanceof Error ? err.message : 'Failed to fetch tables');
     } finally {
+      console.log('[TABLES HOOK] Setting loading to false');
       setLoading(false);
     }
   }, [venueId]);

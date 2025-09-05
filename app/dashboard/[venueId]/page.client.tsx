@@ -410,7 +410,7 @@ export default function VenueDashboardClient({
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Tables</p>
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Tables Set Up</p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.active_tables_count}</p>
                   </div>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -477,7 +477,17 @@ export default function VenueDashboardClient({
           </Link>
 
           {venue?.has_tables !== false && (
-            <Link href={`/dashboard/${venueId}/tables`}>
+            <Link 
+              href={`/dashboard/${venueId}/tables`}
+              onClick={() => {
+                console.log('[DASHBOARD] Table Management clicked:', {
+                  venueId,
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent,
+                  url: window.location.href
+                });
+              }}
+            >
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="p-4 sm:p-6">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
