@@ -35,6 +35,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import OrderTimeline from "@/components/OrderTimeline";
 // import OrderFeedbackForm from "@/components/OrderFeedbackForm";
 
 // Initialize Stripe
@@ -729,7 +730,6 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const isDemo = searchParams?.get('demo') === '1';
-  const [realTimeOrder, setRealTimeOrder] = useState<any>(null);
 
   // Payment method selection
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'simulation' | null>(null);
@@ -750,37 +750,7 @@ export default function CheckoutPage() {
     setIsMounted(true);
   }, []);
 
-  // Set up real-time subscription for order updates when in timeline phase
-  useEffect(() => {
-    if (phase === 'timeline' && order?.id) {
-      console.log('[TIMELINE] Setting up real-time subscription for order:', order.id);
-      
-      const supabase = createClient();
-      const channel = supabase
-        .channel(`timeline-order-${order.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'orders',
-            filter: `id=eq.${order.id}`,
-          },
-          (payload: any) => {
-            console.log('[TIMELINE] Order update detected:', payload);
-            if (payload.new) {
-              setRealTimeOrder(payload.new);
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        console.log('[TIMELINE] Cleaning up real-time subscription');
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [phase, order?.id]);
+  // Real-time subscription is now handled by the OrderTimeline component
 
   // Handle payment success from URL parameters
   useEffect(() => {
@@ -1330,39 +1300,10 @@ export default function CheckoutPage() {
           </Card>
 
           {/* Order Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock className="w-5 h-5 mr-2" />
-                Order Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <div>
-                    <p className="font-medium text-green-600">Order Confirmed</p>
-                    <p className="text-sm text-gray-500">Payment processed successfully</p>
-            </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <div>
-                    <p className="font-medium text-yellow-600">Preparing</p>
-                    <p className="text-sm text-gray-500">Your order is being prepared</p>
-              </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-            <div>
-                    <p className="font-medium text-gray-500">Ready</p>
-                    <p className="text-sm text-gray-500">Your order will be ready soon</p>
-            </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <OrderTimeline 
+            orderId={order?.id || ''} 
+            venueId={checkoutData?.venueId || ''} 
+          />
         </div>
       </div>
     );
@@ -1514,87 +1455,11 @@ export default function CheckoutPage() {
 
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Order Timeline */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Clock className="w-5 h-5 mr-2" />
-                  Order Timeline
-                </div>
-                <Badge variant="outline" className="text-sm">
-                  Live Updates
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <div>
-                    <p className="font-medium text-green-600">Order Confirmed</p>
-                    <p className="text-sm text-gray-500">Payment processed successfully</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    (realTimeOrder?.order_status === 'ACCEPTED' || realTimeOrder?.order_status === 'IN_PREP' || realTimeOrder?.order_status === 'READY' || realTimeOrder?.order_status === 'SERVING' || realTimeOrder?.order_status === 'COMPLETED') 
-                      ? 'bg-yellow-500' 
-                      : 'bg-gray-300'
-                  }`}></div>
-                  <div>
-                    <p className={`font-medium ${
-                      (realTimeOrder?.order_status === 'ACCEPTED' || realTimeOrder?.order_status === 'IN_PREP' || realTimeOrder?.order_status === 'READY' || realTimeOrder?.order_status === 'SERVING' || realTimeOrder?.order_status === 'COMPLETED')
-                        ? 'text-yellow-600'
-                        : 'text-gray-500'
-                    }`}>
-                      {realTimeOrder?.order_status === 'ACCEPTED' ? 'Order Accepted' :
-                       realTimeOrder?.order_status === 'IN_PREP' ? 'In Preparation' :
-                       realTimeOrder?.order_status === 'READY' ? 'Ready for Pickup' :
-                       realTimeOrder?.order_status === 'SERVING' ? 'Being Served' :
-                       realTimeOrder?.order_status === 'COMPLETED' ? 'Order Completed' :
-                       'Preparing'}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {realTimeOrder?.order_status === 'ACCEPTED' ? 'Your order has been accepted by the kitchen' :
-                       realTimeOrder?.order_status === 'IN_PREP' ? 'Your food is being prepared in the kitchen' :
-                       realTimeOrder?.order_status === 'READY' ? 'Your order is ready! Please collect from the counter' :
-                       realTimeOrder?.order_status === 'SERVING' ? 'Your order is being served to your table' :
-                       realTimeOrder?.order_status === 'COMPLETED' ? 'Thank you for your order!' :
-                       'Your order is being prepared'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    realTimeOrder?.order_status === 'COMPLETED' 
-                      ? 'bg-green-500' 
-                      : 'bg-gray-300'
-                  }`}></div>
-                  <div>
-                    <p className={`font-medium ${
-                      realTimeOrder?.order_status === 'COMPLETED'
-                        ? 'text-green-600'
-                        : 'text-gray-500'
-                    }`}>
-                      {realTimeOrder?.order_status === 'COMPLETED' ? 'Order Completed' : 'Ready'}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {realTimeOrder?.order_status === 'COMPLETED' ? 'Thank you for your order!' : 'Your order will be ready soon'}
-                    </p>
-                  </div>
-            </div>
-          </div>
-          
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <p className="text-sm text-blue-700">
-                    This timeline will update automatically as your order progresses
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <OrderTimeline 
+            orderId={order?.id || ''} 
+            venueId={checkoutData?.venueId || ''} 
+            className="mb-6"
+          />
 
           {/* Action Buttons */}
           <div className="flex space-x-4">
