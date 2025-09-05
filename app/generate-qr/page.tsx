@@ -61,22 +61,43 @@ export default async function GenerateQRPage() {
       venueId: venue?.venue_id
     });
     
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select('table_number, order_status, created_at')
-      .eq('venue_id', venue.venue_id)
-      .gte('created_at', startIso)
-      .lt('created_at', endIso);
-
-    console.log('🔍 [QR PAGE] Orders query result:', {
-      ordersCount: orders?.length || 0,
-      orders: orders?.map(o => ({
-        table_number: o.table_number,
-        order_status: o.order_status,
-        created_at: o.created_at
-      })),
-      error: ordersError?.message
-    });
+    let orders = [];
+    let ordersError = null;
+    
+    try {
+      console.log('🔍 [QR PAGE] Executing orders query...');
+      
+      // Add timeout to prevent hanging
+      const ordersPromise = supabase
+        .from('orders')
+        .select('table_number, order_status, created_at')
+        .eq('venue_id', venue.venue_id)
+        .gte('created_at', startIso)
+        .lt('created_at', endIso);
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Orders query timeout')), 5000)
+      );
+      
+      const ordersResult = await Promise.race([ordersPromise, timeoutPromise]) as any;
+      
+      orders = ordersResult.data || [];
+      ordersError = ordersResult.error;
+      
+      console.log('🔍 [QR PAGE] Orders query completed:', {
+        ordersCount: orders?.length || 0,
+        orders: orders?.map(o => ({
+          table_number: o.table_number,
+          order_status: o.order_status,
+          created_at: o.created_at
+        })),
+        error: ordersError?.message
+      });
+    } catch (queryError) {
+      console.error('🔍 [QR PAGE] Orders query failed:', queryError);
+      ordersError = queryError;
+      orders = [];
+    }
     
     if (error) {
       console.error('🔍 [QR PAGE] Database error:', error);
@@ -92,8 +113,14 @@ export default async function GenerateQRPage() {
     console.log('🔍 [QR PAGE] Props being passed to GenerateQRClient:', {
       venueId: venue.venue_id,
       venueName: venue.name,
-      initialOrdersCount: orders?.length || 0
+      initialOrdersCount: orders?.length || 0,
+      ordersError: ordersError?.message
     });
+    
+    // Continue even if orders query failed - we can still show QR codes
+    if (ordersError) {
+      console.log('🔍 [QR PAGE] Orders query had error, but continuing with empty orders:', ordersError.message);
+    }
 
   return (
     <div className="min-h-screen bg-background">

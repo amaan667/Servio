@@ -475,8 +475,9 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
           console.log('🔍 [QR CLIENT] Auto-generated QR codes for active tables:', activeTableNumbers.join(', '));
         } else {
           // No active tables, but still allow manual QR code generation
-          setSelectedTables([]);
-          console.log('🔍 [QR CLIENT] No active tables, but allowing manual QR code generation');
+          // Set a default table so users can still generate QR codes
+          setSelectedTables(['1']);
+          console.log('🔍 [QR CLIENT] No active tables, setting default table 1 for QR generation');
         }
         
         console.log('🔍 [QR CLIENT] Final stats:', {
@@ -486,7 +487,7 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
               .map((o) => o.table_number)
               .filter((t) => t != null)
               .sort((a, b) => a - b)
-          )).map(t => t.toString()) : []
+          )).map(t => t.toString()) : ['1']
         });
         
         setLoading(false);
