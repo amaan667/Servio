@@ -681,7 +681,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <TabsList className="grid w-full grid-cols-3 mb-6 gap-2 p-1 bg-gray-100 rounded-lg">
             <TabsTrigger 
               value="live" 
-              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-red-600 data-[state=inactive]:text-gray-600 hover:text-gray-900"
+              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:text-red-600 data-[state=inactive]:text-gray-600 hover:text-gray-900"
             >
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">Live Orders</span>
@@ -693,7 +693,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </TabsTrigger>
             <TabsTrigger 
               value="all" 
-              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-blue-600 data-[state=inactive]:text-gray-600 hover:text-gray-900"
+              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:text-blue-600 data-[state=inactive]:text-gray-600 hover:text-gray-900"
             >
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">Earlier Today</span>
@@ -705,7 +705,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </TabsTrigger>
             <TabsTrigger 
               value="history" 
-              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-gray-700 data-[state=inactive]:text-gray-600 hover:text-gray-900"
+              className="flex flex-col items-center justify-center space-y-1 text-sm font-medium px-3 py-4 rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:text-gray-700 data-[state=inactive]:text-gray-600 hover:text-gray-900"
             >
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">History</span>
