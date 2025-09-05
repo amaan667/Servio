@@ -194,12 +194,8 @@ export function TableCard({ table, venueId, onActionComplete }: TableCardProps) 
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a href={`/generate-qr?venue=${venueId}&table=${table.id}`} target="_blank" rel="noopener noreferrer">
-            <Card className="hover:shadow-md transition-shadow duration-200 cursor-pointer">
-              <CardContent className="p-4">
+    <Card className="hover:shadow-md transition-shadow duration-200">
+      <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-lg">{table.label}</h3>
@@ -209,7 +205,28 @@ export function TableCard({ table, venueId, onActionComplete }: TableCardProps) 
             </Badge>
           </div>
           
-          <DropdownMenu>
+          <div className="flex items-center gap-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    asChild
+                  >
+                    <a href={`/generate-qr?venue=${venueId}&table=${table.id}`} target="_blank" rel="noopener noreferrer">
+                      <QrCode className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Assign QR Code</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                 <MoreHorizontal className="h-4 w-4" />
@@ -217,12 +234,6 @@ export function TableCard({ table, venueId, onActionComplete }: TableCardProps) 
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {getContextualActions()}
-              <DropdownMenuItem asChild>
-                <a href={`/generate-qr?venue=${venueId}&table=${table.id}`} target="_blank" rel="noopener noreferrer">
-                  <QrCode className="h-4 w-4 mr-2" />
-                  View/Print QR
-                </a>
-              </DropdownMenuItem>
               <DropdownMenuItem>
                 <ArrowRight className="h-4 w-4 mr-2" />
                 Move to...
@@ -233,6 +244,7 @@ export function TableCard({ table, venueId, onActionComplete }: TableCardProps) 
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -276,12 +288,5 @@ export function TableCard({ table, venueId, onActionComplete }: TableCardProps) 
         </div>
       </CardContent>
     </Card>
-          </a>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Assign QR Code</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 }
