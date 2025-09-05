@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { venue_id, label, seat_count } = body;
+    const { venue_id, label, seat_count, qr_version } = body;
 
     if (!venue_id || !label) {
       return NextResponse.json({ error: 'venue_id and label are required' }, { status: 400 });
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
         venue_id,
         label: label.trim(),
         seat_count: seat_count || 2,
+        qr_version: qr_version || 1,
       })
       .select()
       .single();

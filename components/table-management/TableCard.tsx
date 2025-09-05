@@ -15,7 +15,8 @@ import {
   ArrowRight,
   Play,
   Pause,
-  Square
+  Square,
+  QrCode
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -206,6 +207,12 @@ export function TableCard({ table, venueId, onActionComplete }: TableCardProps) 
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {getContextualActions()}
+              <DropdownMenuItem asChild>
+                <a href={`/generate-qr?venue=${venueId}&table=${table.id}`} target="_blank" rel="noopener noreferrer">
+                  <QrCode className="h-4 w-4 mr-2" />
+                  View/Print QR
+                </a>
+              </DropdownMenuItem>
               <DropdownMenuItem>
                 <ArrowRight className="h-4 w-4 mr-2" />
                 Move to...

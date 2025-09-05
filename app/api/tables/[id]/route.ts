@@ -5,19 +5,25 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   try {
     const { id } = params;
     const body = await req.json();
-    const { label, seat_count, is_active } = body;
+    const { label, seat_count, is_active, qr_version } = body;
 
     const supabase = await createClient();
 
     // Update table
+    const updateData: any = {
+      label: label?.trim(),
+      seat_count,
+      is_active,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (qr_version !== undefined) {
+      updateData.qr_version = qr_version;
+    }
+
     const { data: table, error } = await supabase
       .from('tables')
-      .update({
-        label: label?.trim(),
-        seat_count,
-        is_active,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

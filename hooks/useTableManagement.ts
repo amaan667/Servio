@@ -4,6 +4,7 @@ export interface CreateTableParams {
   venue_id: string;
   label: string;
   seat_count?: number;
+  qr_version?: number;
 }
 
 export interface UpdateTableParams {
@@ -11,6 +12,7 @@ export interface UpdateTableParams {
   label?: string;
   seat_count?: number;
   is_active?: boolean;
+  qr_version?: number;
 }
 
 export function useTableManagement() {
@@ -61,6 +63,7 @@ export function useTableManagement() {
           label: params.label,
           seat_count: params.seat_count,
           is_active: params.is_active,
+          qr_version: params.qr_version,
         }),
       });
 
@@ -107,11 +110,38 @@ export function useTableManagement() {
     }
   };
 
+  const reissueQR = async (tableId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/tables/${tableId}/reissue-qr`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reissue QR');
+      }
+
+      return data.table;
+    } catch (err) {
+      console.error('[TABLE MANAGEMENT HOOK] Error reissuing QR:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to reissue QR';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     error,
     createTable,
     updateTable,
     deleteTable,
+    reissueQR,
   };
 }

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS tables (
     label TEXT NOT NULL, -- "Table 1", "Table 2", etc.
     seat_count INTEGER DEFAULT 2,
     is_active BOOLEAN DEFAULT true,
+    qr_version INTEGER DEFAULT 1, -- increments if you reissue a QR
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
