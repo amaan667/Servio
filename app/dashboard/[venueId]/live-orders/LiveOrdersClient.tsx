@@ -673,7 +673,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-center gap-3">
             <div className="inline-flex rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
               {[
                 { key:'live',  label:'Live Orders',    hint:'Last 30 min', count: tabCounts?.live_count || 0 },
@@ -707,14 +707,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               ))}
             </div>
 
-            {/* Slim alert (only for Live tab) */}
-            {activeTab === 'live' && (
+          </div>
+
+          {/* Slim alert (only for Live tab) - centered below tabs */}
+          {activeTab === 'live' && (
+            <div className="flex justify-center">
               <div className="hidden md:flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-100">
                 <span className="h-2 w-2 rounded-full bg-rose-500" />
                 <span>Live Orders – last 30 minutes (including completed orders)</span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </section>
 
 
