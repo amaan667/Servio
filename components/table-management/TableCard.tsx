@@ -16,7 +16,8 @@ import {
   Play,
   Pause,
   Square,
-  QrCode
+  QrCode,
+  UserPlus
 } from 'lucide-react';
 import {
   DropdownMenu,
