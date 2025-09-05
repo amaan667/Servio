@@ -1,0 +1,314 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Clock, CheckCircle, XCircle, RefreshCw, Truck, User, Hash, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+
+interface OrderItem {
+  menu_item_id: string;
+  quantity: number;
+  price: number;
+  item_name: string;
+  specialInstructions?: string;
+}
+
+interface Order {
+  id: string;
+  venue_id: string;
+  table_number: number;
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string;
+  order_status: string;
+  payment_status: string;
+  total_amount: number;
+  notes?: string;
+  items: OrderItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+const ORDER_STATUSES = [
+  { key: 'PLACED', label: 'Order Placed', icon: Clock, color: 'bg-yellow-100 text-yellow-800', description: 'Your order has been received and is being prepared' },
+  { key: 'ACCEPTED', label: 'Order Accepted', icon: CheckCircle, color: 'bg-blue-100 text-blue-800', description: 'Your order has been accepted by the kitchen' },
+  { key: 'IN_PREP', label: 'In Preparation', icon: RefreshCw, color: 'bg-orange-100 text-orange-800', description: 'Your food is being prepared in the kitchen' },
+  { key: 'READY', label: 'Ready for Pickup', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Your order is ready! Please collect from the counter' },
+  { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', icon: Truck, color: 'bg-purple-100 text-purple-800', description: 'Your order is on its way to you' },
+  { key: 'SERVING', label: 'Being Served', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Your order is being served to your table' },
+  { key: 'COMPLETED', label: 'Order Completed', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Thank you for your order!' },
+  { key: 'CANCELLED', label: 'Order Cancelled', icon: XCircle, color: 'bg-red-100 text-red-800', description: 'Your order has been cancelled' },
+  { key: 'REFUNDED', label: 'Order Refunded', icon: XCircle, color: 'bg-red-100 text-red-800', description: 'Your order has been refunded' },
+  { key: 'EXPIRED', label: 'Order Expired', icon: XCircle, color: 'bg-gray-100 text-gray-800', description: 'Your order has expired' }
+];
+
+interface RealTimeOrderTimelineProps {
+  orderId: string;
+  venueId?: string;
+  className?: string;
+}
+
+export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeOrderTimelineProps) {
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+
+  const supabase = createClient();
+
+  const fetchOrder = async () => {
+    if (!orderId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (error) {
+        console.error('[REAL-TIME TIMELINE] Failed to fetch order:', error);
+        setError('Order not found or access denied');
+        return;
+      }
+
+      setOrder(data);
+      setLastUpdate(new Date());
+    } catch (err) {
+      console.error('[REAL-TIME TIMELINE] Error fetching order:', err);
+      setError('Failed to load order details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrder();
+
+    // Set up real-time subscription for order updates
+    if (supabase && orderId) {
+      console.log('[REAL-TIME TIMELINE] Setting up real-time subscription for order:', orderId);
+      
+      const channel = supabase
+        .channel(`order-timeline-${orderId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders',
+            filter: `id=eq.${orderId}`,
+          },
+          (payload) => {
+            console.log('[REAL-TIME TIMELINE] Order update detected:', payload);
+            
+            if (payload.eventType === 'UPDATE') {
+              console.log('[REAL-TIME TIMELINE] Order status updated:', {
+                oldStatus: payload.old?.order_status,
+                newStatus: payload.new?.order_status,
+                orderId: payload.new?.id
+              });
+              
+              // Update the order with new data
+              setOrder(prevOrder => {
+                if (!prevOrder) return null;
+                
+                const updatedOrder = { ...prevOrder, ...payload.new };
+                console.log('[REAL-TIME TIMELINE] Updated order:', updatedOrder);
+                return updatedOrder;
+              });
+              
+              setLastUpdate(new Date());
+            } else if (payload.eventType === 'DELETE') {
+              console.log('[REAL-TIME TIMELINE] Order deleted:', payload.old);
+              setError('This order has been cancelled or deleted');
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[REAL-TIME TIMELINE] Real-time subscription status:', status);
+          
+          if (status === 'SUBSCRIBED') {
+            console.log('[REAL-TIME TIMELINE] Successfully subscribed to order updates');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('[REAL-TIME TIMELINE] Real-time subscription error');
+          }
+        });
+
+      return () => {
+        console.log('[REAL-TIME TIMELINE] Cleaning up real-time subscription');
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [orderId, supabase]);
+
+  const getStatusInfo = (status: string) => {
+    return ORDER_STATUSES.find(s => s.key === status) || {
+      key: status,
+      label: status.replace('_', ' '),
+      icon: Clock,
+      color: 'bg-gray-100 text-gray-800',
+      description: 'Order status update'
+    };
+  };
+
+  const getCurrentStatusIndex = () => {
+    if (!order) return 0;
+    const currentStatus = order.order_status;
+    return ORDER_STATUSES.findIndex(status => status.key === currentStatus);
+  };
+
+  if (loading) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-blue-500" />
+            Order Timeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
+            <p className="text-gray-600">Loading order timeline...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-blue-500" />
+            Order Timeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <XCircle className="w-8 h-8 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={fetchOrder} variant="outline" size="sm">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!order) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-blue-500" />
+            Order Timeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-gray-600">No order data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const currentStatusIndex = getCurrentStatusIndex();
+
+  return (
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+          <span className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-blue-500" />
+            Order Timeline
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={fetchOrder}
+            className="flex items-center gap-2 w-full sm:w-auto"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {/* Order Status Timeline */}
+          <div className="space-y-4">
+            {ORDER_STATUSES.map((status, index) => {
+              const isCompleted = index <= currentStatusIndex;
+              const isCurrent = index === currentStatusIndex;
+              const Icon = status.icon;
+              
+              return (
+                <div key={status.key} className="relative">
+                  <div className="flex items-start space-x-3">
+                    {/* Timeline Icon */}
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      isCompleted 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-400'
+                    }`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    
+                    {/* Timeline Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <p className={`text-sm font-medium ${
+                          isCompleted ? 'text-green-600' : 'text-gray-500'
+                        }`}>
+                          {status.label}
+                        </p>
+                        {isCurrent && (
+                          <Badge variant="secondary" className="text-xs">
+                            Current
+                          </Badge>
+                        )}
+                        {isCompleted && !isCurrent && (
+                          <Badge variant="outline" className="text-xs text-green-600 border-green-600">
+                            Complete
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {status.description}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Timeline Line */}
+                  {index < ORDER_STATUSES.length - 1 && (
+                    <div className={`absolute left-4 top-8 w-0.5 h-4 ${
+                      isCompleted ? 'bg-gray-300' : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Last Update Info */}
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-xs text-gray-600">
+              Last updated: {lastUpdate.toLocaleTimeString()}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

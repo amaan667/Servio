@@ -35,7 +35,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import OrderTimeline from "@/components/OrderTimeline";
+import { RealTimeOrderTimeline } from "@/components/real-time-order-timeline";
 // import OrderFeedbackForm from "@/components/OrderFeedbackForm";
 
 // Initialize Stripe
@@ -1341,7 +1341,7 @@ export default function CheckoutPage() {
           </Card>
 
           {/* Order Timeline */}
-          <OrderTimeline 
+          <RealTimeOrderTimeline 
             orderId={order?.id || ''} 
             venueId={checkoutData?.venueId || ''} 
           />
@@ -1496,7 +1496,7 @@ export default function CheckoutPage() {
 
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Order Timeline */}
-          <OrderTimeline 
+          <RealTimeOrderTimeline 
             orderId={order?.id || ''} 
             venueId={checkoutData?.venueId || ''} 
             className="mb-6"
