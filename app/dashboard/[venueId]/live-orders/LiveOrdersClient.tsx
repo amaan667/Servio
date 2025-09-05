@@ -468,19 +468,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PLACED': return 'bg-yellow-100 text-yellow-800';
-      case 'IN_PREP': return 'bg-blue-100 text-blue-800';
-      case 'READY': return 'bg-green-100 text-green-800';
-      case 'COMPLETED': return 'bg-green-100 text-green-800';
+      case 'PLACED': return 'bg-purple-100 text-purple-800';
+      case 'IN_PREP': return 'bg-purple-100 text-purple-800';
+      case 'READY': return 'bg-purple-100 text-purple-800';
+      case 'COMPLETED': return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getPaymentStatusColor = (paymentStatus: string) => {
     switch (paymentStatus) {
-      case 'PAID': return 'bg-green-100 text-green-800';
-      case 'UNPAID': return 'bg-yellow-100 text-yellow-800';
-      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
+      case 'PAID': return 'bg-purple-100 text-purple-800';
+      case 'UNPAID': return 'bg-purple-100 text-purple-800';
+      case 'IN_PROGRESS': return 'bg-purple-100 text-purple-800';
       case 'REFUNDED': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }

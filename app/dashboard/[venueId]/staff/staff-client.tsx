@@ -117,7 +117,7 @@ const shiftPillStyles = `
 
   /* Focus ring for accessibility */
   .shift-pill:focus-visible {
-    outline: 2px solid #6366f1;
+    outline: 2px solid #a855f7;
     outline-offset: 2px;
   }
 

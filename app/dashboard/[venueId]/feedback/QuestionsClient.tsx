@@ -376,7 +376,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
 
   const getStatusBadge = (isActive: boolean) => {
     return isActive ? (
-      <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+      <Badge variant="default" className="bg-purple-100 text-purple-800 hover:bg-purple-100">
         <Eye className="h-3 w-3 mr-1" />
         Active
       </Badge>
