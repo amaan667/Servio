@@ -62,8 +62,6 @@ interface GroupedHistoryOrders {
 
 
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
-  console.log('[LIVE ORDERS DEBUG] LiveOrdersClient mounted with venueId:', venueId);
-  console.log('[LIVE ORDERS DEBUG] Props received:', { venueId, venueNameProp });
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [allTodayOrders, setAllTodayOrders] = useState<Order[]>([]);
@@ -102,7 +100,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Debug log when tab counts change
   useEffect(() => {
     if (tabCounts) {
-      console.log('[LIVE ORDERS DEBUG] Tab counts updated:', tabCounts);
     }
   }, [tabCounts]);
 
@@ -120,7 +117,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Only refresh counts, not the full order list to avoid overwriting optimistic updates
       // The real-time subscription handles order updates
       refetchCounts();
-      console.log('[LIVE ORDERS DEBUG] Auto-refresh: Refreshing counts only (orders handled by real-time subscription)');
     }, refreshInterval);
 
     return () => {

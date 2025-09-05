@@ -46,7 +46,6 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   }, [venueId]);
 
   const loadMenuItems = async () => {
-    console.log('[MENU CLIENT] Loading menu items for venue:', venueId);
     
     const { data, error } = await supabase
       .from('menu_items')
@@ -55,13 +54,11 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       .order('category', { ascending: true })
       .order('name', { ascending: true });
 
-    console.log('[MENU CLIENT] Query result:', { data: data?.length || 0, error });
 
     if (!error && data) {
-      console.log('[MENU CLIENT] Setting menu items:', data.length);
       setMenuItems(data);
     } else if (error) {
-      console.error('[MENU CLIENT] Error loading menu items:', error);
+      // Silent error handling
     }
     setLoading(false);
   };

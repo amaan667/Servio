@@ -58,11 +58,8 @@ export default function VenueDashboardClient({
   useEffect(() => {
     const loadVenueAndStats = async () => {
       try {
-        console.log('[DASHBOARD] Loading venue and stats for venueId:', venueId);
-        
         // Check if we already have venue data from SSR
         if (venue && !loading) {
-          console.log('[DASHBOARD] Venue already loaded from SSR, setting up time window and stats');
           const window = todayWindowForTZ(venueTz);
           setTodayWindow(window);
           await loadStats(venue.venue_id, window);
@@ -76,40 +73,27 @@ export default function VenueDashboardClient({
           .eq("venue_id", venueId)
           .single();
         
-        console.log('[DASHBOARD] Venue query result:', { hasData: !!venueData, error: error?.message });
-        
         if (!error && venueData) {
           setVenue(venueData);
           const window = todayWindowForTZ(venueTz);
           setTodayWindow(window);
           await loadStats(venueData.venue_id, window);
         } else {
-          console.error('[DASHBOARD] Failed to load venue:', error);
           // Set loading to false even on error to prevent infinite loading
           setLoading(false);
         }
       } catch (error) {
-        console.error('[DASHBOARD] Unexpected error loading venue:', error);
         // Set loading to false even on error to prevent infinite loading
         setLoading(false);
       }
     };
 
-    // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.warn('[DASHBOARD] Loading timeout reached, forcing loading to false');
-      setLoading(false);
-    }, 10000); // 10 second timeout
-
     loadVenueAndStats();
-
-    return () => clearTimeout(timeoutId);
-  }, [venueId]); // Remove venue from dependencies to prevent infinite loop
+  }, [venueId]);
 
   // Handle initial venue data from SSR
   useEffect(() => {
     if (initialVenue && !venue) {
-      console.log('[DASHBOARD] Setting initial venue from SSR');
       setVenue(initialVenue);
       setLoading(false);
     }
@@ -118,7 +102,6 @@ export default function VenueDashboardClient({
   // Set up time window when venue data is available
   useEffect(() => {
     if (venue && !todayWindow) {
-      console.log('[DASHBOARD] Setting up time window for venue');
       const window = todayWindowForTZ(venueTz);
       setTodayWindow(window);
       loadStats(venue.venue_id, window);
@@ -171,43 +154,28 @@ export default function VenueDashboardClient({
           filter: `venue_id=eq.${venueId}`
         }, 
         async (payload) => {
-          console.log('Dashboard order change:', payload);
-          
           // Get the order date from the payload with proper type checking
           const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
           if (!orderCreatedAt) {
-            console.log('No created_at found in payload, ignoring');
             return;
           }
           
           // Only refresh counts if the order is within today's window
           const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
           
-          console.log('[DASHBOARD] Order change analysis:', {
-            orderCreatedAt,
-            windowStart: todayWindow.startUtcISO,
-            windowEnd: todayWindow.endUtcISO,
-            isInTodayWindow,
-            orderId: (payload.new as any)?.id || (payload.old as any)?.id
-          });
-          
           if (isInTodayWindow) {
-            console.log('Refreshing counts for today\'s order change');
             await refreshCounts();
             
             // Update revenue incrementally for new orders to prevent flickering
             if (payload.event === 'INSERT' && payload.new) {
               updateRevenueIncrementally(payload.new);
             }
-          } else {
-            console.log('Ignoring historical order change, not refreshing counts');
           }
         }
       )
       .subscribe();
 
     return () => {
-      console.log('[DASHBOARD] Cleaning up real-time subscription');
       createClient().removeChannel(channel);
     };
   }, [venueId, venue?.venue_id, todayWindow?.startUtcISO, venueTz]); // Use specific properties instead of objects to prevent unnecessary re-runs
@@ -225,14 +193,12 @@ export default function VenueDashboardClient({
         .single();
       
       if (error) {
-        console.error('[DASHBOARD] Error refreshing counts:', error);
         return;
       }
       
-      console.log('[DASHBOARD] Counts refreshed:', newCounts);
       setCounts(newCounts);
     } catch (error) {
-      console.error('[DASHBOARD] Error refreshing counts:', error);
+      // Silent error handling
     }
   };
 
@@ -257,10 +223,9 @@ export default function VenueDashboardClient({
           ...prev,
           revenue: prev.revenue + amount
         }));
-        console.log('[DASHBOARD] Revenue updated incrementally:', amount);
       }
     } catch (error) {
-      console.error('[DASHBOARD] Error updating revenue incrementally:', error);
+      // Silent error handling
     }
   };
 
@@ -320,9 +285,8 @@ export default function VenueDashboardClient({
       });
       
       setStatsLoaded(true);
-      console.log('[DASHBOARD] Stats loaded and cached for today');
     } catch (error) {
-      console.error("Error loading stats:", error);
+      // Silent error handling
     }
   };
 

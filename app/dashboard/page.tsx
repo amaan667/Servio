@@ -4,14 +4,10 @@ import { hasServerAuthCookie } from '@/lib/server-utils';
 import { redirect } from 'next/navigation';
 
 export default async function DashboardPage() {
-  console.log('[DASHBOARD] Starting dashboard page load');
-  
   // Check for auth cookies before making auth calls
   const hasAuthCookie = await hasServerAuthCookie();
-  console.log('[DASHBOARD] Auth cookie check result:', hasAuthCookie);
   
   if (!hasAuthCookie) {
-    console.log('[DASHBOARD] No auth cookie found, redirecting to sign-in');
     redirect('/sign-in');
   }
 
@@ -19,16 +15,12 @@ export default async function DashboardPage() {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
   if (userError) {
-    console.error('[DASHBOARD] Auth error:', userError);
     redirect('/sign-in');
   }
   
   if (!user) {
-    console.log('[DASHBOARD] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
-
-  console.log('[DASHBOARD] Session found, checking venues for user:', user.id);
 
   // Get the user's primary venue
   const { data: venues, error: venueError } = await supabase
@@ -39,7 +31,6 @@ export default async function DashboardPage() {
     .limit(1);
 
   if (venueError) {
-    console.error('Error fetching venues:', venueError);
     redirect('/complete-profile');
   }
 
