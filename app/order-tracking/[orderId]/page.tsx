@@ -33,13 +33,16 @@ interface Order {
 }
 
 const ORDER_STATUSES = [
-  { key: 'PLACED', label: 'Order Placed', icon: Clock, color: 'bg-yellow-100 text-yellow-800', description: 'Your order has been received and is being prepared' },
-  { key: 'ACCEPTED', label: 'Order Accepted', icon: CheckCircle, color: 'bg-blue-100 text-blue-800', description: 'Your order has been accepted by the kitchen' },
-  { key: 'IN_PREP', label: 'In Preparation', icon: RefreshCw, color: 'bg-orange-100 text-orange-800', description: 'Your food is being prepared in the kitchen' },
-  { key: 'READY', label: 'Ready for Pickup', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Your order is ready! Please collect from the counter' },
-  { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', icon: Truck, color: 'bg-purple-100 text-purple-800', description: 'Your order is on its way to you' },
-  { key: 'SERVING', label: 'Being Served', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Your order is being served to your table' },
-  { key: 'COMPLETED', label: 'Order Completed', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Thank you for your order!' },
+  { key: 'PLACED', label: 'Order Placed', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Order has been placed.' },
+  { key: 'ACCEPTED', label: 'Order Accepted', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Your order has been accepted by the kitchen.' },
+  { key: 'IN_PREP', label: 'In Preparation', icon: RefreshCw, color: 'bg-orange-100 text-orange-800', description: 'Your order is being prepared in the kitchen.' },
+  { key: 'READY', label: 'Ready for Pickup / Serving', icon: CheckCircle, color: 'bg-blue-100 text-blue-800', description: 'Your order is ready for pickup / serving.' },
+  { key: 'SERVING', label: 'Being Served', icon: CheckCircle, color: 'bg-purple-100 text-purple-800', description: 'Your order has been served. Enjoy your meal!' },
+  { key: 'COMPLETED', label: 'Completed', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Thank you for your order!' }
+];
+
+// Statuses that should be greyed out (only show if triggered)
+const GREYED_OUT_STATUSES = [
   { key: 'CANCELLED', label: 'Order Cancelled', icon: XCircle, color: 'bg-red-100 text-red-800', description: 'Your order has been cancelled' },
   { key: 'REFUNDED', label: 'Order Refunded', icon: XCircle, color: 'bg-red-100 text-red-800', description: 'Your order has been refunded' },
   { key: 'EXPIRED', label: 'Order Expired', icon: XCircle, color: 'bg-gray-100 text-gray-800', description: 'Your order has expired' }
@@ -146,12 +149,33 @@ export default function OrderTrackingPage() {
   }, [orderId, supabase]);
 
   const getStatusInfo = (status: string) => {
-    return ORDER_STATUSES.find(s => s.key === status) || ORDER_STATUSES[0];
+    return ORDER_STATUSES.find(s => s.key === status) || GREYED_OUT_STATUSES.find(s => s.key === status) || {
+      key: status,
+      label: status.replace('_', ' '),
+      icon: Clock,
+      color: 'bg-gray-100 text-gray-800',
+      description: 'Order status update'
+    };
   };
 
   const getCurrentStatusIndex = () => {
     if (!order) return -1;
     return ORDER_STATUSES.findIndex(s => s.key === order.order_status);
+  };
+
+  const getDisplayStatuses = () => {
+    if (!order) return ORDER_STATUSES;
+    
+    const currentStatus = order.order_status;
+    const isGreyedOutStatus = GREYED_OUT_STATUSES.some(status => status.key === currentStatus);
+    
+    if (isGreyedOutStatus) {
+      // If order is in a greyed-out status, show all normal statuses + the greyed-out one
+      const greyedOutStatus = GREYED_OUT_STATUSES.find(status => status.key === currentStatus);
+      return [...ORDER_STATUSES, greyedOutStatus!];
+    }
+    
+    return ORDER_STATUSES;
   };
 
   const formatCurrency = (amount: number) => {
@@ -260,19 +284,24 @@ export default function OrderTrackingPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {ORDER_STATUSES.map((status, index) => {
-                const isCompleted = index <= currentStatusIndex;
-                const isCurrent = index === currentStatusIndex;
+              {getDisplayStatuses().map((status, index) => {
+                const isGreyedOut = GREYED_OUT_STATUSES.some(gs => gs.key === status.key);
+                const isCompleted = !isGreyedOut && index <= currentStatusIndex;
+                const isCurrent = status.key === order?.order_status;
                 const Icon = status.icon;
                 
                 return (
                   <div key={status.key} className="flex items-start space-x-4">
                     <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      isCompleted 
-                        ? 'bg-servio-purple text-white' 
-                        : 'bg-gray-200 text-gray-400'
+                      isGreyedOut
+                        ? 'bg-red-500 text-white'
+                        : isCompleted 
+                          ? 'bg-servio-purple text-white' 
+                          : 'bg-gray-200 text-gray-400'
                     }`}>
-                      {isCompleted ? (
+                      {isGreyedOut ? (
+                        <XCircle className="h-5 w-5" />
+                      ) : isCompleted ? (
                         <CheckCircle className="h-5 w-5" />
                       ) : (
                         <Icon className="h-5 w-5" />
@@ -282,17 +311,28 @@ export default function OrderTrackingPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
                         <h3 className={`text-sm font-medium ${
-                          isCurrent ? 'text-servio-purple' : 'text-gray-900'
+                          isGreyedOut
+                            ? 'text-red-600'
+                            : isCurrent 
+                              ? 'text-servio-purple' 
+                              : 'text-gray-900'
                         }`}>
                           {status.label}
                         </h3>
-                        {isCurrent && (
+                        {isCurrent && !isGreyedOut && (
                           <Badge className={status.color}>
                             Current
                           </Badge>
                         )}
+                        {isGreyedOut && (
+                          <Badge variant="destructive" className="text-xs">
+                            {status.key}
+                          </Badge>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className={`text-sm mt-1 ${
+                        isGreyedOut ? 'text-red-500' : 'text-gray-600'
+                      }`}>
                         {status.description}
                       </p>
                     </div>
