@@ -34,6 +34,7 @@ import { StatusPill } from './StatusPill';
 import { useTableActions } from '@/hooks/useTableActions';
 import { TableWithSession } from '@/hooks/useTablesData';
 import { TableSelectionDialog } from './TableSelectionDialog';
+import { ReservationDialog } from './ReservationDialog';
 
 interface TableCardProps {
   table: TableWithSession;
@@ -46,7 +47,8 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const [isLoading, setIsLoading] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
-  const { executeAction } = useTableActions();
+  const [showReservationDialog, setShowReservationDialog] = useState(false);
+  const { executeAction, occupyTable } = useTableActions();
 
   const handleAction = async (action: string, orderId?: string, destinationTableId?: string) => {
     try {
@@ -73,8 +75,16 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       case 'FREE':
         actions.push(
           <DropdownMenuItem 
+            key="occupy" 
+            onClick={() => handleAction('occupy_table')}
+            disabled={isLoading}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Occupy Table
+          </DropdownMenuItem>,
+          <DropdownMenuItem 
             key="reserve" 
-            onClick={() => handleAction('reserve_table')}
+            onClick={() => setShowReservationDialog(true)}
             disabled={isLoading}
           >
             <Calendar className="h-4 w-4 mr-2" />
@@ -311,6 +321,15 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         venueId={venueId}
         availableTables={availableTables}
         onActionComplete={onActionComplete}
+      />
+      
+      <ReservationDialog
+        isOpen={showReservationDialog}
+        onClose={() => setShowReservationDialog(false)}
+        tableId={table.id}
+        tableLabel={table.label}
+        venueId={venueId}
+        onReservationComplete={onActionComplete}
       />
     </Card>
   );

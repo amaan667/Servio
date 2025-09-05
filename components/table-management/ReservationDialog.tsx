@@ -9,163 +9,163 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar } from 'lucide-react';
-import { useTableReservations } from '@/hooks/useTableReservations';
+import { Calendar, Clock, User } from 'lucide-react';
 
 interface ReservationDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  tableId: string;
+  tableLabel: string;
   venueId: string;
-  tableId?: string | null;
-  onReservationCreated?: () => void;
-  children?: React.ReactNode;
+  onReservationComplete?: () => void;
 }
 
-export function ReservationDialog({ venueId, tableId, onReservationCreated, children }: ReservationDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    partySize: 2,
-    startAt: '',
-    endAt: '',
-  });
-  const { reserveTable } = useTableReservations();
+export function ReservationDialog({
+  isOpen,
+  onClose,
+  tableId,
+  tableLabel,
+  venueId,
+  onReservationComplete
+}: ReservationDialogProps) {
+  const [customerName, setCustomerName] = useState('');
+  const [reservationTime, setReservationTime] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name.trim() || !formData.startAt || !formData.endAt) return;
+  // Set default time to 1 hour from now
+  const getDefaultTime = () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    return now.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+  };
+
+  const handleSubmit = async () => {
+    if (!customerName.trim()) {
+      setError('Customer name is required');
+      return;
+    }
+
+    if (!reservationTime) {
+      setError('Reservation time is required');
+      return;
+    }
 
     try {
-      await reserveTable.mutateAsync({
-        venueId,
-        tableId: tableId || null,
-        startAt: formData.startAt,
-        endAt: formData.endAt,
-        partySize: formData.partySize,
-        name: formData.name.trim(),
-        phone: formData.phone.trim() || undefined,
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/table-sessions/actions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'reserve_table',
+          table_id: tableId,
+          venue_id: venueId,
+          customer_name: customerName.trim(),
+          reservation_time: reservationTime
+        }),
       });
-      
-      setFormData({
-        name: '',
-        phone: '',
-        partySize: 2,
-        startAt: '',
-        endAt: '',
-      });
-      setOpen(false);
-      onReservationCreated?.();
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create reservation');
+      }
+
+      onReservationComplete?.();
+      onClose();
+      setCustomerName('');
+      setReservationTime('');
     } catch (error) {
       console.error('Failed to create reservation:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create reservation');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleInputChange = (field: string, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleClose = () => {
+    setCustomerName('');
+    setReservationTime('');
+    setError(null);
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button variant="outline">
-            <Calendar className="h-4 w-4 mr-2" />
-            Make Reservation
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Make Reservation</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Make Reservation
+          </DialogTitle>
           <DialogDescription>
-            Create a new reservation for {tableId ? 'this table' : 'your venue'}.
+            Create a reservation for {tableLabel}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Customer name"
-                className="col-span-3"
-                required
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">
-                Phone
-              </Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="Phone number"
-                className="col-span-3"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="partySize" className="text-right">
-                Party Size
-              </Label>
-              <Input
-                id="partySize"
-                type="number"
-                min="1"
-                max="20"
-                value={formData.partySize}
-                onChange={(e) => handleInputChange('partySize', parseInt(e.target.value) || 2)}
-                className="col-span-3"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startAt" className="text-right">
-                Start Time
-              </Label>
-              <Input
-                id="startAt"
-                type="datetime-local"
-                value={formData.startAt}
-                onChange={(e) => handleInputChange('startAt', e.target.value)}
-                className="col-span-3"
-                required
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="endAt" className="text-right">
-                End Time
-              </Label>
-              <Input
-                id="endAt"
-                type="datetime-local"
-                value={formData.endAt}
-                onChange={(e) => handleInputChange('endAt', e.target.value)}
-                className="col-span-3"
-                required
-              />
-            </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="customerName" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Customer Name
+            </Label>
+            <Input
+              id="customerName"
+              placeholder="Enter customer name"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              disabled={isLoading}
+            />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={reserveTable.isPending || !formData.name.trim() || !formData.startAt || !formData.endAt}>
-              {reserveTable.isPending ? 'Creating...' : 'Create Reservation'}
-            </Button>
-          </DialogFooter>
-        </form>
+
+          <div className="space-y-2">
+            <Label htmlFor="reservationTime" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Reservation Time
+            </Label>
+            <Input
+              id="reservationTime"
+              type="datetime-local"
+              value={reservationTime || getDefaultTime()}
+              onChange={(e) => setReservationTime(e.target.value)}
+              disabled={isLoading}
+              min={new Date().toISOString().slice(0, 16)}
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isLoading || !customerName.trim() || !reservationTime}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Creating...
+              </>
+            ) : (
+              'Create Reservation'
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

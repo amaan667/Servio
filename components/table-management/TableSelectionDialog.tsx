@@ -57,8 +57,24 @@ export function TableSelectionDialog({
         table.status === 'FREE'
       );
     } else {
-      // For merge, show all tables except the source table
-      return availableTables.filter(table => table.id !== sourceTable.id);
+      // For merge, apply strict eligibility rules
+      return availableTables.filter(table => {
+        if (table.id === sourceTable.id) return false;
+        
+        // Source table status determines what we can merge with
+        if (sourceTable.status === 'FREE') {
+          // FREE can merge with FREE, RESERVED, or OCCUPIED
+          return ['FREE', 'RESERVED', 'OCCUPIED'].includes(table.status);
+        } else if (sourceTable.status === 'RESERVED') {
+          // RESERVED can only merge with FREE
+          return table.status === 'FREE';
+        } else if (sourceTable.status === 'OCCUPIED') {
+          // OCCUPIED can only merge with FREE
+          return table.status === 'FREE';
+        }
+        
+        return false;
+      });
     }
   };
 
@@ -130,6 +146,12 @@ export function TableSelectionDialog({
               ? `Move the session from ${sourceTable.label} to another table`
               : `Merge the session from ${sourceTable.label} with another table`
             }
+            {action === 'merge' && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                <strong>Merge Rules:</strong> FREE tables can merge with FREE, RESERVED, or OCCUPIED tables. 
+                RESERVED and OCCUPIED tables can only merge with FREE tables.
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
 

@@ -33,7 +33,9 @@ import {
 } from '@/components/ui/tooltip';
 import { StatusPill } from './StatusPill';
 import { useTableReservations, TableGridItem } from '@/hooks/useTableReservations';
+import { useTableActions } from '@/hooks/useTableActions';
 import { TableSelectionDialog } from './TableSelectionDialog';
+import { ReservationDialog } from './ReservationDialog';
 
 interface TableCardNewProps {
   table: TableGridItem;
@@ -46,7 +48,9 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [isLoading, setIsLoading] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [showReservationDialog, setShowReservationDialog] = useState(false);
   const { seatWalkIn, closeTable } = useTableReservations();
+  const { occupyTable } = useTableActions();
 
   const handleSeatWalkIn = async () => {
     try {
@@ -55,6 +59,18 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       onActionComplete?.();
     } catch (error) {
       console.error('Failed to seat walk-in:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOccupyTable = async () => {
+    try {
+      setIsLoading(true);
+      await occupyTable(table.id, venueId);
+      onActionComplete?.();
+    } catch (error) {
+      console.error('Failed to occupy table:', error);
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +96,11 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
             <UserPlus className="h-4 w-4 mr-2" />
             Seat Walk-in
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleOccupyTable} disabled={isLoading}>
+            <Users className="h-4 w-4 mr-2" />
+            Occupy Table
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowReservationDialog(true)}>
             <Calendar className="h-4 w-4 mr-2" />
             Make Reservation
           </DropdownMenuItem>
@@ -240,6 +260,15 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         venueId={venueId}
         availableTables={availableTables}
         onActionComplete={onActionComplete}
+      />
+      
+      <ReservationDialog
+        isOpen={showReservationDialog}
+        onClose={() => setShowReservationDialog(false)}
+        tableId={table.id}
+        tableLabel={table.label}
+        venueId={venueId}
+        onReservationComplete={onActionComplete}
       />
     </Card>
   );
