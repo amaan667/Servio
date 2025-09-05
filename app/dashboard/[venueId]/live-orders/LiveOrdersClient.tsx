@@ -578,6 +578,24 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 Mark Ready
               </Button>
             )}
+            {order.order_status === 'READY' && (
+              <Button 
+                size="sm"
+                onClick={() => updateOrderStatus(order.id, 'SERVING')}
+                className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700"
+              >
+                Mark Served
+              </Button>
+            )}
+            {order.order_status === 'SERVING' && (
+              <Button 
+                size="sm"
+                onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
+                className="w-full sm:w-auto bg-gray-600 hover:bg-gray-700"
+              >
+                Mark Complete
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
