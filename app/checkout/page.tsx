@@ -788,23 +788,91 @@ export default function CheckoutPage() {
     
     const success = searchParams?.get('success');
     const paymentIntent = searchParams?.get('payment_intent');
+    const redirectStatus = searchParams?.get('redirect_status');
     
-    if (success === 'true' && paymentIntent) {
-      console.log('[PAYMENT SUCCESS] Payment completed successfully, progressing to feedback phase');
+    // Handle both success=true and redirect_status=succeeded
+    const isPaymentSuccessful = (success === 'true' && paymentIntent) || redirectStatus === 'succeeded';
+    
+    if (isPaymentSuccessful && checkoutData) {
+      console.log('[PAYMENT SUCCESS] Payment completed successfully, creating order in database');
       console.log('[PAYMENT SUCCESS] Payment intent:', paymentIntent);
       
-      // Set success state and progress to complete phase
-      setPaymentStatus('success');
-      setPhase('complete');
+      // Create the order in the database
+      const createOrder = async () => {
+        try {
+          setPaymentStatus('success');
+          
+          // Prepare order data
+          const orderPayload = {
+            venue_id: checkoutData.venueId,
+            table_number: checkoutData.tableNumber,
+            customer_name: checkoutData.customerName,
+            customer_phone: checkoutData.customerPhone,
+            items: checkoutData.cart.map(item => ({
+              menu_item_id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+              item_name: item.name,
+              specialInstructions: item.specialInstructions || null
+            })),
+            total_amount: checkoutData.total,
+            order_status: 'PLACED',
+            payment_status: 'PAID'
+          };
+
+          console.log('[PAYMENT SUCCESS] Creating order with payload:', orderPayload);
+
+          const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderPayload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to create order: ${response.statusText}`);
+          }
+
+          const orderData = await response.json();
+          console.log('[PAYMENT SUCCESS] Order created successfully:', orderData);
+
+          // Set the order data and progress to feedback phase
+          setOrder({
+            id: orderData.id,
+            orderId: orderData.id,
+            status: orderData.status,
+            total: orderData.total,
+            createdAt: orderData.createdAt,
+            venueId: orderData.venueId,
+            tableNumber: orderData.tableNumber,
+            customerName: orderData.customerName
+          });
+          
+          setPhase('feedback');
+          
+          // Clear stored data since order is now created in database
+          localStorage.removeItem('pending-order-data');
+          localStorage.removeItem('servio-checkout-data');
+          
+        } catch (error) {
+          console.error('[PAYMENT SUCCESS] Error creating order:', error);
+          setError('Failed to create order after payment. Please contact support.');
+          setPhase('error');
+        }
+      };
+
+      createOrder();
       
       // Clear URL parameters to avoid re-triggering
       const url = new URL(window.location.href);
       url.searchParams.delete('success');
       url.searchParams.delete('payment_intent');
       url.searchParams.delete('payment_intent_client_secret');
+      url.searchParams.delete('redirect_status');
       window.history.replaceState({}, document.title, url.toString());
     }
-  }, [isMounted, searchParams]);
+  }, [isMounted, searchParams, checkoutData]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -816,7 +884,7 @@ export default function CheckoutPage() {
     const checkoutData = localStorage.getItem('servio-checkout-data');
     const storedData = pendingData || checkoutData;
     
-    if (storedData) {
+        if (storedData) {
       try {
         const data = JSON.parse(storedData);
         const checkoutData = {
@@ -1007,10 +1075,10 @@ export default function CheckoutPage() {
       setPhase('error');
         setError('Payment simulation failed. Please try again.');
       }
-    } catch (error) {
+      } catch (error) {
       console.error('[DEMO PAYMENT] Error during demo payment:', error);
       setPaymentStatus('failed');
-      setPhase('error');
+        setPhase('error');
       setError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
     }
   };
@@ -1066,7 +1134,7 @@ export default function CheckoutPage() {
         <p className="text-gray-600">Loading checkout...</p>
         <p className="text-sm text-gray-500 mt-2">Preparing your order details...</p>
       </div>
-    </div>
+      </div>
     );
   }
 
@@ -1093,8 +1161,8 @@ export default function CheckoutPage() {
   }
 
   if (phase === 'confirmed') {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8">
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-2xl mx-auto px-4">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1218,11 +1286,11 @@ export default function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+          <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Order ID:</span>
                   <span className="font-medium">{order?.id}</span>
-                </div>
+            </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Venue:</span>
                   <span className="font-medium">{checkoutData?.venueName}</span>
@@ -1273,24 +1341,24 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <div>
+            <div>
                     <p className="font-medium text-green-600">Order Confirmed</p>
                     <p className="text-sm text-gray-500">Payment processed successfully</p>
-                  </div>
+            </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <div>
+              <div>
                     <p className="font-medium text-yellow-600">Preparing</p>
                     <p className="text-sm text-gray-500">Your order is being prepared</p>
-                  </div>
+              </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                  <div>
+            <div>
                     <p className="font-medium text-gray-500">Ready</p>
                     <p className="text-sm text-gray-500">Your order will be ready soon</p>
-                  </div>
+            </div>
                 </div>
               </div>
             </CardContent>
@@ -1462,7 +1530,7 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <div>
+            <div>
                     <p className="font-medium text-green-600">Order Confirmed</p>
                     <p className="text-sm text-gray-500">Payment processed successfully</p>
                   </div>
@@ -1514,9 +1582,9 @@ export default function CheckoutPage() {
                       {realTimeOrder?.order_status === 'COMPLETED' ? 'Thank you for your order!' : 'Your order will be ready soon'}
                     </p>
                   </div>
-                </div>
-              </div>
-              
+            </div>
+          </div>
+          
               <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -1678,22 +1746,22 @@ export default function CheckoutPage() {
                 <div className="space-y-3">
                   {checkoutData?.cart.map((item) => (
                     <div key={item.id} className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                  <div>
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                         {item.specialInstructions && (
                           <p className="text-xs text-gray-500">Note: {item.specialInstructions}</p>
                         )}
-                      </div>
+                  </div>
                       <span className="font-medium">£{(item.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
                 </div>
+              ))}
+            </div>
                 <Separator className="my-4" />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total:</span>
                   <span>£{getTotalPrice().toFixed(2)}</span>
-                </div>
+          </div>
               </CardContent>
             </Card>
           </div>
