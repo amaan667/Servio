@@ -591,53 +591,75 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Status Summary */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-muted-foreground">Real-time monitoring active</span>
+        <div className="mb-6 space-y-4">
+          {/* Mobile-first layout */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-muted-foreground">Real-time monitoring active</span>
+              </div>
+              <div className="hidden sm:flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">•</span>
+                <span className="text-sm text-muted-foreground">
+                  {new Date().toLocaleDateString('en-GB', { 
+                    day: 'numeric', 
+                    month: 'long' 
+                  })} (today)
+                </span>
+                <span className="text-sm text-muted-foreground">•</span>
+                <span className="text-sm text-muted-foreground">
+                  Current time: {new Date().toLocaleTimeString('en-GB', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
+              </div>
             </div>
-            <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">Auto-refresh:</span>
+                <select
+                  value={refreshInterval / 1000}
+                  onChange={(e) => changeRefreshInterval(Number(e.target.value))}
+                  className="text-sm border rounded px-2 py-1"
+                  disabled={!autoRefreshEnabled}
+                >
+                  <option value={5}>5s</option>
+                  <option value={10}>10s</option>
+                  <option value={15}>15s</option>
+                  <option value={30}>30s</option>
+                </select>
+                <Button
+                  variant={autoRefreshEnabled ? "default" : "outline"}
+                  size="sm"
+                  onClick={toggleAutoRefresh}
+                  className="text-xs"
+                >
+                  {autoRefreshEnabled ? 'ON' : 'OFF'}
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Live orders: last 30 min
+              </div>
+            </div>
+          </div>
+          
+          {/* Mobile date/time info */}
+          <div className="sm:hidden flex items-center space-x-2 text-sm text-muted-foreground">
+            <span>
               {new Date().toLocaleDateString('en-GB', { 
                 day: 'numeric', 
                 month: 'long' 
               })} (today)
             </span>
-            <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">
+            <span>•</span>
+            <span>
               Current time: {new Date().toLocaleTimeString('en-GB', { 
                 hour: '2-digit', 
                 minute: '2-digit' 
               })}
             </span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">Auto-refresh:</span>
-              <select
-                value={refreshInterval / 1000}
-                onChange={(e) => changeRefreshInterval(Number(e.target.value))}
-                className="text-sm border rounded px-2 py-1"
-                disabled={!autoRefreshEnabled}
-              >
-                <option value={5}>5s</option>
-                <option value={10}>10s</option>
-                <option value={15}>15s</option>
-                <option value={30}>30s</option>
-              </select>
-              <Button
-                variant={autoRefreshEnabled ? "default" : "outline"}
-                size="sm"
-                onClick={toggleAutoRefresh}
-                className="text-xs"
-              >
-                {autoRefreshEnabled ? 'ON' : 'OFF'}
-              </Button>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Live orders: last 30 min
-            </div>
           </div>
         </div>
 
@@ -646,23 +668,23 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         <Tabs value={activeTab} onValueChange={(newTab) => {
           setActiveTab(newTab);
         }} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="live" className="flex items-center space-x-2">
-              <span>Live (Last 30 Min)</span>
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6 gap-1">
+            <TabsTrigger value="live" className="flex items-center justify-center space-x-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <span className="truncate">Live (30 Min)</span>
               {tabCounts?.live_count > 0 && (
-                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{tabCounts.live_count}</span>
+                <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">{tabCounts.live_count}</span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="all" className="flex items-center space-x-2">
-              <span>Earlier Today</span>
+            <TabsTrigger value="all" className="flex items-center justify-center space-x-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <span className="truncate">Earlier Today</span>
               {tabCounts?.earlier_today_count > 0 && (
-                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">{tabCounts.earlier_today_count}</span>
+                <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">{tabCounts.earlier_today_count}</span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center space-x-2">
-              <span>History</span>
+            <TabsTrigger value="history" className="flex items-center justify-center space-x-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <span className="truncate">History</span>
               {tabCounts?.history_count > 0 && (
-                <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded-full">{tabCounts.history_count}</span>
+                <span className="bg-gray-500 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">{tabCounts.history_count}</span>
               )}
             </TabsTrigger>
           </TabsList>
