@@ -117,9 +117,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     }
 
     autoRefreshRef.current = setInterval(() => {
-      loadVenueAndOrders();
-      // Also refresh the authoritative counts
+      // Only refresh counts, not the full order list to avoid overwriting optimistic updates
+      // The real-time subscription handles order updates
       refetchCounts();
+      console.log('[LIVE ORDERS DEBUG] Auto-refresh: Refreshing counts only (orders handled by real-time subscription)');
     }, refreshInterval);
 
     return () => {

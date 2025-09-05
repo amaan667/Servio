@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
 // import OrderFeedbackForm from "@/components/OrderFeedbackForm";
 
 // Initialize Stripe
@@ -69,7 +70,7 @@ interface CheckoutData {
 type CheckoutPhase = 'review' | 'processing' | 'confirmed' | 'feedback' | 'timeline' | 'complete' | 'error';
 
 // Simple Feedback Form Component
-function FeedbackForm({ venueId, orderId }: { venueId: string; orderId?: string }) {
+function FeedbackForm({ venueId, orderId, onFeedbackComplete }: { venueId: string; orderId?: string; onFeedbackComplete?: () => void }) {
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -201,6 +202,10 @@ function FeedbackForm({ venueId, orderId }: { venueId: string; orderId?: string 
         alert('Thank you for your feedback!');
         setShowForm(false);
         setAnswers({});
+        // Transition to timeline phase after feedback submission
+        setTimeout(() => {
+          onFeedbackComplete?.();
+        }, 1000);
       } else {
         const errorText = await response.text();
         console.error('[FEEDBACK] Error response:', errorText);
@@ -724,6 +729,7 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const isDemo = searchParams?.get('demo') === '1';
+  const [realTimeOrder, setRealTimeOrder] = useState<any>(null);
 
   // Payment method selection
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'simulation' | null>(null);
@@ -743,6 +749,38 @@ export default function CheckoutPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Set up real-time subscription for order updates when in timeline phase
+  useEffect(() => {
+    if (phase === 'timeline' && order?.id) {
+      console.log('[TIMELINE] Setting up real-time subscription for order:', order.id);
+      
+      const supabase = createClient();
+      const channel = supabase
+        .channel(`timeline-order-${order.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `id=eq.${order.id}`,
+          },
+          (payload: any) => {
+            console.log('[TIMELINE] Order update detected:', payload);
+            if (payload.new) {
+              setRealTimeOrder(payload.new);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        console.log('[TIMELINE] Cleaning up real-time subscription');
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [phase, order?.id]);
 
   // Handle payment success from URL parameters
   useEffect(() => {
@@ -860,17 +898,16 @@ export default function CheckoutPage() {
       tableNumber: orderData.tableNumber,
       customerName: orderData.customerName
     });
-    console.log('[STRIPE PAYMENT SUCCESS] Setting order state and transitioning to confirmed phase');
+    console.log('[STRIPE PAYMENT SUCCESS] Setting order state and transitioning to feedback phase');
     
     setOrder(orderData);
-    setPhase('complete');
+    setPhase('feedback');
     setPaymentStatus('success');
     
-    console.log('[STRIPE PAYMENT SUCCESS] Clearing stored checkout data from localStorage');
-    // Clear stored data
+    // Clear stored data since order is now created in database
     localStorage.removeItem('pending-order-data');
     localStorage.removeItem('servio-checkout-data');
-    console.log('[STRIPE PAYMENT SUCCESS] Checkout data cleared, payment flow complete');
+    console.log('[STRIPE PAYMENT SUCCESS] Payment flow complete, order created in database, now showing feedback form');
   };
 
   const handleStripePaymentError = (error: string) => {
@@ -957,13 +994,13 @@ export default function CheckoutPage() {
         
         setPaymentStatus('success');
       setOrder(orderData);
-        setPhase('complete');
-      
-      // Clear stored data
-      localStorage.removeItem('pending-order-data');
-      localStorage.removeItem('servio-checkout-data');
+        setPhase('feedback');
         
-        console.log('[DEMO PAYMENT] Demo payment completed successfully with real order');
+        // Clear stored data since order is now created in database
+        localStorage.removeItem('pending-order-data');
+        localStorage.removeItem('servio-checkout-data');
+        
+        console.log('[DEMO PAYMENT] Demo payment completed successfully with real order, now showing feedback form');
     } else {
         console.log('[DEMO PAYMENT] Payment simulation failed (5% failure rate)');
       setPaymentStatus('failed');
@@ -980,6 +1017,12 @@ export default function CheckoutPage() {
 
   const getTotalPrice = () => {
     return checkoutData?.cart.reduce((total, item) => total + (item.price * item.quantity), 0) || 0;
+  };
+
+  const handleTimelineComplete = () => {
+    console.log('[TIMELINE COMPLETE] Transitioning to complete phase');
+    setPhase('complete');
+    console.log('[TIMELINE COMPLETE] Order flow complete');
   };
 
   const getStatusDisplay = () => {
@@ -1213,6 +1256,7 @@ export default function CheckoutPage() {
               <FeedbackForm 
                 venueId={checkoutData?.venueId || ''} 
                 orderId={order?.id || ''} 
+                onFeedbackComplete={() => setPhase('timeline')}
               />
             </CardContent>
           </Card>
@@ -1258,35 +1302,250 @@ export default function CheckoutPage() {
 
   if (phase === 'feedback') {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-2xl mx-auto px-4">
-          <div className="mb-6">
-            <Button
-              onClick={() => setPhase('confirmed')}
-              variant="ghost"
-              className="mb-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Order
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900">Share Your Experience</h1>
-            <p className="text-gray-600 mt-2">Help us improve by sharing your feedback</p>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header with Logo */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                {/* Servio Logo */}
+                <div className="flex items-center">
+                  <Image
+                    src="/assets/servio-logo-updated.png"
+                    alt="Servio"
+                    width={300}
+                    height={90}
+                    className="h-20 w-auto"
+                    priority
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
+                    const data = checkoutData as CheckoutData;
+                    router.push(`/order?venue=${data.venueId}&table=${data.tableNumber}`);
+                  } else {
+                    router.push('/order');
+                  }
+                }}
+                variant="ghost"
+                className="flex items-center"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Order
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* Payment Success Message */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="w-8 h-8 text-green-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+            <p className="text-gray-600">Your order has been confirmed and payment processed.</p>
           </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center py-8">
-                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Feedback form will be available soon!</p>
-                <Button
-                  onClick={() => router.push('/')}
-                  className="mt-4"
-                >
-                  Return to Home
-                </Button>
+          {/* Order Summary */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Receipt className="w-5 h-5 mr-2" />
+                Order Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Order ID:</span>
+                  <span className="font-medium">{order?.id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Venue:</span>
+                  <span className="font-medium">{checkoutData?.venueName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Table:</span>
+                  <span className="font-medium">{checkoutData?.tableNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Customer:</span>
+                  <span className="font-medium">{checkoutData?.customerName}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-lg font-semibold">
+                  <span>Total:</span>
+                  <span>£{order?.total?.toFixed(2) || checkoutData?.total?.toFixed(2)}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Feedback Form */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2" />
+                Share Your Experience
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FeedbackForm 
+                venueId={checkoutData?.venueId || ''} 
+                orderId={order?.id || ''} 
+                onFeedbackComplete={() => setPhase('timeline')}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'timeline') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header with Logo */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                {/* Servio Logo */}
+                <div className="flex items-center">
+                  <Image
+                    src="/assets/servio-logo-updated.png"
+                    alt="Servio"
+                    width={300}
+                    height={90}
+                    className="h-20 w-auto"
+                    priority
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  if (checkoutData && 'venueId' in checkoutData && 'tableNumber' in checkoutData) {
+                    const data = checkoutData as CheckoutData;
+                    router.push(`/order?venue=${data.venueId}&table=${data.tableNumber}`);
+                  } else {
+                    router.push('/order');
+                  }
+                }}
+                variant="ghost"
+                className="flex items-center"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Order
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* Order Timeline */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Clock className="w-5 h-5 mr-2" />
+                  Order Timeline
+                </div>
+                <Badge variant="outline" className="text-sm">
+                  Live Updates
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <div>
+                    <p className="font-medium text-green-600">Order Confirmed</p>
+                    <p className="text-sm text-gray-500">Payment processed successfully</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    (realTimeOrder?.order_status === 'ACCEPTED' || realTimeOrder?.order_status === 'IN_PREP' || realTimeOrder?.order_status === 'READY' || realTimeOrder?.order_status === 'SERVING' || realTimeOrder?.order_status === 'COMPLETED') 
+                      ? 'bg-yellow-500' 
+                      : 'bg-gray-300'
+                  }`}></div>
+                  <div>
+                    <p className={`font-medium ${
+                      (realTimeOrder?.order_status === 'ACCEPTED' || realTimeOrder?.order_status === 'IN_PREP' || realTimeOrder?.order_status === 'READY' || realTimeOrder?.order_status === 'SERVING' || realTimeOrder?.order_status === 'COMPLETED')
+                        ? 'text-yellow-600'
+                        : 'text-gray-500'
+                    }`}>
+                      {realTimeOrder?.order_status === 'ACCEPTED' ? 'Order Accepted' :
+                       realTimeOrder?.order_status === 'IN_PREP' ? 'In Preparation' :
+                       realTimeOrder?.order_status === 'READY' ? 'Ready for Pickup' :
+                       realTimeOrder?.order_status === 'SERVING' ? 'Being Served' :
+                       realTimeOrder?.order_status === 'COMPLETED' ? 'Order Completed' :
+                       'Preparing'}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {realTimeOrder?.order_status === 'ACCEPTED' ? 'Your order has been accepted by the kitchen' :
+                       realTimeOrder?.order_status === 'IN_PREP' ? 'Your food is being prepared in the kitchen' :
+                       realTimeOrder?.order_status === 'READY' ? 'Your order is ready! Please collect from the counter' :
+                       realTimeOrder?.order_status === 'SERVING' ? 'Your order is being served to your table' :
+                       realTimeOrder?.order_status === 'COMPLETED' ? 'Thank you for your order!' :
+                       'Your order is being prepared'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    realTimeOrder?.order_status === 'COMPLETED' 
+                      ? 'bg-green-500' 
+                      : 'bg-gray-300'
+                  }`}></div>
+                  <div>
+                    <p className={`font-medium ${
+                      realTimeOrder?.order_status === 'COMPLETED'
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }`}>
+                      {realTimeOrder?.order_status === 'COMPLETED' ? 'Order Completed' : 'Ready'}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {realTimeOrder?.order_status === 'COMPLETED' ? 'Thank you for your order!' : 'Your order will be ready soon'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <p className="text-sm text-blue-700">
+                    This timeline will update automatically as your order progresses
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-4">
+            <Button
+              onClick={() => router.push(`/order-tracking/${order?.id}`)}
+              className="flex-1"
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Track Your Order
+            </Button>
+            <Button
+              onClick={handleTimelineComplete}
+              variant="outline"
+              className="flex-1"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Complete
+            </Button>
+          </div>
         </div>
       </div>
     );
