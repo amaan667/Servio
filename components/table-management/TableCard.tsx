@@ -316,21 +316,23 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
             </div>
           )}
           
-          {table.status === 'RESERVED' && table.reservation_time && (
+          {table.status === 'RESERVED' && (
             <div className="text-sm text-gray-600 space-y-1">
               <div className="flex items-center gap-2">
                 <Calendar className="h-3 w-3" />
-                <span className="font-medium">{table.customer_name}</span>
+                <span className="font-medium">{table.customer_name || 'Reserved'}</span>
               </div>
-              <div className="text-xs text-gray-500">
-                Reserved for {new Date(table.reservation_time).toLocaleString('en-GB', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </div>
+              {table.reservation_time && (
+                <div className="text-xs text-gray-500">
+                  Reserved for {new Date(table.reservation_time).toLocaleString('en-GB', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
