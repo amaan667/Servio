@@ -156,11 +156,35 @@ export async function GET(req: NextRequest) {
           });
         }
         
+        // Get reservations for tables that have RESERVED status
+        const reservedTableIds = sessionsResult.data?.filter(s => s.status === 'RESERVED').map(s => s.table_id) || [];
+        let reservationsResult = { data: [], error: null };
+        
+        if (reservedTableIds.length > 0) {
+          console.log('[TABLES API] Fetching reservations for', reservedTableIds.length, 'tables...');
+          reservationsResult = await supabase
+            .from('reservations')
+            .select(`
+              table_id,
+              customer_name,
+              reservation_time,
+              created_at
+            `)
+            .in('table_id', reservedTableIds)
+            .eq('status', 'ACTIVE');
+          
+          console.log('[TABLES API] Reservations query result:', { 
+            data: reservationsResult.data?.length || 0, 
+            error: reservationsResult.error 
+          });
+        }
+        
         // Combine the data
         const result = {
           data: tablesResult.data?.map(table => {
             const session = sessionsResult.data?.find(s => s.table_id === table.id);
             const order = session?.order_id ? ordersResult.data?.find(o => o.id === session.order_id) : null;
+            const reservation = session?.status === 'RESERVED' ? reservationsResult.data?.find(r => r.table_id === table.id) : null;
             
             return {
               id: table.id,
@@ -176,10 +200,12 @@ export async function GET(req: NextRequest) {
               opened_at: session?.opened_at || null,
               closed_at: session?.closed_at || null,
               total_amount: order?.total_amount || null,
-              customer_name: order?.customer_name || null,
+              customer_name: order?.customer_name || reservation?.customer_name || null,
               order_status: order?.order_status || null,
               payment_status: order?.payment_status || null,
               order_updated_at: order?.updated_at || null,
+              reservation_time: reservation?.reservation_time || null,
+              reservation_created_at: reservation?.created_at || null,
             };
           }) || [],
           error: null

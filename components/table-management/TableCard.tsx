@@ -101,6 +101,17 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         break;
 
       case 'ORDERING':
+        actions.push(
+          <DropdownMenuItem 
+            key="undo_occupied" 
+            onClick={() => handleAction('close_table')}
+            disabled={isLoading}
+            className="text-orange-600"
+          >
+            <Square className="h-4 w-4 mr-2" />
+            Undo Occupied
+          </DropdownMenuItem>
+        );
         if (table.order_id) {
           actions.push(
             <DropdownMenuItem 
@@ -302,6 +313,24 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
           {!table.order_id && table.status === 'FREE' && (
             <div className="text-sm text-gray-500">
               Available for seating
+            </div>
+          )}
+          
+          {table.status === 'RESERVED' && table.reservation_time && (
+            <div className="text-sm text-gray-600 space-y-1">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3 w-3" />
+                <span className="font-medium">{table.customer_name}</span>
+              </div>
+              <div className="text-xs text-gray-500">
+                Reserved for {new Date(table.reservation_time).toLocaleString('en-GB', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
             </div>
           )}
         </div>

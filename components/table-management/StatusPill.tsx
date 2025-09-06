@@ -24,7 +24,7 @@ const statusConfig = {
   ORDERING: {
     icon: Clock,
     className: 'bg-amber-50 text-amber-700 ring-amber-100',
-    label: 'Ordering'
+    label: 'Occupied'
   },
   IN_PREP: {
     icon: Utensils,

@@ -18,6 +18,8 @@ export interface TableWithSession {
   order_status: string | null;
   payment_status: string | null;
   order_updated_at: string | null;
+  reservation_time: string | null;
+  reservation_created_at: string | null;
 }
 
 export function useTablesData(venueId: string) {
