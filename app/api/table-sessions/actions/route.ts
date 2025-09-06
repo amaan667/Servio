@@ -252,6 +252,8 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
 
 async function handleOccupyTable(supabase: any, table_id: string) {
   console.log('[TABLE ACTIONS] Starting occupy table for table_id:', table_id);
+  console.log('[TABLE ACTIONS] Table ID type:', typeof table_id);
+  console.log('[TABLE ACTIONS] Table ID length:', table_id?.length);
   
   // First, check if there's an existing open session
   const { data: existingSession, error: checkError } = await supabase
@@ -286,14 +288,38 @@ async function handleOccupyTable(supabase: any, table_id: string) {
     console.log('[TABLE ACTIONS] No existing session found, creating new ORDERING session');
     
     // Get venue_id from table
+    console.log('[TABLE ACTIONS] Looking for table with ID:', table_id);
     const { data: table, error: tableError } = await supabase
       .from('tables')
       .select('venue_id')
       .eq('id', table_id)
       .single();
 
-    if (tableError || !table) {
+    if (tableError) {
       console.error('[TABLE ACTIONS] Error getting table info:', tableError);
+      if (tableError.code === 'PGRST116') {
+        // Let's see what tables actually exist
+        const { data: allTables, error: allTablesError } = await supabase
+          .from('tables')
+          .select('id, label, venue_id')
+          .limit(10);
+        
+        console.log('[TABLE ACTIONS] Available tables in database:', allTables);
+        console.log('[TABLE ACTIONS] Looking for table ID:', table_id);
+        
+        return NextResponse.json({ 
+          error: 'Table not found in database',
+          debug: {
+            requestedTableId: table_id,
+            availableTables: allTables
+          }
+        }, { status: 404 });
+      }
+      return NextResponse.json({ error: 'Failed to get table info' }, { status: 500 });
+    }
+
+    if (!table) {
+      console.error('[TABLE ACTIONS] Table not found for ID:', table_id);
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
 

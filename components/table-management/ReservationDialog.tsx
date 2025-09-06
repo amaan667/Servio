@@ -41,7 +41,7 @@ export function ReservationDialog({
     if (isOpen && !reservationTime) {
       setReservationTime(getDefaultTime());
     }
-  }, [isOpen, reservationTime]);
+  }, [isOpen]);
 
   // Set default time to current time
   const getDefaultTime = () => {
