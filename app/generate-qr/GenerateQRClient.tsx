@@ -464,22 +464,32 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
         setStats({ activeTablesNow: activeTables });
         
-        // Set default table selection based on active tables count
-        if (activeTables > 0) {
-          // Generate table numbers 1 through activeTablesCount
-          const tableNumbers = Array.from({ length: activeTables }, (_, i) => (i + 1).toString());
-          setSelectedTables(tableNumbers);
-          console.log('🔍 [QR CLIENT] Auto-generated QR codes for tables:', tableNumbers.join(', '));
+        // Only auto-generate table selection if no tables were specified in URL
+        const currentSelectedTables = getInitialTables();
+        if (currentSelectedTables.length === 1 && currentSelectedTables[0] === '1') {
+          // No specific tables in URL, use active tables count to generate default selection
+          if (activeTables > 0) {
+            // Generate table numbers 1 through activeTablesCount
+            const tableNumbers = Array.from({ length: activeTables }, (_, i) => (i + 1).toString());
+            setSelectedTables(tableNumbers);
+            console.log('🔍 [QR CLIENT] Auto-generated QR codes for tables:', tableNumbers.join(', '));
+          } else {
+            // No active tables, but still allow manual QR code generation
+            // Set a default table so users can still generate QR codes
+            setSelectedTables(['1']);
+            console.log('🔍 [QR CLIENT] No active tables, setting default table 1 for QR generation');
+          }
         } else {
-          // No active tables, but still allow manual QR code generation
-          // Set a default table so users can still generate QR codes
-          setSelectedTables(['1']);
-          console.log('🔍 [QR CLIENT] No active tables, setting default table 1 for QR generation');
+          // Tables were specified in URL, keep them
+          console.log('🔍 [QR CLIENT] Using tables from URL:', currentSelectedTables.join(', '));
+          setSelectedTables(currentSelectedTables);
         }
         
         console.log('🔍 [QR CLIENT] Final stats:', {
           activeTables,
-          selectedTables: activeTables > 0 ? Array.from({ length: activeTables }, (_, i) => (i + 1).toString()) : ['1']
+          selectedTables: currentSelectedTables.length === 1 && currentSelectedTables[0] === '1' 
+            ? (activeTables > 0 ? Array.from({ length: activeTables }, (_, i) => (i + 1).toString()) : ['1'])
+            : currentSelectedTables
         });
         
         setLoading(false);
@@ -557,9 +567,9 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Tables (now)</p>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.activeTablesNow}</p>
-                <p className="text-xs text-muted-foreground mt-1">Tables with active orders</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Tables Set Up</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{activeTablesCount}</p>
+                <p className="text-xs text-muted-foreground mt-1">Tables configured in your venue</p>
               </div>
             </div>
           </CardContent>
