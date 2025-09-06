@@ -36,14 +36,24 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
       const tablesParam = urlParams.get('tables');
       const tableParam = urlParams.get('table');
       
+      console.log('🔍 [QR CLIENT] URL params:', {
+        tablesParam,
+        tableParam,
+        fullUrl: window.location.href
+      });
+      
       if (tablesParam) {
         // Multiple tables selected
-        return tablesParam.split(',').filter(Boolean);
+        const tables = tablesParam.split(',').filter(Boolean);
+        console.log('🔍 [QR CLIENT] Parsed multiple tables:', tables);
+        return tables;
       } else if (tableParam) {
         // Single table selected
+        console.log('🔍 [QR CLIENT] Parsed single table:', tableParam);
         return [tableParam];
       }
     }
+    console.log('🔍 [QR CLIENT] No tables in URL, defaulting to table 1');
     return ['1']; // Default to table 1
   };
 

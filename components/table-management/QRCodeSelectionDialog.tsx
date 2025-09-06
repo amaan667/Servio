@@ -69,9 +69,21 @@ export function QRCodeSelectionDialog({
     
     setIsGenerating(true);
     try {
-      // Create a URL with selected table IDs
-      const tableIds = selectedTables.join(',');
-      const qrUrl = `/generate-qr?venue=${venueId}&tables=${tableIds}`;
+      // Get table labels for the selected table IDs
+      const selectedTableObjects = availableTables.filter(table => 
+        selectedTables.includes(table.id)
+      );
+      const tableLabels = selectedTableObjects.map(table => table.label);
+      
+      // Create a URL with selected table labels
+      const tableLabelsParam = tableLabels.join(',');
+      const qrUrl = `/generate-qr?venue=${venueId}&tables=${tableLabelsParam}`;
+      
+      console.log('[QR DIALOG] Generating QR for tables:', {
+        selectedTableIds: selectedTables,
+        selectedTableLabels: tableLabels,
+        qrUrl
+      });
       
       // Open in new tab
       window.open(qrUrl, '_blank');
