@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +22,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'action, table_id, and venue_id are required' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    // Check authentication
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError || !user) {
+      console.log('[TABLE ACTIONS API] Authentication failed:', authError);
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    console.log('[TABLE ACTIONS API] Authenticated user:', user.id);
+
+    // Use admin client for table operations to bypass RLS
+    const supabase = createAdminClient();
+
+    // Verify venue ownership
+    const { data: venue, error: venueError } = await supabase
+      .from('venues')
+      .select('venue_id, owner_id')
+      .eq('venue_id', venue_id)
+      .eq('owner_id', user.id)
+      .single();
+
+    if (venueError || !venue) {
+      console.log('[TABLE ACTIONS API] Venue ownership verification failed:', venueError);
+      return NextResponse.json({ error: 'Access denied to venue' }, { status: 403 });
+    }
+
+    console.log('[TABLE ACTIONS API] Venue ownership verified for:', venue_id);
 
     switch (action) {
       case 'start_preparing':
