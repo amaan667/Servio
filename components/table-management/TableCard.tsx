@@ -36,6 +36,7 @@ import { useTableActions } from '@/hooks/useTableActions';
 import { TableWithSession } from '@/hooks/useTablesData';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
+import { QRCodeSelectionDialog } from './QRCodeSelectionDialog';
 
 interface TableCardProps {
   table: TableWithSession;
@@ -49,6 +50,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showReservationDialog, setShowReservationDialog] = useState(false);
+  const [showQRDialog, setShowQRDialog] = useState(false);
   const { executeAction, occupyTable } = useTableActions();
 
   const handleAction = async (action: string, orderId?: string, destinationTableId?: string) => {
@@ -228,11 +230,9 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0"
-                    asChild
+                    onClick={() => setShowQRDialog(true)}
                   >
-                    <a href={`/generate-qr?venue=${venueId}&table=${table.label}`} target="_blank" rel="noopener noreferrer">
-                      <QrCode className="h-4 w-4" />
-                    </a>
+                    <QrCode className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -331,6 +331,14 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         tableLabel={table.label}
         venueId={venueId}
         onReservationComplete={onActionComplete}
+      />
+      
+      <QRCodeSelectionDialog
+        isOpen={showQRDialog}
+        onClose={() => setShowQRDialog(false)}
+        venueId={venueId}
+        availableTables={availableTables}
+        initialSelectedTables={[table.id]}
       />
     </Card>
   );

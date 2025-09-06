@@ -11,12 +11,14 @@ import {
   Users, 
   Clock,
   AlertCircle,
-  Loader2
+  Loader2,
+  QrCode
 } from 'lucide-react';
 import { useTablesData, TableWithSession } from '@/hooks/useTablesData';
 import { TableCard } from '@/components/table-management/TableCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFilters } from '@/components/table-management/TabFilters';
+import { QRCodeSelectionDialog } from '@/components/table-management/QRCodeSelectionDialog';
 
 type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'WAITING' | 'RESERVED' | 'CLOSED';
 
@@ -27,6 +29,7 @@ interface TableManagementClientProps {
 export function TableManagementClient({ venueId }: TableManagementClientProps) {
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showQRDialog, setShowQRDialog] = useState(false);
   const { tables, loading, error, refetch } = useTablesData(venueId);
 
   // Debug logging
@@ -161,6 +164,14 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
                 className="h-9 w-56 pl-10 rounded-xl border border-slate-200 px-3 text-sm shadow-sm"
               />
             </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowQRDialog(true)}
+            >
+              <QrCode className="h-4 w-4 mr-2" />
+              Generate QR Codes
+            </Button>
             <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
             <Button variant="outline" size="sm">
               <HelpCircle className="h-4 w-4 mr-2" />
@@ -291,6 +302,14 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
           </Card>
         </div>
       )}
+
+      {/* QR Code Selection Dialog */}
+      <QRCodeSelectionDialog
+        isOpen={showQRDialog}
+        onClose={() => setShowQRDialog(false)}
+        venueId={venueId}
+        availableTables={tables}
+      />
     </div>
   );
 }

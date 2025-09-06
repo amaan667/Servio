@@ -29,7 +29,25 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
     initialOrders: initialOrders
   });
 
-  const [selectedTables, setSelectedTables] = useState<string[]>([]);
+  // Parse URL parameters to get selected tables
+  const getInitialTables = () => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tablesParam = urlParams.get('tables');
+      const tableParam = urlParams.get('table');
+      
+      if (tablesParam) {
+        // Multiple tables selected
+        return tablesParam.split(',').filter(Boolean);
+      } else if (tableParam) {
+        // Single table selected
+        return [tableParam];
+      }
+    }
+    return ['1']; // Default to table 1
+  };
+
+  const [selectedTables, setSelectedTables] = useState<string[]>(getInitialTables());
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({ activeTablesNow: 0 });
   const [loading, setLoading] = useState(true);
