@@ -169,8 +169,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
               size="sm"
               onClick={() => setShowQRDialog(true)}
             >
-              <QrCode className="h-4 w-4 mr-2" />
-              Generate QR Codes
+              <QrCode className="h-4 w-4" />
             </Button>
             <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
             <Button variant="outline" size="sm">

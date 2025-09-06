@@ -49,54 +49,32 @@ export default async function GenerateQRPage() {
       error: error?.message
     });
 
-    // Get today's orders to calculate active tables for QR codes
-    const today = new Date(); 
-    today.setHours(0,0,0,0);
-    const startIso = today.toISOString();
-    const endIso = new Date(today.getTime() + 24*60*60*1000).toISOString();
-    
-    console.log('🔍 [QR PAGE] Date range for orders:', {
-      startIso,
-      endIso,
-      venueId: venue?.venue_id
-    });
-    
-    let orders = [];
-    let ordersError = null;
+    // Get active tables count using the same logic as dashboard
+    let activeTablesCount = 0;
+    let activeTablesError = null;
     
     try {
-      console.log('🔍 [QR PAGE] Executing orders query...');
+      console.log('🔍 [QR PAGE] Getting active tables count...');
       
-      // Add timeout to prevent hanging
-      const ordersPromise = supabase
-        .from('orders')
-        .select('table_number, order_status, created_at')
-        .eq('venue_id', venue.venue_id)
-        .gte('created_at', startIso)
-        .lt('created_at', endIso);
+      // Use the same dashboard_counts function to get consistent counts
+      const { data: countsData, error: countsError } = await supabase
+        .rpc('dashboard_counts', {
+          p_venue_id: venue.venue_id,
+          p_tz: 'Europe/London', // Default timezone, could be made dynamic
+          p_live_window_mins: 30
+        })
+        .single();
       
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Orders query timeout')), 5000)
-      );
-      
-      const ordersResult = await Promise.race([ordersPromise, timeoutPromise]) as any;
-      
-      orders = ordersResult.data || [];
-      ordersError = ordersResult.error;
-      
-      console.log('🔍 [QR PAGE] Orders query completed:', {
-        ordersCount: orders?.length || 0,
-        orders: orders?.map(o => ({
-          table_number: o.table_number,
-          order_status: o.order_status,
-          created_at: o.created_at
-        })),
-        error: ordersError?.message
-      });
+      if (countsError) {
+        console.error('🔍 [QR PAGE] Dashboard counts error:', countsError);
+        activeTablesError = countsError;
+      } else {
+        activeTablesCount = countsData?.active_tables_count || 0;
+        console.log('🔍 [QR PAGE] Active tables count:', activeTablesCount);
+      }
     } catch (queryError) {
-      console.error('🔍 [QR PAGE] Orders query failed:', queryError);
-      ordersError = queryError;
-      orders = [];
+      console.error('🔍 [QR PAGE] Active tables query failed:', queryError);
+      activeTablesError = queryError;
     }
     
     if (error) {
@@ -113,13 +91,13 @@ export default async function GenerateQRPage() {
     console.log('🔍 [QR PAGE] Props being passed to GenerateQRClient:', {
       venueId: venue.venue_id,
       venueName: venue.name,
-      initialOrdersCount: orders?.length || 0,
-      ordersError: ordersError?.message
+      activeTablesCount: activeTablesCount,
+      activeTablesError: activeTablesError?.message
     });
     
-    // Continue even if orders query failed - we can still show QR codes
-    if (ordersError) {
-      console.log('🔍 [QR PAGE] Orders query had error, but continuing with empty orders:', ordersError.message);
+    // Continue even if active tables query failed - we can still show QR codes
+    if (activeTablesError) {
+      console.log('🔍 [QR PAGE] Active tables query had error, but continuing with default count:', activeTablesError.message);
     }
 
   return (
@@ -139,7 +117,7 @@ export default async function GenerateQRPage() {
         <GenerateQRClient 
           venueId={venue.venue_id} 
           venueName={venue.name} 
-          initialOrders={orders || []}
+          activeTablesCount={activeTablesCount}
         />
       </div>
     </div>

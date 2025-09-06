@@ -13,20 +13,15 @@ import { siteOrigin } from "@/lib/site";
 interface Props {
   venueId: string;
   venueName: string;
-  initialOrders?: Array<{
-    table_number: number;
-    order_status: string;
-    created_at: string;
-  }>;
+  activeTablesCount: number;
 }
 
-export default function GenerateQRClient({ venueId, venueName, initialOrders = [] }: Props) {
+export default function GenerateQRClient({ venueId, venueName, activeTablesCount }: Props) {
   console.log('🔍 [QR CLIENT] ===== GenerateQRClient Component Initialized =====');
   console.log('🔍 [QR CLIENT] Props received:', {
     venueId,
     venueName,
-    initialOrdersCount: initialOrders.length,
-    initialOrders: initialOrders
+    activeTablesCount: activeTablesCount
   });
 
   // Parse URL parameters to get selected tables
@@ -453,8 +448,7 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
         console.log('🔍 [QR CLIENT] ===== Starting loadStats =====');
         console.log('🔍 [QR CLIENT] loadStats inputs:', {
           venueId,
-          initialOrdersCount: initialOrders.length,
-          initialOrders: initialOrders
+          activeTablesCount: activeTablesCount
         });
         
         setLoading(true);
@@ -464,50 +458,18 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
           throw new Error('No venueId provided');
         }
 
-        // Use the initial orders data passed from server
-        const orders = initialOrders;
-        console.log('🔍 [QR CLIENT] Processing orders:', {
-          totalOrders: orders?.length || 0,
-          orders: orders
-        });
-
-        // Calculate active tables using same logic as main dashboard
-        // Active tables = tables with orders that are not completed
-        const nonCompletedOrders = (orders ?? []).filter((o) => o.order_status !== "COMPLETED" && o.order_status !== "CANCELLED");
-        console.log('🔍 [QR CLIENT] Non-completed orders:', {
-          count: nonCompletedOrders.length,
-          orders: nonCompletedOrders
-        });
-
-        const activeTables = new Set(
-          nonCompletedOrders
-            .map((o) => o.table_number)
-            .filter((t) => t != null)
-        ).size;
-
-        console.log('🔍 [QR CLIENT] Active tables calculation:', {
-          activeTablesCount: activeTables,
-          activeTableNumbers: Array.from(new Set(
-            nonCompletedOrders
-              .map((o) => o.table_number)
-              .filter((t) => t != null)
-          ))
-        });
+        // Use the active tables count passed from server (from dashboard_counts function)
+        const activeTables = activeTablesCount;
+        console.log('🔍 [QR CLIENT] Using active tables count from server:', activeTables);
 
         setStats({ activeTablesNow: activeTables });
         
-        // Auto-generate QR codes based on active table count
+        // Set default table selection based on active tables count
         if (activeTables > 0) {
-          // Get the actual table numbers that are active
-          const activeTableNumbers = Array.from(new Set(
-            nonCompletedOrders
-              .map((o) => o.table_number)
-              .filter((t) => t != null)
-              .sort((a, b) => a - b) // Sort numerically
-          ));
-          
-          setSelectedTables(activeTableNumbers.map(t => t.toString()));
-          console.log('🔍 [QR CLIENT] Auto-generated QR codes for active tables:', activeTableNumbers.join(', '));
+          // Generate table numbers 1 through activeTablesCount
+          const tableNumbers = Array.from({ length: activeTables }, (_, i) => (i + 1).toString());
+          setSelectedTables(tableNumbers);
+          console.log('🔍 [QR CLIENT] Auto-generated QR codes for tables:', tableNumbers.join(', '));
         } else {
           // No active tables, but still allow manual QR code generation
           // Set a default table so users can still generate QR codes
@@ -517,12 +479,7 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
         
         console.log('🔍 [QR CLIENT] Final stats:', {
           activeTables,
-          selectedTables: activeTables > 0 ? Array.from(new Set(
-            nonCompletedOrders
-              .map((o) => o.table_number)
-              .filter((t) => t != null)
-              .sort((a, b) => a - b)
-          )).map(t => t.toString()) : ['1']
+          selectedTables: activeTables > 0 ? Array.from({ length: activeTables }, (_, i) => (i + 1).toString()) : ['1']
         });
         
         setLoading(false);
@@ -532,7 +489,7 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
         setError(`Failed to load stats: ${error.message}`);
         // Set default values on error
         setStats({ activeTablesNow: 0 });
-        setSelectedTables([]);
+        setSelectedTables(['1']);
         setLoading(false);
       }
     };
@@ -544,7 +501,7 @@ export default function GenerateQRClient({ venueId, venueName, initialOrders = [
       setError('No venue ID provided');
       setLoading(false);
     }
-  }, [venueId, initialOrders]);
+  }, [venueId, activeTablesCount]);
 
   // Show loading state
   if (loading) {
