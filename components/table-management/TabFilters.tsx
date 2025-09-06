@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'WAITING' | 'RESERVED' | 'CLOSED';
+type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLOSED';
 
 interface TabFiltersProps {
   value: FilterType;
@@ -12,7 +12,6 @@ interface TabFiltersProps {
     all: number;
     free: number;
     occupied: number;
-    waiting: number;
     reserved: number;
     closed: number;
   };
@@ -23,7 +22,6 @@ export function TabFilters({ value, onChange, counts }: TabFiltersProps) {
     { key: 'ALL', label: 'All', count: counts?.all },
     { key: 'FREE', label: 'Free', count: counts?.free },
     { key: 'OCCUPIED', label: 'Occupied', count: counts?.occupied },
-    { key: 'WAITING', label: 'Waiting', count: counts?.waiting },
     { key: 'RESERVED', label: 'Reserved', count: counts?.reserved },
     { key: 'CLOSED', label: 'Closed Today', count: counts?.closed },
   ];

@@ -12,7 +12,8 @@ import {
   Clock,
   AlertCircle,
   Loader2,
-  QrCode
+  QrCode,
+  Calendar
 } from 'lucide-react';
 import { useTablesData, TableWithSession } from '@/hooks/useTablesData';
 import { TableCard } from '@/components/table-management/TableCard';
@@ -20,7 +21,7 @@ import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFilters } from '@/components/table-management/TabFilters';
 import { QRCodeSelectionDialog } from '@/components/table-management/QRCodeSelectionDialog';
 
-type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'WAITING' | 'RESERVED' | 'CLOSED';
+type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLOSED';
 
 interface TableManagementClientProps {
   venueId: string;
@@ -81,11 +82,6 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
           ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(table.status)
         );
         break;
-      case 'WAITING':
-        filtered = filtered.filter(table => 
-          ['IN_PREP', 'READY', 'SERVED'].includes(table.status)
-        );
-        break;
       case 'RESERVED':
         filtered = filtered.filter(table => table.status === 'RESERVED');
         break;
@@ -104,9 +100,6 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
       free: tables.filter(t => t.status === 'FREE').length,
       occupied: tables.filter(t => 
         ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(t.status)
-      ).length,
-      waiting: tables.filter(t => 
-        ['IN_PREP', 'READY', 'SERVED'].includes(t.status)
       ).length,
       reserved: tables.filter(t => t.status === 'RESERVED').length,
       closed: tables.filter(t => t.status === 'CLOSED').length,
@@ -292,10 +285,10 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Waiting</p>
-                  <p className="text-2xl font-bold text-violet-600">{filterCounts.waiting}</p>
+                  <p className="text-sm font-medium text-gray-600">Reserved</p>
+                  <p className="text-2xl font-bold text-blue-600">{filterCounts.reserved}</p>
                 </div>
-                <Clock className="h-8 w-8 text-violet-400" />
+                <Calendar className="h-8 w-8 text-blue-400" />
               </div>
             </CardContent>
           </Card>

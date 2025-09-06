@@ -167,11 +167,11 @@ export async function GET(req: NextRequest) {
             .select(`
               table_id,
               customer_name,
-              reservation_time,
+              start_at,
               created_at
             `)
             .in('table_id', reservedTableIds)
-            .eq('status', 'ACTIVE');
+            .eq('status', 'BOOKED');
           
           console.log('[TABLES API] Reservations query result:', { 
             data: reservationsResult.data?.length || 0, 
@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
               order_status: order?.order_status || null,
               payment_status: order?.payment_status || null,
               order_updated_at: order?.updated_at || null,
-              reservation_time: reservation?.reservation_time || null,
+              reservation_time: reservation?.start_at || null,
               reservation_created_at: reservation?.created_at || null,
             };
           }) || [],
