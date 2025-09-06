@@ -203,6 +203,9 @@ export async function GET(req: NextRequest) {
     }
 
     console.log('[TABLES API] Returning tables:', tables?.length || 0);
+    if (tables && tables.length > 0) {
+      console.log('[TABLES API] Table IDs being returned:', tables.map(t => ({ id: t.id, label: t.label })));
+    }
     return NextResponse.json({ tables });
   } catch (error) {
     console.error('[TABLES API] Unexpected error:', error);

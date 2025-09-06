@@ -57,6 +57,8 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
     try {
       setIsLoading(true);
       console.log('[TABLE CARD] Executing action:', action, 'for table:', table.id);
+      console.log('[TABLE CARD] Table details:', { id: table.id, label: table.label, status: table.status });
+      console.log('[TABLE CARD] Venue ID:', venueId);
       await executeAction({
         action: action as any,
         table_id: table.id,
