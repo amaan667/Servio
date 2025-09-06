@@ -218,19 +218,63 @@ async function handleMarkAwaitingBill(supabase: any, table_id: string) {
 
 async function handleCloseTable(supabase: any, table_id: string) {
   try {
-    // Use the database RPC function that handles unlinking secondaries
-    const { data, error } = await supabase.rpc('close_table_with_unlink', {
-      p_table_id: table_id
-    });
+    console.log('[TABLE ACTIONS] Starting close table for table_id:', table_id);
+    
+    // Get the venue_id for the table
+    const { data: table, error: tableError } = await supabase
+      .from('tables')
+      .select('venue_id')
+      .eq('id', table_id)
+      .single();
 
-    if (error) {
-      console.error('[TABLE ACTIONS] Error closing table:', error);
-      return NextResponse.json({ error: error.message || 'Failed to close table' }, { status: 400 });
+    if (tableError || !table) {
+      console.error('[TABLE ACTIONS] Error fetching table for close:', tableError);
+      return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
+
+    // Close the current session
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('table_sessions')
+      .update({
+        status: 'CLOSED',
+        closed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('table_id', table_id)
+      .is('closed_at', null)
+      .select();
+
+    if (sessionError) {
+      console.error('[TABLE ACTIONS] Error closing session:', sessionError);
+      return NextResponse.json({ error: 'Failed to close session' }, { status: 500 });
+    }
+
+    console.log('[TABLE ACTIONS] Closed session:', sessionData);
+
+    // Create a new FREE session for the table
+    const { data: newSessionData, error: newSessionError } = await supabase
+      .from('table_sessions')
+      .insert({
+        table_id: table_id,
+        venue_id: table.venue_id,
+        status: 'FREE',
+        opened_at: new Date().toISOString()
+      })
+      .select();
+
+    if (newSessionError) {
+      console.error('[TABLE ACTIONS] Error creating new FREE session:', newSessionError);
+      return NextResponse.json({ error: 'Failed to create new session' }, { status: 500 });
+    }
+
+    console.log('[TABLE ACTIONS] Created new FREE session:', newSessionData);
 
     return NextResponse.json({ 
       success: true, 
-      data: data 
+      data: {
+        closed_session: sessionData,
+        new_session: newSessionData
+      }
     });
   } catch (error) {
     console.error('[TABLE ACTIONS] Unexpected error closing table:', error);

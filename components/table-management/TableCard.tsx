@@ -103,13 +103,13 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       case 'ORDERING':
         actions.push(
           <DropdownMenuItem 
-            key="undo_occupied" 
+            key="close_table" 
             onClick={() => handleAction('close_table')}
             disabled={isLoading}
-            className="text-orange-600"
+            className="text-red-600"
           >
             <Square className="h-4 w-4 mr-2" />
-            Undo Occupied
+            Close Table
           </DropdownMenuItem>
         );
         if (table.order_id) {
