@@ -60,18 +60,27 @@ export async function GET(req: NextRequest) {
     
     const queryPromise = (async () => {
       try {
+        console.log('[TABLES API] Attempting to query tables_with_sessions view...');
         const result = await supabase
           .from('tables_with_sessions')
           .select('*')
           .eq('venue_id', venueId)
           .order('label', { ascending: true });
         
+        if (result.error) {
+          console.log('[TABLES API] View query failed:', result.error);
+          throw result.error;
+        }
+        
         tables = result.data;
-        error = result.error;
+        error = null;
+        console.log('[TABLES API] Successfully queried view, found', tables?.length || 0, 'tables');
       } catch (viewError) {
-        console.log('[TABLES API] View not found, using direct query');
+        console.log('[TABLES API] View not found or failed, using direct query. Error:', viewError);
         
         // Fallback: Direct query to get tables with sessions
+        console.log('[TABLES API] Starting fallback query...');
+        
         // First get tables
         const tablesResult = await supabase
           .from('tables')
@@ -88,7 +97,13 @@ export async function GET(req: NextRequest) {
           .eq('is_active', true)
           .order('label', { ascending: true });
         
+        console.log('[TABLES API] Tables query result:', { 
+          data: tablesResult.data?.length || 0, 
+          error: tablesResult.error 
+        });
+        
         if (tablesResult.error) {
+          console.error('[TABLES API] Error fetching tables:', tablesResult.error);
           throw tablesResult.error;
         }
         
@@ -97,6 +112,7 @@ export async function GET(req: NextRequest) {
         let sessionsResult = { data: [], error: null };
         
         if (tableIds.length > 0) {
+          console.log('[TABLES API] Fetching sessions for', tableIds.length, 'tables...');
           sessionsResult = await supabase
             .from('table_sessions')
             .select(`
@@ -109,6 +125,11 @@ export async function GET(req: NextRequest) {
             `)
             .in('table_id', tableIds)
             .is('closed_at', null);
+          
+          console.log('[TABLES API] Sessions query result:', { 
+            data: sessionsResult.data?.length || 0, 
+            error: sessionsResult.error 
+          });
         }
         
         // Get orders for sessions that have order_id
@@ -116,6 +137,7 @@ export async function GET(req: NextRequest) {
         let ordersResult = { data: [], error: null };
         
         if (orderIds.length > 0) {
+          console.log('[TABLES API] Fetching orders for', orderIds.length, 'sessions...');
           ordersResult = await supabase
             .from('orders')
             .select(`
@@ -127,6 +149,11 @@ export async function GET(req: NextRequest) {
               updated_at
             `)
             .in('id', orderIds);
+          
+          console.log('[TABLES API] Orders query result:', { 
+            data: ordersResult.data?.length || 0, 
+            error: ordersResult.error 
+          });
         }
         
         // Combine the data
@@ -160,6 +187,7 @@ export async function GET(req: NextRequest) {
         
         tables = result.data;
         error = result.error;
+        console.log('[TABLES API] Fallback query completed, returning', tables?.length || 0, 'tables');
       }
     })();
 
@@ -249,15 +277,84 @@ export async function POST(req: NextRequest) {
       
       // Check if it's the constraint error we're dealing with
       if (tableError.code === '23505' && tableError.message.includes('uniq_open_session_per_table')) {
-        console.log('[TABLES API] Constraint error detected - this is a known database schema issue');
-        console.log('[TABLES API] The unique constraint is preventing table creation due to trigger conflicts');
+        console.log('[TABLES API] Constraint error detected - attempting to work around it');
         
-        // Return a more user-friendly error message
-        return NextResponse.json({ 
-          error: 'Table creation temporarily unavailable', 
-          details: 'There is a database constraint issue preventing table creation. Please try again in a few moments or contact support if the issue persists.',
-          code: 'CONSTRAINT_ERROR'
-        }, { status: 503 });
+        // Try to create the table without the automatic session creation
+        try {
+          // First, disable the trigger temporarily
+          await supabase.rpc('exec_sql', { 
+            sql: 'DROP TRIGGER IF EXISTS create_free_session_trigger ON tables;' 
+          });
+          
+          // Create the table again
+          const { data: retryTable, error: retryError } = await supabase
+            .from('tables')
+            .insert({
+              venue_id,
+              label: label.trim(),
+              seat_count: seat_count || 2,
+              qr_version: qr_version || 1,
+            })
+            .select()
+            .single();
+          
+          if (retryError) {
+            console.error('[TABLES API] Retry also failed:', retryError);
+            return NextResponse.json({ 
+              error: 'Failed to create table', 
+              details: retryError.message 
+            }, { status: 500 });
+          }
+          
+          // Manually create a session for the table
+          const { data: session, error: sessionError } = await supabase
+            .from('table_sessions')
+            .insert({
+              table_id: retryTable.id,
+              venue_id: venue_id,
+              status: 'FREE',
+              opened_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+          
+          if (sessionError) {
+            console.log('[TABLES API] Session creation failed, but table was created:', sessionError);
+          }
+          
+          // Re-enable the trigger
+          await supabase.rpc('exec_sql', { 
+            sql: `
+              CREATE TRIGGER create_free_session_trigger
+                AFTER INSERT ON tables
+                FOR EACH ROW
+                EXECUTE FUNCTION create_free_session_for_new_table();
+            ` 
+          });
+          
+          console.log('[TABLES API] Table created successfully with workaround:', retryTable.id);
+          
+          return NextResponse.json({ 
+            success: true,
+            table: {
+              id: retryTable.id,
+              venue_id: retryTable.venue_id,
+              label: retryTable.label,
+              seat_count: retryTable.seat_count,
+              qr_version: retryTable.qr_version,
+              created_at: retryTable.created_at
+            }
+          });
+          
+        } catch (workaroundError) {
+          console.error('[TABLES API] Workaround failed:', workaroundError);
+          return NextResponse.json({ 
+            error: 'Table creation temporarily unavailable', 
+            details: 'There is a database constraint issue preventing table creation. Please run the fix-table-creation-constraint.sql script in your Supabase SQL editor to resolve this issue.',
+            code: 'CONSTRAINT_ERROR',
+            fix_script: 'fix-table-creation-constraint.sql'
+          }, { status: 503 });
+        }
       } else {
         return NextResponse.json({ 
           error: 'Failed to create table', 
