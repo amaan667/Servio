@@ -251,18 +251,18 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
 }
 
 async function handleOccupyTable(supabase: any, table_id: string) {
-  // Update table session status to OCCUPIED
+  // Update table session status to ORDERING (which represents occupied table)
   const { error: sessionError } = await supabase
     .from('table_sessions')
     .update({ 
-      status: 'OCCUPIED',
+      status: 'ORDERING',
       updated_at: new Date().toISOString()
     })
     .eq('table_id', table_id)
     .is('closed_at', null);
 
   if (sessionError) {
-    console.error('[TABLE ACTIONS] Error updating session status to OCCUPIED:', sessionError);
+    console.error('[TABLE ACTIONS] Error updating session status to ORDERING:', sessionError);
     return NextResponse.json({ error: 'Failed to occupy table' }, { status: 500 });
   }
 
