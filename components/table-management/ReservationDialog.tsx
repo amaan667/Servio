@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -36,10 +36,16 @@ export function ReservationDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Set default time to 1 hour from now
+  // Initialize reservation time with current time when dialog opens
+  useEffect(() => {
+    if (isOpen && !reservationTime) {
+      setReservationTime(getDefaultTime());
+    }
+  }, [isOpen, reservationTime]);
+
+  // Set default time to current time
   const getDefaultTime = () => {
     const now = new Date();
-    now.setHours(now.getHours() + 1);
     return now.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
   };
 

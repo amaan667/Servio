@@ -56,6 +56,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const handleAction = async (action: string, orderId?: string, destinationTableId?: string) => {
     try {
       setIsLoading(true);
+      console.log('[TABLE CARD] Executing action:', action, 'for table:', table.id);
       await executeAction({
         action: action as any,
         table_id: table.id,
@@ -63,9 +64,10 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         order_id: orderId,
         destination_table_id: destinationTableId,
       });
+      console.log('[TABLE CARD] Action completed successfully:', action);
       onActionComplete?.();
     } catch (error) {
-      console.error('Action failed:', error);
+      console.error('[TABLE CARD] Action failed:', error);
     } finally {
       setIsLoading(false);
     }
