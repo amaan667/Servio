@@ -333,6 +333,12 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
                   })}
                 </div>
               )}
+              {/* Debug info - remove after testing */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-red-500">
+                  Debug: customer_name={table.customer_name}, reservation_time={table.reservation_time}
+                </div>
+              )}
             </div>
           )}
         </div>

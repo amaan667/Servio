@@ -173,10 +173,11 @@ export async function GET(req: NextRequest) {
             .in('table_id', reservedTableIds)
             .eq('status', 'BOOKED');
           
-          console.log('[TABLES API] Reservations query result:', { 
-            data: reservationsResult.data?.length || 0, 
-            error: reservationsResult.error 
-          });
+        console.log('[TABLES API] Reservations query result:', { 
+          data: reservationsResult.data?.length || 0, 
+          error: reservationsResult.error,
+          reservations: reservationsResult.data
+        });
         }
         
         // Combine the data
@@ -186,7 +187,7 @@ export async function GET(req: NextRequest) {
             const order = session?.order_id ? ordersResult.data?.find(o => o.id === session.order_id) : null;
             const reservation = session?.status === 'RESERVED' ? reservationsResult.data?.find(r => r.table_id === table.id) : null;
             
-            return {
+            const tableData = {
               id: table.id,
               venue_id: table.venue_id,
               label: table.label,
@@ -207,6 +208,19 @@ export async function GET(req: NextRequest) {
               reservation_time: reservation?.start_at || null,
               reservation_created_at: reservation?.created_at || null,
             };
+            
+            // Debug logging for reserved tables
+            if (tableData.status === 'RESERVED') {
+              console.log('[TABLES API] Reserved table data:', {
+                tableId: tableData.id,
+                label: tableData.label,
+                customer_name: tableData.customer_name,
+                reservation_time: tableData.reservation_time,
+                reservation: reservation
+              });
+            }
+            
+            return tableData;
           }) || [],
           error: null
         };
