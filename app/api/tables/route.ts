@@ -72,7 +72,8 @@ export async function GET(req: NextRequest) {
         console.log('[TABLES API] View not found, using direct query');
         
         // Fallback: Direct query to get tables with sessions
-        const result = await supabase
+        // First get tables
+        const tablesResult = await supabase
           .from('tables')
           .select(`
             id,
@@ -81,46 +82,83 @@ export async function GET(req: NextRequest) {
             seat_count,
             is_active,
             qr_version,
-            created_at,
-            table_sessions!left (
-              id,
-              status,
-              order_id,
-              opened_at,
-              closed_at,
-              orders!left (
-                total_amount,
-                customer_name,
-                order_status,
-                payment_status,
-                updated_at
-              )
-            )
+            created_at
           `)
           .eq('venue_id', venueId)
           .eq('is_active', true)
           .order('label', { ascending: true });
         
-        tables = result.data?.map(table => ({
-          id: table.id,
-          venue_id: table.venue_id,
-          label: table.label,
-          seat_count: table.seat_count,
-          is_active: table.is_active,
-          qr_version: table.qr_version,
-          table_created_at: table.created_at,
-          session_id: table.table_sessions?.[0]?.id || null,
-          status: table.table_sessions?.[0]?.status || 'FREE',
-          order_id: table.table_sessions?.[0]?.order_id || null,
-          opened_at: table.table_sessions?.[0]?.opened_at || null,
-          closed_at: table.table_sessions?.[0]?.closed_at || null,
-          total_amount: table.table_sessions?.[0]?.orders?.total_amount || null,
-          customer_name: table.table_sessions?.[0]?.orders?.customer_name || null,
-          order_status: table.table_sessions?.[0]?.orders?.order_status || null,
-          payment_status: table.table_sessions?.[0]?.orders?.payment_status || null,
-          order_updated_at: table.table_sessions?.[0]?.orders?.updated_at || null,
-        })) || [];
+        if (tablesResult.error) {
+          throw tablesResult.error;
+        }
         
+        // Then get sessions for these tables
+        const tableIds = tablesResult.data?.map(t => t.id) || [];
+        let sessionsResult = { data: [], error: null };
+        
+        if (tableIds.length > 0) {
+          sessionsResult = await supabase
+            .from('table_sessions')
+            .select(`
+              id,
+              table_id,
+              status,
+              order_id,
+              opened_at,
+              closed_at
+            `)
+            .in('table_id', tableIds)
+            .is('closed_at', null);
+        }
+        
+        // Get orders for sessions that have order_id
+        const orderIds = sessionsResult.data?.filter(s => s.order_id).map(s => s.order_id) || [];
+        let ordersResult = { data: [], error: null };
+        
+        if (orderIds.length > 0) {
+          ordersResult = await supabase
+            .from('orders')
+            .select(`
+              id,
+              total_amount,
+              customer_name,
+              order_status,
+              payment_status,
+              updated_at
+            `)
+            .in('id', orderIds);
+        }
+        
+        // Combine the data
+        const result = {
+          data: tablesResult.data?.map(table => {
+            const session = sessionsResult.data?.find(s => s.table_id === table.id);
+            const order = session?.order_id ? ordersResult.data?.find(o => o.id === session.order_id) : null;
+            
+            return {
+              id: table.id,
+              venue_id: table.venue_id,
+              label: table.label,
+              seat_count: table.seat_count,
+              is_active: table.is_active,
+              qr_version: table.qr_version,
+              table_created_at: table.created_at,
+              session_id: session?.id || null,
+              status: session?.status || 'FREE',
+              order_id: session?.order_id || null,
+              opened_at: session?.opened_at || null,
+              closed_at: session?.closed_at || null,
+              total_amount: order?.total_amount || null,
+              customer_name: order?.customer_name || null,
+              order_status: order?.order_status || null,
+              payment_status: order?.payment_status || null,
+              order_updated_at: order?.updated_at || null,
+            };
+          }) || [],
+          error: null
+        };
+        
+        tables = result.data;
         error = result.error;
       }
     })();
