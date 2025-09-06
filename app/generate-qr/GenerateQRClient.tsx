@@ -65,6 +65,13 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   });
   const router = useRouter();
 
+  // Helper function to clean table names (remove "table" prefix if it exists)
+  const cleanTableName = (tableName: string) => {
+    // If the table name starts with "table " (case insensitive), remove it
+    const cleaned = tableName.replace(/^table\s+/i, '');
+    return cleaned;
+  };
+
   // Ensure we always have a valid order URL
   const orderUrl = selectedTables.length > 0 
     ? `${siteOrigin()}/order?venue=${venueId}&table=${selectedTables[0]}`
@@ -412,7 +419,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNum}`;
               return `
                 <div class="qr-item">
-                  <div class="table-number">Table ${tableNum}</div>
+                  <div class="table-number">Table ${cleanTableName(tableNum)}</div>
                   <div class="qr-code">
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2" alt="QR Code for Table ${tableNum}" />
                   </div>
@@ -611,7 +618,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                   <div className="flex flex-wrap gap-1">
                     {selectedTables.map((tableNumber, index) => (
                       <Badge key={index} variant="outline" className="text-xs">
-                        Table {tableNumber}
+                        Table {cleanTableName(tableNumber)}
                       </Badge>
                     ))}
                   </div>
@@ -719,7 +726,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                         />
                       </div>
                       <div className="mt-2">
-                        <Badge variant="secondary">Table {tableNumber}</Badge>
+                        <Badge variant="secondary">Table {cleanTableName(tableNumber)}</Badge>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground break-all">
                         <code className="text-xs">{tableOrderUrl}</code>
