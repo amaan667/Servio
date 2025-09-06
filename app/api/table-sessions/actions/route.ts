@@ -251,21 +251,68 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
 }
 
 async function handleOccupyTable(supabase: any, table_id: string) {
-  // Update table session status to ORDERING (which represents occupied table)
-  const { error: sessionError } = await supabase
+  console.log('[TABLE ACTIONS] Starting occupy table for table_id:', table_id);
+  
+  // First, check if there's an existing open session
+  const { data: existingSession, error: checkError } = await supabase
     .from('table_sessions')
-    .update({ 
-      status: 'ORDERING',
-      updated_at: new Date().toISOString()
-    })
+    .select('id, status')
     .eq('table_id', table_id)
-    .is('closed_at', null);
+    .is('closed_at', null)
+    .single();
 
-  if (sessionError) {
-    console.error('[TABLE ACTIONS] Error updating session status to ORDERING:', sessionError);
-    return NextResponse.json({ error: 'Failed to occupy table' }, { status: 500 });
+  if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+    console.error('[TABLE ACTIONS] Error checking existing session:', checkError);
+    return NextResponse.json({ error: 'Failed to check table status' }, { status: 500 });
   }
 
+  if (existingSession) {
+    // Update existing session to ORDERING
+    console.log('[TABLE ACTIONS] Updating existing session:', existingSession.id, 'to ORDERING');
+    const { error: updateError } = await supabase
+      .from('table_sessions')
+      .update({ 
+        status: 'ORDERING',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingSession.id);
+
+    if (updateError) {
+      console.error('[TABLE ACTIONS] Error updating session to ORDERING:', updateError);
+      return NextResponse.json({ error: 'Failed to occupy table' }, { status: 500 });
+    }
+  } else {
+    // Create new session with ORDERING status
+    console.log('[TABLE ACTIONS] No existing session found, creating new ORDERING session');
+    
+    // Get venue_id from table
+    const { data: table, error: tableError } = await supabase
+      .from('tables')
+      .select('venue_id')
+      .eq('id', table_id)
+      .single();
+
+    if (tableError || !table) {
+      console.error('[TABLE ACTIONS] Error getting table info:', tableError);
+      return NextResponse.json({ error: 'Table not found' }, { status: 404 });
+    }
+
+    const { error: createError } = await supabase
+      .from('table_sessions')
+      .insert({
+        table_id: table_id,
+        venue_id: table.venue_id,
+        status: 'ORDERING',
+        opened_at: new Date().toISOString()
+      });
+
+    if (createError) {
+      console.error('[TABLE ACTIONS] Error creating new ORDERING session:', createError);
+      return NextResponse.json({ error: 'Failed to occupy table' }, { status: 500 });
+    }
+  }
+
+  console.log('[TABLE ACTIONS] Table occupied successfully');
   return NextResponse.json({ success: true });
 }
 
