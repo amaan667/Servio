@@ -6,7 +6,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, table_id, venue_id, order_id, destination_table_id, customer_name, reservation_time } = body;
 
+    console.log('[TABLE ACTIONS API] Request received:', {
+      action,
+      table_id,
+      venue_id,
+      order_id,
+      destination_table_id,
+      customer_name,
+      reservation_time,
+      timestamp: new Date().toISOString()
+    });
+
     if (!action || !table_id || !venue_id) {
+      console.log('[TABLE ACTIONS API] Missing required fields:', { action, table_id, venue_id });
       return NextResponse.json({ error: 'action, table_id, and venue_id are required' }, { status: 400 });
     }
 
@@ -202,6 +214,8 @@ async function handleCloseTable(supabase: any, table_id: string) {
 }
 
 async function handleReserveTable(supabase: any, table_id: string, customer_name: string, reservation_time: string) {
+  console.log('[TABLE ACTIONS] Starting reserve table for:', { table_id, customer_name, reservation_time });
+  
   // Get venue_id from table
   const { data: table, error: tableError } = await supabase
     .from('tables')
@@ -210,7 +224,26 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     .single();
 
   if (tableError || !table) {
-    console.error('[TABLE ACTIONS] Error fetching table:', tableError);
+    console.error('[TABLE ACTIONS] Error fetching table for reservation:', tableError);
+    
+    if (tableError.code === 'PGRST116') {
+      // Let's see what tables actually exist
+      const { data: allTables, error: allTablesError } = await supabase
+        .from('tables')
+        .select('id, label, venue_id')
+        .limit(10);
+      
+      console.log('[TABLE ACTIONS] Available tables for reservation:', allTables);
+      
+      return NextResponse.json({ 
+        error: 'Table not found',
+        debug: {
+          requestedTableId: table_id,
+          availableTables: allTables
+        }
+      }, { status: 404 });
+    }
+    
     return NextResponse.json({ error: 'Table not found' }, { status: 404 });
   }
 
@@ -307,11 +340,23 @@ async function handleOccupyTable(supabase: any, table_id: string) {
         console.log('[TABLE ACTIONS] Available tables in database:', allTables);
         console.log('[TABLE ACTIONS] Looking for table ID:', table_id);
         
+        // Also check what venues exist
+        const { data: allVenues, error: venuesError } = await supabase
+          .from('venues')
+          .select('venue_id, name')
+          .limit(10);
+        
+        console.log('[TABLE ACTIONS] Available venues in database:', allVenues);
+        
         return NextResponse.json({ 
           error: 'Table not found in database',
           debug: {
             requestedTableId: table_id,
-            availableTables: allTables
+            requestedVenueId: venue_id,
+            availableTables: allTables,
+            availableVenues: allVenues,
+            errorCode: tableError.code,
+            errorMessage: tableError.message
           }
         }, { status: 404 });
       }
