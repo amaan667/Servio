@@ -1,7 +1,8 @@
--- Update tables_with_sessions view to include most_recent_activity field for sorting
+-- Fix duplicate reservations issue in tables_with_sessions view
+-- This ensures each table shows only one reservation at a time
 -- Run this in your Supabase SQL Editor
 
--- Drop and recreate the view with the new most_recent_activity field
+-- Drop and recreate the view with proper LATERAL joins to prevent duplicates
 DROP VIEW IF EXISTS tables_with_sessions;
 
 CREATE OR REPLACE VIEW tables_with_sessions AS
@@ -63,4 +64,4 @@ GRANT SELECT ON tables_with_sessions TO authenticated;
 GRANT SELECT ON tables_with_sessions TO service_role;
 
 -- Show completion message
-SELECT 'tables_with_sessions view updated with most_recent_activity field!' as message;
+SELECT 'tables_with_sessions view fixed - no more duplicate reservations!' as message;

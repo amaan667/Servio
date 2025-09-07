@@ -166,6 +166,7 @@ export async function GET(req: NextRequest) {
         if (reservedTableIds.length > 0) {
           console.log('[TABLES API] Fetching reservations for', reservedTableIds.length, 'tables...');
           try {
+            // Use a subquery to get only the most recent reservation per table
             reservationsResult = await supabase
               .from('reservations')
               .select(`
@@ -175,7 +176,17 @@ export async function GET(req: NextRequest) {
                 created_at
               `)
               .in('table_id', reservedTableIds)
-              .eq('status', 'BOOKED');
+              .eq('status', 'BOOKED')
+              .order('created_at', { ascending: false });
+            
+            // Filter to get only the most recent reservation per table
+            const uniqueReservations = new Map();
+            reservationsResult.data?.forEach(reservation => {
+              if (!uniqueReservations.has(reservation.table_id)) {
+                uniqueReservations.set(reservation.table_id, reservation);
+              }
+            });
+            reservationsResult.data = Array.from(uniqueReservations.values());
             
             console.log('[TABLES API] Reservations query result:', { 
               data: reservationsResult.data?.length || 0, 

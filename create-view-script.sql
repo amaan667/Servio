@@ -46,7 +46,14 @@ LEFT JOIN LATERAL (
     LIMIT 1
 ) ts ON true
 LEFT JOIN orders o ON ts.order_id = o.id
-LEFT JOIN reservations r ON ts.table_id = r.table_id AND r.status = 'BOOKED'
+LEFT JOIN LATERAL (
+    SELECT *
+    FROM reservations r2
+    WHERE r2.table_id = t.id
+    AND r2.status = 'BOOKED'
+    ORDER BY r2.created_at DESC
+    LIMIT 1
+) r ON true
 WHERE t.is_active = true;
 
 -- 2. Grant permissions on the view
