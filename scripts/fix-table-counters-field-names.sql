@@ -42,8 +42,13 @@ BEGIN
       END) as free_now,
       
       -- In Use Now: tables whose live session is OCCUPIED
-      COUNT(CASE WHEN ts.status = 'OCCUPIED' AND ts.closed_at IS NULL THEN 1 END) as in_use_now,
-      
+      COUNT(CASE WHEN ts.status = 'OCCUPIED' AND ts.closed_at IS NULL THEN 1 END) as in_use_now
+    FROM tables t
+    LEFT JOIN table_sessions ts ON ts.table_id = t.id AND ts.closed_at IS NULL
+    WHERE t.venue_id = p_venue_id AND t.is_active = true
+  ),
+  reservation_stats AS (
+    SELECT 
       -- Reserved Now: tables with active reservations (can be FREE or OCCUPIED)
       COUNT(DISTINCT CASE 
         WHEN r.status = 'BOOKED' 
@@ -58,21 +63,21 @@ BEGIN
           AND r.start_at > NOW() + (v_block_window_mins || ' minutes')::INTERVAL
         THEN r.table_id 
       END) as reserved_later
-    FROM tables t
-    LEFT JOIN table_sessions ts ON ts.table_id = t.id AND ts.closed_at IS NULL
-    LEFT JOIN reservations r ON r.table_id = t.id AND r.status = 'BOOKED'
+    FROM reservations r
+    INNER JOIN tables t ON t.id = r.table_id
     WHERE t.venue_id = p_venue_id AND t.is_active = true
   )
   SELECT json_build_object(
-    'total_tables', tables_set_up,
-    'available', free_now,
-    'occupied', in_use_now,
-    'reserved_now', reserved_now,
-    'reserved_later', reserved_later,
+    'total_tables', ts.tables_set_up,
+    'available', ts.free_now,
+    'occupied', ts.in_use_now,
+    'reserved_now', COALESCE(rs.reserved_now, 0),
+    'reserved_later', COALESCE(rs.reserved_later, 0),
     'unassigned_reservations', 0,
     'block_window_mins', v_block_window_mins
   ) INTO v_counters
-  FROM table_stats;
+  FROM table_stats ts
+  CROSS JOIN reservation_stats rs;
   
   RETURN v_counters;
 END;
