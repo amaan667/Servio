@@ -14,16 +14,14 @@ import {
   Loader2,
   QrCode,
   Calendar,
-  UserCheck,
-  UserX
+  UserCheck
 } from 'lucide-react';
-import { useTableRuntimeState, useTableCounters, useUnassignedReservations, TableRuntimeState } from '@/hooks/useTableRuntimeState';
+import { useTableRuntimeState, useTableCounters, TableRuntimeState } from '@/hooks/useTableRuntimeState';
 import { TableCardRefactored } from '@/components/table-management/TableCardRefactored';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFiltersRefactored } from '@/components/table-management/TabFiltersRefactored';
-import { UnassignedReservationsPanel } from '@/components/table-management/UnassignedReservationsPanel';
 
-type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED_NOW' | 'RESERVED_LATER' | 'WAITING';
+type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED_NOW' | 'RESERVED_LATER';
 
 interface TableManagementRefactoredProps {
   venueId: string;
@@ -53,10 +51,6 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     isLoading: countersLoading 
   } = useTableCounters(venueId);
   
-  const { 
-    data: unassignedReservations = [], 
-    isLoading: reservationsLoading 
-  } = useUnassignedReservations(venueId);
 
   const filteredTables = useMemo(() => {
     let filtered = tables;
@@ -83,7 +77,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
       case 'RESERVED_LATER':
         filtered = filtered.filter(table => table.reservation_status === 'RESERVED_LATER');
         break;
-      // 'ALL' and 'WAITING' show all tables
+      // 'ALL' shows all tables
     }
 
     return filtered;
@@ -96,7 +90,6 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
       occupied: counters.occupied,
       reserved_now: counters.reserved_now,
       reserved_later: counters.reserved_later,
-      waiting: counters.unassigned_reservations,
     };
   }, [counters]);
 
@@ -167,17 +160,6 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
         <TabFiltersRefactored value={filter} onChange={setFilter} counts={filterCounts} />
       </header>
 
-      {/* Unassigned Reservations Panel */}
-      {filter === 'WAITING' && !reservationsLoading && unassignedReservations.length > 0 && (
-        <div className="mt-6">
-          <UnassignedReservationsPanel 
-            venueId={venueId} 
-            reservations={unassignedReservations}
-            onActionComplete={handleTableActionComplete}
-            availableTables={tables.filter(t => t.primary_status === 'FREE')}
-          />
-        </div>
-      )}
 
       {/* Content */}
       {filteredTables.length === 0 ? (
@@ -248,7 +230,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
 
       {/* Stats Summary */}
       {tables.length > 0 && (
-        <div className="mt-8 grid grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="mt-8 grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -305,18 +287,6 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
                   <p className="text-2xl font-bold text-purple-600">{counters.reserved_later}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-purple-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Waiting</p>
-                  <p className="text-2xl font-bold text-blue-600">{counters.unassigned_reservations}</p>
-                </div>
-                <UserX className="h-8 w-8 text-blue-400" />
               </div>
             </CardContent>
           </Card>

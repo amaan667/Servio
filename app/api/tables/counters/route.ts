@@ -55,11 +55,12 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: true,
       counters: {
-        tables_set_up: Number(counter.tables_set_up),
-        in_use_now: Number(counter.in_use_now),
+        total_tables: Number(counter.tables_set_up),
+        available: Number(counter.free),
+        occupied: Number(counter.in_use_now),
         reserved_now: Number(counter.reserved_now),
         reserved_later: Number(counter.reserved_later),
-        waiting: Number(counter.waiting)
+        unassigned_reservations: Number(counter.waiting)
       }
     });
 

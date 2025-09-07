@@ -61,6 +61,14 @@ export function ReservationDialog({
       return;
     }
 
+    // Validate reservation time is not in the past
+    const selectedTime = new Date(reservationTime);
+    const now = new Date();
+    if (selectedTime <= now) {
+      setError('Reservation time must be in the future');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -75,6 +83,8 @@ export function ReservationDialog({
           table_id: tableId,
           venue_id: venueId,
           customer_name: customerName.trim(),
+          customer_phone: '', // Add phone field if needed
+          party_size: 2, // Default party size, could be made configurable
           reservation_time: reservationTime,
           reservation_duration: reservationDuration
         }),

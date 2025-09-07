@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED_NOW' | 'RESERVED_LATER' | 'WAITING';
+type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED_NOW' | 'RESERVED_LATER';
 
 interface TabFiltersRefactoredProps {
   value: FilterType;
@@ -14,7 +14,6 @@ interface TabFiltersRefactoredProps {
     occupied: number;
     reserved_now: number;
     reserved_later: number;
-    waiting: number;
   };
 }
 
@@ -25,7 +24,6 @@ export function TabFiltersRefactored({ value, onChange, counts }: TabFiltersRefa
     { key: 'OCCUPIED' as const, label: 'In Use Now', count: counts.occupied },
     { key: 'RESERVED_NOW' as const, label: 'Reserved Now', count: counts.reserved_now },
     { key: 'RESERVED_LATER' as const, label: 'Reserved Later', count: counts.reserved_later },
-    { key: 'WAITING' as const, label: 'Waiting', count: counts.waiting },
   ];
 
   return (

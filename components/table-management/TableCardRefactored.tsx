@@ -113,11 +113,6 @@ export function TableCardRefactored({
     setShowReservationDialog(true);
   };
 
-  const handleOccupyTable = () => {
-    console.log('[TABLE CARD] Occupy table clicked for table:', table.table_id);
-    // This should be the same as "Seat Party"
-    handleAction('seat');
-  };
 
   const handleMergeTables = () => {
     console.log('[TABLE CARD] Merge tables clicked for table:', table.table_id);
@@ -142,7 +137,7 @@ export function TableCardRefactored({
       return (
         <Badge variant="default" className="bg-amber-100 text-amber-700 border-amber-200">
           <Users className="h-3 w-3 mr-1" />
-          Occupied {elapsed && `(${elapsed})`}
+          In Use {elapsed && `(${elapsed})`}
         </Badge>
       );
     }
@@ -174,7 +169,7 @@ export function TableCardRefactored({
       return (
         <Badge variant="default" className="bg-purple-100 text-purple-700 border-purple-200">
           <Calendar className="h-3 w-3 mr-1" />
-          Reserved {startTime && `at ${startTime}`}
+          Reserved Later {startTime && `at ${startTime}`}
         </Badge>
       );
     }
@@ -212,7 +207,7 @@ export function TableCardRefactored({
       });
     }
 
-    // Reservation actions
+    // Reservation actions for current reservations
     if (table.reservation_status === 'RESERVED_NOW' && table.reserved_now_id) {
       actions.push({
         label: 'Cancel Reservation',
@@ -245,31 +240,38 @@ export function TableCardRefactored({
               {table.seat_count} seats
             </Badge>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleQrCodeClick()}>
-                <QrCode className="h-4 w-4 mr-2" />
-                View QR Code
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleReserveTable()}>
-                <Calendar className="h-4 w-4 mr-2" />
-                Reserve Table
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleOccupyTable()}>
-                <UserCheck className="h-4 w-4 mr-2" />
-                Occupy Table
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleMergeTables()}>
-                <MapPin className="h-4 w-4 mr-2" />
-                Merge Tables
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0"
+              onClick={() => handleQrCodeClick()}
+              title="Assign QR Code"
+            >
+              <QrCode className="h-4 w-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleQrCodeClick()}>
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Assign QR Code
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleReserveTable()}>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Reserve Table
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleMergeTables()}>
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Merge Tables
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Status Badges */}
@@ -367,7 +369,7 @@ export function TableCardRefactored({
           <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700 text-sm">
               <AlertCircle className="h-4 w-4" />
-              <span className="font-medium">Guest due but not seated</span>
+              <span className="font-medium">Guest due now - not seated</span>
             </div>
           </div>
         )}
