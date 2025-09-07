@@ -69,8 +69,9 @@ export default async function GenerateQRPage() {
         console.error('🔍 [QR PAGE] Dashboard counts error:', countsError);
         activeTablesError = countsError;
       } else {
-        activeTablesCount = countsData?.active_tables_count || 0;
-        console.log('🔍 [QR PAGE] Active tables count:', activeTablesCount);
+        // Use tables_set_up to match the table management page
+        activeTablesCount = countsData?.tables_set_up || 0;
+        console.log('🔍 [QR PAGE] Tables set up count:', activeTablesCount);
       }
     } catch (queryError) {
       console.error('🔍 [QR PAGE] Active tables query failed:', queryError);
