@@ -95,22 +95,28 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       setIsLoading(true);
       console.log('[TABLE CARD] Seating party at table:', table.id);
       
-      // Call the seat party API
-      const response = await fetch('/api/table-management/seat-party', {
+      // Call the table actions API with occupy_table action
+      const response = await fetch('/api/table-sessions/actions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'occupy_table',
           table_id: table.id,
-          venue_id: venueId,
-          reservation_id: table.reserved_now_id || null
+          venue_id: venueId
         })
       });
       
       const result = await response.json();
       
       if (result.success) {
-        // Show QR code popup
-        setQrData(result.qr_data);
+        // Show QR code popup with basic data
+        setQrData({
+          table_id: table.id,
+          table_label: table.label,
+          venue_id: venueId,
+          qr_url: `${window.location.origin}/order?venue=${venueId}&table=${table.label}`,
+          timestamp: new Date().toISOString()
+        });
         setShowSeatPartyQR(true);
         
         // Start timer
@@ -139,9 +145,11 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         onActionComplete?.();
       } else {
         console.error('[TABLE CARD] Seat party failed:', result.error);
+        alert(`Failed to seat party: ${result.error}`);
       }
     } catch (error) {
       console.error('[TABLE CARD] Seat party error:', error);
+      alert(`Error seating party: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
