@@ -159,7 +159,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => router.push(`/dashboard/${venueId}/qr-codes`)}
+              onClick={() => router.push(`/generate-qr?venue=${venueId}`)}
             >
               <QrCode className="h-4 w-4" />
             </Button>
