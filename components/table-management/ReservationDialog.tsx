@@ -44,10 +44,16 @@ export function ReservationDialog({
     }
   }, [isOpen]);
 
-  // Set default time to current time
+  // Set default time to current time in local timezone
   const getDefaultTime = () => {
     const now = new Date();
-    return now.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+    // Format as YYYY-MM-DDTHH:MM for datetime-local input
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const handleSubmit = async () => {
@@ -73,6 +79,10 @@ export function ReservationDialog({
       setIsLoading(true);
       setError(null);
 
+      // Convert local time to UTC for server
+      const localDateTime = new Date(reservationTime);
+      const utcDateTime = localDateTime.toISOString();
+
       const response = await fetch('/api/table-sessions/actions', {
         method: 'POST',
         headers: {
@@ -85,7 +95,7 @@ export function ReservationDialog({
           customer_name: customerName.trim(),
           customer_phone: '', // Add phone field if needed
           party_size: 2, // Default party size, could be made configurable
-          reservation_time: reservationTime,
+          reservation_time: utcDateTime,
           reservation_duration: reservationDuration
         }),
       });
