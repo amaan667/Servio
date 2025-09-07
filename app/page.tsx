@@ -1,13 +1,11 @@
 "use client";
 
-// Updated: Fresh deployment to ensure all changes are live
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/app/auth/AuthProvider";
 import {
   QrCode,
   Smartphone,
@@ -68,18 +66,18 @@ function PricingQuickCompare() {
   );
 }
 
-function HomePageContent() {
+export default function HomePage() {
   const router = useRouter();
-  const { session, loading } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
 
-  console.log('[HOME PAGE] Auth state:', { session: !!session, loading, userId: session?.user?.id });
+  useEffect(() => {
+    // Simple loading state to prevent hydration issues
+    const timer = setTimeout(() => setIsLoading(false), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleGetStarted = () => {
-    if (session) {
-      router.push("/dashboard");
-    } else {
-      router.push("/sign-in");
-    }
+    router.push("/sign-in");
   };
 
   const handleSignIn = () => {
@@ -89,6 +87,17 @@ function HomePageContent() {
   const handleDemo = () => {
     router.push("/order?demo=1");
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -117,19 +126,17 @@ function HomePageContent() {
                   onClick={handleGetStarted}
                   className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
                 >
-                  {session ? 'Go to Dashboard' : 'Start Free Trial'}
+                  Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                {!session && (
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
-                    onClick={handleSignIn}
-                  >
-                    Sign In
-                  </Button>
-                )}
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                  onClick={handleSignIn}
+                >
+                  Sign In
+                </Button>
                 <Button
                   size="lg"
                   variant="outline"
@@ -406,19 +413,17 @@ function HomePageContent() {
               onClick={handleGetStarted}
               className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
             >
-              {session ? 'Go to Dashboard' : 'Start Your Free Trial'}
+              Start Your Free Trial
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            {!session && (
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
-                onClick={handleSignIn}
-              >
-                Sign In
-              </Button>
-            )}
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+              onClick={handleSignIn}
+            >
+              Sign In
+            </Button>
             <Button
               size="lg"
               variant="outline"
@@ -575,20 +580,5 @@ function HomePageContent() {
         </div>
       </footer>
     </div>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    }>
-      <HomePageContent />
-    </Suspense>
   );
 }
