@@ -145,10 +145,10 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
       const tooLong = raw.items.filter((i: any) => (i.name||'').length > 80);
       console.log('[PARSE] drop_name_too_long', tooLong.length, tooLong.map((i: any) => i.name.slice(0,50)));
 
-      const noPrice = raw.items.filter((i: any) => typeof i.price !== 'number' || isNaN(i.price));
+      const noPrice = raw.items.filter((i: any) => typeof i.price !== 'number' || isNaN(i.price) || i.price === 0);
       console.log('[PARSE] drop_no_price', noPrice.length, noPrice.map((i: any) => i.name));
 
-      const afterBasic = raw.items.filter((i: any) => (i.name||'').length && typeof i.price === 'number' && !isNaN(i.price));
+      const afterBasic = raw.items.filter((i: any) => (i.name||'').length && typeof i.price === 'number' && !isNaN(i.price) && i.price > 0);
       console.log('[PARSE] basic_ok', afterBasic.length);
 
       const { kept, moved } = filterSectionItems(sec.name, afterBasic);
@@ -189,7 +189,7 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
     category: item.category || 'Uncategorized',
     available: Boolean(item.available ?? true),
     order_index: Number.isFinite(item.order_index) ? item.order_index : index,
-  })).filter((item: any) => !isNaN(item.price) && item.name.length > 0);
+  })).filter((item: any) => !isNaN(item.price) && item.price > 0 && item.name.length > 0);
 
   console.log('[VERIFY] source_total', rawTotal, 'final_validated', validatedItems.length);
 
@@ -220,12 +220,13 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
     }`,
     "Rules:",
     "- Preserve category names and menu order as they appear.",
-    "- Include only items with prices; convert £/€ to numbers (no symbols).",
-    "- Extract EVERY single menu item with a price - do not miss any.",
+    "- CRITICAL: Only include items with clear prices. If no price is visible, DO NOT include the item.",
     "- Look for price patterns like £X.XX, €X.XX, $X.XX, or just numbers.",
+    "- Extract EVERY single menu item with a price - do not miss any.",
     "- If no clear categories exist, group items logically (e.g., 'FOOD', 'DRINKS').",
-    "- Be thorough - extract ALL items, even if they seem incomplete.",
+    "- Be thorough - extract ALL items with prices, even if they seem incomplete.",
     "- For items without clear categories, assign a default category based on context.",
+    "- DO NOT include items without prices - skip them entirely.",
   ].join("\n");
 
   const user = `OCR TEXT:\n${sanitizeText(ocrText)}`;
