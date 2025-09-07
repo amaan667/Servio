@@ -81,8 +81,8 @@ table_counters as (
 ),
 reservation_counters as (
   select 
-    count(distinct case when r.status = 'BOOKED' and r.start_at <= b.now_utc + interval '30 minutes' and r.start_at > b.now_utc then r.table_id end)::int as reserved_now,
-    count(distinct case when r.status = 'BOOKED' and r.start_at > b.now_utc + interval '30 minutes' then r.table_id end)::int as reserved_later
+    count(distinct case when r.status = 'BOOKED' and r.start_at <= now() + interval '30 minutes' and r.start_at > now() then r.table_id end)::int as reserved_now,
+    count(distinct case when r.status = 'BOOKED' and r.start_at > now() + interval '30 minutes' then r.table_id end)::int as reserved_later
   from public.reservations r
   inner join public.tables t on t.id = r.table_id
   where t.venue_id = p_venue_id and t.is_active = true
