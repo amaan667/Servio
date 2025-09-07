@@ -67,11 +67,13 @@ export function ReservationDialog({
       return;
     }
 
-    // Validate reservation time is not in the past
+    // Validate reservation time is not too far in the past (allow current time)
     const selectedTime = new Date(reservationTime);
     const now = new Date();
-    if (selectedTime <= now) {
-      setError('Reservation time must be in the future');
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
+    
+    if (selectedTime < fiveMinutesAgo) {
+      setError('Reservation time cannot be more than 5 minutes in the past');
       return;
     }
 
@@ -165,7 +167,7 @@ export function ReservationDialog({
               value={reservationTime || getDefaultTime()}
               onChange={(e) => setReservationTime(e.target.value)}
               disabled={isLoading}
-              min={new Date().toISOString().slice(0, 16)}
+              min={new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16)}
             />
           </div>
 

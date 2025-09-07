@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
 
     console.log('[TABLE ACTIONS API] Authenticated user:', user.id);
 
-    // Use admin client for table operations to bypass RLS
-    const supabase = createAdminClient();
+    // Use regular client for table operations
+    const supabase = await createClient();
 
     // Verify venue ownership
     const { data: venue, error: venueError } = await supabase
@@ -285,12 +285,13 @@ async function handleCloseTable(supabase: any, table_id: string) {
 async function handleReserveTable(supabase: any, table_id: string, customer_name: string, reservation_time: string, reservation_duration: number = 60) {
   console.log('[TABLE ACTIONS] Starting reserve table for:', { table_id, customer_name, reservation_time });
   
-  // Get venue_id from table
-  const { data: table, error: tableError } = await supabase
-    .from('tables')
-    .select('venue_id')
-    .eq('id', table_id)
-    .single();
+  try {
+    // Get venue_id from table
+    const { data: table, error: tableError } = await supabase
+      .from('tables')
+      .select('venue_id')
+      .eq('id', table_id)
+      .single();
 
   if (tableError || !table) {
     console.error('[TABLE ACTIONS] Error fetching table for reservation:', tableError);
@@ -435,6 +436,10 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
   }
 
   return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[TABLE ACTIONS] Unexpected error in handleReserveTable:', error);
+    return NextResponse.json({ error: 'Internal server error in reservation' }, { status: 500 });
+  }
 }
 
 async function handleOccupyTable(supabase: any, table_id: string) {
