@@ -17,6 +17,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useTableRuntimeState, useTableCounters, TableRuntimeState } from '@/hooks/useTableRuntimeState';
+import { useTableRealtime } from '@/hooks/useTableRealtime';
 import { TableCardRefactored } from '@/components/table-management/TableCardRefactored';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFiltersRefactored } from '@/components/table-management/TabFiltersRefactored';
@@ -48,8 +49,16 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
       reserved_later: 0, 
       unassigned_reservations: 0 
     }, 
-    isLoading: countersLoading 
+    isLoading: countersLoading,
+    refetch: refetchCounters
   } = useTableCounters(venueId);
+
+  // Set up real-time updates for table changes
+  useTableRealtime(venueId, () => {
+    console.log('[TABLE_MANAGEMENT] Real-time update triggered, refetching data');
+    refetchTables();
+    refetchCounters();
+  });
   
 
   const filteredTables = useMemo(() => {

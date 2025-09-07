@@ -66,7 +66,6 @@ export function useTableRuntimeState(venueId: string) {
       if (error) throw error;
       return data as TableRuntimeState[];
     },
-    refetchInterval: 10000, // Refresh every 10 seconds
     enabled: !!venueId
   });
 }
@@ -89,7 +88,6 @@ export function useTableCounters(venueId: string) {
       console.log('[TABLE COUNTERS] Processed result:', result);
       return result;
     },
-    refetchInterval: 10000,
     enabled: !!venueId
   });
 }
