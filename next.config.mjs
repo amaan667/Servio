@@ -18,16 +18,7 @@ const nextConfig = {
   // Remove legacy PDF/OCR externals
   serverExternalPackages: [],
   
-  // Fix dynamic server usage errors for Next.js 15
-  experimental: {
-    // Disable static generation for routes that use cookies
-    staticGenerationAsyncStorage: false,
-  },
-  
-  // Force dynamic rendering for routes that use authentication
-  generateStaticParams: async () => {
-    return [];
-  },
+  // Simplified config for production stability
   
   webpack: (config, { isServer }) => {
     config.resolve = config.resolve || {};
