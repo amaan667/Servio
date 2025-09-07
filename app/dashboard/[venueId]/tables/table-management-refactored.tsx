@@ -16,9 +16,9 @@ import {
   Calendar,
   UserCheck
 } from 'lucide-react';
-import { useTablesData, TableWithSession } from '@/hooks/useTablesData';
-import { useTableCounters } from '@/hooks/useTableCounters';
-import { TableCard } from '@/components/table-management/TableCard';
+import { useTableRuntimeState, useTableCounters, TableRuntimeState } from '@/hooks/useTableRuntimeState';
+import { useTableRealtime } from '@/hooks/useTableRealtime';
+import { TableCardRefactored } from '@/components/table-management/TableCardRefactored';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFiltersRefactored } from '@/components/table-management/TabFiltersRefactored';
 
@@ -34,27 +34,31 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
   const router = useRouter();
   
   const { 
-    tables = [], 
-    loading: tablesLoading, 
+    data: tables = [], 
+    isLoading: tablesLoading, 
     error: tablesError, 
     refetch: refetchTables 
-  } = useTablesData(venueId);
+  } = useTableRuntimeState(venueId);
   
   const { 
-    counters, 
-    loading: countersLoading,
+    data: counters = { 
+      total_tables: 0, 
+      available: 0, 
+      occupied: 0, 
+      reserved_now: 0, 
+      reserved_later: 0, 
+      unassigned_reservations: 0 
+    }, 
+    isLoading: countersLoading,
     refetch: refetchCounters
   } = useTableCounters(venueId);
 
-  // Provide default values to prevent null reference errors
-  const safeCounters = counters || { 
-    tables_set_up: 0, 
-    free_now: 0, 
-    in_use_now: 0, 
-    reserved_now: 0, 
-    reserved_later: 0, 
-    block_window_mins: 0
-  };
+  // Set up real-time updates for table changes
+  useTableRealtime(venueId, () => {
+    console.log('[TABLE_MANAGEMENT] Real-time update triggered, refetching data');
+    refetchTables();
+    refetchCounters();
+  });
   
 
   const filteredTables = useMemo(() => {
@@ -71,18 +75,16 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     // Apply status filter
     switch (filter) {
       case 'FREE':
-        filtered = filtered.filter(table => table.status === 'FREE');
+        filtered = filtered.filter(table => table.primary_status === 'FREE');
         break;
       case 'OCCUPIED':
-        filtered = filtered.filter(table => 
-          ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(table.status)
-        );
+        filtered = filtered.filter(table => table.primary_status === 'OCCUPIED');
         break;
       case 'RESERVED_NOW':
-        filtered = filtered.filter(table => table.status === 'RESERVED' && table.reserved_now_id);
+        filtered = filtered.filter(table => table.reservation_status === 'RESERVED_NOW');
         break;
       case 'RESERVED_LATER':
-        filtered = filtered.filter(table => table.status === 'RESERVED' && table.reserved_later_id);
+        filtered = filtered.filter(table => table.reservation_status === 'RESERVED_LATER');
         break;
       // 'ALL' shows all tables
     }
@@ -92,13 +94,13 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
 
   const filterCounts = useMemo(() => {
     return {
-      all: safeCounters.tables_set_up,
-      free: safeCounters.free_now,
-      occupied: safeCounters.in_use_now,
-      reserved_now: safeCounters.reserved_now,
-      reserved_later: safeCounters.reserved_later,
+      all: counters.total_tables,
+      free: counters.available,
+      occupied: counters.occupied,
+      reserved_now: counters.reserved_now,
+      reserved_later: counters.reserved_later,
     };
-  }, [safeCounters]);
+  }, [counters]);
 
   const handleTableActionComplete = () => {
     refetchTables();
@@ -140,12 +142,14 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     <div className="mx-auto max-w-7xl p-4 md:p-6">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+
         <div className="flex flex-wrap items-center gap-3 pb-3">
           <h1 className="text-2xl font-semibold">Table Management</h1>
           
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+
               <Input
                 placeholder="Search tables…"
                 value={searchQuery}
@@ -223,8 +227,8 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
         <section className="mt-6">
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
             {filteredTables.map((table) => (
-              <TableCard
-                key={table.id}
+              <TableCardRefactored
+                key={table.table_id}
                 table={table}
                 venueId={venueId}
                 onActionComplete={handleTableActionComplete}
@@ -243,7 +247,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tables Set Up</p>
-                  <p className="text-2xl font-bold text-gray-800">{safeCounters.tables_set_up}</p>
+                  <p className="text-2xl font-bold text-gray-800">{counters.total_tables}</p>
                 </div>
                 <Users className="h-8 w-8 text-gray-500" />
               </div>
@@ -255,7 +259,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Free Now</p>
-                  <p className="text-2xl font-bold text-green-600">{safeCounters.free_now}</p>
+                  <p className="text-2xl font-bold text-green-600">{counters.available}</p>
                 </div>
                 <Clock className="h-8 w-8 text-green-500" />
               </div>
@@ -267,7 +271,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">In Use Now</p>
-                  <p className="text-2xl font-bold text-amber-600">{safeCounters.in_use_now}</p>
+                  <p className="text-2xl font-bold text-amber-600">{counters.occupied}</p>
                 </div>
                 <UserCheck className="h-8 w-8 text-amber-500" />
               </div>
