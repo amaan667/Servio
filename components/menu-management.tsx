@@ -90,7 +90,8 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
   const [batchEditValue, setBatchEditValue] = useState<any>(null);
   const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
 
-  const venueUuid = session.venue.id;
+  const venueUuid = venueId;
+  const supabase = createClient();
 
   const fetchMenu = async () => {
     if (!supabase) {
