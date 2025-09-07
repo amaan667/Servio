@@ -384,6 +384,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
 
   if (existingSession) {
     // Update existing session
+    console.log('[TABLE ACTIONS] Updating existing session:', existingSession.id);
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .update({ 
@@ -397,10 +398,17 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
 
     if (sessionError) {
       console.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+      console.error('[TABLE ACTIONS] Session update details:', {
+        sessionId: existingSession.id,
+        tableId: table_id,
+        error: sessionError
+      });
       return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
     }
+    console.log('[TABLE ACTIONS] Successfully updated session:', existingSession.id);
   } else {
     // Create new session
+    console.log('[TABLE ACTIONS] Creating new session for table:', table_id);
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .insert({
@@ -416,8 +424,14 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
 
     if (sessionError) {
       console.error('[TABLE ACTIONS] Error creating session:', sessionError);
+      console.error('[TABLE ACTIONS] Session creation details:', {
+        tableId: table_id,
+        venueId: table.venue_id,
+        error: sessionError
+      });
       return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
     }
+    console.log('[TABLE ACTIONS] Successfully created new session for table:', table_id);
   }
 
   return NextResponse.json({ success: true });
