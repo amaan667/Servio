@@ -234,6 +234,7 @@ export function TableCardRefactored({
   const quickActions = getQuickActions();
 
   return (
+    <>
     <Card className="relative overflow-hidden">
       <CardContent className="p-4">
         {/* Header */}
@@ -403,5 +404,6 @@ export function TableCardRefactored({
       }))}
       onActionComplete={onActionComplete}
     />
+    </>
   );
 }
