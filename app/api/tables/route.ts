@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const venueId = searchParams.get('venueId');
+    const venueId = searchParams.get('venue_id') || searchParams.get('venueId');
 
     if (!venueId) {
       return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
@@ -33,21 +33,68 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get table runtime state using the view
-    const { data: tables, error } = await supabase
-      .from('table_runtime_state')
+    // Get tables with their current sessions using a simpler approach
+    const { data: tables, error: tablesError } = await supabase
+      .from('tables')
       .select('*')
       .eq('venue_id', venueId)
+      .eq('is_active', true)
       .order('label');
 
-    if (error) {
-      console.error('[TABLES GET] Error:', error);
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    if (tablesError) {
+      console.error('[TABLES GET] Tables error:', tablesError);
+      return NextResponse.json({ ok: false, error: tablesError.message }, { status: 500 });
     }
+
+    // Get current sessions for each table
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('table_sessions')
+      .select('*')
+      .eq('venue_id', venueId)
+      .in('table_id', tables?.map(t => t.id) || []);
+
+    if (sessionsError) {
+      console.error('[TABLES GET] Sessions error:', sessionsError);
+      return NextResponse.json({ ok: false, error: sessionsError.message }, { status: 500 });
+    }
+
+    // Combine tables with their sessions
+    const tablesWithSessions = tables?.map(table => {
+      const session = sessions?.find(s => s.table_id === table.id);
+      return {
+        ...table,
+        session_id: session?.id || null,
+        status: session?.status || 'FREE',
+        order_id: session?.order_id || null,
+        opened_at: session?.opened_at || null,
+        closed_at: session?.closed_at || null,
+        total_amount: session?.total_amount || null,
+        customer_name: session?.customer_name || null,
+        order_status: session?.order_status || null,
+        payment_status: session?.payment_status || null,
+        order_updated_at: session?.order_updated_at || null,
+        reservation_time: session?.reservation_time || null,
+        reservation_duration_minutes: session?.reservation_duration_minutes || null,
+        reservation_end_time: session?.reservation_end_time || null,
+        reservation_created_at: session?.reservation_created_at || null,
+        most_recent_activity: session?.most_recent_activity || table.table_created_at,
+        reserved_now_id: null,
+        reserved_now_start: null,
+        reserved_now_end: null,
+        reserved_now_name: null,
+        reserved_now_phone: null,
+        reserved_later_id: null,
+        reserved_later_start: null,
+        reserved_later_end: null,
+        reserved_later_name: null,
+        reserved_later_phone: null,
+        block_window_mins: 0
+      };
+    }) || [];
 
     return NextResponse.json({
       ok: true,
-      tables: tables || []
+      tables: tablesWithSessions
     });
 
   } catch (error) {
