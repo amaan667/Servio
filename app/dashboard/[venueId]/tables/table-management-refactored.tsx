@@ -17,7 +17,7 @@ import {
   UserCheck,
   UserX
 } from 'lucide-react';
-import { useTableRuntimeState, TableRuntimeState } from '@/hooks/useTableRuntimeState';
+import { useTableRuntimeState, useTableCounters, useUnassignedReservations, TableRuntimeState } from '@/hooks/useTableRuntimeState';
 import { TableCardRefactored } from '@/components/table-management/TableCardRefactored';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFiltersRefactored } from '@/components/table-management/TabFiltersRefactored';
@@ -39,7 +39,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     isLoading: tablesLoading, 
     error: tablesError, 
     refetch: refetchTables 
-  } = useTableRuntimeState.useTableRuntimeState(venueId);
+  } = useTableRuntimeState(venueId);
   
   const { 
     data: counters = { 
@@ -51,12 +51,12 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
       unassigned_reservations: 0 
     }, 
     isLoading: countersLoading 
-  } = useTableRuntimeState.useTableCounters(venueId);
+  } = useTableCounters(venueId);
   
   const { 
     data: unassignedReservations = [], 
     isLoading: reservationsLoading 
-  } = useTableRuntimeState.useUnassignedReservations(venueId);
+  } = useUnassignedReservations(venueId);
 
   const filteredTables = useMemo(() => {
     let filtered = tables;
