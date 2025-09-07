@@ -17,6 +17,10 @@ CREATE TYPE table_status AS ENUM ('FREE', 'OCCUPIED');
 ALTER TABLE table_sessions 
 DROP CONSTRAINT IF EXISTS table_sessions_status_check;
 
+-- Remove the default value to avoid casting issues
+ALTER TABLE table_sessions 
+ALTER COLUMN status DROP DEFAULT;
+
 -- First, update existing data to map to new enum values
 UPDATE table_sessions 
 SET status = CASE 
@@ -28,6 +32,10 @@ END;
 -- Now change the column type
 ALTER TABLE table_sessions 
 ALTER COLUMN status TYPE table_status USING status::table_status;
+
+-- Set the new default value
+ALTER TABLE table_sessions 
+ALTER COLUMN status SET DEFAULT 'FREE'::table_status;
 
 -- Add server_id column for tracking who opened the session
 ALTER TABLE table_sessions 
@@ -45,6 +53,10 @@ CREATE TYPE reservation_status AS ENUM ('BOOKED', 'CHECKED_IN', 'CANCELLED', 'NO
 ALTER TABLE reservations 
 DROP CONSTRAINT IF EXISTS reservations_status_check;
 
+-- Remove the default value to avoid casting issues
+ALTER TABLE reservations 
+ALTER COLUMN status DROP DEFAULT;
+
 -- First, update existing data to map to new enum values
 UPDATE reservations 
 SET status = CASE 
@@ -58,6 +70,10 @@ END;
 -- Now change the column type
 ALTER TABLE reservations 
 ALTER COLUMN status TYPE reservation_status USING status::reservation_status;
+
+-- Set the new default value
+ALTER TABLE reservations 
+ALTER COLUMN status SET DEFAULT 'BOOKED'::reservation_status;
 
 -- Ensure table_id can be null for unassigned reservations
 ALTER TABLE reservations 
