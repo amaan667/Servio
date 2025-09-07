@@ -16,6 +16,9 @@ interface DashboardCounts {
   history_count: number;
   today_orders_count: number;
   active_tables_count: number;
+  tables_set_up: number;
+  tables_in_use: number;
+  tables_reserved_now: number;
 }
 
 interface DashboardStats {
@@ -48,7 +51,10 @@ export default function VenueDashboardClient({
     earlier_today_count: 0,
     history_count: 0,
     today_orders_count: 0,
-    active_tables_count: 0
+    active_tables_count: 0,
+    tables_set_up: 0,
+    tables_in_use: 0,
+    tables_reserved_now: 0
   });
   const [stats, setStats] = useState<DashboardStats>(initialStats || { revenue: 0, menuItems: 0, unpaid: 0 });
   const [statsLoaded, setStatsLoaded] = useState(false);
@@ -405,16 +411,16 @@ export default function VenueDashboardClient({
             </Card>
           </Link>
 
-           <Link href={`/generate-qr?venue=${venueId}`}>
+           <Link href={`/dashboard/${venueId}/tables`}>
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">Tables Set Up</p>
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.active_tables_count}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{counts.tables_set_up}</p>
                   </div>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                    <Table className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                   </div>
                 </div>
               </CardContent>
