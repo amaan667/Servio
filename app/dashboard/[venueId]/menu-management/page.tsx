@@ -46,6 +46,12 @@ export default async function MenuManagementPage({ params }: { params: { venueId
   }
 
   console.log('[MENU MANAGEMENT] Venue loaded:', venue.name);
+  console.log('[MENU MANAGEMENT] Venue details:', {
+    venue_id: venue.venue_id,
+    slug: venue.slug,
+    params_venueId: params.venueId,
+    name: venue.name
+  });
 
   return (
     <div className="min-h-screen bg-background">

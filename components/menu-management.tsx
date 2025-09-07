@@ -105,6 +105,16 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     console.log('[AUTH DEBUG] Fetching menu for venue:', venueId, 'venueUuid:', venueUuid);
 
     try {
+      // First, let's check if there are ANY menu items in the database
+      const { data: allItems, error: allItemsError } = await supabase
+        .from("menu_items")
+        .select("venue_id, name, id, created_at")
+        .limit(10);
+      
+      console.log('[AUTH DEBUG] All menu items in database:', allItems);
+      console.log('[AUTH DEBUG] All items error:', allItemsError);
+
+      // Now query for this specific venue
       const { data, error } = await supabase
         .from("menu_items")
         .select("*")

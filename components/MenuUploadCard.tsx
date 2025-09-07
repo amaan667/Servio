@@ -51,11 +51,15 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     setIsProcessing(true);
 
     try {
+      console.log('[MENU UPLOAD] Starting PDF upload for venue:', venueId);
+      
       if (fileExtension === '.pdf') {
         // Send PDF directly to process-pdf endpoint
         const formData = new FormData();
         formData.append('file', file);
         formData.append('venue_id', venueId);
+        
+        console.log('[MENU UPLOAD] FormData prepared with venue_id:', venueId);
         
         const response = await fetch('/api/menu/process-pdf', {
           method: 'POST',
