@@ -79,11 +79,19 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    console.log('[HOME PAGE] Auth state changed:', { 
+      hasUser: !!user, 
+      authLoading, 
+      isLoading,
+      userId: user?.id 
+    });
+    
     // Auto-redirect authenticated users to dashboard
-    if (!authLoading && user) {
+    if (!authLoading && !isLoading && user) {
+      console.log('[HOME PAGE] User authenticated, redirecting to dashboard');
       router.push("/dashboard");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, isLoading, router]);
 
   const handleGetStarted = () => {
     if (user) {
@@ -110,6 +118,7 @@ export default function HomePage() {
   };
 
   if (isLoading || authLoading) {
+    console.log('[HOME PAGE] Showing loading state:', { isLoading, authLoading });
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
