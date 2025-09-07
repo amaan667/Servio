@@ -61,24 +61,22 @@ export default async function GenerateQRPage() {
         p_live_window_mins: 30
       });
       
-      // Use the same dashboard_counts function to get consistent counts
-      // Try with exact same parameters that worked in SQL Editor
+      // Use the api_table_counters function instead (same as table management page)
       const { data: countsData, error: countsError } = await supabase
-        .rpc('dashboard_counts', {
-          p_venue_id: 'venue-1e02af4d', // Use exact venue ID from SQL test
-          p_tz: 'Europe/London',
-          p_live_window_mins: 30
-        })
-        .single();
+        .rpc('api_table_counters', {
+          p_venue_id: 'venue-1e02af4d'
+        });
       
       if (countsError) {
         console.error('🔍 [QR PAGE] Dashboard counts error:', countsError);
         activeTablesError = countsError;
       } else {
-        // Use tables_set_up to match the table management page
+        // api_table_counters returns a single object, not an array
+        const result = Array.isArray(countsData) ? countsData[0] : countsData;
         console.log('🔍 [QR PAGE] Raw countsData:', countsData);
-        console.log('🔍 [QR PAGE] tables_set_up value:', countsData?.tables_set_up);
-        activeTablesCount = countsData?.tables_set_up || 0;
+        console.log('🔍 [QR PAGE] Processed result:', result);
+        console.log('🔍 [QR PAGE] total_tables value:', result?.total_tables);
+        activeTablesCount = result?.total_tables || 0;
         console.log('🔍 [QR PAGE] Final activeTablesCount:', activeTablesCount);
       }
     } catch (queryError) {
