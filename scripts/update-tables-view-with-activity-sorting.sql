@@ -1,7 +1,9 @@
--- Create tables_with_sessions view to fix table management 500 error
+-- Update tables_with_sessions view to include most_recent_activity field for sorting
 -- Run this in your Supabase SQL Editor
 
--- 1. Create the missing tables_with_sessions view
+-- Drop and recreate the view with the new most_recent_activity field
+DROP VIEW IF EXISTS tables_with_sessions;
+
 CREATE OR REPLACE VIEW tables_with_sessions AS
 SELECT 
     t.id,
@@ -49,9 +51,9 @@ LEFT JOIN orders o ON ts.order_id = o.id
 LEFT JOIN reservations r ON ts.table_id = r.table_id AND r.status = 'BOOKED'
 WHERE t.is_active = true;
 
--- 2. Grant permissions on the view
+-- Grant permissions on the view
 GRANT SELECT ON tables_with_sessions TO authenticated;
 GRANT SELECT ON tables_with_sessions TO service_role;
 
--- 3. Show completion message
-SELECT 'tables_with_sessions view created successfully!' as message;
+-- Show completion message
+SELECT 'tables_with_sessions view updated with most_recent_activity field!' as message;

@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
           .from('tables_with_sessions')
           .select('*')
           .eq('venue_id', venueId)
-          .order('label', { ascending: true });
+          .order('most_recent_activity', { ascending: false });
         
         if (result.error) {
           console.log('[TABLES API] View query failed:', result.error);
@@ -196,6 +196,16 @@ export async function GET(req: NextRequest) {
             const order = session?.order_id ? ordersResult.data?.find(o => o.id === session.order_id) : null;
             const reservation = session?.status === 'RESERVED' ? reservationsResult.data?.find(r => r.table_id === table.id) : null;
             
+            // Calculate the most recent activity timestamp
+            const timestamps = [
+              session?.opened_at,
+              order?.updated_at,
+              reservation?.created_at,
+              table.created_at
+            ].filter(Boolean).map(ts => new Date(ts).getTime());
+            
+            const mostRecentActivity = timestamps.length > 0 ? new Date(Math.max(...timestamps)).toISOString() : table.created_at;
+            
             const tableData = {
               id: table.id,
               venue_id: table.venue_id,
@@ -220,6 +230,7 @@ export async function GET(req: NextRequest) {
                 ? new Date(new Date(session.reservation_time).getTime() + session.reservation_duration_minutes * 60 * 1000).toISOString()
                 : null,
               reservation_created_at: reservation?.created_at || null,
+              most_recent_activity: mostRecentActivity,
             };
             
             // Debug logging for reserved tables
@@ -229,11 +240,15 @@ export async function GET(req: NextRequest) {
                 label: tableData.label,
                 customer_name: tableData.customer_name,
                 reservation_time: tableData.reservation_time,
+                most_recent_activity: tableData.most_recent_activity,
                 reservation: reservation
               });
             }
             
             return tableData;
+          }).sort((a, b) => {
+            // Sort by most recent activity (newest first)
+            return new Date(b.most_recent_activity).getTime() - new Date(a.most_recent_activity).getTime();
           }) || [],
           error: null
         };

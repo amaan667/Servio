@@ -22,6 +22,7 @@ export interface TableWithSession {
   reservation_duration_minutes: number | null;
   reservation_end_time: string | null;
   reservation_created_at: string | null;
+  most_recent_activity: string;
 }
 
 export function useTablesData(venueId: string) {
