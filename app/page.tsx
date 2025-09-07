@@ -78,12 +78,8 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    // Auto-redirect authenticated users to dashboard
-    if (!authLoading && user) {
-      router.push("/dashboard");
-    }
-  }, [user, authLoading, router]);
+  // Remove automatic redirect - let users see the home page content
+  // They can navigate to dashboard via the "Go to Dashboard" button
 
   const handleGetStarted = () => {
     if (user) {
