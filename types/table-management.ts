@@ -47,6 +47,7 @@ export interface Reservation {
 export interface TableRuntimeState {
   // Table info
   table_id: string;
+  venue_id: string;
   label: string;
   seat_count: number;
   area: string | null;
@@ -54,12 +55,12 @@ export interface TableRuntimeState {
   
   // Live session state
   session_id: string | null;
-  live_status: TableStatus | null;
+  primary_status: TableStatus | null;
   opened_at: string | null;
   server_id: string | null;
   
   // Reservation state
-  reservation_state: ReservationState;
+  reservation_status: ReservationState;
   
   // Current reservation (if any)
   reserved_now_id: string | null;
@@ -91,12 +92,11 @@ export interface UnassignedReservation {
 }
 
 export interface TableCounters {
-  totalTables: number;
-  available: number;
-  occupied: number;
-  reservedNow: number;
-  reservedLater: number;
-  unassignedReservations: number;
+  tables_set_up: number;
+  in_use_now: number;
+  reserved_now: number;
+  reserved_later: number;
+  waiting: number;
 }
 
 // API Request/Response types

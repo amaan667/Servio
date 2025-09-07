@@ -49,7 +49,7 @@ export async function GET(req: Request) {
         status,
         created_at,
         updated_at,
-        tables!inner(label)
+        tables(label)
       `)
       .eq('venue_id', venueId)
       .order('start_at', { ascending: true });

@@ -45,23 +45,21 @@ export async function GET(req: Request) {
 
     // The function returns a single row with all counters
     const counter = counters?.[0] || {
-      total_tables: 0,
-      available: 0,
-      occupied: 0,
+      tables_set_up: 0,
+      in_use_now: 0,
       reserved_now: 0,
       reserved_later: 0,
-      unassigned_reservations: 0
+      waiting: 0
     };
 
     return NextResponse.json({
       ok: true,
       counters: {
-        totalTables: Number(counter.total_tables),
-        available: Number(counter.available),
-        occupied: Number(counter.occupied),
-        reservedNow: Number(counter.reserved_now),
-        reservedLater: Number(counter.reserved_later),
-        unassignedReservations: Number(counter.unassigned_reservations)
+        tables_set_up: Number(counter.tables_set_up),
+        in_use_now: Number(counter.in_use_now),
+        reserved_now: Number(counter.reserved_now),
+        reserved_later: Number(counter.reserved_later),
+        waiting: Number(counter.waiting)
       }
     });
 
