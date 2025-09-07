@@ -84,6 +84,9 @@ export function useTableCounters(venueId: string) {
         throw error;
       }
       console.log('[TABLE COUNTERS] Raw data:', data);
+      console.log('[TABLE COUNTERS] Raw data type:', typeof data, 'Array?', Array.isArray(data));
+      console.log('[TABLE COUNTERS] First element:', data?.[0]);
+      console.log('[TABLE COUNTERS] First element keys:', data?.[0] ? Object.keys(data[0]) : 'No data');
       const result = data[0] as TableCounters;
       console.log('[TABLE COUNTERS] Processed result:', result);
       console.log('[TABLE COUNTERS] Field mapping check:', {
