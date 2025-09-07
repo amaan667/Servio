@@ -248,8 +248,25 @@ export async function POST(req: Request) {
       .from('menu_items')
       .select('name')
       .eq('venue_id', venueId);
-    const existingNames = new Set((existing || []).map((r:any)=>String(r.name||'').toLowerCase()));
-    const toInsert = itemsToUpsert.filter(it=>!existingNames.has(String(it.name).toLowerCase()));
+    
+    // Create a more robust duplicate detection function
+    const normalizeName = (name: string) => {
+      return String(name || '')
+        .toLowerCase()
+        .replace(/[-\s]+/g, ' ') // Replace hyphens and multiple spaces with single space
+        .replace(/[^\w\s]/g, '') // Remove special characters except letters, numbers, and spaces
+        .trim();
+    };
+    
+    const existingNames = new Set((existing || []).map((r:any) => normalizeName(r.name)));
+    const toInsert = itemsToUpsert.filter(it => {
+      const normalizedNewName = normalizeName(it.name);
+      const isDuplicate = existingNames.has(normalizedNewName);
+      if (isDuplicate) {
+        console.log('[DUPLICATE] Skipping duplicate item:', it.name, '-> normalized:', normalizedNewName);
+      }
+      return !isDuplicate;
+    });
 
     let upsertedItems: any[] = [];
     if (toInsert.length) {
@@ -268,7 +285,8 @@ export async function POST(req: Request) {
     const total = validated.items.length;
     const skipped = total - inserted;
 
-    console.log('[PDF_PROCESS] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Total:', total);
+    const duplicatesSkipped = itemsToUpsert.length - toInsert.length;
+    console.log('[PDF_PROCESS] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Duplicates:', duplicatesSkipped, 'Total:', total);
     console.log('[PDF_PROCESS] Items that were inserted:', upsertedItems);
     console.log('[PDF_PROCESS] Venue ID used for insertion:', venueId);
 
