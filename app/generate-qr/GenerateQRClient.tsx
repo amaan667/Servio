@@ -577,6 +577,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground">Tables Set Up</p>
                 <p className="text-xl sm:text-2xl font-bold text-foreground">{activeTablesCount}</p>
                 <p className="text-xs text-muted-foreground mt-1">Tables configured in your venue</p>
+                <p className="text-xs text-red-500 mt-1">DEBUG: activeTablesCount = {activeTablesCount}</p>
               </div>
             </div>
           </CardContent>
