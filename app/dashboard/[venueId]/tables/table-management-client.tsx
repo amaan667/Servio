@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   Search, 
   Plus, 
-  HelpCircle, 
   Users, 
   Clock,
   AlertCircle,
@@ -19,7 +19,6 @@ import { useTablesData, TableWithSession } from '@/hooks/useTablesData';
 import { TableCard } from '@/components/table-management/TableCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFilters } from '@/components/table-management/TabFilters';
-import { QRCodeSelectionDialog } from '@/components/table-management/QRCodeSelectionDialog';
 
 type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLOSED';
 
@@ -30,8 +29,8 @@ interface TableManagementClientProps {
 export function TableManagementClient({ venueId }: TableManagementClientProps) {
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showQRDialog, setShowQRDialog] = useState(false);
   const { tables, loading, error, refetch } = useTablesData(venueId);
+  const router = useRouter();
 
   // Debug logging
   console.log('[TABLE MANAGEMENT] Component rendering:', { 
@@ -160,15 +159,11 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setShowQRDialog(true)}
+              onClick={() => router.push(`/dashboard/${venueId}/qr-codes`)}
             >
               <QrCode className="h-4 w-4" />
             </Button>
             <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
-            <Button variant="outline" size="sm">
-              <HelpCircle className="h-4 w-4 mr-2" />
-              Help
-            </Button>
           </div>
         </div>
         
@@ -295,13 +290,6 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
         </div>
       )}
 
-      {/* QR Code Selection Dialog */}
-      <QRCodeSelectionDialog
-        isOpen={showQRDialog}
-        onClose={() => setShowQRDialog(false)}
-        venueId={venueId}
-        availableTables={tables}
-      />
     </div>
   );
 }
