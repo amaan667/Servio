@@ -70,6 +70,8 @@ interface MenuManagementProps {
 type MenuItem = BaseMenuItem & { category_position?: number };
 
 export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagementProps) {
+  console.log('[MENU MANAGEMENT] Component rendered with:', { venueId, session: !!session, refreshTrigger });
+  
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -179,6 +181,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   };
 
   useEffect(() => {
+    console.log('[MENU MANAGEMENT] useEffect triggered - calling fetchMenu');
     fetchMenu();
 
     if (!supabase) return;
