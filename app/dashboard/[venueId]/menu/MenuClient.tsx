@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { useToast } from "@/hooks/use-toast";
@@ -46,21 +46,35 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   }, [venueId]);
 
   const loadMenuItems = async () => {
-    
-    const { data, error } = await supabase
-      .from('menu_items')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('category', { ascending: true })
-      .order('name', { ascending: true });
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('venue_id', venueId)
+        .order('category', { ascending: true })
+        .order('name', { ascending: true });
 
-
-    if (!error && data) {
-      setMenuItems(data);
-    } else if (error) {
-      // Silent error handling
+      if (!error && data) {
+        setMenuItems(data);
+      } else if (error) {
+        console.error('[MENU CLIENT] Error loading menu items:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load menu items",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error('[MENU CLIENT] Unexpected error:', err);
+      toast({
+        title: "Error",
+        description: "Failed to load menu items",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,6 +91,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
     if (editingItem) {
       // Update existing item
+      const supabase = createClient();
       const { error } = await supabase
         .from('menu_items')
         .update(itemData)
@@ -91,6 +106,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       }
     } else {
       // Add new item
+      const supabase = createClient();
       const { data, error } = await supabase
         .from('menu_items')
         .insert([itemData])
@@ -107,6 +123,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   };
 
   const handleDelete = async (itemId: string) => {
+    const supabase = createClient();
     const { error } = await supabase
       .from('menu_items')
       .delete()
@@ -119,6 +136,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   };
 
   const handleToggleAvailable = async (itemId: string, available: boolean) => {
+    const supabase = createClient();
     const { error } = await supabase
       .from('menu_items')
       .update({ available })

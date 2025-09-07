@@ -78,6 +78,13 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    // Auto-redirect authenticated users to dashboard
+    if (!authLoading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
+
   const handleGetStarted = () => {
     if (user) {
       // User is signed in, redirect to their dashboard
@@ -102,7 +109,7 @@ export default function HomePage() {
     router.push("/order?demo=1");
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
