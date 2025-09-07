@@ -70,8 +70,10 @@ export default async function GenerateQRPage() {
         activeTablesError = countsError;
       } else {
         // Use tables_set_up to match the table management page
+        console.log('🔍 [QR PAGE] Raw countsData:', countsData);
+        console.log('🔍 [QR PAGE] tables_set_up value:', countsData?.tables_set_up);
         activeTablesCount = countsData?.tables_set_up || 0;
-        console.log('🔍 [QR PAGE] Tables set up count:', activeTablesCount);
+        console.log('🔍 [QR PAGE] Final activeTablesCount:', activeTablesCount);
       }
     } catch (queryError) {
       console.error('🔍 [QR PAGE] Active tables query failed:', queryError);
