@@ -16,9 +16,9 @@ import {
   Calendar,
   UserCheck
 } from 'lucide-react';
-import { useTableRuntimeState, useTableCounters, TableRuntimeState } from '@/hooks/useTableRuntimeState';
-import { useTableRealtime } from '@/hooks/useTableRealtime';
-import { TableCardRefactored } from '@/components/table-management/TableCardRefactored';
+import { useTablesData, TableWithSession } from '@/hooks/useTablesData';
+import { useTableCounters } from '@/hooks/useTableCounters';
+import { TableCard } from '@/components/table-management/TableCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFiltersRefactored } from '@/components/table-management/TabFiltersRefactored';
 
@@ -34,31 +34,23 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
   const router = useRouter();
   
   const { 
-    data: tables = [], 
-    isLoading: tablesLoading, 
+    tables = [], 
+    loading: tablesLoading, 
     error: tablesError, 
     refetch: refetchTables 
-  } = useTableRuntimeState(venueId);
+  } = useTablesData(venueId);
   
   const { 
-    data: counters = { 
-      total_tables: 0, 
-      available: 0, 
-      occupied: 0, 
+    counters = { 
+      tables_set_up: 0, 
+      free_now: 0, 
+      in_use_now: 0, 
       reserved_now: 0, 
-      reserved_later: 0, 
-      unassigned_reservations: 0 
+      reserved_later: 0
     }, 
-    isLoading: countersLoading,
+    loading: countersLoading,
     refetch: refetchCounters
   } = useTableCounters(venueId);
-
-  // Set up real-time updates for table changes
-  useTableRealtime(venueId, () => {
-    console.log('[TABLE_MANAGEMENT] Real-time update triggered, refetching data');
-    refetchTables();
-    refetchCounters();
-  });
   
 
   const filteredTables = useMemo(() => {
@@ -75,16 +67,18 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     // Apply status filter
     switch (filter) {
       case 'FREE':
-        filtered = filtered.filter(table => table.primary_status === 'FREE');
+        filtered = filtered.filter(table => table.status === 'FREE');
         break;
       case 'OCCUPIED':
-        filtered = filtered.filter(table => table.primary_status === 'OCCUPIED');
+        filtered = filtered.filter(table => 
+          ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(table.status)
+        );
         break;
       case 'RESERVED_NOW':
-        filtered = filtered.filter(table => table.reservation_status === 'RESERVED_NOW');
+        filtered = filtered.filter(table => table.status === 'RESERVED' && table.reserved_now_id);
         break;
       case 'RESERVED_LATER':
-        filtered = filtered.filter(table => table.reservation_status === 'RESERVED_LATER');
+        filtered = filtered.filter(table => table.status === 'RESERVED' && table.reserved_later_id);
         break;
       // 'ALL' shows all tables
     }
@@ -94,9 +88,9 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
 
   const filterCounts = useMemo(() => {
     return {
-      all: counters.total_tables,
-      free: counters.available,
-      occupied: counters.occupied,
+      all: counters.tables_set_up,
+      free: counters.free_now,
+      occupied: counters.in_use_now,
       reserved_now: counters.reserved_now,
       reserved_later: counters.reserved_later,
     };
@@ -225,8 +219,8 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
         <section className="mt-6">
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
             {filteredTables.map((table) => (
-              <TableCardRefactored
-                key={table.table_id}
+              <TableCard
+                key={table.id}
                 table={table}
                 venueId={venueId}
                 onActionComplete={handleTableActionComplete}
@@ -245,7 +239,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tables Set Up</p>
-                  <p className="text-2xl font-bold text-gray-800">{counters.total_tables}</p>
+                  <p className="text-2xl font-bold text-gray-800">{counters.tables_set_up}</p>
                 </div>
                 <Users className="h-8 w-8 text-gray-500" />
               </div>
@@ -257,7 +251,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Free Now</p>
-                  <p className="text-2xl font-bold text-green-600">{counters.available}</p>
+                  <p className="text-2xl font-bold text-green-600">{counters.free_now}</p>
                 </div>
                 <Clock className="h-8 w-8 text-green-500" />
               </div>
@@ -269,7 +263,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">In Use Now</p>
-                  <p className="text-2xl font-bold text-amber-600">{counters.occupied}</p>
+                  <p className="text-2xl font-bold text-amber-600">{counters.in_use_now}</p>
                 </div>
                 <UserCheck className="h-8 w-8 text-amber-500" />
               </div>
