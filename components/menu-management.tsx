@@ -127,6 +127,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         error: error?.message,
         venueId,
         venueUuid,
+        queryVenueId: venueUuid,
         query: `SELECT * FROM menu_items WHERE venue_id = '${venueUuid}'`
       });
 

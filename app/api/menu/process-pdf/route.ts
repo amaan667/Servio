@@ -269,6 +269,8 @@ export async function POST(req: Request) {
     const skipped = total - inserted;
 
     console.log('[PDF_PROCESS] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Total:', total);
+    console.log('[PDF_PROCESS] Items that were inserted:', upsertedItems);
+    console.log('[PDF_PROCESS] Venue ID used for insertion:', venueId);
 
     // Store audit trail
     try {
