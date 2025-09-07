@@ -123,7 +123,8 @@ export async function GET(req: NextRequest) {
               opened_at,
               closed_at,
               customer_name,
-              reservation_time
+              reservation_time,
+              reservation_duration_minutes
             `)
             .in('table_id', tableIds)
             .is('closed_at', null);
@@ -214,6 +215,10 @@ export async function GET(req: NextRequest) {
               payment_status: order?.payment_status || null,
               order_updated_at: order?.updated_at || null,
               reservation_time: reservation?.start_at || session?.reservation_time || null,
+              reservation_duration_minutes: session?.reservation_duration_minutes || null,
+              reservation_end_time: session?.reservation_time && session?.reservation_duration_minutes 
+                ? new Date(new Date(session.reservation_time).getTime() + session.reservation_duration_minutes * 60 * 1000).toISOString()
+                : null,
               reservation_created_at: reservation?.created_at || null,
             };
             

@@ -33,6 +33,7 @@ export function ReservationDialog({
 }: ReservationDialogProps) {
   const [customerName, setCustomerName] = useState('');
   const [reservationTime, setReservationTime] = useState('');
+  const [reservationDuration, setReservationDuration] = useState(60); // Default to 60 minutes
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,7 +75,8 @@ export function ReservationDialog({
           table_id: tableId,
           venue_id: venueId,
           customer_name: customerName.trim(),
-          reservation_time: reservationTime
+          reservation_time: reservationTime,
+          reservation_duration: reservationDuration
         }),
       });
 
@@ -99,6 +101,7 @@ export function ReservationDialog({
   const handleClose = () => {
     setCustomerName('');
     setReservationTime('');
+    setReservationDuration(60);
     setError(null);
     onClose();
   };
@@ -144,6 +147,26 @@ export function ReservationDialog({
               disabled={isLoading}
               min={new Date().toISOString().slice(0, 16)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reservationDuration" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Reservation Duration
+            </Label>
+            <select
+              id="reservationDuration"
+              value={reservationDuration}
+              onChange={(e) => setReservationDuration(Number(e.target.value))}
+              disabled={isLoading}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value={30}>30 minutes</option>
+              <option value={60}>60 minutes</option>
+              <option value={90}>90 minutes</option>
+              <option value={120}>120 minutes</option>
+              <option value={180}>180 minutes (3 hours)</option>
+            </select>
           </div>
 
           {error && (

@@ -4,7 +4,7 @@ import { createClient, createAdminClient, getAuthenticatedUser } from '@/lib/sup
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, table_id, venue_id, order_id, destination_table_id, customer_name, reservation_time } = body;
+    const { action, table_id, venue_id, order_id, destination_table_id, customer_name, reservation_time, reservation_duration } = body;
 
     console.log('[TABLE ACTIONS API] Request received:', {
       action,
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         if (!customer_name || !reservation_time) {
           return NextResponse.json({ error: 'customer_name and reservation_time are required for reserve_table action' }, { status: 400 });
         }
-        return await handleReserveTable(supabase, table_id, customer_name, reservation_time);
+        return await handleReserveTable(supabase, table_id, customer_name, reservation_time, reservation_duration || 60);
       
       case 'occupy_table':
         return await handleOccupyTable(supabase, table_id);
@@ -282,7 +282,7 @@ async function handleCloseTable(supabase: any, table_id: string) {
   }
 }
 
-async function handleReserveTable(supabase: any, table_id: string, customer_name: string, reservation_time: string) {
+async function handleReserveTable(supabase: any, table_id: string, customer_name: string, reservation_time: string, reservation_duration: number = 60) {
   console.log('[TABLE ACTIONS] Starting reserve table for:', { table_id, customer_name, reservation_time });
   
   // Get venue_id from table
@@ -338,7 +338,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
       .update({
         customer_name: customer_name,
         start_at: reservation_time,
-        end_at: new Date(new Date(reservation_time).getTime() + 2 * 60 * 60 * 1000).toISOString(),
+        end_at: new Date(new Date(reservation_time).getTime() + reservation_duration * 60 * 1000).toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('id', existingReservation.id);
@@ -357,7 +357,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
         table_id: table_id,
         customer_name: customer_name,
         start_at: reservation_time,
-        end_at: new Date(new Date(reservation_time).getTime() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours later
+        end_at: new Date(new Date(reservation_time).getTime() + reservation_duration * 60 * 1000).toISOString(),
         status: 'BOOKED',
         created_at: new Date().toISOString()
       });
@@ -376,6 +376,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
       status: 'RESERVED',
       customer_name: customer_name,
       reservation_time: reservation_time,
+      reservation_duration_minutes: reservation_duration,
       updated_at: new Date().toISOString()
     })
     .eq('table_id', table_id)

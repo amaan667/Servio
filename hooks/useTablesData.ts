@@ -19,6 +19,8 @@ export interface TableWithSession {
   payment_status: string | null;
   order_updated_at: string | null;
   reservation_time: string | null;
+  reservation_duration_minutes: number | null;
+  reservation_end_time: string | null;
   reservation_created_at: string | null;
 }
 

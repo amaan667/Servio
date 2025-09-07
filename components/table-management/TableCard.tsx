@@ -331,6 +331,9 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
                     hour: '2-digit',
                     minute: '2-digit'
                   })}
+                  {table.reservation_duration_minutes && (
+                    <span> ({table.reservation_duration_minutes} min)</span>
+                  )}
                 </div>
               )}
             </div>
