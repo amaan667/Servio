@@ -97,6 +97,31 @@ export function TableCardRefactored({
     }
   };
 
+  const handleQrCodeClick = () => {
+    console.log('[TABLE CARD] QR Code clicked for table:', table.table_id);
+    // Navigate to QR generation page with this table pre-selected
+    const qrUrl = `/generate-qr?venue=${venueId}&table=${table.label}`;
+    window.open(qrUrl, '_blank');
+  };
+
+  const handleReserveTable = () => {
+    console.log('[TABLE CARD] Reserve table clicked for table:', table.table_id);
+    // TODO: Open reservation dialog
+    alert('Reserve Table functionality - Coming soon!');
+  };
+
+  const handleOccupyTable = () => {
+    console.log('[TABLE CARD] Occupy table clicked for table:', table.table_id);
+    // This should be the same as "Seat Party"
+    handleAction('seat');
+  };
+
+  const handleMergeTables = () => {
+    console.log('[TABLE CARD] Merge tables clicked for table:', table.table_id);
+    // TODO: Open merge tables dialog
+    alert('Merge Tables functionality - Coming soon!');
+  };
+
   const getPrimaryStatusBadge = () => {
     // Default to FREE if no primary_status (should not happen if sessions are properly created)
     const status = table.primary_status || 'FREE';
@@ -224,11 +249,19 @@ export function TableCardRefactored({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleQrCodeClick()}>
                 <QrCode className="h-4 w-4 mr-2" />
                 View QR Code
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleReserveTable()}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Reserve Table
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleOccupyTable()}>
+                <UserCheck className="h-4 w-4 mr-2" />
+                Occupy Table
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleMergeTables()}>
                 <MapPin className="h-4 w-4 mr-2" />
                 Merge Tables
               </DropdownMenuItem>

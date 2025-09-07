@@ -76,11 +76,18 @@ export function useTableCounters(venueId: string) {
   return useQuery({
     queryKey: ['tables', 'counters', venueId],
     queryFn: async () => {
+      console.log('[TABLE COUNTERS] Fetching counters for venue:', venueId);
       const { data, error } = await supabase.rpc('api_table_counters', { 
         p_venue_id: venueId 
       });
-      if (error) throw error;
-      return data[0] as TableCounters;
+      if (error) {
+        console.error('[TABLE COUNTERS] Error:', error);
+        throw error;
+      }
+      console.log('[TABLE COUNTERS] Raw data:', data);
+      const result = data[0] as TableCounters;
+      console.log('[TABLE COUNTERS] Processed result:', result);
+      return result;
     },
     refetchInterval: 10000,
     enabled: !!venueId
