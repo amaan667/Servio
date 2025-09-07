@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 // Soft normalization functions
-function clampName(s: string) {
+export function clampName(s: string) {
   return s.length <= 80 ? s : s.slice(0, 77) + '...';
 }
 
-function parsePriceAny(p: any) {
+export function parsePriceAny(p: any) {
   if (typeof p === 'number') return p;
   const m = String(p||'').replace(',', '.').match(/(\d+(\.\d{1,2})?)/);
   return m ? Number(m[1]) : NaN;

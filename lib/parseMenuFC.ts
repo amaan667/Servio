@@ -1,6 +1,6 @@
 import { getOpenAI } from "./openai";
 import { jsonrepair } from "jsonrepair";
-import { MenuPayload, MenuPayloadT, MenuItem } from "./menuSchema";
+import { MenuPayload, MenuPayloadT, MenuItem, clampName, parsePriceAny } from "./menuSchema";
 import { findSections, sliceSection } from "./menuSections";
 import { sectionPrompt } from "./prompts";
 import { filterSectionItems } from "./sectionPost";
@@ -42,17 +42,6 @@ const menuFunction = {
 
 function sanitizeText(s: string) {
   return s.replace(/\u0000/g, "").slice(0, 180_000);
-}
-
-// Soft normalization functions
-function clampName(s: string) {
-  return s.length <= 80 ? s : s.slice(0, 77) + '...';
-}
-
-function parsePriceAny(p: any) {
-  if (typeof p === 'number') return p;
-  const m = String(p||'').replace(',', '.').match(/(\d+(\.\d{1,2})?)/);
-  return m ? Number(m[1]) : NaN;
 }
 
 function reassignCategory(it: any) {
