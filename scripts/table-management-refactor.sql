@@ -102,7 +102,6 @@ WITH cur AS (
     t.id as table_id,
     t.label,
     t.seat_count,
-    t.area,
     t.is_active,
     s.id as session_id,
     s.status as primary_status,              -- 'FREE' | 'OCCUPIED' (primary state)

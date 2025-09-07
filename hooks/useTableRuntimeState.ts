@@ -8,7 +8,6 @@ export interface TableRuntimeState {
   venue_id: string;
   label: string;
   seat_count: number;
-  area: string | null;
   is_active: boolean;
   session_id: string | null;
   
