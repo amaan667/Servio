@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: { tableId: string } }) {
   try {
-    const { id } = params;
+    const { tableId } = params;
     const supabase = await createClient();
 
     // Get current table to increment qr_version
     const { data: currentTable, error: fetchError } = await supabase
       .from('tables')
       .select('qr_version')
-      .eq('id', id)
+      .eq('id', tableId)
       .single();
 
     if (fetchError || !currentTable) {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         qr_version: (currentTable.qr_version || 1) + 1,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
+      .eq('id', tableId)
       .select()
       .single();
 

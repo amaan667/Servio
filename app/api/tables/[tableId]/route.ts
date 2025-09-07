@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: { tableId: string } }) {
   try {
-    const { id } = params;
+    const { tableId } = params;
     const body = await req.json();
     const { label, seat_count, is_active, qr_version } = body;
 
@@ -24,7 +24,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const { data: table, error } = await supabase
       .from('tables')
       .update(updateData)
-      .eq('id', id)
+      .eq('id', tableId)
       .select()
       .single();
 
@@ -40,9 +40,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { tableId: string } }) {
   try {
-    const { id } = params;
+    const { tableId } = params;
 
     const supabase = await createClient();
 
@@ -50,7 +50,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const { error } = await supabase
       .from('tables')
       .delete()
-      .eq('id', id);
+      .eq('id', tableId);
 
     if (error) {
       console.error('[TABLES API] Error deleting table:', error);
