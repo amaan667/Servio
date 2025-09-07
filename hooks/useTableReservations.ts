@@ -157,9 +157,10 @@ export function useCheckInReservation() {
 export function useCloseTable() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ tableId }: { tableId: string }) => {
+    mutationFn: async ({ tableId, venueId }: { tableId: string; venueId: string }) => {
       const { error } = await supabase.rpc('api_close_table', { 
-        p_table_id: tableId 
+        p_table_id: tableId,
+        p_venue_id: venueId
       });
       if (error) throw error;
     },

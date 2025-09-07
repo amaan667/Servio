@@ -62,12 +62,13 @@ export function TableCardRefactored({
           console.log('[TABLE CARD] Seating party at table:', table.table_id);
           await seatParty.mutateAsync({ 
             tableId: table.table_id,
+            venueId: venueId,
             serverId: undefined // Could be passed from user context
           });
           break;
         case 'close':
           console.log('[TABLE CARD] Closing table:', table.table_id);
-          await closeTable.mutateAsync({ tableId: table.table_id });
+          await closeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
           break;
         case 'assign':
           if (reservationId) {

@@ -51,6 +51,7 @@ export async function POST(
     // Call the database function to seat the party
     const { error } = await supabase.rpc('api_seat_party', {
       p_table_id: tableId,
+      p_venue_id: table.venue_id,
       p_reservation_id: reservationId || null,
       p_server_id: serverId || null
     });

@@ -117,16 +117,19 @@ export function useSeatParty() {
   return useMutation({
     mutationFn: async ({ 
       tableId, 
+      venueId,
       reservationId, 
       serverId 
     }: { 
       tableId: string; 
+      venueId: string;
       reservationId?: string; 
       serverId?: string; 
     }) => {
-      console.log('[TABLE HOOK] Seating party:', { tableId, reservationId, serverId });
+      console.log('[TABLE HOOK] Seating party:', { tableId, venueId, reservationId, serverId });
       const { error } = await supabase.rpc('api_seat_party', {
         p_table_id: tableId,
+        p_venue_id: venueId,
         p_reservation_id: reservationId || null,
         p_server_id: serverId || null
       });
@@ -148,10 +151,11 @@ export function useSeatParty() {
 export function useCloseTable() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ tableId }: { tableId: string }) => {
+    mutationFn: async ({ tableId, venueId }: { tableId: string; venueId: string }) => {
       console.log('[TABLE HOOK] Closing table:', tableId);
       const { error } = await supabase.rpc('api_close_table', { 
-        p_table_id: tableId 
+        p_table_id: tableId,
+        p_venue_id: venueId
       });
       if (error) {
         console.error('[TABLE HOOK] api_close_table error:', error);

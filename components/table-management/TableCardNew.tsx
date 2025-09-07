@@ -79,7 +79,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const handleCloseTable = async () => {
     try {
       setIsLoading(true);
-      await closeTable.mutateAsync({ tableId: table.id });
+      await closeTable.mutateAsync({ tableId: table.id, venueId: venueId });
       onActionComplete?.();
     } catch (error) {
       console.error('Failed to close table:', error);

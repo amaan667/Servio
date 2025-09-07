@@ -48,7 +48,8 @@ export async function POST(
 
     // Call the database function to close the table
     const { error } = await supabase.rpc('api_close_table', {
-      p_table_id: tableId
+      p_table_id: tableId,
+      p_venue_id: table.venue_id
     });
 
     if (error) {
