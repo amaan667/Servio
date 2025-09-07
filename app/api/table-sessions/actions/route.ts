@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
 
     console.log('[TABLE ACTIONS API] Authenticated user:', user.id);
 
-    // Use regular client for table operations
-    const supabase = await createClient();
+    // Use admin client for table operations to bypass RLS
+    const supabase = createAdminClient();
 
     // Verify venue ownership
     const { data: venue, error: venueError } = await supabase
