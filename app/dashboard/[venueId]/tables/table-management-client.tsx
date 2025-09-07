@@ -16,11 +16,10 @@ import {
   Calendar
 } from 'lucide-react';
 import { useTablesData, TableWithSession } from '@/hooks/useTablesData';
+import { useTableCounters } from '@/hooks/useTableCounters';
 import { TableCard } from '@/components/table-management/TableCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFilters } from '@/components/table-management/TabFilters';
-import { WaitingList } from '@/components/table-management/WaitingList';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLOSED';
 
@@ -32,6 +31,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const { tables, loading, error, refetch } = useTablesData(venueId);
+  const { counters: apiCounters, loading: countersLoading, refetch: refetchCounters } = useTableCounters(venueId);
   const router = useRouter();
 
   // Debug logging
@@ -110,6 +110,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
 
   const handleTableActionComplete = () => {
     refetch();
+    refetchCounters();
   };
 
   if (loading) {
@@ -173,13 +174,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
       </header>
 
       {/* Content */}
-      <Tabs defaultValue="tables" className="mt-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="tables">Tables</TabsTrigger>
-          <TabsTrigger value="waiting">Waiting List</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="tables" className="mt-6">
+      <div className="mt-6">
           {filteredTables.length === 0 ? (
             <div>
               {tables.length === 0 ? (
@@ -245,26 +240,19 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
               </div>
             </section>
           )}
-        </TabsContent>
-        
-        <TabsContent value="waiting" className="mt-6">
-          <WaitingList 
-            venueId={venueId}
-            availableTables={tables.map(t => ({ id: t.id, label: t.label, seat_count: t.seat_count }))}
-            onPartySeated={handleTableActionComplete}
-          />
-        </TabsContent>
-      </Tabs>
+      </div>
 
       {/* Stats Summary */}
       {tables.length > 0 && (
-        <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mt-8 grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Tables</p>
-                  <p className="text-2xl font-bold">{tables.length}</p>
+                  <p className="text-sm font-medium text-gray-600">Tables Set Up</p>
+                  <p className="text-2xl font-bold">
+                    {countersLoading ? '...' : (apiCounters?.tables_set_up ?? tables.length)}
+                  </p>
                 </div>
                 <Users className="h-8 w-8 text-gray-400" />
               </div>
@@ -275,8 +263,10 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Available</p>
-                  <p className="text-2xl font-bold text-green-600">{filterCounts.free}</p>
+                  <p className="text-sm font-medium text-gray-600">Free Now</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {countersLoading ? '...' : (apiCounters?.free_now ?? filterCounts.free)}
+                  </p>
                 </div>
                 <Clock className="h-8 w-8 text-green-400" />
               </div>
@@ -287,8 +277,10 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Occupied</p>
-                  <p className="text-2xl font-bold text-amber-600">{filterCounts.occupied}</p>
+                  <p className="text-sm font-medium text-gray-600">In Use Now</p>
+                  <p className="text-2xl font-bold text-amber-600">
+                    {countersLoading ? '...' : (apiCounters?.in_use_now ?? filterCounts.occupied)}
+                  </p>
                 </div>
                 <Users className="h-8 w-8 text-amber-400" />
               </div>
@@ -299,8 +291,24 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Reserved</p>
-                  <p className="text-2xl font-bold text-blue-600">{filterCounts.reserved}</p>
+                  <p className="text-sm font-medium text-gray-600">Reserved Now</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {countersLoading ? '...' : (apiCounters?.reserved_now ?? 0)}
+                  </p>
+                </div>
+                <Calendar className="h-8 w-8 text-red-400" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Reserved Later</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {countersLoading ? '...' : (apiCounters?.reserved_later ?? 0)}
+                  </p>
                 </div>
                 <Calendar className="h-8 w-8 text-blue-400" />
               </div>

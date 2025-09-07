@@ -128,27 +128,60 @@ CREATE OR REPLACE FUNCTION api_table_counters(p_venue_id TEXT)
 RETURNS JSON AS $$
 DECLARE
   v_counters JSON;
+  v_venue RECORD;
+  v_block_window_mins INTEGER;
 BEGIN
+  -- Get venue business type to determine blocking window
+  SELECT business_type, reservation_blocking_minutes INTO v_venue
+  FROM venues 
+  WHERE venue_id = p_venue_id;
+  
+  -- Determine effective blocking window
+  IF v_venue.reservation_blocking_minutes IS NOT NULL THEN
+    v_block_window_mins := v_venue.reservation_blocking_minutes;
+  ELSIF v_venue.business_type = 'RESTAURANT' THEN
+    v_block_window_mins := 30;
+  ELSE
+    v_block_window_mins := 0; -- CAFE or default
+  END IF;
+
   WITH table_stats AS (
     SELECT 
-      COUNT(*) as total_tables,
-      COUNT(CASE WHEN ts.status = 'FREE' AND ts.closed_at IS NULL THEN 1 END) as free_tables,
-      COUNT(CASE WHEN ts.status = 'OCCUPIED' AND ts.closed_at IS NULL THEN 1 END) as occupied_tables,
-      COUNT(CASE WHEN r.status = 'BOOKED' AND r.start_at <= NOW() + INTERVAL '30 minutes' AND r.start_at > NOW() THEN 1 END) as reserved_now,
-      COUNT(CASE WHEN r.status = 'BOOKED' AND r.start_at > NOW() + INTERVAL '30 minutes' THEN 1 END) as reserved_later,
-      0 as waiting -- TODO: implement waiting list
+      -- Tables Set Up: count(tables where is_active=true)
+      COUNT(*) as tables_set_up,
+      
+      -- Free Now: tables whose live session is FREE
+      COUNT(CASE WHEN ts.status = 'FREE' AND ts.closed_at IS NULL THEN 1 END) as free_now,
+      
+      -- In Use Now: tables whose live session is OCCUPIED
+      COUNT(CASE WHEN ts.status = 'OCCUPIED' AND ts.closed_at IS NULL THEN 1 END) as in_use_now,
+      
+      -- Reserved Now: tables with BOOKED reservation within blocking window
+      COUNT(DISTINCT CASE 
+        WHEN r.status = 'BOOKED' 
+          AND r.start_at <= NOW() + (v_block_window_mins || ' minutes')::INTERVAL
+          AND r.end_at >= NOW()
+        THEN r.table_id 
+      END) as reserved_now,
+      
+      -- Reserved Later: tables with next BOOKED reservation after blocking window
+      COUNT(DISTINCT CASE 
+        WHEN r.status = 'BOOKED' 
+          AND r.start_at > NOW() + (v_block_window_mins || ' minutes')::INTERVAL
+        THEN r.table_id 
+      END) as reserved_later
     FROM tables t
     LEFT JOIN table_sessions ts ON ts.table_id = t.id AND ts.closed_at IS NULL
     LEFT JOIN reservations r ON r.table_id = t.id AND r.status = 'BOOKED'
     WHERE t.venue_id = p_venue_id AND t.is_active = true
   )
   SELECT json_build_object(
-    'tables_set_up', total_tables,
-    'free', free_tables,
-    'in_use_now', occupied_tables,
+    'tables_set_up', tables_set_up,
+    'free_now', free_now,
+    'in_use_now', in_use_now,
     'reserved_now', reserved_now,
     'reserved_later', reserved_later,
-    'waiting', waiting
+    'block_window_mins', v_block_window_mins
   ) INTO v_counters
   FROM table_stats;
   
@@ -161,7 +194,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =====================================================
 -- Comprehensive view showing current state of all tables
 
-CREATE OR REPLACE VIEW table_runtime_state AS
+-- Drop the existing view first to avoid column conflicts
+DROP VIEW IF EXISTS table_runtime_state;
+
+CREATE VIEW table_runtime_state AS
 SELECT 
   t.id as table_id,
   t.venue_id,
@@ -176,14 +212,19 @@ SELECT
   ts.opened_at,
   ts.server_id,
   
-  -- Reservation state
+  -- Venue blocking window
+  COALESCE(v.reservation_blocking_minutes, 
+    CASE WHEN v.business_type = 'RESTAURANT' THEN 30 ELSE 0 END
+  ) as block_window_mins,
+  
+  -- Reservation state (business type aware)
   CASE 
     WHEN r_now.id IS NOT NULL THEN 'RESERVED_NOW'
     WHEN r_later.id IS NOT NULL THEN 'RESERVED_LATER'
     ELSE 'NONE'
   END as reservation_status,
   
-  -- Current reservation (within 30 minutes)
+  -- Current reservation (within blocking window)
   r_now.id as reserved_now_id,
   r_now.start_at as reserved_now_start,
   r_now.end_at as reserved_now_end,
@@ -191,7 +232,7 @@ SELECT
   r_now.customer_name as reserved_now_name,
   r_now.customer_phone as reserved_now_phone,
   
-  -- Next reservation (after 30 minutes)
+  -- Next reservation (after blocking window)
   r_later.id as next_reservation_id,
   r_later.start_at as next_reservation_start,
   r_later.end_at as next_reservation_end,
@@ -209,13 +250,18 @@ SELECT
   t.updated_at
 FROM tables t
 LEFT JOIN table_sessions ts ON ts.table_id = t.id AND ts.closed_at IS NULL
+LEFT JOIN venues v ON v.venue_id = t.venue_id
 LEFT JOIN reservations r_now ON r_now.table_id = t.id 
   AND r_now.status = 'BOOKED' 
-  AND r_now.start_at <= NOW() + INTERVAL '30 minutes' 
-  AND r_now.start_at > NOW()
+  AND r_now.start_at <= NOW() + COALESCE(v.reservation_blocking_minutes, 
+    CASE WHEN v.business_type = 'RESTAURANT' THEN 30 ELSE 0 END
+  ) * INTERVAL '1 minute'
+  AND r_now.end_at >= NOW()
 LEFT JOIN reservations r_later ON r_later.table_id = t.id 
   AND r_later.status = 'BOOKED' 
-  AND r_later.start_at > NOW() + INTERVAL '30 minutes'
+  AND r_later.start_at > NOW() + COALESCE(v.reservation_blocking_minutes, 
+    CASE WHEN v.business_type = 'RESTAURANT' THEN 30 ELSE 0 END
+  ) * INTERVAL '1 minute'
   AND (r_now.id IS NULL OR r_later.start_at > r_now.start_at)
 LEFT JOIN orders o ON o.table_number = CAST(t.label AS INTEGER) 
   AND o.venue_id = t.venue_id 

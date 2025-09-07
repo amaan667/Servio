@@ -23,6 +23,18 @@ export interface TableWithSession {
   reservation_end_time: string | null;
   reservation_created_at: string | null;
   most_recent_activity: string;
+  // New reservation fields
+  reserved_now_id: string | null;
+  reserved_now_start: string | null;
+  reserved_now_end: string | null;
+  reserved_now_name: string | null;
+  reserved_now_phone: string | null;
+  reserved_later_id: string | null;
+  reserved_later_start: string | null;
+  reserved_later_end: string | null;
+  reserved_later_name: string | null;
+  reserved_later_phone: string | null;
+  block_window_mins: number;
 }
 
 export function useTablesData(venueId: string) {

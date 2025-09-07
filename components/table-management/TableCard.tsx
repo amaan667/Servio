@@ -48,7 +48,7 @@ import { useTableActions } from '@/hooks/useTableActions';
 import { TableWithSession } from '@/hooks/useTablesData';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
-import { QRCodeSelectionDialog } from './QRCodeSelectionDialog';
+import { AssignQRCodeModal } from './AssignQRCodeModal';
 
 interface TableCardProps {
   table: TableWithSession;
@@ -164,14 +164,6 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
     switch (table.status) {
       case 'FREE':
         actions.push(
-          <DropdownMenuItem 
-            key="seat_party" 
-            onClick={handleSeatParty}
-            disabled={isLoading}
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Seat Party
-          </DropdownMenuItem>,
           <DropdownMenuItem 
             key="reserve" 
             onClick={() => setShowReservationDialog(true)}
@@ -308,14 +300,14 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
     }
   };
 
-  const isReservedNow = (reservationTime: string) => {
+  const isReservedNow = (reservationTime: string, blockWindowMins: number = 30) => {
     const now = new Date();
     const reservation = new Date(reservationTime);
     const diffMs = reservation.getTime() - now.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
     
-    // Reserved Now = within the next 30 minutes
-    return diffMins >= 0 && diffMins <= 30;
+    // Reserved Now = within the blocking window
+    return diffMins >= 0 && diffMins <= blockWindowMins;
   };
 
   const getReservationCountdown = (reservationTime: string) => {
@@ -377,8 +369,8 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
               
               {/* Always available actions */}
               <DropdownMenuItem onClick={() => setShowQRDialog(true)}>
-                <Eye className="h-4 w-4 mr-2" />
-                View QR Code
+                <QrCode className="h-4 w-4 mr-2" />
+                Assign QR Code
               </DropdownMenuItem>
               
               {table.order_id && (
@@ -413,7 +405,33 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         </div>
 
         <div className="space-y-2">
-          <StatusPill status={table.status} />
+          {/* Live Status Chip */}
+          <div className="flex items-center gap-2">
+            <StatusPill status={table.status} />
+            {table.reserved_now_id && (
+              <Badge variant="destructive" className="text-xs">
+                Reserved Now
+              </Badge>
+            )}
+            {table.reserved_later_id && !table.reserved_now_id && (
+              <Badge variant="secondary" className="text-xs">
+                Reserved Later
+              </Badge>
+            )}
+          </div>
+          
+          {/* Primary action button for FREE tables */}
+          {table.status === 'FREE' && (
+            <Button 
+              onClick={handleSeatParty}
+              disabled={isLoading}
+              className="w-full"
+              size="sm"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Seat Party
+            </Button>
+          )}
           
           {table.order_id && (
             <div className="text-sm text-gray-600 space-y-1">
@@ -451,43 +469,45 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
             </div>
           )}
           
-          {table.status === 'RESERVED' && (
+          {/* Reservation Information */}
+          {(table.reserved_now_id || table.reserved_later_id) && (
             <div className="text-sm text-gray-600 space-y-1">
               <div className="flex items-center gap-2">
                 <Calendar className="h-3 w-3" />
-                <span className="font-medium">{table.customer_name || 'Reserved'}</span>
-                {table.reservation_time && (
-                  <Badge 
-                    variant={isReservedNow(table.reservation_time) ? "default" : "secondary"}
-                    className="text-xs"
-                  >
-                    {isReservedNow(table.reservation_time) ? 'Now' : 'Later'}
-                  </Badge>
-                )}
+                <span className="font-medium">
+                  {table.reserved_now_name || table.reserved_later_name || 'Reserved'}
+                </span>
               </div>
-              {table.reservation_time && (
+              {table.reserved_now_start && (
                 <div className="text-xs text-gray-500">
-                  {isReservedNow(table.reservation_time) ? (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <span>
-                        {getReservationCountdown(table.reservation_time)}
-                      </span>
-                    </div>
-                  ) : (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
                     <span>
-                      Reserved for {new Date(table.reservation_time).toLocaleString('en-GB', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {getReservationCountdown(table.reserved_now_start)}
                     </span>
-                  )}
-                  {table.reservation_duration_minutes && (
-                    <span> ({table.reservation_duration_minutes} min)</span>
-                  )}
+                  </div>
+                  <span>
+                    {new Date(table.reserved_now_start).toLocaleString('en-GB', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+              )}
+              {table.reserved_later_start && !table.reserved_now_start && (
+                <div className="text-xs text-gray-500">
+                  <span>
+                    Reserved for {new Date(table.reserved_later_start).toLocaleString('en-GB', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
                 </div>
               )}
             </div>
@@ -525,12 +545,12 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         onReservationComplete={onActionComplete}
       />
       
-      <QRCodeSelectionDialog
+      <AssignQRCodeModal
         isOpen={showQRDialog}
         onClose={() => setShowQRDialog(false)}
         venueId={venueId}
-        availableTables={availableTables}
-        initialSelectedTables={[table.id]}
+        tableId={table.id}
+        tableLabel={table.label}
       />
       
       {/* Seat Party QR Code Popup */}
