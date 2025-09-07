@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Printer, Copy, Check, Download, Settings, X } from "lucide-react";
+import { Printer, Copy, Check, Download, Settings, X, Plus } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
 
@@ -48,8 +48,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         return [tableParam];
       }
     }
-    console.log('🔍 [QR CLIENT] No tables in URL, defaulting to table 1');
-    return ['1']; // Default to table 1
+    console.log('🔍 [QR CLIENT] No tables in URL, showing empty state');
+    return []; // No tables selected - show empty state
   };
 
   const [selectedTables, setSelectedTables] = useState<string[]>(getInitialTables());
@@ -577,7 +577,6 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground">Tables Set Up</p>
                 <p className="text-xl sm:text-2xl font-bold text-foreground">{activeTablesCount}</p>
                 <p className="text-xs text-muted-foreground mt-1">Tables configured in your venue</p>
-                <p className="text-xs text-red-500 mt-1">DEBUG: activeTablesCount = {activeTablesCount}</p>
               </div>
             </div>
           </CardContent>
@@ -599,7 +598,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
                     {selectedTables.length === 0 
-                      ? "No active tables - QR codes will auto-generate when orders are placed"
+                      ? "No tables selected - click the buttons below to add tables for QR code generation"
                       : `Currently generating QR codes for ${selectedTables.length} active table${selectedTables.length !== 1 ? 's' : ''}`
                     }
                   </div>
@@ -709,8 +708,18 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               <div className="text-center py-8">
                 <div className="text-muted-foreground mb-4">
                   <QrCode className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-lg font-medium">Loading QR Codes...</p>
-                  <p className="text-sm">Please wait while we set up your QR codes</p>
+                  <p className="text-lg font-medium">No QR Codes Generated</p>
+                  <p className="text-sm">Select tables below to generate QR codes for your venue</p>
+                </div>
+                <div className="flex gap-2 justify-center">
+                  <Button onClick={addTable} variant="outline">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add 1 Table
+                  </Button>
+                  <Button onClick={addMultipleTables} variant="outline">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Multiple Tables
+                  </Button>
                 </div>
               </div>
             ) : (
