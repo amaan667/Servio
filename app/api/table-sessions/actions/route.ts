@@ -371,21 +371,25 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
   }
 
   // Update or create table session status to RESERVED and store reservation info
+  console.log('[TABLE ACTIONS] Checking for existing session for table:', table_id);
+  
   const { data: existingSession, error: sessionCheckError } = await supabase
     .from('table_sessions')
-    .select('id')
+    .select('id, status')
     .eq('table_id', table_id)
     .is('closed_at', null)
-    .single();
+    .maybeSingle();
 
-  if (sessionCheckError && sessionCheckError.code !== 'PGRST116') {
+  if (sessionCheckError) {
     console.error('[TABLE ACTIONS] Error checking existing session:', sessionCheckError);
     return NextResponse.json({ error: 'Failed to check existing session' }, { status: 500 });
   }
 
+  console.log('[TABLE ACTIONS] Existing session found:', existingSession);
+
   if (existingSession) {
     // Update existing session
-    console.log('[TABLE ACTIONS] Updating existing session:', existingSession.id);
+    console.log('[TABLE ACTIONS] Updating existing session:', existingSession.id, 'from status:', existingSession.status);
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .update({ 
@@ -402,6 +406,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
       console.error('[TABLE ACTIONS] Session update details:', {
         sessionId: existingSession.id,
         tableId: table_id,
+        currentStatus: existingSession.status,
         error: sessionError
       });
       return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
@@ -409,7 +414,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     console.log('[TABLE ACTIONS] Successfully updated session:', existingSession.id);
   } else {
     // Create new session
-    console.log('[TABLE ACTIONS] Creating new session for table:', table_id);
+    console.log('[TABLE ACTIONS] No existing session found, creating new session for table:', table_id);
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .insert({
@@ -419,6 +424,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
         customer_name: customer_name,
         reservation_time: reservation_time,
         reservation_duration_minutes: reservation_duration,
+        opened_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
