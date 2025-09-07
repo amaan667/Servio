@@ -8,7 +8,10 @@ SELECT
 FROM information_schema.routines 
 WHERE routine_name = 'ensure_free_sessions_for_active_tables';
 
--- If the function doesn't exist, create it
+-- Drop the existing function first (in case it has a different signature)
+DROP FUNCTION IF EXISTS ensure_free_sessions_for_active_tables();
+
+-- Create the function with the correct signature
 CREATE OR REPLACE FUNCTION ensure_free_sessions_for_active_tables()
 RETURNS INTEGER AS $$
 DECLARE
