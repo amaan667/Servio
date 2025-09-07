@@ -90,16 +90,10 @@ export function TableCardRefactored({
   };
 
   const getPrimaryStatusBadge = () => {
-    if (!table.primary_status) {
-      return (
-        <Badge variant="secondary" className="bg-gray-100 text-gray-600">
-          <Clock className="h-3 w-3 mr-1" />
-          No Session
-        </Badge>
-      );
-    }
-
-    if (table.primary_status === 'FREE') {
+    // Default to FREE if no primary_status (should not happen if sessions are properly created)
+    const status = table.primary_status || 'FREE';
+    
+    if (status === 'FREE') {
       return (
         <Badge variant="default" className="bg-green-100 text-green-700 border-green-200">
           <CheckCircle className="h-3 w-3 mr-1" />
@@ -108,7 +102,7 @@ export function TableCardRefactored({
       );
     }
 
-    if (table.primary_status === 'OCCUPIED') {
+    if (status === 'OCCUPIED') {
       const elapsed = table.opened_at ? formatDistanceToNow(new Date(table.opened_at), { addSuffix: true }) : '';
       return (
         <Badge variant="default" className="bg-amber-100 text-amber-700 border-amber-200">
@@ -155,9 +149,10 @@ export function TableCardRefactored({
 
   const getQuickActions = () => {
     const actions = [];
+    const status = table.primary_status || 'FREE';
 
     // Primary state actions
-    if (table.primary_status === 'FREE') {
+    if (status === 'FREE') {
       if (table.reservation_status === 'RESERVED_NOW') {
         actions.push({
           label: 'Check In',
@@ -174,7 +169,7 @@ export function TableCardRefactored({
       }
     }
 
-    if (table.primary_status === 'OCCUPIED') {
+    if (status === 'OCCUPIED') {
       actions.push({
         label: 'Close Table',
         action: 'close',
@@ -324,7 +319,7 @@ export function TableCardRefactored({
         )}
 
         {/* Warning for overdue reservations */}
-        {table.reservation_status === 'RESERVED_NOW' && table.primary_status === 'FREE' && (
+        {table.reservation_status === 'RESERVED_NOW' && (table.primary_status || 'FREE') === 'FREE' && (
           <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700 text-sm">
               <AlertCircle className="h-4 w-4" />
