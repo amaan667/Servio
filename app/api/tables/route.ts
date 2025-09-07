@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -119,6 +119,7 @@ export async function POST(req: Request) {
     }
     
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
 
     // Check venue ownership
     const { data: venue } = await supabase
@@ -132,8 +133,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    // Create table
-    const { data: table, error: tableError } = await supabase
+    // Create table using admin client to bypass RLS
+    const { data: table, error: tableError } = await adminSupabase
       .from('tables')
       .insert({
         venue_id: venue_id,
@@ -149,8 +150,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
     }
 
-    // Create initial FREE session
-    const { error: sessionError } = await supabase
+    // Create initial FREE session using admin client to bypass RLS
+    const { error: sessionError } = await adminSupabase
       .from('table_sessions')
       .insert({
         venue_id: venue_id,
