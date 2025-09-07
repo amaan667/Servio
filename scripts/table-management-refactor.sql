@@ -17,6 +17,15 @@ CREATE TYPE table_status AS ENUM ('FREE', 'OCCUPIED');
 ALTER TABLE table_sessions 
 DROP CONSTRAINT IF EXISTS table_sessions_status_check;
 
+-- First, update existing data to map to new enum values
+UPDATE table_sessions 
+SET status = CASE 
+  WHEN status IN ('FREE', 'ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL') THEN 'FREE'
+  WHEN status IN ('OCCUPIED', 'RESERVED', 'CLOSED') THEN 'OCCUPIED'
+  ELSE 'FREE'  -- Default fallback
+END;
+
+-- Now change the column type
 ALTER TABLE table_sessions 
 ALTER COLUMN status TYPE table_status USING status::table_status;
 
@@ -36,6 +45,17 @@ CREATE TYPE reservation_status AS ENUM ('BOOKED', 'CHECKED_IN', 'CANCELLED', 'NO
 ALTER TABLE reservations 
 DROP CONSTRAINT IF EXISTS reservations_status_check;
 
+-- First, update existing data to map to new enum values
+UPDATE reservations 
+SET status = CASE 
+  WHEN status IN ('BOOKED', 'PENDING', 'CONFIRMED') THEN 'BOOKED'
+  WHEN status IN ('CHECKED_IN', 'SEATED', 'ARRIVED') THEN 'CHECKED_IN'
+  WHEN status IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
+  WHEN status IN ('NO_SHOW', 'NO-SHOW', 'NOSHOW') THEN 'NO_SHOW'
+  ELSE 'BOOKED'  -- Default fallback
+END;
+
+-- Now change the column type
 ALTER TABLE reservations 
 ALTER COLUMN status TYPE reservation_status USING status::reservation_status;
 
