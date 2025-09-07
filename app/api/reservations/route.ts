@@ -4,11 +4,12 @@ import { getAuthenticatedUser } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
-// GET /api/tables?venueId=xxx - Get table runtime state for a venue
+// GET /api/reservations?venueId=xxx - Get reservations for a venue
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const venueId = searchParams.get('venueId');
+    const status = searchParams.get('status') || 'all';
 
     if (!venueId) {
       return NextResponse.json({ ok: false, error: 'venueId required' }, { status: 400 });
@@ -33,37 +34,68 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get table runtime state using the view
-    const { data: tables, error } = await supabase
-      .from('table_runtime_state')
-      .select('*')
+    // Build query
+    let query = supabase
+      .from('reservations')
+      .select(`
+        id,
+        venue_id,
+        table_id,
+        customer_name,
+        customer_phone,
+        start_at,
+        end_at,
+        party_size,
+        status,
+        created_at,
+        updated_at,
+        tables!inner(label)
+      `)
       .eq('venue_id', venueId)
-      .order('label');
+      .order('start_at', { ascending: true });
+
+    // Apply status filter
+    if (status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    const { data: reservations, error } = await query;
 
     if (error) {
-      console.error('[TABLES GET] Error:', error);
+      console.error('[RESERVATIONS GET] Error:', error);
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({
       ok: true,
-      tables: tables || []
+      reservations: reservations || []
     });
 
   } catch (error) {
-    console.error('[TABLES GET] Unexpected error:', error);
+    console.error('[RESERVATIONS GET] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST /api/tables - Create a new table
+// POST /api/reservations - Create a new reservation
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { venueId, label, seatCount, area } = body;
+    const { 
+      venueId, 
+      tableId, 
+      customerName, 
+      customerPhone, 
+      startAt, 
+      endAt, 
+      partySize 
+    } = body;
 
-    if (!venueId || !label) {
-      return NextResponse.json({ ok: false, error: 'venueId and label are required' }, { status: 400 });
+    if (!venueId || !customerName || !startAt || !endAt) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'venueId, customerName, startAt, and endAt are required' 
+      }, { status: 400 });
     }
 
     const { user } = await getAuthenticatedUser();
@@ -85,44 +117,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    // Create table
-    const { data: table, error: tableError } = await supabase
-      .from('tables')
+    // Create reservation
+    const { data: reservation, error } = await supabase
+      .from('reservations')
       .insert({
         venue_id: venueId,
-        label: label,
-        seat_count: seatCount || 2,
-        area: area || null
+        table_id: tableId || null, // Can be null for unassigned reservations
+        customer_name: customerName,
+        customer_phone: customerPhone || null,
+        start_at: startAt,
+        end_at: endAt,
+        party_size: partySize || 2,
+        status: 'BOOKED'
       })
       .select()
       .single();
 
-    if (tableError) {
-      console.error('[TABLES POST] Table creation error:', tableError);
-      return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
-    }
-
-    // Create initial FREE session
-    const { error: sessionError } = await supabase
-      .from('table_sessions')
-      .insert({
-        venue_id: venueId,
-        table_id: table.id,
-        status: 'FREE'
-      });
-
-    if (sessionError) {
-      console.error('[TABLES POST] Session creation error:', sessionError);
-      return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
+    if (error) {
+      console.error('[RESERVATIONS POST] Error:', error);
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({
       ok: true,
-      table: table
+      reservation: reservation
     });
 
   } catch (error) {
-    console.error('[TABLES POST] Unexpected error:', error);
+    console.error('[RESERVATIONS POST] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

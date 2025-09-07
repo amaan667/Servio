@@ -1,6 +1,9 @@
 -- Update dashboard_counts function to use new table management logic
 -- This replaces the old "active_tables_count" with proper table management counts
 
+-- Drop the existing function first to avoid return type conflicts
+DROP FUNCTION IF EXISTS public.dashboard_counts(text, text, integer);
+
 create or replace function public.dashboard_counts(
   p_venue_id text,
   p_tz text,
