@@ -150,18 +150,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
     }
 
-    // Create initial FREE session using admin client to bypass RLS
-    const { error: sessionError } = await adminSupabase
+    // Check if session already exists for this table
+    const { data: existingSession } = await adminSupabase
       .from('table_sessions')
-      .insert({
-        venue_id: venue_id,
-        table_id: table.id,
-        status: 'FREE'
-      });
+      .select('id')
+      .eq('table_id', table.id)
+      .eq('venue_id', venue_id)
+      .maybeSingle();
 
-    if (sessionError) {
-      console.error('[TABLES POST] Session creation error:', sessionError);
-      return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
+    // Only create session if one doesn't already exist
+    if (!existingSession) {
+      const { error: sessionError } = await adminSupabase
+        .from('table_sessions')
+        .insert({
+          venue_id: venue_id,
+          table_id: table.id,
+          status: 'FREE',
+          opened_at: new Date().toISOString(),
+          closed_at: null
+        });
+
+      if (sessionError) {
+        console.error('[TABLES POST] Session creation error:', sessionError);
+        return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({
