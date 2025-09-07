@@ -46,6 +46,7 @@ export function TableCardRefactored({
   const [isLoading, setIsLoading] = useState(false);
   const [showReservationDialog, setShowReservationDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [noShowMessage, setNoShowMessage] = useState<string | null>(null);
   
   const seatParty = useSeatParty();
   const closeTable = useCloseTable();
@@ -96,6 +97,24 @@ export function TableCardRefactored({
           if (reservationId) {
             console.log('[TABLE CARD] Marking no-show for reservation:', reservationId);
             await noShowReservation.mutateAsync({ reservationId });
+            
+            // Show no-show message
+            setNoShowMessage('Guest marked as no-show');
+            
+            // After 2 seconds, set table to free
+            setTimeout(async () => {
+              try {
+                await closeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
+                console.log('[TABLE CARD] Table set to free after no-show');
+              } catch (error) {
+                console.error('[TABLE CARD] Error setting table to free after no-show:', error);
+              }
+            }, 2000);
+            
+            // Clear the message after 15 seconds
+            setTimeout(() => {
+              setNoShowMessage(null);
+            }, 15000);
           }
           break;
       }
@@ -269,10 +288,13 @@ export function TableCardRefactored({
                   <QrCode className="h-4 w-4 mr-2" />
                   Assign QR Code
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleReserveTable()}>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Reserve Table
-                </DropdownMenuItem>
+                {/* Only show Reserve Table if there's no active reservation */}
+                {!table.reserved_now_id && !table.reserved_later_id && (
+                  <DropdownMenuItem onClick={() => handleReserveTable()}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Reserve Table
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => handleMergeTables()}>
                   <MapPin className="h-4 w-4 mr-2" />
                   Merge Tables
@@ -295,6 +317,17 @@ export function TableCardRefactored({
           {getPrimaryStatusBadge()}
           {/* Secondary Reservation Badge */}
           {getReservationBadge()}
+          
+          {/* No-Show Message */}
+          {noShowMessage && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <UserX className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-medium text-red-700">{noShowMessage}</span>
+              </div>
+              <p className="text-xs text-red-600 mt-1">Table will be set to free shortly...</p>
+            </div>
+          )}
         </div>
 
         {/* Reservation Details */}

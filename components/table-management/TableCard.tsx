@@ -66,6 +66,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const [showSeatPartyQR, setShowSeatPartyQR] = useState(false);
   const [qrData, setQrData] = useState<any>(null);
   const [occupiedTime, setOccupiedTime] = useState<string>('');
+  const [noShowMessage, setNoShowMessage] = useState<string | null>(null);
   const { executeAction, occupyTable } = useTableActions();
 
   const handleAction = async (action: string, orderId?: string, destinationTableId?: string) => {
@@ -171,16 +172,19 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
 
     switch (table.status) {
       case 'FREE':
-        actions.push(
-          <DropdownMenuItem 
-            key="reserve" 
-            onClick={() => setShowReservationDialog(true)}
-            disabled={isLoading}
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            Reserve
-          </DropdownMenuItem>
-        );
+        // Only show Reserve button if there's no active reservation
+        if (!table.reserved_now_id && !table.reserved_later_id) {
+          actions.push(
+            <DropdownMenuItem 
+              key="reserve" 
+              onClick={() => setShowReservationDialog(true)}
+              disabled={isLoading}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Reserve
+            </DropdownMenuItem>
+          );
+        }
         break;
 
       case 'ORDERING':
@@ -427,6 +431,17 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
               </Badge>
             )}
           </div>
+          
+          {/* No-Show Message */}
+          {noShowMessage && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <X className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-medium text-red-700">{noShowMessage}</span>
+              </div>
+              <p className="text-xs text-red-600 mt-1">Table will be set to free shortly...</p>
+            </div>
+          )}
           
           {/* Primary action button for FREE tables */}
           {table.status === 'FREE' && (
