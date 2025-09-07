@@ -72,12 +72,19 @@ table_counters as (
   select 
     count(*)::int as tables_set_up,
     count(case when ts.status = 'OCCUPIED' and ts.closed_at is null then 1 end)::int as in_use_now,
-    count(case when r.status = 'BOOKED' and r.start_at <= b.now_utc + interval '30 minutes' and r.start_at > b.now_utc then 1 end)::int as reserved_now,
-    count(case when r.status = 'BOOKED' and r.start_at > b.now_utc + interval '30 minutes' then 1 end)::int as reserved_later,
+    0::int as reserved_now, -- Will be calculated separately
+    0::int as reserved_later, -- Will be calculated separately
     0::int as waiting -- TODO: implement waiting list
   from public.tables t
   left join public.table_sessions ts on ts.table_id = t.id and ts.closed_at is null
-  left join public.reservations r on r.table_id = t.id and r.status = 'BOOKED'
+  where t.venue_id = p_venue_id and t.is_active = true
+),
+reservation_counters as (
+  select 
+    count(distinct case when r.status = 'BOOKED' and r.start_at <= b.now_utc + interval '30 minutes' and r.start_at > b.now_utc then r.table_id end)::int as reserved_now,
+    count(distinct case when r.status = 'BOOKED' and r.start_at > b.now_utc + interval '30 minutes' then r.table_id end)::int as reserved_later
+  from public.reservations r
+  inner join public.tables t on t.id = r.table_id
   where t.venue_id = p_venue_id and t.is_active = true
 )
 select
@@ -88,10 +95,10 @@ select
   active_tables.c,
   tc.tables_set_up,
   tc.in_use_now,
-  tc.reserved_now,
-  tc.reserved_later,
+  COALESCE(rc.reserved_now, 0) as reserved_now,
+  COALESCE(rc.reserved_later, 0) as reserved_later,
   tc.waiting
-from live, earlier, hist, active_tables, table_counters tc;
+from live, earlier, hist, active_tables, table_counters tc, reservation_counters rc;
 $$;
 
 grant execute on function public.dashboard_counts(text,text,int) to anon, authenticated;
