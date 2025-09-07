@@ -334,11 +334,13 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     return NextResponse.json({ error: 'Failed to create reservation' }, { status: 500 });
   }
 
-  // Update table session status to RESERVED
+  // Update table session status to RESERVED and store reservation info
   const { error: sessionError } = await supabase
     .from('table_sessions')
     .update({ 
       status: 'RESERVED',
+      customer_name: customer_name,
+      reservation_time: reservation_time,
       updated_at: new Date().toISOString()
     })
     .eq('table_id', table_id)

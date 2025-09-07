@@ -121,7 +121,9 @@ export async function GET(req: NextRequest) {
               status,
               order_id,
               opened_at,
-              closed_at
+              closed_at,
+              customer_name,
+              reservation_time
             `)
             .in('table_id', tableIds)
             .is('closed_at', null);
@@ -162,22 +164,28 @@ export async function GET(req: NextRequest) {
         
         if (reservedTableIds.length > 0) {
           console.log('[TABLES API] Fetching reservations for', reservedTableIds.length, 'tables...');
-          reservationsResult = await supabase
-            .from('reservations')
-            .select(`
-              table_id,
-              customer_name,
-              start_at,
-              created_at
-            `)
-            .in('table_id', reservedTableIds)
-            .eq('status', 'BOOKED');
-          
-        console.log('[TABLES API] Reservations query result:', { 
-          data: reservationsResult.data?.length || 0, 
-          error: reservationsResult.error,
-          reservations: reservationsResult.data
-        });
+          try {
+            reservationsResult = await supabase
+              .from('reservations')
+              .select(`
+                table_id,
+                customer_name,
+                start_at,
+                created_at
+              `)
+              .in('table_id', reservedTableIds)
+              .eq('status', 'BOOKED');
+            
+            console.log('[TABLES API] Reservations query result:', { 
+              data: reservationsResult.data?.length || 0, 
+              error: reservationsResult.error,
+              reservations: reservationsResult.data
+            });
+          } catch (reservationError) {
+            console.log('[TABLES API] Reservations table might not exist:', reservationError);
+            // If reservations table doesn't exist, we'll just continue without reservation data
+            reservationsResult = { data: [], error: reservationError };
+          }
         }
         
         // Combine the data
@@ -201,11 +209,11 @@ export async function GET(req: NextRequest) {
               opened_at: session?.opened_at || null,
               closed_at: session?.closed_at || null,
               total_amount: order?.total_amount || null,
-              customer_name: order?.customer_name || reservation?.customer_name || null,
+              customer_name: order?.customer_name || reservation?.customer_name || session?.customer_name || null,
               order_status: order?.order_status || null,
               payment_status: order?.payment_status || null,
               order_updated_at: order?.updated_at || null,
-              reservation_time: reservation?.start_at || null,
+              reservation_time: reservation?.start_at || session?.reservation_time || null,
               reservation_created_at: reservation?.created_at || null,
             };
             
