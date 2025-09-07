@@ -5,6 +5,14 @@
 -- Fixes "last action wins" bug and enables proper venue operations
 
 -- =====================================================
+-- 0. DROP EXISTING VIEWS (must be done first)
+-- =====================================================
+
+-- Drop existing views that depend on the status column
+DROP VIEW IF EXISTS table_runtime_state CASCADE;
+DROP VIEW IF EXISTS tables_with_sessions CASCADE;
+
+-- =====================================================
 -- 1. UPDATE TABLE_SESSIONS SCHEMA
 -- =====================================================
 
@@ -82,10 +90,6 @@ ALTER COLUMN table_id DROP NOT NULL;
 -- =====================================================
 -- 3. CREATE TABLE_RUNTIME_STATE VIEW
 -- =====================================================
-
--- Drop existing view if it exists
-DROP VIEW IF EXISTS table_runtime_state CASCADE;
-DROP VIEW IF EXISTS tables_with_sessions CASCADE;
 
 -- Create the new table_runtime_state view that combines primary state and reservations
 -- PRIMARY STATE: FREE (available) or OCCUPIED (seated)
