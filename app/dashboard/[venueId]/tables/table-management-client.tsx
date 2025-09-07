@@ -19,6 +19,8 @@ import { useTablesData, TableWithSession } from '@/hooks/useTablesData';
 import { TableCard } from '@/components/table-management/TableCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFilters } from '@/components/table-management/TabFilters';
+import { WaitingList } from '@/components/table-management/WaitingList';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLOSED';
 
@@ -171,71 +173,88 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
       </header>
 
       {/* Content */}
-      {filteredTables.length === 0 ? (
-        <div className="mt-8">
-          {tables.length === 0 ? (
-            <Card>
-              <CardContent className="py-16">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No tables yet</h3>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    Create your first table to start managing your venue's seating. Tables will automatically get a free session when created.
-                  </p>
-                  <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
-                </div>
-              </CardContent>
-            </Card>
+      <Tabs defaultValue="tables" className="mt-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="tables">Tables</TabsTrigger>
+          <TabsTrigger value="waiting">Waiting List</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="tables" className="mt-6">
+          {filteredTables.length === 0 ? (
+            <div>
+              {tables.length === 0 ? (
+                <Card>
+                  <CardContent className="py-16">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">No tables yet</h3>
+                      <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                        Create your first table to start managing your venue's seating. Tables will automatically get a free session when created.
+                      </p>
+                      <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="py-16">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Search className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">No tables found</h3>
+                      <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                        {searchQuery.trim() 
+                          ? `No tables match "${searchQuery}". Try adjusting your search or filter.`
+                          : `No tables match the "${filter.toLowerCase()}" filter.`
+                        }
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setSearchQuery('')}
+                        >
+                          Clear Search
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setFilter('ALL')}
+                        >
+                          Show All
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           ) : (
-            <Card>
-              <CardContent className="py-16">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No tables found</h3>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    {searchQuery.trim() 
-                      ? `No tables match "${searchQuery}". Try adjusting your search or filter.`
-                      : `No tables match the "${filter.toLowerCase()}" filter.`
-                    }
-                  </p>
-                  <div className="flex gap-2 justify-center">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setSearchQuery('')}
-                    >
-                      Clear Search
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setFilter('ALL')}
-                    >
-                      Show All
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <section>
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                {filteredTables.map((table) => (
+                  <TableCard
+                    key={table.id}
+                    table={table}
+                    venueId={venueId}
+                    onActionComplete={handleTableActionComplete}
+                    availableTables={tables}
+                  />
+                ))}
+              </div>
+            </section>
           )}
-        </div>
-      ) : (
-        <section className="mt-6">
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-            {filteredTables.map((table) => (
-              <TableCard
-                key={table.id}
-                table={table}
-                venueId={venueId}
-                onActionComplete={handleTableActionComplete}
-                availableTables={tables}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        </TabsContent>
+        
+        <TabsContent value="waiting" className="mt-6">
+          <WaitingList 
+            venueId={venueId}
+            availableTables={tables.map(t => ({ id: t.id, label: t.label, seat_count: t.seat_count }))}
+            onPartySeated={handleTableActionComplete}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Stats Summary */}
       {tables.length > 0 && (

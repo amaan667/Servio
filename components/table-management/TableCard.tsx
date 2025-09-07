@@ -17,7 +17,12 @@ import {
   Pause,
   Square,
   QrCode,
-  UserPlus
+  UserPlus,
+  Timer,
+  Eye,
+  Merge,
+  Split,
+  X
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,6 +36,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { StatusPill } from './StatusPill';
 import { useTableActions } from '@/hooks/useTableActions';
 import { TableWithSession } from '@/hooks/useTablesData';
@@ -51,6 +63,9 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showReservationDialog, setShowReservationDialog] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
+  const [showSeatPartyQR, setShowSeatPartyQR] = useState(false);
+  const [qrData, setQrData] = useState<any>(null);
+  const [occupiedTime, setOccupiedTime] = useState<string>('');
   const { executeAction, occupyTable } = useTableActions();
 
   const handleAction = async (action: string, orderId?: string, destinationTableId?: string) => {
@@ -75,6 +90,74 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
     }
   };
 
+  const handleSeatParty = async () => {
+    try {
+      setIsLoading(true);
+      console.log('[TABLE CARD] Seating party at table:', table.id);
+      
+      // Call the seat party API
+      const response = await fetch('/api/table-management/seat-party', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table_id: table.id,
+          venue_id: venueId,
+          reservation_id: table.reserved_now_id || null
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Show QR code popup
+        setQrData(result.qr_data);
+        setShowSeatPartyQR(true);
+        
+        // Start timer
+        const startTime = new Date();
+        const updateTimer = () => {
+          const now = new Date();
+          const diffMs = now.getTime() - startTime.getTime();
+          const diffMins = Math.floor(diffMs / (1000 * 60));
+          const diffHours = Math.floor(diffMins / 60);
+          const remainingMins = diffMins % 60;
+          
+          if (diffHours > 0) {
+            setOccupiedTime(`${diffHours}h ${remainingMins}m`);
+          } else {
+            setOccupiedTime(`${diffMins}m`);
+          }
+        };
+        
+        // Update timer every minute
+        const timerInterval = setInterval(updateTimer, 60000);
+        updateTimer(); // Initial update
+        
+        // Store timer interval for cleanup
+        (window as any).tableTimer = timerInterval;
+        
+        onActionComplete?.();
+      } else {
+        console.error('[TABLE CARD] Seat party failed:', result.error);
+      }
+    } catch (error) {
+      console.error('[TABLE CARD] Seat party error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSplitBill = async () => {
+    try {
+      console.log('[TABLE CARD] Splitting bill for table:', table.id);
+      // TODO: Implement split bill functionality
+      // This would open a dialog to select items to split
+      alert('Split bill functionality coming soon!');
+    } catch (error) {
+      console.error('[TABLE CARD] Split bill error:', error);
+    }
+  };
+
   const getContextualActions = () => {
     const actions = [];
 
@@ -82,12 +165,12 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       case 'FREE':
         actions.push(
           <DropdownMenuItem 
-            key="occupy" 
-            onClick={() => handleAction('occupy_table')}
+            key="seat_party" 
+            onClick={handleSeatParty}
             disabled={isLoading}
           >
             <UserPlus className="h-4 w-4 mr-2" />
-            Occupy Table
+            Seat Party
           </DropdownMenuItem>,
           <DropdownMenuItem 
             key="reserve" 
@@ -225,6 +308,33 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
     }
   };
 
+  const isReservedNow = (reservationTime: string) => {
+    const now = new Date();
+    const reservation = new Date(reservationTime);
+    const diffMs = reservation.getTime() - now.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    // Reserved Now = within the next 30 minutes
+    return diffMins >= 0 && diffMins <= 30;
+  };
+
+  const getReservationCountdown = (reservationTime: string) => {
+    const now = new Date();
+    const reservation = new Date(reservationTime);
+    const diffMs = reservation.getTime() - now.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMins <= 0) {
+      return 'Arriving now';
+    } else if (diffMins < 60) {
+      return `In ${diffMins}m`;
+    } else {
+      const hours = Math.floor(diffMins / 60);
+      const mins = diffMins % 60;
+      return `In ${hours}h ${mins}m`;
+    }
+  };
+
   return (
     <Card className="hover:shadow-md transition-shadow duration-200">
       <CardContent className="p-4">
@@ -262,16 +372,41 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-48">
               {getContextualActions()}
+              
+              {/* Always available actions */}
+              <DropdownMenuItem onClick={() => setShowQRDialog(true)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View QR Code
+              </DropdownMenuItem>
+              
+              {table.order_id && (
+                <DropdownMenuItem onClick={() => handleSplitBill()}>
+                  <Split className="h-4 w-4 mr-2" />
+                  Split Bill
+                </DropdownMenuItem>
+              )}
+              
+              <DropdownMenuItem onClick={() => setShowMergeDialog(true)}>
+                <Merge className="h-4 w-4 mr-2" />
+                Merge Table
+              </DropdownMenuItem>
+              
               <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
                 <ArrowRight className="h-4 w-4 mr-2" />
                 Move to...
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowMergeDialog(true)}>
-                <MoreHorizontal className="h-4 w-4 mr-2" />
-                Merge with...
-              </DropdownMenuItem>
+              
+              {table.status !== 'FREE' && (
+                <DropdownMenuItem 
+                  onClick={() => handleAction('close_table')}
+                  className="text-red-600"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Close Table
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           </div>
@@ -321,16 +456,35 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
               <div className="flex items-center gap-2">
                 <Calendar className="h-3 w-3" />
                 <span className="font-medium">{table.customer_name || 'Reserved'}</span>
+                {table.reservation_time && (
+                  <Badge 
+                    variant={isReservedNow(table.reservation_time) ? "default" : "secondary"}
+                    className="text-xs"
+                  >
+                    {isReservedNow(table.reservation_time) ? 'Now' : 'Later'}
+                  </Badge>
+                )}
               </div>
               {table.reservation_time && (
                 <div className="text-xs text-gray-500">
-                  Reserved for {new Date(table.reservation_time).toLocaleString('en-GB', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  {isReservedNow(table.reservation_time) ? (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      <span>
+                        {getReservationCountdown(table.reservation_time)}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>
+                      Reserved for {new Date(table.reservation_time).toLocaleString('en-GB', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  )}
                   {table.reservation_duration_minutes && (
                     <span> ({table.reservation_duration_minutes} min)</span>
                   )}
@@ -378,6 +532,65 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         availableTables={availableTables}
         initialSelectedTables={[table.id]}
       />
+      
+      {/* Seat Party QR Code Popup */}
+      <Dialog open={showSeatPartyQR} onOpenChange={setShowSeatPartyQR}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              Table {table.label} - QR Code
+            </DialogTitle>
+            <DialogDescription>
+              Scan this QR code to access the menu for Table {table.label}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {qrData && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
+                  {/* QR Code would be generated here */}
+                  <div className="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
+                    <QrCode className="h-24 w-24 text-gray-400" />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-center space-y-2">
+                <p className="text-sm text-gray-600">
+                  <strong>Table:</strong> {table.label}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>URL:</strong> {qrData.qr_url}
+                </p>
+                {occupiedTime && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
+                    <Timer className="h-4 w-4" />
+                    <span>Occupied for {occupiedTime}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => navigator.clipboard.writeText(qrData.qr_url)}
+                >
+                  Copy URL
+                </Button>
+                <Button 
+                  className="flex-1"
+                  onClick={() => window.print()}
+                >
+                  Print QR Code
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

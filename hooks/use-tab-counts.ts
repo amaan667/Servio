@@ -3,10 +3,15 @@ import { useState, useEffect, useCallback } from 'react'
 
 export interface TabCounts {
   live_count: number
-  today_count: number
+  earlier_today_count: number
   history_count: number
   today_orders_count: number
   active_tables_count: number
+  tables_set_up: number
+  in_use_now: number
+  reserved_now: number
+  reserved_later: number
+  waiting: number
 }
 
 export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
