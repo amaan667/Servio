@@ -55,12 +55,18 @@ export default async function GenerateQRPage() {
     
     try {
       console.log('🔍 [QR PAGE] Getting active tables count...');
+      console.log('🔍 [QR PAGE] Function parameters:', {
+        p_venue_id: venue.venue_id,
+        p_tz: 'Europe/London',
+        p_live_window_mins: 30
+      });
       
       // Use the same dashboard_counts function to get consistent counts
+      // Try with exact same parameters that worked in SQL Editor
       const { data: countsData, error: countsError } = await supabase
         .rpc('dashboard_counts', {
-          p_venue_id: venue.venue_id,
-          p_tz: 'Europe/London', // Default timezone, could be made dynamic
+          p_venue_id: 'venue-1e02af4d', // Use exact venue ID from SQL test
+          p_tz: 'Europe/London',
           p_live_window_mins: 30
         })
         .single();
