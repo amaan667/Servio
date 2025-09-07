@@ -245,9 +245,9 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tables Set Up</p>
-                  <p className="text-2xl font-bold">{counters.total_tables}</p>
+                  <p className="text-2xl font-bold text-gray-800">{counters.total_tables}</p>
                 </div>
-                <Users className="h-8 w-8 text-gray-400" />
+                <Users className="h-8 w-8 text-gray-500" />
               </div>
             </CardContent>
           </Card>
@@ -259,7 +259,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
                   <p className="text-sm font-medium text-gray-600">Free Now</p>
                   <p className="text-2xl font-bold text-green-600">{counters.available}</p>
                 </div>
-                <Clock className="h-8 w-8 text-green-400" />
+                <Clock className="h-8 w-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
@@ -271,7 +271,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
                   <p className="text-sm font-medium text-gray-600">In Use Now</p>
                   <p className="text-2xl font-bold text-amber-600">{counters.occupied}</p>
                 </div>
-                <UserCheck className="h-8 w-8 text-amber-400" />
+                <UserCheck className="h-8 w-8 text-amber-500" />
               </div>
             </CardContent>
           </Card>
@@ -283,7 +283,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
                   <p className="text-sm font-medium text-gray-600">Reserved Now</p>
                   <p className="text-2xl font-bold text-red-600">{counters.reserved_now}</p>
                 </div>
-                <AlertCircle className="h-8 w-8 text-red-400" />
+                <AlertCircle className="h-8 w-8 text-red-500" />
               </div>
             </CardContent>
           </Card>
@@ -295,7 +295,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
                   <p className="text-sm font-medium text-gray-600">Reserved Later</p>
                   <p className="text-2xl font-bold text-purple-600">{counters.reserved_later}</p>
                 </div>
-                <Calendar className="h-8 w-8 text-purple-400" />
+                <Calendar className="h-8 w-8 text-purple-500" />
               </div>
             </CardContent>
           </Card>

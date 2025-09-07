@@ -231,3 +231,25 @@ export function useNoShowReservation() {
     }
   });
 }
+
+// Remove table (soft delete)
+export function useRemoveTable() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ tableId, venueId }: { tableId: string; venueId: string }) => {
+      console.log('[TABLE HOOK] Removing table:', tableId);
+      const { error } = await supabase.rpc('api_remove_table', {
+        p_table_id: tableId,
+        p_venue_id: venueId
+      });
+      if (error) {
+        console.error('[TABLE HOOK] api_remove_table error:', error);
+        throw error;
+      }
+      console.log('[TABLE HOOK] api_remove_table success');
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tables'] });
+    }
+  });
+}

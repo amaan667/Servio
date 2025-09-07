@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TableRuntimeState } from '@/hooks/useTableRuntimeState';
-import { useSeatParty, useCloseTable, useAssignReservation, useCancelReservation, useNoShowReservation } from '@/hooks/useTableRuntimeState';
+import { useSeatParty, useCloseTable, useAssignReservation, useCancelReservation, useNoShowReservation, useRemoveTable } from '@/hooks/useTableRuntimeState';
 import { formatDistanceToNow } from 'date-fns';
 import { ReservationDialog } from './ReservationDialog';
 import { TableSelectionDialog } from './TableSelectionDialog';
@@ -52,6 +52,7 @@ export function TableCardRefactored({
   const assignReservation = useAssignReservation();
   const cancelReservation = useCancelReservation();
   const noShowReservation = useNoShowReservation();
+  const removeTable = useRemoveTable();
 
   const handleAction = async (action: string, reservationId?: string) => {
     console.log('[TABLE CARD] Action triggered:', { action, tableId: table.table_id, reservationId });
@@ -66,9 +67,15 @@ export function TableCardRefactored({
             serverId: undefined // Could be passed from user context
           });
           break;
-        case 'close':
-          console.log('[TABLE CARD] Closing table:', table.table_id);
+        case 'free':
+          console.log('[TABLE CARD] Freeing table:', table.table_id);
           await closeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
+          break;
+        case 'remove':
+          console.log('[TABLE CARD] Removing table:', table.table_id);
+          if (confirm(`Are you sure you want to remove Table ${table.label}? This action cannot be undone.`)) {
+            await removeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
+          }
           break;
         case 'assign':
           if (reservationId) {
@@ -202,9 +209,9 @@ export function TableCardRefactored({
 
     if (status === 'OCCUPIED') {
       actions.push({
-        label: 'Close Table',
-        action: 'close',
-        variant: 'destructive' as const
+        label: 'Free Table',
+        action: 'free',
+        variant: 'default' as const
       });
     }
 
@@ -269,6 +276,13 @@ export function TableCardRefactored({
                 <DropdownMenuItem onClick={() => handleMergeTables()}>
                   <MapPin className="h-4 w-4 mr-2" />
                   Merge Tables
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => handleAction('remove')}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Remove Table
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
