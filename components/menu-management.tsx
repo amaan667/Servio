@@ -119,7 +119,6 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .from("menu_items")
         .select("*")
         .eq("venue_id", venueUuid)
-        .order("position", { ascending: true, nullsFirst: true })
         .order("category", { ascending: true })
         .order("name", { ascending: true });
 
