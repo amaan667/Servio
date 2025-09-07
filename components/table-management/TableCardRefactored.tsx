@@ -50,20 +50,24 @@ export function TableCardRefactored({
   const noShowReservation = useNoShowReservation();
 
   const handleAction = async (action: string, reservationId?: string) => {
+    console.log('[TABLE CARD] Action triggered:', { action, tableId: table.table_id, reservationId });
     setIsLoading(true);
     try {
       switch (action) {
         case 'seat':
+          console.log('[TABLE CARD] Seating party at table:', table.table_id);
           await seatParty.mutateAsync({ 
             tableId: table.table_id,
             serverId: undefined // Could be passed from user context
           });
           break;
         case 'close':
+          console.log('[TABLE CARD] Closing table:', table.table_id);
           await closeTable.mutateAsync({ tableId: table.table_id });
           break;
         case 'assign':
           if (reservationId) {
+            console.log('[TABLE CARD] Assigning reservation:', reservationId, 'to table:', table.table_id);
             await assignReservation.mutateAsync({ 
               reservationId, 
               tableId: table.table_id 
@@ -72,18 +76,22 @@ export function TableCardRefactored({
           break;
         case 'cancel':
           if (reservationId) {
+            console.log('[TABLE CARD] Cancelling reservation:', reservationId);
             await cancelReservation.mutateAsync({ reservationId });
           }
           break;
         case 'no-show':
           if (reservationId) {
+            console.log('[TABLE CARD] Marking no-show for reservation:', reservationId);
             await noShowReservation.mutateAsync({ reservationId });
           }
           break;
       }
+      console.log('[TABLE CARD] Action completed successfully:', action);
       onActionComplete();
     } catch (error) {
-      console.error('Action failed:', error);
+      console.error('[TABLE CARD] Action failed:', error);
+      // You might want to show a toast notification here
     } finally {
       setIsLoading(false);
     }

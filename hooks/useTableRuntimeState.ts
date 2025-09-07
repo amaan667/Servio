@@ -117,12 +117,17 @@ export function useSeatParty() {
       reservationId?: string; 
       serverId?: string; 
     }) => {
+      console.log('[TABLE HOOK] Seating party:', { tableId, reservationId, serverId });
       const { error } = await supabase.rpc('api_seat_party', {
         p_table_id: tableId,
         p_reservation_id: reservationId || null,
         p_server_id: serverId || null
       });
-      if (error) throw error;
+      if (error) {
+        console.error('[TABLE HOOK] api_seat_party error:', error);
+        throw error;
+      }
+      console.log('[TABLE HOOK] api_seat_party success');
     },
     onSuccess: (_, { tableId }) => {
       // Invalidate all table-related queries
@@ -137,10 +142,15 @@ export function useCloseTable() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ tableId }: { tableId: string }) => {
+      console.log('[TABLE HOOK] Closing table:', tableId);
       const { error } = await supabase.rpc('api_close_table', { 
         p_table_id: tableId 
       });
-      if (error) throw error;
+      if (error) {
+        console.error('[TABLE HOOK] api_close_table error:', error);
+        throw error;
+      }
+      console.log('[TABLE HOOK] api_close_table success');
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tables'] });
