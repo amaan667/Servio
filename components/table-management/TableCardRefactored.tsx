@@ -27,6 +27,8 @@ import {
 import { TableRuntimeState } from '@/hooks/useTableRuntimeState';
 import { useSeatParty, useCloseTable, useAssignReservation, useCancelReservation, useNoShowReservation } from '@/hooks/useTableRuntimeState';
 import { formatDistanceToNow } from 'date-fns';
+import { ReservationDialog } from './ReservationDialog';
+import { TableSelectionDialog } from './TableSelectionDialog';
 
 interface TableCardRefactoredProps {
   table: TableRuntimeState;
@@ -42,6 +44,8 @@ export function TableCardRefactored({
   availableTables 
 }: TableCardRefactoredProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showReservationDialog, setShowReservationDialog] = useState(false);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
   
   const seatParty = useSeatParty();
   const closeTable = useCloseTable();
@@ -106,8 +110,7 @@ export function TableCardRefactored({
 
   const handleReserveTable = () => {
     console.log('[TABLE CARD] Reserve table clicked for table:', table.table_id);
-    // TODO: Open reservation dialog
-    alert('Reserve Table functionality - Coming soon!');
+    setShowReservationDialog(true);
   };
 
   const handleOccupyTable = () => {
@@ -118,8 +121,7 @@ export function TableCardRefactored({
 
   const handleMergeTables = () => {
     console.log('[TABLE CARD] Merge tables clicked for table:', table.table_id);
-    // TODO: Open merge tables dialog
-    alert('Merge Tables functionality - Coming soon!');
+    setShowMergeDialog(true);
   };
 
   const getPrimaryStatusBadge = () => {
@@ -370,5 +372,36 @@ export function TableCardRefactored({
         )}
       </CardContent>
     </Card>
+
+    {/* Reservation Dialog */}
+    <ReservationDialog
+      isOpen={showReservationDialog}
+      onClose={() => setShowReservationDialog(false)}
+      tableId={table.table_id}
+      tableLabel={table.label}
+      venueId={venueId}
+      onReservationComplete={onActionComplete}
+    />
+
+    {/* Merge Tables Dialog */}
+    <TableSelectionDialog
+      isOpen={showMergeDialog}
+      onClose={() => setShowMergeDialog(false)}
+      sourceTable={{
+        id: table.table_id,
+        label: table.label,
+        seat_count: table.seat_count,
+        status: table.primary_status || 'FREE'
+      }}
+      action="merge"
+      venueId={venueId}
+      availableTables={availableTables.map(t => ({
+        id: t.table_id,
+        label: t.label,
+        seat_count: t.seat_count,
+        status: t.primary_status || 'FREE'
+      }))}
+      onActionComplete={onActionComplete}
+    />
   );
 }
