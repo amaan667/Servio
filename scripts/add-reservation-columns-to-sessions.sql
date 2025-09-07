@@ -13,14 +13,18 @@ ADD COLUMN IF NOT EXISTS reservation_time TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_table_sessions_customer_name ON table_sessions(customer_name);
 CREATE INDEX IF NOT EXISTS idx_table_sessions_reservation_time ON table_sessions(reservation_time);
 
--- Update the tables_with_sessions view to include the new columns
-CREATE OR REPLACE VIEW tables_with_sessions AS
+-- Drop the existing view first to avoid column name conflicts
+DROP VIEW IF EXISTS tables_with_sessions;
+
+-- Recreate the tables_with_sessions view to include the new columns
+CREATE VIEW tables_with_sessions AS
 SELECT 
     t.id,
     t.venue_id,
     t.label,
     t.seat_count,
     t.is_active,
+    t.qr_version,
     t.created_at as table_created_at,
     ts.id as session_id,
     ts.status,
