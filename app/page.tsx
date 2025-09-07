@@ -17,6 +17,7 @@ import {
   CheckCircle,
   ArrowRight,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 function PricingQuickCompare() {
   return (
@@ -69,6 +70,7 @@ function PricingQuickCompare() {
 export default function HomePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     // Simple loading state to prevent hydration issues
@@ -77,11 +79,23 @@ export default function HomePage() {
   }, []);
 
   const handleGetStarted = () => {
-    router.push("/sign-in");
+    if (user) {
+      // User is signed in, redirect to their dashboard
+      router.push("/dashboard");
+    } else {
+      // User is not signed in, redirect to sign-in
+      router.push("/sign-in");
+    }
   };
 
   const handleSignIn = () => {
-    router.push("/sign-in");
+    if (user) {
+      // User is signed in, redirect to their dashboard
+      router.push("/dashboard");
+    } else {
+      // User is not signed in, redirect to sign-in
+      router.push("/sign-in");
+    }
   };
 
   const handleDemo = () => {
@@ -126,17 +140,19 @@ export default function HomePage() {
                   onClick={handleGetStarted}
                   className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
                 >
-                  Start Free Trial
+                  {user ? 'Go to Dashboard' : 'Start Free Trial'}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
-                  onClick={handleSignIn}
-                >
-                  Sign In
-                </Button>
+                {!user && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                    onClick={handleSignIn}
+                  >
+                    Sign In
+                  </Button>
+                )}
                 <Button
                   size="lg"
                   variant="outline"
@@ -413,17 +429,19 @@ export default function HomePage() {
               onClick={handleGetStarted}
               className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
             >
-              Start Your Free Trial
+              {user ? 'Go to Dashboard' : 'Start Your Free Trial'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
-              onClick={handleSignIn}
-            >
-              Sign In
-            </Button>
+            {!user && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white text-white hover:bg-white hover:text-purple-600 text-lg px-8 py-4 bg-transparent"
+                onClick={handleSignIn}
+              >
+                Sign In
+              </Button>
+            )}
             <Button
               size="lg"
               variant="outline"

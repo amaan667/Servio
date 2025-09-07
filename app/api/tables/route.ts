@@ -60,10 +60,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { venueId, label, seatCount, area } = body;
+    const { venue_id, label, seat_count, area } = body;
 
-    if (!venueId || !label) {
-      return NextResponse.json({ ok: false, error: 'venueId and label are required' }, { status: 400 });
+    if (!venue_id || !label) {
+      return NextResponse.json({ ok: false, error: 'venue_id and label are required' }, { status: 400 });
     }
 
     const { user } = await getAuthenticatedUser();
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     const { data: venue } = await supabase
       .from('venues')
       .select('venue_id')
-      .eq('venue_id', venueId)
+      .eq('venue_id', venue_id)
       .eq('owner_id', user.id)
       .maybeSingle();
 
@@ -89,9 +89,9 @@ export async function POST(req: Request) {
     const { data: table, error: tableError } = await supabase
       .from('tables')
       .insert({
-        venue_id: venueId,
+        venue_id: venue_id,
         label: label,
-        seat_count: seatCount || 2,
+        seat_count: seat_count || 2,
         area: area || null
       })
       .select()
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .insert({
-        venue_id: venueId,
+        venue_id: venue_id,
         table_id: table.id,
         status: 'FREE'
       });
