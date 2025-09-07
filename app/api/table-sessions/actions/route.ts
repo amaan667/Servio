@@ -369,22 +369,55 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     }
   }
 
-  // Update table session status to RESERVED and store reservation info
-  const { error: sessionError } = await supabase
+  // Update or create table session status to RESERVED and store reservation info
+  const { data: existingSession, error: sessionCheckError } = await supabase
     .from('table_sessions')
-    .update({ 
-      status: 'RESERVED',
-      customer_name: customer_name,
-      reservation_time: reservation_time,
-      reservation_duration_minutes: reservation_duration,
-      updated_at: new Date().toISOString()
-    })
+    .select('id')
     .eq('table_id', table_id)
-    .is('closed_at', null);
+    .is('closed_at', null)
+    .single();
 
-  if (sessionError) {
-    console.error('[TABLE ACTIONS] Error updating session status:', sessionError);
-    return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
+  if (sessionCheckError && sessionCheckError.code !== 'PGRST116') {
+    console.error('[TABLE ACTIONS] Error checking existing session:', sessionCheckError);
+    return NextResponse.json({ error: 'Failed to check existing session' }, { status: 500 });
+  }
+
+  if (existingSession) {
+    // Update existing session
+    const { error: sessionError } = await supabase
+      .from('table_sessions')
+      .update({ 
+        status: 'RESERVED',
+        customer_name: customer_name,
+        reservation_time: reservation_time,
+        reservation_duration_minutes: reservation_duration,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingSession.id);
+
+    if (sessionError) {
+      console.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+      return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
+    }
+  } else {
+    // Create new session
+    const { error: sessionError } = await supabase
+      .from('table_sessions')
+      .insert({
+        table_id: table_id,
+        venue_id: table.venue_id,
+        status: 'RESERVED',
+        customer_name: customer_name,
+        reservation_time: reservation_time,
+        reservation_duration_minutes: reservation_duration,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+    if (sessionError) {
+      console.error('[TABLE ACTIONS] Error creating session:', sessionError);
+      return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true });
