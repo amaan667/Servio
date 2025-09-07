@@ -41,16 +41,20 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
   } = useTablesData(venueId);
   
   const { 
-    counters = { 
-      tables_set_up: 0, 
-      free_now: 0, 
-      in_use_now: 0, 
-      reserved_now: 0, 
-      reserved_later: 0
-    }, 
+    counters, 
     loading: countersLoading,
     refetch: refetchCounters
   } = useTableCounters(venueId);
+
+  // Provide default values to prevent null reference errors
+  const safeCounters = counters || { 
+    tables_set_up: 0, 
+    free_now: 0, 
+    in_use_now: 0, 
+    reserved_now: 0, 
+    reserved_later: 0, 
+    block_window_mins: 0
+  };
   
 
   const filteredTables = useMemo(() => {
@@ -88,13 +92,13 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
 
   const filterCounts = useMemo(() => {
     return {
-      all: counters.tables_set_up,
-      free: counters.free_now,
-      occupied: counters.in_use_now,
-      reserved_now: counters.reserved_now,
-      reserved_later: counters.reserved_later,
+      all: safeCounters.tables_set_up,
+      free: safeCounters.free_now,
+      occupied: safeCounters.in_use_now,
+      reserved_now: safeCounters.reserved_now,
+      reserved_later: safeCounters.reserved_later,
     };
-  }, [counters]);
+  }, [safeCounters]);
 
   const handleTableActionComplete = () => {
     refetchTables();
@@ -239,7 +243,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tables Set Up</p>
-                  <p className="text-2xl font-bold text-gray-800">{counters.tables_set_up}</p>
+                  <p className="text-2xl font-bold text-gray-800">{safeCounters.tables_set_up}</p>
                 </div>
                 <Users className="h-8 w-8 text-gray-500" />
               </div>
@@ -251,7 +255,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Free Now</p>
-                  <p className="text-2xl font-bold text-green-600">{counters.free_now}</p>
+                  <p className="text-2xl font-bold text-green-600">{safeCounters.free_now}</p>
                 </div>
                 <Clock className="h-8 w-8 text-green-500" />
               </div>
@@ -263,7 +267,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">In Use Now</p>
-                  <p className="text-2xl font-bold text-amber-600">{counters.in_use_now}</p>
+                  <p className="text-2xl font-bold text-amber-600">{safeCounters.in_use_now}</p>
                 </div>
                 <UserCheck className="h-8 w-8 text-amber-500" />
               </div>
