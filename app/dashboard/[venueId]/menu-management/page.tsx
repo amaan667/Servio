@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
-import { MenuManagement } from '@/components/menu-management';
+import { MenuManagementWrapper } from '@/components/MenuManagementWrapper';
 
 export default async function MenuManagementPage({ params }: { params: { venueId: string } }) {
   console.log('[MENU MANAGEMENT] Page mounted for venue', params.venueId);
@@ -61,7 +61,10 @@ export default async function MenuManagementPage({ params }: { params: { venueId
           </p>
         </div>
         
-        <MenuManagement venueId={venue.venue_id} session={{ user, venue: { id: venue.venue_id, venue_id: venue.venue_id } }} />
+        <MenuManagementWrapper 
+          venueId={venue.venue_id} 
+          session={{ user, venue: { id: venue.venue_id, venue_id: venue.venue_id } }} 
+        />
       </div>
     </div>
   );

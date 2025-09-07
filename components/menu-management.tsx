@@ -64,11 +64,12 @@ interface AuthSession {
 interface MenuManagementProps {
   venueId: string;
   session: AuthSession;
+  refreshTrigger?: number;
 }
 
 type MenuItem = BaseMenuItem & { category_position?: number };
 
-export function MenuManagement({ venueId, session }: MenuManagementProps) {
+export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagementProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -201,6 +202,14 @@ export function MenuManagement({ venueId, session }: MenuManagementProps) {
       }
     };
   }, [fetchMenu, venueUuid]);
+
+  // Refresh menu when refreshTrigger changes (e.g., after PDF upload)
+  useEffect(() => {
+    if (refreshTrigger) {
+      console.log('[MENU MANAGEMENT] Refresh trigger activated, refetching menu');
+      fetchMenu();
+    }
+  }, [refreshTrigger, fetchMenu]);
 
   // Enhanced file upload handler for both input and drag-and-drop
   // Removed file upload handlers
