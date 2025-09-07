@@ -86,6 +86,13 @@ export function useTableCounters(venueId: string) {
       console.log('[TABLE COUNTERS] Raw data:', data);
       const result = data[0] as TableCounters;
       console.log('[TABLE COUNTERS] Processed result:', result);
+      console.log('[TABLE COUNTERS] Field mapping check:', {
+        total_tables: result?.total_tables,
+        available: result?.available,
+        occupied: result?.occupied,
+        reserved_now: result?.reserved_now,
+        reserved_later: result?.reserved_later
+      });
       return result;
     },
     enabled: !!venueId

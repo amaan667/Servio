@@ -176,11 +176,12 @@ BEGIN
     WHERE t.venue_id = p_venue_id AND t.is_active = true
   )
   SELECT json_build_object(
-    'tables_set_up', tables_set_up,
-    'free_now', free_now,
-    'in_use_now', in_use_now,
+    'total_tables', tables_set_up,
+    'available', free_now,
+    'occupied', in_use_now,
     'reserved_now', reserved_now,
     'reserved_later', reserved_later,
+    'unassigned_reservations', 0,
     'block_window_mins', v_block_window_mins
   ) INTO v_counters
   FROM table_stats;
