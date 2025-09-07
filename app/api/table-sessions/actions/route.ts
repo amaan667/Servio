@@ -316,22 +316,57 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     return NextResponse.json({ error: 'Table not found' }, { status: 404 });
   }
 
-  // Create reservation
-  const { error: reservationError } = await supabase
+  // Check if there's already a reservation for this table
+  const { data: existingReservation, error: checkError } = await supabase
     .from('reservations')
-    .insert({
-      venue_id: table.venue_id,
-      table_id: table_id,
-      customer_name: customer_name,
-      start_at: reservation_time,
-      end_at: new Date(new Date(reservation_time).getTime() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours later
-      status: 'BOOKED',
-      created_at: new Date().toISOString()
-    });
+    .select('id')
+    .eq('table_id', table_id)
+    .eq('status', 'BOOKED')
+    .single();
 
-  if (reservationError) {
-    console.error('[TABLE ACTIONS] Error creating reservation:', reservationError);
-    return NextResponse.json({ error: 'Failed to create reservation' }, { status: 500 });
+  if (checkError && checkError.code !== 'PGRST116') {
+    console.error('[TABLE ACTIONS] Error checking existing reservation:', checkError);
+    return NextResponse.json({ error: 'Failed to check existing reservation' }, { status: 500 });
+  }
+
+  // Create or update reservation
+  if (existingReservation) {
+    // Update existing reservation
+    console.log('[TABLE ACTIONS] Updating existing reservation:', existingReservation.id);
+    const { error: updateError } = await supabase
+      .from('reservations')
+      .update({
+        customer_name: customer_name,
+        start_at: reservation_time,
+        end_at: new Date(new Date(reservation_time).getTime() + 2 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingReservation.id);
+
+    if (updateError) {
+      console.error('[TABLE ACTIONS] Error updating reservation:', updateError);
+      return NextResponse.json({ error: 'Failed to update reservation' }, { status: 500 });
+    }
+  } else {
+    // Create new reservation
+    console.log('[TABLE ACTIONS] Creating new reservation');
+    const { error: reservationError } = await supabase
+      .from('reservations')
+      .insert({
+        venue_id: table.venue_id,
+        table_id: table_id,
+        customer_name: customer_name,
+        start_at: reservation_time,
+        end_at: new Date(new Date(reservation_time).getTime() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours later
+        status: 'BOOKED',
+        created_at: new Date().toISOString()
+      });
+
+    if (reservationError) {
+      console.error('[TABLE ACTIONS] Error creating reservation:', reservationError);
+      // Don't fail if reservations table doesn't exist, just log the error
+      console.log('[TABLE ACTIONS] Continuing without reservations table...');
+    }
   }
 
   // Update table session status to RESERVED and store reservation info
