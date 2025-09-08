@@ -370,7 +370,7 @@ export async function createOrder(orderData: {
   }>;
   total_amount: number;
   notes?: string;
-  order_status?: "placed" | "accepted" | "preparing" | "ready" | "served" | "cancelled" | "refunded";
+  order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED";
   payment_status?: "unpaid" | "paid" | "till";
   payment_method?: "demo" | "stripe" | "till" | null;
   table_id?: string | null;

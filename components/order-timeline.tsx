@@ -6,13 +6,13 @@ import { Clock, CheckCircle, ChefHat, Truck, Utensils } from 'lucide-react';
 
 interface OrderTimelineProps {
   orderId: string;
-  currentStatus?: 'placed' | 'confirmed' | 'preparing' | 'ready' | 'delivered';
+  currentStatus?: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'SERVING' | 'COMPLETED';
   estimatedTime?: string;
 }
 
 const ORDER_STATUSES = [
   {
-    id: 'placed',
+    id: 'PLACED',
     label: 'Order Placed',
     description: 'Your order has been received',
     icon: CheckCircle,
@@ -20,7 +20,7 @@ const ORDER_STATUSES = [
     textColor: 'text-green-600'
   },
   {
-    id: 'confirmed',
+    id: 'ACCEPTED',
     label: 'Order Confirmed',
     description: 'Kitchen has confirmed your order',
     icon: ChefHat,
@@ -28,7 +28,7 @@ const ORDER_STATUSES = [
     textColor: 'text-blue-600'
   },
   {
-    id: 'preparing',
+    id: 'IN_PREP',
     label: 'Preparing',
     description: 'Your food is being prepared',
     icon: Utensils,
@@ -36,7 +36,7 @@ const ORDER_STATUSES = [
     textColor: 'text-orange-600'
   },
   {
-    id: 'ready',
+    id: 'READY',
     label: 'Ready for Pickup',
     description: 'Your order is ready!',
     icon: Truck,
@@ -44,7 +44,7 @@ const ORDER_STATUSES = [
     textColor: 'text-purple-600'
   },
   {
-    id: 'delivered',
+    id: 'COMPLETED',
     label: 'Delivered',
     description: 'Enjoy your meal!',
     icon: CheckCircle,
@@ -53,7 +53,7 @@ const ORDER_STATUSES = [
   }
 ];
 
-export function OrderTimeline({ orderId, currentStatus = 'placed', estimatedTime }: OrderTimelineProps) {
+export function OrderTimeline({ orderId, currentStatus = 'PLACED', estimatedTime }: OrderTimelineProps) {
   const currentStatusIndex = ORDER_STATUSES.findIndex(status => status.id === currentStatus);
   
   return (

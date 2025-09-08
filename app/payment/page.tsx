@@ -215,7 +215,7 @@ export default function PaymentPage() {
           {/* Order Timeline */}
           <OrderTimeline
             orderId={orderNumber}
-            currentStatus="placed"
+            currentStatus="PLACED"
             estimatedTime="15-20 minutes"
           />
 
