@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { TrendingUp, ShoppingBag, Users, RefreshCw, Clock, Star, TrendingDown, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Chart, ChartContainer } from "@/components/ui/chart";
+import { ChartContainer } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 
 interface OrderWithItems {
@@ -268,7 +268,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        (payload) => {
+        (payload: any) => {
           console.log('[ANALYTICS] Real-time order change detected:', payload.event, payload.new?.id);
           
           // Check if the order is within the current time range
@@ -411,7 +411,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             />
             <StatCard
               title="Peak Hour"
-              value={hourlyData.length > 0 ? hourlyData.reduce((max, hour) => hour.orders > max.orders ? hour : max).name : 'N/A'}
+              value={hourlyData.length > 0 ? hourlyData.reduce((max, hour) => (hour.orders || 0) > (max.orders || 0) ? hour : max).name : 'N/A'}
               icon={Clock}
             />
           </div>

@@ -59,9 +59,9 @@ function CallbackContent() {
         addDebugLog(`[AUTH CALLBACK] Platform: ${isMobile() ? 'Mobile' : 'Desktop'}`);
         
         // Get the code from URL parameters
-        const code = searchParams.get('code');
-        const error = searchParams.get('error');
-        const state = searchParams.get('state');
+        const code = searchParams?.get('code');
+        const error = searchParams?.get('error');
+        const state = searchParams?.get('state');
         
         addDebugLog(`[AUTH CALLBACK] URL params: ${JSON.stringify({ 
           code: code?.substring(0, 10) + '...', 
@@ -90,7 +90,7 @@ function CallbackContent() {
 
         if (!code) {
           addDebugLog('[AUTH CALLBACK] No code found in URL parameters');
-          addDebugLog(`[AUTH CALLBACK] All search params: ${JSON.stringify(Object.fromEntries(searchParams.entries()))}`);
+          addDebugLog(`[AUTH CALLBACK] All search params: ${JSON.stringify(searchParams ? Object.fromEntries(searchParams.entries()) : {})}`);
           setError('No authorization code found in URL parameters');
           setLoading(false);
           return;
@@ -125,12 +125,7 @@ function CallbackContent() {
         addDebugLog('[AUTH CALLBACK] Starting code exchange with Supabase...');
         
         // Exchange the code for a session
-        const exchangePromise = supabaseBrowser().auth.exchangeCodeForSession(code);
-        
-        const { data, error: exchangeError } = await Promise.race([
-          exchangePromise,
-          timeoutPromise
-        ]) as any;
+        const { data, error: exchangeError } = await supabaseBrowser().auth.exchangeCodeForSession(code);
         
         addDebugLog(`[AUTH CALLBACK] Exchange completed: ${JSON.stringify({ 
           hasData: !!data, 
@@ -257,8 +252,6 @@ function CallbackContent() {
         
         setError(err.message || 'An unexpected error occurred during authentication');
         setLoading(false);
-      } finally {
-        clearTimeout(timeoutId);
       }
     };
 

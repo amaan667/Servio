@@ -7,8 +7,9 @@ import { getAuthenticatedUser } from '@/lib/supabase/server';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { MenuManagementWrapper } from '@/components/MenuManagementWrapper';
 
-export default async function MenuManagementPage({ params }: { params: { venueId: string } }) {
-  console.log('[MENU MANAGEMENT] Page mounted for venue', params.venueId);
+export default async function MenuManagementPage({ params }: { params: Promise<{ venueId: string }> }) {
+  const { venueId } = await params;
+  console.log('[MENU MANAGEMENT] Page mounted for venue', venueId);
   
   // SECURE: Use the secure authentication utility
   const { user, error } = await getAuthenticatedUser();
@@ -31,7 +32,7 @@ export default async function MenuManagementPage({ params }: { params: { venueId
   const { data: venue, error: venueError } = await supabase
     .from('venues')
     .select('venue_id, name, slug, owner_id')
-    .or(`venue_id.eq.${params.venueId},slug.eq.${params.venueId}`)
+    .or(`venue_id.eq.${venueId},slug.eq.${venueId}`)
     .eq('owner_id', user.id)
     .maybeSingle();
 
@@ -49,7 +50,7 @@ export default async function MenuManagementPage({ params }: { params: { venueId
   console.log('[MENU MANAGEMENT] Venue details:', {
     venue_id: venue.venue_id,
     slug: venue.slug,
-    params_venueId: params.venueId,
+    params_venueId: venueId,
     name: venue.name
   });
 

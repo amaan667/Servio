@@ -71,7 +71,7 @@ export function useLiveOrders(venueId: string) {
         .limit(100) // avoid accidental infinite loading
         .throwOnError()
 
-      const { data, error } = await withTimeout(queryPromise)
+      const { data, error } = await withTimeout(queryPromise) as any
 
       if (error) {
         throw error

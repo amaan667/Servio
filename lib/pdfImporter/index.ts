@@ -106,8 +106,7 @@ export {
 export { 
   parseMenuWithGPT,
   parseMenuInBatches,
-  validateMenuParsingResult,
-  getPrompt
+  validateMenuParsingResult
 } from './robustMenuParser';
 
 export { getPrompt } from './gptPrompts';

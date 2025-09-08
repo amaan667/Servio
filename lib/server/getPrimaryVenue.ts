@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 import { createServerSupabaseClient } from './supabase';
 
 export async function getPrimaryVenueId(): Promise<string | null> {
-  const supa = createServerSupabaseClient();
+  const supa = await createServerSupabaseClient();
 
   const { data: { user } } = await supa.auth.getUser();
   if (!user) return null;

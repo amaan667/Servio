@@ -141,15 +141,15 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         });
         setError("Failed to load menu items.");
       } else {
-        logger.info("Menu fetched successfully", {
+        logger.log("Menu fetched successfully", {
           itemCount: data?.length || 0,
-          categories: [...new Set(data?.map((item) => item.category) || [])],
+          categories: [...new Set(data?.map((item: any) => item.category) || [])],
         });
         setMenuItems(data || []);
         
         // Debug: Log the actual items found
         if (data && data.length > 0) {
-          console.log('[AUTH DEBUG] Found menu items:', data.map(item => ({
+          console.log('[AUTH DEBUG] Found menu items:', data.map((item: any) => ({
             id: item.id,
             name: item.name,
             category: item.category,
@@ -186,7 +186,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
     if (!supabase) return;
 
-    logger.debug("Setting up real-time subscription");
+    logger.log("Setting up real-time subscription");
     const channel = supabase
       .channel(`menu-management-${venueUuid}`)
       .on(
@@ -197,19 +197,19 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           table: "menu_items",
           filter: `venue_id=eq.${venueUuid}`,
         },
-        (payload) => {
-          logger.info("Real-time change detected, refetching menu", {
+        (payload: any) => {
+          logger.log("Real-time change detected, refetching menu", {
             payload,
           });
           fetchMenu();
         },
       )
-      .subscribe((status) => {
-        logger.debug("Real-time subscription status", { status });
+      .subscribe((status: any) => {
+        logger.log("Real-time subscription status", { status });
       });
 
     return () => {
-      logger.debug("Cleaning up real-time subscription");
+      logger.log("Cleaning up real-time subscription");
       if (supabase) {
         createClient().removeChannel(channel);
       }
@@ -233,7 +233,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   // Removed drag-and-drop handlers
 
   const handleAddItem = async () => {
-    logger.info("Starting add item process", {
+    logger.log("Starting add item process", {
       name: newItem.name.trim(),
       category: newItem.category.trim(),
       price: newItem.price,
@@ -278,7 +278,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         });
         setError(result.error || "Failed to add item.");
       } else {
-        logger.info("Item added successfully");
+        logger.log("Item added successfully");
         setNewItem({
           name: "",
           description: "",
@@ -299,7 +299,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     itemId: string,
     updates: Partial<MenuItem>,
   ) => {
-    logger.info("Updating item", { itemId, updates });
+    logger.log("Updating item", { itemId, updates });
 
     if (!supabase) return;
 
@@ -332,7 +332,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           )
         );
       } else {
-        logger.info("Item updated successfully", { itemId });
+        logger.log("Item updated successfully", { itemId });
       }
     } catch (error: any) {
       logger.error("Unexpected error updating item", { error });
@@ -350,7 +350,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
   const handleDeleteItem = async (itemId: string) => {
     if (!window.confirm("Are you sure you want to delete this menu item?")) return;
-    logger.info("Deleting item", { itemId });
+    logger.log("Deleting item", { itemId });
 
     if (!supabase) return;
 
@@ -380,7 +380,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           setMenuItems(prevItems => [...prevItems, itemToDelete]);
         }
       } else {
-        logger.info("Item deleted successfully", { itemId });
+        logger.log("Item deleted successfully", { itemId });
       }
     } catch (error: any) {
       logger.error("Unexpected error deleting item", { error });

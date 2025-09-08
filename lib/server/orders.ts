@@ -1,7 +1,7 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 export async function markPaid(orderId: string) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { error } = await supabase
     .from('orders')
     .update({ payment_status: 'PAID' })
@@ -10,7 +10,7 @@ export async function markPaid(orderId: string) {
 }
 
 export async function setOrderStatus(orderId: string, next: 'IN_PREP'|'READY'|'SERVING'|'SERVED'|'CANCELLED') {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { error } = await supabase
     .from('orders')
     .update({ order_status: next })
@@ -34,7 +34,7 @@ export function todayBounds(tz: string) {
 
 // Fetch live orders (today's orders with active statuses)
 export async function fetchLiveOrders(venueId: string, tz: string = 'Europe/London') {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { startUtc, endUtc } = todayBounds(tz)
   const ACTIVE = ['PLACED','IN_PREP','READY','SERVING']
   
@@ -49,7 +49,7 @@ export async function fetchLiveOrders(venueId: string, tz: string = 'Europe/Lond
 
 // Fetch earlier today (today's orders with terminal statuses)
 export async function fetchEarlierToday(venueId: string, tz: string = 'Europe/London') {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { startUtc, endUtc } = todayBounds(tz)
   const TERMINAL_TODAY = ['SERVED','CANCELLED','REFUNDED','EXPIRED']
   
@@ -64,7 +64,7 @@ export async function fetchEarlierToday(venueId: string, tz: string = 'Europe/Lo
 
 // Fetch history (orders from previous days with SERVED status only)
 export async function fetchHistory(venueId: string, tz: string = 'Europe/London') {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { startUtc } = todayBounds(tz)
   
   return supabase.from('orders_with_totals')

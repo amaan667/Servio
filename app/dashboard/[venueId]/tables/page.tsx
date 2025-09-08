@@ -3,18 +3,19 @@ import { TableManagementRefactored } from './table-management-refactored';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 interface TableManagementPageProps {
-  params: {
+  params: Promise<{
     venueId: string;
-  };
+  }>;
 }
 
-export default function TableManagementPage({ params }: TableManagementPageProps) {
+export default async function TableManagementPage({ params }: TableManagementPageProps) {
+  const { venueId } = await params;
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb venueId={params.venueId} />
+        <NavigationBreadcrumb venueId={venueId} />
         <Suspense fallback={<div className="text-center py-8 text-gray-600">Loading tables...</div>}>
-          <TableManagementRefactored venueId={params.venueId} />
+          <TableManagementRefactored venueId={venueId} />
         </Suspense>
       </div>
     </div>

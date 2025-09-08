@@ -11,7 +11,7 @@ import { TextBlock, BoundingBox } from './types';
 const bucketName = process.env.GCS_BUCKET_NAME;
 
 // Google clients with Railway-compatible credentials
-let client: vision.ImageAnnotatorClient, storage: Storage;
+let client: any, storage: any;
 
 try {
   console.log('[OCR] Initializing Google Cloud clients...');
@@ -55,7 +55,7 @@ try {
   console.log('[OCR] Google Cloud clients initialized successfully');
 } catch (error) {
   console.error('[OCR] Failed to initialize Google Cloud clients:', error);
-  throw new Error(`Google Cloud credentials not properly configured: ${error.message}`);
+  throw new Error(`Google Cloud credentials not properly configured: ${(error as any).message}`);
 }
 
 /**
@@ -132,7 +132,7 @@ export async function extractTextBlocksFromPdf(pdfBuffer: Buffer, fileName: stri
       await storage.bucket(bucketName).file(tempFileName).delete();
       console.log(`[OCR] Cleaned up temporary file: ${tempFileName}`);
     } catch (cleanupError) {
-      console.warn(`[OCR] Failed to cleanup temporary file:`, cleanupError.message);
+      console.warn(`[OCR] Failed to cleanup temporary file:`, (cleanupError as any).message);
     }
 
     return allBlocks;

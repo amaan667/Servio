@@ -13,7 +13,7 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react';
-import { useTableReservations } from '@/hooks/useTableReservations';
+import { useTableGrid, useTableCounters, useReservations } from '@/hooks/useTableReservations';
 import { TableCardNew } from '@/components/table-management/TableCardNew';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFiltersNew } from '@/components/table-management/TabFiltersNew';
@@ -34,17 +34,17 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     isLoading: tablesLoading, 
     error: tablesError, 
     refetch: refetchTables 
-  } = useTableReservations.useTableGrid(venueId);
+  } = useTableGrid(venueId);
   
   const { 
     data: counters = { total_tables: 0, available: 0, occupied: 0, reserved_overlapping_now: 0 }, 
     isLoading: countersLoading 
-  } = useTableReservations.useTableCounters(venueId);
+  } = useTableCounters(venueId);
   
   const { 
     data: reservations = [], 
     isLoading: reservationsLoading 
-  } = useTableReservations.useReservations(venueId);
+  } = useReservations(venueId);
 
   const filteredTables = useMemo(() => {
     let filtered = tables;

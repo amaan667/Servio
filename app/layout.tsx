@@ -31,8 +31,8 @@ export default async function RootLayout({
   let session = null;
   try {
     const supabase = await createServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    session = user ? { user } : null;
+    const { data: { session: serverSession } } = await supabase.auth.getSession();
+    session = serverSession;
   } catch (error) {
     // Silent error handling
   }

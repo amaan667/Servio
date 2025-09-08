@@ -252,12 +252,12 @@ export function isModifierBlock(block: TextBlock, contextBlocks: TextBlock[]): b
   
   // Check for small price (modifiers usually have small prices)
   const priceMatch = text.match(/£?(\d+(?:\.\d{1,2})?)/);
-  const hasSmallPrice = priceMatch && parseFloat(priceMatch[1]) < 2.0;
+  const hasSmallPrice = (priceMatch && parseFloat(priceMatch[1]) < 2.0) || false;
   
   // Check if it's indented or positioned as a sub-item
   const isIndented = contextBlocks.some(context => 
     block.bbox.x > context.bbox.x + 20
-  );
+  ) || false;
   
   // Check for list-like formatting
   const isListLike = /^[•\-\*]\s/.test(block.text) || 

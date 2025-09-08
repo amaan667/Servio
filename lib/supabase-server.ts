@@ -83,10 +83,10 @@ export async function createRouteSupabase() {
         flowType: 'pkce',
       },
       cookies: {
-        get: (n) => jar.get(n)?.value,
-        set: (n, v, opts) => jar.set(n, v, opts),
-        remove: (n, opts) => jar.set(n, '', { ...opts, maxAge: 0 }),
-      },
+        get: (n: any) => jar.get(n)?.value,
+        set: (n: any, v: any, opts: any) => jar.set(n, v, opts),
+        remove: (n: any, opts: any) => jar.set(n, '', { ...opts, maxAge: 0 }),
+      } as any,
     }
   );
 }

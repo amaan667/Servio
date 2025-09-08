@@ -6,7 +6,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from '@/lib/supabase/server';
 import { importPDFToMenu, generateImportReport, validateImportResult, exportImportResult } from '@/lib/pdfImporter/mainImporter';
-import { parseMenuWithGPT, repairAndValidateMenuJSON } from '@/lib/pdfImporter/robustMenuParser';
+import { parseMenuWithGPT } from '@/lib/pdfImporter/robustMenuParser';
 
 export const runtime = "nodejs";
 

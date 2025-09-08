@@ -13,7 +13,7 @@ function titleFor(seg: string) {
 
 export default function Breadcrumbs() {
   const segs = useSelectedLayoutSegments();
-  const currentSeg = [...segs].reverse().find(s => !s.startsWith('[')) || 'dashboard';
+  const currentSeg = [...(segs || [])].reverse().find(s => !s.startsWith('[')) || 'dashboard';
   const currentLabel = titleFor(currentSeg);
 
   const crumbs = [

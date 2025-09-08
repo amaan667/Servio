@@ -8,7 +8,7 @@ export async function GET() {
     if (userError || !user) {
       return NextResponse.json({ 
         authenticated: false, 
-        error: userError.message,
+        error: userError || 'Authentication failed',
         timestamp: new Date().toISOString()
       });
     }

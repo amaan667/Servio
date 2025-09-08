@@ -1,9 +1,9 @@
 // /lib/auth/utils.ts
-import type { Headers } from 'next/dist/server/web/spec-extension/adapters/headers';
+// import type { Headers } from 'next/dist/server/web/spec-extension/adapters/headers';
 
 const AUTH_COOKIE_PREFIXES = ['sb-', 'supabase.auth.token', 'supabase-auth-token'];
 
-export function getOriginFromHeaders(h: Headers) {
+export function getOriginFromHeaders(h: any) {
   const proto = h.get('x-forwarded-proto') ?? 'https';
   const host  = h.get('host') ?? 'localhost';
   return `${proto}://${host}`;

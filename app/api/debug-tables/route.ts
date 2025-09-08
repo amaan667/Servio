@@ -34,7 +34,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    const debug = {
+    const debug: any = {
       venue_id: venueId,
       checks: {}
     };
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
         count: tables?.length || 0,
         sample: tables?.[0] || null
       };
-    } catch (e) {
+    } catch (e: any) {
       debug.checks.tables = { exists: false, error: e.message };
     }
 
@@ -72,7 +72,7 @@ export async function GET(req: Request) {
         count: sessions?.length || 0,
         sample: sessions?.[0] || null
       };
-    } catch (e) {
+    } catch (e: any) {
       debug.checks.table_sessions = { exists: false, error: e.message };
     }
 
@@ -90,7 +90,7 @@ export async function GET(req: Request) {
         count: runtimeState?.length || 0,
         sample: runtimeState?.[0] || null
       };
-    } catch (e) {
+    } catch (e: any) {
       debug.checks.table_runtime_state = { exists: false, error: e.message };
     }
 
@@ -108,7 +108,7 @@ export async function GET(req: Request) {
         count: tablesWithSessions?.length || 0,
         sample: tablesWithSessions?.[0] || null
       };
-    } catch (e) {
+    } catch (e: any) {
       debug.checks.tables_with_sessions = { exists: false, error: e.message };
     }
 

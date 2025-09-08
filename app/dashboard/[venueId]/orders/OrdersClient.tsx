@@ -66,11 +66,11 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           // Calculate stats with fallback to items calculation
           setStats({
             todayOrders: ordersData.length,
-            revenue: ordersData.reduce((sum, order) => {
+            revenue: ordersData.reduce((sum: number, order: any) => {
               let amount = order.total_amount;
               if (!amount || amount <= 0) {
                 // Calculate from items if total_amount is 0 or missing
-                amount = order.items.reduce((itemSum, item) => {
+                amount = order.items.reduce((itemSum: number, item: any) => {
                   const quantity = Number(item.quantity) || 0;
                   const price = Number(item.price) || 0;
                   return itemSum + (quantity * price);

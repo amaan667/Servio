@@ -7,10 +7,10 @@ export const runtime = 'nodejs';
 // POST /api/reservations/[reservationId]/cancel - Cancel a reservation
 export async function POST(
   req: Request,
-  { params }: { params: { reservationId: string } }
+  context: { params: Promise<{ reservationId: string }> }
 ) {
   try {
-    const { reservationId } = params;
+    const { reservationId } = await context.params;
 
     if (!reservationId) {
       return NextResponse.json({ ok: false, error: 'reservationId is required' }, { status: 400 });

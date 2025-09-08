@@ -10,7 +10,7 @@ export async function ocrPdfToText(pdfBuffer: Buffer, maxPages = 5): Promise<str
   const texts: string[] = [];
   let pageIndex = 0;
   // If buffer is an image (not a multi-page PDF), sharp will still handle it; we try page loop with try/catch
-  const worker = await createWorker({ logger: () => {} });
+  const worker = await createWorker() as any;
   try {
     await worker.loadLanguage('eng');
     await worker.initialize('eng');

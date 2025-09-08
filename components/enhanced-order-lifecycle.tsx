@@ -176,7 +176,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
       // Auto-advance to next logical status
       const nextStatus = getNextLogicalStatus(order.order_status);
       if (nextStatus) {
-        logger.info('Auto-transitioning order status', { 
+        logger.log('Auto-transitioning order status', { 
           orderId: order.id, 
           from: order.order_status, 
           to: nextStatus 
@@ -188,7 +188,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
       const timer = setTimeout(() => {
         const nextStatus = getNextLogicalStatus(order.order_status);
         if (nextStatus) {
-          logger.info('Auto-transitioning order status', { 
+          logger.log('Auto-transitioning order status', { 
             orderId: order.id, 
             from: order.order_status, 
             to: nextStatus 
@@ -222,7 +222,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
     if (updating) return;
 
     setUpdating(true);
-    logger.info('Updating order status', { 
+    logger.log('Updating order status', { 
       orderId: order.id, 
       from: order.order_status, 
       to: newStatus 
@@ -244,7 +244,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
         throw new Error(error.message);
       }
 
-      logger.info('Order status updated successfully', { 
+      logger.log('Order status updated successfully', { 
         orderId: order.id, 
         newStatus 
       });
@@ -304,16 +304,18 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
   const urgencyColors = {
     normal: 'text-green-600',
     warning: 'text-orange-600',
-    critical: 'text-red-600'
+    critical: 'text-red-600',
+    none: 'text-gray-600'
   };
 
   const urgencyIcons = {
     normal: Clock,
     warning: AlertTriangle,
-    critical: Zap
+    critical: Zap,
+    none: Clock
   };
 
-  const UrgencyIcon = urgencyIcons[getUrgencyLevel()];
+  const UrgencyIcon = urgencyIcons[getUrgencyLevel() as keyof typeof urgencyIcons];
 
   return (
     <Card className="w-full">
@@ -372,7 +374,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
           </div>
           <div>
             <div className="text-sm text-gray-600">Urgency</div>
-            <div className={`flex items-center ${urgencyColors[getUrgencyLevel()]}`}>
+            <div className={`flex items-center ${urgencyColors[getUrgencyLevel() as keyof typeof urgencyColors]}`}>
               <UrgencyIcon className="h-4 w-4 mr-1" />
               <span className="capitalize">{getUrgencyLevel()}</span>
             </div>
@@ -452,7 +454,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
                     const newTime = new Date();
                     newTime.setMinutes(newTime.getMinutes() - 5);
                     // This would need a custom API endpoint to update the updated_at timestamp
-                    logger.info('Requesting time adjustment', { orderId: order.id, adjustment: '-5 minutes' });
+                    logger.log('Requesting time adjustment', { orderId: order.id, adjustment: '-5 minutes' });
                   }}
                   disabled={updating}
                 >
@@ -468,7 +470,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
                     const newTime = new Date();
                     newTime.setMinutes(newTime.getMinutes() + 5);
                     // This would need a custom API endpoint to update the updated_at timestamp
-                    logger.info('Requesting time adjustment', { orderId: order.id, adjustment: '+5 minutes' });
+                    logger.log('Requesting time adjustment', { orderId: order.id, adjustment: '+5 minutes' });
                   }}
                   disabled={updating}
                 >

@@ -47,10 +47,10 @@ export default function AuthProvider({
     // Get initial session quickly
     const getInitialSession = async () => {
       try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        setSession(currentUser ? { user: currentUser } : null);
-        setUser(currentUser);
+        setSession(currentSession);
+        setUser(currentSession?.user || null);
         setLoading(false);
       } catch (error) {
         setSession(null);
@@ -63,9 +63,9 @@ export default function AuthProvider({
     getInitialSession();
     
     // Handle auth state changes
-    let subscription;
+    let subscription: any;
     try {
-      const { data } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      const { data } = supabase.auth.onAuthStateChange(async (event: any, newSession: any) => {
         switch (event) {
           case 'SIGNED_IN':
             setSession(newSession);

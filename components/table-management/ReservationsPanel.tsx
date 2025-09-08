@@ -19,8 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal } from 'lucide-react';
-import { useTableReservations, Reservation } from '@/hooks/useTableReservations';
+import { MoreHorizontal, ArrowRight } from 'lucide-react';
+import { useCheckInReservation, useCancelReservation, Reservation } from '@/hooks/useTableReservations';
 
 interface ReservationsPanelProps {
   venueId: string;
@@ -30,7 +30,8 @@ interface ReservationsPanelProps {
 
 export function ReservationsPanel({ venueId, reservations, onActionComplete }: ReservationsPanelProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const { checkInReservation, cancelReservation } = useTableReservations();
+  const checkInReservation = useCheckInReservation();
+  const cancelReservation = useCancelReservation();
 
   const handleCheckIn = async (reservationId: string, tableId: string) => {
     try {

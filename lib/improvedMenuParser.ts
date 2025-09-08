@@ -191,7 +191,7 @@ function convertToMenuPayload(parsed: any): MenuPayloadT {
   }));
 
   // Extract unique categories from items
-  const categories = [...new Set(items.map(item => item.category).filter(Boolean))];
+  const categories = [...new Set(items.map((item: any) => item.category).filter(Boolean))] as string[];
 
   return {
     items,

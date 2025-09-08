@@ -8,7 +8,8 @@ import { log } from '@/lib/debug';
 import DashboardClient from './page.client';
 import { todayWindowForTZ } from '@/lib/time';
 
-export default async function VenuePage({ params }: { params: { venueId: string } }) {
+export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
+  const { venueId } = await params;
   try {
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
@@ -33,7 +34,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('*')
-      .eq('venue_id', params.venueId)
+      .eq('venue_id', venueId)
       .eq('owner_id', user.id)
       .maybeSingle();
 
@@ -63,7 +64,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const venueTz = 'Europe/London'; // pull from DB/config if you store it
     const { data: counts, error: countsError } = await supabase
       .rpc('dashboard_counts', { 
-        p_venue_id: params.venueId, 
+        p_venue_id: venueId, 
         p_tz: venueTz, 
         p_live_window_mins: 30 
       })
@@ -79,7 +80,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const { data: todayOrders } = await supabase
       .from("orders")
       .select("total_amount, status, payment_status, items")
-      .eq("venue_id", params.venueId)
+      .eq("venue_id", venueId)
       .gte("created_at", todayWindow.startUtcISO)
       .lt("created_at", todayWindow.endUtcISO);
 
@@ -103,7 +104,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     const { data: menuItems } = await supabase
       .from("menu_items")
       .select("id")
-      .eq("venue_id", params.venueId)
+      .eq("venue_id", venueId)
       .eq("available", true);
 
     const initialStats = {
@@ -114,7 +115,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
     return (
       <DashboardClient 
-        venueId={params.venueId} 
+        venueId={venueId} 
         userId={user.id}
         venue={venue}
         userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}

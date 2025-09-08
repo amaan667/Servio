@@ -12,9 +12,10 @@ import { liveOrdersWindow } from '@/lib/dates';
 export default async function OrdersPage({
   params,
 }: {
-  params: { venueId: string };
+  params: Promise<{ venueId: string }>;
 }) {
-  console.log('[ORDERS] Page mounted for venue', params.venueId);
+  const { venueId } = await params;
+  console.log('[ORDERS] Page mounted for venue', venueId);
   
   // Safe auth check that only calls getUser if auth cookies exist
   const { data: { user }, error } = await safeGetUser();
@@ -37,7 +38,7 @@ export default async function OrdersPage({
   const { data: venue } = await supabase
     .from('venues')
     .select('venue_id, name')
-    .eq('venue_id', params.venueId)
+    .eq('venue_id', venueId)
     .eq('owner_id', user.id)
     .maybeSingle();
 
@@ -48,7 +49,7 @@ export default async function OrdersPage({
   const { data: ordersData } = await supabase
     .from('orders')
     .select('*')
-    .eq('venue_id', params.venueId)
+    .eq('venue_id', venueId)
     .eq('payment_status', 'PAID')
     .gte('created_at', timeWindow.startUtcISO)
     .order('created_at', { ascending: false });
@@ -56,10 +57,10 @@ export default async function OrdersPage({
   // Calculate stats server-side
   const stats = {
     todayOrders: ordersData?.length || 0,
-    revenue: (ordersData || []).reduce((sum, order) => {
+    revenue: (ordersData || []).reduce((sum: number, order: any) => {
       let amount = order.total_amount;
       if (!amount || amount <= 0) {
-        amount = order.items.reduce((itemSum, item) => {
+        amount = order.items.reduce((itemSum: number, item: any) => {
           const quantity = Number(item.quantity) || 0;
           const price = Number(item.price) || 0;
           return itemSum + (quantity * price);
@@ -72,7 +73,7 @@ export default async function OrdersPage({
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb venueId={params.venueId} />
+        <NavigationBreadcrumb venueId={venueId} />
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -83,7 +84,7 @@ export default async function OrdersPage({
           </p>
         </div>
         
-        <OrdersClient venueId={params.venueId} initialOrders={ordersData || []} initialStats={stats} />
+        <OrdersClient venueId={venueId} initialOrders={ordersData || []} initialStats={stats} />
       </div>
     </div>
   );

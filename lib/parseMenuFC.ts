@@ -74,7 +74,7 @@ async function callMenuTool(system: string, user: string) {
     throw new Error("Model did not return tool_calls.");
   }
 
-  let args = call.function.arguments || "{}";
+  let args = (call as any).function.arguments || "{}";
   console.log('[MENU PARSE] Tool arguments length:', args.length);
   console.log('[MENU PARSE] Tool arguments preview:', args.substring(0, 200));
 
@@ -84,7 +84,7 @@ async function callMenuTool(system: string, user: string) {
   } catch (parseError) {
     console.log('[MENU PARSE] Initial parse failed, attempting jsonrepair...');
     console.log('[MENU PARSE] Raw arguments:', args);
-    console.log('[MENU PARSE] Parse error:', parseError.message);
+    console.log('[MENU PARSE] Parse error:', (parseError as any).message);
     
     try {
       const repaired = jsonrepair(args);
@@ -96,7 +96,7 @@ async function callMenuTool(system: string, user: string) {
       console.error('[MENU PARSE] Failed arguments:', args);
       
       // Try to extract any valid JSON from the response
-      const jsonMatch = args.match(/\{.*\}/s);
+      const jsonMatch = args.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           console.log('[MENU PARSE] Attempting to extract JSON from response...');

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function PUT(req: NextRequest, { params }: { params: { tableId: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
-    const { tableId } = params;
+    const { tableId } = await context.params;
     const body = await req.json();
     const { label, seat_count, is_active, qr_version } = body;
 
@@ -40,9 +40,9 @@ export async function PUT(req: NextRequest, { params }: { params: { tableId: str
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { tableId: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
-    const { tableId } = params;
+    const { tableId } = await context.params;
 
     const supabase = await createClient();
 

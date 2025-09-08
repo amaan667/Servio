@@ -35,6 +35,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       type: 'stars',
       choices: null,
       is_active: true,
+      sort_index: 1,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
@@ -45,6 +46,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       type: 'stars',
       choices: null,
       is_active: true,
+      sort_index: 2,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
@@ -55,6 +57,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       type: 'stars',
       choices: null,
       is_active: true,
+      sort_index: 3,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
@@ -65,6 +68,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       type: 'stars',
       choices: null,
       is_active: true,
+      sort_index: 4,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
@@ -75,49 +79,19 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       type: 'paragraph',
       choices: null,
       is_active: true,
+      sort_index: 5,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
   ];
 
-  useEffect(() => {
-    fetchQuestions();
-  }, [fetchQuestions]);
+  // useEffect moved after fetchQuestions definition
 
   useEffect(() => {
     console.log('[FEEDBACK DEBUG] totalCount state changed to:', totalCount);
   }, [totalCount]);
 
-  // Set up real-time subscription for feedback questions
-  useEffect(() => {
-    const supabase = createClient();
-    
-    console.log('[FEEDBACK DEBUG] Setting up real-time subscription for venue:', venueId);
-    
-    const channel = supabase
-      .channel(`feedback-questions-${venueId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'feedback_questions',
-          filter: `venue_id=eq.${venueId}`,
-        },
-        (payload) => {
-          console.log('[FEEDBACK DEBUG] Real-time change detected:', payload);
-          fetchQuestions();
-        },
-      )
-      .subscribe((status) => {
-        console.log('[FEEDBACK DEBUG] Real-time subscription status:', status);
-      });
-
-    return () => {
-      console.log('[FEEDBACK DEBUG] Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
-    };
-  }, [venueId, fetchQuestions]);
+  // Real-time subscription moved after fetchQuestions definition
 
   const fetchQuestions = useCallback(async () => {
     try {
@@ -159,6 +133,41 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
     }
   }, [venueId]);
 
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
+
+  // Set up real-time subscription for feedback questions
+  useEffect(() => {
+    const supabase = createClient();
+    
+    console.log('[FEEDBACK DEBUG] Setting up real-time subscription for venue:', venueId);
+    
+    const channel = supabase
+      .channel(`feedback-questions-${venueId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: '*',
+          schema: 'public',
+          table: 'feedback_questions',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        (payload: any) => {
+          console.log('[FEEDBACK DEBUG] Real-time change detected:', payload);
+          fetchQuestions();
+        },
+      )
+      .subscribe((status: any) => {
+        console.log('[FEEDBACK DEBUG] Real-time subscription status:', status);
+      });
+
+    return () => {
+      console.log('[FEEDBACK DEBUG] Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [venueId, fetchQuestions]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -174,21 +183,21 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           case 'stars':
             return {
               question_id: question.id,
-              type: 'stars',
+              type: 'stars' as const,
               answer_stars: answer || 0,
               order_id: orderId
             };
           case 'multiple_choice':
             return {
               question_id: question.id,
-              type: 'multiple_choice',
+              type: 'multiple_choice' as const,
               answer_choice: answer || '',
               order_id: orderId
             };
           case 'paragraph':
             return {
               question_id: question.id,
-              type: 'paragraph',
+              type: 'paragraph' as const,
               answer_text: answer || '',
               order_id: orderId
             };

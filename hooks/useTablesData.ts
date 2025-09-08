@@ -124,7 +124,7 @@ export function useTablesData(venueId: string) {
           table: 'table_sessions',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('[TABLES HOOK] Realtime table_sessions update received:', payload);
           // Refetch tables when sessions change
           fetchTables();
@@ -138,7 +138,7 @@ export function useTablesData(venueId: string) {
           table: 'orders',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('[TABLES HOOK] Realtime orders update received:', payload);
           // Refetch tables when orders change
           fetchTables();
@@ -152,7 +152,7 @@ export function useTablesData(venueId: string) {
           table: 'tables',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('[TABLES HOOK] Realtime tables update received:', payload);
           // Refetch tables when tables change
           fetchTables();

@@ -107,7 +107,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
             table: 'orders',
             filter: `id=eq.${orderId}`,
           },
-          (payload) => {
+          (payload: any) => {
             console.log('[REAL-TIME TIMELINE] Order update detected:', payload);
             
             if (payload.eventType === 'UPDATE') {
@@ -133,7 +133,7 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
             }
           }
         )
-        .subscribe((status) => {
+        .subscribe((status: any) => {
           console.log('[REAL-TIME TIMELINE] Real-time subscription status:', status);
           
           if (status === 'SUBSCRIBED') {

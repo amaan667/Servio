@@ -5,17 +5,21 @@ import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-export default function FeedbackTestPage({ params }: { params: { venueId: string } }) {
+export default function FeedbackTestPage({ params }: { params: Promise<{ venueId: string }> }) {
   const [testResult, setTestResult] = useState<string>('Testing...');
   const [tableExists, setTableExists] = useState<boolean | null>(null);
   const [canInsert, setCanInsert] = useState<boolean | null>(null);
   const [canSelect, setCanSelect] = useState<boolean | null>(null);
+  const [venueId, setVenueId] = useState<string>('');
 
   useEffect(() => {
-    testFeedbackSystem();
+    params.then(({ venueId }) => {
+      setVenueId(venueId);
+      testFeedbackSystem(venueId);
+    });
   }, []);
 
-  const testFeedbackSystem = async () => {
+  const testFeedbackSystem = async (venueId: string) => {
     try {
       const supabase = createClient();
       if (!supabase) {
@@ -55,7 +59,7 @@ export default function FeedbackTestPage({ params }: { params: { venueId: string
       // Test 2: Test insert permission
       try {
         const testFeedback = {
-          venue_id: params.venueId,
+          venue_id: venueId,
           customer_name: 'Test Customer',
           rating: 5,
           comment: 'Test feedback for system verification',
@@ -87,7 +91,7 @@ export default function FeedbackTestPage({ params }: { params: { venueId: string
         const { data, error: selectError } = await supabase
           .from('feedback')
           .select('*')
-          .eq('venue_id', params.venueId)
+          .eq('venue_id', venueId)
           .limit(5);
 
         if (selectError) {
@@ -115,7 +119,7 @@ export default function FeedbackTestPage({ params }: { params: { venueId: string
       if (!supabase) return;
 
       const sampleFeedback = {
-        venue_id: params.venueId,
+        venue_id: venueId,
         customer_name: 'John Doe',
         rating: 4,
         comment: 'Great food and service! Will definitely come back.',
@@ -132,7 +136,7 @@ export default function FeedbackTestPage({ params }: { params: { venueId: string
         alert(`Error inserting sample feedback: ${error.message}`);
       } else {
         alert('Sample feedback inserted successfully!');
-        testFeedbackSystem(); // Refresh the test
+        testFeedbackSystem(venueId); // Refresh the test
       }
     } catch (error) {
       alert(`Error: ${error}`);
@@ -182,7 +186,7 @@ export default function FeedbackTestPage({ params }: { params: { venueId: string
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={testFeedbackSystem} variant="outline">
+              <Button onClick={() => testFeedbackSystem(venueId)} variant="outline">
                 Run Test Again
               </Button>
               <Button onClick={insertSampleFeedback} disabled={!tableExists}>

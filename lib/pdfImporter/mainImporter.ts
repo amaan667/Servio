@@ -351,18 +351,18 @@ export function generateImportReport(result: any): string {
     lines.push(`Valid: ${result.validation.valid ? 'YES' : 'NO'}`);
     if (result.validation.errors.length > 0) {
       lines.push('Errors:');
-      result.validation.errors.forEach(error => lines.push(`  • ${error}`));
+      result.validation.errors.forEach((error: any) => lines.push(`  • ${error}`));
     }
     if (result.validation.warnings.length > 0) {
       lines.push('Warnings:');
-      result.validation.warnings.forEach(warning => lines.push(`  • ${warning}`));
+      result.validation.warnings.forEach((warning: any) => lines.push(`  • ${warning}`));
     }
   }
   
   if (result.warnings && result.warnings.length > 0) {
     lines.push('');
     lines.push('=== PROCESSING WARNINGS ===');
-    result.warnings.forEach(warning => lines.push(`  • ${warning}`));
+    result.warnings.forEach((warning: any) => lines.push(`  • ${warning}`));
   }
   
   if (result.error) {

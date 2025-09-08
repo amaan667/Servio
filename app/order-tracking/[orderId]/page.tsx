@@ -50,7 +50,7 @@ const GREYED_OUT_STATUSES = [
 
 export default function OrderTrackingPage() {
   const params = useParams();
-  const orderId = params.orderId as string;
+  const orderId = params?.orderId as string;
   
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +105,7 @@ export default function OrderTrackingPage() {
             table: 'orders',
             filter: `id=eq.${orderId}`,
           },
-          (payload) => {
+          (payload: any) => {
             console.log('Order update detected:', payload);
             
             if (payload.eventType === 'UPDATE') {
@@ -131,7 +131,7 @@ export default function OrderTrackingPage() {
             }
           }
         )
-        .subscribe((status) => {
+        .subscribe((status: any) => {
           console.log('Real-time subscription status:', status);
           
           if (status === 'SUBSCRIBED') {

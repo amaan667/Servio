@@ -159,7 +159,7 @@ export default function VenueDashboardClient({
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         }, 
-        async (payload) => {
+        async (payload: any) => {
           console.log('[DASHBOARD] Real-time order change detected:', payload.event, payload.new?.id);
           
           // Get the order date from the payload with proper type checking

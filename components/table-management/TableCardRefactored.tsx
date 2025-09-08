@@ -291,7 +291,7 @@ export function TableCardRefactored({
                   Assign QR Code
                 </DropdownMenuItem>
                 {/* Only show Reserve Table if there's no active reservation */}
-                {!table.reserved_now_id && !table.reserved_later_id && (
+                {!table.reserved_now_id && !(table as any).reserved_later_id && (
                   <DropdownMenuItem onClick={() => handleReserveTable()}>
                     <Calendar className="h-4 w-4 mr-2" />
                     Reserve Table
@@ -405,7 +405,7 @@ export function TableCardRefactored({
                 variant={action.variant}
                 size="sm"
                 className="w-full"
-                onClick={() => handleAction(action.action, action.reservationId)}
+                onClick={() => handleAction(action.action, action.reservationId || undefined)}
                 disabled={isLoading}
               >
                 {action.label}

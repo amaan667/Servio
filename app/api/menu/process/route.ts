@@ -88,11 +88,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if text is menu-like
-    const menuScore = isMenuLike(rawText);
-    console.log('[AUTH DEBUG] Menu-likeness score:', menuScore);
+    const isMenuLikeResult = isMenuLike(rawText);
+    console.log('[AUTH DEBUG] Menu-likeness result:', isMenuLikeResult);
 
-    if (menuScore < 10) {
-      console.log('[AUTH DEBUG] Text not menu-like, score:', menuScore);
+    if (!isMenuLikeResult) {
+      console.log('[AUTH DEBUG] Text not menu-like');
       
       // Update status to needs_review
       await supa
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ 
         ok: false, 
         error: 'Text not menu-like',
-        score: menuScore,
+        isMenuLike: isMenuLikeResult,
         preview: rawText.substring(0, 200) + '...'
       });
     }

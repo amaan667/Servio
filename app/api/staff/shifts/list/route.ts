@@ -29,11 +29,14 @@ export async function GET(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   
   // Transform the data to flatten the nested staff object
-  const transformedShifts = data?.map(shift => ({
-    ...shift,
-    staff_name: shift.staff?.name || 'Unknown',
-    staff_role: shift.staff?.role || 'Unknown'
-  })) || [];
+  const transformedShifts = data?.map(shift => {
+    const staff = shift.staff as any;
+    return {
+      ...shift,
+      staff_name: Array.isArray(staff) ? staff[0]?.name || 'Unknown' : staff?.name || 'Unknown',
+      staff_role: Array.isArray(staff) ? staff[0]?.role || 'Unknown' : staff?.role || 'Unknown'
+    };
+  }) || [];
   
   return NextResponse.json({ ok: true, shifts: transformedShifts });
 }

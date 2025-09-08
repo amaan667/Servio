@@ -16,7 +16,7 @@ export function getRequestOrigin(req: NextRequest): string {
 // Resolve base URL in server context using Next headers; falls back to env/production URL
 export async function getServerBaseUrl(): Promise<string> {
   try {
-    const h = headers()
+    const h = await headers()
     const xfProto = h.get('x-forwarded-proto')?.split(',')[0]?.trim()
     const xfHost = h.get('x-forwarded-host')?.split(',')[0]?.trim()
     const host = h.get('host')?.split(',')[0]?.trim()

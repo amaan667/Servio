@@ -203,7 +203,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
           actions.push(
             <DropdownMenuItem 
               key="start_prep" 
-              onClick={() => handleAction('start_preparing', table.order_id)}
+              onClick={() => handleAction('start_preparing', table.order_id || undefined)}
               disabled={isLoading}
             >
               <Play className="h-4 w-4 mr-2" />
@@ -218,7 +218,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
           actions.push(
             <DropdownMenuItem 
               key="mark_ready" 
-              onClick={() => handleAction('mark_ready', table.order_id)}
+              onClick={() => handleAction('mark_ready', table.order_id || undefined)}
               disabled={isLoading}
             >
               <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -233,7 +233,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
           actions.push(
             <DropdownMenuItem 
               key="mark_served" 
-              onClick={() => handleAction('mark_served', table.order_id)}
+              onClick={() => handleAction('mark_served', table.order_id || undefined)}
               disabled={isLoading}
             >
               <UserCheck className="h-4 w-4 mr-2" />
@@ -542,20 +542,20 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       <TableSelectionDialog
         isOpen={showMoveDialog}
         onClose={() => setShowMoveDialog(false)}
-        sourceTable={table}
+        sourceTable={table as any}
         action="move"
         venueId={venueId}
-        availableTables={availableTables}
+        availableTables={availableTables as any}
         onActionComplete={onActionComplete}
       />
       
       <TableSelectionDialog
         isOpen={showMergeDialog}
         onClose={() => setShowMergeDialog(false)}
-        sourceTable={table}
+        sourceTable={table as any}
         action="merge"
         venueId={venueId}
-        availableTables={availableTables}
+        availableTables={availableTables as any}
         onActionComplete={onActionComplete}
       />
       

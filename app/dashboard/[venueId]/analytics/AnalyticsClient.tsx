@@ -80,12 +80,12 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       }
 
       // Process orders data
-      const validOrders = (orders || []).filter(order => 
+      const validOrders = (orders || []).filter((order: any) => 
         order.order_status !== 'CANCELLED' && order.total_amount > 0
       );
 
       const totalOrders = validOrders.length;
-      const totalRevenue = validOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+      const totalRevenue = validOrders.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
       const menuItemsCount = menuItems?.length || 0;
 
@@ -104,8 +104,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         const dateStr = date.toISOString().split('T')[0];
         
         const dayRevenue = validOrders
-          .filter(order => order.created_at.startsWith(dateStr))
-          .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+          .filter((order: any) => order.created_at.startsWith(dateStr))
+          .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
         
         revenueOverTime.push({
           date: dateStr,
@@ -116,7 +116,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       // Generate top selling items data
       const itemSales = new Map<string, { name: string; quantity: number; revenue: number }>();
       
-      validOrders.forEach(order => {
+      validOrders.forEach((order: any) => {
         if (order.items && Array.isArray(order.items)) {
           order.items.forEach((item: any) => {
             const itemName = item.item_name || item.name || 'Unknown Item';

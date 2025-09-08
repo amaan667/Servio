@@ -517,7 +517,6 @@ async function handleOccupyTable(supabase: any, table_id: string) {
           error: 'Table not found in database',
           debug: {
             requestedTableId: table_id,
-            requestedVenueId: venueId,
             availableTables: allTables,
             availableVenues: allVenues,
             errorCode: tableError.code,

@@ -12,8 +12,9 @@ export async function GET(request: NextRequest) {
     // Test Supabase connection
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    // Test OAuth providers
-    const { data: providers, error: providersError } = await supabase.auth.listIdentities();
+    // Test OAuth providers - removed listIdentities as it doesn't exist
+    const providers = null;
+    const providersError = null;
     
     const testResults = {
       timestamp: new Date().toISOString(),
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest) {
         sessionError: sessionError?.message,
       },
       providers: {
-        hasProviders: !!providers,
-        providerCount: providers?.length || 0,
-        providersError: providersError?.message,
+        hasProviders: false,
+        providerCount: 0,
+        providersError: 'OAuth provider testing disabled',
       },
       request: {
         url: request.url,

@@ -19,6 +19,8 @@
     "tsprune": "ts-prune -p tsconfig.json"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.7.0",
+    "@google-cloud/vision": "^4.0.2",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",

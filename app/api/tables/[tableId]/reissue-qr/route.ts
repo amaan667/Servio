@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function POST(req: NextRequest, { params }: { params: { tableId: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
-    const { tableId } = params;
+    const { tableId } = await context.params;
     const supabase = await createClient();
 
     // Get current table to increment qr_version

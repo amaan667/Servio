@@ -11,9 +11,10 @@ import MenuClient from './MenuClient';
 export default async function MenuPage({
   params,
 }: {
-  params: { venueId: string };
+  params: Promise<{ venueId: string }>;
 }) {
-  console.log('[MENU] Page mounted for venue', params.venueId);
+  const { venueId } = await params;
+  console.log('[MENU] Page mounted for venue', venueId);
   
   // Safe auth check that only calls getUser if auth cookies exist
   const { data: { user }, error } = await safeGetUser();
@@ -36,7 +37,7 @@ export default async function MenuPage({
   const { data: venue } = await supabase
     .from('venues')
     .select('venue_id, name')
-    .eq('venue_id', params.venueId)
+    .eq('venue_id', venueId)
     .eq('owner_id', user.id)
     .maybeSingle();
 
@@ -45,7 +46,7 @@ export default async function MenuPage({
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationBreadcrumb venueId={params.venueId} />
+        <NavigationBreadcrumb venueId={venueId} />
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -56,7 +57,7 @@ export default async function MenuPage({
           </p>
         </div>
         
-        <MenuClient venueId={params.venueId} venueName={venue.name} />
+        <MenuClient venueId={venueId} venueName={venue.name} />
       </div>
     </div>
   );

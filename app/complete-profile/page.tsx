@@ -9,6 +9,7 @@ export default function CompleteProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     // Only run on client side
@@ -41,6 +42,7 @@ export default function CompleteProfilePage() {
           return;
         }
 
+        setUser(user);
         setShowForm(true);
         setLoading(false);
       } catch (error) {
@@ -62,8 +64,8 @@ export default function CompleteProfilePage() {
     );
   }
 
-  if (showForm) {
-    return <CompleteProfileForm />;
+  if (showForm && user) {
+    return <CompleteProfileForm user={user} />;
   }
 
   return (

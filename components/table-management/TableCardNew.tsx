@@ -32,7 +32,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { StatusPill } from './StatusPill';
-import { useTableReservations, TableGridItem } from '@/hooks/useTableReservations';
+import { useSeatWalkIn, useCloseTable, TableGridItem } from '@/hooks/useTableReservations';
 import { useTableActions } from '@/hooks/useTableActions';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
@@ -49,7 +49,8 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showReservationDialog, setShowReservationDialog] = useState(false);
-  const { seatWalkIn, closeTable } = useTableReservations();
+  const seatWalkIn = useSeatWalkIn();
+  const closeTable = useCloseTable();
   const { occupyTable } = useTableActions();
 
   const handleSeatWalkIn = async () => {
@@ -204,7 +205,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         </div>
 
         <div className="space-y-2">
-          <StatusPill status={table.session_status} />
+          <StatusPill status={table.session_status as any} />
           
           {table.order_id && (
             <div className="text-sm text-gray-600 space-y-1">
@@ -245,20 +246,20 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       <TableSelectionDialog
         isOpen={showMoveDialog}
         onClose={() => setShowMoveDialog(false)}
-        sourceTable={table}
+        sourceTable={table as any}
         action="move"
         venueId={venueId}
-        availableTables={availableTables}
+        availableTables={availableTables as any}
         onActionComplete={onActionComplete}
       />
       
       <TableSelectionDialog
         isOpen={showMergeDialog}
         onClose={() => setShowMergeDialog(false)}
-        sourceTable={table}
+        sourceTable={table as any}
         action="merge"
         venueId={venueId}
-        availableTables={availableTables}
+        availableTables={availableTables as any}
         onActionComplete={onActionComplete}
       />
       

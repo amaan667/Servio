@@ -118,7 +118,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       notes: 'Extra crispy fries please',
       payment_method: 'card',
       payment_status: 'pending',
-      scheduled_for: null,
+      scheduled_for: undefined,
       prep_lead_minutes: 15,
       items: [
         { menu_item_id: 'demo-item-1', quantity: 1, price: 14.50, item_name: 'Beef Burger' },
@@ -140,7 +140,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       notes: 'No onions please',
       payment_method: 'card',
       payment_status: 'pending',
-      scheduled_for: null,
+      scheduled_for: undefined,
       prep_lead_minutes: 20,
       items: [
         { menu_item_id: 'demo-item-4', quantity: 1, price: 18.75, item_name: 'Grilled Salmon' }
@@ -218,7 +218,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
       console.log("LIVE_ORDERS: All venue orders fetched", {
         totalCount: allVenueOrders?.length || 0,
-        statuses: allVenueOrders?.map(order => ({ 
+        statuses: allVenueOrders?.map((order: any) => ({ 
           id: order.id, 
           status: order.order_status, 
           created: order.created_at,
@@ -227,7 +227,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       });
 
       // Now filter for live orders - ONLY ACTIVE orders, NEVER completed ones
-      const liveOrders = allVenueOrders?.filter(order => {
+      const liveOrders = allVenueOrders?.filter((order: any) => {
         const orderCreatedAt = new Date(order.created_at);
         
         // CRITICAL: Completed/terminal orders should NEVER appear in live tab
@@ -266,9 +266,9 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       console.log("LIVE_ORDERS: Live orders filtering results", {
         totalOrders: allVenueOrders?.length || 0,
         liveOrdersCount: liveOrders.length,
-        activeOrdersCount: liveOrders.filter(o => ACTIVE_STATUSES.includes(o.order_status)).length,
-        recentCompletedCount: liveOrders.filter(o => o.order_status === 'COMPLETED').length,
-        liveOrders: liveOrders.map(o => ({
+        activeOrdersCount: liveOrders.filter((o: any) => ACTIVE_STATUSES.includes(o.order_status)).length,
+        recentCompletedCount: liveOrders.filter((o: any) => o.order_status === 'COMPLETED').length,
+        liveOrders: liveOrders.map((o: any) => ({
           id: o.id,
           status: o.order_status,
           created: o.created_at,
@@ -281,7 +281,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       
       console.log("🔍 [FETCH DEBUG] Live orders fetched and set:", {
         liveOrdersCount: liveOrders.length,
-        orders: liveOrders.map(o => ({
+        orders: liveOrders.map((o: any) => ({
           id: o.id,
           status: o.order_status,
           customer: o.customer_name,
@@ -339,7 +339,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       } else {
         console.log("🔍 [FETCH DEBUG] Today's orders fetched and set:", {
           orderCount: ordersData?.length || 0,
-          orders: ordersData?.map(o => ({
+          orders: ordersData?.map((o: any) => ({
             id: o.id,
             status: o.order_status,
             customer: o.customer_name,
@@ -396,7 +396,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       } else {
         console.log("LIVE_ORDERS: Historical orders fetched successfully", {
           orderCount: ordersData?.length || 0,
-          orders: ordersData?.map(o => ({
+          orders: ordersData?.map((o: any) => ({
             id: o.id,
             status: o.order_status,
             created: o.created_at,
@@ -438,7 +438,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        const liveCount = allOrdersData.filter(order => {
+        const liveCount = allOrdersData.filter((order: any) => {
           const orderCreatedAt = new Date(order.created_at);
           const isActive = ACTIVE_STATUSES.includes(order.order_status) && 
                           orderCreatedAt >= thirtyMinutesAgo;
@@ -447,12 +447,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           return isActive || isRecentCompleted;
         }).length;
         
-        const todayCount = allOrdersData.filter(order => {
+        const todayCount = allOrdersData.filter((order: any) => {
           const orderDate = new Date(order.created_at);
           return orderDate >= today;
         }).length;
         
-        const historyCount = allOrdersData.filter(order => {
+        const historyCount = allOrdersData.filter((order: any) => {
           const orderDate = new Date(order.created_at);
           return orderDate < today;
         }).length;
@@ -464,11 +464,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             today: todayCount,
             history: historyCount
           },
-          statusBreakdown: allOrdersData.reduce((acc, order) => {
+          statusBreakdown: allOrdersData.reduce((acc: any, order: any) => {
             acc[order.order_status] = (acc[order.order_status] || 0) + 1;
             return acc;
           }, {} as Record<string, number>),
-          ageBreakdown: allOrdersData.reduce((acc, order) => {
+          ageBreakdown: allOrdersData.reduce((acc: any, order: any) => {
             const age = Math.round((Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60 * 24));
             if (age === 0) acc['today'] = (acc['today'] || 0) + 1;
             else if (age === 1) acc['yesterday'] = (acc['yesterday'] || 0) + 1;
@@ -503,7 +503,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       // Always fetch all orders for accurate counting
       await fetchAllOrders();
     } finally {
-      clearTimeout(timeoutId);
+      // clearTimeout(timeoutId); // timeoutId not defined
     }
   }, [activeTab, fetchLiveOrders, fetchTodayOrders, fetchHistoryOrders, fetchAllOrders]);
 

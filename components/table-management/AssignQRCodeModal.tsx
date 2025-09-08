@@ -87,7 +87,7 @@ export function AssignQRCodeModal({
           .eq('venue_id', venueId);
 
         if (mergedError) throw mergedError;
-        mergedTables = mergedTableData.map(t => t.label);
+        mergedTables = mergedTableData.map((t: any) => t.label);
       }
 
       const qrVersion = table.qr_version || 1;

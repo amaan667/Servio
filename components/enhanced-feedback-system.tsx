@@ -153,7 +153,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
       // Apply search filter (only filter not handled by query)
       if (searchQuery.trim()) {
-        filteredFeedback = filteredFeedback.filter(f => 
+        filteredFeedback = filteredFeedback.filter((f: any) => 
           f.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           f.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
           f.category?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -257,7 +257,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
       if (error) throw new Error(error.message);
 
-      logger.info('Feedback response added', { feedbackId, venueId });
+      logger.log('Feedback response added', { feedbackId, venueId });
       
       // Refresh feedback data
       fetchFeedback();
@@ -324,7 +324,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "create" | "feedback" | "overview")}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="feedback">All Feedback</TabsTrigger>

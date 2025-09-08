@@ -217,7 +217,7 @@ export default function PaymentSimulation({ amount, onPaymentComplete }: Payment
               <Button 
                 onClick={simulatePayment}
                 className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={paymentStatus === 'processing'}
+                disabled={false}
               >
                 <Lock className="h-4 w-4 mr-2" />
                 Pay £{amount.toFixed(2)}

@@ -21,7 +21,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
         schema: 'public',
         table: 'table_sessions',
         filter: `venue_id=eq.${venueId}`,
-      }, (payload) => {
+      }, (payload: any) => {
         console.log('[TABLE_REALTIME] Table session changed:', payload.event, payload.new?.id)
         if (onTableChangeRef.current) {
           onTableChangeRef.current()
@@ -32,7 +32,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
         schema: 'public',
         table: 'tables',
         filter: `venue_id=eq.${venueId}`,
-      }, (payload) => {
+      }, (payload: any) => {
         console.log('[TABLE_REALTIME] Table changed:', payload.event, payload.new?.id)
         if (onTableChangeRef.current) {
           onTableChangeRef.current()
@@ -43,13 +43,13 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
         schema: 'public',
         table: 'reservations',
         filter: `venue_id=eq.${venueId}`,
-      }, (payload) => {
+      }, (payload: any) => {
         console.log('[TABLE_REALTIME] Reservation changed:', payload.event, payload.new?.id)
         if (onTableChangeRef.current) {
           onTableChangeRef.current()
         }
       })
-      .subscribe((status) => {
+      .subscribe((status: any) => {
         console.log('[TABLE_REALTIME] Subscription status:', status)
       })
 

@@ -10,7 +10,7 @@ import { Suspense } from 'react';
 
 function AuthErrorContent() {
   const searchParams = useSearchParams();
-  const reason = searchParams.get('reason');
+  const reason = searchParams?.get('reason');
 
   const getErrorMessage = (reason: string | null) => {
     switch (reason) {
@@ -57,7 +57,7 @@ function AuthErrorContent() {
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              {getErrorMessage(reason)}
+              {getErrorMessage(reason || null)}
             </AlertDescription>
           </Alert>
 

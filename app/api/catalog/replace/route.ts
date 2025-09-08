@@ -5,6 +5,7 @@ import { parseMenuBulletproof, applyKnownFixes } from '@/lib/improvedMenuParser'
 export async function POST(req: NextRequest) {
   try {
     let venueId, pdfFileId, mode = 'replace';
+    let requestBody;
     
     // Check if request is FormData (file upload) or JSON
     const contentType = req.headers.get('content-type') || '';
@@ -84,7 +85,6 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // Handle JSON request
-      let requestBody;
       try {
         requestBody = await req.json();
       } catch (jsonError) {

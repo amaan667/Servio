@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         .from(operation.table)
         .delete()
         .eq('venue_id', venueId)
-        .select('*', { count: 'exact', head: true });
+        .select('*');
 
       if (error) {
         console.error(`[CATALOG CLEAR] Error clearing ${operation.description}:`, error);

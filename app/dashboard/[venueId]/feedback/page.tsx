@@ -8,7 +8,8 @@ import { log } from '@/lib/debug';
 import { EnhancedFeedbackSystem } from '@/components/enhanced-feedback-system';
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
-export default async function FeedbackPage({ params }: { params: { venueId: string } }) {
+export default async function FeedbackPage({ params }: { params: Promise<{ venueId: string }> }) {
+  const { venueId } = await params;
   try {
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
@@ -33,7 +34,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('*')
-      .eq('venue_id', params.venueId)
+      .eq('venue_id', venueId)
       .eq('owner_id', user.id)
       .maybeSingle();
 
@@ -61,7 +62,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <NavigationBreadcrumb venueId={params.venueId} />
+          <NavigationBreadcrumb venueId={venueId} />
           
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Customer Feedback</h1>
@@ -70,7 +71,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
             </p>
           </div>
           
-          <EnhancedFeedbackSystem venueId={params.venueId} />
+          <EnhancedFeedbackSystem venueId={venueId} />
         </div>
       </div>
     );

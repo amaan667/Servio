@@ -11,9 +11,10 @@ import AnalyticsClient from './AnalyticsClient';
 export default async function AnalyticsPage({
   params,
 }: {
-  params: { venueId: string };
+  params: Promise<{ venueId: string }>;
 }) {
-  console.log('[ANALYTICS] Page mounted for venue', params.venueId);
+  const { venueId } = await params;
+  console.log('[ANALYTICS] Page mounted for venue', venueId);
   
   try {
     // Check for auth cookies before making auth calls
@@ -42,7 +43,7 @@ export default async function AnalyticsPage({
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('venue_id, name')
-      .eq('venue_id', params.venueId)
+      .eq('venue_id', venueId)
       .eq('owner_id', user.id)
       .maybeSingle();
 
@@ -59,7 +60,7 @@ export default async function AnalyticsPage({
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <NavigationBreadcrumb venueId={params.venueId} />
+          <NavigationBreadcrumb venueId={venueId} />
           
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -70,7 +71,7 @@ export default async function AnalyticsPage({
             </p>
           </div>
           
-          <AnalyticsClient venueId={params.venueId} venueName={venue.name} />
+          <AnalyticsClient venueId={venueId} venueName={venue.name} />
         </div>
       </div>
     );

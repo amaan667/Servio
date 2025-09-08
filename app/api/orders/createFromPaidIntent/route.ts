@@ -4,13 +4,13 @@ import { createClient } from '@supabase/supabase-js';
 import { ENV } from '@/lib/env';
 import { v4 as uuidv4 } from 'uuid';
 
-const stripe = new Stripe(ENV.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',
+const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2025-08-27.basil',
 });
 
 const supabase = createClient(
   ENV.SUPABASE_URL,
-  ENV.SUPABASE_SERVICE_ROLE_KEY
+  ENV.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
 interface CreateOrderRequest {

@@ -15,7 +15,7 @@ export function repairMenuJSON(brokenJSON: string): string {
     console.log('[JSON_REPAIR] JSON is already valid');
     return brokenJSON;
   } catch (error) {
-    console.log('[JSON_REPAIR] JSON needs repair, error:', error.message);
+    console.log('[JSON_REPAIR] JSON needs repair, error:', (error as any).message);
   }
   
   // Try the new robust reconstruction approach first
@@ -606,7 +606,7 @@ export function validateMenuJSON(json: string): {
     };
     
   } catch (error) {
-    errors.push(`JSON parse error: ${error.message}`);
+    errors.push(`JSON parse error: ${(error as any).message}`);
     return { valid: false, errors, items };
   }
 }
@@ -648,7 +648,7 @@ export function repairAndValidateMenuJSON(brokenJSON: string): {
     console.error('[JSON_REPAIR] Repair pipeline failed:', error);
     return {
       success: false,
-      errors: [`Repair failed: ${error.message}`]
+      errors: [`Repair failed: ${(error as any).message}`]
     };
   }
 }

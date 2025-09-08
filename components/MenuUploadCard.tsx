@@ -168,7 +168,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    await processFile(file);
+    if (file) {
+      await processFile(file);
+    }
   };
 
   const handleDragOver = (event: React.DragEvent) => {

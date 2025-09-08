@@ -194,7 +194,7 @@ export function LiveOrdersPartitioned({ venueId, venueTimezone = 'Europe/London'
           ) : currentData?.rows && currentData.rows.length > 0 ? (
             <div className="space-y-4">
               {currentData.rows.map((order: Order) => (
-                <OrderCard key={order.id} order={order} />
+                <OrderCard key={order.id} order={order} onUpdate={() => {}} />
               ))}
             </div>
           ) : (

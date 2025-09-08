@@ -204,7 +204,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         });
         
         if (tab === 'live') {
-          filteredOrders = filteredOrders.filter(order => {
+          filteredOrders = filteredOrders.filter((order: any) => {
             const status = order.order_status || order.status;
             const created = new Date(order.created_at);
             const isActive = ACTIVE_STATUSES.includes(status);
@@ -221,7 +221,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             return isActive && isToday && isNotExpired;
           });
         } else if (tab === 'earlier') {
-          filteredOrders = filteredOrders.filter(order => {
+          filteredOrders = filteredOrders.filter((order: any) => {
             const status = order.order_status || order.status;
             const created = new Date(order.created_at);
             const isTerminal = TERMINAL_TODAY.includes(status);
@@ -238,7 +238,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             return isToday && (isTerminal || isExpiredLive);
           });
         } else if (tab === 'history') {
-          filteredOrders = filteredOrders.filter(order => {
+          filteredOrders = filteredOrders.filter((order: any) => {
             const created = new Date(order.created_at);
             const isBeforeToday = created < today;
             console.log(`[LIVE_ORDERS] Order ${order.id}: status=${order.order_status || order.status}, created=${created.toISOString()}, isBeforeToday=${isBeforeToday}`);
@@ -247,7 +247,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         }
         
         
-        clearTimeout(timeoutId);
+        // // clearTimeout(timeoutId); // timeoutId not defined // timeoutId not defined
         setOrders(filteredOrders);
         if (background) {
           setIsRefreshing(false);
@@ -260,7 +260,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       }
 
 
-      clearTimeout(timeoutId);
+      // clearTimeout(timeoutId); // timeoutId not defined
       setOrders(data || []);
       setLastUpdatedAt(new Date());
       
@@ -269,7 +269,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         setError(`Failed to load ${activeTab} orders: ${error.message}`);
       }
     } finally {
-      clearTimeout(timeoutId);
+      // clearTimeout(timeoutId); // timeoutId not defined
       if (background) {
         setIsRefreshing(false);
       } else {

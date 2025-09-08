@@ -88,7 +88,7 @@ export default function CustomerOrderPage() {
     };
     getUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setSession(session);
     });
 
@@ -159,9 +159,9 @@ export default function CustomerOrderPage() {
       
       setLoadingMenu(false);
       // Clear the timeout since we successfully loaded the menu
-      if (window.menuLoadTimeout) {
-        clearTimeout(window.menuLoadTimeout);
-        window.menuLoadTimeout = null;
+      if ((window as any).menuLoadTimeout) {
+        clearTimeout((window as any).menuLoadTimeout);
+        (window as any).menuLoadTimeout = null;
       }
     } catch (err: any) {
       setMenuError(`Error loading menu: ${err.message}`);
@@ -175,9 +175,9 @@ export default function CustomerOrderPage() {
     // Remove artificial timeout - let real loading states handle this
     
     return () => {
-      if (window.menuLoadTimeout) {
-        clearTimeout(window.menuLoadTimeout);
-        window.menuLoadTimeout = null;
+      if ((window as any).menuLoadTimeout) {
+        clearTimeout((window as any).menuLoadTimeout);
+        (window as any).menuLoadTimeout = null;
       }
     };
   }, [venueSlug, isLoggedIn]);
@@ -285,7 +285,7 @@ export default function CustomerOrderPage() {
             price: item.price,
             quantity: item.quantity,
             specialInstructions: item.specialInstructions || null,
-            image: item.image || null,
+            image: (item as any).image || null,
           })),
           total: getTotalPrice(),
           notes: cart
@@ -330,7 +330,7 @@ export default function CustomerOrderPage() {
           price: item.price,
           quantity: item.quantity,
           specialInstructions: item.specialInstructions || null,
-          image: item.image || null,
+          image: (item as any).image || null,
         })),
         total: getTotalPrice(),
         notes: cart

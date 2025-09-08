@@ -4,7 +4,7 @@ import { ENV } from '@/lib/env';
 
 const supabase = createClient(
   ENV.SUPABASE_URL,
-  ENV.SUPABASE_SERVICE_ROLE_KEY
+  ENV.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 interface CartItem {

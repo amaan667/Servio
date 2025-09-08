@@ -12,9 +12,10 @@ import StaffClient from './staff-client';
 export default async function StaffPage({
   params,
 }: {
-  params: { venueId: string };
+  params: Promise<{ venueId: string }>;
 }) {
-  console.log('[STAFF] Page mounted for venue', params.venueId);
+  const { venueId } = await params;
+  console.log('[STAFF] Page mounted for venue', venueId);
   
   try {
     // Check for auth cookies before making auth calls
@@ -43,7 +44,7 @@ export default async function StaffPage({
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('venue_id, name')
-      .eq('venue_id', params.venueId)
+      .eq('venue_id', venueId)
       .eq('owner_id', user.id)
       .maybeSingle();
 
@@ -61,7 +62,7 @@ export default async function StaffPage({
     const { data: initialStaff, error: staffError } = await supabase
       .from('staff')
       .select('*')
-      .eq('venue_id', params.venueId)
+      .eq('venue_id', venueId)
       .is('deleted_at', null)  // Only fetch non-deleted staff
       .order('created_at', { ascending: false });
 
@@ -72,7 +73,7 @@ export default async function StaffPage({
     // Get authoritative staff counts from the new RPC function
     const { data: initialCounts, error: countsError } = await supabase
       .rpc('staff_counts', { 
-        p_venue_id: params.venueId
+        p_venue_id: venueId
       })
       .single();
 
@@ -83,7 +84,7 @@ export default async function StaffPage({
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <NavigationBreadcrumb venueId={params.venueId} />
+          <NavigationBreadcrumb venueId={venueId} />
           
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -95,7 +96,7 @@ export default async function StaffPage({
           </div>
           
           <StaffClient 
-            venueId={params.venueId} 
+            venueId={venueId} 
             venueName={venue.name}
             initialStaff={initialStaff || []}
             initialCounts={initialCounts}

@@ -7,10 +7,10 @@ export const runtime = 'nodejs';
 // POST /api/tables/[tableId]/seat - Seat a party at a table
 export async function POST(
   req: Request,
-  { params }: { params: { tableId: string } }
+  context: { params: Promise<{ tableId: string }> }
 ) {
   try {
-    const { tableId } = params;
+    const { tableId } = await context.params;
     const body = await req.json();
     const { reservationId, serverId } = body;
 

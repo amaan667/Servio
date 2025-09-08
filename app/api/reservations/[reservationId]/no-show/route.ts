@@ -3,10 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { reservationId: string } }
+  context: { params: Promise<{ reservationId: string }> }
 ) {
   try {
-    const { reservationId } = params;
+    const { reservationId } = await context.params;
 
     if (!reservationId) {
       return NextResponse.json(
@@ -15,7 +15,7 @@ export async function POST(
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { error } = await supabase.rpc('api_no_show_reservation', {
       p_reservation_id: reservationId

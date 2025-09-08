@@ -1,10 +1,11 @@
-export default function VenueDashboardLayout({
+export default async function VenueDashboardLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: { venueId: string };
+  params: Promise<{ venueId: string }>;
 }) {
+  const { venueId } = await params;
   return (
     <>
       {children}

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  context: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -15,7 +15,7 @@ export async function GET(
       );
     }
 
-    const { orderId } = params;
+    const { orderId } = await context.params;
 
     if (!orderId) {
       return NextResponse.json(
@@ -83,7 +83,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  context: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -95,7 +95,7 @@ export async function PATCH(
       );
     }
 
-    const { orderId } = params;
+    const { orderId } = await context.params;
 
     if (!orderId) {
       return NextResponse.json(

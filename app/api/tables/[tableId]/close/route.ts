@@ -7,10 +7,10 @@ export const runtime = 'nodejs';
 // POST /api/tables/[tableId]/close - Close a table
 export async function POST(
   req: Request,
-  { params }: { params: { tableId: string } }
+  context: { params: Promise<{ tableId: string }> }
 ) {
   try {
-    const { tableId } = params;
+    const { tableId } = await context.params;
 
     if (!tableId) {
       return NextResponse.json({ ok: false, error: 'tableId is required' }, { status: 400 });

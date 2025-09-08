@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         .from(operation.table)
         .delete()
         .eq('venue_id', venue_id)
-        .select('*', { count: 'exact', head: true });
+        .select('*');
 
       if (error) {
         console.error(`[AUTH DEBUG] Error clearing ${operation.description}:`, error);
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       details: results
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AUTH DEBUG] Clear menu error:', error);
     return NextResponse.json({ 
       ok: false, 

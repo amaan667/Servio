@@ -7,10 +7,10 @@ export const runtime = 'nodejs';
 // POST /api/reservations/[reservationId]/assign - Assign reservation to table
 export async function POST(
   req: Request,
-  { params }: { params: { reservationId: string } }
+  context: { params: Promise<{ reservationId: string }> }
 ) {
   try {
-    const { reservationId } = params;
+    const { reservationId } = await context.params;
     const body = await req.json();
     const { tableId } = body;
 

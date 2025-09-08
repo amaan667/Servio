@@ -3,10 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { venueId: string } }
+  context: { params: Promise<{ venueId: string }> }
 ) {
   try {
-    const venueId = params.venueId;
+    const { venueId } = await context.params;
     
     // Enhanced logging for customer menu access
     console.log('🍕 MENU API CALLED 🍕');
