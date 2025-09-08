@@ -17,7 +17,7 @@ import {
   CheckCircle,
   ArrowRight,
 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/app/auth/AuthProvider";
 
 function PricingQuickCompare() {
   return (
@@ -71,6 +71,11 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
+  // Debug authentication state
+  useEffect(() => {
+    console.log('[LANDING PAGE] Auth state:', { user: !!user, loading: authLoading, userId: user?.id });
+  }, [user, authLoading]);
+
   const handleGetStarted = () => {
     if (user) {
       // User is signed in, redirect to their dashboard
@@ -121,11 +126,12 @@ export default function HomePage() {
                   size="lg"
                   onClick={handleGetStarted}
                   className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
+                  disabled={authLoading}
                 >
-                  {user ? 'Go to Dashboard' : 'Start Free Trial'}
+                  {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Free Trial')}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                {!user && (
+                {!authLoading && !user && (
                   <Button
                     size="lg"
                     variant="outline"
@@ -410,11 +416,12 @@ export default function HomePage() {
               size="lg"
               onClick={handleGetStarted}
               className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
+              disabled={authLoading}
             >
-              {user ? 'Go to Dashboard' : 'Start Your Free Trial'}
+              {authLoading ? 'Loading...' : (user ? 'Go to Dashboard' : 'Start Your Free Trial')}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            {!user && (
+            {!authLoading && !user && (
               <Button
                 size="lg"
                 variant="outline"
