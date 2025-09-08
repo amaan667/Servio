@@ -14,13 +14,14 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
     
+    // Convert to uppercase for database consistency
     const updateData: any = {
-      payment_status: paymentStatus,
+      payment_status: paymentStatus.toUpperCase(),
       updated_at: new Date().toISOString()
     };
     
     if (paymentMethod) {
-      updateData.payment_method = paymentMethod;
+      updateData.payment_method = paymentMethod.toUpperCase();
     }
     
     const { data, error } = await supabase

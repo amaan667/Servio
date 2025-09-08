@@ -58,9 +58,11 @@ export default function PaymentPage() {
     
     if (!checkoutData || !checkoutData.orderId) {
       console.log('[PAYMENT DEBUG] ERROR: Missing required data');
+      setError('Missing order information. Please try again.');
       return;
     }
 
+    setError(null); // Clear any previous errors
     setIsProcessing(true);
 
     try {
@@ -107,9 +109,11 @@ export default function PaymentPage() {
     
     if (!checkoutData || !checkoutData.orderId) {
       console.log('[PAY AT TILL DEBUG] ERROR: Missing required data');
+      setError('Missing order information. Please try again.');
       return;
     }
 
+    setError(null); // Clear any previous errors
     setIsProcessing(true);
 
     try {
@@ -147,9 +151,11 @@ export default function PaymentPage() {
     
     if (!checkoutData || !checkoutData.orderId) {
       console.log('[PAY LATER DEBUG] ERROR: Missing required data');
+      setError('Missing order information. Please try again.');
       return;
     }
 
+    setError(null); // Clear any previous errors
     setIsProcessing(true);
 
     try {
@@ -330,7 +336,24 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Removed purple header as requested */}
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-md mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
+            </Button>
+            <h1 className="font-semibold text-lg text-gray-900">Payment</h1>
+            <div className="w-10"></div>
+          </div>
+        </div>
+      </header>
 
       <main className="max-w-md mx-auto p-4 space-y-6">
         {/* Order Summary */}
@@ -367,6 +390,13 @@ export default function PaymentPage() {
         </Card>
 
         {/* Customer Information - Removed since order is already created with customer details */}
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
 
         {/* Payment Options */}
         <div className="space-y-3">
