@@ -16,6 +16,7 @@ import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 
 import { useRouter } from "next/navigation";
+import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface MenuItem {
   id: string;
@@ -411,6 +412,17 @@ export default function CustomerOrderPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          {/* Breadcrumb Navigation for Demo */}
+          {isDemo && (
+            <div className="mb-4">
+              <NavigationBreadcrumb 
+                customBackPath="/dashboard" 
+                customBackLabel="Dashboard"
+                showBackButton={true}
+              />
+            </div>
+          )}
+          
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Servio Logo */}
@@ -501,6 +513,23 @@ export default function CustomerOrderPage() {
                             <Card key={item.id} className="hover:shadow-md transition-shadow">
                               <CardContent className="p-4">
                                 <div className="flex space-x-4">
+                                  {/* Item Image */}
+                                  {item.image && (
+                                    <div className="flex-shrink-0">
+                                      <Image
+                                        src={item.image}
+                                        alt={item.name}
+                                        width={80}
+                                        height={80}
+                                        className="w-20 h-20 object-cover rounded-lg"
+                                        onError={(e) => {
+                                          // Hide image if it fails to load
+                                          (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                  
                                   {/* Item Details */}
                                   <div className="flex-1">
                                     <h3 className="font-semibold text-gray-900">
