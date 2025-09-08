@@ -17,6 +17,7 @@ import { validateParsedCatalog, replaceCatalogAtomically, sanitizeItemData, dedu
 import { generateCoverageReport, generateCoverageSummary, validateCoverageReport } from './coverageReporter';
 import { runHighRecallMode, runPrecisionMode, HIGH_RECALL_OPTIONS, PRECISION_OPTIONS } from './processingModes';
 import { batchClassifyBlocks } from './gptClassifier';
+import { parseMenuWithGPT, parseMenuInBatches, validateMenuParsingResult } from './robustMenuParser';
 
 /**
  * Main PDF importer function with comprehensive error handling
@@ -87,34 +88,98 @@ export async function importPDFToMenu(
     let coverage: CoverageReport;
     let validation: ValidationResult;
     
-    if (processingMode === 'high_recall') {
-      // Step 4a: Run high-recall mode
-      console.log('[PDF_IMPORT] Step 4a: Running high-recall mode...');
-      const highRecallOptions = { ...HIGH_RECALL_OPTIONS, ...options.customOptions };
-      const highRecallResult = await runHighRecallMode(blocks, highRecallOptions);
+    try {
+      if (processingMode === 'high_recall') {
+        // Step 4a: Run high-recall mode
+        console.log('[PDF_IMPORT] Step 4a: Running high-recall mode...');
+        const highRecallOptions = { ...HIGH_RECALL_OPTIONS, ...options.customOptions };
+        const highRecallResult = await runHighRecallMode(blocks, highRecallOptions);
+        
+        catalog = highRecallResult.catalog;
+        coverage = highRecallResult.coverage;
+        warnings.push(...highRecallResult.warnings);
+        
+        // Step 5a: Run precision mode on high-recall results
+        console.log('[PDF_IMPORT] Step 5a: Running precision mode...');
+        const precisionOptions = { ...PRECISION_OPTIONS, ...options.customOptions };
+        const precisionResult = await runPrecisionMode(blocks, highRecallResult, precisionOptions);
+        
+        catalog = precisionResult.catalog;
+        coverage = precisionResult.coverage;
+        validation = precisionResult.validation;
+        
+      } else {
+        // Step 4b: Run precision mode directly
+        console.log('[PDF_IMPORT] Step 4b: Running precision mode...');
+        const precisionOptions = { ...PRECISION_OPTIONS, ...options.customOptions };
+        const precisionResult = await runPrecisionMode(blocks, undefined, precisionOptions);
+        
+        catalog = precisionResult.catalog;
+        coverage = precisionResult.coverage;
+        validation = precisionResult.validation;
+      }
+    } catch (layoutError: any) {
+      console.warn('[PDF_IMPORT] Layout parsing failed, falling back to robust GPT parser:', layoutError.message);
+      warnings.push(`Layout parsing failed: ${layoutError.message}`);
       
-      catalog = highRecallResult.catalog;
-      coverage = highRecallResult.coverage;
-      warnings.push(...highRecallResult.warnings);
+      // Fallback to robust GPT parser
+      const menuText = blocks.map(block => block.text).join('\n');
+      const gptResult = await parseMenuWithGPT(menuText, {
+        maxRetries: 3,
+        enableRepair: true,
+        enableValidation: true,
+        temperature: 0,
+        model: 'gpt-4o-mini'
+      });
       
-      // Step 5a: Run precision mode on high-recall results
-      console.log('[PDF_IMPORT] Step 5a: Running precision mode...');
-      const precisionOptions = { ...PRECISION_OPTIONS, ...options.customOptions };
-      const precisionResult = await runPrecisionMode(blocks, highRecallResult, precisionOptions);
-      
-      catalog = precisionResult.catalog;
-      coverage = precisionResult.coverage;
-      validation = precisionResult.validation;
-      
-    } else {
-      // Step 4b: Run precision mode directly
-      console.log('[PDF_IMPORT] Step 4b: Running precision mode...');
-      const precisionOptions = { ...PRECISION_OPTIONS, ...options.customOptions };
-      const precisionResult = await runPrecisionMode(blocks, undefined, precisionOptions);
-      
-      catalog = precisionResult.catalog;
-      coverage = precisionResult.coverage;
-      validation = precisionResult.validation;
+      if (gptResult.success) {
+        // Convert GPT result to catalog format
+        catalog = {
+          categories: [{
+            name: 'UNCATEGORIZED',
+            items: gptResult.items.map((item: any) => ({
+              title: item.title,
+              subtitle: undefined,
+              description: item.description,
+              price: item.price,
+              category: item.category,
+              confidence: 0.8,
+              sourceLineIds: ['gpt_fallback']
+            })),
+            sortOrder: 0
+          }],
+          metadata: {
+            sourceType: sourceInfo.type,
+            totalItems: gptResult.items.length,
+            totalPrices: gptResult.items.length,
+            unattachedPrices: 0,
+            optionGroups: 0,
+            processingMode: 'precision'
+          }
+        };
+        
+        coverage = {
+          pricesFound: gptResult.items.length,
+          pricesAttached: gptResult.items.length,
+          unattachedPrices: [],
+          sectionsWithZeroItems: [],
+          optionGroupsCreated: [],
+          processingWarnings: ['Used GPT fallback parser']
+        };
+        
+        validation = {
+          valid: true,
+          errors: [],
+          warnings: gptResult.warnings || [],
+          itemsCount: gptResult.items.length,
+          zeroPriceCount: 0,
+          missingPriceCount: 0
+        };
+        
+        warnings.push('Used GPT fallback parser due to layout parsing failure');
+      } else {
+        throw new Error(`Both layout parsing and GPT fallback failed: ${gptResult.errors?.join(', ')}`);
+      }
     }
     
     // Step 6: Apply post-processing

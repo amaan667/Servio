@@ -151,6 +151,82 @@ OPTION GROUPS CREATED:
 - Warning threshold detection
 - Error aggregation
 
+## 🔧 JSON Repair System
+
+The PDF importer includes a robust JSON repair system that fixes common GPT output errors:
+
+### Common Issues Fixed:
+- **Duplicate keys** (e.g., `"price": 4.50, "price": 10.50`)
+- **Missing commas** between objects and properties
+- **Unterminated strings** and malformed quotes
+- **Trailing commas** before closing braces
+- **Malformed object structures**
+- **Invalid data types** and missing required fields
+
+### Usage:
+
+```typescript
+import { repairAndValidateMenuJSON } from '@/lib/pdfImporter/jsonRepair';
+
+const result = repairAndValidateMenuJSON(brokenJSON);
+if (result.success) {
+  console.log('Repaired items:', result.items);
+  console.log('Clean JSON:', result.json);
+}
+```
+
+### API Endpoint:
+
+```bash
+POST /api/menu/repair-json
+Content-Type: application/json
+
+{
+  "json": "{\"items\": [{\"title\": \"Item\", \"price\": 10.50, \"price\": 12.00}]}"
+}
+```
+
+### Example Repair:
+
+**Broken JSON:**
+```json
+{
+  "items": [
+    {
+      "title": "Labneh",
+      "price": 4.50,
+      "price": 10.50,
+      "description": "Cream Olive Cheese traditional dip. Served with olives and zaatar."
+      "description": "Served with overnight oat, granular, milk macerated berries, greek yoghurt, greek honey."
+    },
+    },
+    {
+    {
+      "title": "Kibbeh",
+```
+
+**Repaired JSON:**
+```json
+{
+  "items": [
+    {
+      "title": "Labneh",
+      "category": "STARTERS",
+      "price": 10.50,
+      "currency": "GBP",
+      "description": "Served with overnight oat, granular, milk macerated berries, greek yoghurt, greek honey."
+    },
+    {
+      "title": "Kibbeh",
+      "category": "STARTERS",
+      "price": 5.50,
+      "currency": "GBP",
+      "description": "Crushed wheat mixture with minced meat, deep fried."
+    }
+  ]
+}
+```
+
 ## 🔧 Configuration
 
 ### Processing Options

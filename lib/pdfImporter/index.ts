@@ -95,3 +95,19 @@ export {
   HIGH_RECALL_OPTIONS,
   PRECISION_OPTIONS
 } from './processingModes';
+
+// JSON repair and robust parsing
+export { 
+  repairMenuJSON,
+  validateMenuJSON,
+  repairAndValidateMenuJSON
+} from './jsonRepair';
+
+export { 
+  parseMenuWithGPT,
+  parseMenuInBatches,
+  validateMenuParsingResult,
+  getPrompt
+} from './robustMenuParser';
+
+export { getPrompt } from './gptPrompts';
