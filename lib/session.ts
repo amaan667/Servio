@@ -46,7 +46,7 @@ export function getOrCreateSessionId(tableNumber?: number, venueId?: string): st
     const sessionData: SessionData = {
       sessionId: newSessionId,
       tableId: null,
-      tableNumber: tableNumber || null,
+      tableNumber: tableNumber || undefined,
       venueId: venueId || '',
       createdAt: new Date().toISOString()
     };

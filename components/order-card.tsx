@@ -15,7 +15,7 @@ export type Order = {
   customer_phone?: string;
   customer_email?: string;
   order_status: 'PLACED'|'IN_PREP'|'READY'|'SERVING'|'SERVED'|'CANCELLED'|'REFUNDED'|'EXPIRED';
-  payment_status: 'UNPAID'|'PAID'|'REFUNDED';
+  payment_status: 'unpaid'|'paid'|'till'|'UNPAID'|'PAID'|'REFUNDED';
   total_amount: number;
   calc_total_amount?: number;
   notes?: string;
