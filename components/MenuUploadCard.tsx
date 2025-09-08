@@ -19,11 +19,11 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isReplacing, setIsReplacing] = useState(true); // Default to replace mode
   const [isClearing, setIsClearing] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const processFile = async (file: File) => {
     if (!file) {
       return;
     }
@@ -166,6 +166,31 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    await processFile(file);
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      await processFile(files[0]);
+    }
+  };
+
   const handleClearCatalog = async () => {
     if (!confirm('Are you sure you want to clear the entire catalog? This action cannot be undone.')) {
       return;
@@ -234,18 +259,23 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           </Label>
         </div>
 
-        {isReplacing && (
-          <Alert>
-            <Trash2 className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Replace Mode:</strong> This will completely clear your existing catalog and replace it with the new menu. 
-              All current items, categories, and options will be deleted.
-            </AlertDescription>
-          </Alert>
-        )}
 
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
+          {/* Drag and Drop Area */}
+          <div
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+              isDragOver 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm text-gray-600 mb-2">
+              Drag and drop your menu file here, or
+            </p>
             <Button
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
@@ -261,6 +291,9 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
               onChange={handleFileUpload}
               className="hidden"
             />
+          </div>
+
+          <div className="flex items-center gap-2">
             <Button
               variant="destructive"
               onClick={handleClearCatalog}
@@ -268,7 +301,7 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
               size="sm"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              {isClearing ? 'Clearing...' : 'Clear Catalog'}
+              {isClearing ? 'Clearing...' : 'Clear Menu'}
             </Button>
           </div>
           

@@ -4,7 +4,99 @@ import { parseMenuBulletproof, applyKnownFixes } from '@/lib/improvedMenuParser'
 
 export async function POST(req: NextRequest) {
   try {
-    const { venueId, pdfFileId, mode = 'replace' } = await req.json();
+    let venueId, pdfFileId, mode = 'replace';
+    
+    // Check if request is FormData (file upload) or JSON
+    const contentType = req.headers.get('content-type') || '';
+    
+    if (contentType.includes('multipart/form-data')) {
+      // Handle FormData (file upload)
+      const formData = await req.formData();
+      venueId = formData.get('venue_id') as string;
+      const file = formData.get('file') as File;
+      
+      if (!venueId) {
+        return NextResponse.json({ 
+          ok: false, 
+          error: 'venueId is required' 
+        }, { status: 400 });
+      }
+
+      if (!file) {
+        return NextResponse.json({ 
+          ok: false, 
+          error: 'File is required' 
+        }, { status: 400 });
+      }
+
+      // Process the uploaded file
+      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+      
+      if (fileExtension === '.pdf') {
+        // For PDF files, we need to store them and process
+        const supabase = await createAdminClient();
+        
+        // Store the file temporarily
+        const fileBuffer = await file.arrayBuffer();
+        const fileName = `${venueId}/${Date.now()}-${file.name}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('menus')
+          .upload(fileName, fileBuffer, {
+            contentType: file.type,
+            upsert: false
+          });
+
+        if (uploadError) {
+          return NextResponse.json({ 
+            ok: false, 
+            error: 'Failed to upload file: ' + uploadError.message 
+          }, { status: 500 });
+        }
+
+        // Extract text from PDF (simplified - you may want to use your existing OCR logic)
+        const extractedText = await extractTextFromPDF(fileBuffer);
+        
+        // Parse using bulletproof parser
+        const parsedPayload = await parseMenuBulletproof(extractedText);
+        
+        // Apply known fixes
+        const fixedPayload = {
+          ...parsedPayload,
+          items: applyKnownFixes(parsedPayload.items)
+        };
+
+        // Validate and replace catalog
+        return await replaceCatalog(supabase, venueId, fixedPayload);
+        
+      } else {
+        // For text files
+        const text = await file.text();
+        const parsedPayload = await parseMenuBulletproof(text);
+        
+        const fixedPayload = {
+          ...parsedPayload,
+          items: applyKnownFixes(parsedPayload.items)
+        };
+
+        const supabase = await createAdminClient();
+        return await replaceCatalog(supabase, venueId, fixedPayload);
+      }
+    } else {
+      // Handle JSON request
+      let requestBody;
+      try {
+        requestBody = await req.json();
+      } catch (jsonError) {
+        console.error('[CATALOG REPLACE] JSON parsing error:', jsonError);
+        return NextResponse.json({ 
+          ok: false, 
+          error: 'Invalid JSON in request body' 
+        }, { status: 400 });
+      }
+
+      ({ venueId, pdfFileId, mode } = requestBody);
+    }
 
     if (!venueId) {
       return NextResponse.json({ 
@@ -17,9 +109,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createAdminClient();
 
-    // 1) Parse PDF into normalized payload
-    let parsedPayload;
-    
+    // Handle PDF file ID case
     if (pdfFileId) {
       // Get the PDF file from storage
       const { data: uploadRecord, error: fetchError } = await supabase
@@ -48,80 +138,37 @@ export async function POST(req: NextRequest) {
         }, { status: 500 });
       }
 
-      // Extract text from PDF (simplified - you may want to use your existing OCR logic)
+      // Extract text from PDF
       const pdfBytes = await file.arrayBuffer();
       const extractedText = await extractTextFromPDF(pdfBytes);
       
       // Parse using bulletproof parser
-      parsedPayload = await parseMenuBulletproof(extractedText);
+      const parsedPayload = await parseMenuBulletproof(extractedText);
+      
+      // Apply known fixes
+      const fixedPayload = {
+        ...parsedPayload,
+        items: applyKnownFixes(parsedPayload.items)
+      };
+
+      return await replaceCatalog(supabase, venueId, fixedPayload);
     } else {
       // Direct payload provided
-      const { payload } = await req.json();
+      const { payload } = requestBody;
       if (!payload) {
         return NextResponse.json({ 
           ok: false, 
           error: 'Either pdfFileId or payload is required' 
         }, { status: 400 });
       }
-      parsedPayload = payload;
+      
+      const fixedPayload = {
+        ...payload,
+        items: applyKnownFixes(payload.items)
+      };
+
+      return await replaceCatalog(supabase, venueId, fixedPayload);
     }
-
-    // 2) Apply known fixes
-    const fixedPayload = {
-      ...parsedPayload,
-      items: applyKnownFixes(parsedPayload.items)
-    };
-
-    // 3) Validate payload before database call
-    const { data: validation, error: validationError } = await supabase
-      .rpc('validate_catalog_payload', { p_payload: fixedPayload });
-
-    if (validationError) {
-      console.error('[CATALOG REPLACE] Validation error:', validationError);
-      return NextResponse.json({ 
-        ok: false, 
-        error: 'Payload validation failed' 
-      }, { status: 400 });
-    }
-
-    if (!validation.valid) {
-      console.error('[CATALOG REPLACE] Invalid payload:', validation.errors);
-      return NextResponse.json({ 
-        ok: false, 
-        error: 'Invalid payload', 
-        details: validation.errors,
-        warnings: validation.warnings 
-      }, { status: 400 });
-    }
-
-    // Log warnings if any
-    if (validation.warnings && validation.warnings.length > 0) {
-      console.warn('[CATALOG REPLACE] Warnings:', validation.warnings);
-    }
-
-    // 4) Replace catalog atomically
-    const { data: result, error: replaceError } = await supabase
-      .rpc('api_replace_catalog', {
-        p_venue_id: venueId,
-        p_payload: fixedPayload
-      });
-
-    if (replaceError) {
-      console.error('[CATALOG REPLACE] Replace error:', replaceError);
-      return NextResponse.json({ 
-        ok: false, 
-        error: 'Catalog replacement failed: ' + replaceError.message 
-      }, { status: 500 });
-    }
-
-    console.log('[CATALOG REPLACE] Success:', result);
-
-    return NextResponse.json({
-      ok: true,
-      message: 'Catalog replaced successfully',
-      result: result,
-      warnings: validation.warnings || []
-    });
 
   } catch (error: any) {
     console.error('[CATALOG REPLACE] Unexpected error:', error);
@@ -130,6 +177,60 @@ export async function POST(req: NextRequest) {
       error: 'Unexpected error: ' + error.message 
     }, { status: 500 });
   }
+}
+
+// Helper function to replace catalog
+async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any) {
+  // Validate payload before database call
+  const { data: validation, error: validationError } = await supabase
+    .rpc('validate_catalog_payload', { p_payload: fixedPayload });
+
+  if (validationError) {
+    console.error('[CATALOG REPLACE] Validation error:', validationError);
+    return NextResponse.json({ 
+      ok: false, 
+      error: 'Payload validation failed' 
+    }, { status: 400 });
+  }
+
+  if (!validation.valid) {
+    console.error('[CATALOG REPLACE] Invalid payload:', validation.errors);
+    return NextResponse.json({ 
+      ok: false, 
+      error: 'Invalid payload', 
+      details: validation.errors,
+      warnings: validation.warnings 
+    }, { status: 400 });
+  }
+
+  // Log warnings if any
+  if (validation.warnings && validation.warnings.length > 0) {
+    console.warn('[CATALOG REPLACE] Warnings:', validation.warnings);
+  }
+
+  // Replace catalog atomically
+  const { data: result, error: replaceError } = await supabase
+    .rpc('api_replace_catalog', {
+      p_venue_id: venueId,
+      p_payload: fixedPayload
+    });
+
+  if (replaceError) {
+    console.error('[CATALOG REPLACE] Replace error:', replaceError);
+    return NextResponse.json({ 
+      ok: false, 
+      error: 'Catalog replacement failed: ' + replaceError.message 
+    }, { status: 500 });
+  }
+
+  console.log('[CATALOG REPLACE] Success:', result);
+
+  return NextResponse.json({
+    ok: true,
+    message: 'Catalog replaced successfully',
+    result: result,
+    warnings: validation.warnings || []
+  });
 }
 
 // Simplified PDF text extraction (you may want to use your existing OCR logic)
