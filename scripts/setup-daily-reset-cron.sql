@@ -1,7 +1,7 @@
 -- =====================================================
--- DAILY TABLE RESET CRON SETUP
+-- DAILY TABLE DELETION CRON SETUP
 -- =====================================================
--- This script sets up the daily table reset using Supabase's pg_cron extension
+-- This script sets up the daily table deletion using Supabase's pg_cron extension
 -- Note: pg_cron must be enabled in your Supabase project
 
 -- =====================================================
@@ -11,47 +11,47 @@
 -- CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- =====================================================
--- 2. CREATE DAILY RESET CRON JOB
+-- 2. CREATE DAILY DELETION CRON JOB
 -- =====================================================
--- Schedule the daily table reset to run at midnight every day
--- This will reset all tables to FREE status automatically
+-- Schedule the daily table deletion to run at midnight every day
+-- This will completely delete all tables, making the count go to 0
 
 -- Remove existing job if it exists
-SELECT cron.unschedule('daily-table-reset');
+SELECT cron.unschedule('daily-table-deletion');
 
--- Schedule the daily reset job
+-- Schedule the daily deletion job
 SELECT cron.schedule(
-  'daily-table-reset',
+  'daily-table-deletion',
   '0 0 * * *', -- Run at midnight (00:00) every day
-  'SELECT public.daily_table_reset_with_log();'
+  'SELECT public.daily_table_deletion_with_log();'
 );
 
 -- =====================================================
 -- 3. CREATE BACKUP CRON JOB (optional)
 -- =====================================================
--- Schedule a backup reset at 6 AM in case the midnight reset fails
--- This provides redundancy for the daily reset
+-- Schedule a backup deletion at 6 AM in case the midnight deletion fails
+-- This provides redundancy for the daily deletion
 
-SELECT cron.unschedule('daily-table-reset-backup');
+SELECT cron.unschedule('daily-table-deletion-backup');
 
 SELECT cron.schedule(
-  'daily-table-reset-backup',
+  'daily-table-deletion-backup',
   '0 6 * * *', -- Run at 6 AM every day
-  'SELECT public.daily_table_reset_with_log();'
+  'SELECT public.daily_table_deletion_with_log();'
 );
 
 -- =====================================================
 -- 4. CREATE WEEKLY CLEANUP JOB (optional)
 -- =====================================================
--- Clean up old reset logs to prevent table bloat
--- Keeps only the last 30 days of reset logs
+-- Clean up old deletion logs to prevent table bloat
+-- Keeps only the last 30 days of deletion logs
 
-SELECT cron.unschedule('cleanup-reset-logs');
+SELECT cron.unschedule('cleanup-deletion-logs');
 
 SELECT cron.schedule(
-  'cleanup-reset-logs',
+  'cleanup-deletion-logs',
   '0 2 * * 0', -- Run at 2 AM every Sunday
-  'DELETE FROM table_reset_logs WHERE reset_timestamp < NOW() - INTERVAL ''30 days'';'
+  'DELETE FROM table_deletion_logs WHERE deletion_timestamp < NOW() - INTERVAL ''30 days'';'
 );
 
 -- =====================================================
@@ -65,37 +65,38 @@ SELECT
   command,
   active
 FROM cron.job 
-WHERE jobname IN ('daily-table-reset', 'daily-table-reset-backup', 'cleanup-reset-logs')
+WHERE jobname IN ('daily-table-deletion', 'daily-table-deletion-backup', 'cleanup-deletion-logs')
 ORDER BY jobname;
 
 -- =====================================================
 -- 6. MANUAL TESTING
 -- =====================================================
--- Test the reset function manually to ensure it works
+-- Test the deletion function manually to ensure it works
 
--- Test the daily reset function
-SELECT public.daily_table_reset_with_log();
+-- Test the daily deletion function
+SELECT public.daily_table_deletion_with_log();
 
--- Check the reset logs
-SELECT * FROM table_reset_logs ORDER BY reset_timestamp DESC LIMIT 5;
+-- Check the deletion logs
+SELECT * FROM table_deletion_logs ORDER BY deletion_timestamp DESC LIMIT 5;
 
 -- =====================================================
 -- 7. MONITORING QUERIES
 -- =====================================================
--- Useful queries for monitoring the daily reset system
+-- Useful queries for monitoring the daily deletion system
 
--- Check recent reset logs
+-- Check recent deletion logs
 -- SELECT 
---   reset_type,
---   sessions_reset,
+--   deletion_type,
+--   tables_deleted,
+--   sessions_deleted,
 --   venues_affected,
---   reset_timestamp,
+--   deletion_timestamp,
 --   notes
--- FROM table_reset_logs 
--- ORDER BY reset_timestamp DESC 
+-- FROM table_deletion_logs 
+-- ORDER BY deletion_timestamp DESC 
 -- LIMIT 10;
 
--- Check current table status after reset
+-- Check current table status after deletion (should be empty)
 -- SELECT 
 --   t.venue_id,
 --   t.label,
@@ -113,6 +114,6 @@ SELECT * FROM table_reset_logs ORDER BY reset_timestamp DESC LIMIT 5;
 --   next_run,
 --   status
 -- FROM cron.job_run_details 
--- WHERE jobname = 'daily-table-reset'
+-- WHERE jobname = 'daily-table-deletion'
 -- ORDER BY start_time DESC 
 -- LIMIT 5;

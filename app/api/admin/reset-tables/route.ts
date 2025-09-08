@@ -24,25 +24,25 @@ export async function POST(req: NextRequest) {
     let result;
     
     if (resetType === 'venue' && venueId) {
-      // Reset specific venue
-      const { data, error } = await supabase.rpc('reset_venue_tables', {
+      // Delete specific venue tables
+      const { data, error } = await supabase.rpc('delete_venue_tables', {
         p_venue_id: venueId
       });
       
       if (error) {
-        console.error('[AUTH DEBUG] Venue reset error:', error);
+        console.error('[AUTH DEBUG] Venue deletion error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
       
       result = data;
     } else {
-      // Reset all tables
-      const { data, error } = await supabase.rpc('manual_table_reset', {
+      // Delete all tables
+      const { data, error } = await supabase.rpc('manual_table_deletion', {
         p_venue_id: null
       });
       
       if (error) {
-        console.error('[AUTH DEBUG] Manual reset error:', error);
+        console.error('[AUTH DEBUG] Manual deletion error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
       
@@ -79,11 +79,11 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    // Get recent reset logs
+    // Get recent deletion logs
     const { data, error } = await supabase
-      .from('table_reset_logs')
+      .from('table_deletion_logs')
       .select('*')
-      .order('reset_timestamp', { ascending: false })
+      .order('deletion_timestamp', { ascending: false })
       .limit(limit);
 
     if (error) {
