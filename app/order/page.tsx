@@ -27,6 +27,7 @@ interface MenuItem {
   available: boolean;
   venue_name?: string; // added for display in header when loaded with join
   options?: Array<{ label: string; values: string[] }>; // modifiers/options
+  image?: string; // image URL for menu items
 }
 
 interface CartItem extends MenuItem {
