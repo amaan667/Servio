@@ -151,8 +151,8 @@ export async function POST(req: Request) {
       items: safeItems,
       total_amount: finalTotal,
       notes: body.notes ?? null,
-      order_status: body.order_status || 'open', // Use provided status or default to 'open'
-      payment_status: body.payment_status || 'unpaid', // Use provided status or default to 'unpaid'
+      order_status: body.order_status || 'PLACED', // Use provided status or default to 'PLACED'
+      payment_status: body.payment_status || 'UNPAID', // Use provided status or default to 'UNPAID'
       payment_method: body.payment_method || 'online',
       // table_id and session_id removed - not in database schema
     };

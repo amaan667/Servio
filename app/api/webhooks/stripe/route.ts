@@ -96,8 +96,8 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       customer_phone: customer_phone || '',
       items: items,
       total_amount: parseFloat(total_amount) / 100, // Convert from pence to pounds
-      order_status: 'open',
-      payment_status: 'unpaid', // Start as unpaid
+      order_status: 'PLACED',
+      payment_status: 'UNPAID', // Start as unpaid
       payment_method: 'online',
       payment_intent_id: paymentIntent.id
     };

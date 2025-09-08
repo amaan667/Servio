@@ -378,9 +378,9 @@ export default function CustomerOrderPage() {
           .filter((item) => item.specialInstructions)
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
-        order_status: 'open',
-        payment_status: 'unpaid', // Start as unpaid
-        payment_method: 'pending', // Will be updated based on payment choice
+        order_status: 'PLACED',
+        payment_status: 'UNPAID', // Start as unpaid
+        payment_method: 'PENDING', // Will be updated based on payment choice
       };
 
       // Create the order immediately via API

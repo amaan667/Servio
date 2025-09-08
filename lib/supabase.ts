@@ -402,8 +402,8 @@ export async function createOrder(orderData: {
       table_number: orderData.table_number,
       customer_name: orderData.customer_name,
       customer_phone: orderData.customer_phone,
-      order_status: "open", // Always start with "open" status
-      payment_status: orderData.payment_status || "unpaid", // Default to unpaid
+      order_status: "PLACED", // Always start with "PLACED" status
+      payment_status: orderData.payment_status || "UNPAID", // Default to unpaid
       total_amount: calculatedTotal, // Always use calculated total
       notes: orderData.notes,
       items: orderData.items, // Store items as JSONB
