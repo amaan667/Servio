@@ -213,7 +213,6 @@ RETURNS JSONB
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  v_category JSONB;
   v_item JSONB;
   v_errors TEXT[] := '{}';
   v_warnings TEXT[] := '{}';
@@ -221,41 +220,32 @@ DECLARE
   v_zero_price_count INTEGER := 0;
   v_missing_price_count INTEGER := 0;
 BEGIN
-  -- Check payload structure
-  IF NOT (p_payload ? 'categories' AND jsonb_typeof(p_payload->'categories') = 'array') THEN
-    v_errors := array_append(v_errors, 'Missing or invalid categories array');
+  -- Check payload structure - must have items array
+  IF NOT (p_payload ? 'items' AND jsonb_typeof(p_payload->'items') = 'array') THEN
+    v_errors := array_append(v_errors, 'Missing or invalid items array');
     RETURN jsonb_build_object('valid', false, 'errors', to_jsonb(v_errors));
   END IF;
 
-  -- Validate each category and item
-  FOR v_category IN
-    SELECT * FROM jsonb_array_elements(p_payload->'categories')
+  -- Validate each item directly
+  FOR v_item IN
+    SELECT * FROM jsonb_array_elements(p_payload->'items')
   LOOP
-    IF NOT (v_category ? 'name' AND v_category->>'name' IS NOT NULL) THEN
-      v_errors := array_append(v_errors, 'Category missing name');
+    v_items_count := v_items_count + 1;
+
+    -- Check required fields
+    IF NOT (v_item ? 'name' AND v_item->>'name' IS NOT NULL) THEN
+      v_errors := array_append(v_errors, 'Item missing name');
       CONTINUE;
     END IF;
 
-    FOR v_item IN
-      SELECT * FROM jsonb_array_elements(COALESCE(v_category->'items', '[]'::jsonb))
-    LOOP
-      v_items_count := v_items_count + 1;
-
-      -- Check required fields
-      IF NOT (v_item ? 'title' AND v_item->>'title' IS NOT NULL) THEN
-        v_errors := array_append(v_errors, 'Item missing title');
-        CONTINUE;
-      END IF;
-
-      -- Check price
-      IF NOT (v_item ? 'price') THEN
-        v_missing_price_count := v_missing_price_count + 1;
-        v_errors := array_append(v_errors, 'Item "' || (v_item->>'title') || '" missing price');
-      ELSIF COALESCE((v_item->>'price')::numeric, 0) <= 0 THEN
-        v_zero_price_count := v_zero_price_count + 1;
-        v_errors := array_append(v_errors, 'Item "' || (v_item->>'title') || '" has invalid price: ' || (v_item->>'price'));
-      END IF;
-    END LOOP;
+    -- Check price
+    IF NOT (v_item ? 'price') THEN
+      v_missing_price_count := v_missing_price_count + 1;
+      v_errors := array_append(v_errors, 'Item "' || (v_item->>'name') || '" missing price');
+    ELSIF COALESCE((v_item->>'price')::numeric, 0) <= 0 THEN
+      v_zero_price_count := v_zero_price_count + 1;
+      v_errors := array_append(v_errors, 'Item "' || (v_item->>'name') || '" has invalid price: ' || (v_item->>'price'));
+    END IF;
   END LOOP;
 
   -- Add warnings for suspicious patterns

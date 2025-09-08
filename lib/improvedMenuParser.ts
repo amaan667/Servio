@@ -30,81 +30,40 @@ interface ImprovedMenuPayload {
 export async function parseMenuBulletproof(extractedText: string): Promise<MenuPayloadT> {
   const openai = getOpenAI();
   
-  const systemPrompt = `You are a menu parsing expert. Parse ONLY sellable SKUs with prices. Do NOT turn extras, syrups, or descriptive components into items.
+  const systemPrompt = `You are a menu parsing expert. Extract menu items from the provided text and return ONLY a valid JSON object.
 
 CRITICAL RULES:
 
-1. ITEM DETECTION:
-   - Item lines = a title immediately followed (within 0-2 lines) by a price token "£\\d"
-   - Bind that price to the nearest preceding title line
-   - If multiple prices appear for sizes, create variants
+1. ONLY extract items that have a clear price (like £3.50, £12.99, etc.)
+2. Each item must have: title, category, price
+3. Categories should be standard names: COFFEE, TEA, STARTERS, MAINS, BRUNCH, DESSERTS, BEVERAGES, etc.
+4. Do NOT create items from:
+   - Syrups or milk alternatives (these are add-ons, not main items)
+   - Items mentioned only as part of sets
+   - Marketing text or descriptions without prices
+   - Items with £0.00 prices
 
-2. SECTION HEADERS:
-   - Section headers (COFFEE / TEA / STARTERS / MAINS / BRUNCH / DESSERTS / SPECIALS) start a category
-   - Everything until the next header belongs to it
+5. If you see "Coffee with a shot of X" - this should be one item "Coffee" with syrup options, not separate items
 
-3. EXTRAS/MODIFIERS:
-   - Extras/modifiers detected by cue words (Alternative Milk, Syrup, Ice, Extra Shot, Cheese Foam) become options
-   - Attach to relevant base items (Latte, Cappuccino, etc.) with their own prices
-   - Do NOT create items from these
-   - If a line mentions multiple flavours separated by slashes (e.g., "Syrup Salted Caramel / Hazelnut / French Vanilla £0.50"), create one option group
-
-4. REJECTION CRITERIA:
-   - Reject any candidate item that:
-     * has no price in the local block
-     * is clearly a component of a set menu (e.g., "club sandwich" inside Afternoon Tea copy)
-     * appears only as marketing text ("The love language Arabian hospitality")
-
-5. DE-DUPLICATION:
-   - Title-normalize (lowercase, strip punctuation/diacritics) and keep the longest, cleanest variant
-   - Store shorter ones as aliases (e.g., "Earl grey" alias of "Earl Grey Tea")
-
-6. CURRENCY SANITY:
-   - Any parsed item with price £0.00 is invalid
-   - Flag and skip unless a matching price is found within ±3 lines
-
-7. ARABIC + ENGLISH NAMES:
-   - If both appear on the same block, keep English as title and Arabic as subtitle/alias
-
-8. CATEGORY GUARDS:
-   - Food items may NOT appear in COFFEE/TEA categories
-   - If detected, move to MAINS/BRUNCH/STARTERS/DESSERTS based on nearest header with price context
-
-OUTPUT JSON FORMAT:
+OUTPUT FORMAT:
 {
   "items": [
     {
       "title": "Latte",
-      "subtitle": null,
-      "category": "COFFEE",
+      "category": "COFFEE", 
       "price": 3.50,
-      "currency": "GBP",
-      "description": "Creamy espresso with milk",
-      "variants": [],
-      "options": [
-        {
-          "group": "Milk",
-          "choices": ["Whole","Oat","Coconut","Almond"],
-          "price_add": {"Oat":0.5,"Coconut":0.5,"Almond":0.5}
-        },
-        {
-          "group": "Syrup",
-          "choices": ["Salted Caramel","Hazelnut","French Vanilla"],
-          "price_add_flat": 0.5
-        }
-      ],
-      "aliases": ["Cafe Latte"]
+      "description": "Creamy espresso with milk"
     }
-  ],
-  "categories": ["COFFEE", "TEA", "STARTERS", "MAINS", "BRUNCH", "DESSERTS"]
+  ]
 }
 
-VALIDATION RULES:
-- Fail if any £0.00 prices
-- Fail if any category contains >25% options exploded as items
-- Fail if any food item is left in COFFEE/TEA
+IMPORTANT: 
+- Only return items that have actual prices
+- Use standard category names
+- Do not create categories without items
+- Return empty items array if no valid items found
 
-Return ONLY valid JSON, no explanations.`;
+Return ONLY the JSON object, no other text.`;
 
   const userPrompt = `Parse this menu text following the bulletproof rules:
 
@@ -181,9 +140,10 @@ function validateParsedMenu(parsed: ImprovedMenuPayload): void {
   }
 }
 
-function convertToMenuPayload(parsed: ImprovedMenuPayload): MenuPayloadT {
-  const items = parsed.items.map(item => ({
-    name: item.title,
+function convertToMenuPayload(parsed: any): MenuPayloadT {
+  // Handle both old and new format
+  const items = (parsed.items || []).map((item: any) => ({
+    name: item.title || item.name,
     description: item.description || null,
     price: item.price,
     category: item.category,
@@ -191,9 +151,12 @@ function convertToMenuPayload(parsed: ImprovedMenuPayload): MenuPayloadT {
     order_index: 0 // Will be set during normalization
   }));
 
+  // Extract unique categories from items
+  const categories = [...new Set(items.map(item => item.category).filter(Boolean))];
+
   return {
     items,
-    categories: parsed.categories
+    categories
   };
 }
 
