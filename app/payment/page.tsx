@@ -22,6 +22,8 @@ interface CheckoutData {
   total: number;
   tableId?: string | null;
   sessionId?: string | null;
+  orderId?: string; // The ID of the already created order
+  orderNumber?: string; // The order number for display
 }
 
 export default function PaymentPage() {
@@ -52,7 +54,7 @@ export default function PaymentPage() {
   const handlePayment = async () => {
     console.log('[PAYMENT DEBUG] ===== PAY NOW HANDLER STARTED =====');
     
-    if (!checkoutData || !customerName.trim() || !customerPhone.trim()) {
+    if (!checkoutData || !customerName.trim() || !customerPhone.trim() || !checkoutData.orderId) {
       console.log('[PAYMENT DEBUG] ERROR: Missing required data');
       return;
     }
@@ -60,35 +62,8 @@ export default function PaymentPage() {
     setIsProcessing(true);
 
     try {
-      // Step 1: Always create the order first (unpaid)
-      console.log('[PAYMENT DEBUG] Step 1: Creating order first...');
-      const orderData = {
-        venue_id: checkoutData.venueId,
-        table_number: checkoutData.tableNumber,
-        customer_name: customerName.trim(),
-        customer_phone: customerPhone.trim(),
-        items: checkoutData.cart.map((item) => ({
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          item_name: item.name,
-        })),
-        total_amount: checkoutData.total,
-        payment_status: 'unpaid', // Start as unpaid
-        payment_method: 'online',
-        table_id: checkoutData.tableId || null,
-        session_id: checkoutData.sessionId || null,
-      };
-
-      const orderResult = await createOrder(orderData);
-      if (!orderResult.success) {
-        throw new Error(orderResult.message || 'Failed to create order');
-      }
-
-      console.log('[PAYMENT DEBUG] Order created successfully:', orderResult.data);
-
-      // Step 2: Attempt payment
-      console.log('[PAYMENT DEBUG] Step 2: Processing payment...');
+      // Step 1: Process payment (order already exists)
+      console.log('[PAYMENT DEBUG] Step 1: Processing payment for existing order...');
       
       // Simulate payment processing (in production, this would be Stripe/real payment)
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate payment delay
@@ -97,20 +72,20 @@ export default function PaymentPage() {
       const paymentSuccess = true;
       
       if (paymentSuccess) {
-        // Step 3: Update payment status to paid
-        console.log('[PAYMENT DEBUG] Step 3: Payment successful, updating status...');
+        // Step 2: Update payment status to paid
+        console.log('[PAYMENT DEBUG] Step 2: Payment successful, updating status...');
         const updateResult = await updateOrderPaymentStatus(
-          orderResult.data.id, 
+          checkoutData.orderId, 
           'paid', 
           'online'
         );
         
         if (!updateResult.success) {
           console.error('[PAYMENT DEBUG] Failed to update payment status:', updateResult.message);
-          // Order exists but payment status update failed - this is recoverable
+          throw new Error('Failed to update payment status');
         }
         
-        setOrderNumber(orderResult.data.order_number?.toString() || "ORD-001");
+        setOrderNumber(checkoutData.orderNumber || "ORD-001");
         setPaymentComplete(true);
         localStorage.removeItem("servio-checkout-data");
       } else {
@@ -128,7 +103,7 @@ export default function PaymentPage() {
   const handlePayAtTill = async () => {
     console.log('[PAY AT TILL DEBUG] ===== PAY AT TILL HANDLER STARTED =====');
     
-    if (!checkoutData || !customerName.trim() || !customerPhone.trim()) {
+    if (!checkoutData || !customerName.trim() || !customerPhone.trim() || !checkoutData.orderId) {
       console.log('[PAY AT TILL DEBUG] ERROR: Missing required data');
       return;
     }
@@ -136,40 +111,26 @@ export default function PaymentPage() {
     setIsProcessing(true);
 
     try {
-      // Step 1: Create order with 'till' payment status
-      console.log('[PAY AT TILL DEBUG] Step 1: Creating order for pay at till...');
-      const orderData = {
-        venue_id: checkoutData.venueId,
-        table_number: checkoutData.tableNumber,
-        customer_name: customerName.trim(),
-        customer_phone: customerPhone.trim(),
-        items: checkoutData.cart.map((item) => ({
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          item_name: item.name,
-        })),
-        total_amount: checkoutData.total,
-        payment_status: 'till', // Mark as 'till' payment
-        payment_method: 'till',
-        table_id: checkoutData.tableId || null,
-        session_id: checkoutData.sessionId || null,
-      };
+      // Step 1: Update existing order to 'till' payment status
+      console.log('[PAY AT TILL DEBUG] Step 1: Updating order for pay at till...');
+      
+      const updateResult = await updateOrderPaymentStatus(
+        checkoutData.orderId, 
+        'till', 
+        'till'
+      );
 
-      const orderResult = await createOrder(orderData);
-
-      if (orderResult.success) {
-        console.log('[PAY AT TILL DEBUG] Order created successfully:', orderResult.data);
+      if (updateResult.success) {
+        console.log('[PAY AT TILL DEBUG] Order updated successfully:', updateResult.data);
         
-        const orderNumber = orderResult.data?.order_number?.toString() || "ORD-001";
-        setOrderNumber(orderNumber);
+        setOrderNumber(checkoutData.orderNumber || "ORD-001");
         setPaymentComplete(true);
         localStorage.removeItem("servio-checkout-data");
         
         // Send bill to table management
-        await sendBillToTableManagement(orderResult.data);
+        await sendBillToTableManagement(updateResult.data);
       } else {
-        setError(orderResult.message || 'Failed to create order');
+        setError(updateResult.message || 'Failed to update order');
       }
     } catch (err: any) {
       console.error('[PAY AT TILL DEBUG] Error:', err);
@@ -182,7 +143,7 @@ export default function PaymentPage() {
   const handlePayLater = async () => {
     console.log('[PAY LATER DEBUG] ===== PAY LATER HANDLER STARTED =====');
     
-    if (!checkoutData || !customerName.trim() || !customerPhone.trim()) {
+    if (!checkoutData || !customerName.trim() || !customerPhone.trim() || !checkoutData.orderId) {
       console.log('[PAY LATER DEBUG] ERROR: Missing required data');
       return;
     }
@@ -190,38 +151,24 @@ export default function PaymentPage() {
     setIsProcessing(true);
 
     try {
-      // Step 1: Create order with 'unpaid' status
-      console.log('[PAY LATER DEBUG] Step 1: Creating unpaid order...');
-      const orderData = {
-        venue_id: checkoutData.venueId,
-        table_number: checkoutData.tableNumber,
-        customer_name: customerName.trim(),
-        customer_phone: customerPhone.trim(),
-        items: checkoutData.cart.map((item) => ({
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          item_name: item.name,
-        })),
-        total_amount: checkoutData.total,
-        payment_status: 'unpaid', // Mark as unpaid
-        payment_method: 'later',
-        table_id: checkoutData.tableId || null,
-        session_id: checkoutData.sessionId || null,
-      };
+      // Step 1: Update existing order to 'later' payment method (keeps unpaid status)
+      console.log('[PAY LATER DEBUG] Step 1: Updating order for pay later...');
+      
+      const updateResult = await updateOrderPaymentStatus(
+        checkoutData.orderId, 
+        'unpaid', // Keep as unpaid
+        'later'
+      );
 
-      const orderResult = await createOrder(orderData);
-
-      if (orderResult.success) {
-        console.log('[PAY LATER DEBUG] Order created successfully:', orderResult.data);
+      if (updateResult.success) {
+        console.log('[PAY LATER DEBUG] Order updated successfully:', updateResult.data);
         
-        const orderNumber = orderResult.data?.order_number?.toString() || "ORD-001";
-        setOrderNumber(orderNumber);
+        setOrderNumber(checkoutData.orderNumber || "ORD-001");
         setPaymentComplete(true);
         
         // Store session data for later payment detection
         const sessionData = {
-          orderId: orderResult.data?.id,
+          orderId: checkoutData.orderId,
           tableNumber: checkoutData.tableNumber,
           venueId: checkoutData.venueId,
           total: checkoutData.total,
@@ -242,7 +189,7 @@ export default function PaymentPage() {
         
         localStorage.removeItem("servio-checkout-data");
       } else {
-        setError(orderResult.message || 'Failed to create order');
+        setError(updateResult.message || 'Failed to update order');
       }
     } catch (err: any) {
       console.error('[PAY LATER DEBUG] Error:', err);

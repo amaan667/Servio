@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
+import { createOrder } from "@/lib/supabase";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 
@@ -359,15 +360,48 @@ export default function CustomerOrderPage() {
         return;
       }
 
-      // For real orders, store order data and redirect to unified checkout page
+      // For real orders, create the order immediately in the database
+      console.log('[ORDER SUBMIT] Creating order immediately...');
       
-      // Order will only be created after successful payment
       const orderData = {
-        venueId: venueSlug, // Changed from venue_id to venueId
-        venueName: 'Restaurant', // You might want to fetch this from the venue data
-        tableNumber: safeTable, // Changed from table_number to tableNumber
-        customerName: customerInfo.name.trim(), // Changed from customer_name to customerName
-        customerPhone: customerInfo.phone.trim(), // Changed from customer_phone to customerPhone
+        venue_id: venueSlug,
+        table_number: safeTable,
+        customer_name: customerInfo.name.trim(),
+        customer_phone: customerInfo.phone.trim(),
+        items: cart.map((item) => ({
+          menu_item_id: item.id && item.id.startsWith('demo-') ? 'demo-item' : item.id || 'unknown',
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+        })),
+        total_amount: getTotalPrice(),
+        notes: cart
+          .filter((item) => item.specialInstructions)
+          .map((item) => `${item.name}: ${item.specialInstructions}`)
+          .join("; "),
+        order_status: 'open',
+        payment_status: 'unpaid', // Start as unpaid
+        payment_method: 'pending', // Will be updated based on payment choice
+        table_id: null, // Can be set later if needed
+        session_id: null, // Can be set later if needed
+      };
+
+      // Create the order immediately
+      const orderResult = await createOrder(orderData);
+      
+      if (!orderResult.success) {
+        throw new Error(orderResult.message || 'Failed to create order');
+      }
+
+      console.log('[ORDER SUBMIT] Order created successfully:', orderResult.data);
+
+      // Store order data with order ID for payment page
+      const checkoutData = {
+        venueId: venueSlug,
+        venueName: 'Restaurant',
+        tableNumber: safeTable,
+        customerName: customerInfo.name.trim(),
+        customerPhone: customerInfo.phone.trim(),
         cart: cart.map((item) => ({
           id: item.id && item.id.startsWith('demo-') ? null : item.id,
           name: item.name,
@@ -381,24 +415,19 @@ export default function CustomerOrderPage() {
           .filter((item) => item.specialInstructions)
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
+        orderId: orderResult.data.id, // Include the created order ID
+        orderNumber: orderResult.data.order_number,
       };
 
-      
-      // Store order data in localStorage for order summary page
-      localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
-      
-      // Verify storage
-      const storedPending = localStorage.getItem('servio-pending-order');
-      
-      // Redirect to order summary page - customer can choose to pay now or later
+      // Store checkout data for payment page
+      localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
       
       // Clear loading state before navigation
       setIsSubmitting(false);
       
-      // Use window.location for reliable navigation
+      // Redirect to payment page where they can choose payment method
       if (typeof window !== 'undefined') {
-        window.location.href = '/order-summary';
-      } else {
+        window.location.href = '/payment';
       }
     } catch (error) {
       console.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
