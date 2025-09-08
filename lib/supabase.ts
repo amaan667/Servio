@@ -45,7 +45,7 @@ export interface Order {
   customer_name: string;
   customer_phone?: string;
   customer_email?: string;
-  order_status: "placed" | "accepted" | "preparing" | "ready" | "served" | "cancelled" | "refunded";
+  order_status: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED";
   total_amount: number;
   notes?: string;
   payment_method?: "demo" | "stripe" | "till" | null;
@@ -407,7 +407,7 @@ export async function createOrder(orderData: {
       table_number: orderData.table_number,
       customer_name: orderData.customer_name,
       customer_phone: orderData.customer_phone,
-      order_status: orderData.order_status || "placed", // Always start with "placed" status
+        order_status: orderData.order_status || "PLACED", // Always start with "PLACED" status
       payment_status: orderData.payment_status || "unpaid", // Default to unpaid
       total_amount: calculatedTotal, // Always use calculated total
       notes: orderData.notes,
