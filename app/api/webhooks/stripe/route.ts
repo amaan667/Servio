@@ -70,33 +70,69 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
 
   try {
     // Extract order information from metadata
-    const { cart_id, venue_id, table_number, customer_name, customer_phone } = paymentIntent.metadata;
+    const { cart_id, venue_id, table_number, customer_name, customer_phone, items_summary, total_amount } = paymentIntent.metadata;
     
     if (!cart_id || !venue_id) {
       console.error('[STRIPE WEBHOOK] Missing required metadata for order creation');
       return;
     }
 
-    // Update order status in database
-    // This would typically involve updating your orders table
-    console.log('[STRIPE WEBHOOK] Order should be marked as paid:', {
-      cartId: cart_id,
-      venueId: venue_id,
-      tableNumber: table_number,
-      customerName: customer_name,
-      customerPhone: customer_phone,
-      paymentIntentId: paymentIntent.id,
-      amount: paymentIntent.amount
-    });
+    // Step 1: Create the order first (unpaid)
+    const { createClient } = await import('@/lib/supabase/server');
+    const supabase = await createClient();
 
-    // TODO: Implement database update
-    // await updateOrderStatus(cart_id, 'paid', paymentIntent.id);
-    
-    // TODO: Send confirmation email
-    // await sendOrderConfirmationEmail(customer_phone, orderDetails);
-    
-    // TODO: Update inventory
-    // await updateInventory(venue_id, items);
+    // Parse items from metadata (simplified for now)
+    const items = items_summary ? items_summary.split(',').map((item: string, index: number) => ({
+      menu_item_id: `item_${index}`,
+      quantity: 1,
+      price: Math.round(parseFloat(total_amount) / items_summary.split(',').length),
+      item_name: item.trim()
+    })) : [];
+
+    const orderData = {
+      venue_id: venue_id,
+      table_number: parseInt(table_number) || 1,
+      customer_name: customer_name || 'Customer',
+      customer_phone: customer_phone || '',
+      items: items,
+      total_amount: parseFloat(total_amount) / 100, // Convert from pence to pounds
+      order_status: 'open',
+      payment_status: 'unpaid', // Start as unpaid
+      payment_method: 'online',
+      payment_intent_id: paymentIntent.id
+    };
+
+    console.log('[STRIPE WEBHOOK] Creating order:', orderData);
+
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert(orderData)
+      .select()
+      .single();
+
+    if (orderError) {
+      console.error('[STRIPE WEBHOOK] Failed to create order:', orderError);
+      return;
+    }
+
+    console.log('[STRIPE WEBHOOK] Order created successfully:', order);
+
+    // Step 2: Update payment status to paid
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ 
+        payment_status: 'paid',
+        payment_method: 'online',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', order.id);
+
+    if (updateError) {
+      console.error('[STRIPE WEBHOOK] Failed to update payment status:', updateError);
+      // Order exists but payment status update failed - this is recoverable
+    } else {
+      console.log('[STRIPE WEBHOOK] Payment status updated to paid successfully');
+    }
     
   } catch (error) {
     console.error('[STRIPE WEBHOOK] Error processing successful payment:', error);

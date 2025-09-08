@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, ArrowLeft } from "lucide-react";
-import { createOrder } from "@/lib/supabase";
+import { Check, ArrowLeft, CreditCard, Clock } from "lucide-react";
+import { createOrder, updateOrderPaymentStatus } from "@/lib/supabase";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 import { OrderTimeline } from "@/components/order-timeline";
 
@@ -20,6 +20,8 @@ interface CheckoutData {
     quantity: number;
   }>;
   total: number;
+  tableId?: string | null;
+  sessionId?: string | null;
 }
 
 export default function PaymentPage() {
@@ -33,6 +35,7 @@ export default function PaymentPage() {
   const [orderNumber, setOrderNumber] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get checkout data from localStorage
@@ -47,30 +50,18 @@ export default function PaymentPage() {
   }, [router]);
 
   const handlePayment = async () => {
-    console.log('[PAYMENT DEBUG] ===== PAYMENT HANDLER STARTED =====');
-    console.log('[PAYMENT DEBUG] Checkout data:', checkoutData);
-    console.log('[PAYMENT DEBUG] Customer name:', customerName);
-    console.log('[PAYMENT DEBUG] Customer phone:', customerPhone);
-    console.log('[PAYMENT DEBUG] Form validation - name trimmed:', customerName.trim());
-    console.log('[PAYMENT DEBUG] Form validation - phone trimmed:', customerPhone.trim());
+    console.log('[PAYMENT DEBUG] ===== PAY NOW HANDLER STARTED =====');
     
     if (!checkoutData || !customerName.trim() || !customerPhone.trim()) {
       console.log('[PAYMENT DEBUG] ERROR: Missing required data');
-      console.log('[PAYMENT DEBUG] - checkoutData exists:', !!checkoutData);
-      console.log('[PAYMENT DEBUG] - customerName valid:', !!customerName.trim());
-      console.log('[PAYMENT DEBUG] - customerPhone valid:', !!customerPhone.trim());
       return;
     }
 
-    console.log('[PAYMENT DEBUG] Setting processing state to true');
     setIsProcessing(true);
 
     try {
-      console.log('[PAYMENT DEBUG] Starting payment simulation (2 second delay)');
-      // Remove artificial payment delay - process immediately
-      console.log('[PAYMENT DEBUG] Payment simulation completed');
-
-      console.log('[PAYMENT DEBUG] Preparing order data for creation');
+      // Step 1: Always create the order first (unpaid)
+      console.log('[PAYMENT DEBUG] Step 1: Creating order first...');
       const orderData = {
         venue_id: checkoutData.venueId,
         table_number: checkoutData.tableNumber,
@@ -83,38 +74,209 @@ export default function PaymentPage() {
           item_name: item.name,
         })),
         total_amount: checkoutData.total,
+        payment_status: 'unpaid', // Start as unpaid
+        payment_method: 'online',
+        table_id: checkoutData.tableId || null,
+        session_id: checkoutData.sessionId || null,
       };
-      console.log('[PAYMENT DEBUG] Order data prepared:', orderData);
 
-      // Create the order
-      console.log('[PAYMENT DEBUG] Calling createOrder function');
       const orderResult = await createOrder(orderData);
-      console.log('[PAYMENT DEBUG] Order creation result:', orderResult);
+      if (!orderResult.success) {
+        throw new Error(orderResult.message || 'Failed to create order');
+      }
 
-      if (orderResult.success) {
-        console.log('[PAYMENT DEBUG] Order created successfully');
-        const orderNumber = orderResult.data?.order_number?.toString() || "ORD-001";
-        console.log('[PAYMENT DEBUG] Setting order number:', orderNumber);
-        setOrderNumber(orderNumber);
-        console.log('[PAYMENT DEBUG] Setting payment complete to true');
+      console.log('[PAYMENT DEBUG] Order created successfully:', orderResult.data);
+
+      // Step 2: Attempt payment
+      console.log('[PAYMENT DEBUG] Step 2: Processing payment...');
+      
+      // Simulate payment processing (in production, this would be Stripe/real payment)
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate payment delay
+      
+      // For demo purposes, assume payment always succeeds
+      const paymentSuccess = true;
+      
+      if (paymentSuccess) {
+        // Step 3: Update payment status to paid
+        console.log('[PAYMENT DEBUG] Step 3: Payment successful, updating status...');
+        const updateResult = await updateOrderPaymentStatus(
+          orderResult.data.id, 
+          'paid', 
+          'online'
+        );
+        
+        if (!updateResult.success) {
+          console.error('[PAYMENT DEBUG] Failed to update payment status:', updateResult.message);
+          // Order exists but payment status update failed - this is recoverable
+        }
+        
+        setOrderNumber(orderResult.data.order_number?.toString() || "ORD-001");
         setPaymentComplete(true);
-        // Clear checkout data
-        console.log('[PAYMENT DEBUG] Clearing checkout data from localStorage');
         localStorage.removeItem("servio-checkout-data");
-        console.log('[PAYMENT DEBUG] Payment flow completed successfully');
       } else {
-        console.log('[PAYMENT DEBUG] ERROR: Order creation failed:', orderResult.message);
-        throw new Error(orderResult.message);
+        // Payment failed - order exists but remains unpaid
+        throw new Error('Payment failed');
       }
     } catch (error) {
-      console.error('[PAYMENT DEBUG] Payment error occurred:', error);
-      console.error('[PAYMENT DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      const errorMessage = error instanceof Error ? error.message : "Payment failed. Please try again.";
-      console.log('[PAYMENT DEBUG] Showing error alert:', errorMessage);
-      alert(`Payment failed: ${errorMessage}`);
+      console.error('[PAYMENT DEBUG] Payment error:', error);
+      setError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
     } finally {
-      console.log('[PAYMENT DEBUG] Setting processing state to false');
       setIsProcessing(false);
+    }
+  };
+
+  const handlePayAtTill = async () => {
+    console.log('[PAY AT TILL DEBUG] ===== PAY AT TILL HANDLER STARTED =====');
+    
+    if (!checkoutData || !customerName.trim() || !customerPhone.trim()) {
+      console.log('[PAY AT TILL DEBUG] ERROR: Missing required data');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Step 1: Create order with 'till' payment status
+      console.log('[PAY AT TILL DEBUG] Step 1: Creating order for pay at till...');
+      const orderData = {
+        venue_id: checkoutData.venueId,
+        table_number: checkoutData.tableNumber,
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim(),
+        items: checkoutData.cart.map((item) => ({
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+        })),
+        total_amount: checkoutData.total,
+        payment_status: 'till', // Mark as 'till' payment
+        payment_method: 'till',
+        table_id: checkoutData.tableId || null,
+        session_id: checkoutData.sessionId || null,
+      };
+
+      const orderResult = await createOrder(orderData);
+
+      if (orderResult.success) {
+        console.log('[PAY AT TILL DEBUG] Order created successfully:', orderResult.data);
+        
+        const orderNumber = orderResult.data?.order_number?.toString() || "ORD-001";
+        setOrderNumber(orderNumber);
+        setPaymentComplete(true);
+        localStorage.removeItem("servio-checkout-data");
+        
+        // Send bill to table management
+        await sendBillToTableManagement(orderResult.data);
+      } else {
+        setError(orderResult.message || 'Failed to create order');
+      }
+    } catch (err: any) {
+      console.error('[PAY AT TILL DEBUG] Error:', err);
+      setError(err.message || 'Failed to process order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePayLater = async () => {
+    console.log('[PAY LATER DEBUG] ===== PAY LATER HANDLER STARTED =====');
+    
+    if (!checkoutData || !customerName.trim() || !customerPhone.trim()) {
+      console.log('[PAY LATER DEBUG] ERROR: Missing required data');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Step 1: Create order with 'unpaid' status
+      console.log('[PAY LATER DEBUG] Step 1: Creating unpaid order...');
+      const orderData = {
+        venue_id: checkoutData.venueId,
+        table_number: checkoutData.tableNumber,
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim(),
+        items: checkoutData.cart.map((item) => ({
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+        })),
+        total_amount: checkoutData.total,
+        payment_status: 'unpaid', // Mark as unpaid
+        payment_method: 'later',
+        table_id: checkoutData.tableId || null,
+        session_id: checkoutData.sessionId || null,
+      };
+
+      const orderResult = await createOrder(orderData);
+
+      if (orderResult.success) {
+        console.log('[PAY LATER DEBUG] Order created successfully:', orderResult.data);
+        
+        const orderNumber = orderResult.data?.order_number?.toString() || "ORD-001";
+        setOrderNumber(orderNumber);
+        setPaymentComplete(true);
+        
+        // Store session data for later payment detection
+        const sessionData = {
+          orderId: orderResult.data?.id,
+          tableNumber: checkoutData.tableNumber,
+          venueId: checkoutData.venueId,
+          total: checkoutData.total,
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim(),
+          paymentStatus: 'unpaid'
+        };
+        
+        // Store session for table-based orders
+        if (checkoutData.tableNumber) {
+          localStorage.setItem(`servio-session-${checkoutData.tableNumber}`, JSON.stringify(sessionData));
+        }
+        
+        // Store session for session-based orders
+        if (checkoutData.sessionId) {
+          localStorage.setItem(`servio-session-${checkoutData.sessionId}`, JSON.stringify(sessionData));
+        }
+        
+        localStorage.removeItem("servio-checkout-data");
+      } else {
+        setError(orderResult.message || 'Failed to create order');
+      }
+    } catch (err: any) {
+      console.error('[PAY LATER DEBUG] Error:', err);
+      setError(err.message || 'Failed to process order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const sendBillToTableManagement = async (orderData: any) => {
+    try {
+      console.log('[TABLE MANAGEMENT DEBUG] Sending bill to table management:', orderData);
+      
+      // Create a bill record for table management
+      const billData = {
+        venue_id: orderData.venue_id,
+        table_number: orderData.table_number,
+        customer_name: orderData.customer_name,
+        customer_phone: orderData.customer_phone,
+        total_amount: orderData.total_amount,
+        items: orderData.items,
+        payment_method: 'PAY_AT_TILL',
+        status: 'PENDING',
+        created_at: new Date().toISOString()
+      };
+
+      // Store in localStorage for now (in production, this would go to a database)
+      const existingBills = JSON.parse(localStorage.getItem('servio-table-bills') || '[]');
+      existingBills.push(billData);
+      localStorage.setItem('servio-table-bills', JSON.stringify(existingBills));
+
+      console.log('[TABLE MANAGEMENT DEBUG] Bill sent successfully');
+    } catch (error) {
+      console.error('[TABLE MANAGEMENT DEBUG] Error sending bill:', error);
     }
   };
 
@@ -310,25 +472,50 @@ export default function PaymentPage() {
           </CardContent>
         </Card>
 
-        {/* Payment Button */}
-        <Button
-          onClick={handlePayment}
-          disabled={isProcessing || !customerName.trim() || !customerPhone.trim()}
-          className="w-full bg-servio-purple hover:bg-servio-purple-dark disabled:bg-gray-300"
-        >
-          {isProcessing ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Processing Payment...
-            </>
-          ) : (
-            `Pay £${checkoutData.total.toFixed(2)}`
-          )}
-        </Button>
+        {/* Payment Options */}
+        <div className="space-y-3">
+          {/* Pay Now Button */}
+          <Button
+            onClick={handlePayment}
+            disabled={isProcessing || !customerName.trim() || !customerPhone.trim()}
+            className="w-full bg-servio-purple hover:bg-servio-purple-dark disabled:bg-gray-300"
+          >
+            {isProcessing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Processing Payment...
+              </>
+            ) : (
+              `Pay Now £${checkoutData.total.toFixed(2)}`
+            )}
+          </Button>
+
+          {/* Pay at Till Button */}
+          <Button
+            onClick={() => handlePayAtTill()}
+            disabled={isProcessing || !customerName.trim() || !customerPhone.trim()}
+            variant="outline"
+            className="w-full border-2 border-servio-purple text-servio-purple hover:bg-servio-purple hover:text-white"
+          >
+            <CreditCard className="h-4 w-4 mr-2" />
+            Pay at Till £{checkoutData.total.toFixed(2)}
+          </Button>
+
+          {/* Pay Later Button */}
+          <Button
+            onClick={() => handlePayLater()}
+            disabled={isProcessing || !customerName.trim() || !customerPhone.trim()}
+            variant="outline"
+            className="w-full border-2 border-gray-400 text-gray-600 hover:bg-gray-100"
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Pay Later £{checkoutData.total.toFixed(2)}
+          </Button>
+        </div>
 
         {/* Payment Note */}
         <p className="text-xs text-gray-500 text-center">
-          This is a demo payment. In production, this would integrate with a real payment processor.
+          Choose your preferred payment method. Pay at Till sends the bill to staff for payment at the counter.
         </p>
       </main>
     </div>

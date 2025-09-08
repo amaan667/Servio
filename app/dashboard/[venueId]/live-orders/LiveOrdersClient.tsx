@@ -160,7 +160,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .in('order_status', LIVE_WINDOW_STATUSES)
+        .eq('order_status', 'open') // Only show open orders
         .gte('created_at', liveOrdersCutoff)
         .order('created_at', { ascending: false });
 

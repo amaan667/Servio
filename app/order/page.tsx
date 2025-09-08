@@ -87,6 +87,51 @@ export default function CustomerOrderPage() {
     };
     getUser();
 
+    // Check for existing unpaid orders
+    const checkUnpaidOrders = () => {
+      // Check for table-based session
+      const tableSessionKey = `servio-session-${tableNumber}`;
+      const tableSessionData = localStorage.getItem(tableSessionKey);
+      
+      // Check for session-based session (if sessionId exists in URL)
+      const sessionId = searchParams?.get('sessionId');
+      const sessionSessionKey = sessionId ? `servio-session-${sessionId}` : null;
+      const sessionSessionData = sessionSessionKey ? localStorage.getItem(sessionSessionKey) : null;
+      
+      const sessionData = tableSessionData || sessionSessionData;
+      
+      if (sessionData) {
+        try {
+          const session = JSON.parse(sessionData);
+          console.log('[ORDER PAGE] Found existing session:', session);
+          
+          // If there's an unpaid order, redirect to order summary
+          if (session.paymentStatus === 'unpaid' || session.paymentStatus === 'till') {
+            console.log('[ORDER PAGE] Unpaid order detected, redirecting to summary...');
+            
+            // Store the session data for the summary page
+            localStorage.setItem('servio-unpaid-order', JSON.stringify(session));
+            
+            // Redirect to order summary page
+            router.push(`/order-summary?table=${tableNumber}&session=${session.orderId}`);
+            return;
+          }
+          
+          // If paid order, show checkout form for new order
+          setShowCheckout(true);
+          setCustomerInfo({
+            name: session.customerName,
+            phone: session.customerPhone
+          });
+          
+        } catch (error) {
+          console.error('[ORDER PAGE] Error parsing session data:', error);
+        }
+      }
+    };
+
+    checkUnpaidOrders();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setSession(session);
     });
@@ -499,34 +544,6 @@ export default function CustomerOrderPage() {
                             <Card key={item.id} className="hover:shadow-md transition-shadow">
                               <CardContent className="p-4">
                                 <div className="flex space-x-4">
-                                  {/* Item Image */}
-                                  <div className="flex-shrink-0">
-                                    <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
-                                      {item.image ? (
-                                        <Image
-                                          src={item.image}
-                                          alt={item.name}
-                                          width={80}
-                                          height={80}
-                                          className="w-20 h-20 object-cover rounded-lg"
-                                          onError={(e) => {
-                                            // Show placeholder if image fails to load
-                                            const target = e.target as HTMLImageElement;
-                                            target.style.display = 'none';
-                                            const parent = target.parentElement;
-                                            if (parent) {
-                                              parent.innerHTML = '<div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-xs">📷</div>';
-                                            }
-                                          }}
-                                        />
-                                      ) : (
-                                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-xs">
-                                          📷
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
                                   {/* Item Details */}
                                   <div className="flex-1">
                                     <h3 className="font-semibold text-gray-900">

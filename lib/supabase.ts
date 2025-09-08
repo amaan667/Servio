@@ -366,6 +366,11 @@ export async function createOrder(orderData: {
   }>;
   total_amount: number;
   notes?: string;
+  order_status?: string;
+  payment_status?: string;
+  payment_method?: string;
+  table_id?: string | null;
+  session_id?: string | null;
 }) {
   try {
     console.log('[ORDER CREATION DEBUG] ===== CREATE ORDER FUNCTION CALLED =====');
@@ -397,11 +402,14 @@ export async function createOrder(orderData: {
       table_number: orderData.table_number,
       customer_name: orderData.customer_name,
       customer_phone: orderData.customer_phone,
-      order_status: "PLACED",
-      payment_status: "UNPAID",
+      order_status: "open", // Always start with "open" status
+      payment_status: orderData.payment_status || "unpaid", // Default to unpaid
       total_amount: calculatedTotal, // Always use calculated total
       notes: orderData.notes,
       items: orderData.items, // Store items as JSONB
+      payment_method: orderData.payment_method || "online",
+      table_id: orderData.table_id || null, // Optional table_id for flexibility
+      session_id: orderData.session_id || null, // Optional session_id for non-table orders
     };
     console.log('[ORDER CREATION DEBUG] Insert data prepared:', insertData);
     console.log('[ORDER CREATION DEBUG] Calling Supabase insert...');
@@ -438,6 +446,38 @@ export async function createOrder(orderData: {
   } catch (error) {
     console.error('[ORDER CREATION DEBUG] Create order error:', error);
     return { success: false, message: "An unexpected error occurred" };
+  }
+}
+
+// Update payment status for existing orders (client-side)
+export async function updateOrderPaymentStatus(orderId: string, paymentStatus: 'paid' | 'unpaid' | 'till', paymentMethod?: string) {
+  try {
+    console.log('[PAYMENT UPDATE DEBUG] Updating payment status:', { orderId, paymentStatus, paymentMethod });
+    
+    // Use API route for server-side operations
+    const response = await fetch('/api/orders/update-payment-status', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        orderId,
+        paymentStatus,
+        paymentMethod
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update payment status');
+    }
+
+    const data = await response.json();
+    console.log('[PAYMENT UPDATE DEBUG] Payment status updated successfully:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('[PAYMENT UPDATE DEBUG] Update payment status error:', error);
+    return { success: false, message: error instanceof Error ? error.message : "An unexpected error occurred" };
   }
 }
 
