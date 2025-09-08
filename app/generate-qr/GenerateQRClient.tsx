@@ -84,7 +84,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     try {
       await navigator.clipboard.writeText(orderUrl);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 1000); // Reduced from 2 seconds
     } catch (err) {
       console.error("Failed to copy:", err);
     }
@@ -295,13 +295,11 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       `);
       printContent.close();
       
-      // Wait for images to load, then print and remove iframe
+      // Print immediately - no artificial delay
+      printFrame.contentWindow?.print();
       setTimeout(() => {
-        printFrame.contentWindow?.print();
-        setTimeout(() => {
-          document.body.removeChild(printFrame);
-        }, 1000);
-      }, 500);
+        document.body.removeChild(printFrame);
+      }, 500); // Reduced delay
     }
   };
 
@@ -439,13 +437,11 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       `);
       printContent.close();
       
-      // Wait for images to load, then print and remove iframe
+      // Print immediately - no artificial delay
+      printFrame.contentWindow?.print();
       setTimeout(() => {
-        printFrame.contentWindow?.print();
-        setTimeout(() => {
-          document.body.removeChild(printFrame);
-        }, 1000);
-      }, 1000);
+        document.body.removeChild(printFrame);
+      }, 500); // Reduced delay
     }
   };
 
@@ -526,7 +522,6 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-2 text-muted-foreground">Loading QR codes...</p>
         </div>
       </div>

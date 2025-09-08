@@ -94,13 +94,8 @@ function SignInPageContent() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
-      </div>
-    );
-  }
+  // Remove blocking loading state - render content immediately
+  // Auth state will be handled by the auth provider
 
   if (session?.user) {
     return null; // Will redirect in useEffect

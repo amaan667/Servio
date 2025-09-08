@@ -131,10 +131,8 @@ export async function signInWithGoogle() {
     console.log('[AUTH DEBUG] Full OAuth URL:', data.url);
     console.log('[AUTH DEBUG] === GOOGLE SIGN-IN REDIRECTING ===');
     
-    // Add a small delay to ensure logging is complete
-    setTimeout(() => {
-      window.location.href = data.url;
-    }, 100);
+    // Redirect immediately - no artificial delay
+    window.location.href = data.url;
   } else {
     console.error('[AUTH DEBUG] No OAuth URL received from Supabase');
     console.error('[AUTH DEBUG] Full OAuth response data:', data);

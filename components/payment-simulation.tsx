@@ -36,17 +36,13 @@ export default function PaymentSimulation({ amount, onPaymentComplete }: Payment
   const simulatePayment = async () => {
     setPaymentStatus('processing');
     
-    // Simulate payment processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
     // Simulate 95% success rate
     const isSuccess = Math.random() > 0.05;
     
     if (isSuccess) {
       setPaymentStatus('success');
-      setTimeout(() => {
-        onPaymentComplete();
-      }, 1500);
+      // Complete immediately - no artificial delay
+      onPaymentComplete();
     } else {
       setPaymentStatus('failed');
     }

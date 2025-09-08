@@ -118,7 +118,8 @@ export async function POST(req: NextRequest) {
     const allMenuItems: any[] = [];
     let totalTokens = 0;
 
-    for (let i = 0; i < pdfPages.length; i++) {
+    // Process all pages in parallel for faster processing
+    const pagePromises = pdfPages.map(async (page, i) => {
       try {
         const response = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
@@ -131,7 +132,7 @@ export async function POST(req: NextRequest) {
               role: 'user',
               content: [
                 { type: 'text', text: 'Extract menu items from this PDF page. Return valid JSON array only.' },
-                { type: 'image_url', image_url: { url: pdfPages[i] } }
+                { type: 'image_url', image_url: { url: page } }
               ]
             }
           ],
@@ -144,20 +145,30 @@ export async function POST(req: NextRequest) {
           try {
             const items = JSON.parse(content);
             if (Array.isArray(items)) {
-              allMenuItems.push(...items);
+              return { items, tokens: response.usage?.total_tokens || 0, page: i + 1 };
             }
           } catch (parseErr) {
             console.error('[AUTH DEBUG] Failed to parse JSON from page', i + 1, ':', parseErr);
           }
         }
 
-        totalTokens += response.usage?.total_tokens || 0;
-        console.log('[AUTH DEBUG] Processed page', i + 1, 'tokens:', response.usage?.total_tokens);
+        return { items: [], tokens: response.usage?.total_tokens || 0, page: i + 1 };
         
       } catch (visionErr) {
         console.error('[AUTH DEBUG] Vision API error on page', i + 1, ':', visionErr);
+        return { items: [], tokens: 0, page: i + 1 };
       }
-    }
+    });
+
+    // Wait for all pages to complete
+    const results = await Promise.all(pagePromises);
+    
+    // Combine results
+    results.forEach(result => {
+      allMenuItems.push(...result.items);
+      totalTokens += result.tokens;
+      console.log('[AUTH DEBUG] Processed page', result.page, 'tokens:', result.tokens);
+    });
 
     console.log('[AUTH DEBUG] Total items extracted:', allMenuItems.length);
     console.log('[AUTH DEBUG] Total tokens used:', totalTokens);

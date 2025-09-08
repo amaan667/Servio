@@ -1,26 +1,27 @@
-import 'server-only'
-// Note: This module is server-only. Do not import from client components.
-export const ENV = {
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY!,
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET!,
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-  // Never allow localhost in production; prefer explicit production URLs
-  APP_URL:
-    process.env.NODE_ENV === 'production'
-      ? (
-          process.env.APP_URL ||
-          process.env.NEXT_PUBLIC_APP_URL ||
-          process.env.NEXT_PUBLIC_SITE_URL ||
-          'https://servio-production.up.railway.app'
-        )
-      : (
-          process.env.APP_URL ||
-          process.env.NEXT_PUBLIC_APP_URL ||
-          'http://localhost:3000'
-        ),
-  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-};
+import { z } from "zod";
+import "server-only";
 
+export const Env = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]),
+  NEXT_PUBLIC_APP_URL: z.string().url(),
+  DATABASE_URL: z.string().min(1),
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(), // server only
+  STRIPE_SECRET_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+}).transform(e => e);
 
+export const env = Env.parse({
+  NODE_ENV: process.env.NODE_ENV,
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  DATABASE_URL: process.env.DATABASE_URL,
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+});
+
+// Legacy export for backward compatibility
+export const ENV = env;

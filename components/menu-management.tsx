@@ -305,6 +305,13 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
     setSaving(itemId);
 
+    // Optimistic update - update UI immediately
+    setMenuItems(prevItems => 
+      prevItems.map(item => 
+        item.id === itemId ? { ...item, ...updates } : item
+      )
+    );
+
     try {
       const { error } = await supabase
         .from("menu_items")
@@ -318,12 +325,24 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           code: error.code,
         });
         setError(`Failed to update item: ${error.message}`);
+        // Revert optimistic update on error
+        setMenuItems(prevItems => 
+          prevItems.map(item => 
+            item.id === itemId ? { ...item, ...updates } : item
+          )
+        );
       } else {
         logger.info("Item updated successfully", { itemId });
       }
     } catch (error: any) {
       logger.error("Unexpected error updating item", { error });
       setError("An unexpected error occurred.");
+      // Revert optimistic update on error
+      setMenuItems(prevItems => 
+        prevItems.map(item => 
+          item.id === itemId ? { ...item, ...updates } : item
+        )
+      );
     } finally {
       setSaving(null);
     }
@@ -336,6 +355,12 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     if (!supabase) return;
 
     setSaving(itemId);
+
+    // Store the item to restore on error
+    const itemToDelete = menuItems.find(item => item.id === itemId);
+
+    // Optimistic update - remove from UI immediately
+    setMenuItems(prevItems => prevItems.filter(item => item.id !== itemId));
 
     try {
       const { error } = await supabase
@@ -350,13 +375,20 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           code: error.code,
         });
         setError(`Failed to delete item: ${error.message}`);
+        // Revert optimistic update on error
+        if (itemToDelete) {
+          setMenuItems(prevItems => [...prevItems, itemToDelete]);
+        }
       } else {
         logger.info("Item deleted successfully", { itemId });
-        fetchMenu(); // Refresh the menu after deletion
       }
     } catch (error: any) {
       logger.error("Unexpected error deleting item", { error });
       setError("An unexpected error occurred.");
+      // Revert optimistic update on error
+      if (itemToDelete) {
+        setMenuItems(prevItems => [...prevItems, itemToDelete]);
+      }
     } finally {
       setSaving(null);
     }
@@ -533,7 +565,6 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
-              <RefreshCw className="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4" />
               <p className="text-gray-600">Loading menu items...</p>
             </div>
           ) : menuItems.length === 0 ? (

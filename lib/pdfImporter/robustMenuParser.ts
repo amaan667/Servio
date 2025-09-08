@@ -134,8 +134,8 @@ export async function parseMenuWithGPT(
         break;
       }
       
-      // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+      // Reduce retry delay for faster processing
+      await new Promise(resolve => setTimeout(resolve, 500 * attempts));
     }
   }
   

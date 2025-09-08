@@ -59,14 +59,12 @@ storage: {
 - Multiple retry attempts for mobile browsers
 
 ```typescript
-// Mobile browsers need longer delays for storage sync
-const retryDelay = isMobile ? 2000 : 1000;
-await new Promise(resolve => setTimeout(resolve, retryDelay));
+// Remove artificial delays - let real storage operations handle timing
 
-// On mobile, try one more time if still no verifier
+// On mobile, try one more time if still no verifier (reduced delay)
 if (!hasVerifier && isMobile) {
   console.log('[OAuth Frontend] callback: second retry for mobile...');
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 1500ms
   hasVerifier = checkVerifier();
 }
 ```
@@ -81,8 +79,8 @@ if (!hasVerifier && isMobile) {
 - Extended timeouts for mobile browsers
 
 ```typescript
-// Enhanced delay for mobile browsers - they need more time for storage operations
-const storageDelay = isMobile ? 500 : 100;
+// Reduced delay for mobile browsers - faster storage operations
+const storageDelay = isMobile ? 200 : 50;
 await new Promise(resolve => setTimeout(resolve, storageDelay));
 
 // Verify storage is working properly on mobile

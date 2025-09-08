@@ -50,13 +50,7 @@ function CallbackContent() {
     addDebugLog(`[AUTH CALLBACK] User Agent: ${typeof window !== 'undefined' ? navigator.userAgent : 'SSR'}`);
     addDebugLog(`[AUTH CALLBACK] Current URL: ${typeof window !== 'undefined' ? window.location.href : 'SSR'}`);
     
-    // Add a timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      addDebugLog('[AUTH CALLBACK] TIMEOUT ERROR: 30 second timeout reached');
-      addDebugLog(`[AUTH CALLBACK] Current state - Error: ${error}, Loading: ${loading}`);
-      setError('Authentication timed out. Please try signing in again.');
-      setLoading(false);
-    }, 30000); // 30 seconds timeout
+    // Remove artificial timeout - let real auth flow handle errors
 
     const handleCallback = async () => {
       try {
@@ -126,13 +120,7 @@ function CallbackContent() {
         addDebugLog('[AUTH CALLBACK] No existing session, proceeding with code exchange');
         addDebugLog('[AUTH CALLBACK] Exchanging code for session...');
         
-        // Add timeout to prevent hanging
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => {
-            addDebugLog('[AUTH CALLBACK] EXCHANGE TIMEOUT: 15 second timeout reached');
-            reject(new Error('Exchange timeout after 15 seconds'));
-          }, 15000);
-        });
+        // Remove artificial timeout - let real auth exchange handle timing
 
         addDebugLog('[AUTH CALLBACK] Starting code exchange with Supabase...');
         
@@ -169,9 +157,7 @@ function CallbackContent() {
               exchangeError.code === 'validation_failed') {
             addDebugLog('[AUTH CALLBACK] PKCE error detected, clearing auth state and redirecting');
             await clearAuthState();
-            setTimeout(() => {
-              router.push('/sign-in?error=pkce_error');
-            }, 1000);
+            router.push('/sign-in?error=pkce_error');
             return;
           }
           
@@ -180,9 +166,7 @@ function CallbackContent() {
               exchangeError.message?.includes('refresh token')) {
             addDebugLog('[AUTH CALLBACK] Refresh token error detected, redirecting to sign-in');
             await clearAuthState();
-            setTimeout(() => {
-              router.push('/sign-in?error=refresh_token_error');
-            }, 1000);
+            router.push('/sign-in?error=refresh_token_error');
             return;
           }
           
@@ -191,9 +175,7 @@ function CallbackContent() {
               exchangeError.message?.includes('fetch') ||
               exchangeError.message?.includes('timeout')) {
             addDebugLog('[AUTH CALLBACK] Network error detected, redirecting to sign-in');
-            setTimeout(() => {
-              router.push('/sign-in?error=network_error');
-            }, 1000);
+            router.push('/sign-in?error=network_error');
             return;
           }
           
@@ -204,8 +186,7 @@ function CallbackContent() {
             // Clear any existing auth state
             await clearAuthState();
             
-            // Wait a moment for cleanup
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Remove artificial delay - proceed immediately
             
             // Try the exchange again
             addDebugLog('[AUTH CALLBACK] Retrying code exchange...');
@@ -226,9 +207,7 @@ function CallbackContent() {
             
             if (retryData?.session) {
               addDebugLog('[AUTH CALLBACK] Fallback authentication successful');
-              setTimeout(() => {
-                router.push('/dashboard');
-              }, 500);
+              router.push('/dashboard');
               return;
             }
           } catch (fallbackErr: any) {
@@ -286,25 +265,8 @@ function CallbackContent() {
     handleCallback();
   }, [searchParams, addDebugLog, router, error, loading]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-            {debugLogs.length > 0 && (
-              <div className="mt-4 text-xs text-gray-500 text-left max-h-32 overflow-y-auto">
-                <p className="font-medium mb-1">Debug Logs:</p>
-                {debugLogs.slice(-5).map((log, index) => (
-                  <div key={index} className="mb-1">{log}</div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Remove blocking loading state - render content immediately
+  // Auth state will be handled by the auth provider
 
   if (error) {
     return (

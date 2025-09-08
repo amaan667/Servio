@@ -36,8 +36,7 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
       try {
         console.log('[WORKING AUTH PROVIDER] Starting auth check...');
         
-        // Simulate a brief auth check
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Remove artificial delay - check auth immediately
         
         // For now, just set no session
         setSession(null);

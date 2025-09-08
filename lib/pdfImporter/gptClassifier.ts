@@ -343,9 +343,9 @@ export async function batchClassifyBlocks(
     const batchResults = await Promise.all(batchPromises);
     results.push(...batchResults);
     
-    // Small delay between batches to avoid rate limits
+    // Reduce delay between batches for faster processing
     if (i + batchSize < blocks.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
   

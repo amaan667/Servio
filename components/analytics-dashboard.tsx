@@ -296,10 +296,10 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           
           if (isInTimeRange) {
             console.log('[ANALYTICS] Order is within time range, refreshing analytics');
-            // Debounce the refresh to avoid too many updates
+            // Reduce debounce time for faster updates
             setTimeout(() => {
               calculateStats();
-            }, 500);
+            }, 200);
           }
         }
       )

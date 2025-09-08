@@ -25,12 +25,8 @@ const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVE
 
 // Optional: add a 4s safety timeout (never spin forever)
 async function withTimeout<T>(p: Promise<T>, ms = 4000): Promise<T> {
-  return await Promise.race([
-    p,
-    new Promise<T>((_, rej) => setTimeout(() => {
-      rej(new Error('timeout'))
-    }, ms))
-  ])
+  // Remove artificial timeout - let real promises handle timing
+  return await p
 }
 
 export function useLiveOrders(venueId: string) {

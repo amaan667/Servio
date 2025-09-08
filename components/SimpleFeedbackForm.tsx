@@ -31,8 +31,7 @@ export default function SimpleFeedbackForm({ venueId, orderId, onSubmit }: Simpl
     setSubmitting(true);
 
     try {
-      // For now, just simulate submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Remove artificial delay - submit immediately
       
       // Show success message
       alert('Thank you for your feedback!');

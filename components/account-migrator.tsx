@@ -155,8 +155,7 @@ export function AccountMigrator() {
       const progress = ((i + 1) / totalAccounts) * 100;
       setMigrationProgress(progress);
 
-      // Small delay between migrations
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Remove artificial delay - process migrations immediately
     }
 
     addLog(

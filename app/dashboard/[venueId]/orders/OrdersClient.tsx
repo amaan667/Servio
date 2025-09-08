@@ -8,6 +8,11 @@ import { liveOrdersWindow } from "@/lib/dates";
 
 type OrdersClientProps = {
   venueId: string;
+  initialOrders?: Order[];
+  initialStats?: {
+    todayOrders: number;
+    revenue: number;
+  };
 };
 
 interface Order {
@@ -26,15 +31,21 @@ interface Order {
   payment_status?: string;
 }
 
-const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
-  const [stats, setStats] = useState({
+const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = [], initialStats }) => {
+  const [stats, setStats] = useState(initialStats || {
     todayOrders: 0,
     revenue: 0
   });
-  const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(!initialOrders.length);
+  const [orders, setOrders] = useState<Order[]>(initialOrders);
 
   useEffect(() => {
+    // Only fetch data if we don't have initial data
+    if (initialOrders.length > 0) {
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
         // Get time window for live orders (last 30 minutes)
@@ -78,10 +89,10 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId }) => {
     };
 
     fetchData();
-  }, [venueId]);
+  }, [venueId, initialOrders.length]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="text-center py-8 text-gray-600">Loading orders...</div>;
   }
 
   return (

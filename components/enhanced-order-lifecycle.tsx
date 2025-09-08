@@ -195,7 +195,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
           });
           updateOrderStatus(nextStatus);
         }
-      }, timeUntilTransition * 60 * 1000);
+      }, Math.min(timeUntilTransition * 60 * 1000, 15000)); // Cap at 15 seconds max
 
       setAutoTransitionTimer(timer);
     }

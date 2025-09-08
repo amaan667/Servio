@@ -203,10 +203,8 @@ function FeedbackForm({ venueId, orderId, onFeedbackComplete }: { venueId: strin
         alert('Thank you for your feedback!');
         setShowForm(false);
         setAnswers({});
-        // Transition to timeline phase after feedback submission
-        setTimeout(() => {
-          onFeedbackComplete?.();
-        }, 1000);
+        // Complete feedback immediately - no artificial delay
+        onFeedbackComplete?.();
       } else {
         const errorText = await response.text();
         console.error('[FEEDBACK] Error response:', errorText);
@@ -647,7 +645,6 @@ function StripePaymentForm({
     return (
       <div className="space-y-4">
         <div className="text-center py-8">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
           <p className="text-gray-600">Loading secure payment form...</p>
           <p className="text-sm text-gray-500 mt-2">Please wait while we initialize Stripe</p>
         </div>
@@ -995,8 +992,7 @@ export default function CheckoutPage() {
     try {
       console.log('[DEMO PAYMENT] Starting demo payment processing...');
     
-    // Simulate payment processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Remove artificial payment delay - process immediately
     
     // Simulate 95% success rate
     const isSuccess = Math.random() > 0.05;
@@ -1141,7 +1137,6 @@ export default function CheckoutPage() {
     return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
         <p className="text-gray-600">Loading checkout...</p>
         <p className="text-sm text-gray-500 mt-2">Preparing your order details...</p>
       </div>

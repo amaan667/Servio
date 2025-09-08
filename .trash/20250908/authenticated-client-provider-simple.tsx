@@ -65,19 +65,8 @@ export function AuthenticatedClientProvider({ children }: { children: React.Reac
     localStorage.removeItem('sb-auth-token');
   };
 
-  // Don't render children until mounted to prevent hydration issues
-  if (!mounted) {
-    return (
-      <AuthContext.Provider value={{ session: null, loading: true, signOut }}>
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
-          </div>
-        </div>
-      </AuthContext.Provider>
-    );
-  }
+  // Remove blocking loading state - render children immediately
+  // Auth state will be handled by individual components
 
   return (
     <AuthContext.Provider value={{ session, loading, signOut }}>

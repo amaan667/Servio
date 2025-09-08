@@ -172,13 +172,7 @@ export default function CustomerOrderPage() {
   useEffect(() => {
     loadMenuItems();
     
-    // Add timeout to prevent infinite loading
-    window.menuLoadTimeout = setTimeout(() => {
-      if (loadingMenu) {
-        setLoadingMenu(false);
-        setMenuError("Loading timeout - please refresh the page");
-      }
-    }, 10000); // 10 second timeout
+    // Remove artificial timeout - let real loading states handle this
     
     return () => {
       if (window.menuLoadTimeout) {
@@ -195,16 +189,8 @@ export default function CustomerOrderPage() {
   // Auto-reset demo after 2 minutes for next user
   useEffect(() => {
     if (isDemo) {
-      const resetTimer = setTimeout(() => {
-        setCart([]);
-        setCustomerInfo({ name: '', phone: '' });
-        setShowCheckout(false);
-        setShowMobileCart(false);
-        // Show a notification
-        alert('Demo has been reset for the next user. Feel free to try again!');
-      }, 120000); // 2 minutes
-
-      return () => clearTimeout(resetTimer);
+      // Remove artificial demo reset timer - let users control their demo experience
+      // Demo reset can be handled manually or through a button
     }
   }, [isDemo]);
 

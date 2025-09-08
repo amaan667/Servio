@@ -485,12 +485,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   }, [venueId]);
 
   const fetchOrders = useCallback(async () => {
-    // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.error("LIVE_ORDERS: Query timeout - taking too long to load orders");
-      setError("Query timeout - taking too long to load orders");
-      setLoading(false);
-    }, 10000); // 10 second timeout
+    // Remove artificial timeout - let real loading states handle this
 
     try {
       switch (activeTab) {
@@ -596,8 +591,8 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   useEffect(() => {
     if (orders.length > lastOrderCountRef.current && lastOrderCountRef.current > 0) {
       setHasNewOrders(true);
-      // Auto-clear notification after 5 seconds
-      setTimeout(() => setHasNewOrders(false), 5000);
+      // Auto-clear notification after 3 seconds (reduced from 5)
+      setTimeout(() => setHasNewOrders(false), 3000);
     }
     lastOrderCountRef.current = orders.length;
   }, [orders.length]);
@@ -1204,7 +1199,6 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
           {loading ? (
             <div className="text-center py-8">
-              <RefreshCw className="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4" />
               <p className="text-gray-600">Loading orders...</p>
             </div>
           ) : (

@@ -58,6 +58,10 @@ export function TableCardRefactored({
   const handleAction = async (action: string, reservationId?: string) => {
     console.log('[TABLE CARD] Action triggered:', { action, tableId: table.table_id, reservationId });
     setIsLoading(true);
+    
+    // Optimistic update - call onActionComplete immediately for instant UI feedback
+    onActionComplete();
+    
     try {
       switch (action) {
         case 'seat':
@@ -101,28 +105,26 @@ export function TableCardRefactored({
             // Show no-show message
             setNoShowMessage('Guest marked as no-show');
             
-            // After 2 seconds, set table to free
-            setTimeout(async () => {
-              try {
-                await closeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
-                console.log('[TABLE CARD] Table set to free after no-show');
-              } catch (error) {
-                console.error('[TABLE CARD] Error setting table to free after no-show:', error);
-              }
-            }, 2000);
+            // Close table immediately - no artificial delay
+            try {
+              await closeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
+              console.log('[TABLE CARD] Table set to free after no-show');
+            } catch (error) {
+              console.error('[TABLE CARD] Error setting table to free after no-show:', error);
+            }
             
-            // Clear the message after 15 seconds
+            // Clear the message after 5 seconds (reduced from 15)
             setTimeout(() => {
               setNoShowMessage(null);
-            }, 15000);
+            }, 5000);
           }
           break;
       }
       console.log('[TABLE CARD] Action completed successfully:', action);
-      onActionComplete();
     } catch (error) {
       console.error('[TABLE CARD] Action failed:', error);
-      // You might want to show a toast notification here
+      // On error, we could show a toast or revert the optimistic update
+      // For now, the UI will refresh and show the correct state
     } finally {
       setIsLoading(false);
     }

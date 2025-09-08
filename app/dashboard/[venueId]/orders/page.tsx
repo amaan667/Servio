@@ -7,6 +7,7 @@ import { safeGetUser } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import OrdersClient from './OrdersClient';
+import { liveOrdersWindow } from '@/lib/dates';
 
 export default async function OrdersPage({
   params,
@@ -42,6 +43,32 @@ export default async function OrdersPage({
 
   if (!venue) redirect('/dashboard');
 
+  // Fetch orders data server-side to prevent client-side loading
+  const timeWindow = liveOrdersWindow();
+  const { data: ordersData } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('venue_id', params.venueId)
+    .eq('payment_status', 'PAID')
+    .gte('created_at', timeWindow.startUtcISO)
+    .order('created_at', { ascending: false });
+
+  // Calculate stats server-side
+  const stats = {
+    todayOrders: ordersData?.length || 0,
+    revenue: (ordersData || []).reduce((sum, order) => {
+      let amount = order.total_amount;
+      if (!amount || amount <= 0) {
+        amount = order.items.reduce((itemSum, item) => {
+          const quantity = Number(item.quantity) || 0;
+          const price = Number(item.price) || 0;
+          return itemSum + (quantity * price);
+        }, 0);
+      }
+      return sum + amount;
+    }, 0)
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -56,7 +83,7 @@ export default async function OrdersPage({
           </p>
         </div>
         
-        <OrdersClient venueId={params.venueId} />
+        <OrdersClient venueId={params.venueId} initialOrders={ordersData || []} initialStats={stats} />
       </div>
     </div>
   );

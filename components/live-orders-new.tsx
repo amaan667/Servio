@@ -101,16 +101,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
       setError(null);
     }
 
-    // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.error(`[LIVE_ORDERS] Query timeout for ${tab}`);
-      if (!background) {
-        setError(`Query timeout - taking too long to load ${tab} orders`);
-        setLoading(false);
-      }
-      setIsRefreshing(false);
-      isFetchingRef.current = false;
-    }, 15000); // Reduced to 15 seconds
+    // Remove artificial timeout - let real loading states handle this
 
     try {
       const supabase = createClient();

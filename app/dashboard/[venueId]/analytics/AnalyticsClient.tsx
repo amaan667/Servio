@@ -169,7 +169,6 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-2 text-muted-foreground">Loading analytics...</p>
         </div>
       </div>

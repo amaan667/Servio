@@ -67,8 +67,7 @@ export default function PaymentPage() {
 
     try {
       console.log('[PAYMENT DEBUG] Starting payment simulation (2 second delay)');
-      // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Remove artificial payment delay - process immediately
       console.log('[PAYMENT DEBUG] Payment simulation completed');
 
       console.log('[PAYMENT DEBUG] Preparing order data for creation');
@@ -127,7 +126,6 @@ export default function PaymentPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-servio-purple mx-auto mb-4"></div>
           <p className="text-gray-600">Loading checkout...</p>
         </div>
       </div>
