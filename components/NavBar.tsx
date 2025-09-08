@@ -10,15 +10,15 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
   const homeHref = '/dashboard';
   // Avoid dumping cookies in production logs and mutating them here
   return (
-    <nav className="flex items-center justify-between h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44 px-0 bg-white border-b shadow-lg sticky top-0 z-20">
-      <div className="flex items-center -ml-4">
+    <nav className="flex items-center justify-between h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44 px-2 sm:px-4 lg:px-6 bg-white border-b shadow-lg sticky top-0 z-20">
+      <div className="flex items-center -ml-2 sm:-ml-1">
         <Link href={homeHref} className="flex items-center">
           <Image
             src="/assets/servio-logo-updated.png"
             alt="Servio logo"
             width={800}
             height={250}
-            className="h-36 sm:h-42 md:h-48 lg:h-54 xl:h-60 w-auto"
+            className="h-36 sm:h-40 md:h-44 lg:h-48 xl:h-52 w-auto"
             priority
           />
         </Link>
