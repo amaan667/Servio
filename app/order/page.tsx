@@ -12,7 +12,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
-import { createOrder } from "@/lib/supabase";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
 
@@ -386,14 +385,23 @@ export default function CustomerOrderPage() {
         session_id: null, // Can be set later if needed
       };
 
-      // Create the order immediately
-      const orderResult = await createOrder(orderData);
-      
-      if (!orderResult.success) {
-        throw new Error(orderResult.message || 'Failed to create order');
+      // Create the order immediately via API
+      console.log('[ORDER SUBMIT] Calling orders API...');
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create order');
       }
 
-      console.log('[ORDER SUBMIT] Order created successfully:', orderResult.data);
+      const orderResult = await response.json();
+      console.log('[ORDER SUBMIT] Order created successfully:', orderResult);
 
       // Store order data with order ID for payment page
       const checkoutData = {
@@ -415,8 +423,8 @@ export default function CustomerOrderPage() {
           .filter((item) => item.specialInstructions)
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
-        orderId: orderResult.data.id, // Include the created order ID
-        orderNumber: orderResult.data.order_number,
+        orderId: orderResult.data?.id || orderResult.id, // Include the created order ID
+        orderNumber: orderResult.data?.order_number || orderResult.order_number,
       };
 
       // Store checkout data for payment page
