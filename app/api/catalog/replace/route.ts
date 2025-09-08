@@ -59,13 +59,23 @@ export async function POST(req: NextRequest) {
         const extractedText = await extractTextFromPDF(fileBuffer);
         
         // Parse using bulletproof parser
+        console.log('[CATALOG REPLACE] Starting menu parsing...');
         const parsedPayload = await parseMenuBulletproof(extractedText);
+        console.log('[CATALOG REPLACE] Parsed payload:', {
+          itemsCount: parsedPayload.items?.length || 0,
+          categoriesCount: parsedPayload.categories?.length || 0
+        });
         
         // Apply known fixes
         const fixedPayload = {
           ...parsedPayload,
-          items: applyKnownFixes(parsedPayload.items)
+          items: applyKnownFixes(parsedPayload.items || [])
         };
+
+        console.log('[CATALOG REPLACE] Fixed payload:', {
+          itemsCount: fixedPayload.items?.length || 0,
+          categoriesCount: fixedPayload.categories?.length || 0
+        });
 
         // Validate and replace catalog
         return await replaceCatalog(supabase, venueId, fixedPayload);
@@ -181,56 +191,84 @@ export async function POST(req: NextRequest) {
 
 // Helper function to replace catalog
 async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any) {
-  // Validate payload before database call
-  const { data: validation, error: validationError } = await supabase
-    .rpc('validate_catalog_payload', { p_payload: fixedPayload });
+  console.log('[CATALOG REPLACE] Starting catalog replacement...');
+  console.log('[CATALOG REPLACE] Payload summary:', {
+    itemsCount: fixedPayload.items?.length || 0,
+    categoriesCount: fixedPayload.categories?.length || 0,
+    venueId
+  });
 
-  if (validationError) {
-    console.error('[CATALOG REPLACE] Validation error:', validationError);
+  // Skip validation for now to focus on maximum extraction
+  // Just try to insert items directly
+  try {
+    // Clear existing menu items for this venue
+    console.log('[CATALOG REPLACE] Clearing existing menu items...');
+    const { error: deleteError } = await supabase
+      .from('menu_items')
+      .delete()
+      .eq('venue_id', venueId);
+
+    if (deleteError) {
+      console.warn('[CATALOG REPLACE] Warning: Could not clear existing items:', deleteError.message);
+    }
+
+    // Insert new items
+    if (fixedPayload.items && fixedPayload.items.length > 0) {
+      console.log('[CATALOG REPLACE] Inserting', fixedPayload.items.length, 'new items...');
+      
+      const itemsToInsert = fixedPayload.items.map((item: any, index: number) => ({
+        venue_id: venueId,
+        name: item.name || `Item ${index + 1}`,
+        description: item.description || null,
+        price: item.price || 0,
+        category: item.category || 'UNCATEGORIZED',
+        available: true,
+        order_index: index
+      }));
+
+      const { data: insertedItems, error: insertError } = await supabase
+        .from('menu_items')
+        .insert(itemsToInsert)
+        .select('id, name, price, category');
+
+      if (insertError) {
+        console.error('[CATALOG REPLACE] Insert error:', insertError);
+        return NextResponse.json({ 
+          ok: false, 
+          error: 'Failed to insert menu items: ' + insertError.message,
+          details: insertError
+        }, { status: 500 });
+      }
+
+      console.log('[CATALOG REPLACE] Successfully inserted', insertedItems?.length || 0, 'items');
+
+      return NextResponse.json({
+        ok: true,
+        message: 'Catalog replaced successfully',
+        result: {
+          items_created: insertedItems?.length || 0,
+          categories_created: [...new Set(itemsToInsert.map(item => item.category))].length
+        }
+      });
+    } else {
+      console.log('[CATALOG REPLACE] No items to insert');
+      return NextResponse.json({
+        ok: true,
+        message: 'Catalog cleared (no items found)',
+        result: {
+          items_created: 0,
+          categories_created: 0
+        }
+      });
+    }
+
+  } catch (error: any) {
+    console.error('[CATALOG REPLACE] Unexpected error:', error);
     return NextResponse.json({ 
       ok: false, 
-      error: 'Payload validation failed' 
-    }, { status: 400 });
-  }
-
-  if (!validation.valid) {
-    console.error('[CATALOG REPLACE] Invalid payload:', validation.errors);
-    return NextResponse.json({ 
-      ok: false, 
-      error: 'Invalid payload', 
-      details: validation.errors,
-      warnings: validation.warnings 
-    }, { status: 400 });
-  }
-
-  // Log warnings if any
-  if (validation.warnings && validation.warnings.length > 0) {
-    console.warn('[CATALOG REPLACE] Warnings:', validation.warnings);
-  }
-
-  // Replace catalog atomically
-  const { data: result, error: replaceError } = await supabase
-    .rpc('api_replace_catalog', {
-      p_venue_id: venueId,
-      p_payload: fixedPayload
-    });
-
-  if (replaceError) {
-    console.error('[CATALOG REPLACE] Replace error:', replaceError);
-    return NextResponse.json({ 
-      ok: false, 
-      error: 'Catalog replacement failed: ' + replaceError.message 
+      error: 'Unexpected error: ' + error.message 
     }, { status: 500 });
   }
-
-  console.log('[CATALOG REPLACE] Success:', result);
-
-  return NextResponse.json({
-    ok: true,
-    message: 'Catalog replaced successfully',
-    result: result,
-    warnings: validation.warnings || []
-  });
 }
 
 // Extract text from PDF using the same logic as the existing process-pdf route

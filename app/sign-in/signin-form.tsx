@@ -47,9 +47,9 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
       }
 
       if (data.user) {
-        console.log('[AUTH DEBUG] Email sign in successful, redirecting to dashboard');
-        // Redirect to dashboard
-        router.push('/dashboard');
+        console.log('[AUTH DEBUG] Email sign in successful, redirecting to home');
+        // Redirect to home page
+        router.push('/');
       }
     } catch (err: any) {
       console.log('[AUTH DEBUG] Email sign in error:', err);

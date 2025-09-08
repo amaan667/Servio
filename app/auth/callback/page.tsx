@@ -202,7 +202,7 @@ function CallbackContent() {
             
             if (retryData?.session) {
               addDebugLog('[AUTH CALLBACK] Fallback authentication successful');
-              router.push('/dashboard');
+              router.push('/');
               return;
             }
           } catch (fallbackErr: any) {
@@ -218,7 +218,7 @@ function CallbackContent() {
         }
 
         if (data?.session) {
-          addDebugLog('[AUTH CALLBACK] Session created successfully, redirecting to dashboard');
+          addDebugLog('[AUTH CALLBACK] Session created successfully, redirecting to home');
           addDebugLog(`[AUTH CALLBACK] Session details: ${JSON.stringify({
             userId: data.session.user.id,
             expiresAt: data.session.expires_at,
@@ -226,8 +226,8 @@ function CallbackContent() {
           })}`);
           
           // Redirect immediately without delay
-          addDebugLog('[AUTH CALLBACK] Redirecting to dashboard...');
-          router.push('/dashboard');
+          addDebugLog('[AUTH CALLBACK] Redirecting to home...');
+          router.push('/');
         } else {
           addDebugLog('[AUTH CALLBACK] No session returned from exchange');
           addDebugLog(`[AUTH CALLBACK] Data received: ${JSON.stringify(data)}`);

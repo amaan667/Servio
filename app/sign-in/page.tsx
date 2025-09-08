@@ -23,7 +23,7 @@ function SignInPageContent() {
   useEffect(() => {
     // Check if user is already authenticated
     if (!loading && session?.user) {
-      router.replace('/dashboard');
+      router.replace('/');
       return;
     }
     

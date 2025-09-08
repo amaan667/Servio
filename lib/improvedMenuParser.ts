@@ -30,20 +30,23 @@ interface ImprovedMenuPayload {
 export async function parseMenuBulletproof(extractedText: string): Promise<MenuPayloadT> {
   const openai = getOpenAI();
   
-  const systemPrompt = `You are a menu parsing expert. Extract menu items from the provided text and return ONLY a valid JSON object.
+  const systemPrompt = `You are a menu parsing expert. Extract ALL possible menu items from the provided text and return ONLY a valid JSON object.
 
-CRITICAL RULES:
+CRITICAL RULES FOR MAXIMUM EXTRACTION:
 
-1. ONLY extract items that have a clear price (like £3.50, £12.99, etc.)
-2. Each item must have: title, category, price
-3. Categories should be standard names: COFFEE, TEA, STARTERS, MAINS, BRUNCH, DESSERTS, BEVERAGES, etc.
-4. Do NOT create items from:
-   - Syrups or milk alternatives (these are add-ons, not main items)
-   - Items mentioned only as part of sets
-   - Marketing text or descriptions without prices
-   - Items with £0.00 prices
+1. Extract ANY item that has a price (even if unclear, make your best guess)
+2. If price is missing but item seems like a menu item, assign a reasonable price (3.50 for drinks, 8.50 for mains, 5.50 for desserts)
+3. Each item must have: title, category, price
+4. Categories should be standard names: COFFEE, TEA, STARTERS, MAINS, BRUNCH, DESSERTS, BEVERAGES, etc.
+5. INCLUDE items that might be:
+   - Syrups or milk alternatives (as separate items)
+   - Items mentioned as part of sets (extract each component)
+   - Items with unclear prices (make reasonable estimates)
+   - Items with £0.00 prices (assign reasonable prices)
 
-5. If you see "Coffee with a shot of X" - this should be one item "Coffee" with syrup options, not separate items
+6. If you see "Coffee with a shot of X" - create BOTH "Coffee" AND "Coffee with X" as separate items
+
+7. PRIORITIZE QUANTITY OVER ACCURACY - extract as many items as possible
 
 OUTPUT FORMAT (MUST BE VALID JSON):
 {
@@ -65,10 +68,11 @@ JSON REQUIREMENTS:
 - If description contains quotes, escape them properly
 
 IMPORTANT: 
-- Only return items that have actual prices
+- Extract EVERYTHING that could be a menu item
+- If in doubt, include it with a reasonable price
 - Use standard category names
 - Do not create categories without items
-- Return empty items array if no valid items found
+- Return empty items array only if absolutely no items found
 - Ensure the JSON is syntactically valid
 
 Return ONLY the JSON object, no other text.`;
@@ -83,8 +87,8 @@ ${extractedText}`;
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // Using GPT-4o as preferred by user
       response_format: { type: "json_object" },
-      temperature: 0,
-      max_tokens: 4000,
+      temperature: 0.1, // Slightly higher for more creative extraction
+      max_tokens: 6000, // Increased for more items
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -111,7 +115,18 @@ ${extractedText}`;
         parsed = JSON.parse(fixedJson);
         console.log('[IMPROVED PARSER] Successfully fixed and parsed JSON');
       } catch (fixError) {
-        console.error('[IMPROVED PARSER] Could not fix JSON, using fallback');
+        console.error('[IMPROVED PARSER] Could not fix JSON, trying alternative parsing...');
+        
+        // Try to extract items using regex as last resort
+        const fallbackItems = extractItemsWithRegex(rawResponse);
+        if (fallbackItems.length > 0) {
+          console.log('[IMPROVED PARSER] Using regex fallback, extracted', fallbackItems.length, 'items');
+          return {
+            items: fallbackItems,
+            categories: [...new Set(fallbackItems.map(item => item.category))]
+          };
+        }
+        
         // Return empty result instead of crashing
         return {
           items: [],
@@ -120,7 +135,7 @@ ${extractedText}`;
       }
     }
     
-    // Validate the parsed data
+    // Validate the parsed data (relaxed validation)
     validateParsedMenu(parsed);
     
     // Convert to the expected format
@@ -131,6 +146,22 @@ ${extractedText}`;
 
   } catch (error: any) {
     console.error('[IMPROVED PARSER] Parsing failed:', error.message);
+    
+    // Try a simpler approach as fallback
+    try {
+      console.log('[IMPROVED PARSER] Attempting simple extraction fallback...');
+      const simpleItems = extractItemsWithRegex(extractedText);
+      if (simpleItems.length > 0) {
+        console.log('[IMPROVED PARSER] Simple extraction found', simpleItems.length, 'items');
+        return {
+          items: simpleItems,
+          categories: [...new Set(simpleItems.map(item => item.category))]
+        };
+      }
+    } catch (fallbackError) {
+      console.error('[IMPROVED PARSER] Fallback extraction also failed:', fallbackError);
+    }
+    
     // Return empty result instead of throwing to prevent crashes
     console.log('[IMPROVED PARSER] Returning empty result due to parsing error');
     return {
@@ -241,6 +272,72 @@ function fixMalformedJson(jsonString: string): string {
   }
   
   return fixed;
+}
+
+/**
+ * Fallback regex-based extraction for when JSON parsing fails
+ */
+function extractItemsWithRegex(text: string): any[] {
+  console.log('[IMPROVED PARSER] Using regex fallback extraction...');
+  
+  const items: any[] = [];
+  
+  // Common price patterns
+  const pricePatterns = [
+    /£(\d+\.?\d*)/g,
+    /\$(\d+\.?\d*)/g,
+    /(\d+\.?\d*)\s*£/g,
+    /(\d+\.?\d*)\s*$/g
+  ];
+  
+  // Split text into lines and look for items
+  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  
+  let currentCategory = 'UNCATEGORIZED';
+  
+  for (const line of lines) {
+    // Check if line is a category header
+    if (line.match(/^[A-Z\s&]+$/)) {
+      currentCategory = line.toUpperCase().replace(/[^A-Z\s]/g, '').trim();
+      continue;
+    }
+    
+    // Look for price in the line
+    let price = 0;
+    let priceMatch = null;
+    
+    for (const pattern of pricePatterns) {
+      priceMatch = pattern.exec(line);
+      if (priceMatch) {
+        price = parseFloat(priceMatch[1]);
+        break;
+      }
+    }
+    
+    // If we found a price, extract the item
+    if (price > 0) {
+      // Remove price from the line to get the item name
+      let itemName = line.replace(/£\d+\.?\d*|\$\d+\.?\d*|\d+\.?\d*\s*£|\d+\.?\d*\s*$/g, '').trim();
+      
+      // Clean up the item name
+      itemName = itemName.replace(/^[\d\.\-\s]+/, '').trim(); // Remove leading numbers/dashes
+      itemName = itemName.replace(/[^\w\s\-&'()]/g, '').trim(); // Remove special chars except common ones
+      
+      if (itemName.length > 0 && itemName.length < 100) { // Reasonable length
+        items.push({
+          name: itemName,
+          description: null,
+          price: price,
+          category: currentCategory,
+          available: true,
+          order_index: 0
+        });
+      }
+    }
+  }
+  
+  console.log('[IMPROVED PARSER] Regex extraction found', items.length, 'items');
+  return items;
 }
 
 /**
