@@ -69,8 +69,8 @@ function reconstructJSONFromMalformed(json: string): string | null {
     // First, try to fix truncated JSON
     const fixedJson = fixTruncatedJSON(json);
     
-    // Extract all property-value pairs using regex
-    const propertyPattern = /"([^"]+)":\s*([^,}]+)/g;
+    // Extract all property-value pairs using regex - improved pattern
+    const propertyPattern = /"([^"]+)":\s*([^,}]+?)(?=\s*[,}\]])/g;
     const properties: Array<{key: string, value: string}> = [];
     let match;
     
@@ -87,6 +87,36 @@ function reconstructJSONFromMalformed(json: string): string | null {
         } else if (!value.startsWith('"') && !value.match(/^\d/)) {
           // Looks like an incomplete string, add quotes
           value = '"' + value + '"';
+        }
+      }
+      
+      // Handle unterminated strings that might be cut off mid-word
+      if (value && value.startsWith('"') && !value.endsWith('"')) {
+        // Try to complete common cut-off words
+        const content = value.substring(1); // Remove opening quote
+        const completions: Record<string, string> = {
+          'lem': 'lemon',
+          'tom': 'tomato', 
+          'che': 'cheese',
+          'bur': 'burger',
+          'chi': 'chicken',
+          'bee': 'beef',
+          'fis': 'fish',
+          'sou': 'soup',
+          'sal': 'salad',
+          'pas': 'pasta',
+          'piz': 'pizza',
+          'gra': 'granola',
+          'yog': 'yoghurt',
+          'mil': 'milk',
+          'ber': 'berries'
+        };
+        
+        if (completions[content]) {
+          value = `"${completions[content]}"`;
+        } else {
+          // Just close the string
+          value = value + '"';
         }
       }
       
@@ -140,7 +170,7 @@ function reconstructJSONFromMalformed(json: string): string | null {
       items: validItems.map(item => ({
         title: item.title,
         category: item.category,
-        price: item.price ? parseFloat(item.price) : 0, // Default to 0 if no price
+        price: item.price ? (typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0) : 0, // Ensure price is always a number
         currency: 'GBP',
         description: item.description || ''
       }))
@@ -355,10 +385,11 @@ function fixUnterminatedStrings(json: string): string {
   
   let fixed = json;
   
-  // Find unterminated strings and close them
-  const unterminatedPattern = /"([^"]*?)(?=\s*[,}\]])/g;
+  // Handle unterminated strings more aggressively
+  // Look for strings that start with quote but don't end with quote before next property/brace
+  const unterminatedStringPattern = /"([^"]*?)(?=\s*[,}\]])/g;
   
-  fixed = fixed.replace(unterminatedPattern, (match, content) => {
+  fixed = fixed.replace(unterminatedStringPattern, (match, content) => {
     // If the string doesn't end with a quote, add one
     if (!match.endsWith('"')) {
       return `"${content}"`;
@@ -371,6 +402,32 @@ function fixUnterminatedStrings(json: string): string {
     // If this looks like a string value but isn't quoted
     if (before === ':' || before === ',') {
       return `${before}"${content}"`;
+    }
+    return match;
+  });
+  
+  // Handle strings that are cut off mid-word (like "lem" instead of "lemon")
+  fixed = fixed.replace(/"([^"]*?)(?=\s*[,}\]])/g, (match, content) => {
+    // If the content looks like it was cut off (short word, no space at end)
+    if (content.length < 4 && !content.endsWith(' ') && !content.endsWith('.')) {
+      // Try to complete common cut-off words
+      const completions: Record<string, string> = {
+        'lem': 'lemon',
+        'tom': 'tomato',
+        'che': 'cheese',
+        'bur': 'burger',
+        'chi': 'chicken',
+        'bee': 'beef',
+        'fis': 'fish',
+        'sou': 'soup',
+        'sal': 'salad',
+        'pas': 'pasta',
+        'piz': 'pizza'
+      };
+      
+      if (completions[content]) {
+        return `"${completions[content]}"`;
+      }
     }
     return match;
   });
