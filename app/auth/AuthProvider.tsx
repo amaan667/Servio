@@ -31,7 +31,8 @@ export default function AuthProvider({
 }) {
   const [session, setSession] = useState<Session | null>(initialSession ?? null);
   const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
-  const [loading, setLoading] = useState(true);
+  // Start with loading false if we have an initial session, true otherwise
+  const [loading, setLoading] = useState(!initialSession);
 
   useEffect(() => {
     let supabase;
@@ -44,8 +45,14 @@ export default function AuthProvider({
       return;
     }
     
-    // Get initial session quickly
+    // Get initial session quickly - only if we don't have one already
     const getInitialSession = async () => {
+      if (initialSession) {
+        // We already have a session, no need to fetch
+        setLoading(false);
+        return;
+      }
+      
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         

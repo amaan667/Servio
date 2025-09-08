@@ -30,9 +30,9 @@ export default function GlobalNav() {
     });
   }
 
-  // Ensure we don't show authenticated navigation while loading
-  // Also add additional checks to ensure session is valid
-  const isAuthenticated = !loading && !!session?.user && !!session?.access_token;
+  // Show authenticated navigation if we have a session, even if still loading
+  // This prevents the flash of unauthenticated content
+  const isAuthenticated = !!session?.user && !!session?.access_token;
 
   // Determine if we're on an authenticated route that supports dark mode
   const isAuthenticatedRoute = pathname?.startsWith('/dashboard') || 
@@ -132,35 +132,8 @@ export default function GlobalNav() {
     }
   };
 
-  // Don't render navigation items while loading
-  if (loading) {
-    return (
-      <nav className="bg-background border-b border-border shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
-          <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
-            {/* Logo */}
-            <div className="flex-shrink-0">
-              <Link href="/" className="flex items-center group">
-                <Image
-                  src="/assets/servio-logo-updated.png"
-                  alt="Servio"
-                  width={800}
-                  height={250}
-                  className="h-40 sm:h-44 md:h-48 lg:h-52 xl:h-56 w-auto transition-all duration-300 group-hover:scale-105"
-                  priority
-                />
-              </Link>
-            </div>
-            
-            {/* Loading indicator */}
-            <div className="flex items-center">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-            </div>
-          </div>
-        </div>
-      </nav>
-    );
-  }
+  // Always render navigation immediately - don't wait for auth loading
+  // The navigation will show appropriate content based on auth state
 
   return (
     <nav className={navClasses}>

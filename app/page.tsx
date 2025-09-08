@@ -69,16 +69,7 @@ function PricingQuickCompare() {
 
 export default function HomePage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
-
-  useEffect(() => {
-    // Remove artificial loading delay - set immediately
-    setIsLoading(false);
-  }, []);
-
-  // Remove automatic redirect - let users see the home page content
-  // They can navigate to dashboard via the "Go to Dashboard" button
 
   const handleGetStarted = () => {
     if (user) {
@@ -103,11 +94,6 @@ export default function HomePage() {
   const handleDemo = () => {
     router.push("/order?demo=1");
   };
-
-  if (isLoading || authLoading) {
-    // Remove blocking loading state - render content immediately
-    // Loading state will be handled by individual components
-  }
 
   return (
     <div className="min-h-screen bg-white">
