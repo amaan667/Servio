@@ -45,7 +45,7 @@ CRITICAL RULES:
 
 5. If you see "Coffee with a shot of X" - this should be one item "Coffee" with syrup options, not separate items
 
-OUTPUT FORMAT:
+OUTPUT FORMAT (MUST BE VALID JSON):
 {
   "items": [
     {
@@ -57,11 +57,19 @@ OUTPUT FORMAT:
   ]
 }
 
+JSON REQUIREMENTS:
+- All strings must be properly quoted with double quotes
+- All special characters in strings must be escaped (use \\" for quotes)
+- No trailing commas
+- No comments or extra text outside the JSON
+- If description contains quotes, escape them properly
+
 IMPORTANT: 
 - Only return items that have actual prices
 - Use standard category names
 - Do not create categories without items
 - Return empty items array if no valid items found
+- Ensure the JSON is syntactically valid
 
 Return ONLY the JSON object, no other text.`;
 
@@ -85,8 +93,32 @@ ${extractedText}`;
 
     const rawResponse = response.choices[0]?.message?.content ?? "";
     console.log('[IMPROVED PARSER] Raw response length:', rawResponse.length);
+    console.log('[IMPROVED PARSER] Raw response preview:', rawResponse.substring(0, 500));
 
-    const parsed: ImprovedMenuPayload = JSON.parse(rawResponse);
+    // Try to parse JSON with better error handling
+    let parsed: ImprovedMenuPayload;
+    try {
+      parsed = JSON.parse(rawResponse);
+    } catch (jsonError: any) {
+      console.error('[IMPROVED PARSER] JSON parse error:', jsonError.message);
+      console.error('[IMPROVED PARSER] Problematic JSON:', rawResponse);
+      
+      // Try to fix common JSON issues
+      const fixedJson = fixMalformedJson(rawResponse);
+      console.log('[IMPROVED PARSER] Attempting to fix JSON...');
+      
+      try {
+        parsed = JSON.parse(fixedJson);
+        console.log('[IMPROVED PARSER] Successfully fixed and parsed JSON');
+      } catch (fixError) {
+        console.error('[IMPROVED PARSER] Could not fix JSON, using fallback');
+        // Return empty result instead of crashing
+        return {
+          items: [],
+          categories: []
+        };
+      }
+    }
     
     // Validate the parsed data
     validateParsedMenu(parsed);
@@ -99,7 +131,12 @@ ${extractedText}`;
 
   } catch (error: any) {
     console.error('[IMPROVED PARSER] Parsing failed:', error.message);
-    throw new Error(`Menu parsing failed: ${error.message}`);
+    // Return empty result instead of throwing to prevent crashes
+    console.log('[IMPROVED PARSER] Returning empty result due to parsing error');
+    return {
+      items: [],
+      categories: []
+    };
   }
 }
 
@@ -158,6 +195,41 @@ function convertToMenuPayload(parsed: any): MenuPayloadT {
     items,
     categories
   };
+}
+
+/**
+ * Attempt to fix common JSON malformation issues
+ */
+function fixMalformedJson(jsonString: string): string {
+  let fixed = jsonString;
+  
+  // Remove any text before the first {
+  const firstBrace = fixed.indexOf('{');
+  if (firstBrace > 0) {
+    fixed = fixed.substring(firstBrace);
+  }
+  
+  // Remove any text after the last }
+  const lastBrace = fixed.lastIndexOf('}');
+  if (lastBrace > 0 && lastBrace < fixed.length - 1) {
+    fixed = fixed.substring(0, lastBrace + 1);
+  }
+  
+  // Fix common issues with unterminated strings
+  // Look for unescaped quotes in strings
+  fixed = fixed.replace(/([^\\])"([^"]*?)([^\\])"/g, (match, before, content, after) => {
+    // If the content contains unescaped quotes, escape them
+    const escapedContent = content.replace(/([^\\])"/g, '$1\\"');
+    return `${before}"${escapedContent}${after}"`;
+  });
+  
+  // Fix trailing commas
+  fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+  
+  // Fix missing quotes around keys
+  fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+  
+  return fixed;
 }
 
 /**
