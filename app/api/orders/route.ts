@@ -15,12 +15,15 @@ type OrderPayload = {
   venue_id: string;
   table_number?: number | null;
   customer_name: string;
-  customer_phone?: string | null;
+  customer_phone: string; // Make required since database requires it
   items: OrderItem[];
   total_amount: number;
   notes?: string | null;
   order_status?: string;
   payment_status?: string;
+  payment_method?: string;
+  table_id?: string | null;
+  session_id?: string | null;
   scheduled_for?: string | null;
   prep_lead_minutes?: number;
 };
@@ -50,6 +53,10 @@ export async function POST(req: Request) {
     if (!body.customer_name || !body.customer_name.trim()) {
       console.log('[ORDERS POST] VALIDATION FAILED: customer_name is required');
       return bad('customer_name is required');
+    }
+    if (!body.customer_phone || !body.customer_phone.trim()) {
+      console.log('[ORDERS POST] VALIDATION FAILED: customer_phone is required');
+      return bad('customer_phone is required');
     }
     if (!Array.isArray(body.items) || body.items.length === 0) {
       console.log('[ORDERS POST] VALIDATION FAILED: items must be a non-empty array');
@@ -103,12 +110,15 @@ export async function POST(req: Request) {
       venue_id: body.venue_id,
       table_number,
       customer_name: body.customer_name.trim(),
-      customer_phone: body.customer_phone ?? null,
+      customer_phone: body.customer_phone!.trim(), // Required field, already validated
       items: safeItems,
       total_amount: finalTotal,
       notes: body.notes ?? null,
-      order_status: 'PLACED', // Set initial status as PLACED for live orders
-              payment_status: 'PAID', // Set as PAID since order only appears after payment
+      order_status: body.order_status || 'open', // Use provided status or default to 'open'
+      payment_status: body.payment_status || 'unpaid', // Use provided status or default to 'unpaid'
+      payment_method: body.payment_method || 'online',
+      table_id: body.table_id || null,
+      session_id: body.session_id || null,
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
