@@ -34,7 +34,7 @@ interface CartItem extends MenuItem {
 
 export default function CustomerOrderPage() {
   const searchParams = useSearchParams();
-  const venueSlug = searchParams?.get("venue") || "";
+  const venueSlug = searchParams?.get("venue") || "venue-1e02af4d"; // Default to known venue
   const tableNumber = searchParams?.get("table") || "1";
   const isDemo = searchParams?.get("demo") === "1";
 
@@ -387,6 +387,8 @@ export default function CustomerOrderPage() {
 
       // Create the order immediately via API
       console.log('[ORDER SUBMIT] Calling orders API...');
+      console.log('[ORDER SUBMIT] Order data being sent:', JSON.stringify(orderData, null, 2));
+      
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
@@ -395,9 +397,13 @@ export default function CustomerOrderPage() {
         body: JSON.stringify(orderData),
       });
 
+      console.log('[ORDER SUBMIT] API response status:', response.status);
+      console.log('[ORDER SUBMIT] API response ok:', response.ok);
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create order');
+        console.error('[ORDER SUBMIT] API error response:', errorData);
+        throw new Error(errorData.error || `Failed to create order (${response.status})`);
       }
 
       const orderResult = await response.json();

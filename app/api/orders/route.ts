@@ -79,15 +79,40 @@ export async function POST(req: Request) {
     }
     const supabase = await createClient();
 
-    // Verify venue exists
+    // Verify venue exists, create if it doesn't (for demo purposes)
     const { data: venue, error: venueErr } = await supabase
       .from('venues')
       .select('venue_id')
       .eq('venue_id', body.venue_id)
       .maybeSingle();
 
-    if (venueErr) return bad(`Failed to verify venue: ${venueErr.message}`, 500);
-    if (!venue) return bad('Invalid venue_id');
+    if (venueErr) {
+      console.log('[ORDERS POST] Venue verification error:', venueErr);
+      return bad(`Failed to verify venue: ${venueErr.message}`, 500);
+    }
+    
+    if (!venue) {
+      console.log('[ORDERS POST] Venue not found, creating default venue for demo...');
+      // Create a default venue for demo purposes
+      const { data: newVenue, error: createErr } = await supabase
+        .from('venues')
+        .insert({
+          venue_id: body.venue_id,
+          name: 'Demo Restaurant',
+          business_type: 'restaurant',
+          owner_id: null, // No owner for demo venue
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select('venue_id')
+        .single();
+        
+      if (createErr) {
+        console.log('[ORDERS POST] Failed to create demo venue:', createErr);
+        return bad(`Failed to create demo venue: ${createErr.message}`, 500);
+      }
+      console.log('[ORDERS POST] Demo venue created successfully:', newVenue);
+    }
 
     // Recompute total server-side for safety
     const computedTotal = body.items.reduce((sum, it) => {
