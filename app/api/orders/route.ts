@@ -22,8 +22,7 @@ type OrderPayload = {
   order_status?: string;
   payment_status?: string;
   payment_method?: string;
-  table_id?: string | null;
-  // session_id removed - not in database schema
+  // table_id and session_id removed - not in database schema
   scheduled_for?: string | null;
   prep_lead_minutes?: number;
 };
@@ -142,8 +141,7 @@ export async function POST(req: Request) {
       order_status: body.order_status || 'open', // Use provided status or default to 'open'
       payment_status: body.payment_status || 'unpaid', // Use provided status or default to 'unpaid'
       payment_method: body.payment_method || 'online',
-      table_id: body.table_id || null,
-      // session_id removed - not in database schema
+      // table_id and session_id removed - not in database schema
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,

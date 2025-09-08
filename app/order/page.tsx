@@ -381,7 +381,6 @@ export default function CustomerOrderPage() {
         order_status: 'open',
         payment_status: 'unpaid', // Start as unpaid
         payment_method: 'pending', // Will be updated based on payment choice
-        table_id: null, // Can be set later if needed
       };
 
       // Create the order immediately via API
