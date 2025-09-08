@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Upload, Info } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { FileText, Upload, Info, Trash2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface MenuUploadCardProps {
@@ -15,6 +17,8 @@ interface MenuUploadCardProps {
 
 export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isReplacing, setIsReplacing] = useState(true); // Default to replace mode
+  const [isClearing, setIsClearing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -51,36 +55,67 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     setIsProcessing(true);
 
     try {
-      console.log('[MENU UPLOAD] Starting PDF upload for venue:', venueId);
+      console.log('[MENU UPLOAD] Starting PDF upload for venue:', venueId, 'mode:', isReplacing ? 'replace' : 'append');
       
       if (fileExtension === '.pdf') {
-        // Send PDF directly to process-pdf endpoint
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('venue_id', venueId);
-        
-        console.log('[MENU UPLOAD] FormData prepared with venue_id:', venueId);
-        
-        const response = await fetch('/api/menu/process-pdf', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`PDF processing failed: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.ok) {
-          toast({
-            title: 'Menu imported successfully',
-            description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
+        if (isReplacing) {
+          // Use new catalog replace endpoint
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('venue_id', venueId);
+          
+          console.log('[MENU UPLOAD] Using catalog replace endpoint');
+          
+          const response = await fetch('/api/catalog/replace', {
+            method: 'POST',
+            body: formData
           });
-          onSuccess?.();
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Catalog replacement failed: ${response.status} - ${errorText}`);
+          }
+
+          const result = await response.json();
+          
+          if (result.ok) {
+            toast({
+              title: 'Catalog replaced successfully',
+              description: `${result.result.items_created} items, ${result.result.categories_created} categories created`
+            });
+            onSuccess?.();
+          } else {
+            throw new Error(`Catalog replacement failed: ${result.error}`);
+          }
         } else {
-          throw new Error(`PDF processing failed: ${result.error}`);
+          // Use legacy append endpoint
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('venue_id', venueId);
+          
+          console.log('[MENU UPLOAD] Using legacy append endpoint');
+          
+          const response = await fetch('/api/menu/process-pdf', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`PDF processing failed: ${response.status} - ${errorText}`);
+          }
+
+          const result = await response.json();
+          
+          if (result.ok) {
+            toast({
+              title: 'Menu imported successfully',
+              description: `${result.counts.inserted} items added, ${result.counts.skipped} skipped`
+            });
+            onSuccess?.();
+          } else {
+            throw new Error(`PDF processing failed: ${result.error}`);
+          }
         }
         
       } else {
@@ -131,6 +166,51 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     }
   };
 
+  const handleClearCatalog = async () => {
+    if (!confirm('Are you sure you want to clear the entire catalog? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsClearing(true);
+
+    try {
+      console.log('[CLEAR CATALOG] Clearing catalog for venue:', venueId);
+
+      const response = await fetch('/api/catalog/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ venueId })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Clear catalog failed: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.ok) {
+        toast({
+          title: 'Catalog cleared successfully',
+          description: `Removed ${result.deletedCount} items from catalog`
+        });
+        onSuccess?.();
+      } else {
+        throw new Error(`Clear catalog failed: ${result.error}`);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Clear catalog failed',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -141,6 +221,29 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
         <CardDescription>Upload and parse PDF menus using advanced OCR and AI processing.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Replace vs Append Toggle */}
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="replace-mode"
+            checked={isReplacing}
+            onCheckedChange={setIsReplacing}
+            disabled={isProcessing}
+          />
+          <Label htmlFor="replace-mode" className="text-sm font-medium">
+            {isReplacing ? 'Replace Catalog' : 'Append to Catalog'}
+          </Label>
+        </div>
+
+        {isReplacing && (
+          <Alert>
+            <Trash2 className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Replace Mode:</strong> This will completely clear your existing catalog and replace it with the new menu. 
+              All current items, categories, and options will be deleted.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Button
@@ -158,6 +261,15 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
               onChange={handleFileUpload}
               className="hidden"
             />
+            <Button
+              variant="destructive"
+              onClick={handleClearCatalog}
+              disabled={isClearing || isProcessing}
+              size="sm"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {isClearing ? 'Clearing...' : 'Clear Catalog'}
+            </Button>
           </div>
           
           <div className="text-sm text-gray-500">

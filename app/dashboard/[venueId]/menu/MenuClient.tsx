@@ -241,14 +241,6 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadMenuItems}
-              disabled={loading}
-            >
-              Refresh
-            </Button>
           </div>
         </div>
 
@@ -260,13 +252,6 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         {/* Action Buttons - Positioned between upload and menu items */}
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={loadMenuItems}
-              disabled={loading}
-            >
-              Refresh
-            </Button>
             {menuItems.length > 0 && (
               <Button 
                 variant="destructive" 
