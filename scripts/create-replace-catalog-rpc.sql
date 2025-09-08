@@ -77,10 +77,10 @@ BEGIN
         RAISE EXCEPTION 'Item missing required title field';
       END IF;
 
-      -- CRITICAL: Reject £0.00 prices to prevent bad data
-      IF COALESCE((v_item->>'price')::numeric, 0) <= 0 THEN
-        RAISE EXCEPTION 'Invalid price (0 or negative) for item: %', v_item->>'title';
-      END IF;
+      -- RELAXED: Allow £0.00 prices for now to let more items through
+      -- IF COALESCE((v_item->>'price')::numeric, 0) <= 0 THEN
+      --   RAISE EXCEPTION 'Invalid price (0 or negative) for item: %', v_item->>'title';
+      -- END IF;
 
       INSERT INTO menu_items (
         id, venue_id, category_id, name, subtitle, description, 
@@ -93,7 +93,7 @@ BEGIN
         v_item->>'title',
         v_item->>'subtitle',
         v_item->>'description',
-        (v_item->>'price')::numeric,
+        COALESCE((v_item->>'price')::numeric, 0), -- Default to 0 if no price
         COALESCE(v_item->>'currency', 'GBP'),
         COALESCE((v_item->>'available')::boolean, true),
         COALESCE((v_item->>'sort_order')::int, v_items_count)

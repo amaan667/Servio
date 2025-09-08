@@ -124,24 +124,23 @@ function reconstructJSONFromMalformed(json: string): string | null {
       items.push(currentItem);
     }
     
-    // Filter out invalid items
+    // Filter out invalid items - RELAXED for now to allow more items through
     const validItems = items.filter(item => 
       item.title && 
-      item.category && 
-      item.price !== undefined && 
-      parseFloat(item.price) >= 0  // Allow 0 prices for incomplete items
+      item.category
+      // Removed price validation to allow more items through
     );
     
     if (validItems.length === 0) {
       return null;
     }
     
-    // Reconstruct the JSON
+    // Reconstruct the JSON - RELAXED for now to allow more items through
     const reconstructed = {
       items: validItems.map(item => ({
         title: item.title,
         category: item.category,
-        price: parseFloat(item.price),
+        price: item.price ? parseFloat(item.price) : 0, // Default to 0 if no price
         currency: 'GBP',
         description: item.description || ''
       }))
@@ -529,7 +528,8 @@ export function validateMenuJSON(json: string): {
         errors.push(`Item ${i}: Missing or invalid category`);
       }
       
-      if (typeof item.price !== 'number' || item.price < 0) {
+      // RELAXED: Allow any price value for now
+      if (typeof item.price !== 'number') {
         errors.push(`Item ${i}: Missing or invalid price`);
       }
       

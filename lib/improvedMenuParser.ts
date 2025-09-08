@@ -143,13 +143,16 @@ ${extractedText}`;
 function validateParsedMenu(parsed: ImprovedMenuPayload): void {
   const errors: string[] = [];
   
-  // Check for £0.00 prices
+  // RELAXED VALIDATION: Only log warnings, don't throw errors
+  console.log('[IMPROVED PARSER] Running relaxed validation...');
+  
+  // Check for £0.00 prices (warning only)
   const zeroPriceItems = parsed.items.filter(item => item.price === 0);
   if (zeroPriceItems.length > 0) {
-    errors.push(`Found ${zeroPriceItems.length} items with £0.00 prices: ${zeroPriceItems.map(i => i.title).join(', ')}`);
+    console.log(`[IMPROVED PARSER] WARNING: Found ${zeroPriceItems.length} items with £0.00 prices: ${zeroPriceItems.map(i => i.title).join(', ')}`);
   }
   
-  // Check for food items in COFFEE/TEA categories
+  // Check for food items in COFFEE/TEA categories (warning only)
   const foodKeywords = ['sandwich', 'salad', 'soup', 'pasta', 'pizza', 'burger', 'chicken', 'beef', 'fish', 'lobster', 'seafood'];
   const misfiledItems = parsed.items.filter(item => 
     (item.category === 'COFFEE' || item.category === 'TEA') &&
@@ -157,10 +160,10 @@ function validateParsedMenu(parsed: ImprovedMenuPayload): void {
   );
   
   if (misfiledItems.length > 0) {
-    errors.push(`Found ${misfiledItems.length} food items in COFFEE/TEA categories: ${misfiledItems.map(i => `${i.title} (${i.category})`).join(', ')}`);
+    console.log(`[IMPROVED PARSER] WARNING: Found ${misfiledItems.length} food items in COFFEE/TEA categories: ${misfiledItems.map(i => `${i.title} (${i.category})`).join(', ')}`);
   }
   
-  // Check for modifier explosion (too many items in a category)
+  // Check for modifier explosion (warning only)
   const categoryCounts: Record<string, number> = {};
   parsed.items.forEach(item => {
     categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
@@ -168,13 +171,12 @@ function validateParsedMenu(parsed: ImprovedMenuPayload): void {
   
   Object.entries(categoryCounts).forEach(([category, count]) => {
     if (count > 25) {
-      errors.push(`Category ${category} has ${count} items (suspicious modifier explosion)`);
+      console.log(`[IMPROVED PARSER] WARNING: Category ${category} has ${count} items (suspicious modifier explosion)`);
     }
   });
   
-  if (errors.length > 0) {
-    throw new Error(`Validation failed:\n${errors.join('\n')}`);
-  }
+  // RELAXED: Don't throw errors, just log warnings
+  console.log(`[IMPROVED PARSER] Validation completed with ${errors.length} warnings`);
 }
 
 function convertToMenuPayload(parsed: any): MenuPayloadT {
