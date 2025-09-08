@@ -54,7 +54,7 @@ export default function PaymentPage() {
   const handlePayment = async () => {
     console.log('[PAYMENT DEBUG] ===== PAY NOW HANDLER STARTED =====');
     
-    if (!checkoutData || !customerName.trim() || !customerPhone.trim() || !checkoutData.orderId) {
+    if (!checkoutData || !checkoutData.orderId) {
       console.log('[PAYMENT DEBUG] ERROR: Missing required data');
       return;
     }
@@ -76,8 +76,8 @@ export default function PaymentPage() {
         console.log('[PAYMENT DEBUG] Step 2: Payment successful, updating status...');
         const updateResult = await updateOrderPaymentStatus(
           checkoutData.orderId, 
-          'paid', 
-          'online'
+          'PAID', 
+          'ONLINE'
         );
         
         if (!updateResult.success) {
@@ -103,7 +103,7 @@ export default function PaymentPage() {
   const handlePayAtTill = async () => {
     console.log('[PAY AT TILL DEBUG] ===== PAY AT TILL HANDLER STARTED =====');
     
-    if (!checkoutData || !customerName.trim() || !customerPhone.trim() || !checkoutData.orderId) {
+    if (!checkoutData || !checkoutData.orderId) {
       console.log('[PAY AT TILL DEBUG] ERROR: Missing required data');
       return;
     }
@@ -116,8 +116,8 @@ export default function PaymentPage() {
       
       const updateResult = await updateOrderPaymentStatus(
         checkoutData.orderId, 
-        'till', 
-        'till'
+        'UNPAID', 
+        'PAY_AT_TILL'
       );
 
       if (updateResult.success) {
@@ -143,7 +143,7 @@ export default function PaymentPage() {
   const handlePayLater = async () => {
     console.log('[PAY LATER DEBUG] ===== PAY LATER HANDLER STARTED =====');
     
-    if (!checkoutData || !customerName.trim() || !customerPhone.trim() || !checkoutData.orderId) {
+    if (!checkoutData || !checkoutData.orderId) {
       console.log('[PAY LATER DEBUG] ERROR: Missing required data');
       return;
     }
@@ -156,8 +156,8 @@ export default function PaymentPage() {
       
       const updateResult = await updateOrderPaymentStatus(
         checkoutData.orderId, 
-        'unpaid', // Keep as unpaid
-        'later'
+        'UNPAID', // Keep as unpaid
+        'PAY_LATER'
       );
 
       if (updateResult.success) {
@@ -172,8 +172,8 @@ export default function PaymentPage() {
           tableNumber: checkoutData.tableNumber,
           venueId: checkoutData.venueId,
           total: checkoutData.total,
-          customerName: customerName.trim(),
-          customerPhone: customerPhone.trim(),
+          customerName: checkoutData.customerName || 'Customer',
+          customerPhone: checkoutData.customerPhone || '',
           paymentStatus: 'unpaid'
         };
         
@@ -277,8 +277,8 @@ export default function PaymentPage() {
             <CustomerFeedbackForm
               venueId={checkoutData.venueId}
               orderId={orderNumber}
-              customerName={customerName}
-              customerPhone={customerPhone}
+              customerName={checkoutData.customerName || 'Customer'}
+              customerPhone={checkoutData.customerPhone || ''}
               onFeedbackSubmitted={handleFeedbackSubmitted}
             />
           )}
@@ -328,21 +328,7 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-servio-purple text-white p-4 sticky top-0 z-30 shadow-md">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-            className="text-white hover:bg-white/20 rounded-full"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span className="sr-only">Back</span>
-          </Button>
-          <h1 className="font-semibold text-lg">Checkout</h1>
-          <div className="w-10"></div>
-        </div>
-      </header>
+      {/* Removed purple header as requested */}
 
       <main className="max-w-md mx-auto p-4 space-y-6">
         {/* Order Summary */}
@@ -378,53 +364,14 @@ export default function PaymentPage() {
           </CardContent>
         </Card>
 
-        {/* Customer Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Customer Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name *
-              </label>
-              <Input
-                id="customerName"
-                type="text"
-                value={customerName}
-                onChange={(e) => {
-                  console.log('[PAYMENT DEBUG] Customer name changed:', e.target.value);
-                  setCustomerName(e.target.value);
-                }}
-                placeholder="Enter your full name"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number *
-              </label>
-              <Input
-                id="customerPhone"
-                type="tel"
-                value={customerPhone}
-                onChange={(e) => {
-                  console.log('[PAYMENT DEBUG] Customer phone changed:', e.target.value);
-                  setCustomerPhone(e.target.value);
-                }}
-                placeholder="Enter your phone number"
-                required
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Customer Information - Removed since order is already created with customer details */}
 
         {/* Payment Options */}
         <div className="space-y-3">
           {/* Pay Now Button */}
           <Button
             onClick={handlePayment}
-            disabled={isProcessing || !customerName.trim() || !customerPhone.trim()}
+            disabled={isProcessing}
             className="w-full bg-servio-purple hover:bg-servio-purple-dark disabled:bg-gray-300"
           >
             {isProcessing ? (
@@ -440,7 +387,7 @@ export default function PaymentPage() {
           {/* Pay at Till Button */}
           <Button
             onClick={() => handlePayAtTill()}
-            disabled={isProcessing || !customerName.trim() || !customerPhone.trim()}
+            disabled={isProcessing}
             variant="outline"
             className="w-full border-2 border-servio-purple text-servio-purple hover:bg-servio-purple hover:text-white"
           >
@@ -451,7 +398,7 @@ export default function PaymentPage() {
           {/* Pay Later Button */}
           <Button
             onClick={() => handlePayLater()}
-            disabled={isProcessing || !customerName.trim() || !customerPhone.trim()}
+            disabled={isProcessing}
             variant="outline"
             className="w-full border-2 border-gray-400 text-gray-600 hover:bg-gray-100"
           >

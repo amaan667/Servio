@@ -90,7 +90,7 @@ export default function OrderSummaryPage() {
           item_name: item.name,
           specialInstructions: item.specialInstructions || null
         })),
-        total_amount: Math.round(orderData.total * 100), // Convert to pence
+        total_amount: orderData.total, // Keep as pounds, not pence
         order_status: 'PLACED',
         payment_status: 'UNPAID',
         notes: 'Order placed - payment pending'

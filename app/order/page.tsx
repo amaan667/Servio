@@ -299,15 +299,7 @@ export default function CustomerOrderPage() {
   };
 
   const submitOrder = async () => {
-    
-    if (!customerInfo.name.trim()) {
-      alert("Please enter your name.");
-      return;
-    }
-    if (!customerInfo.phone.trim()) {
-      alert("Please enter your phone number.");
-      return;
-    }
+    // Customer details are now collected in the checkout modal, not here
 
     setIsSubmitting(true);
       try {
