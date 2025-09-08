@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
 
 export const runtime = 'nodejs';
 
@@ -76,7 +76,20 @@ export async function POST(req: Request) {
     if (!url || !serviceKey) {
       return bad('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY', 500);
     }
-    const supabase = createAdminClient(); // Use admin client to bypass RLS
+    console.log('[ORDERS POST] Creating admin client to bypass RLS...');
+    // Create admin client directly with service role key to bypass RLS
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          get(name: string) { return undefined; },
+          set(name: string, value: string, options: any) { },
+          remove(name: string, options: any) { },
+        },
+      }
+    );
+    console.log('[ORDERS POST] Admin client created successfully');
 
     // Verify venue exists, create if it doesn't (for demo purposes)
     const { data: venue, error: venueErr } = await supabase
@@ -154,6 +167,7 @@ export async function POST(req: Request) {
 
     console.log('[ORDERS POST] Attempting database insertion...');
     console.log('[ORDERS POST] Payload for insertion:', JSON.stringify(payload, null, 2));
+    console.log('[ORDERS POST] Using admin client with service role key to bypass RLS');
     
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')
@@ -162,6 +176,10 @@ export async function POST(req: Request) {
 
     if (insertErr) {
       console.log('[ORDERS POST] DATABASE INSERT FAILED:', insertErr);
+      console.log('[ORDERS POST] Error code:', insertErr.code);
+      console.log('[ORDERS POST] Error message:', insertErr.message);
+      console.log('[ORDERS POST] Error details:', insertErr.details);
+      console.log('[ORDERS POST] Error hint:', insertErr.hint);
       return bad(`Insert failed: ${insertErr.message}`, 400);
     }
     
