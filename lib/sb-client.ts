@@ -160,28 +160,14 @@ export async function checkAuthState() {
   try {
     const browserInfo = getBrowserInfo();
     const { data, error } = await createClient().auth.getSession();
-    console.log('[AUTH DEBUG] Current auth state:', {
-      hasSession: !!data.session,
-      hasUser: !!data.session?.user,
-      userId: data.session?.user?.id,
-      userEmail: data.session?.user?.email,
-      sessionExpiresAt: data.session?.expires_at,
-      error: error?.message,
-      browserInfo
-    });
     return { data, error };
   } catch (error) {
-    console.log('[AUTH DEBUG] ❌ Error checking auth state:', error);
     return { data: null, error };
   }
 }
 
 // Universal logger for auth state changes
 if (typeof window !== 'undefined') {
-  const browserInfo = getBrowserInfo();
-  console.log('[AUTH DEBUG] Setting up universal auth state change listener');
-  console.log('[AUTH DEBUG] Browser info:', browserInfo);
-
   const client = createClient();
   
   // Override console.error to filter out refresh token errors
@@ -202,31 +188,7 @@ if (typeof window !== 'undefined') {
   client.auth.onAuthStateChange = (callback: (event: AuthChangeEvent, session: Session | null) => void) => {
     return originalOnAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       // Don't trigger any cookie operations during auth state changes
-      console.log('[AUTH DEBUG] Auth state change (no cookie ops):', event, !!session);
       callback(event, session);
     });
   };
-  
-  // Log initial session state
-  client.auth.getSession().then(({ data, error }: { data: { session: Session | null }, error: AuthError | null }) => {
-    console.log('[AUTH DEBUG] Initial session check:', {
-      hasSession: !!data.session,
-      hasUser: !!data.session?.user,
-      userId: data.session?.user?.id,
-      error: error?.message,
-      timestamp: new Date().toISOString(),
-      browserInfo
-    });
-    
-    // If there's an error with the initial session, clear storage
-    if (error && (error.message?.includes('Refresh Token') || 
-                  error.message?.includes('Invalid') || 
-                  error.message?.includes('400') ||
-                  error.status === 400)) {
-      console.log('[AUTH DEBUG] Clearing invalid initial session due to error:', error.message);
-      clearAuthStorage();
-    }
-  });
-  
-  console.log('[AUTH DEBUG] ===== Universal Supabase Client Initialized (NO AUTO RESTORATION) =====');
 }

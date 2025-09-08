@@ -34,7 +34,7 @@ export default async function RootLayout({
     const { data: { user } } = await supabase.auth.getUser();
     session = user ? { user } : null;
   } catch (error) {
-    console.log('[LAYOUT] Error getting user:', error);
+    // Silent error handling
   }
 
   return (

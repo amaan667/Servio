@@ -45,7 +45,7 @@ export default function VenueDashboardClient({
   initialStats?: DashboardStats;
 }) {
   const [venue, setVenue] = useState<any>(initialVenue);
-  const [loading, setLoading] = useState(!initialVenue); // Start with loading false if we have initial venue data
+  const [loading, setLoading] = useState(false); // Always start with loading false for instant loading
   const [counts, setCounts] = useState<DashboardCounts>(initialCounts || {
     live_count: 0,
     earlier_today_count: 0,
@@ -328,18 +328,6 @@ export default function VenueDashboardClient({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading venue dashboard...</p>
-          <p className="mt-1 text-xs text-gray-500">Venue ID: {venueId}</p>
-          {venue && <p className="mt-1 text-xs text-gray-500">Venue: {venue.name}</p>}
-        </div>
-      </div>
-    );
-  }
 
   if (!venue) {
     return (

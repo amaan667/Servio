@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth/client";
 
 // This component will check for authentication and redirect appropriately
 export default function HomePage() {
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     // Only run on client side
     if (typeof window === 'undefined') {
-      setLoading(false);
       return;
     }
 
@@ -31,22 +29,11 @@ export default function HomePage() {
       } catch (error) {
         // On error, redirect to sign-in
         router.push("/sign-in");
-      } finally {
-        setLoading(false);
       }
     }
     
     checkAuth();
   }, [router]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      {loading && (
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600">Loading...</p>
-        </div>
-      )}
-    </div>
-  );
+  return null;
 }

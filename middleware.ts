@@ -37,7 +37,6 @@ export function middleware(req: NextRequest) {
   );
   
   if (!hasAuth) {
-    console.log('[MIDDLEWARE] No auth cookies found, redirecting to sign-in');
     const url = req.nextUrl.clone();
     url.pathname = '/sign-in';
     url.searchParams.set('redirect', pathname);

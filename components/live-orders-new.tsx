@@ -255,10 +255,6 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           });
         }
         
-        console.log(`[LIVE_ORDERS] Fallback result:`, { 
-          orderCount: filteredOrders.length, 
-          orders: filteredOrders.slice(0, 2)
-        });
         
         clearTimeout(timeoutId);
         setOrders(filteredOrders);
@@ -272,51 +268,12 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         return;
       }
 
-      console.log(`[LIVE_ORDERS] ${tab} query result:`, { 
-        orderCount: data?.length || 0,
-        rawData: data,
-        isArray: Array.isArray(data)
-      });
-      
-      if (data && Array.isArray(data)) {
-        console.log(`[LIVE_ORDERS] ${tab} - Orders found:`, data.length);
-        data.forEach((order, index) => {
-          console.log(`[LIVE_ORDERS] ${tab} - Order ${index + 1}:`, {
-            id: order.id,
-            status: order.order_status || order.status,
-            payment: order.payment_status,
-            created: order.created_at,
-            amount: order.total_amount
-          });
-        });
-      } else {
-        console.log(`[LIVE_ORDERS] ${tab} - No orders returned from query`);
-      }
 
       clearTimeout(timeoutId);
       setOrders(data || []);
       setLastUpdatedAt(new Date());
       
-      // Log fetch results
-      console.log('[FETCH_ORDERS] ===== FETCH RESULTS =====');
-      console.log('[FETCH_ORDERS] Tab:', tab.toUpperCase());
-      console.log('[FETCH_ORDERS] Orders Fetched:', (data || []).length);
-      console.log('[FETCH_ORDERS] Sample Orders (first 2):');
-      (data || []).slice(0, 2).forEach((order, index) => {
-        const orderDate = new Date(order.created_at);
-        const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-        console.log(`[FETCH_ORDERS]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.order_status || order.status}`);
-      });
-      console.log('[FETCH_ORDERS] ===== END FETCH RESULTS =====');
-      
-      logger.info(`LIVE_ORDERS: ${tab} orders fetched successfully`, {
-        orderCount: data?.length || 0,
-        tab,
-        venueId
-      });
     } catch (error: any) {
-      console.error(`[LIVE_ORDERS] Failed to fetch ${activeTab} orders:`, error);
-      logger.error(`LIVE_ORDERS: Failed to fetch ${activeTab} orders`, { error: error.message });
       if (!background) {
         setError(`Failed to load ${activeTab} orders: ${error.message}`);
       }
