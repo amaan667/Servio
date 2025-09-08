@@ -24,6 +24,8 @@ interface CheckoutData {
   sessionId?: string | null;
   orderId?: string; // The ID of the already created order
   orderNumber?: string; // The order number for display
+  customerName?: string; // Customer name from order
+  customerPhone?: string; // Customer phone from order
 }
 
 export default function PaymentPage() {
