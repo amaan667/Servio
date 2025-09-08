@@ -76,8 +76,8 @@ export default function PaymentPage() {
         console.log('[PAYMENT DEBUG] Step 2: Payment successful, updating status...');
         const updateResult = await updateOrderPaymentStatus(
           checkoutData.orderId, 
-          'PAID', 
-          'ONLINE'
+          'paid', 
+          'online'
         );
         
         if (!updateResult.success) {
@@ -116,8 +116,8 @@ export default function PaymentPage() {
       
       const updateResult = await updateOrderPaymentStatus(
         checkoutData.orderId, 
-        'UNPAID', 
-        'PAY_AT_TILL'
+        'unpaid', 
+        'till'
       );
 
       if (updateResult.success) {
@@ -156,8 +156,8 @@ export default function PaymentPage() {
       
       const updateResult = await updateOrderPaymentStatus(
         checkoutData.orderId, 
-        'UNPAID', // Keep as unpaid
-        'PAY_LATER'
+        'unpaid', // Keep as unpaid
+        'later'
       );
 
       if (updateResult.success) {
