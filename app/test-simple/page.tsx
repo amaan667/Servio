@@ -42,7 +42,6 @@ export default function TestSimplePage() {
             />
             <Button 
               onClick={() => {
-                console.log('[TEST SIMPLE] Manual refresh triggered for venue:', testVenueId);
                 // Force a page refresh to test with new venue ID
                 window.location.reload();
               }}

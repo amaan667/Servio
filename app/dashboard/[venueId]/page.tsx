@@ -112,10 +112,6 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       unpaid: 0, // All orders are now paid since they only appear after payment
     };
 
-    console.log('[VENUE PAGE] Dashboard counts:', counts);
-    console.log('[VENUE PAGE] Initial stats:', initialStats);
-
-    console.log('[VENUE PAGE] Rendering dashboard client');
     return (
       <DashboardClient 
         venueId={params.venueId} 
@@ -128,7 +124,6 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       />
     );
   } catch (error) {
-    console.error('[VENUE PAGE] Error in venue page:', error);
     redirect('/sign-in');
   }
 }

@@ -39,20 +39,8 @@ export default function CustomerOrderPage() {
   const tableNumber = searchParams?.get("table") || "1";
   const isDemo = searchParams?.get("demo") === "1";
 
-  // Log the initial page load and QR scan parameters (client-side only)
+  // Initialize page parameters
   useEffect(() => {
-    // IMMEDIATE DEBUG - This should appear in browser console
-    console.log('🚨 ORDER PAGE COMPONENT LOADED 🚨');
-    console.log('🚨 TIMESTAMP:', new Date().toISOString());
-    console.log('🚨 This means someone accessed the order page!');
-    
-    console.log('[QR FLOW DEBUG] ===== CUSTOMER ORDER PAGE LOADED =====');
-    console.log('[QR FLOW DEBUG] URL:', window.location.href);
-    console.log('[QR FLOW DEBUG] Search params:', window.location.search);
-    console.log('[QR FLOW DEBUG] venueSlug from QR:', venueSlug);
-    console.log('[QR FLOW DEBUG] tableNumber from QR:', tableNumber);
-    console.log('[QR FLOW DEBUG] isDemo from QR:', isDemo);
-    console.log('[QR FLOW DEBUG] All search params:', Object.fromEntries(searchParams?.entries() || []));
     
     // Log to server-side for deploy logs
     fetch('/api/log-order-access', {
@@ -64,7 +52,6 @@ export default function CustomerOrderPage() {
         isDemo,
         url: window.location.href
       })
-    }).catch(err => console.log('[QR FLOW DEBUG] Failed to log to server:', err));
   }, [venueSlug, tableNumber, isDemo, searchParams]);
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -81,17 +68,9 @@ export default function CustomerOrderPage() {
 
   // Add logging for customer info changes
   const updateCustomerInfo = (field: 'name' | 'phone', value: string) => {
-    console.log(`[CUSTOMER DEBUG] ===== CUSTOMER ${field.toUpperCase()} CHANGED =====`);
-    console.log(`[CUSTOMER DEBUG] Field: ${field}`);
-    console.log(`[CUSTOMER DEBUG] New value: "${value}"`);
-    console.log(`[CUSTOMER DEBUG] Current customer info:`, customerInfo);
     
     setCustomerInfo(prev => {
       const updated = { ...prev, [field]: value };
-      console.log(`[CUSTOMER DEBUG] Customer info updated:`, updated);
-      console.log(`[CUSTOMER DEBUG] Form validation - name valid:`, !!updated.name.trim());
-      console.log(`[CUSTOMER DEBUG] Form validation - phone valid:`, !!updated.phone.trim());
-      console.log(`[CUSTOMER DEBUG] Form validation - both valid:`, !!updated.name.trim() && !!updated.phone.trim());
       return updated;
     });
   };
@@ -118,9 +97,6 @@ export default function CustomerOrderPage() {
   const isLoggedIn = !!session;
 
   const loadMenuItems = async () => {
-    console.log('[MENU DEBUG] Starting loadMenuItems');
-    console.log('[MENU DEBUG] venueSlug:', venueSlug);
-    console.log('[MENU DEBUG] isDemo:', isDemo);
     
     setLoadingMenu(true);
     setMenuError(null);
@@ -128,7 +104,6 @@ export default function CustomerOrderPage() {
 
     // Explicit demo only
     if (isDemo) {
-      console.log("Loading demo menu items");
               const mappedItems = demoMenuItems.map((item, idx) => ({
           ...item,
           id: `demo-${idx}`,
@@ -150,17 +125,13 @@ export default function CustomerOrderPage() {
         return;
       }
       // Skip venue lookup since it's failing due to RLS - go straight to API call
-      console.log('[MENU DEBUG] Skipping venue lookup, going straight to API call');
       setVenueName('Cafe Nur'); // Set default venue name
 
       // Fetch menu items using the API endpoint (bypasses RLS)
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
-      console.log('[MENU DEBUG] Calling API:', apiUrl);
       
       const response = await fetch(apiUrl);
       
-      console.log('[MENU DEBUG] API response status:', response.status);
-      console.log('[MENU DEBUG] API response ok:', response.ok);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -170,9 +141,6 @@ export default function CustomerOrderPage() {
       }
 
       const data = await response.json();
-      console.log('[MENU DEBUG] API success response:', data);
-      console.log('[MENU DEBUG] Menu items count:', data.menuItems?.length);
-      console.log('[MENU DEBUG] Menu items sample:', data.menuItems?.slice(0, 3));
       
       // Attach venue_name for display
       const normalized = (data.menuItems || []).map((mi: any) => ({ 
@@ -180,16 +148,12 @@ export default function CustomerOrderPage() {
         venue_name: data.venue?.name || 'Our Venue'
       }));
       
-      console.log('[MENU DEBUG] Normalized menu items count:', normalized.length);
-      console.log('[MENU DEBUG] Setting menu items to state');
       
       setMenuItems(normalized);
       
       if (!data.menuItems || data.menuItems.length === 0) {
-        console.log('[MENU DEBUG] No menu items found');
         setMenuError("This venue has no available menu items yet.");
       } else {
-        console.log('[MENU DEBUG] Successfully loaded', normalized.length, 'menu items');
       }
       
       setLoadingMenu(false);
@@ -205,15 +169,11 @@ export default function CustomerOrderPage() {
   };
 
   useEffect(() => {
-    console.log('[MENU DEBUG] useEffect triggered');
-    console.log('[MENU DEBUG] venueSlug:', venueSlug);
-    console.log('[MENU DEBUG] isLoggedIn:', isLoggedIn);
     loadMenuItems();
     
     // Add timeout to prevent infinite loading
     window.menuLoadTimeout = setTimeout(() => {
       if (loadingMenu) {
-        console.log('[MENU DEBUG] Loading timeout reached, forcing stop');
         setLoadingMenu(false);
         setMenuError("Loading timeout - please refresh the page");
       }
@@ -229,16 +189,12 @@ export default function CustomerOrderPage() {
 
   // Debug state changes
   useEffect(() => {
-    console.log('[MENU DEBUG] State changed - menuItems:', menuItems.length);
-    console.log('[MENU DEBUG] State changed - loadingMenu:', loadingMenu);
-    console.log('[MENU DEBUG] State changed - menuError:', menuError);
   }, [menuItems, loadingMenu, menuError]);
 
   // Auto-reset demo after 2 minutes for next user
   useEffect(() => {
     if (isDemo) {
       const resetTimer = setTimeout(() => {
-        console.log('[DEMO] Auto-resetting demo for next user');
         setCart([]);
         setCustomerInfo({ name: '', phone: '' });
         setShowCheckout(false);
@@ -252,9 +208,6 @@ export default function CustomerOrderPage() {
   }, [isDemo]);
 
   const addToCart = (item: MenuItem) => {
-    console.log('[CART DEBUG] ===== ADDING ITEM TO CART =====');
-    console.log('[CART DEBUG] Item being added:', item);
-    console.log('[CART DEBUG] Current cart before add:', cart);
     
     setCart((prev) => {
       const existing = prev.find((cartItem) => cartItem.id === item.id);
@@ -264,34 +217,24 @@ export default function CustomerOrderPage() {
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
-        console.log('[CART DEBUG] Item already in cart, incrementing quantity. New cart:', updated);
         return updated;
       }
       const newCart = [...prev, { ...item, quantity: 1 }];
-      console.log('[CART DEBUG] New item added to cart. New cart:', newCart);
       return newCart;
     });
   };
 
   const removeFromCart = (itemId: string) => {
-    console.log('[CART DEBUG] ===== REMOVING ITEM FROM CART =====');
-    console.log('[CART DEBUG] Item ID to remove:', itemId);
-    console.log('[CART DEBUG] Current cart before remove:', cart);
     
     setCart((prev) => {
       const newCart = prev.filter((item) => item.id !== itemId);
-      console.log('[CART DEBUG] Item removed from cart. New cart:', newCart);
       return newCart;
     });
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
-    console.log('[CART DEBUG] ===== UPDATING ITEM QUANTITY =====');
-    console.log('[CART DEBUG] Item ID:', itemId, 'New quantity:', quantity);
-    console.log('[CART DEBUG] Current cart before update:', cart);
     
     if (quantity <= 0) {
-      console.log('[CART DEBUG] Quantity is 0 or negative, removing item');
       removeFromCart(itemId);
       return;
     }
@@ -300,7 +243,6 @@ export default function CustomerOrderPage() {
       const newCart = prev.map((item) =>
         item.id === itemId ? { ...item, quantity } : item
       );
-      console.log('[CART DEBUG] Quantity updated. New cart:', newCart);
       return newCart;
     });
   };
@@ -322,44 +264,26 @@ export default function CustomerOrderPage() {
   };
 
   const resetCart = () => {
-    console.log('[CART DEBUG] Resetting cart');
     setCart([]);
   };
 
   const submitOrder = async () => {
-    console.log('[ORDER SUBMIT] ===== STARTING ORDER SUBMISSION =====');
-    console.log('[ORDER SUBMIT] Customer name:', customerInfo.name);
-    console.log('[ORDER SUBMIT] Customer phone:', customerInfo.phone);
-    console.log('[ORDER SUBMIT] Cart length:', cart.length);
-    console.log('[ORDER SUBMIT] Venue slug:', venueSlug);
-    console.log('[ORDER SUBMIT] Table number:', tableNumber);
-    console.log('[ORDER SUBMIT] Is demo:', isDemo);
-    console.log('[ORDER SUBMIT] Is demo fallback:', isDemoFallback);
     
     if (!customerInfo.name.trim()) {
-      console.log('[ORDER SUBMIT] ERROR: No customer name provided');
       alert("Please enter your name.");
       return;
     }
     if (!customerInfo.phone.trim()) {
-      console.log('[ORDER SUBMIT] ERROR: No customer phone provided');
       alert("Please enter your phone number.");
       return;
     }
 
-    console.log('[ORDER SUBMIT] Validation passed, setting submitting state');
-    console.log('[ORDER SUBMIT] Setting isSubmitting to true');
     setIsSubmitting(true);
-    console.log('[ORDER SUBMIT] isSubmitting state set to true');
       try {
         const safeTable = parseInt(tableNumber) || 1;
 
       // For demo orders, redirect to checkout with demo mode
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
-        console.log('[ORDER SUBMIT] DEMO FLOW: Processing demo order');
-        console.log('[ORDER SUBMIT] DEMO FLOW: isDemo =', isDemo);
-        console.log('[ORDER SUBMIT] DEMO FLOW: isDemoFallback =', isDemoFallback);
-        console.log('[ORDER SUBMIT] DEMO FLOW: venueSlug =', venueSlug);
         
         // For demo orders, use the same flow as real orders but with demo mode
         const orderData = {
@@ -383,49 +307,28 @@ export default function CustomerOrderPage() {
             .join("; "),
         };
 
-        console.log('[ORDER SUBMIT] DEMO FLOW: Storing demo order data for checkout:', orderData);
         
         // Store order data in localStorage for order summary page
-        console.log('[ORDER SUBMIT] DEMO FLOW: Storing data in localStorage...');
-        console.log('[ORDER SUBMIT] DEMO FLOW: Data to store:', orderData);
         localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
-        console.log('[ORDER SUBMIT] DEMO FLOW: Stored in servio-pending-order key');
-        console.log('[ORDER SUBMIT] DEMO FLOW: Demo order data stored in localStorage');
         
         // Verify storage
         const storedPending = localStorage.getItem('servio-pending-order');
-        console.log('[ORDER SUBMIT] DEMO FLOW: Verification - servio-pending-order exists:', !!storedPending);
         
         // Redirect to order summary page
-        console.log('[ORDER SUBMIT] DEMO FLOW: About to redirect to /order-summary');
-        console.log('[ORDER SUBMIT] DEMO FLOW: Router object:', router);
-        console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before redirect:', typeof window !== 'undefined' ? window.location.href : 'SSR');
         
         // Clear loading state before navigation
-        console.log('[ORDER SUBMIT] DEMO FLOW: Clearing loading state before navigation');
         setIsSubmitting(false);
         
         // Use window.location for reliable navigation
-        console.log('[ORDER SUBMIT] DEMO FLOW: Using window.location for navigation');
-        console.log('[ORDER SUBMIT] DEMO FLOW: About to navigate to /order-summary');
-        console.log('[ORDER SUBMIT] DEMO FLOW: Current URL before navigation:', window.location.href);
-        console.log('[ORDER SUBMIT] DEMO FLOW: Window object available:', typeof window !== 'undefined');
         if (typeof window !== 'undefined') {
-          console.log('[ORDER SUBMIT] DEMO FLOW: Setting window.location.href to /order-summary');
           window.location.href = '/order-summary';
-          console.log('[ORDER SUBMIT] DEMO FLOW: Navigation command executed');
         } else {
-          console.log('[ORDER SUBMIT] DEMO FLOW: Window not available, cannot navigate');
         }
         
-        console.log('[ORDER SUBMIT] DEMO FLOW: Returning from demo flow');
         return;
       }
 
       // For real orders, store order data and redirect to unified checkout page
-      console.log('[ORDER SUBMIT] REAL FLOW: Processing real order');
-      console.log('[ORDER SUBMIT] REAL FLOW: venueSlug =', venueSlug);
-      console.log('[ORDER SUBMIT] REAL FLOW: safeTable =', safeTable);
       
       // Order will only be created after successful payment
       const orderData = {
@@ -449,47 +352,28 @@ export default function CustomerOrderPage() {
           .join("; "),
       };
 
-      console.log('[ORDER SUBMIT] REAL FLOW: Storing order data for checkout:', orderData);
       
       // Store order data in localStorage for order summary page
-      console.log('[ORDER SUBMIT] REAL FLOW: Storing data in localStorage...');
-      console.log('[ORDER SUBMIT] REAL FLOW: Data to store:', orderData);
       localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
-      console.log('[ORDER SUBMIT] REAL FLOW: Stored in servio-pending-order key');
-      console.log('[ORDER SUBMIT] REAL FLOW: Order data stored in localStorage');
       
       // Verify storage
       const storedPending = localStorage.getItem('servio-pending-order');
-      console.log('[ORDER SUBMIT] REAL FLOW: Verification - servio-pending-order exists:', !!storedPending);
       
       // Redirect to order summary page - customer can choose to pay now or later
-      console.log('[ORDER SUBMIT] REAL FLOW: About to redirect to /order-summary');
-      console.log('[ORDER SUBMIT] REAL FLOW: Router object:', router);
-      console.log('[ORDER SUBMIT] REAL FLOW: Current URL before redirect:', typeof window !== 'undefined' ? window.location.href : 'SSR');
       
       // Clear loading state before navigation
-      console.log('[ORDER SUBMIT] REAL FLOW: Clearing loading state before navigation');
       setIsSubmitting(false);
       
       // Use window.location for reliable navigation
-      console.log('[ORDER SUBMIT] REAL FLOW: Using window.location for navigation');
-      console.log('[ORDER SUBMIT] REAL FLOW: About to navigate to /order-summary');
-      console.log('[ORDER SUBMIT] REAL FLOW: Current URL before navigation:', window.location.href);
-      console.log('[ORDER SUBMIT] REAL FLOW: Window object available:', typeof window !== 'undefined');
       if (typeof window !== 'undefined') {
-        console.log('[ORDER SUBMIT] REAL FLOW: Setting window.location.href to /order-summary');
         window.location.href = '/order-summary';
-        console.log('[ORDER SUBMIT] REAL FLOW: Navigation command executed');
       } else {
-        console.log('[ORDER SUBMIT] REAL FLOW: Window not available, cannot navigate');
       }
     } catch (error) {
       console.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
       console.error('[ORDER SUBMIT] ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       alert("Failed to prepare order. Please try again.");
-      console.log('[ORDER SUBMIT] ERROR: Setting isSubmitting to false due to error');
       setIsSubmitting(false);
-      console.log('[ORDER SUBMIT] ERROR: isSubmitting state cleared due to error');
     }
   };
 
@@ -581,17 +465,9 @@ export default function CustomerOrderPage() {
           {/* Menu */}
           <div className="lg:col-span-2">
         {(() => {
-          console.log('[MENU DEBUG] Rendering menu section');
-          console.log('[MENU DEBUG] loadingMenu:', loadingMenu);
-          console.log('[MENU DEBUG] menuError:', menuError);
-          console.log('[MENU DEBUG] menuItems.length:', menuItems.length);
           
           if (loadingMenu) {
-            return (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-              </div>
-            );
+            return null;
           }
           
           if (menuError) {
@@ -957,19 +833,6 @@ export default function CustomerOrderPage() {
                   </Button>
                   <Button
                     onClick={() => {
-                      console.log('[SUBMIT DEBUG] ===== SUBMIT ORDER BUTTON CLICKED =====');
-                      console.log('[SUBMIT DEBUG] Button click event triggered');
-                      console.log('[SUBMIT DEBUG] Current state:');
-                      console.log('[SUBMIT DEBUG] - isSubmitting:', isSubmitting);
-                      console.log('[SUBMIT DEBUG] - customerInfo:', customerInfo);
-                      console.log('[SUBMIT DEBUG] - customerInfo.name.trim():', customerInfo.name.trim());
-                      console.log('[SUBMIT DEBUG] - customerInfo.phone.trim():', customerInfo.phone.trim());
-                      console.log('[SUBMIT DEBUG] - cart length:', cart.length);
-                      console.log('[SUBMIT DEBUG] - cart items:', cart);
-                      console.log('[SUBMIT DEBUG] - venueSlug:', venueSlug);
-                      console.log('[SUBMIT DEBUG] - tableNumber:', tableNumber);
-                      console.log('[SUBMIT DEBUG] - isDemo:', isDemo);
-                      console.log('[SUBMIT DEBUG] Button disabled state:', isSubmitting || !customerInfo.name.trim() || !customerInfo.phone.trim());
                       submitOrder();
                     }}
                     className="flex-1"
