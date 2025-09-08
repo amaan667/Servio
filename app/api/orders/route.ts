@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     if (!url || !serviceKey) {
       return bad('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY', 500);
     }
-    const supabase = await createClient();
+    const supabase = createAdminClient(); // Use admin client to bypass RLS
 
     // Verify venue exists, create if it doesn't (for demo purposes)
     const { data: venue, error: venueErr } = await supabase
