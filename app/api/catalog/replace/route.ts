@@ -247,7 +247,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
         message: 'Catalog replaced successfully',
         result: {
           items_created: insertedItems?.length || 0,
-          categories_created: [...new Set(itemsToInsert.map(item => item.category))].length
+          categories_created: [...new Set(itemsToInsert.map((item: any) => item.category))].length
         }
       });
     } else {

@@ -32,6 +32,7 @@ export interface MenuItem {
   category: string;
   available: boolean;
   created_at: string;
+  image?: string; // image URL for menu items
 }
 
 export interface Order {

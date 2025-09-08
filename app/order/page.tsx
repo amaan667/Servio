@@ -17,17 +17,14 @@ import { demoMenuItems } from "@/data/demoMenuItems";
 
 import { useRouter } from "next/navigation";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { MenuItem as BaseMenuItem } from "@/lib/supabase";
 
-interface MenuItem {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  category: string;
-  available: boolean;
+// Local MenuItem interface for order page (extends global but makes some properties optional)
+interface MenuItem extends Omit<BaseMenuItem, 'venue_id' | 'created_at'> {
+  venue_id?: string;
+  created_at?: string;
   venue_name?: string; // added for display in header when loaded with join
   options?: Array<{ label: string; values: string[] }>; // modifiers/options
-  image?: string; // image URL for menu items
 }
 
 interface CartItem extends MenuItem {
