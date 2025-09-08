@@ -65,23 +65,23 @@ export default function CustomerOrderPage() {
       if (sessionParam) {
         console.log('[ORDER PAGE] Checking for existing order with session:', sessionParam);
         
-        const response = await fetch(`/api/orders/session/${sessionParam}/open`);
-        const result = await response.json();
-        
-        if (result.success && result.data) {
-          console.log('[ORDER PAGE] Found existing unpaid order:', result.data);
+        // Check localStorage for existing order data with this session
+        const storedOrderData = localStorage.getItem(`servio-order-${sessionParam}`);
+        if (storedOrderData) {
+          const orderData = JSON.parse(storedOrderData);
+          console.log('[ORDER PAGE] Found existing unpaid order in localStorage:', orderData);
           
           // Redirect to payment page with existing order data
           const checkoutData = {
-            venueId: result.data.venue_id,
+            venueId: orderData.venueId,
             venueName: 'Restaurant',
-            tableNumber: result.data.table_number,
-            customerName: result.data.customer_name,
-            customerPhone: result.data.customer_phone,
-            cart: result.data.items || [],
-            total: result.data.total_amount,
-            orderId: result.data.id,
-            orderNumber: result.data.id.slice(-6), // Use last 6 chars as order number
+            tableNumber: orderData.tableNumber,
+            customerName: orderData.customerName,
+            customerPhone: orderData.customerPhone,
+            cart: orderData.cart || [],
+            total: orderData.total,
+            orderId: orderData.orderId,
+            orderNumber: orderData.orderNumber,
             sessionId: sessionParam,
           };
           
@@ -96,22 +96,21 @@ export default function CustomerOrderPage() {
       if (storedSession && !sessionParam) {
         console.log('[ORDER PAGE] Checking localStorage session:', storedSession);
         
-        const response = await fetch(`/api/orders/session/${storedSession}/open`);
-        const result = await response.json();
-        
-        if (result.success && result.data) {
-          console.log('[ORDER PAGE] Found existing unpaid order in localStorage session:', result.data);
+        const storedOrderData = localStorage.getItem(`servio-order-${storedSession}`);
+        if (storedOrderData) {
+          const orderData = JSON.parse(storedOrderData);
+          console.log('[ORDER PAGE] Found existing unpaid order in localStorage session:', orderData);
           
           const checkoutData = {
-            venueId: result.data.venue_id,
+            venueId: orderData.venueId,
             venueName: 'Restaurant',
-            tableNumber: result.data.table_number,
-            customerName: result.data.customer_name,
-            customerPhone: result.data.customer_phone,
-            cart: result.data.items || [],
-            total: result.data.total_amount,
-            orderId: result.data.id,
-            orderNumber: result.data.id.slice(-6),
+            tableNumber: orderData.tableNumber,
+            customerName: orderData.customerName,
+            customerPhone: orderData.customerPhone,
+            cart: orderData.cart || [],
+            total: orderData.total,
+            orderId: orderData.orderId,
+            orderNumber: orderData.orderNumber,
             sessionId: storedSession,
           };
           
@@ -513,6 +512,29 @@ export default function CustomerOrderPage() {
 
       // Store checkout data for payment page
       localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
+      
+      // Store order data in localStorage for session management (since session_id column doesn't exist in DB yet)
+      const orderDataForSession = {
+        venueId: venueSlug,
+        tableNumber: safeTable,
+        customerName: customerInfo.name.trim(),
+        customerPhone: customerInfo.phone.trim(),
+        cart: cart.map((item) => ({
+          id: item.id && item.id.startsWith('demo-') ? null : item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          specialInstructions: item.specialInstructions || null,
+          image: (item as any).image || null,
+        })),
+        total: getTotalPrice(),
+        orderId: orderResult.data?.id || orderResult.id,
+        orderNumber: orderResult.data?.order_number || orderResult.order_number,
+        sessionId: sessionId,
+        paymentStatus: 'unpaid'
+      };
+      
+      localStorage.setItem(`servio-order-${sessionId}`, JSON.stringify(orderDataForSession));
       
       // Clear loading state before navigation
       setIsSubmitting(false);

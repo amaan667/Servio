@@ -33,23 +33,10 @@ export async function GET(
 
     console.log('[ORDERS SESSION] Looking for open order with session:', sessionId);
 
-    // Find any unpaid order for this session
-    const { data: order, error: fetchError } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('session_id', sessionId)
-      .eq('payment_status', 'unpaid')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error('[ORDERS SESSION] Error fetching order:', fetchError);
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Failed to fetch order' 
-      }, { status: 500 });
-    }
+    // Since session_id column doesn't exist in database yet, we'll use localStorage approach
+    // For now, return null to indicate no session-based order found
+    // This will be handled client-side using localStorage
+    const order = null;
 
     if (!order) {
       console.log('[ORDERS SESSION] No open order found for session:', sessionId);
@@ -58,13 +45,6 @@ export async function GET(
         data: null
       });
     }
-
-    console.log('[ORDERS SESSION] Found open order:', order.id);
-
-    return NextResponse.json({
-      success: true,
-      data: order
-    });
 
   } catch (error) {
     console.error('[ORDERS SESSION] Error:', error);

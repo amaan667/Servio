@@ -22,9 +22,7 @@ type OrderPayload = {
   order_status?: "placed" | "accepted" | "preparing" | "ready" | "served" | "cancelled" | "refunded";
   payment_status?: "unpaid" | "paid" | "till";
   payment_method?: "demo" | "stripe" | "till" | null;
-  table_id?: string | null;
-  session_id?: string | null;
-  source?: "qr" | "counter";
+  // Note: table_id, session_id, and source columns don't exist in current database schema
   scheduled_for?: string | null;
   prep_lead_minutes?: number;
 };
@@ -129,8 +127,8 @@ export async function POST(req: Request) {
     }
 
     // Auto-create table if it doesn't exist (for QR code scenarios)
-    let tableId = body.table_id || null;
-    if (body.table_number && !tableId) {
+    let tableId = null;
+    if (body.table_number) {
       console.log('[ORDERS POST] Checking if table exists for table_number:', body.table_number);
       
       // Check if table exists
@@ -220,9 +218,8 @@ export async function POST(req: Request) {
       order_status: body.order_status || 'placed', // Use provided status or default to 'placed'
       payment_status: body.payment_status || 'unpaid', // Use provided status or default to 'unpaid'
       payment_method: body.payment_method || null,
-      table_id: tableId, // Use the auto-created or existing table_id
-      session_id: body.session_id || null,
-      source: body.source || 'qr',
+      // Note: table_id, session_id, and source columns don't exist in current database schema
+      // These will be stored in localStorage for now until database schema is updated
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
@@ -261,8 +258,10 @@ export async function POST(req: Request) {
     const response = { 
       ok: true, 
       order: inserted?.[0] ?? null,
-      table_auto_created: tableId && !body.table_id, // True if we auto-created a table
-      table_id: tableId
+      table_auto_created: tableId !== null, // True if we auto-created a table
+      table_id: tableId,
+      session_id: (body as any).session_id || null, // Include session_id in response for client-side storage
+      source: (body as any).source || 'qr' // Include source in response for client-side storage
     };
     console.log('[ORDERS POST] ===== ORDER SUBMISSION COMPLETED SUCCESSFULLY =====');
     console.log('[ORDERS POST] Final response:', JSON.stringify(response, null, 2));
