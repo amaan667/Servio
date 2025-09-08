@@ -215,19 +215,28 @@ function fixMalformedJson(jsonString: string): string {
     fixed = fixed.substring(0, lastBrace + 1);
   }
   
-  // Fix common issues with unterminated strings
-  // Look for unescaped quotes in strings
-  fixed = fixed.replace(/([^\\])"([^"]*?)([^\\])"/g, (match, before, content, after) => {
-    // If the content contains unescaped quotes, escape them
-    const escapedContent = content.replace(/([^\\])"/g, '$1\\"');
-    return `${before}"${escapedContent}${after}"`;
-  });
-  
-  // Fix trailing commas
-  fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
-  
-  // Fix missing quotes around keys
-  fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+  // Import and use the enhanced JSON repair function
+  try {
+    const { repairMenuJSON } = require('./pdfImporter/jsonRepair');
+    fixed = repairMenuJSON(fixed);
+  } catch (error) {
+    console.log('[IMPROVED PARSER] Could not use enhanced JSON repair, using basic fixes');
+    
+    // Fallback to basic fixes
+    // Fix common issues with unterminated strings
+    // Look for unescaped quotes in strings
+    fixed = fixed.replace(/([^\\])"([^"]*?)([^\\])"/g, (match, before, content, after) => {
+      // If the content contains unescaped quotes, escape them
+      const escapedContent = content.replace(/([^\\])"/g, '$1\\"');
+      return `${before}"${escapedContent}${after}"`;
+    });
+    
+    // Fix trailing commas
+    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Fix missing quotes around keys
+    fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+  }
   
   return fixed;
 }

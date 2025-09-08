@@ -18,31 +18,215 @@ export function repairMenuJSON(brokenJSON: string): string {
     console.log('[JSON_REPAIR] JSON needs repair, error:', error.message);
   }
   
+  // Try the new robust reconstruction approach first
+  try {
+    const reconstructed = reconstructJSONFromMalformed(brokenJSON);
+    if (reconstructed) {
+      console.log('[JSON_REPAIR] Successfully reconstructed JSON');
+      return reconstructed;
+    }
+  } catch (error) {
+    console.log('[JSON_REPAIR] Reconstruction failed, trying traditional repair');
+  }
+  
   let repaired = brokenJSON;
   
-  // Step 1: Fix duplicate keys (keep the last occurrence)
+  // Step 1: Fix complex malformations (orphaned properties, incomplete objects)
+  repaired = fixComplexMalformations(repaired);
+  
+  // Step 2: Fix duplicate keys (keep the last occurrence)
   repaired = fixDuplicateKeys(repaired);
   
-  // Step 2: Fix missing commas between objects
+  // Step 3: Fix missing commas between objects
   repaired = fixMissingCommas(repaired);
   
-  // Step 3: Fix unterminated strings
+  // Step 4: Fix unterminated strings
   repaired = fixUnterminatedStrings(repaired);
   
-  // Step 4: Fix malformed object structures
+  // Step 5: Fix malformed object structures
   repaired = fixMalformedObjects(repaired);
   
-  // Step 5: Remove trailing commas
+  // Step 6: Remove trailing commas
   repaired = removeTrailingCommas(repaired);
   
-  // Step 6: Ensure proper array structure
+  // Step 7: Ensure proper array structure
   repaired = fixArrayStructure(repaired);
   
-  // Step 7: Validate and clean items
+  // Step 8: Validate and clean items
   repaired = validateAndCleanItems(repaired);
   
   console.log('[JSON_REPAIR] JSON repair completed');
   return repaired;
+}
+
+/**
+ * Reconstructs JSON by extracting valid properties and rebuilding the structure
+ */
+function reconstructJSONFromMalformed(json: string): string | null {
+  console.log('[JSON_REPAIR] Attempting JSON reconstruction...');
+  
+  try {
+    // Extract all property-value pairs using regex
+    const propertyPattern = /"([^"]+)":\s*([^,}]+)/g;
+    const properties: Array<{key: string, value: string}> = [];
+    let match;
+    
+    while ((match = propertyPattern.exec(json)) !== null) {
+      const key = match[1];
+      const value = match[2].trim();
+      
+      // Only include valid properties
+      if (key && value && !value.includes('{') && !value.includes('}')) {
+        properties.push({ key, value });
+      }
+    }
+    
+    // Group properties into items based on common patterns
+    const items: any[] = [];
+    let currentItem: any = {};
+    
+    for (const prop of properties) {
+      // If we encounter a title and we already have a title, start a new item
+      if (prop.key === 'title' && currentItem.title) {
+        if (isValidItem(currentItem)) {
+          items.push(currentItem);
+        }
+        currentItem = {};
+      }
+      
+      currentItem[prop.key] = cleanValue(prop.value);
+    }
+    
+    // Add the last item if it's valid
+    if (isValidItem(currentItem)) {
+      items.push(currentItem);
+    }
+    
+    // Filter out invalid items
+    const validItems = items.filter(item => 
+      item.title && 
+      item.category && 
+      item.price && 
+      parseFloat(item.price) > 0
+    );
+    
+    if (validItems.length === 0) {
+      return null;
+    }
+    
+    // Reconstruct the JSON
+    const reconstructed = {
+      items: validItems.map(item => ({
+        title: item.title,
+        category: item.category,
+        price: parseFloat(item.price),
+        currency: 'GBP',
+        description: item.description || ''
+      }))
+    };
+    
+    return JSON.stringify(reconstructed, null, 2);
+    
+  } catch (error) {
+    console.log('[JSON_REPAIR] Reconstruction failed:', error);
+    return null;
+  }
+}
+
+/**
+ * Checks if an item has the minimum required properties
+ */
+function isValidItem(item: any): boolean {
+  return item.title && item.category && item.price;
+}
+
+/**
+ * Cleans a property value by removing quotes and fixing common issues
+ */
+function cleanValue(value: string): string {
+  // Remove surrounding quotes
+  let cleaned = value.replace(/^["']|["']$/g, '');
+  
+  // Fix common issues
+  cleaned = cleaned.replace(/\\"/g, '"');
+  cleaned = cleaned.replace(/\\n/g, ' ');
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  
+  return cleaned;
+}
+
+/**
+ * Fixes complex malformations like orphaned properties and incomplete objects
+ */
+function fixComplexMalformations(json: string): string {
+  console.log('[JSON_REPAIR] Fixing complex malformations...');
+  
+  let fixed = json;
+  
+  // Step 1: Fix the specific pattern in the problematic JSON
+  // Handle orphaned properties that appear between objects
+  fixed = fixed.replace(/},\s*"([^"]+)":\s*([^,}]+),\s*{\s*"title"/g, (match, prop, value) => {
+    return `},\n    {\n      "${prop}": ${value},\n      "title"`;
+  });
+  
+  // Step 2: Fix objects with duplicate properties (keep the last one)
+  // This handles cases like: "title": "Labneh", "category": "STARTERS", "title": "Tacos"
+  fixed = fixDuplicatePropertiesInObjects(fixed);
+  
+  // Step 3: Fix missing commas between properties in the same object
+  fixed = fixed.replace(/"([^"]+)":\s*([^,}]+)\s*"([^"]+)":/g, '"$1": $2,\n      "$3":');
+  
+  // Step 4: Fix orphaned properties that appear after objects
+  fixed = fixed.replace(/}\s*,\s*"([^"]+)":\s*([^,}]+),\s*{\s*"title"/g, (match, prop, value) => {
+    return `},\n    {\n      "${prop}": ${value},\n      "title"`;
+  });
+  
+  // Step 5: Fix incomplete objects (missing closing braces)
+  fixed = fixed.replace(/"([^"]+)":\s*([^,}]+)\s*{\s*"title"/g, (match, prop, value) => {
+    return `"${prop}": ${value}\n    },\n    {\n      "title"`;
+  });
+  
+  return fixed;
+}
+
+/**
+ * Fixes duplicate properties within individual objects
+ */
+function fixDuplicatePropertiesInObjects(json: string): string {
+  console.log('[JSON_REPAIR] Fixing duplicate properties in objects...');
+  
+  // Find all objects and fix duplicates within each
+  const objectPattern = /{\s*([^}]*?)\s*}/g;
+  
+  return json.replace(objectPattern, (match, content) => {
+    // Split properties and remove duplicates (keep last occurrence)
+    const properties = content.split(',').map((prop: string) => prop.trim()).filter(Boolean);
+    const uniqueProperties = new Map();
+    
+    // Process properties in reverse order to keep the last occurrence
+    for (let i = properties.length - 1; i >= 0; i--) {
+      const prop = properties[i];
+      const colonIndex = prop.indexOf(':');
+      if (colonIndex > 0) {
+        const key = prop.substring(0, colonIndex).trim();
+        const value = prop.substring(colonIndex + 1).trim();
+        
+        // Clean up the key (remove quotes if present)
+        const cleanKey = key.replace(/^["']|["']$/g, '');
+        
+        if (!uniqueProperties.has(cleanKey)) {
+          uniqueProperties.set(cleanKey, value);
+        }
+      }
+    }
+    
+    // Rebuild the object with unique properties
+    const uniqueProps = Array.from(uniqueProperties.entries())
+      .map(([key, value]) => `"${key}": ${value}`)
+      .join(',\n      ');
+    
+    return `{\n      ${uniqueProps}\n    }`;
+  });
 }
 
 /**
