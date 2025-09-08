@@ -545,12 +545,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         </div>
 
         {/* Orders List */}
-        {(loading && !isRefreshing) ? (
-          <div className="flex items-center justify-center py-8">
-            <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
-            <span className="ml-2 text-gray-600">Loading orders...</span>
-          </div>
-        ) : error ? (
+        {error ? (
           <Card>
             <CardContent className="py-8 text-center">
               <Alert variant="destructive" className="mb-4">

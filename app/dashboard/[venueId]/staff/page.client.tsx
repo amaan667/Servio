@@ -100,13 +100,7 @@ export default function StaffPageClient({ venueId }: { venueId: string }) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-      </div>
-    );
-  }
+  // Remove loading state - render immediately with empty state if needed
 
   return (
     <div className="space-y-6">

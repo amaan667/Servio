@@ -57,7 +57,7 @@ export default function CustomerOrderPage() {
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [loadingMenu, setLoadingMenu] = useState(true);
+  const [loadingMenu, setLoadingMenu] = useState(false); // Start with false for instant loading
   const [menuError, setMenuError] = useState<string | null>(null);
   const [isDemoFallback, setIsDemoFallback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -467,9 +467,7 @@ export default function CustomerOrderPage() {
           <div className="lg:col-span-2">
         {(() => {
           
-          if (loadingMenu) {
-            return null;
-          }
+          // Remove loading check - render immediately
           
           if (menuError) {
             return (

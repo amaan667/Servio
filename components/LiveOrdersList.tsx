@@ -5,16 +5,7 @@ import { useLiveOrders } from '@/hooks/useLiveOrders'
 export default function LiveOrdersList({ venueId }: { venueId: string }) {
   const { data, isLoading, isError, error } = useLiveOrders(venueId)
 
-  if (isLoading) {
-    return (
-      <div className="text-slate-500">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-500"></div>
-          <span>Loading orders…</span>
-        </div>
-      </div>
-    )
-  }
+  // Remove loading state - render immediately with empty state if needed
 
   if (isError) {
     return (

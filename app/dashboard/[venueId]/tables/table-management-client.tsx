@@ -113,18 +113,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
     refetchCounters();
   };
 
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-7xl p-4 md:p-6">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
-            <p className="text-gray-600">Loading tables...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Remove loading state - render immediately with empty state if needed
 
   if (error) {
     return (
@@ -251,7 +240,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tables Set Up</p>
                   <p className="text-2xl font-bold">
-                    {countersLoading ? '...' : (apiCounters?.tables_set_up ?? tables.length)}
+                    {apiCounters?.tables_set_up ?? tables.length}
                   </p>
                 </div>
                 <Users className="h-8 w-8 text-gray-400" />
@@ -265,7 +254,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Free Now</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {countersLoading ? '...' : (apiCounters?.free_now ?? filterCounts.free)}
+                    {apiCounters?.free_now ?? filterCounts.free}
                   </p>
                 </div>
                 <Clock className="h-8 w-8 text-green-400" />
@@ -279,7 +268,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
                 <div>
                   <p className="text-sm font-medium text-gray-600">In Use Now</p>
                   <p className="text-2xl font-bold text-amber-600">
-                    {countersLoading ? '...' : (apiCounters?.in_use_now ?? filterCounts.occupied)}
+                    {apiCounters?.in_use_now ?? filterCounts.occupied}
                   </p>
                 </div>
                 <Users className="h-8 w-8 text-amber-400" />
@@ -293,7 +282,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Reserved Now</p>
                   <p className="text-2xl font-bold text-red-600">
-                    {countersLoading ? '...' : (apiCounters?.reserved_now ?? 0)}
+                    {apiCounters?.reserved_now ?? 0}
                   </p>
                 </div>
                 <Calendar className="h-8 w-8 text-red-400" />
@@ -307,7 +296,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Reserved Later</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    {countersLoading ? '...' : (apiCounters?.reserved_later ?? 0)}
+                    {apiCounters?.reserved_later ?? 0}
                   </p>
                 </div>
                 <Calendar className="h-8 w-8 text-blue-400" />
