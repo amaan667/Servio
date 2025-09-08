@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 export interface TableCounters {
   tables_set_up: number;
@@ -53,6 +54,48 @@ export function useTableCounters(venueId: string) {
   useEffect(() => {
     fetchCounters();
   }, [fetchCounters]);
+
+  // Add real-time updates
+  useEffect(() => {
+    if (!venueId) return;
+
+    const supabase = createClient();
+    
+    // Subscribe to table and session changes
+    const subscription = supabase
+      .channel('table-counters-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tables',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        () => {
+          console.log('[TABLE COUNTERS] Table changed, refreshing counters');
+          fetchCounters();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'table_sessions',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        () => {
+          console.log('[TABLE COUNTERS] Table session changed, refreshing counters');
+          fetchCounters();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [venueId, fetchCounters]);
 
   return {
     counters,

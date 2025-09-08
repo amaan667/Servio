@@ -20,6 +20,7 @@ import { useTableCounters } from '@/hooks/useTableCounters';
 import { TableCard } from '@/components/table-management/TableCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFilters } from '@/components/table-management/TabFilters';
+import { createClient } from '@/lib/supabase/client';
 
 type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLOSED';
 
@@ -112,6 +113,48 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
     refetch();
     refetchCounters();
   };
+
+  // Add real-time updates for counters
+  useEffect(() => {
+    if (!venueId) return;
+
+    const supabase = createClient();
+    
+    // Subscribe to table changes
+    const subscription = supabase
+      .channel('table-management-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tables',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        () => {
+          console.log('[TABLE MANAGEMENT] Table changed, refreshing counters');
+          refetchCounters();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'table_sessions',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        () => {
+          console.log('[TABLE MANAGEMENT] Table session changed, refreshing counters');
+          refetchCounters();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [venueId, refetchCounters]);
 
   // Remove loading state - render immediately with empty state if needed
 
