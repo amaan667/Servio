@@ -19,10 +19,12 @@ type OrderPayload = {
   items: OrderItem[];
   total_amount: number;
   notes?: string | null;
-  order_status?: string;
-  payment_status?: string;
-  payment_method?: string;
-  // table_id and session_id removed - not in database schema
+  order_status?: "placed" | "accepted" | "preparing" | "ready" | "served" | "cancelled" | "refunded";
+  payment_status?: "unpaid" | "paid" | "till";
+  payment_method?: "demo" | "stripe" | "till" | null;
+  table_id?: string | null;
+  session_id?: string | null;
+  source?: "qr" | "counter";
   scheduled_for?: string | null;
   prep_lead_minutes?: number;
 };
@@ -126,6 +128,70 @@ export async function POST(req: Request) {
       console.log('[ORDERS POST] Demo venue created successfully:', newVenue);
     }
 
+    // Auto-create table if it doesn't exist (for QR code scenarios)
+    let tableId = body.table_id || null;
+    if (body.table_number && !tableId) {
+      console.log('[ORDERS POST] Checking if table exists for table_number:', body.table_number);
+      
+      // Check if table exists
+      const { data: existingTable } = await supabase
+        .from('tables')
+        .select('id, label')
+        .eq('venue_id', body.venue_id)
+        .eq('label', body.table_number.toString())
+        .maybeSingle();
+
+      if (existingTable) {
+        console.log('[ORDERS POST] Table found:', existingTable.id);
+        tableId = existingTable.id;
+      } else {
+        console.log('[ORDERS POST] Table not found, auto-creating table for QR code...');
+        
+        // Auto-create the table
+        const { data: newTable, error: tableCreateErr } = await supabase
+          .from('tables')
+          .insert({
+            venue_id: body.venue_id,
+            label: body.table_number.toString(),
+            seat_count: 4, // Default seat count
+            area: null,
+            is_active: true
+          })
+          .select('id, label')
+          .single();
+
+        if (tableCreateErr) {
+          console.log('[ORDERS POST] Failed to auto-create table:', tableCreateErr);
+          return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
+        }
+
+        console.log('[ORDERS POST] Table auto-created successfully:', newTable.id);
+        console.log('[ORDERS POST] Auto-created table details:', {
+          table_id: newTable.id,
+          table_label: newTable.label,
+          venue_id: body.venue_id,
+          seat_count: 4
+        });
+        tableId = newTable.id;
+
+        // Create a table session for the new table
+        const { error: sessionErr } = await supabase
+          .from('table_sessions')
+          .insert({
+            venue_id: body.venue_id,
+            table_id: newTable.id,
+            status: 'FREE',
+            opened_at: new Date().toISOString(),
+            closed_at: null
+          });
+
+        if (sessionErr) {
+          console.log('[ORDERS POST] Failed to create table session:', sessionErr);
+          // Don't fail the request if session creation fails
+        }
+      }
+    }
+
     // Recompute total server-side for safety
     const computedTotal = body.items.reduce((sum, it) => {
       const qty = Number(it.quantity) || 0;
@@ -151,10 +217,12 @@ export async function POST(req: Request) {
       items: safeItems,
       total_amount: finalTotal,
       notes: body.notes ?? null,
-      order_status: body.order_status || 'PLACED', // Use provided status or default to 'PLACED'
-      payment_status: body.payment_status || 'UNPAID', // Use provided status or default to 'UNPAID'
-      payment_method: body.payment_method || 'online',
-      // table_id and session_id removed - not in database schema
+      order_status: body.order_status || 'placed', // Use provided status or default to 'placed'
+      payment_status: body.payment_status || 'unpaid', // Use provided status or default to 'unpaid'
+      payment_method: body.payment_method || null,
+      table_id: tableId, // Use the auto-created or existing table_id
+      session_id: body.session_id || null,
+      source: body.source || 'qr',
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
@@ -190,7 +258,12 @@ export async function POST(req: Request) {
     // Note: items are embedded in orders payload in this schema; if you also mirror rows in order_items elsewhere, log success after that insert
     console.log('[ORDERS POST] order_items insert success (embedded items)');
     
-    const response = { ok: true, order: inserted?.[0] ?? null };
+    const response = { 
+      ok: true, 
+      order: inserted?.[0] ?? null,
+      table_auto_created: tableId && !body.table_id, // True if we auto-created a table
+      table_id: tableId
+    };
     console.log('[ORDERS POST] ===== ORDER SUBMISSION COMPLETED SUCCESSFULLY =====');
     console.log('[ORDERS POST] Final response:', JSON.stringify(response, null, 2));
     console.log('[ORDERS POST] Response sent at:', new Date().toISOString());

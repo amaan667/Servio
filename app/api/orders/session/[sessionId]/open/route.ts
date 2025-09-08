@@ -6,15 +6,15 @@ export const runtime = 'nodejs';
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
-    const { orderId } = await params;
+    const { sessionId } = await params;
 
-    if (!orderId) {
+    if (!sessionId) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Order ID is required' 
+        error: 'Session ID is required' 
       }, { status: 400 });
     }
 
@@ -31,24 +31,35 @@ export async function GET(
       }
     );
 
-    console.log('[ORDERS GET] Fetching order:', orderId);
+    console.log('[ORDERS SESSION] Looking for open order with session:', sessionId);
 
-    // Get the order with all details
+    // Find any unpaid order for this session
     const { data: order, error: fetchError } = await supabase
       .from('orders')
       .select('*')
-      .eq('id', orderId)
-      .single();
+      .eq('session_id', sessionId)
+      .eq('payment_status', 'unpaid')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (fetchError) {
-      console.error('[ORDERS GET] Error fetching order:', fetchError);
+      console.error('[ORDERS SESSION] Error fetching order:', fetchError);
       return NextResponse.json({ 
         success: false, 
-        error: 'Order not found' 
-      }, { status: 404 });
+        error: 'Failed to fetch order' 
+      }, { status: 500 });
     }
 
-    console.log('[ORDERS GET] Found order:', order.id);
+    if (!order) {
+      console.log('[ORDERS SESSION] No open order found for session:', sessionId);
+      return NextResponse.json({
+        success: true,
+        data: null
+      });
+    }
+
+    console.log('[ORDERS SESSION] Found open order:', order.id);
 
     return NextResponse.json({
       success: true,
@@ -56,7 +67,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('[ORDERS GET] Error:', error);
+    console.error('[ORDERS SESSION] Error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error' 

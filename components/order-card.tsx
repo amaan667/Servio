@@ -90,6 +90,12 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      case 'unpaid':
+        return 'bg-red-100 text-red-800';
+      case 'till':
+        return 'bg-yellow-100 text-yellow-800';
       case 'PAID':
         return 'bg-green-100 text-green-800';
       case 'UNPAID':
@@ -226,7 +232,10 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
             <span className="ml-1">{order.order_status.replace('_', ' ')}</span>
           </Badge>
           <Badge className={getPaymentStatusColor(order.payment_status)}>
-            {order.payment_status}
+            {order.payment_status === 'paid' ? '✅ Paid' :
+             order.payment_status === 'unpaid' ? '❌ Unpaid' :
+             order.payment_status === 'till' ? '🏪 Till' :
+             order.payment_status}
           </Badge>
         </div>
 

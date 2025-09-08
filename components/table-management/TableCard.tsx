@@ -349,6 +349,12 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
               <Users className="h-3 w-3 mr-1" />
               {table.seat_count} seats
             </Badge>
+            {/* Show QR indicator if this table was likely created from QR code */}
+            {table.label && /^\d+$/.test(table.label) && (
+              <Badge variant="outline" className="text-xs text-blue-600 border-blue-600">
+                📱 QR
+              </Badge>
+            )}
           </div>
           
           <div className="flex items-center gap-1">
@@ -471,6 +477,16 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
                   {table.order_status && (
                     <Badge variant="outline" className="text-xs">
                       {table.order_status}
+                    </Badge>
+                  )}
+                  {table.payment_status && (
+                    <Badge 
+                      variant={table.payment_status === 'paid' ? 'default' : 
+                              table.payment_status === 'till' ? 'secondary' : 'destructive'}
+                      className="text-xs"
+                    >
+                      {table.payment_status === 'paid' ? '✅ Paid' :
+                       table.payment_status === 'till' ? '🏪 Till' : '❌ Unpaid'}
                     </Badge>
                   )}
                 </div>

@@ -39,14 +39,17 @@ export interface Order {
   id: string;
   venue_id: string;
   table_number: number;
+  table_id?: string | null; // For table-bound orders
+  session_id?: string | null; // Guest session token
+  source?: "qr" | "counter"; // Order source
   customer_name: string;
   customer_phone?: string;
   customer_email?: string;
-  order_status: string;
+  order_status: "placed" | "accepted" | "preparing" | "ready" | "served" | "cancelled" | "refunded";
   total_amount: number;
   notes?: string;
-  payment_method?: string;
-  payment_status?: string;
+  payment_method?: "demo" | "stripe" | "till" | null;
+  payment_status?: "unpaid" | "paid" | "till";
   scheduled_for?: string;
   prep_lead_minutes?: number;
   items: Array<{
@@ -363,14 +366,16 @@ export async function createOrder(orderData: {
     quantity: number;
     price: number;
     item_name: string;
+    specialInstructions?: string;
   }>;
   total_amount: number;
   notes?: string;
-  order_status?: string;
-  payment_status?: string;
-  payment_method?: string;
+  order_status?: "placed" | "accepted" | "preparing" | "ready" | "served" | "cancelled" | "refunded";
+  payment_status?: "unpaid" | "paid" | "till";
+  payment_method?: "demo" | "stripe" | "till" | null;
   table_id?: string | null;
   session_id?: string | null;
+  source?: "qr" | "counter";
 }) {
   try {
     console.log('[ORDER CREATION DEBUG] ===== CREATE ORDER FUNCTION CALLED =====');
@@ -402,14 +407,15 @@ export async function createOrder(orderData: {
       table_number: orderData.table_number,
       customer_name: orderData.customer_name,
       customer_phone: orderData.customer_phone,
-      order_status: "PLACED", // Always start with "PLACED" status
-      payment_status: orderData.payment_status || "UNPAID", // Default to unpaid
+      order_status: orderData.order_status || "placed", // Always start with "placed" status
+      payment_status: orderData.payment_status || "unpaid", // Default to unpaid
       total_amount: calculatedTotal, // Always use calculated total
       notes: orderData.notes,
       items: orderData.items, // Store items as JSONB
-      payment_method: orderData.payment_method || "online",
+      payment_method: orderData.payment_method || null,
       table_id: orderData.table_id || null, // Optional table_id for flexibility
       session_id: orderData.session_id || null, // Optional session_id for non-table orders
+      source: orderData.source || "qr", // Default to QR source
     };
     console.log('[ORDER CREATION DEBUG] Insert data prepared:', insertData);
     console.log('[ORDER CREATION DEBUG] Calling Supabase insert...');

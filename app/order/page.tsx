@@ -38,7 +38,7 @@ export default function CustomerOrderPage() {
   const tableNumber = searchParams?.get("table") || "1";
   const isDemo = searchParams?.get("demo") === "1";
 
-  // Initialize page parameters
+  // Initialize page parameters and check for existing orders
   useEffect(() => {
     
     // Log to server-side for deploy logs
@@ -52,7 +52,80 @@ export default function CustomerOrderPage() {
         url: window.location.href
       })
     });
+
+    // Check for existing unpaid orders for this table/session
+    checkForExistingOrder();
   }, [venueSlug, tableNumber, isDemo, searchParams]);
+
+  const checkForExistingOrder = async () => {
+    try {
+      // Check if there's a session parameter in the URL
+      const sessionParam = searchParams?.get('session');
+      
+      if (sessionParam) {
+        console.log('[ORDER PAGE] Checking for existing order with session:', sessionParam);
+        
+        const response = await fetch(`/api/orders/session/${sessionParam}/open`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          console.log('[ORDER PAGE] Found existing unpaid order:', result.data);
+          
+          // Redirect to payment page with existing order data
+          const checkoutData = {
+            venueId: result.data.venue_id,
+            venueName: 'Restaurant',
+            tableNumber: result.data.table_number,
+            customerName: result.data.customer_name,
+            customerPhone: result.data.customer_phone,
+            cart: result.data.items || [],
+            total: result.data.total_amount,
+            orderId: result.data.id,
+            orderNumber: result.data.id.slice(-6), // Use last 6 chars as order number
+            sessionId: sessionParam,
+          };
+          
+          localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
+          window.location.href = '/payment';
+          return;
+        }
+      }
+      
+      // Also check localStorage for any existing session data
+      const storedSession = localStorage.getItem('servio-current-session');
+      if (storedSession && !sessionParam) {
+        console.log('[ORDER PAGE] Checking localStorage session:', storedSession);
+        
+        const response = await fetch(`/api/orders/session/${storedSession}/open`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          console.log('[ORDER PAGE] Found existing unpaid order in localStorage session:', result.data);
+          
+          const checkoutData = {
+            venueId: result.data.venue_id,
+            venueName: 'Restaurant',
+            tableNumber: result.data.table_number,
+            customerName: result.data.customer_name,
+            customerPhone: result.data.customer_phone,
+            cart: result.data.items || [],
+            total: result.data.total_amount,
+            orderId: result.data.id,
+            orderNumber: result.data.id.slice(-6),
+            sessionId: storedSession,
+          };
+          
+          localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
+          window.location.href = '/payment';
+          return;
+        }
+      }
+      
+    } catch (error) {
+      console.error('[ORDER PAGE] Error checking for existing order:', error);
+      // Continue with normal flow if check fails
+    }
+  };
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -354,6 +427,12 @@ export default function CustomerOrderPage() {
       // For real orders, create the order immediately in the database
       console.log('[ORDER SUBMIT] Creating order immediately...');
       
+      // Generate session ID for this order
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Store session in localStorage for future QR scans
+      localStorage.setItem('servio-current-session', sessionId);
+      
       const orderData = {
         venue_id: venueSlug,
         table_number: safeTable,
@@ -364,15 +443,18 @@ export default function CustomerOrderPage() {
           quantity: item.quantity,
           price: item.price,
           item_name: item.name,
+          specialInstructions: item.specialInstructions || null,
         })),
         total_amount: getTotalPrice(),
         notes: cart
           .filter((item) => item.specialInstructions)
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
-        order_status: 'PLACED',
-        payment_status: 'UNPAID', // Start as unpaid
-        payment_method: 'PENDING', // Will be updated based on payment choice
+        order_status: 'placed',
+        payment_status: 'unpaid', // Start as unpaid
+        payment_method: null, // Will be updated based on payment choice
+        session_id: sessionId,
+        source: 'qr',
       };
 
       // Create the order immediately via API
@@ -398,6 +480,11 @@ export default function CustomerOrderPage() {
 
       const orderResult = await response.json();
       console.log('[ORDER SUBMIT] Order created successfully:', orderResult);
+      
+      // Check if a table was auto-created
+      if (orderResult.table_auto_created) {
+        console.log('[ORDER SUBMIT] Table was auto-created for QR code:', orderResult.table_id);
+      }
 
       // Store order data with order ID for payment page
       const checkoutData = {
@@ -421,6 +508,7 @@ export default function CustomerOrderPage() {
           .join("; "),
         orderId: orderResult.data?.id || orderResult.id, // Include the created order ID
         orderNumber: orderResult.data?.order_number || orderResult.order_number,
+        sessionId: sessionId, // Include session ID for resume functionality
       };
 
       // Store checkout data for payment page

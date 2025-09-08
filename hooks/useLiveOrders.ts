@@ -9,6 +9,8 @@ export type Order = {
   customer_phone?: string
   customer_email?: string
   order_status: string
+  payment_status?: string
+  payment_method?: string
   total_amount: number
   items: Array<{
     menu_item_id: string
@@ -60,7 +62,7 @@ export function useLiveOrders(venueId: string) {
       const queryPromise = supabase
         .from('orders')
         .select(
-          'id, venue_id, table_number, customer_name, customer_phone, customer_email, order_status, total_amount, items, created_at, updated_at',
+          'id, venue_id, table_number, customer_name, customer_phone, customer_email, order_status, payment_status, payment_method, total_amount, items, created_at, updated_at',
           { count: 'exact' }
         )
         .eq('venue_id', venueId)

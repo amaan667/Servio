@@ -3,43 +3,55 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, ArrowLeft, CreditCard, Clock } from "lucide-react";
-import { createOrder, updateOrderPaymentStatus } from "@/lib/supabase";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Check, 
+  ArrowLeft, 
+  CreditCard, 
+  Clock, 
+  Shield,
+  Receipt,
+  Star,
+  Loader2
+} from "lucide-react";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 import { OrderTimeline } from "@/components/order-timeline";
 
 interface CheckoutData {
   venueId: string;
+  venueName?: string;
   tableNumber: number;
   cart: Array<{
     id: string;
     name: string;
     price: number;
     quantity: number;
+    specialInstructions?: string;
   }>;
   total: number;
   tableId?: string | null;
   sessionId?: string | null;
-  orderId?: string; // The ID of the already created order
-  orderNumber?: string; // The order number for display
-  customerName?: string; // Customer name from order
-  customerPhone?: string; // Customer phone from order
+  orderId?: string;
+  orderNumber?: string;
+  customerName?: string;
+  customerPhone?: string;
 }
+
+type PaymentAction = 'demo' | 'stripe' | 'till' | 'later';
 
 export default function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentAction, setPaymentAction] = useState<PaymentAction | null>(null);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
 
   useEffect(() => {
     // Get checkout data from localStorage
@@ -53,8 +65,8 @@ export default function PaymentPage() {
     }
   }, [router]);
 
-  const handlePayment = async () => {
-    console.log('[PAYMENT DEBUG] ===== PAY NOW HANDLER STARTED =====');
+  const handlePayment = async (action: PaymentAction) => {
+    console.log('[PAYMENT DEBUG] ===== PAYMENT HANDLER STARTED =====', action);
     
     if (!checkoutData || !checkoutData.orderId) {
       console.log('[PAYMENT DEBUG] ERROR: Missing required data');
@@ -62,40 +74,62 @@ export default function PaymentPage() {
       return;
     }
 
-    setError(null); // Clear any previous errors
+    setError(null);
     setIsProcessing(true);
+    setPaymentAction(action);
 
     try {
-      // Step 1: Process payment (order already exists)
-      console.log('[PAYMENT DEBUG] Step 1: Processing payment for existing order...');
-      
-      // Simulate payment processing (in production, this would be Stripe/real payment)
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate payment delay
-      
-      // For demo purposes, assume payment always succeeds
-      const paymentSuccess = true;
-      
-      if (paymentSuccess) {
-        // Step 2: Update payment status to paid
-        console.log('[PAYMENT DEBUG] Step 2: Payment successful, updating status...');
-        const updateResult = await updateOrderPaymentStatus(
-          checkoutData.orderId, 
-          'paid', 
-          'online'
-        );
-        
-        if (!updateResult.success) {
-          console.error('[PAYMENT DEBUG] Failed to update payment status:', updateResult.message);
-          throw new Error('Failed to update payment status');
-        }
-        
-        setOrderNumber(checkoutData.orderNumber || "ORD-001");
-        setPaymentComplete(true);
-        localStorage.removeItem("servio-checkout-data");
-      } else {
-        // Payment failed - order exists but remains unpaid
-        throw new Error('Payment failed');
+      let endpoint = '';
+      let expectedStatus = '';
+      let expectedMethod = '';
+
+      switch (action) {
+        case 'demo':
+          endpoint = '/api/pay/demo';
+          expectedStatus = 'paid';
+          expectedMethod = 'demo';
+          break;
+        case 'stripe':
+          endpoint = '/api/pay/stripe';
+          expectedStatus = 'paid';
+          expectedMethod = 'stripe';
+          break;
+        case 'till':
+          endpoint = '/api/pay/till';
+          expectedStatus = 'till';
+          expectedMethod = 'till';
+          break;
+        case 'later':
+          endpoint = '/api/pay/later';
+          expectedStatus = 'unpaid';
+          expectedMethod = 'later';
+          break;
       }
+
+      console.log('[PAYMENT DEBUG] Calling endpoint:', endpoint);
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          order_id: checkoutData.orderId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Payment failed');
+      }
+
+      console.log('[PAYMENT DEBUG] Payment successful:', result);
+      
+      setOrderNumber(checkoutData.orderNumber || "ORD-001");
+      setPaymentComplete(true);
+      localStorage.removeItem("servio-checkout-data");
+
     } catch (error) {
       console.error('[PAYMENT DEBUG] Payment error:', error);
       setError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
@@ -104,145 +138,41 @@ export default function PaymentPage() {
     }
   };
 
-  const handlePayAtTill = async () => {
-    console.log('[PAY AT TILL DEBUG] ===== PAY AT TILL HANDLER STARTED =====');
-    
-    if (!checkoutData || !checkoutData.orderId) {
-      console.log('[PAY AT TILL DEBUG] ERROR: Missing required data');
-      setError('Missing order information. Please try again.');
-      return;
-    }
-
-    setError(null); // Clear any previous errors
-    setIsProcessing(true);
-
-    try {
-      // Step 1: Update existing order to 'till' payment status
-      console.log('[PAY AT TILL DEBUG] Step 1: Updating order for pay at till...');
-      
-      const updateResult = await updateOrderPaymentStatus(
-        checkoutData.orderId, 
-        'unpaid', 
-        'till'
-      );
-
-      if (updateResult.success) {
-        console.log('[PAY AT TILL DEBUG] Order updated successfully:', updateResult.data);
-        
-        setOrderNumber(checkoutData.orderNumber || "ORD-001");
-        setPaymentComplete(true);
-        localStorage.removeItem("servio-checkout-data");
-        
-        // Send bill to table management
-        await sendBillToTableManagement(updateResult.data);
-      } else {
-        setError(updateResult.message || 'Failed to update order');
-      }
-    } catch (err: any) {
-      console.error('[PAY AT TILL DEBUG] Error:', err);
-      setError(err.message || 'Failed to process order. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handlePayLater = async () => {
-    console.log('[PAY LATER DEBUG] ===== PAY LATER HANDLER STARTED =====');
-    
-    if (!checkoutData || !checkoutData.orderId) {
-      console.log('[PAY LATER DEBUG] ERROR: Missing required data');
-      setError('Missing order information. Please try again.');
-      return;
-    }
-
-    setError(null); // Clear any previous errors
-    setIsProcessing(true);
-
-    try {
-      // Step 1: Update existing order to 'later' payment method (keeps unpaid status)
-      console.log('[PAY LATER DEBUG] Step 1: Updating order for pay later...');
-      
-      const updateResult = await updateOrderPaymentStatus(
-        checkoutData.orderId, 
-        'unpaid', // Keep as unpaid
-        'later'
-      );
-
-      if (updateResult.success) {
-        console.log('[PAY LATER DEBUG] Order updated successfully:', updateResult.data);
-        
-        setOrderNumber(checkoutData.orderNumber || "ORD-001");
-        setPaymentComplete(true);
-        
-        // Store session data for later payment detection
-        const sessionData = {
-          orderId: checkoutData.orderId,
-          tableNumber: checkoutData.tableNumber,
-          venueId: checkoutData.venueId,
-          total: checkoutData.total,
-          customerName: checkoutData.customerName || 'Customer',
-          customerPhone: checkoutData.customerPhone || '',
-          paymentStatus: 'unpaid'
-        };
-        
-        // Store session for table-based orders
-        if (checkoutData.tableNumber) {
-          localStorage.setItem(`servio-session-${checkoutData.tableNumber}`, JSON.stringify(sessionData));
-        }
-        
-        // Store session for session-based orders
-        if (checkoutData.sessionId) {
-          localStorage.setItem(`servio-session-${checkoutData.sessionId}`, JSON.stringify(sessionData));
-        }
-        
-        localStorage.removeItem("servio-checkout-data");
-      } else {
-        setError(updateResult.message || 'Failed to update order');
-      }
-    } catch (err: any) {
-      console.error('[PAY LATER DEBUG] Error:', err);
-      setError(err.message || 'Failed to process order. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const sendBillToTableManagement = async (orderData: any) => {
-    try {
-      console.log('[TABLE MANAGEMENT DEBUG] Sending bill to table management:', orderData);
-      
-      // Create a bill record for table management
-      const billData = {
-        venue_id: orderData.venue_id,
-        table_number: orderData.table_number,
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        total_amount: orderData.total_amount,
-        items: orderData.items,
-        payment_method: 'PAY_AT_TILL',
-        status: 'PENDING',
-        created_at: new Date().toISOString()
-      };
-
-      // Store in localStorage for now (in production, this would go to a database)
-      const existingBills = JSON.parse(localStorage.getItem('servio-table-bills') || '[]');
-      existingBills.push(billData);
-      localStorage.setItem('servio-table-bills', JSON.stringify(existingBills));
-
-      console.log('[TABLE MANAGEMENT DEBUG] Bill sent successfully');
-    } catch (error) {
-      console.error('[TABLE MANAGEMENT DEBUG] Error sending bill:', error);
-    }
-  };
-
   const handleFeedbackSubmitted = () => {
     setFeedbackSubmitted(true);
+  };
+
+  const getSuccessMessage = () => {
+    switch (paymentAction) {
+      case 'demo':
+      case 'stripe':
+        return {
+          title: "✅ Payment successful",
+          description: "Your order has been confirmed and sent to the kitchen."
+        };
+      case 'till':
+        return {
+          title: "📨 Bill sent to the counter",
+          description: "Please pay with staff when ready."
+        };
+      case 'later':
+        return {
+          title: "⏳ Order placed",
+          description: "You can pay later by scanning this table's QR again or at the counter."
+        };
+      default:
+        return {
+          title: "✅ Order confirmed",
+          description: "Your order has been processed."
+        };
+    }
   };
 
   if (!checkoutData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-600" />
           <p className="text-gray-600">Loading checkout...</p>
         </div>
       </div>
@@ -250,20 +180,22 @@ export default function PaymentPage() {
   }
 
   if (paymentComplete) {
+    const successMsg = getSuccessMessage();
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
-          {/* Order Confirmation */}
+          {/* Success Banner */}
           <Card className="text-center">
             <CardContent className="p-8">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check className="h-8 w-8 text-green-600" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Payment Successful!
+                {successMsg.title}
               </h2>
               <p className="text-gray-600 mb-4">
-                Your order has been confirmed and sent to the kitchen.
+                {successMsg.description}
               </p>
               <div className="bg-gray-50 p-4 rounded-lg mb-6">
                 <p className="text-sm text-gray-600">Order Number</p>
@@ -280,6 +212,13 @@ export default function PaymentPage() {
             </CardContent>
           </Card>
 
+          {/* Order Timeline */}
+          <OrderTimeline
+            orderId={orderNumber}
+            currentStatus="placed"
+            estimatedTime="15-20 minutes"
+          />
+
           {/* Feedback Form */}
           {!feedbackSubmitted && (
             <CustomerFeedbackForm
@@ -291,25 +230,18 @@ export default function PaymentPage() {
             />
           )}
 
-          {/* Order Timeline */}
-          <OrderTimeline
-            orderId={orderNumber}
-            currentStatus="placed"
-            estimatedTime="15-20 minutes"
-          />
-
           {/* Action Buttons */}
           <div className="space-y-3">
-            <Button
-              onClick={() =>
-                router.push(
-                  `/order-tracking/${orderNumber}`,
-                )
-              }
-              className="w-full bg-servio-purple hover:bg-servio-purple-dark"
-            >
-              Track Your Order
-            </Button>
+            {paymentAction === 'demo' || paymentAction === 'stripe' ? (
+              <Button
+                onClick={() => router.push(`/order-tracking/${orderNumber}`)}
+                className="w-full bg-servio-purple hover:bg-servio-purple-dark"
+              >
+                <Receipt className="h-4 w-4 mr-2" />
+                View Receipt
+              </Button>
+            ) : null}
+            
             <Button
               onClick={() =>
                 router.push(
@@ -319,8 +251,9 @@ export default function PaymentPage() {
               variant="outline"
               className="w-full"
             >
-              Place Another Order
+              Order Again
             </Button>
+            
             <Button
               onClick={() => router.push("/")}
               variant="outline"
@@ -349,8 +282,17 @@ export default function PaymentPage() {
               <ArrowLeft className="h-5 w-5" />
               <span className="sr-only">Back</span>
             </Button>
-            <h1 className="font-semibold text-lg text-gray-900">Payment</h1>
+            <h1 className="font-semibold text-lg text-gray-900">Complete Your Order</h1>
             <div className="w-10"></div>
+          </div>
+          
+          {/* Venue Info */}
+          <div className="text-center mt-2">
+            <p className="text-sm text-gray-600">{checkoutData.venueName || 'Restaurant'}</p>
+            <div className="flex items-center justify-center gap-1 mt-1">
+              <Shield className="h-3 w-3 text-green-600" />
+              <span className="text-xs text-green-600">🔒 Secure checkout</span>
+            </div>
           </div>
         </div>
       </header>
@@ -364,32 +306,43 @@ export default function PaymentPage() {
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">
-                Table {checkoutData.tableNumber}
+                Your Table: {checkoutData.tableNumber || 'Counter'}
               </span>
               <span className="font-medium">
                 {checkoutData.cart.reduce((total, item) => total + item.quantity, 0)} items
               </span>
             </div>
+            
             <div className="border-t pt-3">
               {checkoutData.cart.map((item, index) => (
                 <div key={index} className="flex justify-between text-sm mb-2">
                   <span className="text-gray-600">
-                    {item.quantity}x {item.name}
+                    {item.quantity}× {item.name}
                   </span>
                   <span className="font-medium">
                     £{(item.price * item.quantity).toFixed(2)}
                   </span>
                 </div>
               ))}
+              
               <div className="border-t pt-2 flex justify-between font-semibold">
                 <span>Total</span>
                 <span className="text-green-600">£{checkoutData.total.toFixed(2)}</span>
               </div>
             </div>
+            
+            <div className="pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.back()}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                Change order
+              </Button>
+            </div>
           </CardContent>
         </Card>
-
-        {/* Customer Information - Removed since order is already created with customer details */}
 
         {/* Error Display */}
         {error && (
@@ -402,14 +355,14 @@ export default function PaymentPage() {
         <div className="space-y-3">
           {/* Pay Now Button */}
           <Button
-            onClick={handlePayment}
+            onClick={() => setShowPaymentOptions(true)}
             disabled={isProcessing}
             className="w-full bg-servio-purple hover:bg-servio-purple-dark disabled:bg-gray-300"
           >
             {isProcessing ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Processing Payment...
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Processing...
               </>
             ) : (
               `Pay Now £${checkoutData.total.toFixed(2)}`
@@ -418,7 +371,7 @@ export default function PaymentPage() {
 
           {/* Pay at Till Button */}
           <Button
-            onClick={() => handlePayAtTill()}
+            onClick={() => handlePayment('till')}
             disabled={isProcessing}
             variant="outline"
             className="w-full border-2 border-servio-purple text-servio-purple hover:bg-servio-purple hover:text-white"
@@ -429,7 +382,7 @@ export default function PaymentPage() {
 
           {/* Pay Later Button */}
           <Button
-            onClick={() => handlePayLater()}
+            onClick={() => handlePayment('later')}
             disabled={isProcessing}
             variant="outline"
             className="w-full border-2 border-gray-400 text-gray-600 hover:bg-gray-100"
@@ -438,6 +391,47 @@ export default function PaymentPage() {
             Pay Later £{checkoutData.total.toFixed(2)}
           </Button>
         </div>
+
+        {/* Payment Options Modal */}
+        {showPaymentOptions && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <Card className="max-w-sm w-full">
+              <CardHeader>
+                <CardTitle>Choose Payment Method</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  onClick={() => {
+                    setShowPaymentOptions(false);
+                    handlePayment('demo');
+                  }}
+                  disabled={isProcessing}
+                  className="w-full"
+                >
+                  Demo Payment
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowPaymentOptions(false);
+                    handlePayment('stripe');
+                  }}
+                  disabled={isProcessing}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Card / Wallet (Stripe)
+                </Button>
+                <Button
+                  onClick={() => setShowPaymentOptions(false)}
+                  variant="ghost"
+                  className="w-full"
+                >
+                  Cancel
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Payment Note */}
         <p className="text-xs text-gray-500 text-center">
