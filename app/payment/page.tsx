@@ -56,10 +56,19 @@ export default function PaymentPage() {
   useEffect(() => {
     // Get checkout data from localStorage
     const storedData = localStorage.getItem("servio-checkout-data");
+    console.log('[PAYMENT DEBUG] Loading checkout data from localStorage:', storedData);
+    
     if (storedData) {
-      const data = JSON.parse(storedData);
-      setCheckoutData(data);
+      try {
+        const data = JSON.parse(storedData);
+        console.log('[PAYMENT DEBUG] Parsed checkout data:', data);
+        setCheckoutData(data);
+      } catch (error) {
+        console.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
+        router.push("/order");
+      }
     } else {
+      console.log('[PAYMENT DEBUG] No checkout data found, redirecting to order page');
       // Redirect back if no checkout data
       router.push("/order");
     }
@@ -68,8 +77,8 @@ export default function PaymentPage() {
   const handlePayment = async (action: PaymentAction) => {
     console.log('[PAYMENT DEBUG] ===== PAYMENT HANDLER STARTED =====', action);
     
-    if (!checkoutData || !checkoutData.orderId) {
-      console.log('[PAYMENT DEBUG] ERROR: Missing required data');
+    if (!checkoutData) {
+      console.log('[PAYMENT DEBUG] ERROR: Missing checkout data');
       setError('Missing order information. Please try again.');
       return;
     }
@@ -79,54 +88,81 @@ export default function PaymentPage() {
     setPaymentAction(action);
 
     try {
-      let endpoint = '';
-      let expectedStatus = '';
-      let expectedMethod = '';
-
-      switch (action) {
-        case 'demo':
-          endpoint = '/api/pay/demo';
-          expectedStatus = 'paid';
-          expectedMethod = 'demo';
-          break;
-        case 'stripe':
-          endpoint = '/api/pay/stripe';
-          expectedStatus = 'paid';
-          expectedMethod = 'stripe';
-          break;
-        case 'till':
-          endpoint = '/api/pay/till';
-          expectedStatus = 'till';
-          expectedMethod = 'till';
-          break;
-        case 'later':
-          endpoint = '/api/pay/later';
-          expectedStatus = 'unpaid';
-          expectedMethod = 'later';
-          break;
-      }
-
-      console.log('[PAYMENT DEBUG] Calling endpoint:', endpoint);
+      // First, create the order in the database
+      console.log('[PAYMENT DEBUG] Creating order first...');
       
-      const response = await fetch(endpoint, {
+      const orderPayload = {
+        venue_id: checkoutData.venueId,
+        table_number: checkoutData.tableNumber,
+        customer_name: checkoutData.customerName || 'Customer',
+        customer_phone: checkoutData.customerPhone || '+1234567890',
+        items: checkoutData.cart.map(item => ({
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+          specialInstructions: item.specialInstructions || null
+        })),
+        total_amount: Math.round(checkoutData.total * 100), // Convert to pence
+        order_status: 'PLACED',
+        payment_status: action === 'till' ? 'TILL' : action === 'later' ? 'UNPAID' : 'PAID',
+        payment_method: action === 'demo' ? 'demo' : action === 'stripe' ? 'stripe' : action === 'till' ? 'till' : 'later',
+        notes: `${action} payment order`
+      };
+
+      console.log('[PAYMENT DEBUG] Order payload:', orderPayload);
+
+      const orderResponse = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          order_id: checkoutData.orderId,
-        }),
+        body: JSON.stringify(orderPayload),
       });
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Payment failed');
+      if (!orderResponse.ok) {
+        const errorText = await orderResponse.text();
+        console.error('[PAYMENT DEBUG] Order creation failed:', errorText);
+        throw new Error('Failed to create order');
       }
 
-      console.log('[PAYMENT DEBUG] Payment successful:', result);
+      const orderData = await orderResponse.json();
+      console.log('[PAYMENT DEBUG] Order created successfully:', orderData);
+
+      // For demo and stripe payments, we need to update the payment status
+      if (action === 'demo' || action === 'stripe') {
+        console.log('[PAYMENT DEBUG] Processing payment for order:', orderData.order?.id);
+        
+        let endpoint = '';
+        switch (action) {
+          case 'demo':
+            endpoint = '/api/pay/demo';
+            break;
+          case 'stripe':
+            endpoint = '/api/pay/stripe';
+            break;
+        }
+
+        const paymentResponse = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            order_id: orderData.order?.id,
+          }),
+        });
+
+        const paymentResult = await paymentResponse.json();
+
+        if (!paymentResult.success) {
+          throw new Error(paymentResult.error || 'Payment failed');
+        }
+
+        console.log('[PAYMENT DEBUG] Payment successful:', paymentResult);
+      }
       
-      setOrderNumber(checkoutData.orderNumber || "ORD-001");
+      setOrderNumber(orderData.order?.id || "ORD-001");
       setPaymentComplete(true);
       localStorage.removeItem("servio-checkout-data");
 
@@ -205,7 +241,13 @@ export default function PaymentPage() {
                 <p className="text-sm text-gray-600 mt-2">
                   Table {checkoutData.tableNumber}
                 </p>
-                <p className="text-lg font-bold text-green-600">
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-sm text-gray-600">Customer</p>
+                  <p className="font-medium text-gray-900">{checkoutData.customerName || 'Customer'}</p>
+                  <p className="text-sm text-gray-600 mt-1">Phone</p>
+                  <p className="font-medium text-gray-900">{checkoutData.customerPhone || 'Not provided'}</p>
+                </div>
+                <p className="text-lg font-bold text-green-600 mt-3">
                   Total: £{checkoutData.total.toFixed(2)}
                 </p>
               </div>
@@ -311,6 +353,18 @@ export default function PaymentPage() {
               <span className="font-medium">
                 {checkoutData.cart.reduce((total, item) => total + item.quantity, 0)} items
               </span>
+            </div>
+            
+            {/* Customer Information */}
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Customer:</span>
+                <span className="font-medium">{checkoutData.customerName || 'Customer'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Phone:</span>
+                <span className="font-medium">{checkoutData.customerPhone || 'Not provided'}</span>
+              </div>
             </div>
             
             <div className="border-t pt-3">

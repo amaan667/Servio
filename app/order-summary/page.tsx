@@ -45,15 +45,23 @@ export default function OrderSummaryPage() {
   useEffect(() => {
     // Get order data from localStorage
     const storedData = localStorage.getItem('servio-pending-order');
+    console.log('[ORDER SUMMARY DEBUG] Loading order data from localStorage:', storedData);
+    
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
+        console.log('[ORDER SUMMARY DEBUG] Parsed order data:', data);
+        console.log('[ORDER SUMMARY DEBUG] Customer info:', {
+          name: data.customerName,
+          phone: data.customerPhone
+        });
         setOrderData(data);
       } catch (error) {
         console.error('Error parsing stored order data:', error);
         router.push('/order');
       }
     } else {
+      console.log('[ORDER SUMMARY DEBUG] No pending order data found, redirecting to order page');
       router.push('/order');
     }
     setLoading(false);
@@ -63,12 +71,15 @@ export default function OrderSummaryPage() {
     if (!orderData) return;
     
     // Store order data for checkout
-    localStorage.setItem('servio-checkout-data', JSON.stringify({
+    const checkoutData = {
       ...orderData,
       cartId: `cart-${Date.now()}`,
-    }));
+    };
     
-    router.push('/checkout');
+    console.log('[ORDER SUMMARY DEBUG] Storing checkout data:', checkoutData);
+    localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
+    
+    router.push('/payment');
   };
 
   const handlePayLater = async () => {
@@ -222,14 +233,19 @@ export default function OrderSummaryPage() {
                     <span className="text-gray-600">Table:</span>
                     <span className="font-medium">{orderData.tableNumber}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Customer:</span>
-                    <span className="font-medium">{orderData.customerName}</span>
+                  
+                  {/* Customer Information - Highlighted */}
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <div className="flex justify-between">
+                      <span className="text-blue-700 font-medium">Customer Name:</span>
+                      <span className="font-semibold text-blue-900">{orderData.customerName}</span>
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      <span className="text-blue-700 font-medium">Phone Number:</span>
+                      <span className="font-semibold text-blue-900">{orderData.customerPhone}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Phone:</span>
-                    <span className="font-medium">{orderData.customerPhone}</span>
-                  </div>
+                  
                   {orderData.orderId && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Order ID:</span>

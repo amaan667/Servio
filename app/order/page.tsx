@@ -404,10 +404,12 @@ export default function CustomerOrderPage() {
 
         
         // Store order data in localStorage for order summary page
+        console.log('[ORDER PAGE DEBUG] Storing order data for summary:', orderData);
         localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
         
         // Verify storage
         const storedPending = localStorage.getItem('servio-pending-order');
+        console.log('[ORDER PAGE DEBUG] Verified stored data:', storedPending);
         
         // Redirect to order summary page
         
