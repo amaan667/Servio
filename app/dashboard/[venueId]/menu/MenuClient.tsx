@@ -157,10 +157,10 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
     setIsClearing(true);
     try {
-      const response = await fetch('/api/menu/clear', {
+      const response = await fetch('/api/catalog/clear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ venue_id: venueId })
+        body: JSON.stringify({ venueId: venueId })
       });
 
       const result = await response.json();
@@ -252,16 +252,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         {/* Action Buttons - Positioned between upload and menu items */}
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {menuItems.length > 0 && (
-              <Button 
-                variant="destructive" 
-                onClick={handleClearMenu}
-                disabled={isClearing}
-              >
-                <Trash className="h-4 w-4 mr-2" />
-                {isClearing ? 'Clearing...' : 'Clear Menu'}
-              </Button>
-            )}
+            {/* Clear Menu button removed - now only in MenuUploadCard */}
           </div>
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
