@@ -11,6 +11,7 @@ interface NavigationBreadcrumbProps {
   customBackLabel?: string;
   showBackButton?: boolean;
   venueId?: string; // Add venueId prop
+  isDemo?: boolean; // Add demo flag
 }
 
 function extractVenueId(pathname: string | null) {
@@ -24,6 +25,7 @@ export default function NavigationBreadcrumb({
   customBackLabel,
   showBackButton = true,
   venueId: propVenueId,
+  isDemo = false,
 }: NavigationBreadcrumbProps) {
   const pathnameRaw = usePathname();
   const pathname = pathnameRaw || '';
@@ -71,6 +73,28 @@ export default function NavigationBreadcrumb({
   const isSignInPage = pathname.includes("/sign-in");
   const isSignUpPage = pathname.includes("/sign-up");
   const isGenerateQRPage = pathname.includes("/generate-qr");
+
+  // Demo mode: Home ← Demo (current)
+  if (isDemo) {
+    return (
+      <nav aria-label="Breadcrumb" className="mb-4">
+        <ol className="flex items-center gap-2 text-sm">
+          <li>
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+              <Link href={homeLink}>
+                <>
+                  <Home className="h-4 w-4" />
+                  <span className="hidden sm:inline">Home</span>
+                </>
+              </Link>
+            </Button>
+          </li>
+          <li className="text-gray-400">←</li>
+          <li className="text-gray-700 font-medium">Demo</li>
+        </ol>
+      </nav>
+    );
+  }
 
   // For sign-in/sign-up pages: Home ← Sign In/Sign Up (current)
   if ((isSignInPage || isSignUpPage) && !showBackButton) {

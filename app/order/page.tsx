@@ -391,19 +391,6 @@ export default function CustomerOrderPage() {
                     >
                       Reset Cart
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setCart([]);
-                        setCustomerInfo({ name: '', phone: '' });
-                        setShowCheckout(false);
-                        setShowMobileCart(false);
-                      }}
-                      className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                    >
-                      🔄 Reset Demo
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -420,6 +407,7 @@ export default function CustomerOrderPage() {
                 customBackPath="/dashboard" 
                 customBackLabel="Dashboard"
                 showBackButton={true}
+                isDemo={true}
               />
             </div>
           )}
@@ -515,21 +503,32 @@ export default function CustomerOrderPage() {
                               <CardContent className="p-4">
                                 <div className="flex space-x-4">
                                   {/* Item Image */}
-                                  {item.image && (
-                                    <div className="flex-shrink-0">
-                                      <Image
-                                        src={item.image}
-                                        alt={item.name}
-                                        width={80}
-                                        height={80}
-                                        className="w-20 h-20 object-cover rounded-lg"
-                                        onError={(e) => {
-                                          // Hide image if it fails to load
-                                          (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                      />
+                                  <div className="flex-shrink-0">
+                                    <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
+                                      {item.image ? (
+                                        <Image
+                                          src={item.image}
+                                          alt={item.name}
+                                          width={80}
+                                          height={80}
+                                          className="w-20 h-20 object-cover rounded-lg"
+                                          onError={(e) => {
+                                            // Show placeholder if image fails to load
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                            const parent = target.parentElement;
+                                            if (parent) {
+                                              parent.innerHTML = '<div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-xs">📷</div>';
+                                            }
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-xs">
+                                          📷
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
+                                  </div>
                                   
                                   {/* Item Details */}
                                   <div className="flex-1">
