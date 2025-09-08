@@ -66,14 +66,29 @@ function reconstructJSONFromMalformed(json: string): string | null {
   console.log('[JSON_REPAIR] Attempting JSON reconstruction...');
   
   try {
+    // First, try to fix truncated JSON
+    const fixedJson = fixTruncatedJSON(json);
+    
     // Extract all property-value pairs using regex
     const propertyPattern = /"([^"]+)":\s*([^,}]+)/g;
     const properties: Array<{key: string, value: string}> = [];
     let match;
     
-    while ((match = propertyPattern.exec(json)) !== null) {
+    while ((match = propertyPattern.exec(fixedJson)) !== null) {
       const key = match[1];
-      const value = match[2].trim();
+      let value = match[2].trim();
+      
+      // Handle incomplete values (values that don't end with quote, comma, or brace)
+      if (value && !value.endsWith('"') && !value.endsWith(',') && !value.endsWith('}')) {
+        // If the value is incomplete, try to complete it
+        if (value.startsWith('"') && !value.endsWith('"')) {
+          // Incomplete string, close it
+          value = value + '"';
+        } else if (!value.startsWith('"') && !value.match(/^\d/)) {
+          // Looks like an incomplete string, add quotes
+          value = '"' + value + '"';
+        }
+      }
       
       // Only include valid properties
       if (key && value && !value.includes('{') && !value.includes('}')) {
@@ -97,8 +112,15 @@ function reconstructJSONFromMalformed(json: string): string | null {
       currentItem[prop.key] = cleanValue(prop.value);
     }
     
-    // Add the last item if it's valid
-    if (isValidItem(currentItem)) {
+    // Add the last item if it's valid (even if incomplete)
+    if (currentItem.title && currentItem.category) {
+      // For incomplete items, provide default values
+      if (!currentItem.price) {
+        currentItem.price = '0.00';
+      }
+      if (!currentItem.description) {
+        currentItem.description = '';
+      }
       items.push(currentItem);
     }
     
@@ -106,8 +128,8 @@ function reconstructJSONFromMalformed(json: string): string | null {
     const validItems = items.filter(item => 
       item.title && 
       item.category && 
-      item.price && 
-      parseFloat(item.price) > 0
+      item.price !== undefined && 
+      parseFloat(item.price) >= 0  // Allow 0 prices for incomplete items
     );
     
     if (validItems.length === 0) {
@@ -131,6 +153,54 @@ function reconstructJSONFromMalformed(json: string): string | null {
     console.log('[JSON_REPAIR] Reconstruction failed:', error);
     return null;
   }
+}
+
+/**
+ * Fixes truncated JSON by completing incomplete structures
+ */
+function fixTruncatedJSON(json: string): string {
+  console.log('[JSON_REPAIR] Fixing truncated JSON...');
+  
+  let fixed = json.trim();
+  
+  // If the JSON ends abruptly, try to complete it
+  if (!fixed.endsWith('}') && !fixed.endsWith(']')) {
+    // Find the last complete object or property
+    const lastCompleteBrace = fixed.lastIndexOf('}');
+    const lastCompleteBracket = fixed.lastIndexOf(']');
+    const lastCompleteQuote = fixed.lastIndexOf('"');
+    
+    // If we're in the middle of a property value, complete it
+    if (lastCompleteQuote > Math.max(lastCompleteBrace, lastCompleteBracket)) {
+      // Find the last property that's incomplete
+      const lastColon = fixed.lastIndexOf(':');
+      if (lastColon > lastCompleteQuote) {
+        // We're in the middle of a property value, close it
+        fixed = fixed.substring(0, lastColon + 1) + ' "",';
+      }
+    }
+    
+    // If we're in the middle of an object, close it
+    const openBraces = (fixed.match(/{/g) || []).length;
+    const closeBraces = (fixed.match(/}/g) || []).length;
+    const openBrackets = (fixed.match(/\[/g) || []).length;
+    const closeBrackets = (fixed.match(/\]/g) || []).length;
+    
+    // Close incomplete objects
+    for (let i = 0; i < openBraces - closeBraces; i++) {
+      fixed += '}';
+    }
+    
+    // Close incomplete arrays
+    for (let i = 0; i < openBrackets - closeBrackets; i++) {
+      fixed += ']';
+    }
+    
+    // Remove trailing comma if present
+    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+  }
+  
+  return fixed;
 }
 
 /**
@@ -459,7 +529,7 @@ export function validateMenuJSON(json: string): {
         errors.push(`Item ${i}: Missing or invalid category`);
       }
       
-      if (typeof item.price !== 'number' || item.price <= 0) {
+      if (typeof item.price !== 'number' || item.price < 0) {
         errors.push(`Item ${i}: Missing or invalid price`);
       }
       
