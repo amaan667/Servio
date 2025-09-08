@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const { data: order, error: updateError } = await supabase
       .from('orders')
       .update({
-        payment_status: 'till',
+        payment_status: 'TILL',
         payment_method: 'till',
         updated_at: new Date().toISOString()
       })
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       success: true,
       data: {
         order_id: order.id,
-        payment_status: 'till',
+        payment_status: 'TILL',
         payment_method: 'till',
         total_amount: order.total_amount
       }

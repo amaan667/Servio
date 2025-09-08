@@ -49,7 +49,7 @@ export interface Order {
   total_amount: number;
   notes?: string;
   payment_method?: "demo" | "stripe" | "till" | null;
-  payment_status?: "unpaid" | "paid" | "till";
+  payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
   scheduled_for?: string;
   prep_lead_minutes?: number;
   items: Array<{
@@ -371,7 +371,7 @@ export async function createOrder(orderData: {
   total_amount: number;
   notes?: string;
   order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED";
-  payment_status?: "unpaid" | "paid" | "till";
+  payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
   payment_method?: "demo" | "stripe" | "till" | null;
   table_id?: string | null;
   session_id?: string | null;
@@ -408,7 +408,7 @@ export async function createOrder(orderData: {
       customer_name: orderData.customer_name,
       customer_phone: orderData.customer_phone,
         order_status: orderData.order_status || "PLACED", // Always start with "PLACED" status
-      payment_status: orderData.payment_status || "unpaid", // Default to unpaid
+      payment_status: orderData.payment_status || "UNPAID", // Default to unpaid
       total_amount: calculatedTotal, // Always use calculated total
       notes: orderData.notes,
       items: orderData.items, // Store items as JSONB

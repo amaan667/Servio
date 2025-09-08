@@ -450,7 +450,7 @@ export default function CustomerOrderPage() {
           .map((item) => `${item.name}: ${item.specialInstructions}`)
           .join("; "),
         order_status: 'PLACED',
-        payment_status: 'unpaid', // Start as unpaid
+        payment_status: 'UNPAID', // Start as unpaid
         payment_method: null, // Will be updated based on payment choice
         session_id: sessionId,
         source: 'qr',

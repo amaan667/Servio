@@ -20,7 +20,7 @@ type OrderPayload = {
   total_amount: number;
   notes?: string | null;
   order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED";
-  payment_status?: "unpaid" | "paid" | "till";
+  payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
   payment_method?: "demo" | "stripe" | "till" | null;
   // Note: table_id, session_id, and source columns don't exist in current database schema
   scheduled_for?: string | null;
@@ -216,7 +216,7 @@ export async function POST(req: Request) {
       total_amount: finalTotal,
       notes: body.notes ?? null,
       order_status: body.order_status || 'PLACED', // Use provided status or default to 'PLACED'
-      payment_status: body.payment_status || 'unpaid', // Use provided status or default to 'unpaid'
+      payment_status: body.payment_status || 'UNPAID', // Use provided status or default to 'UNPAID'
       payment_method: body.payment_method || null,
       // Note: table_id, session_id, and source columns don't exist in current database schema
       // These will be stored in localStorage for now until database schema is updated
