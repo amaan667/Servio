@@ -217,8 +217,7 @@ function convertToMenuPayload(parsed: any): MenuPayloadT {
     description: item.description || null,
     price: item.price,
     category: item.category,
-    available: true,
-    order_index: 0 // Will be set during normalization
+    available: true
   }));
 
   // Extract unique categories from items
@@ -329,8 +328,7 @@ function extractItemsWithRegex(text: string): any[] {
           description: null,
           price: price,
           category: currentCategory,
-          available: true,
-          order_index: 0
+          available: true
         });
       }
     }
