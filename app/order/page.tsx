@@ -52,6 +52,7 @@ export default function CustomerOrderPage() {
         isDemo,
         url: window.location.href
       })
+    });
   }, [venueSlug, tableNumber, isDemo, searchParams]);
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
