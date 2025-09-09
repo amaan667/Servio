@@ -86,6 +86,17 @@ export function useTableRuntimeState(venueId: string) {
       
       console.log('[TABLE_RUNTIME_STATE] All venues in database:', allVenues);
       
+      // Let's check what orders exist for this venue to see table numbers
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('id, table_number, customer_name, order_status, payment_status, created_at')
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      console.log('[TABLE_RUNTIME_STATE] Orders for this venue:', orders);
+      console.log('[TABLE_RUNTIME_STATE] Orders error:', ordersError);
+      
       // Use the raw tables API instead of the problematic view
       const { data, error } = await supabase
         .from('tables')
