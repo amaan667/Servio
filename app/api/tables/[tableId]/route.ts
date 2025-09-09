@@ -43,8 +43,23 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
 export async function DELETE(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
     const { tableId } = await context.params;
+    console.log('[TABLES API] DELETE request for tableId:', tableId);
 
     const supabase = await createClient();
+
+    // First check if table exists
+    const { data: existingTable, error: checkError } = await supabase
+      .from('tables')
+      .select('id, label, venue_id')
+      .eq('id', tableId)
+      .single();
+
+    if (checkError) {
+      console.error('[TABLES API] Error checking table existence:', checkError);
+      return NextResponse.json({ error: 'Table not found' }, { status: 404 });
+    }
+
+    console.log('[TABLES API] Found table to delete:', existingTable);
 
     // Delete table (this will cascade to table_sessions)
     const { error } = await supabase
@@ -57,7 +72,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       return NextResponse.json({ error: 'Failed to delete table' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    console.log('[TABLES API] Table deleted successfully:', tableId);
+    return NextResponse.json({ success: true, deletedTable: existingTable });
   } catch (error) {
     console.error('[TABLES API] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

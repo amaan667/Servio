@@ -78,8 +78,17 @@ export function TableCardRefactored({
           break;
         case 'remove':
           console.log('[TABLE CARD] Removing table:', table.table_id);
+          console.log('[TABLE CARD] Table data:', table);
           if (confirm(`Are you sure you want to remove Table ${table.label}? This action cannot be undone.`)) {
-            await removeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
+            console.log('[TABLE CARD] Confirmed removal, calling removeTable.mutateAsync');
+            try {
+              await removeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
+              console.log('[TABLE CARD] Table removal completed successfully');
+            } catch (error) {
+              console.error('[TABLE CARD] Table removal failed:', error);
+            }
+          } else {
+            console.log('[TABLE CARD] Table removal cancelled by user');
           }
           break;
         case 'assign':

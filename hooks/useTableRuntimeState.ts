@@ -242,7 +242,7 @@ export function useRemoveTable() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ tableId, venueId }: { tableId: string; venueId: string }) => {
-      console.log('[TABLE HOOK] Removing table:', tableId);
+      console.log('[TABLE HOOK] Removing table:', tableId, 'from venue:', venueId);
       
       const response = await fetch(`/api/tables/${tableId}`, {
         method: 'DELETE',
@@ -251,18 +251,29 @@ export function useRemoveTable() {
         },
       });
 
+      console.log('[TABLE HOOK] Delete response status:', response.status);
+      console.log('[TABLE HOOK] Delete response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('[TABLE HOOK] Delete table error:', errorData);
         throw new Error(errorData.error || 'Failed to delete table');
       }
 
+      const responseData = await response.json();
+      console.log('[TABLE HOOK] Delete response data:', responseData);
       console.log('[TABLE HOOK] Table deleted successfully');
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      console.log('[TABLE HOOK] onSuccess called, invalidating queries');
       qc.invalidateQueries({ queryKey: ['tables'] });
       qc.invalidateQueries({ queryKey: ['tables', 'runtime-state'] });
       qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'runtime-state', variables.venueId] });
+      qc.invalidateQueries({ queryKey: ['tables', 'counters', variables.venueId] });
+    },
+    onError: (error) => {
+      console.error('[TABLE HOOK] onError called:', error);
     }
   });
 }
