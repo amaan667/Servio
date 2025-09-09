@@ -58,6 +58,24 @@ export function useTableRuntimeState(venueId: string) {
   return useQuery({
     queryKey: ['tables', 'runtime-state', venueId],
     queryFn: async () => {
+      console.log('[TABLE_RUNTIME_STATE] Fetching tables for venue:', venueId);
+      
+      // First, let's check all tables (including inactive ones) to debug
+      const { data: allTables, error: allTablesError } = await supabase
+        .from('tables')
+        .select(`
+          id,
+          venue_id,
+          label,
+          seat_count,
+          is_active,
+          created_at
+        `)
+        .eq('venue_id', venueId)
+        .order('label');
+      
+      console.log('[TABLE_RUNTIME_STATE] All tables (including inactive):', allTables);
+      
       // Use the raw tables API instead of the problematic view
       const { data, error } = await supabase
         .from('tables')
@@ -73,7 +91,13 @@ export function useTableRuntimeState(venueId: string) {
         .eq('is_active', true)
         .order('label');
       
-      if (error) throw error;
+      if (error) {
+        console.error('[TABLE_RUNTIME_STATE] Error fetching tables:', error);
+        throw error;
+      }
+      
+      console.log('[TABLE_RUNTIME_STATE] Raw tables data:', data);
+      console.log('[TABLE_RUNTIME_STATE] Tables count:', data?.length || 0);
       
       // Get table sessions for each table
       const tableIds = data.map((t: any) => t.id);
