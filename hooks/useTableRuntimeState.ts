@@ -58,13 +58,61 @@ export function useTableRuntimeState(venueId: string) {
   return useQuery({
     queryKey: ['tables', 'runtime-state', venueId],
     queryFn: async () => {
+      // Use the raw tables API instead of the problematic view
       const { data, error } = await supabase
-        .from('table_runtime_state')
+        .from('tables')
+        .select(`
+          id as table_id,
+          venue_id,
+          label,
+          seat_count,
+          is_active,
+          created_at
+        `)
+        .eq('venue_id', venueId)
+        .eq('is_active', true)
+        .order('label');
+      
+      if (error) throw error;
+      
+      // Get table sessions for each table
+      const tableIds = data.map(t => t.table_id);
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('table_sessions')
         .select('*')
         .eq('venue_id', venueId)
-        .order('label');
-      if (error) throw error;
-      return data as TableRuntimeState[];
+        .in('table_id', tableIds);
+      
+      if (sessionsError) {
+        console.warn('Failed to fetch table sessions:', sessionsError);
+      }
+      
+      // Combine tables with their sessions
+      const result = data.map(table => {
+        const session = sessions?.find(s => s.table_id === table.table_id);
+        return {
+          ...table,
+          session_id: session?.id || null,
+          primary_status: session?.status || 'FREE',
+          opened_at: session?.opened_at || null,
+          server_id: session?.server_id || null,
+          reservation_status: 'NONE' as const,
+          reserved_now_id: null,
+          reserved_now_start: null,
+          reserved_now_end: null,
+          reserved_now_party_size: null,
+          reserved_now_name: null,
+          reserved_now_phone: null,
+          next_reservation_id: null,
+          next_reservation_start: null,
+          next_reservation_end: null,
+          next_reservation_party_size: null,
+          next_reservation_name: null,
+          next_reservation_phone: null
+        } as TableRuntimeState;
+      });
+      
+      return result;
     },
     enabled: !!venueId
   });
