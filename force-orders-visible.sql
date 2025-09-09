@@ -17,7 +17,31 @@ UPDATE orders
 SET payment_status = 'UNPAID'
 WHERE payment_status IS NULL OR payment_status = '';
 
--- 3. Create table sessions for all orders
+-- 3. Update existing table sessions or create new ones for all orders
+-- First, close any existing open sessions that don't have orders
+UPDATE table_sessions 
+SET 
+    status = 'CLOSED',
+    closed_at = NOW(),
+    updated_at = NOW()
+WHERE venue_id = 'venue-1e02af4d'
+  AND closed_at IS NULL
+  AND order_id IS NULL;
+
+-- Then, update existing sessions to link them to orders
+UPDATE table_sessions 
+SET 
+    status = 'OCCUPIED',
+    order_id = o.id,
+    updated_at = NOW()
+FROM orders o
+JOIN tables t ON t.venue_id = o.venue_id AND t.label = o.table_number::text
+WHERE table_sessions.table_id = t.id
+  AND table_sessions.venue_id = 'venue-1e02af4d'
+  AND table_sessions.closed_at IS NULL
+  AND table_sessions.order_id IS NULL;
+
+-- Finally, create new sessions only for tables that don't have any sessions
 INSERT INTO table_sessions (venue_id, table_id, status, order_id, opened_at, created_at, updated_at)
 SELECT 
     o.venue_id,
@@ -33,7 +57,7 @@ WHERE o.venue_id = 'venue-1e02af4d'
   AND NOT EXISTS (
     SELECT 1 FROM table_sessions ts 
     WHERE ts.table_id = t.id 
-    AND ts.order_id = o.id
+    AND ts.closed_at IS NULL
   );
 
 -- 4. Show the result
