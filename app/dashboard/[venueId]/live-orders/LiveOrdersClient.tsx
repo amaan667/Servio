@@ -621,11 +621,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <Badge className={`${getStatusColor(order.order_status)} text-xs font-medium px-2 py-1`}>
             {order.order_status.replace('_', ' ').toLowerCase()}
           </Badge>
-          {isCompleted && (
-            <Badge className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1">
-              ✓ Completed
-            </Badge>
-          )}
           {order.payment_status && (
             <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-medium px-2 py-1`}>
               {order.payment_status.toUpperCase()}
