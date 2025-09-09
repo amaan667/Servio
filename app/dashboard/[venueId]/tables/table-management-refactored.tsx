@@ -67,7 +67,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(table => 
+      filtered = filtered.filter((table: TableRuntimeState) => 
         table.label.toLowerCase().includes(query)
       );
     }
