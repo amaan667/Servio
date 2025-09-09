@@ -368,7 +368,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('[LIVE_ORDERS] Real-time order update received:', payload);
           // Refresh orders when any order changes
           fetchOrders(activeTab, true);
