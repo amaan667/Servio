@@ -24,21 +24,21 @@ SELECT
         ELSE 'FREE'
     END as primary_status,
     ts.opened_at,
-    ts.server_id,
+    NULL::TEXT as server_id,  -- server_id doesn't exist in table_sessions
     -- Set reservation status to NONE for now (can be enhanced later)
     'NONE' as reservation_status,
-    ts.order_id,
+    NULL::UUID as order_id,  -- order_id doesn't exist in table_sessions
     ts.closed_at,
-    ts.total_amount,
-    ts.customer_name,
-    COALESCE(ts.order_status::TEXT, 'PENDING') as order_status,
-    COALESCE(ts.payment_status::TEXT, 'PENDING') as payment_status,
-    ts.order_updated_at,
-    ts.reservation_time,
-    ts.reservation_duration_minutes,
-    ts.reservation_end_time,
-    ts.reservation_created_at,
-    COALESCE(ts.most_recent_activity, t.created_at) as most_recent_activity,
+    NULL::NUMERIC as total_amount,  -- total_amount doesn't exist in table_sessions
+    NULL::TEXT as customer_name,  -- customer_name doesn't exist in table_sessions
+    NULL::TEXT as order_status,  -- order_status doesn't exist in table_sessions
+    NULL::TEXT as payment_status,  -- payment_status doesn't exist in table_sessions
+    NULL::TIMESTAMPTZ as order_updated_at,  -- order_updated_at doesn't exist in table_sessions
+    NULL::TIMESTAMPTZ as reservation_time,  -- reservation_time doesn't exist in table_sessions
+    NULL::INTEGER as reservation_duration_minutes,  -- reservation_duration_minutes doesn't exist in table_sessions
+    NULL::TIMESTAMPTZ as reservation_end_time,  -- reservation_end_time doesn't exist in table_sessions
+    NULL::TIMESTAMPTZ as reservation_created_at,  -- reservation_created_at doesn't exist in table_sessions
+    COALESCE(ts.opened_at, t.created_at) as most_recent_activity,
     NULL::UUID as reserved_now_id,
     NULL::TIMESTAMPTZ as reserved_now_start,
     NULL::TIMESTAMPTZ as reserved_now_end,
