@@ -68,7 +68,7 @@ ORDER BY created_at DESC;
 
 -- Show today's orders (these should remain unchanged for staff management)
 SELECT 
-    'Today\'s orders (should remain unchanged for staff):' as info,
+    'Today''s orders (should remain unchanged for staff):' as info,
     id,
     table_number,
     customer_name,

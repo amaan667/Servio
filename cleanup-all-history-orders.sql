@@ -49,7 +49,7 @@ WHERE venue_id = 'venue-1e02af4d'
 
 -- Show today's orders (these should remain unchanged for staff management)
 SELECT 
-    'TODAY\'S ORDERS (unchanged for staff management):' as info,
+    'TODAY''S ORDERS (unchanged for staff management):' as info,
     id,
     table_number,
     customer_name,
