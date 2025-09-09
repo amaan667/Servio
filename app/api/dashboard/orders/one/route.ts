@@ -99,7 +99,7 @@ export async function GET(req: Request) {
       data.slice(0, 3).forEach((order, index) => {
         const orderDate = new Date(order.created_at);
         const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-        console.log(`[TAB_FILTERING]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.status}`);
+        console.log(`[TAB_FILTERING]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.order_status}`);
       });
       
       // Age distribution analysis
@@ -117,7 +117,7 @@ export async function GET(req: Request) {
       
       // Status distribution
       const statusDistribution = data.reduce((acc, order) => {
-        acc[order.status] = (acc[order.status] || 0) + 1;
+        acc[order.order_status] = (acc[order.order_status] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
       
