@@ -109,6 +109,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { venue_id, label, seat_count, area } = body;
 
+    console.log('[TABLES POST] Request body:', body);
+    console.log('[TABLES POST] Extracted values:', { venue_id, label, seat_count, area });
+
     if (!venue_id || !label) {
       return NextResponse.json({ ok: false, error: 'venue_id and label are required' }, { status: 400 });
     }

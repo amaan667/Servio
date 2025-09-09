@@ -237,24 +237,32 @@ export function useNoShowReservation() {
   });
 }
 
-// Remove table (soft delete)
+// Remove table (hard delete)
 export function useRemoveTable() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ tableId, venueId }: { tableId: string; venueId: string }) => {
       console.log('[TABLE HOOK] Removing table:', tableId);
-      const { error } = await supabase.rpc('api_remove_table', {
-        p_table_id: tableId,
-        p_venue_id: venueId
+      
+      const response = await fetch(`/api/tables/${tableId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-      if (error) {
-        console.error('[TABLE HOOK] api_remove_table error:', error);
-        throw error;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[TABLE HOOK] Delete table error:', errorData);
+        throw new Error(errorData.error || 'Failed to delete table');
       }
-      console.log('[TABLE HOOK] api_remove_table success');
+
+      console.log('[TABLE HOOK] Table deleted successfully');
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tables'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'runtime-state'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
     }
   });
 }

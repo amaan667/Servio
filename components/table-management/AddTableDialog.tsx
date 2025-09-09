@@ -36,19 +36,18 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
 
     setError(null); // Clear any previous errors
 
-    console.log('[ADD TABLE DIALOG] Creating table:', {
+    const tableData = {
       venue_id: venueId,
       label: label.trim(),
       seat_count: seatCount,
-      timestamp: new Date().toISOString()
-    });
+    };
+
+    console.log('[ADD TABLE DIALOG] Creating table with data:', tableData);
+    console.log('[ADD TABLE DIALOG] Original label input:', label);
+    console.log('[ADD TABLE DIALOG] Trimmed label:', label.trim());
 
     try {
-      const result = await createTable({
-        venue_id: venueId,
-        label: label.trim(),
-        seat_count: seatCount,
-      });
+      const result = await createTable(tableData);
       
       console.log('[ADD TABLE DIALOG] Table created successfully:', result);
       
