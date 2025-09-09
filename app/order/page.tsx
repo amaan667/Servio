@@ -69,9 +69,31 @@ export default function CustomerOrderPage() {
         const storedOrderData = localStorage.getItem(`servio-order-${sessionParam}`);
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
-          console.log('[ORDER PAGE] Found existing unpaid order in localStorage:', orderData);
+          console.log('[ORDER PAGE] Found existing order in localStorage:', orderData);
           
-          // Redirect to payment page with existing order data
+          // Check payment status in database if order ID exists
+          if (orderData.orderId) {
+            try {
+              const orderCheckResponse = await fetch(`/api/orders/check-status?orderId=${orderData.orderId}`);
+              if (orderCheckResponse.ok) {
+                const statusData = await orderCheckResponse.json();
+                console.log('[ORDER PAGE] Order status from database:', statusData);
+                
+                // If order is paid, clear localStorage and continue to ordering
+                if (statusData.payment_status === 'PAID') {
+                  console.log('[ORDER PAGE] Order already paid, clearing localStorage and showing ordering page');
+                  localStorage.removeItem(`servio-order-${sessionParam}`);
+                  localStorage.removeItem('servio-checkout-data');
+                  return; // Continue to ordering page
+                }
+              }
+            } catch (error) {
+              console.error('[ORDER PAGE] Failed to check order status:', error);
+            }
+          }
+          
+          // Order is still unpaid, redirect to payment page
+          console.log('[ORDER PAGE] Order still unpaid, redirecting to payment');
           const checkoutData = {
             venueId: orderData.venueId,
             venueName: 'Restaurant',
@@ -99,8 +121,32 @@ export default function CustomerOrderPage() {
         const storedOrderData = localStorage.getItem(`servio-order-${storedSession}`);
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
-          console.log('[ORDER PAGE] Found existing unpaid order in localStorage session:', orderData);
+          console.log('[ORDER PAGE] Found existing order in localStorage session:', orderData);
           
+          // Check payment status in database if order ID exists
+          if (orderData.orderId) {
+            try {
+              const orderCheckResponse = await fetch(`/api/orders/check-status?orderId=${orderData.orderId}`);
+              if (orderCheckResponse.ok) {
+                const statusData = await orderCheckResponse.json();
+                console.log('[ORDER PAGE] Order status from database:', statusData);
+                
+                // If order is paid, clear localStorage and continue to ordering
+                if (statusData.payment_status === 'PAID') {
+                  console.log('[ORDER PAGE] Order already paid, clearing localStorage and showing ordering page');
+                  localStorage.removeItem(`servio-order-${storedSession}`);
+                  localStorage.removeItem('servio-checkout-data');
+                  localStorage.removeItem('servio-current-session');
+                  return; // Continue to ordering page
+                }
+              }
+            } catch (error) {
+              console.error('[ORDER PAGE] Failed to check order status:', error);
+            }
+          }
+          
+          // Order is still unpaid, redirect to payment page
+          console.log('[ORDER PAGE] Order still unpaid, redirecting to payment');
           const checkoutData = {
             venueId: orderData.venueId,
             venueName: 'Restaurant',

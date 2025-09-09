@@ -138,38 +138,42 @@ export default function PaymentPage() {
         total_amount: orderData.order?.total_amount
       });
 
-      // For demo and stripe payments, we need to update the payment status
-      if (action === 'demo' || action === 'stripe') {
-        console.log('[PAYMENT DEBUG] Processing payment for order:', orderData.order?.id);
-        
-        let endpoint = '';
-        switch (action) {
-          case 'demo':
-            endpoint = '/api/pay/demo';
-            break;
-          case 'stripe':
-            endpoint = '/api/pay/stripe';
-            break;
-        }
-
-        const paymentResponse = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            order_id: orderData.order?.id,
-          }),
-        });
-
-        const paymentResult = await paymentResponse.json();
-
-        if (!paymentResult.success) {
-          throw new Error(paymentResult.error || 'Payment failed');
-        }
-
-        console.log('[PAYMENT DEBUG] Payment successful:', paymentResult);
+      // Process payment action through respective endpoint
+      console.log('[PAYMENT DEBUG] Processing payment action for order:', orderData.order?.id);
+      
+      let endpoint = '';
+      switch (action) {
+        case 'demo':
+          endpoint = '/api/pay/demo';
+          break;
+        case 'stripe':
+          endpoint = '/api/pay/stripe';
+          break;
+        case 'till':
+          endpoint = '/api/pay/till';
+          break;
+        case 'later':
+          endpoint = '/api/pay/later';
+          break;
       }
+
+      const paymentResponse = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          order_id: orderData.order?.id,
+        }),
+      });
+
+      const paymentResult = await paymentResponse.json();
+
+      if (!paymentResult.success) {
+        throw new Error(paymentResult.error || 'Payment processing failed');
+      }
+
+      console.log('[PAYMENT DEBUG] Payment action processed successfully:', paymentResult);
       
       setOrderNumber(orderData.order?.id || "ORD-001");
       setPaymentComplete(true);

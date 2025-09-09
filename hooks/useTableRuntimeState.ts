@@ -118,7 +118,7 @@ export function useTableRuntimeState(venueId: string) {
         console.log('[TABLE_RUNTIME_STATE] No tables in database, creating virtual tables from orders');
         
         // Get unique table numbers from orders
-        const uniqueTableNumbers = [...new Set(orders.map(o => o.table_number).filter(Boolean))];
+        const uniqueTableNumbers = [...new Set(orders.map((o: any) => o.table_number).filter(Boolean))];
         
         // Create virtual table objects
         const virtualTables = uniqueTableNumbers.map((tableNumber, index) => ({
@@ -260,12 +260,12 @@ export function useTableCounters(venueId: string) {
           
           // If we have orders with table numbers, return counts based on those
           if (orderTables && orderTables.length > 0) {
-            const uniqueTables = [...new Set(orderTables.map(o => o.table_number))];
-            const occupiedTables = orderTables.filter(o => 
+            const uniqueTables = [...new Set(orderTables.map((o: any) => o.table_number))];
+            const occupiedTables = orderTables.filter((o: any) => 
               o.payment_status === 'UNPAID' || 
               (o.payment_status === 'PAID' && ['PLACED', 'IN_PREP', 'READY'].includes(o.order_status))
             );
-            const occupiedTableNumbers = [...new Set(occupiedTables.map(o => o.table_number))];
+            const occupiedTableNumbers = [...new Set(occupiedTables.map((o: any) => o.table_number))];
             
             return {
               total_tables: uniqueTables.length,
