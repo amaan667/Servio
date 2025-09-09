@@ -93,6 +93,33 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
   }, [tables, filter, searchQuery]);
 
   const filterCounts = useMemo(() => {
+    // Calculate client-side counts as fallback and for debugging
+    const clientSideCounts = {
+      all: tables.length,
+      free: tables.filter(table => table.primary_status === 'FREE').length,
+      occupied: tables.filter(table => table.primary_status === 'OCCUPIED').length,
+      reserved_now: tables.filter(table => table.reservation_status === 'RESERVED_NOW').length,
+      reserved_later: tables.filter(table => table.reservation_status === 'RESERVED_LATER').length,
+    };
+
+    console.log('[TABLE_MANAGEMENT] Client-side counts:', clientSideCounts);
+    console.log('[TABLE_MANAGEMENT] Server-side counts:', {
+      all: counters.total_tables,
+      free: counters.available,
+      occupied: counters.occupied,
+      reserved_now: counters.reserved_now,
+      reserved_later: counters.reserved_later,
+    });
+
+    // Use client-side counts if server counts seem wrong or are missing
+    const useClientSide = !counters.total_tables || counters.total_tables === 0 || 
+                         Math.abs(counters.total_tables - tables.length) > 0;
+
+    if (useClientSide) {
+      console.log('[TABLE_MANAGEMENT] Using client-side counts due to server count issues');
+      return clientSideCounts;
+    }
+
     return {
       all: counters.total_tables,
       free: counters.available,
@@ -100,7 +127,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
       reserved_now: counters.reserved_now,
       reserved_later: counters.reserved_later,
     };
-  }, [counters]);
+  }, [counters, tables]);
 
   const handleTableActionComplete = () => {
     refetchTables();
@@ -246,7 +273,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tables Set Up</p>
-                  <p className="text-2xl font-bold text-gray-800">{counters.total_tables}</p>
+                  <p className="text-2xl font-bold text-gray-800">{filterCounts.all}</p>
                 </div>
                 <Users className="h-8 w-8 text-gray-500" />
               </div>
@@ -258,7 +285,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Free Now</p>
-                  <p className="text-2xl font-bold text-green-600">{counters.available}</p>
+                  <p className="text-2xl font-bold text-green-600">{filterCounts.free}</p>
                 </div>
                 <Clock className="h-8 w-8 text-green-500" />
               </div>
@@ -270,7 +297,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">In Use Now</p>
-                  <p className="text-2xl font-bold text-amber-600">{counters.occupied}</p>
+                  <p className="text-2xl font-bold text-amber-600">{filterCounts.occupied}</p>
                 </div>
                 <UserCheck className="h-8 w-8 text-amber-500" />
               </div>
@@ -282,7 +309,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Reserved Now</p>
-                  <p className="text-2xl font-bold text-red-600">{counters.reserved_now}</p>
+                  <p className="text-2xl font-bold text-red-600">{filterCounts.reserved_now}</p>
                 </div>
                 <AlertCircle className="h-8 w-8 text-red-500" />
               </div>
@@ -294,7 +321,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Reserved Later</p>
-                  <p className="text-2xl font-bold text-purple-600">{counters.reserved_later}</p>
+                  <p className="text-2xl font-bold text-purple-600">{filterCounts.reserved_later}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-purple-500" />
               </div>
