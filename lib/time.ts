@@ -30,17 +30,30 @@ export function addDaysISO(dateYYYYMMDD: string, days: number): string {
 
 export function todayWindowForTZ(tz?: string) {
   const zone = tz || 'Europe/London';
-  // Fix for system date being set to 2025 - force current year to 2024
   const now = DateTime.now().setZone(zone);
-  const correctedNow = now.set({ year: 2024 });
-  const start = correctedNow.startOf('day');
+  
+  // Handle both 2024 and 2025 dates - use the current system year
+  // This ensures orders created with current system date will be included
+  const start = now.startOf('day');
   const end = start.plus({ days: 1 });
+  
   return {
     zone,
     startUtcISO: start.toUTC().toISO(),
     endUtcISO: end.toUTC().toISO(),
     startLocalISO: start.toISO(),
     endLocalISO: end.toISO(),
+  };
+}
+
+export function liveOrdersWindow() {
+  // Live orders: last 30 minutes from current time
+  const now = DateTime.now().toUTC();
+  const thirtyMinutesAgo = now.minus({ minutes: 30 });
+  
+  return {
+    startUtcISO: thirtyMinutesAgo.toISO(),
+    endUtcISO: now.toISO(),
   };
 }
 
