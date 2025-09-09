@@ -75,16 +75,16 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     // Apply status filter
     switch (filter) {
       case 'FREE':
-        filtered = filtered.filter(table => table.primary_status === 'FREE');
+        filtered = filtered.filter((table: TableRuntimeState) => table.primary_status === 'FREE');
         break;
       case 'OCCUPIED':
-        filtered = filtered.filter(table => table.primary_status === 'OCCUPIED');
+        filtered = filtered.filter((table: TableRuntimeState) => table.primary_status === 'OCCUPIED');
         break;
       case 'RESERVED_NOW':
-        filtered = filtered.filter(table => table.reservation_status === 'RESERVED_NOW');
+        filtered = filtered.filter((table: TableRuntimeState) => table.reservation_status === 'RESERVED_NOW');
         break;
       case 'RESERVED_LATER':
-        filtered = filtered.filter(table => table.reservation_status === 'RESERVED_LATER');
+        filtered = filtered.filter((table: TableRuntimeState) => table.reservation_status === 'RESERVED_LATER');
         break;
       // 'ALL' shows all tables
     }
@@ -225,7 +225,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
       ) : (
         <section className="mt-6">
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-            {filteredTables.map((table) => (
+            {filteredTables.map((table: TableRuntimeState) => (
               <TableCardRefactored
                 key={table.table_id}
                 table={table}
