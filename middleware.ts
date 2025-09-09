@@ -11,7 +11,8 @@ export function middleware(req: NextRequest) {
   // Skip middleware for static files and API routes
   if (pathname.startsWith('/_next/') || 
       pathname.startsWith('/api/') || 
-      pathname.startsWith('/favicon.ico')) {
+      pathname.startsWith('/favicon.ico') ||
+      pathname === '/api/status') {
     return NextResponse.next();
   }
   
@@ -56,6 +57,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - api routes (handled separately)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/).*)',
   ],
 }
