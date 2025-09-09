@@ -66,6 +66,10 @@ export function TableManagementRefactored({
     refetch: refetchCounters
   } = useTableCounters(venueId);
 
+  // Override with initial data if available (server-side data)
+  const finalTables = initialTables.length > 0 ? initialTables : tables;
+  const finalCounters = initialCounters.total_tables > 0 ? initialCounters : counters;
+
   // Set up real-time updates for table changes
   useTableRealtime(venueId, () => {
     console.log('[TABLE_MANAGEMENT] Real-time update triggered, refetching data');
@@ -75,7 +79,7 @@ export function TableManagementRefactored({
   
 
   const filteredTables = useMemo(() => {
-    let filtered = tables;
+    let filtered = finalTables;
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -103,17 +107,17 @@ export function TableManagementRefactored({
     }
 
     return filtered;
-  }, [tables, filter, searchQuery]);
+  }, [finalTables, filter, searchQuery]);
 
   const filterCounts = useMemo(() => {
     return {
-      all: counters.total_tables,
-      free: counters.available,
-      occupied: counters.occupied,
-      reserved_now: counters.reserved_now,
-      reserved_later: counters.reserved_later,
+    all: finalCounters.total_tables,
+    free: finalCounters.available,
+    occupied: finalCounters.occupied,
+    reserved_now: finalCounters.reserved_now,
+    reserved_later: finalCounters.reserved_later,
     };
-  }, [counters]);
+  }, [finalCounters]);
 
   const handleTableActionComplete = () => {
     refetchTables();
@@ -260,7 +264,7 @@ export function TableManagementRefactored({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tables Set Up</p>
-                  <p className="text-2xl font-bold text-gray-800">{counters.total_tables}</p>
+                  <p className="text-2xl font-bold text-gray-800">{finalCounters.total_tables}</p>
                 </div>
                 <Users className="h-8 w-8 text-gray-500" />
               </div>
@@ -272,7 +276,7 @@ export function TableManagementRefactored({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Free Now</p>
-                  <p className="text-2xl font-bold text-green-600">{counters.available}</p>
+                  <p className="text-2xl font-bold text-green-600">{finalCounters.available}</p>
                 </div>
                 <Clock className="h-8 w-8 text-green-500" />
               </div>
@@ -284,7 +288,7 @@ export function TableManagementRefactored({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">In Use Now</p>
-                  <p className="text-2xl font-bold text-amber-600">{counters.occupied}</p>
+                  <p className="text-2xl font-bold text-amber-600">{finalCounters.occupied}</p>
                 </div>
                 <UserCheck className="h-8 w-8 text-amber-500" />
               </div>
@@ -296,7 +300,7 @@ export function TableManagementRefactored({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Reserved Now</p>
-                  <p className="text-2xl font-bold text-red-600">{counters.reserved_now}</p>
+                  <p className="text-2xl font-bold text-red-600">{finalCounters.reserved_now}</p>
                 </div>
                 <AlertCircle className="h-8 w-8 text-red-500" />
               </div>
@@ -308,7 +312,7 @@ export function TableManagementRefactored({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Reserved Later</p>
-                  <p className="text-2xl font-bold text-purple-600">{counters.reserved_later}</p>
+                  <p className="text-2xl font-bold text-purple-600">{finalCounters.reserved_later}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-purple-500" />
               </div>
