@@ -63,6 +63,7 @@ export async function GET(req: Request) {
       const session = sessions?.find(s => s.table_id === table.id);
       return {
         ...table,
+        table_id: table.id, // Add table_id field for consistency with TableRuntimeState interface
         session_id: session?.id || null,
         status: session?.status || 'FREE',
         order_id: session?.order_id || null,
