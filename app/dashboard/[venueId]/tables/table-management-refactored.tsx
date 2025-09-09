@@ -106,6 +106,30 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     refetchTables();
   };
 
+  const handleSetupVenue = async () => {
+    try {
+      const response = await fetch('/api/setup-venue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.ok) {
+        console.log('[TABLE_MANAGEMENT] Venue setup successful:', result);
+        // Refresh the data
+        refetchTables();
+        refetchCounters();
+      } else {
+        console.error('[TABLE_MANAGEMENT] Venue setup failed:', result.error);
+      }
+    } catch (error) {
+      console.error('[TABLE_MANAGEMENT] Error setting up venue:', error);
+    }
+  };
+
   const isLoading = tablesLoading || countersLoading;
   const error = tablesError;
 
@@ -183,9 +207,17 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">No tables yet</h3>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    Create your first table to start managing your venue's seating. Tables will automatically get a free session when created.
+                    Set up your venue and create your first table to start managing your seating. This will create "Cafe Nur" venue and Table 1.
                   </p>
-                  <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
+                  <div className="flex gap-2 justify-center">
+                    <Button 
+                      onClick={handleSetupVenue}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Set Up Cafe Nur & Table 1
+                    </Button>
+                    <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
+                  </div>
                 </div>
               </CardContent>
             </Card>
