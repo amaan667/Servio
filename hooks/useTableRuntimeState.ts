@@ -62,7 +62,7 @@ export function useTableRuntimeState(venueId: string) {
       const { data, error } = await supabase
         .from('tables')
         .select(`
-          id as table_id,
+          id,
           venue_id,
           label,
           seat_count,
@@ -76,7 +76,7 @@ export function useTableRuntimeState(venueId: string) {
       if (error) throw error;
       
       // Get table sessions for each table
-      const tableIds = data.map((t: any) => t.table_id);
+      const tableIds = data.map((t: any) => t.id);
       const { data: sessions, error: sessionsError } = await supabase
         .from('table_sessions')
         .select('*')
@@ -89,9 +89,13 @@ export function useTableRuntimeState(venueId: string) {
       
       // Combine tables with their sessions
       const result = data.map((table: any) => {
-        const session = sessions?.find((s: any) => s.table_id === table.table_id);
+        const session = sessions?.find((s: any) => s.table_id === table.id);
         return {
-          ...table,
+          table_id: table.id,
+          venue_id: table.venue_id,
+          label: table.label,
+          seat_count: table.seat_count,
+          is_active: table.is_active,
           session_id: session?.id || null,
           primary_status: session?.status || 'FREE',
           opened_at: session?.opened_at || null,
