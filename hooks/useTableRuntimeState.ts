@@ -113,6 +113,28 @@ export function useTableRuntimeState(venueId: string) {
         .eq('is_active', true)
         .order('label');
       
+      // If no tables exist in database, create virtual tables from orders
+      if ((!data || data.length === 0) && orders && orders.length > 0) {
+        console.log('[TABLE_RUNTIME_STATE] No tables in database, creating virtual tables from orders');
+        
+        // Get unique table numbers from orders
+        const uniqueTableNumbers = [...new Set(orders.map(o => o.table_number).filter(Boolean))];
+        
+        // Create virtual table objects
+        const virtualTables = uniqueTableNumbers.map((tableNumber, index) => ({
+          id: `virtual-${tableNumber}`,
+          venue_id: venueId,
+          label: `Table ${tableNumber}`,
+          seat_count: 4,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          is_virtual: true // Flag to indicate this is a virtual table from orders
+        }));
+        
+        console.log('[TABLE_RUNTIME_STATE] Created virtual tables:', virtualTables);
+        data = virtualTables;
+      }
+      
       if (error) {
         console.error('[TABLE_RUNTIME_STATE] Error fetching tables:', error);
         throw error;
@@ -225,15 +247,36 @@ export function useTableCounters(venueId: string) {
         // Check if there are any orders that would indicate tables exist
         const { data: orderTables, error: orderError } = await supabase
           .from('orders')
-          .select('table_number')
+          .select('table_number, payment_status, order_status')
           .eq('venue_id', venueId)
           .not('table_number', 'is', null)
+          .in('payment_status', ['PAID', 'UNPAID'])
           .order('created_at', { ascending: false });
         
         if (orderError) {
           console.log('[TABLE COUNTERS] Error checking order tables:', orderError);
         } else {
           console.log('[TABLE COUNTERS] Tables from orders:', orderTables);
+          
+          // If we have orders with table numbers, return counts based on those
+          if (orderTables && orderTables.length > 0) {
+            const uniqueTables = [...new Set(orderTables.map(o => o.table_number))];
+            const occupiedTables = orderTables.filter(o => 
+              o.payment_status === 'UNPAID' || 
+              (o.payment_status === 'PAID' && ['PLACED', 'IN_PREP', 'READY'].includes(o.order_status))
+            );
+            const occupiedTableNumbers = [...new Set(occupiedTables.map(o => o.table_number))];
+            
+            return {
+              total_tables: uniqueTables.length,
+              available: uniqueTables.length - occupiedTableNumbers.length,
+              occupied: occupiedTableNumbers.length,
+              reserved_now: 0,
+              reserved_later: 0,
+              unassigned_reservations: 0,
+              block_window_mins: 0
+            };
+          }
         }
         
         // For now, return zero counts to match the empty state
