@@ -115,7 +115,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      meta: { scope, zone, startUtcISO, endUtcISO, count: data?.length ?? 0 },
+      meta: { scope, zone, count: data?.length ?? 0 },
       orders: (data || []) as OrderRow[],
     });
   } catch (e: any) {
