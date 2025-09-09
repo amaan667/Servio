@@ -59,6 +59,7 @@ export function useTableRuntimeState(venueId: string) {
     queryKey: ['tables', 'runtime-state', venueId],
     queryFn: async () => {
       console.log('[TABLE_RUNTIME_STATE] Fetching tables for venue:', venueId);
+      console.log('[TABLE_RUNTIME_STATE] Venue ID type:', typeof venueId);
       
       // First, let's check all tables (including inactive ones) to debug
       const { data: allTables, error: allTablesError } = await supabase
@@ -75,6 +76,15 @@ export function useTableRuntimeState(venueId: string) {
         .order('label');
       
       console.log('[TABLE_RUNTIME_STATE] All tables (including inactive):', allTables);
+      console.log('[TABLE_RUNTIME_STATE] All tables error:', allTablesError);
+      
+      // Let's also check what venues exist
+      const { data: allVenues, error: venuesError } = await supabase
+        .from('venues')
+        .select('venue_id, name')
+        .limit(10);
+      
+      console.log('[TABLE_RUNTIME_STATE] All venues in database:', allVenues);
       
       // Use the raw tables API instead of the problematic view
       const { data, error } = await supabase
@@ -174,6 +184,15 @@ export function useTableCounters(venueId: string) {
         reserved_now: result?.reserved_now,
         reserved_later: result?.reserved_later
       });
+      
+      // Let's also check what tables actually exist in the database
+      const { data: debugTables, error: debugError } = await supabase
+        .from('tables')
+        .select('*')
+        .eq('venue_id', venueId);
+      
+      console.log('[TABLE COUNTERS] Debug - All tables in database for venue:', debugTables);
+      console.log('[TABLE COUNTERS] Debug - Tables count:', debugTables?.length || 0);
       return result;
     },
     enabled: !!venueId
