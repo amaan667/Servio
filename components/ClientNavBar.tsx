@@ -25,18 +25,20 @@ export default function ClientNavBar() {
   // Also add additional checks to ensure session is valid
   const isAuthenticated = !loading && !!session?.user && !!session?.access_token;
 
-  // Debug logging for authentication state
+  // Debug logging for authentication state (reduced)
   useEffect(() => {
-    console.log('[NAV DEBUG] Authentication state changed:', {
-      loading,
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      hasAccessToken: !!session?.access_token,
-      userId: session?.user?.id,
-      isAuthenticated,
-      pathname,
-      timestamp: new Date().toISOString()
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[NAV DEBUG] Authentication state changed:', {
+        loading,
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        hasAccessToken: !!session?.access_token,
+        userId: session?.user?.id,
+        isAuthenticated,
+        pathname,
+        timestamp: new Date().toISOString()
+      });
+    }
   }, [loading, session, isAuthenticated, pathname]);
 
   // Determine if we're on dashboard pages

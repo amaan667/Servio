@@ -36,7 +36,7 @@ export const supabaseBrowser = () => {
       } as any;
     }
     
-    console.log('[SUPABASE] Creating browser client with URL:', supabaseUrl);
+    // console.log('[SUPABASE] Creating browser client with URL:', supabaseUrl);
     
     supabaseBrowserInstance = createBrowserClient(
       supabaseUrl,

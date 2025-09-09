@@ -109,24 +109,19 @@ export default function AuthProvider({
   }, []);
 
   const signOut = async () => {
-    console.log('[AUTH DEBUG] AuthProvider signOut called');
     try {
       const supabase = supabaseBrowser();
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.log('[AUTH DEBUG] Supabase signOut error:', error);
-      } else {
-        console.log('[AUTH DEBUG] Supabase signOut successful');
+        console.error('[AUTH DEBUG] Supabase signOut error:', error);
       }
       
       // Clear local state immediately
       setSession(null);
       setUser(null);
-      
-      console.log('[AUTH DEBUG] AuthProvider signOut completed');
     } catch (error) {
-      console.log('[AUTH DEBUG] AuthProvider signOut error:', error);
+      console.error('[AUTH DEBUG] AuthProvider signOut error:', error);
       // Clear local state even if there's an error
       setSession(null);
       setUser(null);

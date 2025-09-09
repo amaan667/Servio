@@ -35,14 +35,6 @@ function getOrCreateClient() {
     return supabaseInstance;
   }
 
-  console.log('[AUTH DEBUG] === SUPABASE CLIENT CREATION ===');
-  console.log('[AUTH DEBUG] Environment variables check:', {
-    hasSupabaseUrl: !!url,
-    hasAnonKey: !!anon,
-    supabaseUrl: url?.substring(0, 20) + '...',
-    anonKeyLength: anon?.length
-  });
-
   supabaseInstance = createBrowserClient(url, anon, {
     auth: {
       persistSession: true, // Enable session persistence for mobile compatibility
@@ -51,8 +43,6 @@ function getOrCreateClient() {
       flowType: 'pkce',
     },
   });
-
-  console.log('[AUTH DEBUG] Supabase client created successfully (WITH AUTO RESTORATION)');
   return supabaseInstance;
 }
 
@@ -60,9 +50,6 @@ export const supabase = getOrCreateClient();
 
 // Keep the old createClient function for backward compatibility
 export function createClient() {
-  if (typeof window !== 'undefined') {
-    console.log('[AUTH DEBUG] createClient() called - returning existing supabase instance');
-  }
   return getOrCreateClient();
 }
 
