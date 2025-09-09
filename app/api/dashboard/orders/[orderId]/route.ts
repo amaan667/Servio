@@ -9,8 +9,8 @@ function admin() {
   return createClient();
 }
 
-export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
+export async function PATCH(req: Request, context: { params: Promise<{ orderId: string }> }) {
+  const { orderId: id } = await context.params;
   const body = await req.json().catch(() => ({}));
   const { order_status, payment_status } = body as { order_status?: 'PLACED'|'IN_PREP'|'READY'|'COMPLETED'|'CANCELLED', payment_status?: 'UNPAID'|'PAID'|'REFUNDED' };
   if (!id) {
@@ -35,8 +35,8 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   return NextResponse.json({ ok: true, order: data });
 }
 
-export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
+export async function DELETE(_req: Request, context: { params: Promise<{ orderId: string }> }) {
+  const { orderId: id } = await context.params;
   if (!id) return NextResponse.json({ ok: false, error: 'id required' }, { status: 400 });
   const supa = await admin();
   const { error } = await supa.from('orders').delete().eq('id', id);
