@@ -148,6 +148,37 @@ export async function POST(req: Request) {
       if (existingTable) {
         console.log('[ORDERS POST] Table found:', existingTable.id);
         tableId = existingTable.id;
+        // Ensure there is an open session marked OCCUPIED when an order is being placed
+        const { data: existingSession } = await supabase
+          .from('table_sessions')
+          .select('id, status')
+          .eq('venue_id', body.venue_id)
+          .eq('table_id', existingTable.id)
+          .is('closed_at', null)
+          .maybeSingle();
+
+        if (existingSession) {
+          const { error: updateSessionErr } = await supabase
+            .from('table_sessions')
+            .update({ status: 'OCCUPIED' })
+            .eq('id', existingSession.id);
+          if (updateSessionErr) {
+            console.log('[ORDERS POST] Failed to update existing table session:', updateSessionErr);
+          }
+        } else {
+          const { error: sessionErr } = await supabase
+            .from('table_sessions')
+            .insert({
+              venue_id: body.venue_id,
+              table_id: existingTable.id,
+              status: 'OCCUPIED',
+              opened_at: new Date().toISOString(),
+              closed_at: null
+            });
+          if (sessionErr) {
+            console.log('[ORDERS POST] Failed to create table session for existing table:', sessionErr);
+          }
+        }
       } else {
         console.log('[ORDERS POST] Table not found, auto-creating table for QR code...');
         
@@ -181,20 +212,18 @@ export async function POST(req: Request) {
         });
         tableId = newTable.id;
 
-        // Create a table session for the new table
+        // Ensure a table session exists and is marked OCCUPIED (customer just placed order)
         const { error: sessionErr } = await supabase
           .from('table_sessions')
           .insert({
             venue_id: body.venue_id,
             table_id: newTable.id,
-            status: 'FREE',
+            status: 'OCCUPIED',
             opened_at: new Date().toISOString(),
             closed_at: null
           });
-
         if (sessionErr) {
           console.log('[ORDERS POST] Failed to create table session:', sessionErr);
-          // Don't fail the request if session creation fails
         }
       }
     }

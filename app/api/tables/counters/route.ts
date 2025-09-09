@@ -43,8 +43,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    // The function returns a single row with all counters
-    const counter = counters?.[0] || {
+    // The function may return a single object; normalize to object
+    const counter = (Array.isArray(counters) ? counters?.[0] : counters) || {
       total_tables: 0,
       available: 0,
       occupied: 0,

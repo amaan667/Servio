@@ -98,7 +98,7 @@ export function useTableRuntimeState(venueId: string) {
       console.log('[TABLE_RUNTIME_STATE] Orders for this venue:', orders);
       console.log('[TABLE_RUNTIME_STATE] Orders error:', ordersError);
       
-      // Use the raw tables API instead of the problematic view
+      // Use the raw tables API
       const { data: tablesData, error } = await supabase
         .from('tables')
         .select(`
@@ -145,12 +145,13 @@ export function useTableRuntimeState(venueId: string) {
       console.log('[TABLE_RUNTIME_STATE] Raw tables data:', finalTablesData);
       console.log('[TABLE_RUNTIME_STATE] Tables count:', finalTablesData?.length || 0);
       
-      // Get table sessions for each table
+      // Get table sessions for each table (only open sessions)
       const tableIds = finalTablesData.map((t: any) => t.id);
       const { data: sessions, error: sessionsError } = await supabase
         .from('table_sessions')
         .select('*')
         .eq('venue_id', venueId)
+        .is('closed_at', null)
         .in('table_id', tableIds);
       
       if (sessionsError) {
