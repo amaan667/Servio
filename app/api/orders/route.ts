@@ -264,6 +264,29 @@ export async function POST(req: Request) {
     // Note: items are embedded in orders payload in this schema; if you also mirror rows in order_items elsewhere, log success after that insert
     console.log('[ORDERS POST] order_items insert success (embedded items)');
     
+    // Update table session status to OCCUPIED if we have a table
+    if (tableId && inserted?.[0]?.id) {
+      console.log('[ORDERS POST] Updating table session status to OCCUPIED for table:', tableId);
+      
+      // Update existing table session to OCCUPIED status
+      const { error: sessionUpdateError } = await supabase
+        .from('table_sessions')
+        .update({ 
+          status: 'OCCUPIED',
+          order_id: inserted[0].id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('table_id', tableId)
+        .is('closed_at', null);
+
+      if (sessionUpdateError) {
+        console.log('[ORDERS POST] Warning: Failed to update table session status:', sessionUpdateError);
+        // Don't fail the order creation if session update fails
+      } else {
+        console.log('[ORDERS POST] Successfully updated table session to OCCUPIED for table:', tableId);
+      }
+    }
+    
     const response = { 
       ok: true, 
       order: inserted?.[0] ?? null,
@@ -279,6 +302,7 @@ export async function POST(req: Request) {
     // Log that real-time updates should be triggered
     console.log('[ORDERS POST] Real-time updates will be triggered automatically via Supabase subscriptions');
     console.log('[ORDERS POST] Dashboard, analytics, and live orders components will update instantly');
+    console.log('[ORDERS POST] Table management will show OCCUPIED status for the table');
     
     return NextResponse.json(response);
   } catch (e: any) {
