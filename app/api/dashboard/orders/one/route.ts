@@ -15,7 +15,7 @@ type OrderRow = {
   items: any[];                    // jsonb[]
   total_amount: number;
   created_at: string;              // timestamptz
-  status: 'pending' | 'preparing' | 'served' | 'delivered' | 'cancelled';
+  order_status: 'pending' | 'preparing' | 'served' | 'delivered' | 'cancelled';
   payment_status: 'paid' | 'unpaid' | null;
 };
 
