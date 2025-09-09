@@ -25,6 +25,7 @@ interface Order {
   customer_email?: string;
   order_status: string;
   payment_status: string;
+  payment_method?: string;
   total_amount: number;
   notes?: string;
   items: OrderItem[];
