@@ -110,18 +110,14 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   };
 
   const clearAllTables = () => {
-    // Always keep at least one table (table 1) for QR generation
-    setSelectedTables(['1']);
-    console.log('🔍 [QR CLIENT] Cleared all tables, reset to default table 1');
+    // Clear all tables - start with empty state
+    setSelectedTables([]);
+    console.log('🔍 [QR CLIENT] Cleared all tables, starting with empty state');
   };
 
   const removeTable = (tableNumber: string) => {
-    if (selectedTables.length > 1) {
-      setSelectedTables(selectedTables.filter(t => t !== tableNumber));
-    } else {
-      // If this is the last table, don't remove it - keep at least one
-      console.log('🔍 [QR CLIENT] Cannot remove last table, keeping table', tableNumber);
-    }
+    setSelectedTables(selectedTables.filter(t => t !== tableNumber));
+    console.log('🔍 [QR CLIENT] Removed table', tableNumber, 'remaining tables:', selectedTables.filter(t => t !== tableNumber));
   };
 
   const updateTableNumber = (oldTableNumber: string, newTableNumber: string) => {
@@ -471,18 +467,9 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         // Check if tables were specified in URL parameters
         const currentSelectedTables = getInitialTables();
         if (currentSelectedTables.length === 0) {
-          // No tables in URL, use active tables count to generate default selection
-          if (activeTables > 0) {
-            // Generate table numbers 1 through activeTablesCount
-            const tableNumbers = Array.from({ length: activeTables }, (_, i) => (i + 1).toString());
-            setSelectedTables(tableNumbers);
-            console.log('🔍 [QR CLIENT] Auto-generated QR codes for tables:', tableNumbers.join(', '));
-          } else {
-            // No active tables, but still allow manual QR code generation
-            // Set a default table so users can still generate QR codes
-            setSelectedTables(['1']);
-            console.log('🔍 [QR CLIENT] No active tables, setting default table 1 for QR generation');
-          }
+          // No tables in URL - start with empty state, let user choose what to generate
+          setSelectedTables([]);
+          console.log('🔍 [QR CLIENT] No tables in URL, starting with empty state - user must choose tables to generate');
         } else {
           // Tables were specified in URL, keep them (including single table like '1')
           console.log('🔍 [QR CLIENT] Using tables from URL:', currentSelectedTables.join(', '));
@@ -492,7 +479,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         console.log('🔍 [QR CLIENT] Final stats:', {
           activeTables,
           selectedTables: currentSelectedTables.length === 0 
-            ? (activeTables > 0 ? Array.from({ length: activeTables }, (_, i) => (i + 1).toString()) : ['1'])
+            ? []
             : currentSelectedTables
         });
         
@@ -503,7 +490,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         setError(`Failed to load stats: ${error.message}`);
         // Set default values on error
         setStats({ activeTablesNow: 0 });
-        setSelectedTables(['1']);
+        setSelectedTables([]);
         setLoading(false);
       }
     };
@@ -598,14 +585,14 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                       : `Currently generating QR codes for ${selectedTables.length} active table${selectedTables.length !== 1 ? 's' : ''}`
                     }
                   </div>
-                  {selectedTables.length > 1 && (
+                  {selectedTables.length > 0 && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={clearAllTables}
                       className="text-xs"
                     >
-                      Reset to Default
+                      Clear All
                     </Button>
                   )}
                 </div>
