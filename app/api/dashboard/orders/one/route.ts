@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     );
 
     // Use default timezone since venues table doesn't have timezone column
-    const { startUtcISO, endUtcISO, zone } = todayWindowForTZ('Europe/London');
+    const zone = 'Europe/London';
 
     // base query: always sort by created_at DESC  ✅ (Requirement #2)
     let q = supabase
@@ -57,19 +57,15 @@ export async function GET(req: Request) {
       q = q.gte('created_at', timeWindow.startUtcISO);
     } else if (scope === 'earlier') {
       // Earlier today: orders from today but more than 30 minutes ago
-      const timeWindow = earlierTodayWindow('Europe/London');
-      console.log('[DEBUG] Earlier today filtering:', {
-        scope,
-        timezone: 'Europe/London',
-        timeWindow,
-        startUtcISO: timeWindow.startUtcISO,
-        endUtcISO: timeWindow.endUtcISO
-      });
-      q = q.gte('created_at', timeWindow.startUtcISO).lt('created_at', timeWindow.endUtcISO);
+      const liveWindow = liveOrdersWindow();
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      q = q.gte('created_at', todayStart.toISOString()).lt('created_at', liveWindow.startUtcISO);
     } else if (scope === 'history') {
       // History: orders from yesterday and earlier
-      const timeWindow = historyWindow('Europe/London');
-      q = q.lt('created_at', timeWindow.endUtcISO).limit(500);
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      q = q.lt('created_at', todayStart.toISOString()).limit(500);
     }
 
     const { data, error } = await q;
@@ -81,7 +77,7 @@ export async function GET(req: Request) {
     console.log('[TAB_FILTERING] ===== TAB SELECTION DEBUG =====');
     console.log('[TAB_FILTERING] Tab:', scope.toUpperCase());
     console.log('[TAB_FILTERING] Venue ID:', venueId);
-    console.log('[TAB_FILTERING] Venue Timezone:', 'Europe/London');
+    console.log('[TAB_FILTERING] Venue Timezone:', zone);
     console.log('[TAB_FILTERING] Order Count:', data?.length || 0);
     
     if (data && data.length > 0) {
