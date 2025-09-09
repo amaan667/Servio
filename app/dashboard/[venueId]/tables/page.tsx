@@ -12,6 +12,9 @@ interface TableManagementPageProps {
 async function fetchTablesData(venueId: string) {
   const supabase = await createServerSupabase();
   
+  console.log('[SERVER] Fetching tables for venue:', venueId);
+  console.log('[SERVER] Supabase client created:', !!supabase);
+  
   // Fetch tables
   const { data: tables, error: tablesError } = await supabase
     .from('tables')
@@ -27,10 +30,14 @@ async function fetchTablesData(venueId: string) {
     .eq('is_active', true)
     .order('label');
 
+  console.log('[SERVER] Tables fetched:', tables?.length || 0, 'Error:', tablesError?.message);
+
   // Fetch table counters
   const { data: countersData, error: countersError } = await supabase.rpc('api_table_counters', {
     p_venue_id: venueId
   });
+
+  console.log('[SERVER] Counters fetched:', countersData, 'Error:', countersError?.message);
 
   // Fetch table sessions
   const tableIds = tables?.map((t: any) => t.id) || [];
@@ -80,6 +87,9 @@ async function fetchTablesData(venueId: string) {
     unassigned_reservations: 0
   };
 
+  console.log('[SERVER] Processed tables:', processedTables?.length || 0);
+  console.log('[SERVER] Final counters:', counters);
+
   return {
     tables: processedTables,
     counters,
@@ -94,8 +104,16 @@ async function fetchTablesData(venueId: string) {
 export default async function TableManagementPage({ params }: TableManagementPageProps) {
   const { venueId } = await params;
   
+  console.log('[SERVER PAGE] venueId:', venueId);
+  
   // Fetch data server-side
   const { tables, counters, errors } = await fetchTablesData(venueId);
+  
+  console.log('[SERVER PAGE] Data to pass to client:', {
+    tablesLength: tables?.length || 0,
+    counters,
+    errors
+  });
   
   return (
     <div className="min-h-screen bg-background">

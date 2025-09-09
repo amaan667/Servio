@@ -52,23 +52,56 @@ export function TableManagementRefactored({
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
   
+  console.log('[CLIENT] TableManagementRefactored props:', {
+    venueId,
+    initialTablesLength: initialTables.length,
+    initialCounters,
+    initialErrors
+  });
+  
   // Use initial data if provided, otherwise fall back to hooks
   const { 
-    data: tables = initialTables, 
+    data: tables, 
     isLoading: tablesLoading, 
     error: tablesError, 
     refetch: refetchTables 
   } = useTableRuntimeState(venueId);
   
   const { 
-    data: counters = initialCounters, 
+    data: counters, 
     isLoading: countersLoading,
     refetch: refetchCounters
   } = useTableCounters(venueId);
 
-  // Override with initial data if available (server-side data)
-  const finalTables = initialTables.length > 0 ? initialTables : tables;
-  const finalCounters = initialCounters.total_tables > 0 ? initialCounters : counters;
+  // Use initial data from server if available, otherwise use data from hooks
+  // Prioritize client-side data if server-side data is empty but client has data
+  const hasServerData = initialTables.length > 0 || initialCounters.total_tables > 0;
+  const hasClientData = (tables && tables.length > 0) || (counters && counters.total_tables > 0);
+  
+  // If we have client data but no server data, use client data
+  // This handles cases where server-side fetch fails but client-side works
+  const finalTables = hasClientData && !hasServerData ? (tables || []) : 
+                      initialTables.length > 0 ? initialTables : (tables || []);
+  
+  const finalCounters = hasClientData && !hasServerData ? (counters || initialCounters) :
+                        initialCounters.total_tables > 0 ? initialCounters : (counters || {
+    total_tables: 0,
+    available: 0,
+    occupied: 0,
+    reserved_now: 0,
+    reserved_later: 0,
+    unassigned_reservations: 0
+  });
+  
+  console.log('[CLIENT] Final data:', {
+    hasServerData,
+    hasClientData,
+    finalTablesLength: finalTables.length,
+    finalTables: finalTables.slice(0, 2), // Show first 2 tables for debugging
+    finalCounters,
+    tablesFromHook: tables?.length || 0,
+    countersFromHook: counters
+  });
 
   // Set up real-time updates for table changes
   useTableRealtime(venueId, () => {
@@ -124,7 +157,8 @@ export function TableManagementRefactored({
   };
 
 
-  const isLoading = tablesLoading || countersLoading;
+  // Only show loading if we don't have any data (neither from server nor client)
+  const isLoading = (tablesLoading || countersLoading) && finalTables.length === 0 && !hasServerData;
   const error = tablesError;
 
   if (isLoading) {
