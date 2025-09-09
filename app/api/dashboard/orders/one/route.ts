@@ -53,14 +53,14 @@ export async function GET(req: Request) {
 
     if (scope === 'live') {
       // Live orders: last 30 minutes only
-      const timeWindow = liveOrdersWindow();
-      q = q.gte('created_at', timeWindow.startUtcISO);
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+      q = q.gte('created_at', thirtyMinutesAgo.toISOString());
     } else if (scope === 'earlier') {
       // Earlier today: orders from today but more than 30 minutes ago
-      const liveWindow = liveOrdersWindow();
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      q = q.gte('created_at', todayStart.toISOString()).lt('created_at', liveWindow.startUtcISO);
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+      q = q.gte('created_at', todayStart.toISOString()).lt('created_at', thirtyMinutesAgo.toISOString());
     } else if (scope === 'history') {
       // History: orders from yesterday and earlier
       const todayStart = new Date();
