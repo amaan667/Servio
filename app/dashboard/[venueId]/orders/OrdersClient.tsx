@@ -81,7 +81,11 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       const venueTz = 'Europe/London';
       
       // Get today's time window
-      const todayWindow = todayWindowForTZ(venueTz);
+      const todayWindowData = todayWindowForTZ(venueTz);
+      const todayWindow = {
+        startUtcISO: todayWindowData.startUtcISO || new Date().toISOString(),
+        endUtcISO: todayWindowData.endUtcISO || new Date().toISOString()
+      };
       setTodayWindow(todayWindow);
       
       // Calculate 30 minutes ago for live orders
@@ -211,7 +215,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           table: 'orders',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Orders real-time update:', payload);
           loadVenueAndOrders();
         }

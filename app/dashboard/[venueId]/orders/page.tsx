@@ -55,7 +55,7 @@ export default async function OrdersPage({
     venueId,
     ordersCount: ordersData?.length || 0,
     error: ordersError?.message,
-    sampleOrders: ordersData?.slice(0, 3).map(o => ({
+    sampleOrders: ordersData?.slice(0, 3).map((o: any) => ({
       id: o.id,
       created_at: o.created_at,
       order_status: o.order_status,
