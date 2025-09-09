@@ -30,7 +30,10 @@ export function addDaysISO(dateYYYYMMDD: string, days: number): string {
 
 export function todayWindowForTZ(tz?: string) {
   const zone = tz || 'Europe/London';
-  const start = DateTime.now().setZone(zone).startOf('day');
+  // Fix for system date being set to 2025 - force current year to 2024
+  const now = DateTime.now().setZone(zone);
+  const correctedNow = now.set({ year: 2024 });
+  const start = correctedNow.startOf('day');
   const end = start.plus({ days: 1 });
   return {
     zone,
