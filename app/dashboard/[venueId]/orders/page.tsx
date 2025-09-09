@@ -44,20 +44,34 @@ export default async function OrdersPage({
 
   if (!venue) redirect('/dashboard');
 
-  // Fetch orders data server-side to prevent client-side loading
-  const timeWindow = liveOrdersWindow();
-  const { data: ordersData } = await supabase
+  // Fetch all orders data server-side to prevent client-side loading
+  const { data: ordersData, error: ordersError } = await supabase
     .from('orders')
     .select('*')
     .eq('venue_id', venueId)
-    .eq('payment_status', 'PAID')
-    .gte('created_at', timeWindow.startUtcISO)
     .order('created_at', { ascending: false });
 
-  // Calculate stats server-side
+  console.log('[ORDERS SSR] Fetched orders:', {
+    venueId,
+    ordersCount: ordersData?.length || 0,
+    error: ordersError?.message,
+    sampleOrders: ordersData?.slice(0, 3).map(o => ({
+      id: o.id,
+      created_at: o.created_at,
+      order_status: o.order_status,
+      customer_name: o.customer_name
+    })) || []
+  });
+
+  // Calculate stats server-side (for live orders only)
+  const timeWindow = liveOrdersWindow();
+  const liveOrders = (ordersData || []).filter((order: any) => 
+    new Date(order.created_at) >= new Date(timeWindow.startUtcISO)
+  );
+  
   const stats = {
-    todayOrders: ordersData?.length || 0,
-    revenue: (ordersData || []).reduce((sum: number, order: any) => {
+    todayOrders: liveOrders.length,
+    revenue: liveOrders.reduce((sum: number, order: any) => {
       let amount = order.total_amount;
       if (!amount || amount <= 0) {
         amount = order.items.reduce((itemSum: number, item: any) => {
