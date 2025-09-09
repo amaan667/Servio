@@ -88,6 +88,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   // Use the authoritative tab counts hook
   const { data: tabCounts, refetch: refetchCounts } = useTabCounts(venueId, 'Europe/London', 30);
+  // Local fallback counts if RPC is unavailable or returns 0
+  const [localCounts, setLocalCounts] = useState<{ live_count: number; earlier_today_count: number; history_count: number } | null>(null);
 
   // Refresh counts when component mounts or venue changes
   useEffect(() => {
@@ -101,6 +103,67 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     if (tabCounts) {
     }
   }, [tabCounts]);
+
+  // Lightweight local recount using COUNT(*) to avoid heavy loads
+  const recalcLocalCounts = async () => {
+    try {
+      if (!todayWindow) return;
+      const supabase = createClient();
+      const startUtc = todayWindow.startUtcISO;
+      const endUtc = todayWindow.endUtcISO;
+      const liveCutoff = new Date(Date.now() - LIVE_ORDER_WINDOW_MS).toISOString();
+
+      const todayTotalPromise = supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('venue_id', venueId)
+        .gte('created_at', startUtc)
+        .lt('created_at', endUtc);
+
+      const liveEligiblePromise = supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('venue_id', venueId)
+        .or(`order_status.in.(PLACED,ACCEPTED,IN_PREP,READY,OUT_FOR_DELIVERY,SERVING,COMPLETED),status.in.(PLACED,ACCEPTED,IN_PREP,READY,OUT_FOR_DELIVERY,SERVING,COMPLETED)`) 
+        .gte('created_at', startUtc)
+        .lt('created_at', endUtc)
+        .gte('created_at', liveCutoff);
+
+      const historyPromise = supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('venue_id', venueId)
+        .lt('created_at', startUtc);
+
+      const [{ count: todayTotal }, { count: liveEligible }, { count: historyCount }] = await Promise.all([
+        todayTotalPromise,
+        liveEligiblePromise,
+        historyPromise,
+      ]);
+
+      const live_count = liveEligible || 0;
+      const earlier_today_count = Math.max(0, (todayTotal || 0) - (liveEligible || 0));
+      const history_count = historyCount || 0;
+
+      setLocalCounts({ live_count, earlier_today_count, history_count });
+    } catch (err) {
+      console.error('[LIVE ORDERS] Failed to recalc local counts', err);
+    }
+  };
+
+  // Recalc when today window becomes available
+  useEffect(() => {
+    recalcLocalCounts();
+  }, [todayWindow]);
+
+  // Prefer local counts if RPC is missing or reports 0 while local > 0
+  const getDisplayCount = (key: 'live' | 'all' | 'history') => {
+    const rpc = key === 'live' ? tabCounts?.live_count : key === 'all' ? tabCounts?.earlier_today_count : tabCounts?.history_count;
+    const local = key === 'live' ? localCounts?.live_count : key === 'all' ? localCounts?.earlier_today_count : localCounts?.history_count;
+    if (typeof rpc === 'number' && rpc > 0) return rpc;
+    if (typeof local === 'number' && local > 0) return local;
+    return (typeof rpc === 'number' ? rpc : (local || 0)) || 0;
+  };
 
   // Auto-refresh effect
   useEffect(() => {
@@ -116,6 +179,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Only refresh counts, not the full order list to avoid overwriting optimistic updates
       // The real-time subscription handles order updates
       refetchCounts();
+      recalcLocalCounts();
     }, refreshInterval);
 
     return () => {
@@ -136,7 +200,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   useEffect(() => {
     const loadVenueAndOrders = async () => {
-      let venueTimezone;
+      let venueTimezone = 'Europe/London';
       if (!venueNameProp) {
         const { data: venueData } = await createClient()
           .from('venues')
@@ -144,7 +208,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           .eq('venue_id', venueId)
           .single();
         setVenueName(venueData?.name || '');
-        venueTimezone = 'Europe/London'; // Default timezone
+        // keep default timezone for now; replace with venue setting when available
       }
       const window = todayWindowForTZ(venueTimezone);
       if (window.startUtcISO && window.endUtcISO) {
@@ -160,7 +224,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .eq('order_status', 'open') // Only show open orders
+        .or(`order_status.in.(${LIVE_WINDOW_STATUSES.join(',')}),status.in.(${LIVE_WINDOW_STATUSES.join(',')})`)
+        .gte('created_at', window.startUtcISO)
+        .lt('created_at', window.endUtcISO)
         .gte('created_at', liveOrdersCutoff)
         .order('created_at', { ascending: false });
 
@@ -242,6 +308,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         }, {});
         setGroupedHistoryOrders(grouped);
       }
+      // Compute local counts as a robust fallback for badges
+      try {
+        const liveCount = (liveData || []).length;
+        const earlierCount = (allTodayOrders || []).length > 0 ? (allTodayOrders as Order[]).length : (allData ? (allData as any[]).length - (liveData ? (liveData as any[]).length : 0) : 0);
+        const historyCount = (historyData || []).length || 0;
+        setLocalCounts({ live_count: liveCount, earlier_today_count: Math.max(0, earlierCount), history_count: historyCount });
+      } catch {}
       setLoading(false);
       
     };
@@ -314,6 +387,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           
           // Refresh the authoritative counts
           refetchCounts();
+          recalcLocalCounts();
           } else if (payload.eventType === 'UPDATE') {
             console.log('[LIVE ORDERS DEBUG] Order updated:', {
               orderId: newOrder.id,
@@ -372,6 +446,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             
             // Refresh the authoritative counts
             refetchCounts();
+            recalcLocalCounts();
           } else if (payload.eventType === 'DELETE') {
             const deletedOrder = payload.old as Order;
             console.log('[LIVE ORDERS DEBUG] Order deleted:', {
@@ -385,6 +460,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             
             // Refresh the authoritative counts
             refetchCounts();
+            recalcLocalCounts();
           }
         }
       )
@@ -676,9 +752,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <div className="flex items-center justify-center gap-3">
             <div className="inline-flex rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
               {[
-                { key:'live',  label:'Live Orders',    hint:'Last 30 min', count: tabCounts?.live_count || 0 },
-                { key:'all', label:'Earlier Today',  hint:"Today's orders", count: tabCounts?.earlier_today_count || 0 },
-                { key:'history',  label:'History',        hint:'Previous days', count: tabCounts?.history_count || 0 },
+                { key:'live',  label:'Live Orders',    hint:'Last 30 min', count: getDisplayCount('live') },
+                { key:'all', label:'Earlier Today',  hint:"Today's orders", count: getDisplayCount('all') },
+                { key:'history',  label:'History',        hint:'Previous days', count: getDisplayCount('history') },
               ].map(tab => (
                 <button
                   key={tab.key}
