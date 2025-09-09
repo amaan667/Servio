@@ -85,6 +85,7 @@ export function useTableRuntimeState(venueId: string) {
         .limit(10);
       
       console.log('[TABLE_RUNTIME_STATE] All venues in database:', allVenues);
+      console.log('[TABLE_RUNTIME_STATE] Current venue ID being used:', venueId);
       
       // Let's check what orders exist for this venue to see table numbers
       const { data: orders, error: ordersError } = await supabase
@@ -216,9 +217,26 @@ export function useTableCounters(venueId: string) {
       console.log('[TABLE COUNTERS] Debug - All tables in database for venue:', debugTables);
       console.log('[TABLE COUNTERS] Debug - Tables count:', debugTables?.length || 0);
       
-      // If there are no tables in the database, return zero counts to match reality
+      // If there are no tables in the database, check if we should create virtual tables
+      // based on orders or return zero counts
       if (!debugTables || debugTables.length === 0) {
-        console.log('[TABLE COUNTERS] No tables found in database, returning zero counts');
+        console.log('[TABLE COUNTERS] No tables found in database');
+        
+        // Check if there are any orders that would indicate tables exist
+        const { data: orderTables, error: orderError } = await supabase
+          .from('orders')
+          .select('table_number')
+          .eq('venue_id', venueId)
+          .not('table_number', 'is', null)
+          .order('created_at', { ascending: false });
+        
+        if (orderError) {
+          console.log('[TABLE COUNTERS] Error checking order tables:', orderError);
+        } else {
+          console.log('[TABLE COUNTERS] Tables from orders:', orderTables);
+        }
+        
+        // For now, return zero counts to match the empty state
         return {
           total_tables: 0,
           available: 0,
