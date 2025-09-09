@@ -31,35 +31,18 @@ export async function POST(req: Request) {
 
     console.log('[AUTO CREATE TABLE] Creating table for QR scan:', { venue_id, table_number, table_label });
 
-    // Check if table already exists
-    const { data: existingTable } = await supabase
-      .from('tables')
-      .select('id, label')
-      .eq('venue_id', venue_id)
-      .eq('label', table_label || table_number.toString())
-      .maybeSingle();
-
-    if (existingTable) {
-      console.log('[AUTO CREATE TABLE] Table already exists:', existingTable.id);
-      return NextResponse.json({
-        success: true,
-        data: {
-          table_id: existingTable.id,
-          table_label: existingTable.label,
-          was_created: false
-        }
-      });
-    }
-
-    // Create the table
+    // Use upsert to prevent duplicates - this will insert if not exists, or return existing if it does
     const { data: table, error: tableError } = await supabase
       .from('tables')
-      .insert({
+      .upsert({
         venue_id: venue_id,
         label: table_label || table_number.toString(),
         seat_count: seat_count,
         area: area,
         is_active: true
+      }, {
+        onConflict: 'venue_id,label',
+        ignoreDuplicates: false
       })
       .select()
       .single();
@@ -72,22 +55,32 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[AUTO CREATE TABLE] Table created successfully:', table.id);
+    console.log('[AUTO CREATE TABLE] Table created/updated successfully:', table.id);
 
-    // Create a table session for the new table
-    const { error: sessionError } = await supabase
+    // Check if session already exists for this table
+    const { data: existingSession } = await supabase
       .from('table_sessions')
-      .insert({
-        venue_id: venue_id,
-        table_id: table.id,
-        status: 'FREE',
-        opened_at: new Date().toISOString(),
-        closed_at: null
-      });
+      .select('id')
+      .eq('table_id', table.id)
+      .eq('venue_id', venue_id)
+      .maybeSingle();
 
-    if (sessionError) {
-      console.error('[AUTO CREATE TABLE] Session creation error:', sessionError);
-      // Don't fail the request if session creation fails, table is still created
+    // Only create session if one doesn't already exist
+    if (!existingSession) {
+      const { error: sessionError } = await supabase
+        .from('table_sessions')
+        .insert({
+          venue_id: venue_id,
+          table_id: table.id,
+          status: 'FREE',
+          opened_at: new Date().toISOString(),
+          closed_at: null
+        });
+
+      if (sessionError) {
+        console.error('[AUTO CREATE TABLE] Session creation error:', sessionError);
+        // Don't fail the request if session creation fails, table is still created
+      }
     }
 
     return NextResponse.json({

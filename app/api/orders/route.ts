@@ -131,13 +131,19 @@ export async function POST(req: Request) {
     if (body.table_number) {
       console.log('[ORDERS POST] Checking if table exists for table_number:', body.table_number);
       
-      // Check if table exists
-      const { data: existingTable } = await supabase
+      // Check if table exists - use more robust lookup
+      const { data: existingTable, error: lookupError } = await supabase
         .from('tables')
         .select('id, label')
         .eq('venue_id', body.venue_id)
         .eq('label', body.table_number.toString())
+        .eq('is_active', true)
         .maybeSingle();
+
+      if (lookupError) {
+        console.log('[ORDERS POST] Table lookup error:', lookupError);
+        return bad(`Failed to check existing tables: ${lookupError.message}`, 500);
+      }
 
       if (existingTable) {
         console.log('[ORDERS POST] Table found:', existingTable.id);
@@ -145,15 +151,18 @@ export async function POST(req: Request) {
       } else {
         console.log('[ORDERS POST] Table not found, auto-creating table for QR code...');
         
-        // Auto-create the table
+        // Use upsert to prevent duplicates - this will insert if not exists, or return existing if it does
         const { data: newTable, error: tableCreateErr } = await supabase
           .from('tables')
-          .insert({
+          .upsert({
             venue_id: body.venue_id,
             label: body.table_number.toString(),
             seat_count: 4, // Default seat count
             area: null,
             is_active: true
+          }, {
+            onConflict: 'venue_id,label',
+            ignoreDuplicates: false
           })
           .select('id, label')
           .single();
@@ -163,7 +172,7 @@ export async function POST(req: Request) {
           return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
         }
 
-        console.log('[ORDERS POST] Table auto-created successfully:', newTable.id);
+        console.log('[ORDERS POST] Table auto-created/updated successfully:', newTable.id);
         console.log('[ORDERS POST] Auto-created table details:', {
           table_id: newTable.id,
           table_label: newTable.label,
