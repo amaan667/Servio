@@ -277,3 +277,42 @@ export function useRemoveTable() {
     }
   });
 }
+
+// Clear all table runtime state (for new day)
+export function useClearAllTables() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ venueId }: { venueId: string }) => {
+      console.log('[TABLE HOOK] Clearing all table runtime state for venue:', venueId);
+      
+      const response = await fetch('/api/tables/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ venue_id: venueId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[TABLE HOOK] Clear tables error:', errorData);
+        throw new Error(errorData.error || 'Failed to clear table runtime state');
+      }
+
+      const responseData = await response.json();
+      console.log('[TABLE HOOK] Clear tables response:', responseData);
+      console.log('[TABLE HOOK] All tables cleared successfully');
+    },
+    onSuccess: (data, variables) => {
+      console.log('[TABLE HOOK] Clear tables onSuccess called, invalidating queries');
+      qc.invalidateQueries({ queryKey: ['tables'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'runtime-state'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'runtime-state', variables.venueId] });
+      qc.invalidateQueries({ queryKey: ['tables', 'counters', variables.venueId] });
+    },
+    onError: (error) => {
+      console.error('[TABLE HOOK] Clear tables onError called:', error);
+    }
+  });
+}

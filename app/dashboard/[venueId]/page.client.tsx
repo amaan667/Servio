@@ -114,20 +114,41 @@ export default function VenueDashboardClient({
     }
   }, [venue, todayWindow, venueTz]);
 
-  // Reset stats when day changes to ensure fresh data
+  // Reset stats and clear tables when day changes to ensure fresh data
   useEffect(() => {
     if (todayWindow) {
-      const checkDayChange = () => {
+      const checkDayChange = async () => {
         const now = new Date();
         const currentDay = now.toDateString();
         const lastDay = new Date(todayWindow.startUtcISO).toDateString();
         
         if (currentDay !== lastDay) {
-          console.log('[DASHBOARD] Day changed, resetting stats cache');
+          console.log('[DASHBOARD] Day changed, resetting stats cache and clearing tables');
           setStatsLoaded(false);
           setStats({ revenue: 0, menuItems: 0, unpaid: 0 });
-          // Reload stats for new day
+          
+          // Clear all table runtime state for new day
           if (venue) {
+            try {
+              console.log('[DASHBOARD] Clearing table runtime state for new day');
+              const response = await fetch('/api/tables/clear', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ venue_id: venue.venue_id }),
+              });
+
+              if (response.ok) {
+                console.log('[DASHBOARD] Table runtime state cleared successfully');
+              } else {
+                console.error('[DASHBOARD] Failed to clear table runtime state:', response.status);
+              }
+            } catch (error) {
+              console.error('[DASHBOARD] Error clearing table runtime state:', error);
+            }
+
+            // Reload stats for new day
             const newWindow = todayWindowForTZ(venueTz);
             setTodayWindow(newWindow);
             loadStats(venue.venue_id, newWindow);
