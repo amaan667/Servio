@@ -284,7 +284,7 @@ export default function VenueDashboardClient({
 
       const { data: orders } = await createClient()
         .from("orders")
-        .select("total_amount, table_number, status, payment_status, created_at, items")
+        .select("total_amount, table_number, order_status, payment_status, created_at, items")
         .eq("venue_id", vId)
         .gte("created_at", window.startUtcISO)
         .lt("created_at", window.endUtcISO);

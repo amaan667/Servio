@@ -124,7 +124,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select('id', { count: 'exact', head: true })
         .eq('venue_id', venueId)
-        .or(`order_status.in.(PLACED,ACCEPTED,IN_PREP,READY,OUT_FOR_DELIVERY,SERVING,COMPLETED),status.in.(PLACED,ACCEPTED,IN_PREP,READY,OUT_FOR_DELIVERY,SERVING,COMPLETED)`) 
+        .in('order_status', ['PLACED','ACCEPTED','IN_PREP','READY','OUT_FOR_DELIVERY','SERVING','COMPLETED'])
         .gte('created_at', startUtc)
         .lt('created_at', endUtc)
         .gte('created_at', liveCutoff);
@@ -224,7 +224,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select('*')
         .eq('venue_id', venueId)
-        .or(`order_status.in.(${LIVE_WINDOW_STATUSES.join(',')}),status.in.(${LIVE_WINDOW_STATUSES.join(',')})`)
+        .in('order_status', LIVE_WINDOW_STATUSES)
         .gte('created_at', window.startUtcISO)
         .lt('created_at', window.endUtcISO)
         .gte('created_at', liveOrdersCutoff)

@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
     const { data, error } = await supabase
       .from('orders')
-      .update({ status })
+      .update({ order_status: status })
       .eq('id', orderId)
       .select();
 

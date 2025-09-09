@@ -79,7 +79,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     const todayWindow = todayWindowForTZ(venueTz);
     const { data: todayOrders } = await supabase
       .from("orders")
-      .select("total_amount, status, payment_status, items")
+      .select("total_amount, order_status, payment_status, items")
       .eq("venue_id", venueId)
       .gte("created_at", todayWindow.startUtcISO)
       .lt("created_at", todayWindow.endUtcISO);
