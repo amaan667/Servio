@@ -99,7 +99,7 @@ export function useTableRuntimeState(venueId: string) {
       console.log('[TABLE_RUNTIME_STATE] Orders error:', ordersError);
       
       // Use the raw tables API instead of the problematic view
-      const { data, error } = await supabase
+      const { data: tablesData, error } = await supabase
         .from('tables')
         .select(`
           id,
@@ -113,8 +113,10 @@ export function useTableRuntimeState(venueId: string) {
         .eq('is_active', true)
         .order('label');
       
+      let finalTablesData = tablesData;
+      
       // If no tables exist in database, create virtual tables from orders
-      if ((!data || data.length === 0) && orders && orders.length > 0) {
+      if ((!tablesData || tablesData.length === 0) && orders && orders.length > 0) {
         console.log('[TABLE_RUNTIME_STATE] No tables in database, creating virtual tables from orders');
         
         // Get unique table numbers from orders
@@ -132,7 +134,7 @@ export function useTableRuntimeState(venueId: string) {
         }));
         
         console.log('[TABLE_RUNTIME_STATE] Created virtual tables:', virtualTables);
-        data = virtualTables;
+        finalTablesData = virtualTables;
       }
       
       if (error) {
@@ -140,11 +142,11 @@ export function useTableRuntimeState(venueId: string) {
         throw error;
       }
       
-      console.log('[TABLE_RUNTIME_STATE] Raw tables data:', data);
-      console.log('[TABLE_RUNTIME_STATE] Tables count:', data?.length || 0);
+      console.log('[TABLE_RUNTIME_STATE] Raw tables data:', finalTablesData);
+      console.log('[TABLE_RUNTIME_STATE] Tables count:', finalTablesData?.length || 0);
       
       // Get table sessions for each table
-      const tableIds = data.map((t: any) => t.id);
+      const tableIds = finalTablesData.map((t: any) => t.id);
       const { data: sessions, error: sessionsError } = await supabase
         .from('table_sessions')
         .select('*')
@@ -156,7 +158,7 @@ export function useTableRuntimeState(venueId: string) {
       }
       
       // Combine tables with their sessions
-      const result = data.map((table: any) => {
+      const result = finalTablesData.map((table: any) => {
         const session = sessions?.find((s: any) => s.table_id === table.id);
         return {
           table_id: table.id,
