@@ -38,18 +38,8 @@ export async function GET(req: Request) {
       { cookies: cookieAdapter(jar) }
     );
 
-    // find venue tz
-    const { data: venue, error: vErr } = await supabase
-      .from('venues')
-      .select('timezone')
-      .eq('venue_id', venueId)
-      .maybeSingle();
-
-    if (vErr) {
-      return NextResponse.json({ ok: false, error: vErr.message }, { status: 500 });
-    }
-
-    const { startUtcISO, endUtcISO, zone } = todayWindowForTZ(venue?.timezone);
+    // Use default timezone since venues table doesn't have timezone column
+    const { startUtcISO, endUtcISO, zone } = todayWindowForTZ('Europe/London');
 
     // base query: always sort by created_at DESC  ✅ (Requirement #2)
     let q = supabase
@@ -67,10 +57,10 @@ export async function GET(req: Request) {
       q = q.gte('created_at', timeWindow.startUtcISO);
     } else if (scope === 'earlier') {
       // Earlier today: orders from today but more than 30 minutes ago
-      const timeWindow = earlierTodayWindow(venue?.timezone);
+      const timeWindow = earlierTodayWindow('Europe/London');
       console.log('[DEBUG] Earlier today filtering:', {
         scope,
-        timezone: venue?.timezone,
+        timezone: 'Europe/London',
         timeWindow,
         startUtcISO: timeWindow.startUtcISO,
         endUtcISO: timeWindow.endUtcISO
@@ -78,7 +68,7 @@ export async function GET(req: Request) {
       q = q.gte('created_at', timeWindow.startUtcISO).lt('created_at', timeWindow.endUtcISO);
     } else if (scope === 'history') {
       // History: orders from yesterday and earlier
-      const timeWindow = historyWindow(venue?.timezone);
+      const timeWindow = historyWindow('Europe/London');
       q = q.lt('created_at', timeWindow.endUtcISO).limit(500);
     }
 
@@ -91,7 +81,7 @@ export async function GET(req: Request) {
     console.log('[TAB_FILTERING] ===== TAB SELECTION DEBUG =====');
     console.log('[TAB_FILTERING] Tab:', scope.toUpperCase());
     console.log('[TAB_FILTERING] Venue ID:', venueId);
-    console.log('[TAB_FILTERING] Venue Timezone:', venue?.timezone || 'UTC');
+    console.log('[TAB_FILTERING] Venue Timezone:', 'Europe/London');
     console.log('[TAB_FILTERING] Order Count:', data?.length || 0);
     
     if (data && data.length > 0) {
