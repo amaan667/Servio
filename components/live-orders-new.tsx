@@ -191,16 +191,18 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         // Filter orders in JavaScript based on tab
         let filteredOrders = fallbackData || [];
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Use the venue timezone bounds that were already calculated
+        const today = new Date(startUtc);
+        const tomorrow = new Date(endUtc);
         
         console.log(`[LIVE_ORDERS] Date filtering:`, {
           now: now.toISOString(),
           today: today.toISOString(),
           tomorrow: tomorrow.toISOString(),
           startUtc,
-          endUtc
+          endUtc,
+          venueTimezone
         });
         
         if (tab === 'live') {
@@ -366,7 +368,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           table: 'orders',
           filter: `venue_id=eq.${venueId}`
         },
-        () => {
+        (payload) => {
+          console.log('[LIVE_ORDERS] Real-time order update received:', payload);
           // Refresh orders when any order changes
           fetchOrders(activeTab, true);
           // Update counts (both RPC and local)

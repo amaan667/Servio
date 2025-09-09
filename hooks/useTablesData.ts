@@ -165,6 +165,17 @@ export function useTablesData(venueId: string) {
     };
   }, [venueId, fetchTables]);
 
+  // Add debugging to track table data changes
+  useEffect(() => {
+    console.log('[TABLES HOOK] Tables data changed:', {
+      venueId,
+      tablesCount: tables.length,
+      tableIds: tables.map(t => t.id),
+      tableLabels: tables.map(t => t.label),
+      timestamp: new Date().toISOString()
+    });
+  }, [tables, venueId]);
+
   return {
     tables,
     loading,
