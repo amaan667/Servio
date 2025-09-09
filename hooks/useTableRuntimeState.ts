@@ -185,6 +185,17 @@ export function useTableCounters(venueId: string) {
         reserved_later: result?.reserved_later
       });
       
+      // Log the actual counter values
+      console.log('[TABLE COUNTERS] ACTUAL COUNTER VALUES:', {
+        total_tables: result?.total_tables,
+        available: result?.available,
+        occupied: result?.occupied,
+        reserved_now: result?.reserved_now,
+        reserved_later: result?.reserved_later,
+        unassigned_reservations: result?.unassigned_reservations,
+        block_window_mins: result?.block_window_mins
+      });
+      
       // Let's also check what tables actually exist in the database
       const { data: debugTables, error: debugError } = await supabase
         .from('tables')
@@ -193,6 +204,21 @@ export function useTableCounters(venueId: string) {
       
       console.log('[TABLE COUNTERS] Debug - All tables in database for venue:', debugTables);
       console.log('[TABLE COUNTERS] Debug - Tables count:', debugTables?.length || 0);
+      
+      // If there are no tables in the database, return zero counts to match reality
+      if (!debugTables || debugTables.length === 0) {
+        console.log('[TABLE COUNTERS] No tables found in database, returning zero counts');
+        return {
+          total_tables: 0,
+          available: 0,
+          occupied: 0,
+          reserved_now: 0,
+          reserved_later: 0,
+          unassigned_reservations: 0,
+          block_window_mins: 0
+        };
+      }
+      
       return result;
     },
     enabled: !!venueId
