@@ -39,8 +39,44 @@ async function fetchTablesData(venueId: string) {
 
   console.log('[SERVER] Counters fetched:', countersData, 'Error:', countersError?.message);
 
+  // If no actual tables exist, check for orders to create virtual tables
+  let finalTables = tables;
+  if ((!tables || tables.length === 0)) {
+    console.log('[SERVER] No actual tables found, checking orders for virtual tables');
+    
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('table_number, payment_status, order_status, created_at')
+      .eq('venue_id', venueId)
+      .not('table_number', 'is', null)
+      .order('created_at', { ascending: false });
+
+    if (ordersError) {
+      console.log('[SERVER] Error fetching orders:', ordersError);
+    } else if (orders && orders.length > 0) {
+      console.log('[SERVER] Found orders with table numbers:', orders.length);
+      
+      // Get unique table numbers from orders
+      const uniqueTableNumbers = [...new Set(orders.map((o: any) => o.table_number).filter(Boolean))];
+      
+      // Create virtual table objects
+      const virtualTables = uniqueTableNumbers.map((tableNumber, index) => ({
+        id: `virtual-${tableNumber}`,
+        venue_id: venueId,
+        label: `Table ${tableNumber}`,
+        seat_count: 4,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        is_virtual: true // Flag to indicate this is a virtual table from orders
+      }));
+      
+      console.log('[SERVER] Created virtual tables:', virtualTables.length);
+      finalTables = virtualTables;
+    }
+  }
+
   // Fetch table sessions
-  const tableIds = tables?.map((t: any) => t.id) || [];
+  const tableIds = finalTables?.map((t: any) => t.id) || [];
   const { data: sessions, error: sessionsError } = await supabase
     .from('table_sessions')
     .select('*')
@@ -49,7 +85,7 @@ async function fetchTablesData(venueId: string) {
     .in('table_id', tableIds);
 
   // Process tables with sessions
-  const processedTables = tables?.map((table: any) => {
+  const processedTables = finalTables?.map((table: any) => {
     const session = sessions?.find((s: any) => s.table_id === table.id);
     return {
       table_id: table.id,
@@ -78,7 +114,7 @@ async function fetchTablesData(venueId: string) {
   }) || [];
 
   // Process counters
-  const counters = Array.isArray(countersData) ? countersData[0] : countersData || {
+  let counters = Array.isArray(countersData) ? countersData[0] : countersData || {
     total_tables: 0,
     available: 0,
     occupied: 0,
@@ -86,6 +122,41 @@ async function fetchTablesData(venueId: string) {
     reserved_later: 0,
     unassigned_reservations: 0
   };
+
+  // If we created virtual tables, we need to recalculate counters based on orders
+  if (finalTables && finalTables.some((t: any) => t.is_virtual)) {
+    console.log('[SERVER] Recalculating counters for virtual tables');
+    
+    // Get orders to calculate real-time status
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('table_number, payment_status, order_status, created_at')
+      .eq('venue_id', venueId)
+      .not('table_number', 'is', null)
+      .order('created_at', { ascending: false });
+
+    if (!ordersError && orders && orders.length > 0) {
+      const uniqueTableNumbers = [...new Set(orders.map((o: any) => o.table_number).filter(Boolean))];
+      
+      // Calculate occupied tables (unpaid orders or paid orders that are still active)
+      const occupiedTables = orders.filter((o: any) => 
+        o.payment_status === 'UNPAID' || 
+        (o.payment_status === 'PAID' && ['PLACED', 'IN_PREP', 'READY'].includes(o.order_status))
+      );
+      const occupiedTableNumbers = [...new Set(occupiedTables.map((o: any) => o.table_number))];
+      
+      counters = {
+        total_tables: uniqueTableNumbers.length,
+        available: uniqueTableNumbers.length - occupiedTableNumbers.length,
+        occupied: occupiedTableNumbers.length,
+        reserved_now: 0,
+        reserved_later: 0,
+        unassigned_reservations: 0
+      };
+      
+      console.log('[SERVER] Virtual table counters:', counters);
+    }
+  }
 
   console.log('[SERVER] Processed tables:', processedTables?.length || 0);
   console.log('[SERVER] Final counters:', counters);

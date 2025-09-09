@@ -75,16 +75,16 @@ export function TableManagementRefactored({
 
   // Use initial data from server if available, otherwise use data from hooks
   // Prioritize client-side data if server-side data is empty but client has data
-  const hasServerData = initialTables.length > 0 || initialCounters.total_tables > 0;
-  const hasClientData = (tables && tables.length > 0) || (counters && counters.total_tables > 0);
+  const hasServerTables = initialTables.length > 0;
+  const hasServerCounters = initialCounters.total_tables > 0;
+  const hasClientTables = (tables && tables.length > 0);
+  const hasClientCounters = (counters && counters.total_tables > 0);
   
-  // If we have client data but no server data, use client data
-  // This handles cases where server-side fetch fails but client-side works
-  const finalTables = hasClientData && !hasServerData ? (tables || []) : 
-                      initialTables.length > 0 ? initialTables : (tables || []);
+  // For tables: prefer server data if available, otherwise use client data
+  const finalTables = hasServerTables ? initialTables : (tables || []);
   
-  const finalCounters = hasClientData && !hasServerData ? (counters || initialCounters) :
-                        initialCounters.total_tables > 0 ? initialCounters : (counters || {
+  // For counters: prefer server data if available, otherwise use client data
+  const finalCounters = hasServerCounters ? initialCounters : (counters || {
     total_tables: 0,
     available: 0,
     occupied: 0,
@@ -94,8 +94,10 @@ export function TableManagementRefactored({
   });
   
   console.log('[CLIENT] Final data:', {
-    hasServerData,
-    hasClientData,
+    hasServerTables,
+    hasServerCounters,
+    hasClientTables,
+    hasClientCounters,
     finalTablesLength: finalTables.length,
     finalTables: finalTables.slice(0, 2), // Show first 2 tables for debugging
     finalCounters,
@@ -158,7 +160,7 @@ export function TableManagementRefactored({
 
 
   // Only show loading if we don't have any data (neither from server nor client)
-  const isLoading = (tablesLoading || countersLoading) && finalTables.length === 0 && !hasServerData;
+  const isLoading = (tablesLoading || countersLoading) && finalTables.length === 0 && !hasServerTables;
   const error = tablesError;
 
   if (isLoading) {
