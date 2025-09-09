@@ -468,10 +468,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
         setStats({ activeTablesNow: activeTables });
         
-        // Only auto-generate table selection if no tables were specified in URL
+        // Check if tables were specified in URL parameters
         const currentSelectedTables = getInitialTables();
-        if (currentSelectedTables.length === 1 && currentSelectedTables[0] === '1') {
-          // No specific tables in URL, use active tables count to generate default selection
+        if (currentSelectedTables.length === 0) {
+          // No tables in URL, use active tables count to generate default selection
           if (activeTables > 0) {
             // Generate table numbers 1 through activeTablesCount
             const tableNumbers = Array.from({ length: activeTables }, (_, i) => (i + 1).toString());
@@ -484,14 +484,14 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
             console.log('🔍 [QR CLIENT] No active tables, setting default table 1 for QR generation');
           }
         } else {
-          // Tables were specified in URL, keep them
+          // Tables were specified in URL, keep them (including single table like '1')
           console.log('🔍 [QR CLIENT] Using tables from URL:', currentSelectedTables.join(', '));
           setSelectedTables(currentSelectedTables);
         }
         
         console.log('🔍 [QR CLIENT] Final stats:', {
           activeTables,
-          selectedTables: currentSelectedTables.length === 1 && currentSelectedTables[0] === '1' 
+          selectedTables: currentSelectedTables.length === 0 
             ? (activeTables > 0 ? Array.from({ length: activeTables }, (_, i) => (i + 1).toString()) : ['1'])
             : currentSelectedTables
         });
