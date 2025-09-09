@@ -66,19 +66,24 @@ export default function OrderTrackingPage() {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
+      console.log('[ORDER TRACKING] Fetching order:', orderId);
 
-      if (error) {
-        console.error('Failed to fetch order:', error);
-        setError('Order not found or access denied');
+      // Try to fetch order with admin client to bypass RLS
+      const response = await fetch(`/api/orders/${orderId}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('Order not found');
+        } else {
+          setError('Failed to load order details');
+        }
         return;
       }
 
-      setOrder(data);
+      const orderData = await response.json();
+      console.log('[ORDER TRACKING] Order data received:', orderData);
+      
+      setOrder(orderData);
       setLastUpdate(new Date());
     } catch (err) {
       console.error('Error fetching order:', err);
@@ -226,14 +231,12 @@ export default function OrderTrackingPage() {
           <p className="text-gray-600 text-sm sm:text-base">Track your order in real-time</p>
         </div>
 
-        {/* Order Summary Card */}
+        {/* Receipt Header */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Order #{order.id.slice(0, 8).toUpperCase()}</span>
-              <Badge variant="outline" className="text-sm">
-                Table {order.table_number}
-              </Badge>
+            <CardTitle className="text-center">
+              <div className="text-2xl font-bold text-gray-900 mb-2">Receipt</div>
+              <div className="text-lg text-gray-600">Order #{order.id.slice(0, 8).toUpperCase()}</div>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -367,6 +370,38 @@ export default function OrderTrackingPage() {
                   </span>
                 </div>
               ))}
+              
+              {/* Receipt Total */}
+              <div className="pt-4 border-t-2 border-gray-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold text-gray-900">Total:</span>
+                  <span className="text-lg font-bold text-gray-900">{formatCurrency(order.total_amount)}</span>
+                </div>
+                
+                {/* Payment Information */}
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-500">Payment Status:</span>
+                      <p className={`font-medium ${
+                        order.payment_status === 'PAID' ? 'text-green-600' : 
+                        order.payment_status === 'TILL' ? 'text-orange-600' : 
+                        'text-red-600'
+                      }`}>
+                        {order.payment_status === 'PAID' ? '✅ Paid' :
+                         order.payment_status === 'TILL' ? '🏪 Pay at Till' :
+                         '⏳ Unpaid'}
+                      </p>
+                    </div>
+                    {order.payment_method && (
+                      <div>
+                        <span className="font-medium text-gray-500">Payment Method:</span>
+                        <p className="text-gray-900 capitalize">{order.payment_method}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

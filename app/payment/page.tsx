@@ -196,23 +196,27 @@ export default function PaymentPage() {
       case 'demo':
       case 'stripe':
         return {
-          title: "✅ Payment successful",
-          description: "Your order has been confirmed and sent to the kitchen."
+          title: "✅ Payment Successful",
+          description: "Your payment has been processed and your order is confirmed. The kitchen has been notified.",
+          showReceipt: true
         };
       case 'till':
         return {
-          title: "📨 Bill sent to the counter",
-          description: "Please pay with staff when ready."
+          title: "📨 Order Confirmed",
+          description: "Your order has been placed and sent to the kitchen. Please pay with staff when ready.",
+          showReceipt: false
         };
       case 'later':
         return {
-          title: "⏳ Order placed",
-          description: "You can pay later by scanning this table's QR again or at the counter."
+          title: "⏳ Order Confirmed", 
+          description: "Your order has been placed and sent to the kitchen. You can pay later by scanning this table's QR again or at the counter.",
+          showReceipt: false
         };
       default:
         return {
-          title: "✅ Order confirmed",
-          description: "Your order has been processed."
+          title: "✅ Order Confirmed",
+          description: "Your order has been processed and sent to the kitchen.",
+          showReceipt: false
         };
     }
   };
@@ -287,7 +291,7 @@ export default function PaymentPage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            {paymentAction === 'demo' || paymentAction === 'stripe' ? (
+            {successMsg.showReceipt && (
               <Button
                 onClick={() => router.push(`/order-tracking/${orderNumber}`)}
                 className="w-full bg-servio-purple hover:bg-servio-purple-dark"
@@ -295,7 +299,7 @@ export default function PaymentPage() {
                 <Receipt className="h-4 w-4 mr-2" />
                 View Receipt
               </Button>
-            ) : null}
+            )}
             
             <Button
               onClick={() =>
