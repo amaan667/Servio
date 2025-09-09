@@ -141,8 +141,14 @@ export function TableCardRefactored({
 
   const handleQrCodeClick = () => {
     console.log('[TABLE CARD] QR Code clicked for table:', table.table_id);
+    console.log('[TABLE CARD] Table data:', {
+      table_id: table.table_id,
+      label: table.label,
+      venue_id: venueId
+    });
     // Navigate to QR generation page with this table pre-selected
-    const qrUrl = `/generate-qr?venue=${venueId}&table=${table.label}`;
+    const qrUrl = `/generate-qr?venue=${venueId}&table=${encodeURIComponent(table.label)}`;
+    console.log('[TABLE CARD] Generated QR URL:', qrUrl);
     window.open(qrUrl, '_blank');
   };
 

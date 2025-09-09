@@ -45,7 +45,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       } else if (tableParam) {
         // Single table selected
         console.log('🔍 [QR CLIENT] Parsed single table:', tableParam);
-        return [tableParam];
+        console.log('🔍 [QR CLIENT] Single table decoded:', decodeURIComponent(tableParam));
+        return [decodeURIComponent(tableParam)];
       }
     }
     console.log('🔍 [QR CLIENT] No tables in URL, showing empty state');
