@@ -115,9 +115,9 @@ export function useTableRuntimeState(venueId: string) {
       
       let finalTablesData = tablesData;
       
-      // If no tables exist in database, create virtual tables from orders
+      // Only create virtual tables if NO actual tables exist in database
       if ((!tablesData || tablesData.length === 0) && orders && orders.length > 0) {
-        console.log('[TABLE_RUNTIME_STATE] No tables in database, creating virtual tables from orders');
+        console.log('[TABLE_RUNTIME_STATE] No actual tables in database, creating virtual tables from orders');
         
         // Get unique table numbers from orders
         const uniqueTableNumbers = [...new Set(orders.map((o: any) => o.table_number).filter(Boolean))];
@@ -135,6 +135,8 @@ export function useTableRuntimeState(venueId: string) {
         
         console.log('[TABLE_RUNTIME_STATE] Created virtual tables:', virtualTables);
         finalTablesData = virtualTables;
+      } else if (tablesData && tablesData.length > 0) {
+        console.log('[TABLE_RUNTIME_STATE] Using actual tables from database:', tablesData.length);
       }
       
       if (error) {
@@ -245,7 +247,7 @@ export function useTableCounters(venueId: string) {
       // If there are no tables in the database, check if we should create virtual tables
       // based on orders or return zero counts
       if (!debugTables || debugTables.length === 0) {
-        console.log('[TABLE COUNTERS] No tables found in database');
+        console.log('[TABLE COUNTERS] No actual tables found in database, checking orders for virtual tables');
         
         // Check if there are any orders that would indicate tables exist
         const { data: orderTables, error: orderError } = await supabase
@@ -292,6 +294,8 @@ export function useTableCounters(venueId: string) {
           unassigned_reservations: 0,
           block_window_mins: 0
         };
+      } else {
+        console.log('[TABLE COUNTERS] Found actual tables in database, using RPC result');
       }
       
       return result;
