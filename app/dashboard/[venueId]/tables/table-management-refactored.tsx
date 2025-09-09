@@ -16,7 +16,7 @@ import {
   Calendar,
   UserCheck
 } from 'lucide-react';
-import { useTableRuntimeState, useTableCounters, TableRuntimeState } from '@/hooks/useTableRuntimeState';
+import { useTableRuntimeState, useTableCounters, TableRuntimeState, TableCounters } from '@/hooks/useTableRuntimeState';
 import { useTableRealtime } from '@/hooks/useTableRealtime';
 import { TableCardRefactored } from '@/components/table-management/TableCardRefactored';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
@@ -26,29 +26,42 @@ type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED_NOW' | 'RESERVED_LATER
 
 interface TableManagementRefactoredProps {
   venueId: string;
+  initialTables?: TableRuntimeState[];
+  initialCounters?: TableCounters;
+  initialErrors?: {
+    tables?: string;
+    counters?: string;
+    sessions?: string;
+  };
 }
 
-export function TableManagementRefactored({ venueId }: TableManagementRefactoredProps) {
+export function TableManagementRefactored({ 
+  venueId, 
+  initialTables = [], 
+  initialCounters = {
+    total_tables: 0, 
+    available: 0, 
+    occupied: 0, 
+    reserved_now: 0, 
+    reserved_later: 0, 
+    unassigned_reservations: 0 
+  },
+  initialErrors = {}
+}: TableManagementRefactoredProps) {
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
   
+  // Use initial data if provided, otherwise fall back to hooks
   const { 
-    data: tables = [], 
+    data: tables = initialTables, 
     isLoading: tablesLoading, 
     error: tablesError, 
     refetch: refetchTables 
   } = useTableRuntimeState(venueId);
   
   const { 
-    data: counters = { 
-      total_tables: 0, 
-      available: 0, 
-      occupied: 0, 
-      reserved_now: 0, 
-      reserved_later: 0, 
-      unassigned_reservations: 0 
-    }, 
+    data: counters = initialCounters, 
     isLoading: countersLoading,
     refetch: refetchCounters
   } = useTableCounters(venueId);
