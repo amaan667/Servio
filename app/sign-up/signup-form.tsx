@@ -91,9 +91,9 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
         const { data: { user: currentUser } } = await supabaseBrowser().auth.getUser();
         
         if (currentUser) {
-          // User is immediately authenticated, redirect to dashboard
-          console.log('User immediately authenticated, redirecting to dashboard');
-          router.push('/dashboard');
+          // User is immediately authenticated, redirect to home
+          console.log('User immediately authenticated, redirecting to home');
+          router.push('/');
         } else {
           // Email confirmation is required - redirect to sign-in page
           console.log('Email confirmation required, redirecting to sign-in');
