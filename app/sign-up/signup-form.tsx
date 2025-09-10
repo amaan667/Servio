@@ -65,8 +65,8 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           // User is immediately authenticated, redirect to dashboard
           router.push('/dashboard');
         } else {
-          // Email confirmation is required - redirect to sign-in with message
-          router.push('/sign-in?message=Please check your email to confirm your account, then sign in.');
+          // Email confirmation is required - redirect to sign-in page
+          router.push('/sign-in');
         }
       }
     } catch (err: any) {
