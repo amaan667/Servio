@@ -261,7 +261,7 @@ export default function PaymentPage() {
                   {orderNumber}
                 </p>
                 <p className="text-sm text-gray-600 mt-2">
-                  Table {checkoutData.tableNumber}
+                  {checkoutData.orderType === 'counter' ? 'Counter' : 'Table'} {checkoutData.tableNumber}
                 </p>
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <p className="text-sm text-gray-600">Customer</p>
@@ -370,7 +370,7 @@ export default function PaymentPage() {
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">
-                Your Table: {checkoutData.tableNumber || 'Counter'}
+                Your {checkoutData.orderType === 'counter' ? 'Counter' : 'Table'}: {checkoutData.tableNumber}
               </span>
               <span className="font-medium">
                 {checkoutData.cart.reduce((total, item) => total + item.quantity, 0)} items

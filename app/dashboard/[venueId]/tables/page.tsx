@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { TableManagementRefactored } from './table-management-refactored';
+import { TableManagementClientNew } from './table-management-client-new';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 
 interface TableManagementPageProps {
@@ -15,7 +15,7 @@ export default async function TableManagementPage({ params }: TableManagementPag
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <NavigationBreadcrumb venueId={venueId} />
         <Suspense fallback={<div className="text-center py-8 text-gray-600">Loading tables...</div>}>
-          <TableManagementRefactored venueId={venueId} />
+          <TableManagementClientNew venueId={venueId} />
         </Suspense>
       </div>
     </div>

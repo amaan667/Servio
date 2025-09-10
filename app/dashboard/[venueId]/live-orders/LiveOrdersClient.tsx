@@ -584,7 +584,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               </div>
               <div className="text-sm text-gray-500">•</div>
               <div className="font-semibold text-gray-900">
-                {order.source === 'counter' ? 'Counter' : 'Table'} {order.table_number || 'Takeaway'}
+                {order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}
               </div>
             </div>
             {order.customer_name && (

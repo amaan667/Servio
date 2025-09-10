@@ -264,7 +264,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <p className="font-medium">{order.source === 'counter' ? 'Counter' : 'Table'} {order.table_number || 'Takeaway'}</p>
+              <p className="font-medium">{order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}</p>
               <Badge className={`text-xs ${getStatusColor(order.order_status)}`}>
                 {order.order_status.replace('_', ' ')}
               </Badge>

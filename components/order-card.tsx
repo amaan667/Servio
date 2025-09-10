@@ -22,6 +22,7 @@ export type Order = {
   payment_method?: string;
   scheduled_for?: string;
   prep_lead_minutes?: number;
+  source?: 'qr' | 'counter'; // Order source - qr for table orders, counter for counter orders
   items: Array<{
     menu_item_id: string;
     quantity: number;
@@ -221,7 +222,7 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
               {formatCurrency(amount, venueCurrency)}
             </div>
             <div className="text-sm text-gray-500">
-              Table {order.table_number}
+              {order.source === 'counter' ? 'Counter' : 'Table'} {order.table_number}
             </div>
           </div>
         </div>

@@ -414,7 +414,7 @@ export default function CustomerOrderPage() {
         const orderData = {
           venueId: 'demo-cafe',
           venueName: 'Servio Café',
-          tableNumber: safeTable,
+          tableNumber: parseInt(orderLocation) || 1, // Use orderLocation for consistency
           counterNumber: counterNumber,
           orderType: orderType,
           orderLocation: orderLocation,
@@ -532,7 +532,7 @@ export default function CustomerOrderPage() {
       const checkoutData = {
         venueId: venueSlug,
         venueName: 'Restaurant',
-        tableNumber: safeTable,
+        tableNumber: parseInt(orderLocation) || 1, // Use orderLocation to handle both counter and table numbers
         customerName: customerInfo.name.trim(),
         customerPhone: customerInfo.phone.trim(),
         cart: cart.map((item) => ({
@@ -560,7 +560,7 @@ export default function CustomerOrderPage() {
       // Store order data in localStorage for session management (since session_id column doesn't exist in DB yet)
       const orderDataForSession = {
         venueId: venueSlug,
-        tableNumber: safeTable,
+        tableNumber: parseInt(orderLocation) || 1, // Use orderLocation to handle both counter and table numbers
         customerName: customerInfo.name.trim(),
         customerPhone: customerInfo.phone.trim(),
         cart: cart.map((item) => ({
