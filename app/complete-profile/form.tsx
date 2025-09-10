@@ -25,7 +25,14 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
     businessType: "Cafe",
     address: "",
     phone: "",
+    password: "",
+    confirmPassword: "",
   });
+
+  // Check if user signed up with OAuth (Google) and needs to set a password
+  const isOAuthUser = user?.identities?.some((identity: any) => 
+    identity.provider === 'google' || identity.provider === 'oauth'
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +43,34 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       if (!user) {
         setError("No user found. Please sign in again.");
         return;
+      }
+
+      // Validate password if OAuth user is setting one
+      if (isOAuthUser && formData.password) {
+        if (formData.password !== formData.confirmPassword) {
+          setError("Passwords do not match.");
+          setLoading(false);
+          return;
+        }
+        if (formData.password.length < 6) {
+          setError("Password must be at least 6 characters long.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Set password for OAuth users if provided
+      if (isOAuthUser && formData.password) {
+        console.log("[COMPLETE-PROFILE] Setting password for OAuth user");
+        const { error: passwordError } = await createClient().auth.updateUser({
+          password: formData.password
+        });
+        if (passwordError) {
+          console.error('[COMPLETE-PROFILE] Password update error', passwordError);
+          setError(`Failed to set password: ${passwordError.message}`);
+          setLoading(false);
+          return;
+        }
       }
 
       console.log("[COMPLETE-PROFILE] Upserting venue via server route (service role)", user.id);
@@ -164,6 +199,45 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   disabled={loading}
                 />
               </div>
+
+              {isOAuthUser && (
+                <>
+                  <div className="border-t pt-4 mt-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Set Up Password (Optional)</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Set a password so you can also sign in with your email and password in the future.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password (Optional)</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                      placeholder="Create a password"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) =>
+                        setFormData({ ...formData, confirmPassword: e.target.value })
+                      }
+                      placeholder="Confirm your password"
+                      disabled={loading}
+                    />
+                  </div>
+                </>
+              )}
 
               <Button type="submit" disabled={loading} className="w-full">
                 {loading ? "Setting up..." : "Complete Setup"}

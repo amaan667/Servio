@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { User, Building, Mail, Phone, MapPin, Lock, Trash2, Save } from "lucide-react";
@@ -57,6 +57,11 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
   // Account deletion state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
+
+  // Check if user signed up with OAuth (Google) and doesn't have a password yet
+  const isOAuthUser = user?.identities?.some((identity: any) => 
+    identity.provider === 'google' || identity.provider === 'oauth'
+  );
 
   const updateVenueSettings = async () => {
     setLoading(true);
@@ -119,7 +124,8 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         throw new Error(error.message);
       }
 
-      setSuccess('Password updated successfully!');
+      const successMessage = isOAuthUser ? 'Password set successfully! You can now sign in with email and password.' : 'Password updated successfully!';
+      setSuccess(successMessage);
       setShowPasswordDialog(false);
       setCurrentPassword('');
       setNewPassword('');
@@ -127,7 +133,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
       
       toast({
         title: "Success",
-        description: "Password updated successfully!",
+        description: successMessage,
       });
     } catch (err: any) {
       setError(err.message || 'Failed to update password');
@@ -323,45 +329,66 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         </CardContent>
       </Card>
 
-      {/* Password Change */}
+      {/* Password Management */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            Change Password
+            {isOAuthUser ? 'Set Password' : 'Change Password'}
           </CardTitle>
+          <CardDescription>
+            {isOAuthUser 
+              ? 'Set a password so you can also sign in with your email and password'
+              : 'Update your account password'
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
+          {isOAuthUser && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Google Account:</strong> You're currently signed in with Google. 
+                Setting a password will allow you to also sign in with your email and password.
+              </p>
+            </div>
+          )}
+          
           <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className="w-full">
-                Change Password
+                {isOAuthUser ? 'Set Password' : 'Change Password'}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Change Password</DialogTitle>
+                <DialogTitle>{isOAuthUser ? 'Set Password' : 'Change Password'}</DialogTitle>
+                <DialogDescription>
+                  {isOAuthUser 
+                    ? 'Create a password for your account so you can sign in with email and password in the future.'
+                    : 'Enter your new password below.'
+                  }
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="newPassword">New Password</Label>
+                  <Label htmlFor="newPassword">{isOAuthUser ? 'Password' : 'New Password'}</Label>
                   <Input
                     id="newPassword"
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder={isOAuthUser ? 'Create a password' : 'Enter new password'}
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword">{isOAuthUser ? 'Confirm Password' : 'Confirm New Password'}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
+                    placeholder={isOAuthUser ? 'Confirm your password' : 'Confirm new password'}
                   />
                 </div>
                 
@@ -371,7 +398,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                     disabled={loading}
                     className="flex-1"
                   >
-                    {loading ? 'Updating...' : 'Update Password'}
+                    {loading ? (isOAuthUser ? 'Setting...' : 'Updating...') : (isOAuthUser ? 'Set Password' : 'Update Password')}
                   </Button>
                   <Button 
                     variant="outline" 
