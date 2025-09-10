@@ -94,22 +94,22 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     }
 
     // Calculate counts manually including unpaid orders
-    const todayOrders = allOrders?.filter(order => {
+    const todayOrders = allOrders?.filter((order: any) => {
       const orderDate = new Date(order.created_at);
       return orderDate >= todayStart && orderDate < todayEnd;
     }) || [];
 
-    const liveOrders = todayOrders.filter(order => {
+    const liveOrders = todayOrders.filter((order: any) => {
       const orderDate = new Date(order.created_at);
       return orderDate >= thirtyMinutesAgo;
     });
 
-    const earlierTodayOrders = todayOrders.filter(order => {
+    const earlierTodayOrders = todayOrders.filter((order: any) => {
       const orderDate = new Date(order.created_at);
       return orderDate < thirtyMinutesAgo;
     });
 
-    const historyOrders = allOrders?.filter(order => {
+    const historyOrders = allOrders?.filter((order: any) => {
       const orderDate = new Date(order.created_at);
       return orderDate < todayStart;
     }) || [];
@@ -120,7 +120,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       counts.earlier_today_count = earlierTodayOrders.length;
       counts.history_count = historyOrders.length;
       counts.today_orders_count = todayOrders.length;
-      counts.active_tables_count = new Set(todayOrders.map(o => o.table_number)).size;
+      counts.active_tables_count = new Set(todayOrders.map((o: any) => o.table_number)).size;
     }
 
     // Get table counters using the same function as other pages for consistency
@@ -143,7 +143,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
 
     // Calculate today's revenue on the server-side to prevent flickering
     const todayWindow = todayWindowForTZ(venueTz);
-    const { data: todayOrders } = await supabase
+    const { data: todayOrdersForRevenue } = await supabase
       .from("orders")
       .select("total_amount, order_status, payment_status, items")
       .eq("venue_id", venueId)
@@ -151,7 +151,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .lt("created_at", todayWindow.endUtcISO);
 
     // Calculate revenue from today's orders (all are now paid since they only appear after payment)
-    const todayRevenue = (todayOrders ?? []).reduce((sum: number, order: any) => {
+    const todayRevenue = (todayOrdersForRevenue ?? []).reduce((sum: number, order: any) => {
       let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
       if (!Number.isFinite(amount) || amount <= 0) {
         if (Array.isArray(order.items)) {

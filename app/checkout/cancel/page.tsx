@@ -7,7 +7,7 @@ import Image from "next/image";
 
 export default function CancelPage() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get("orderId") as string | undefined;
+  const orderId = searchParams?.get("orderId") as string | undefined;
 
   return (
     <div className="min-h-screen bg-gray-50">

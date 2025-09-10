@@ -8,8 +8,8 @@ import Image from "next/image";
 
 export default function SuccessPage() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get("orderId") as string | undefined;
-  const sessionId = searchParams.get("session_id") as string | undefined;
+  const orderId = searchParams?.get("orderId") as string | undefined;
+  const sessionId = searchParams?.get("session_id") as string | undefined;
   const [state, setState] = useState<"verifying"|"paid"|"unpaid"|"error">("verifying");
 
   useEffect(() => {
