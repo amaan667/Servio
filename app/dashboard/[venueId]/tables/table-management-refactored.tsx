@@ -16,7 +16,7 @@ import {
   Calendar,
   UserCheck
 } from 'lucide-react';
-import { useTableRuntimeState, useTableCounters, TableRuntimeState } from '@/hooks/useTableRuntimeState';
+import { useTableRuntimeState, TableRuntimeState } from '@/hooks/useTableRuntimeState';
 import { useTableRealtime } from '@/hooks/useTableRealtime';
 import { TableCardRefactored } from '@/components/table-management/TableCardRefactored';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
@@ -40,24 +40,29 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     refetch: refetchTables 
   } = useTableRuntimeState(venueId);
   
-  const { 
-    data: counters = { 
-      total_tables: 0, 
-      available: 0, 
-      occupied: 0, 
-      reserved_now: 0, 
-      reserved_later: 0, 
-      unassigned_reservations: 0 
-    }, 
-    isLoading: countersLoading,
-    refetch: refetchCounters
-  } = useTableCounters(venueId);
+  // Calculate counters from actual table data instead of separate API call
+  const counters = useMemo(() => {
+    const total_tables = tables.length;
+    const available = tables.filter(t => t.primary_status === 'FREE' && t.reservation_status === 'NONE').length;
+    const occupied = tables.filter(t => t.primary_status === 'OCCUPIED').length;
+    const reserved_now = tables.filter(t => t.reservation_status === 'RESERVED_NOW').length;
+    const reserved_later = tables.filter(t => t.reservation_status === 'RESERVED_LATER').length;
+    
+    return {
+      total_tables,
+      available,
+      occupied,
+      reserved_now,
+      reserved_later,
+      unassigned_reservations: 0 // This would need to be fetched separately if needed
+    };
+  }, [tables]);
 
   // Set up real-time updates for table changes
   useTableRealtime(venueId, () => {
     console.log('[TABLE_MANAGEMENT] Real-time update triggered, refetching data');
     refetchTables();
-    refetchCounters();
+    // Counters are now calculated from table data, so no need to refetch separately
   });
   
 
@@ -133,7 +138,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
     refetchTables();
   };
 
-  const isLoading = tablesLoading || countersLoading;
+  const isLoading = tablesLoading;
   const error = tablesError;
 
   if (isLoading) {

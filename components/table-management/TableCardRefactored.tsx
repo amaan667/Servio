@@ -60,9 +60,6 @@ export function TableCardRefactored({
     console.log('[TABLE CARD] Action triggered:', { action, tableId: table.table_id, reservationId });
     setIsLoading(true);
     
-    // Optimistic update - call onActionComplete immediately for instant UI feedback
-    onActionComplete();
-    
     try {
       switch (action) {
         case 'seat':
@@ -127,6 +124,8 @@ export function TableCardRefactored({
           break;
       }
       console.log('[TABLE CARD] Action completed successfully:', action);
+      // Only call onActionComplete after successful completion
+      onActionComplete();
     } catch (error) {
       console.error('[TABLE CARD] Action failed:', error);
       // On error, we could show a toast or revert the optimistic update
