@@ -75,6 +75,54 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       // Continue with default counts rather than failing
     }
 
+    // WORKAROUND: Manually calculate counts to include unpaid orders
+    // The RPC function only counts PAID orders, but we need to include UNPAID orders too
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+
+    // Get all orders for manual calculation (including unpaid)
+    const { data: allOrders, error: ordersError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('venue_id', venueId)
+      .order('created_at', { ascending: false });
+
+    if (ordersError) {
+      console.error('Error fetching orders for manual count:', ordersError);
+    }
+
+    // Calculate counts manually including unpaid orders
+    const todayOrders = allOrders?.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate >= todayStart && orderDate < todayEnd;
+    }) || [];
+
+    const liveOrders = todayOrders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate >= thirtyMinutesAgo;
+    });
+
+    const earlierTodayOrders = todayOrders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate < thirtyMinutesAgo;
+    });
+
+    const historyOrders = allOrders?.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate < todayStart;
+    }) || [];
+
+    // Override the counts with manual calculations
+    if (counts) {
+      counts.live_count = liveOrders.length;
+      counts.earlier_today_count = earlierTodayOrders.length;
+      counts.history_count = historyOrders.length;
+      counts.today_orders_count = todayOrders.length;
+      counts.active_tables_count = new Set(todayOrders.map(o => o.table_number)).size;
+    }
+
     // Get table counters using the same function as other pages for consistency
     const { data: tableCounters, error: tableCountersError } = await supabase
       .rpc('api_table_counters', {
