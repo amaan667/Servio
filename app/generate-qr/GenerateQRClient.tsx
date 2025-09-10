@@ -16,6 +16,8 @@ interface Props {
   activeTablesCount: number;
 }
 
+type QRType = 'table' | 'counter';
+
 export default function GenerateQRClient({ venueId, venueName, activeTablesCount }: Props) {
   console.log('🔍 [QR CLIENT] ===== GenerateQRClient Component Initialized =====');
   console.log('🔍 [QR CLIENT] Props received:', {
@@ -69,6 +71,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   };
 
   const [selectedTables, setSelectedTables] = useState<string[]>(getInitialTables());
+  const [selectedCounters, setSelectedCounters] = useState<string[]>([]);
+  const [qrType, setQrType] = useState<QRType>('table');
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({ activeTablesNow: 0 });
   const [loading, setLoading] = useState(true);
@@ -90,10 +94,25 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     }
   };
 
+  // Function to persist selected counters to localStorage
+  const persistSelectedCounters = (counters: string[]) => {
+    if (typeof window !== 'undefined') {
+      const storageKey = `qr-selected-counters-${venueId}`;
+      localStorage.setItem(storageKey, JSON.stringify(counters));
+      console.log('🔍 [QR CLIENT] Persisted counters to localStorage:', counters);
+    }
+  };
+
   // Function to update selected tables and persist them
   const updateSelectedTables = (newTables: string[]) => {
     setSelectedTables(newTables);
     persistSelectedTables(newTables);
+  };
+
+  // Function to update selected counters and persist them
+  const updateSelectedCounters = (newCounters: string[]) => {
+    setSelectedCounters(newCounters);
+    persistSelectedCounters(newCounters);
   };
 
   // Helper function to clean table names (remove "table" prefix if it exists)
@@ -103,25 +122,39 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     return cleaned;
   };
 
+  // Helper function to clean counter names (remove "counter" prefix if it exists)
+  const cleanCounterName = (counterName: string) => {
+    // If the counter name starts with "counter " (case insensitive), remove it
+    const cleaned = counterName.replace(/^counter\s+/i, '');
+    return cleaned;
+  };
+
+  // Get current selection based on QR type
+  const currentSelection = qrType === 'table' ? selectedTables : selectedCounters;
+  
   // Ensure we always have a valid order URL
-  const orderUrl = selectedTables.length > 0 
-    ? `${siteOrigin()}/order?venue=${venueId}&table=${selectedTables[0]}`
+  const orderUrl = currentSelection.length > 0 
+    ? `${siteOrigin()}/order?venue=${venueId}&${qrType}=${currentSelection[0]}`
     : `${siteOrigin()}/order?venue=${venueId}&table=1`;
 
   console.log('🔍 [QR CLIENT] Order URL:', orderUrl);
+  console.log('🔍 [QR CLIENT] QR Type:', qrType);
   console.log('🔍 [QR CLIENT] Selected tables:', selectedTables);
+  console.log('🔍 [QR CLIENT] Selected counters:', selectedCounters);
 
   const handleCopy = async () => {
     try {
-      if (selectedTables.length === 1) {
-        // Copy the single table's URL
-        const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${selectedTables[0]}`;
-        await navigator.clipboard.writeText(tableOrderUrl);
+      if (currentSelection.length === 1) {
+        // Copy the single item's URL
+        const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${currentSelection[0]}`;
+        await navigator.clipboard.writeText(itemOrderUrl);
       } else {
-        // Copy all table URLs in a formatted list
-        const allUrls = selectedTables.map(tableNumber => 
-          `Table ${cleanTableName(tableNumber)}: ${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`
-        ).join('\n');
+        // Copy all URLs in a formatted list
+        const allUrls = currentSelection.map(itemNumber => {
+          const cleanName = qrType === 'table' ? cleanTableName(itemNumber) : cleanCounterName(itemNumber);
+          const label = qrType === 'table' ? 'Table' : 'Counter';
+          return `${label} ${cleanName}: ${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNumber}`;
+        }).join('\n');
         await navigator.clipboard.writeText(allUrls);
       }
       setCopied(true);
@@ -144,6 +177,19 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     }
   };
 
+  const addCounter = () => {
+    const counterName = prompt("Enter counter name or number (e.g., 1, 2, Pickup-1):");
+    if (counterName && counterName.trim()) {
+      const trimmedName = counterName.trim();
+      // Check if counter already exists
+      if (!selectedCounters.includes(trimmedName)) {
+        updateSelectedCounters([...selectedCounters, trimmedName]);
+      } else {
+        alert(`Counter "${trimmedName}" is already added.`);
+      }
+    }
+  };
+
   const addMultipleTables = () => {
     const count = parseInt(prompt("How many tables would you like to add?") || "0");
     if (count > 0 && count <= 50) { // Limit to reasonable number
@@ -155,16 +201,39 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     }
   };
 
+  const addMultipleCounters = () => {
+    const count = parseInt(prompt("How many counters would you like to add?") || "0");
+    if (count > 0 && count <= 50) { // Limit to reasonable number
+      const startNumber = selectedCounters.length === 0 
+        ? 1 
+        : Math.max(...selectedCounters.map(c => parseInt(c) || 0), 0) + 1;
+      const newCounters = Array.from({length: count}, (_, i) => (startNumber + i).toString());
+      updateSelectedCounters([...selectedCounters, ...newCounters]);
+    }
+  };
+
   const clearAllTables = () => {
     // Clear all tables - start with empty state
     updateSelectedTables([]);
     console.log('🔍 [QR CLIENT] Cleared all tables, starting with empty state');
   };
 
+  const clearAllCounters = () => {
+    // Clear all counters - start with empty state
+    updateSelectedCounters([]);
+    console.log('🔍 [QR CLIENT] Cleared all counters, starting with empty state');
+  };
+
   const removeTable = (tableNumber: string) => {
     const newTables = selectedTables.filter(t => t !== tableNumber);
     updateSelectedTables(newTables);
     console.log('🔍 [QR CLIENT] Removed table', tableNumber, 'remaining tables:', newTables);
+  };
+
+  const removeCounter = (counterNumber: string) => {
+    const newCounters = selectedCounters.filter(c => c !== counterNumber);
+    updateSelectedCounters(newCounters);
+    console.log('🔍 [QR CLIENT] Removed counter', counterNumber, 'remaining counters:', newCounters);
   };
 
   const updateTableNumber = (oldTableNumber: string, newTableNumber: string) => {
@@ -187,7 +256,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       printContent.write(`
         <html>
           <head>
-            <title>QR Code - Table ${selectedTables[0]}</title>
+            <title>QR Code - ${qrType === 'table' ? 'Table' : 'Counter'} ${currentSelection[0]}</title>
             <style>
               @media print {
                 body { margin: 0; padding: 0; }
@@ -309,9 +378,9 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
             
             <div class="qr-grid">
               <div class="qr-item">
-                <div class="table-number">Table ${selectedTables[0]}</div>
+                <div class="table-number">${qrType === 'table' ? 'Table' : 'Counter'} ${qrType === 'table' ? cleanTableName(currentSelection[0]) : cleanCounterName(currentSelection[0])}</div>
                 <div class="qr-code">
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(orderUrl)}&format=png&margin=2" alt="QR Code for Table ${selectedTables[0]}" />
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(orderUrl)}&format=png&margin=2" alt="QR Code for ${qrType === 'table' ? 'Table' : 'Counter'} ${currentSelection[0]}" />
                 </div>
                 <div class="scan-text">Scan to order</div>
                 <div class="venue-info">${venueName || "My Venue"}</div>
@@ -455,21 +524,23 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           <body>
             <div class="header">
               <div class="venue-name">${venueName || "My Venue"}</div>
-              <div class="venue-subtitle">QR Code Ordering System - Tables ${selectedTables.join(', ')}</div>
+              <div class="venue-subtitle">QR Code Ordering System - ${qrType === 'table' ? 'Tables' : 'Counters'} ${currentSelection.join(', ')}</div>
             </div>
             
-            ${selectedTables.map((tableNum, index) => {
-              const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNum}`;
+            ${currentSelection.map((itemNum, index) => {
+              const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNum}`;
+              const cleanName = qrType === 'table' ? cleanTableName(itemNum) : cleanCounterName(itemNum);
+              const label = qrType === 'table' ? 'Table' : 'Counter';
               return `
                 <div class="qr-item">
-                  <div class="table-number">Table ${cleanTableName(tableNum)}</div>
+                  <div class="table-number">${label} ${cleanName}</div>
                   <div class="qr-code">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2" alt="QR Code for Table ${tableNum}" />
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2" alt="QR Code for ${label} ${itemNum}" />
                   </div>
                   <div class="scan-text">Scan to order</div>
                   <div class="venue-info">${venueName || "My Venue"}</div>
                 </div>
-                ${(index + 1) % 4 === 0 && index < selectedTables.length - 1 ? '<div class="page-break"></div>' : ''}
+                ${(index + 1) % 4 === 0 && index < currentSelection.length - 1 ? '<div class="page-break"></div>' : ''}
               `;
             }).join('')}
             
@@ -624,20 +695,46 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Table Numbers</Label>
+              <Label>QR Code Type</Label>
+              <div className="mt-2 flex gap-2">
+                <Button
+                  variant={qrType === 'table' ? 'default' : 'outline'}
+                  onClick={() => setQrType('table')}
+                  className="flex-1"
+                >
+                  Tables
+                </Button>
+                <Button
+                  variant={qrType === 'counter' ? 'default' : 'outline'}
+                  onClick={() => setQrType('counter')}
+                  className="flex-1"
+                >
+                  Counters
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {qrType === 'table' 
+                  ? 'Generate QR codes for table service (dine-in restaurants)' 
+                  : 'Generate QR codes for counter service (food trucks, cafes, pickup)'
+                }
+              </p>
+            </div>
+
+            <div>
+              <Label>{qrType === 'table' ? 'Table' : 'Counter'} Numbers</Label>
               <div className="mt-2 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {selectedTables.length === 0 
-                      ? "No tables selected - click the buttons below to add tables for QR code generation"
-                      : `Currently generating QR codes for ${selectedTables.length} active table${selectedTables.length !== 1 ? 's' : ''}`
+                    {currentSelection.length === 0 
+                      ? `No ${qrType}s selected - click the buttons below to add ${qrType}s for QR code generation`
+                      : `Currently generating QR codes for ${currentSelection.length} active ${qrType}${currentSelection.length !== 1 ? 's' : ''}`
                     }
                   </div>
-                  {selectedTables.length > 0 && (
+                  {currentSelection.length > 0 && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={clearAllTables}
+                      onClick={qrType === 'table' ? clearAllTables : clearAllCounters}
                       className="text-xs"
                     >
                       Clear All
@@ -645,34 +742,38 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                   )}
                 </div>
                 
-                {selectedTables.length > 0 && (
+                {currentSelection.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {selectedTables.map((tableNumber, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        Table {cleanTableName(tableNumber)}
-                      </Badge>
-                    ))}
+                    {currentSelection.map((itemNumber, index) => {
+                      const cleanName = qrType === 'table' ? cleanTableName(itemNumber) : cleanCounterName(itemNumber);
+                      const label = qrType === 'table' ? 'Table' : 'Counter';
+                      return (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {label} {cleanName}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 )}
                 
                 <p className="text-xs text-muted-foreground">
-                  💡 QR codes automatically match your active table count
+                  💡 QR codes automatically match your active {qrType} count
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
-                    onClick={addTable}
+                    onClick={qrType === 'table' ? addTable : addCounter}
                     className="flex-1"
                   >
-                    + Add a Table
+                    + Add a {qrType === 'table' ? 'Table' : 'Counter'}
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={addMultipleTables}
+                    onClick={qrType === 'table' ? addMultipleTables : addMultipleCounters}
                     className="flex-1"
                   >
-                    + Add Multiple Tables
+                    + Add Multiple {qrType === 'table' ? 'Tables' : 'Counters'}
                   </Button>
                 </div>
               </div>
@@ -735,32 +836,34 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {selectedTables.length === 0 ? (
+            {currentSelection.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-muted-foreground mb-4">
                   <QrCode className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p className="text-lg font-medium">No QR Codes Generated</p>
-                  <p className="text-sm">Select tables below to generate QR codes for your venue</p>
+                  <p className="text-sm">Select {qrType}s below to generate QR codes for your venue</p>
                 </div>
                 <div className="flex gap-2 justify-center">
-                  <Button onClick={addTable} variant="outline">
+                  <Button onClick={qrType === 'table' ? addTable : addCounter} variant="outline">
                     <Plus className="mr-2 h-4 w-4" />
-                    Add a Table
+                    Add a {qrType === 'table' ? 'Table' : 'Counter'}
                   </Button>
-                  <Button onClick={addMultipleTables} variant="outline">
+                  <Button onClick={qrType === 'table' ? addMultipleTables : addMultipleCounters} variant="outline">
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Multiple Tables
+                    Add Multiple {qrType === 'table' ? 'Tables' : 'Counters'}
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
-                {selectedTables.map((tableNumber, index) => {
-                  const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`;
+                {currentSelection.map((itemNumber, index) => {
+                  const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNumber}`;
+                  const cleanName = qrType === 'table' ? cleanTableName(itemNumber) : cleanCounterName(itemNumber);
+                  const label = qrType === 'table' ? 'Table' : 'Counter';
                   return (
                     <div key={index} className="text-center p-2 sm:p-3 border rounded-lg bg-card relative">
                       <Button
-                        onClick={() => removeTable(tableNumber)}
+                        onClick={() => qrType === 'table' ? removeTable(itemNumber) : removeCounter(itemNumber)}
                         variant="ghost"
                         size="sm"
                         className="absolute top-1 right-1 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
@@ -769,16 +872,16 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                       </Button>
                       <div className="bg-card p-2 rounded-lg shadow-sm inline-block">
                         <img
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 120)}x${Math.min(printSettings.qrSize, 120)}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2`}
-                          alt={`QR Code for Table ${tableNumber}`}
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 120)}x${Math.min(printSettings.qrSize, 120)}&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2`}
+                          alt={`QR Code for ${label} ${itemNumber}`}
                           className="w-20 h-20 sm:w-24 sm:h-24"
                         />
                       </div>
                       <div className="mt-2">
-                        <Badge variant="secondary">Table {cleanTableName(tableNumber)}</Badge>
+                        <Badge variant="secondary">{label} {cleanName}</Badge>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground break-all">
-                        <code className="text-xs">{tableOrderUrl}</code>
+                        <code className="text-xs">{itemOrderUrl}</code>
                       </div>
                     </div>
                   );
@@ -786,13 +889,13 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               </div>
             )}
 
-            {selectedTables.length > 0 && (
+            {currentSelection.length > 0 && (
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={handleCopy} variant="outline" className="flex-1">
                   {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                  {copied ? "Copied!" : selectedTables.length === 1 ? "Copy URL" : "Copy All URLs"}
+                  {copied ? "Copied!" : currentSelection.length === 1 ? "Copy URL" : "Copy All URLs"}
                 </Button>
-                {selectedTables.length === 1 ? (
+                {currentSelection.length === 1 ? (
                   <Button onClick={handlePrint} variant="outline" className="flex-1">
                     <Printer className="mr-2 h-4 w-4" />
                     Print Single
@@ -800,7 +903,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 ) : (
                   <Button onClick={handlePrintAll} variant="default" className="flex-1">
                     <Printer className="mr-2 h-4 w-4" />
-                    Print All Tables
+                    Print All {qrType === 'table' ? 'Tables' : 'Counters'}
                   </Button>
                 )}
               </div>
@@ -825,7 +928,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               <div>
                 <h4 className="font-medium">Generate QR Codes</h4>
                 <p className="text-sm text-muted-foreground">
-                  Create a QR code for each table in your venue
+                  Create QR codes for tables (dine-in) or counters (pickup/food trucks) in your venue
                 </p>
               </div>
             </div>
@@ -836,7 +939,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               <div>
                 <h4 className="font-medium">Print and Display</h4>
                 <p className="text-sm text-muted-foreground">
-                  Print the QR codes and place them on each table
+                  Print the QR codes and place them on tables or at counter locations
                 </p>
               </div>
             </div>
@@ -847,7 +950,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               <div>
                 <h4 className="font-medium">Customers Order</h4>
                 <p className="text-sm text-muted-foreground">
-                  Customers scan the QR code to view your menu and place orders
+                  Customers scan the QR code to view your menu and place orders for pickup or delivery
                 </p>
               </div>
             </div>

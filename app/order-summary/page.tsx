@@ -22,6 +22,9 @@ interface PendingOrderData {
   venueId: string;
   venueName: string;
   tableNumber: number;
+  counterNumber?: string;
+  orderType?: string;
+  orderLocation?: string;
   cart: Array<{
     id: string;
     name: string;
@@ -203,12 +206,16 @@ export default function OrderSummaryPage() {
 
   const handleAddMoreItems = () => {
     if (!orderData) return;
-    router.push(`/order?venue=${orderData.venueId}&table=${orderData.tableNumber}`);
+    const param = orderData.orderType === 'counter' ? 'counter' : 'table';
+    const value = orderData.orderLocation || orderData.tableNumber;
+    router.push(`/order?venue=${orderData.venueId}&${param}=${value}`);
   };
 
   const handleBackToOrder = () => {
     if (!orderData) return;
-    router.push(`/order?venue=${orderData.venueId}&table=${orderData.tableNumber}`);
+    const param = orderData.orderType === 'counter' ? 'counter' : 'table';
+    const value = orderData.orderLocation || orderData.tableNumber;
+    router.push(`/order?venue=${orderData.venueId}&${param}=${value}`);
   };
 
   if (loading) {
@@ -290,8 +297,8 @@ export default function OrderSummaryPage() {
                     <span className="font-medium">{orderData.venueName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Table:</span>
-                    <span className="font-medium">{orderData.tableNumber}</span>
+                    <span className="text-gray-600">{orderData.orderType === 'counter' ? 'Counter:' : 'Table:'}</span>
+                    <span className="font-medium">{orderData.orderLocation || orderData.tableNumber}</span>
                   </div>
                   
                   {/* Customer Information - Highlighted */}
@@ -461,7 +468,7 @@ export default function OrderSummaryPage() {
                   className="w-full"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add More Items to Table
+                  Add More Items to {orderData?.orderType === 'counter' ? 'Counter' : 'Table'}
                 </Button>
                 
                 <Button 

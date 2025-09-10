@@ -36,7 +36,13 @@ export default function CustomerOrderPage() {
   const searchParams = useSearchParams();
   const venueSlug = searchParams?.get("venue") || "venue-1e02af4d"; // Default to known venue
   const tableNumber = searchParams?.get("table") || "1";
+  const counterNumber = searchParams?.get("counter") || "";
   const isDemo = searchParams?.get("demo") === "1";
+  
+  // Determine if this is a counter order or table order
+  const isCounterOrder = !!counterNumber;
+  const orderLocation = isCounterOrder ? counterNumber : tableNumber;
+  const orderType = isCounterOrder ? "counter" : "table";
 
   // Initialize page parameters and check for existing orders
   useEffect(() => {
@@ -48,6 +54,9 @@ export default function CustomerOrderPage() {
       body: JSON.stringify({
         venueSlug,
         tableNumber,
+        counterNumber,
+        orderType,
+        orderLocation,
         isDemo,
         url: window.location.href
       })
@@ -55,7 +64,7 @@ export default function CustomerOrderPage() {
 
     // Check for existing unpaid orders for this table/session
     checkForExistingOrder();
-  }, [venueSlug, tableNumber, isDemo, searchParams]);
+  }, [venueSlug, tableNumber, counterNumber, orderType, orderLocation, isDemo, searchParams]);
 
   const checkForExistingOrder = async () => {
     try {
@@ -185,7 +194,7 @@ export default function CustomerOrderPage() {
             localStorage.setItem('servio-unpaid-order', JSON.stringify(session));
             
             // Redirect to order summary page
-            router.push(`/order-summary?table=${tableNumber}&session=${session.orderId}`);
+            router.push(`/order-summary?${isCounterOrder ? 'counter' : 'table'}=${orderLocation}&session=${session.orderId}`);
             return;
           }
           
@@ -406,6 +415,9 @@ export default function CustomerOrderPage() {
           venueId: 'demo-cafe',
           venueName: 'Servio Café',
           tableNumber: safeTable,
+          counterNumber: counterNumber,
+          orderType: orderType,
+          orderLocation: orderLocation,
           customerName: customerInfo.name.trim(),
           customerPhone: customerInfo.phone.trim(),
           cart: cart.map((item) => ({
@@ -458,6 +470,9 @@ export default function CustomerOrderPage() {
       const orderData = {
         venue_id: venueSlug,
         table_number: safeTable,
+        counter_number: counterNumber,
+        order_type: orderType,
+        order_location: orderLocation,
         customer_name: customerInfo.name.trim(),
         customer_phone: customerInfo.phone.trim(),
         items: cart.map((item) => ({
@@ -668,7 +683,9 @@ export default function CustomerOrderPage() {
                 <h1 className="text-2xl font-bold text-gray-900">
                   {isDemo ? "Servio Café" : venueName}
                 </h1>
-                <p className="text-gray-600">Table {tableNumber}</p>
+                <p className="text-gray-600">
+                  {isCounterOrder ? `Counter ${counterNumber}` : `Table ${tableNumber}`}
+                </p>
               </div>
             </div>
             
