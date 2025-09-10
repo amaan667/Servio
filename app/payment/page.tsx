@@ -105,7 +105,7 @@ export default function PaymentPage() {
         })),
         total_amount: Math.round(checkoutData.total * 100), // Convert to pence
         order_status: 'PLACED',
-        payment_status: action === 'till' ? 'TILL' : action === 'later' ? 'UNPAID' : 'PAID',
+        payment_status: action === 'till' ? 'TILL' : action === 'later' ? 'PAY_LATER' : 'PAID',
         payment_method: action === 'demo' ? 'demo' : action === 'stripe' ? 'stripe' : action === 'till' ? 'till' : 'later',
         notes: `${action} payment order`
       };

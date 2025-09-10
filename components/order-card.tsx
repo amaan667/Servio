@@ -15,7 +15,7 @@ export type Order = {
   customer_phone?: string;
   customer_email?: string;
   order_status: 'PLACED'|'IN_PREP'|'READY'|'SERVING'|'SERVED'|'CANCELLED'|'REFUNDED'|'EXPIRED';
-  payment_status: 'unpaid'|'paid'|'till'|'UNPAID'|'PAID'|'REFUNDED';
+  payment_status: 'unpaid'|'paid'|'till'|'UNPAID'|'PAID'|'PAY_LATER'|'REFUNDED';
   total_amount: number;
   calc_total_amount?: number;
   notes?: string;
@@ -100,6 +100,8 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
         return 'bg-green-100 text-green-800';
       case 'UNPAID':
         return 'bg-red-100 text-red-800';
+      case 'PAY_LATER':
+        return 'bg-blue-100 text-blue-800';
       case 'REFUNDED':
         return 'bg-red-100 text-red-800';
       default:
@@ -235,6 +237,7 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
             {order.payment_status === 'paid' ? '✅ Paid' :
              order.payment_status === 'unpaid' ? '❌ Unpaid' :
              order.payment_status === 'till' ? '🏪 Till' :
+             order.payment_status === 'PAY_LATER' ? '⏰ Pay Later' :
              order.payment_status}
           </Badge>
         </div>
