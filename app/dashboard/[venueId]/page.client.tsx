@@ -239,6 +239,7 @@ export default function VenueDashboardClient({
     };
   }, [venueId, venue?.venue_id, todayWindow?.startUtcISO, venueTz]); // Use specific properties instead of objects to prevent unnecessary re-runs
 
+
   // Function to refresh counts using the new RPC
   const refreshCounts = async () => {
     try {
