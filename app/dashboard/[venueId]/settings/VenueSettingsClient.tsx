@@ -58,10 +58,16 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
-  // Check if user signed up with OAuth (Google) and doesn't have a password yet
+  // Check if user signed up with OAuth (Google)
   const isOAuthUser = (user as any)?.identities?.some((identity: any) => 
     identity.provider === 'google' || identity.provider === 'oauth'
   );
+
+  // Check if user has set a password (tracked in user metadata)
+  const hasPasswordSet = (user?.user_metadata as any)?.hasPasswordSet === true;
+  
+  // Determine if we should show "Set Password" or "Change Password"
+  const shouldShowSetPassword = isOAuthUser && !hasPasswordSet;
 
   const updateVenueSettings = async () => {
     setLoading(true);
@@ -116,6 +122,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
     setError(null);
 
     try {
+      // Update password
       const { error } = await createClient().auth.updateUser({
         password: newPassword
       });
@@ -124,7 +131,21 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         throw new Error(error.message);
       }
 
-      const successMessage = isOAuthUser ? 'Password set successfully! You can now sign in with email and password.' : 'Password updated successfully!';
+      // If this is an OAuth user setting their first password, mark it in metadata
+      if (shouldShowSetPassword) {
+        const { error: metadataError } = await createClient().auth.updateUser({
+          data: { hasPasswordSet: true }
+        });
+        
+        if (metadataError) {
+          console.error('Error updating password metadata:', metadataError);
+        }
+      }
+
+      const successMessage = shouldShowSetPassword 
+        ? 'Password set successfully! You can now sign in with email and password.' 
+        : 'Password updated successfully!';
+      
       setSuccess(successMessage);
       setShowPasswordDialog(false);
       setCurrentPassword('');
@@ -334,36 +355,27 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            {isOAuthUser ? 'Set Password' : 'Change Password'}
+            {shouldShowSetPassword ? 'Set Password' : 'Change Password'}
           </CardTitle>
           <CardDescription>
-            {isOAuthUser 
+            {shouldShowSetPassword 
               ? 'Set a password so you can also sign in with your email and password'
               : 'Update your account password'
             }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isOAuthUser && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-sm text-blue-800">
-                <strong>Google Account:</strong> You're currently signed in with Google. 
-                Setting a password will allow you to also sign in with your email and password.
-              </p>
-            </div>
-          )}
-          
           <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className="w-full">
-                {isOAuthUser ? 'Set Password' : 'Change Password'}
+                {shouldShowSetPassword ? 'Set Password' : 'Change Password'}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{isOAuthUser ? 'Set Password' : 'Change Password'}</DialogTitle>
+                <DialogTitle>{shouldShowSetPassword ? 'Set Password' : 'Change Password'}</DialogTitle>
                 <DialogDescription>
-                  {isOAuthUser 
+                  {shouldShowSetPassword 
                     ? 'Create a password for your account so you can sign in with email and password in the future.'
                     : 'Enter your new password below.'
                   }
@@ -371,24 +383,24 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="newPassword">{isOAuthUser ? 'Password' : 'New Password'}</Label>
+                  <Label htmlFor="newPassword">{shouldShowSetPassword ? 'Password' : 'New Password'}</Label>
                   <Input
                     id="newPassword"
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder={isOAuthUser ? 'Create a password' : 'Enter new password'}
+                    placeholder={shouldShowSetPassword ? 'Create a password' : 'Enter new password'}
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="confirmPassword">{isOAuthUser ? 'Confirm Password' : 'Confirm New Password'}</Label>
+                  <Label htmlFor="confirmPassword">{shouldShowSetPassword ? 'Confirm Password' : 'Confirm New Password'}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder={isOAuthUser ? 'Confirm your password' : 'Confirm new password'}
+                    placeholder={shouldShowSetPassword ? 'Confirm your password' : 'Confirm new password'}
                   />
                 </div>
                 
@@ -398,7 +410,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                     disabled={loading}
                     className="flex-1"
                   >
-                    {loading ? (isOAuthUser ? 'Setting...' : 'Updating...') : (isOAuthUser ? 'Set Password' : 'Update Password')}
+                    {loading ? (shouldShowSetPassword ? 'Setting...' : 'Updating...') : (shouldShowSetPassword ? 'Set Password' : 'Update Password')}
                   </Button>
                   <Button 
                     variant="outline" 

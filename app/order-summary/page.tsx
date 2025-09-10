@@ -67,19 +67,79 @@ export default function OrderSummaryPage() {
     setLoading(false);
   }, [router]);
 
-  const handlePayNow = () => {
+  const handlePayNow = async () => {
     if (!orderData) return;
     
-    // Store order data for checkout
-    const checkoutData = {
-      ...orderData,
-      cartId: `cart-${Date.now()}`,
-    };
-    
-    console.log('[ORDER SUMMARY DEBUG] Storing checkout data:', checkoutData);
-    localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
-    
-    router.push('/payment');
+    setLoading(true);
+    try {
+      // First, create the order in the database
+      console.log('[ORDER SUMMARY DEBUG] Creating order first...');
+      
+      const orderPayload = {
+        venue_id: orderData.venueId,
+        table_number: orderData.tableNumber,
+        customer_name: orderData.customerName,
+        customer_phone: orderData.customerPhone,
+        items: orderData.cart.map(item => ({
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          item_name: item.name,
+          specialInstructions: item.specialInstructions || null
+        })),
+        total_amount: orderData.total,
+        order_status: 'PLACED',
+        payment_status: 'UNPAID',
+        notes: 'Order placed - payment pending'
+      };
+
+      const orderResponse = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderPayload),
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const orderResult = await orderResponse.json();
+      console.log('[ORDER SUMMARY DEBUG] Order created:', orderResult);
+      
+      if (!orderResult.order?.id) {
+        throw new Error('Order was created but no order ID was returned');
+      }
+
+      // Now create Stripe checkout session
+      const checkoutResponse = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          orderId: orderResult.order.id, 
+          total: orderData.total, 
+          currency: 'GBP' 
+        }),
+      });
+      
+      const { url, sessionId, error: checkoutErr } = await checkoutResponse.json();
+      if (!checkoutResponse.ok || !(url || sessionId)) {
+        throw new Error(checkoutErr || 'Checkout failed');
+      }
+
+      // Redirect to Stripe checkout
+      if (url) {
+        window.location.assign(url);
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('[ORDER SUMMARY DEBUG] Payment error:', error);
+      alert(error instanceof Error ? error.message : 'Payment failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePayLater = async () => {
@@ -306,10 +366,20 @@ export default function OrderSummaryPage() {
                       </p>
                       <Button 
                         onClick={handlePayNow}
+                        disabled={loading}
                         className="w-full bg-blue-600 hover:bg-blue-700"
                       >
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Pay £{orderData.total.toFixed(2)} Now
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Pay £{orderData.total.toFixed(2)} Now
+                          </>
+                        )}
                       </Button>
                     </div>
 
@@ -350,10 +420,20 @@ export default function OrderSummaryPage() {
                     <div className="space-y-2">
                       <Button 
                         onClick={handlePayNow}
+                        disabled={loading}
                         className="w-full bg-green-600 hover:bg-green-700"
                       >
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Pay Now
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Pay Now
+                          </>
+                        )}
                       </Button>
                       <Button 
                         onClick={handleAddMoreItems}
