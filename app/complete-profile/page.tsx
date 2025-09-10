@@ -27,6 +27,18 @@ export default function CompleteProfilePage() {
           return;
         }
 
+        // Check if user is a Google OAuth user (new sign-up)
+        const isOAuthUser = user.identities?.some((identity: any) => 
+          identity.provider === 'google' || identity.provider === 'oauth'
+        );
+
+        // Only show complete profile form for new Google OAuth users
+        if (!isOAuthUser) {
+          // For email sign-up users, redirect to dashboard or sign-in
+          router.replace('/dashboard');
+          return;
+        }
+
         const { data: venue, error: venueErr } = await createClient()
           .from('venues')
           .select('venue_id')
@@ -42,6 +54,7 @@ export default function CompleteProfilePage() {
           return;
         }
 
+        // Only show form for Google OAuth users without venues
         setUser(user);
         setShowForm(true);
         setLoading(false);

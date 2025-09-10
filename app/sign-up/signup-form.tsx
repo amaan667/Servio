@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ interface SignUpFormProps {
 }
 
 export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: SignUpFormProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -22,6 +24,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     email: '',
     password: '',
     venueName: '',
+    businessType: 'Restaurant',
   });
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -34,9 +37,11 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: formData.fullName,
             venue_name: formData.venueName,
+            business_type: formData.businessType,
           },
         },
       });
@@ -48,9 +53,17 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       }
 
       if (data.user) {
-        // Show success message or redirect
-        setError('Please check your email to confirm your account.');
-        setLoading(false);
+        // Check if user is immediately authenticated (no email confirmation required)
+        const { data: { user: currentUser } } = await supabaseBrowser().auth.getUser();
+        
+        if (currentUser) {
+          // User is immediately authenticated, redirect to dashboard
+          router.push('/dashboard');
+        } else {
+          // Email confirmation is required
+          setError('Please check your email to confirm your account.');
+          setLoading(false);
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Sign-up failed. Please try again.');
@@ -164,6 +177,39 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
                 disabled={loading}
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="businessType">Business Type</Label>
+              <select
+                id="businessType"
+                value={formData.businessType}
+                onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
+                disabled={loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                required
+              >
+                <option value="Restaurant">Restaurant</option>
+                <option value="Cafe">Cafe</option>
+                <option value="Coffee Shop">Coffee Shop</option>
+                <option value="Bar">Bar</option>
+                <option value="Food Truck">Food Truck</option>
+                <option value="Takeaway">Takeaway</option>
+                <option value="Bakery">Bakery</option>
+                <option value="Fast Food">Fast Food</option>
+                <option value="Fine Dining">Fine Dining</option>
+                <option value="Casual Dining">Casual Dining</option>
+                <option value="Pizzeria">Pizzeria</option>
+                <option value="Bistro">Bistro</option>
+                <option value="Pub">Pub</option>
+                <option value="Brewery">Brewery</option>
+                <option value="Juice Bar">Juice Bar</option>
+                <option value="Ice Cream Shop">Ice Cream Shop</option>
+                <option value="Deli">Deli</option>
+                <option value="Catering">Catering</option>
+                <option value="Food Court">Food Court</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
 
             <Button type="submit" disabled={loading} className="w-full">

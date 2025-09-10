@@ -21,8 +21,8 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    venueName: "",
-    businessType: "Cafe",
+    venueName: user?.user_metadata?.venue_name || "",
+    businessType: user?.user_metadata?.business_type || "Restaurant",
     address: "",
     phone: "",
     password: "",
@@ -159,15 +159,25 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                   required
                 >
-                              <option value="Restaurant">Restaurant</option>
-            <option value="Cafe">Cafe</option>
-            <option value="Bar">Bar</option>
-            <option value="Takeaway">Takeaway</option>
-            <option value="Other">Other</option>
-                  <option value="Food Truck">Food Truck</option>
+                  <option value="Restaurant">Restaurant</option>
+                  <option value="Cafe">Cafe</option>
                   <option value="Coffee Shop">Coffee Shop</option>
                   <option value="Bar">Bar</option>
+                  <option value="Food Truck">Food Truck</option>
+                  <option value="Takeaway">Takeaway</option>
                   <option value="Bakery">Bakery</option>
+                  <option value="Fast Food">Fast Food</option>
+                  <option value="Fine Dining">Fine Dining</option>
+                  <option value="Casual Dining">Casual Dining</option>
+                  <option value="Pizzeria">Pizzeria</option>
+                  <option value="Bistro">Bistro</option>
+                  <option value="Pub">Pub</option>
+                  <option value="Brewery">Brewery</option>
+                  <option value="Juice Bar">Juice Bar</option>
+                  <option value="Ice Cream Shop">Ice Cream Shop</option>
+                  <option value="Deli">Deli</option>
+                  <option value="Catering">Catering</option>
+                  <option value="Food Court">Food Court</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
