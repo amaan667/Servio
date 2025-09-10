@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { headers } from "next/headers";
 import { createServerClient } from '@supabase/ssr';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-06-20" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-08-27.basil" });
 
 export async function POST(req: Request) {
   const buf = await req.text();
@@ -45,4 +45,4 @@ export async function POST(req: Request) {
 }
 
 // Disable Next's body parser for this route
-export const config = { api: { bodyParser: false } } as any;
+export const runtime = 'nodejs';
