@@ -4,7 +4,7 @@ import { createClient, createAdminClient, getAuthenticatedUser } from '@/lib/sup
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, table_id, venue_id, order_id, destination_table_id, customer_name, reservation_time, reservation_duration } = body;
+    const { action, table_id, venue_id, order_id, destination_table_id, customer_name, reservation_time, reservation_duration, reservation_id } = body;
 
     console.log('[TABLE ACTIONS API] Request received:', {
       action,
@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
       destination_table_id,
       customer_name,
       reservation_time,
+      reservation_id,
       timestamp: new Date().toISOString()
     });
 
