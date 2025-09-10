@@ -61,10 +61,10 @@ export default async function GenerateQRPage() {
         p_live_window_mins: 30
       });
       
-      // Use the api_table_counters function instead (same as table management page)
+      // Use the api_table_counters function (same as table management page)
       const { data: countsData, error: countsError } = await supabase
         .rpc('api_table_counters', {
-          p_venue_id: 'venue-1e02af4d'
+          p_venue_id: venue.venue_id
         });
       
       if (countsError) {

@@ -75,6 +75,24 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       // Continue with default counts rather than failing
     }
 
+    // Get table counters using the same function as other pages for consistency
+    const { data: tableCounters, error: tableCountersError } = await supabase
+      .rpc('api_table_counters', {
+        p_venue_id: venueId
+      });
+
+    if (tableCountersError) {
+      console.error('Error fetching table counters:', tableCountersError);
+    }
+
+    // Use table counters data to override dashboard counts for consistency
+    const tableCounter = tableCounters?.[0];
+    if (tableCounter && counts) {
+      counts.tables_set_up = Number(tableCounter.total_tables) || 0;
+      counts.tables_in_use = Number(tableCounter.occupied) || 0;
+      counts.active_tables_count = Number(tableCounter.total_tables) || 0;
+    }
+
     // Calculate today's revenue on the server-side to prevent flickering
     const todayWindow = todayWindowForTZ(venueTz);
     const { data: todayOrders } = await supabase

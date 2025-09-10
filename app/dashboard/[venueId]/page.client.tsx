@@ -255,6 +255,20 @@ export default function VenueDashboardClient({
       if (error) {
         return;
       }
+
+      // Also get table counters for consistency
+      const { data: tableCounters, error: tableCountersError } = await supabase
+        .rpc('api_table_counters', {
+          p_venue_id: venueId
+        });
+
+      if (!tableCountersError && tableCounters?.[0]) {
+        const tableCounter = tableCounters[0];
+        // Override table counts with consistent data
+        newCounts.tables_set_up = Number(tableCounter.total_tables) || 0;
+        newCounts.tables_in_use = Number(tableCounter.occupied) || 0;
+        newCounts.active_tables_count = Number(tableCounter.total_tables) || 0;
+      }
       
       setCounts(newCounts);
     } catch (error) {
