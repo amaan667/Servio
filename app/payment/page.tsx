@@ -138,9 +138,15 @@ export default function PaymentPage() {
         total_amount: orderData.order?.total_amount
       });
 
+      // Check if we have a valid order ID
+      if (!orderData.order?.id) {
+        console.error('[PAYMENT DEBUG] ERROR: No order ID in response:', orderData);
+        throw new Error('Order was created but no order ID was returned');
+      }
+
       // For demo and stripe payments, we need to update the payment status
       if (action === 'demo' || action === 'stripe') {
-        console.log('[PAYMENT DEBUG] Processing payment for order:', orderData.order?.id);
+        console.log('[PAYMENT DEBUG] Processing payment for order:', orderData.order.id);
         
         let endpoint = '';
         switch (action) {
@@ -158,7 +164,7 @@ export default function PaymentPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            order_id: orderData.order?.id,
+            order_id: orderData.order.id,
           }),
         });
 
@@ -171,7 +177,7 @@ export default function PaymentPage() {
         console.log('[PAYMENT DEBUG] Payment successful:', paymentResult);
       }
       
-      setOrderNumber(orderData.order?.id || "ORD-001");
+      setOrderNumber(orderData.order.id || "ORD-001");
       setPaymentComplete(true);
       localStorage.removeItem("servio-checkout-data");
 
