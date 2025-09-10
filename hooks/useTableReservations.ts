@@ -41,11 +41,25 @@ export function useTableGrid(venueId: string) {
   return useQuery({
     queryKey: ['tables', 'grid', venueId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('api_tables_grid', { 
-        p_venue_id: venueId 
-      });
+      const { data, error } = await supabase
+        .from('table_runtime_state')
+        .select('*')
+        .eq('venue_id', venueId)
+        .order('label');
       if (error) throw error;
-      return data as TableGridItem[];
+      
+      // Transform the data to match the expected TableGridItem interface
+      return data.map((item: any) => ({
+        id: item.table_id,
+        label: item.label,
+        seat_count: item.seat_count,
+        session_status: item.primary_status === 'OCCUPIED' ? 'OCCUPIED' : 'FREE',
+        opened_at: item.opened_at,
+        order_id: null, // This would need to be fetched separately if needed
+        total_amount: null, // This would need to be fetched separately if needed
+        order_status: null, // This would need to be fetched separately if needed
+        order_updated_at: null // This would need to be fetched separately if needed
+      })) as TableGridItem[];
     },
     refetchInterval: 15000,
     enabled: !!venueId
