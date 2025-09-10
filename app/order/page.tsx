@@ -649,15 +649,7 @@ export default function CustomerOrderPage() {
             );
           }
           
-          // Only show "no items" if there are actually no items
-          if (menuItems.length === 0) {
-            return (
-              <div className="text-center py-12">
-                <p className="text-gray-600">No menu items available.</p>
-              </div>
-            );
-          }
-          
+          // Always render the menu structure - items will appear as they load
           return (
               <div className="space-y-6">
                 {(() => {
