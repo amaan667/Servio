@@ -12,21 +12,29 @@ export default function PaymentSuccessPage() {
   const [isProcessing, setIsProcessing] = useState(true);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [tableNumber, setTableNumber] = useState<string | null>(null);
+  const [total, setTotal] = useState<string | null>(null);
 
   useEffect(() => {
-    const sessionId = searchParams?.get('sessionId');
-    const returnUrl = searchParams?.get('returnUrl');
+    const orderIdParam = searchParams?.get('orderId');
+    const tableNumberParam = searchParams?.get('tableNumber');
+    const totalParam = searchParams?.get('total');
 
-    if (!sessionId) {
-      setError('Invalid payment session');
+    if (!orderIdParam) {
+      setError('Invalid payment session - no order ID provided');
       setIsProcessing(false);
       return;
     }
 
-    // Simulate order confirmation (since Stripe is removed)
+    setOrderId(orderIdParam);
+    setTableNumber(tableNumberParam || null);
+    setTotal(totalParam || null);
+
+    // Simulate order confirmation
     const createOrderAfterPayment = async () => {
       try {
-        // For now, just simulate success since Stripe is removed
+        // Order is already confirmed, just show success
         setOrderConfirmed(true);
       } catch (err) {
         console.error('Error confirming order:', err);
@@ -92,6 +100,26 @@ export default function PaymentSuccessPage() {
           <p className="text-gray-600 mb-6">
             Your order has been confirmed and is being prepared.
           </p>
+          
+          {/* Order Details */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <p className="text-sm text-gray-600">Order Number</p>
+            <p className="font-bold text-lg text-servio-purple mb-2">
+              {orderId}
+            </p>
+            {tableNumber && (
+              <>
+                <p className="text-sm text-gray-600">Table</p>
+                <p className="font-medium text-gray-900 mb-2">Counter {tableNumber}</p>
+              </>
+            )}
+            {total && (
+              <>
+                <p className="text-sm text-gray-600">Total</p>
+                <p className="font-bold text-lg text-green-600">£{parseFloat(total).toFixed(2)}</p>
+              </>
+            )}
+          </div>
           
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-green-800">

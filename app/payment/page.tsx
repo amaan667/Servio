@@ -178,7 +178,12 @@ export default function PaymentPage() {
       }
       
       setOrderNumber(orderData.order.id || "ORD-001");
-      setPaymentComplete(true);
+      
+      // Redirect to payment success page with order ID
+      const successUrl = `/payment/success?orderId=${orderData.order.id}&tableNumber=${checkoutData.tableNumber}&total=${checkoutData.total}`;
+      console.log('[PAYMENT DEBUG] Redirecting to success page:', successUrl);
+      router.push(successUrl);
+      
       localStorage.removeItem("servio-checkout-data");
 
     } catch (error) {
