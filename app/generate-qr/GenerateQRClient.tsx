@@ -83,9 +83,19 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(orderUrl);
+      if (selectedTables.length === 1) {
+        // Copy the single table's URL
+        const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${selectedTables[0]}`;
+        await navigator.clipboard.writeText(tableOrderUrl);
+      } else {
+        // Copy all table URLs in a formatted list
+        const allUrls = selectedTables.map(tableNumber => 
+          `Table ${cleanTableName(tableNumber)}: ${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`
+        ).join('\n');
+        await navigator.clipboard.writeText(allUrls);
+      }
       setCopied(true);
-      setTimeout(() => setCopied(false), 1000); // Reduced from 2 seconds
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
     }
@@ -740,7 +750,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={handleCopy} variant="outline" className="flex-1">
                   {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                  {copied ? "Copied!" : "Copy URL"}
+                  {copied ? "Copied!" : selectedTables.length === 1 ? "Copy URL" : "Copy All URLs"}
                 </Button>
                 {selectedTables.length === 1 ? (
                   <Button onClick={handlePrint} variant="outline" className="flex-1">
