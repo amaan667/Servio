@@ -136,10 +136,6 @@ export function UnassignedReservationsPanel({
                       </div>
                     )}
                     <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Users className="h-4 w-4 text-gray-400" />
-                      Party of {reservation.party_size}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Clock className="h-4 w-4 text-gray-400" />
                       {new Date(reservation.start_at).toLocaleTimeString([], { 
                         hour: '2-digit', 

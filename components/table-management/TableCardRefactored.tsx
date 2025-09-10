@@ -379,10 +379,6 @@ export function TableCardRefactored({
                       {table.reserved_now_phone}
                     </div>
                   )}
-                  <div className="flex items-center gap-1 text-gray-600">
-                    <Users className="h-3 w-3" />
-                    Party of {table.reserved_now_party_size}
-                  </div>
                 </>
               ) : (
                 <>
@@ -402,10 +398,6 @@ export function TableCardRefactored({
                       {table.next_reservation_phone}
                     </div>
                   )}
-                  <div className="flex items-center gap-1 text-gray-600">
-                    <Users className="h-3 w-3" />
-                    Party of {table.next_reservation_party_size}
-                  </div>
                   {table.next_reservation_start && (
                     <div className="flex items-center gap-1 text-gray-600">
                       <Clock className="h-3 w-3" />
