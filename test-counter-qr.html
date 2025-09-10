@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counter QR Code Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .qr-code img {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .url-display {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Counter QR Code Test</h1>
+    
+    <div class="test-section">
+        <h2>Table QR Code (Original)</h2>
+        <div class="url-display">
+            /order?venue=venue-1e02af4d&table=1
+        </div>
+        <div class="qr-code">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=%2Forder%3Fvenue%3Dvenue-1e02af4d%26table%3D1&format=png&margin=2" alt="Table QR Code">
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Counter QR Code (New)</h2>
+        <div class="url-display">
+            /order?venue=venue-1e02af4d&counter=1
+        </div>
+        <div class="qr-code">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=%2Forder%3Fvenue%3Dvenue-1e02af4d%26counter%3D1&format=png&margin=2" alt="Counter QR Code">
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Counter QR Code (Multiple)</h2>
+        <div class="url-display">
+            /order?venue=venue-1e02af4d&counter=2
+        </div>
+        <div class="qr-code">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=%2Forder%3Fvenue%3Dvenue-1e02af4d%26counter%3D2&format=png&margin=2" alt="Counter QR Code 2">
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Counter QR Code (Named)</h2>
+        <div class="url-display">
+            /order?venue=venue-1e02af4d&counter=Pickup-1
+        </div>
+        <div class="qr-code">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=%2Forder%3Fvenue%3Dvenue-1e02af4d%26counter%3DPickup-1&format=png&margin=2" alt="Counter QR Code Pickup">
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Instructions</h2>
+        <ol>
+            <li>Scan any of the QR codes above with your phone</li>
+            <li>Verify that the order page loads correctly</li>
+            <li>Check that the page shows "Counter X" instead of "Table X" for counter QR codes</li>
+            <li>Test placing an order to ensure it works with the new counter parameter</li>
+        </ol>
+    </div>
+</body>
+</html>

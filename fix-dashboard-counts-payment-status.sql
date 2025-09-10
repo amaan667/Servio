@@ -1,18 +1,10 @@
--- Create or update the dashboard_counts RPC function
--- This function calculates the correct counts for the dashboard
+-- Fix the dashboard_counts function to include unpaid orders
+-- The issue is that the function only counts PAID orders, but unpaid orders should also be counted
 
--- First, check if the function exists
-SELECT 
-    'Checking if dashboard_counts function exists...' as info,
-    proname as function_name,
-    prosrc as function_source
-FROM pg_proc 
-WHERE proname = 'dashboard_counts';
-
--- Drop the function if it exists (to recreate it)
+-- Drop and recreate the dashboard_counts function
 DROP FUNCTION IF EXISTS dashboard_counts(text, text, integer);
 
--- Create the dashboard_counts function
+-- Create the corrected dashboard_counts function
 CREATE OR REPLACE FUNCTION dashboard_counts(
     p_venue_id text,
     p_tz text DEFAULT 'Europe/London',
@@ -52,7 +44,8 @@ BEGIN
     WHERE venue_id = p_venue_id
       AND created_at >= live_cutoff
       AND created_at >= today_start
-      AND created_at <= today_end;
+      AND created_at <= today_end
+      AND payment_status IN ('PAID', 'UNPAID');
     
     -- Count earlier today orders (today but before live window) - include both PAID and UNPAID
     SELECT COUNT(*) INTO earlier_today_count_val
@@ -60,20 +53,23 @@ BEGIN
     WHERE venue_id = p_venue_id
       AND created_at < live_cutoff
       AND created_at >= today_start
-      AND created_at <= today_end;
+      AND created_at <= today_end
+      AND payment_status IN ('PAID', 'UNPAID');
     
     -- Count history orders (before today) - include both PAID and UNPAID
     SELECT COUNT(*) INTO history_count_val
     FROM orders 
     WHERE venue_id = p_venue_id
-      AND created_at < today_start;
+      AND created_at < today_start
+      AND payment_status IN ('PAID', 'UNPAID');
     
     -- Count total today's orders - include both PAID and UNPAID
     SELECT COUNT(*) INTO today_orders_count_val
     FROM orders 
     WHERE venue_id = p_venue_id
       AND created_at >= today_start
-      AND created_at <= today_end;
+      AND created_at <= today_end
+      AND payment_status IN ('PAID', 'UNPAID');
     
     -- Count active tables (tables with current orders) - include both PAID and UNPAID
     SELECT COUNT(DISTINCT table_number) INTO active_tables_count_val
@@ -81,6 +77,7 @@ BEGIN
     WHERE venue_id = p_venue_id
       AND created_at >= today_start
       AND created_at <= today_end
+      AND payment_status IN ('PAID', 'UNPAID')
       AND order_status IN ('PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING');
     
     -- Count tables set up (from table_runtime_state) - FREE tables
@@ -109,7 +106,7 @@ $$;
 
 -- Test the function
 SELECT 
-    'Testing dashboard_counts function...' as info,
+    'Testing corrected dashboard_counts function...' as info,
     *
 FROM dashboard_counts('venue-1e02af4d', 'Europe/London', 30);
 
@@ -119,7 +116,7 @@ GRANT EXECUTE ON FUNCTION dashboard_counts(text, text, integer) TO anon;
 
 -- Show the function definition
 SELECT 
-    'Function created successfully!' as info,
+    'Function updated successfully!' as info,
     proname as function_name,
     pg_get_function_arguments(oid) as arguments,
     pg_get_function_result(oid) as return_type
