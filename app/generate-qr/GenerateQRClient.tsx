@@ -736,23 +736,25 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={handleCopy} variant="outline" className="flex-1">
-                {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                {copied ? "Copied!" : "Copy URL"}
-              </Button>
-              {selectedTables.length === 1 ? (
-                <Button onClick={handlePrint} variant="outline" className="flex-1">
-                  <Printer className="mr-2 h-4 w-4" />
-                  Print Single
+            {selectedTables.length > 0 && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={handleCopy} variant="outline" className="flex-1">
+                  {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                  {copied ? "Copied!" : "Copy URL"}
                 </Button>
-              ) : (
-                <Button onClick={handlePrintAll} variant="default" className="flex-1">
-                  <Printer className="mr-2 h-4 w-4" />
-                  Print All Tables
-                </Button>
-              )}
-            </div>
+                {selectedTables.length === 1 ? (
+                  <Button onClick={handlePrint} variant="outline" className="flex-1">
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print Single
+                  </Button>
+                ) : (
+                  <Button onClick={handlePrintAll} variant="default" className="flex-1">
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print All Tables
+                  </Button>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
