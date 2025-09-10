@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, Clock, User } from 'lucide-react';
+import { Calendar, Clock, User, Users } from 'lucide-react';
 
 interface ReservationDialogProps {
   isOpen: boolean;
@@ -34,6 +34,7 @@ export function ReservationDialog({
   const [customerName, setCustomerName] = useState('');
   const [reservationTime, setReservationTime] = useState('');
   const [reservationDuration, setReservationDuration] = useState(60); // Default to 60 minutes
+  const [partySize, setPartySize] = useState(2); // Default to 2 people
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +68,11 @@ export function ReservationDialog({
       return;
     }
 
+    if (!partySize || partySize < 1) {
+      setError('Party size must be at least 1 person');
+      return;
+    }
+
     // Validate reservation time is not too far in the past (allow current time)
     const selectedTime = new Date(reservationTime);
     const now = new Date();
@@ -96,7 +102,7 @@ export function ReservationDialog({
           venue_id: venueId,
           customer_name: customerName.trim(),
           customer_phone: '', // Add phone field if needed
-          party_size: 2, // Default party size, could be made configurable
+          party_size: partySize,
           reservation_time: utcDateTime,
           reservation_duration: reservationDuration
         }),
@@ -112,6 +118,7 @@ export function ReservationDialog({
       onClose();
       setCustomerName('');
       setReservationTime('');
+      setPartySize(2);
     } catch (error) {
       console.error('Failed to create reservation:', error);
       setError(error instanceof Error ? error.message : 'Failed to create reservation');
@@ -124,6 +131,7 @@ export function ReservationDialog({
     setCustomerName('');
     setReservationTime('');
     setReservationDuration(60);
+    setPartySize(2);
     setError(null);
     onClose();
   };
@@ -152,6 +160,23 @@ export function ReservationDialog({
               placeholder="Enter customer name"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="partySize" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Party Size
+            </Label>
+            <Input
+              id="partySize"
+              type="number"
+              min="1"
+              max="20"
+              placeholder="Number of people"
+              value={partySize}
+              onChange={(e) => setPartySize(Number(e.target.value))}
               disabled={isLoading}
             />
           </div>
@@ -204,7 +229,7 @@ export function ReservationDialog({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={isLoading || !customerName.trim() || !reservationTime}
+            disabled={isLoading || !customerName.trim() || !reservationTime || !partySize || partySize < 1}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {isLoading ? (

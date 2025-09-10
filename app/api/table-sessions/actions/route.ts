@@ -89,6 +89,12 @@ export async function POST(req: NextRequest) {
       case 'unmerge_table':
         return await handleUnmergeTable(supabase, table_id);
       
+      case 'cancel_reservation':
+        if (!reservation_id) {
+          return NextResponse.json({ error: 'reservation_id is required for cancel_reservation action' }, { status: 400 });
+        }
+        return await handleCancelReservation(supabase, table_id, reservation_id);
+      
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
@@ -661,6 +667,86 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
     });
   } catch (error) {
     console.error('[TABLE ACTIONS] Unexpected error unmerging table:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+async function handleCancelReservation(supabase: any, table_id: string, reservation_id: string) {
+  try {
+    console.log('[TABLE ACTIONS] Starting cancel reservation for:', { table_id, reservation_id });
+    
+    // First, cancel the reservation in the reservations table (if it exists)
+    const { error: reservationError } = await supabase
+      .from('reservations')
+      .update({ 
+        status: 'CANCELLED',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reservation_id);
+
+    if (reservationError) {
+      console.log('[TABLE ACTIONS] Reservation table update failed (table may not exist):', reservationError);
+      // Don't fail if reservations table doesn't exist, just log the error
+    }
+
+    // Get the current table session
+    const { data: currentSession, error: sessionError } = await supabase
+      .from('table_sessions')
+      .select('*')
+      .eq('table_id', table_id)
+      .is('closed_at', null)
+      .single();
+
+    if (sessionError) {
+      console.error('[TABLE ACTIONS] Error fetching current session:', sessionError);
+      return NextResponse.json({ error: 'Failed to fetch table session' }, { status: 500 });
+    }
+
+    if (!currentSession) {
+      console.error('[TABLE ACTIONS] No active session found for table:', table_id);
+      return NextResponse.json({ error: 'No active session found' }, { status: 404 });
+    }
+
+    // Close the current session
+    const { error: closeError } = await supabase
+      .from('table_sessions')
+      .update({
+        closed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentSession.id);
+
+    if (closeError) {
+      console.error('[TABLE ACTIONS] Error closing session:', closeError);
+      return NextResponse.json({ error: 'Failed to close session' }, { status: 500 });
+    }
+
+    // Create a new FREE session for the table
+    const { data: newSessionData, error: newSessionError } = await supabase
+      .from('table_sessions')
+      .insert({
+        table_id: table_id,
+        venue_id: currentSession.venue_id,
+        status: 'FREE',
+        opened_at: new Date().toISOString()
+      })
+      .select();
+
+    if (newSessionError) {
+      console.error('[TABLE ACTIONS] Error creating new FREE session:', newSessionError);
+      return NextResponse.json({ error: 'Failed to create new session' }, { status: 500 });
+    }
+
+    console.log('[TABLE ACTIONS] Reservation cancelled and table set to FREE successfully');
+    return NextResponse.json({ 
+      success: true, 
+      data: {
+        cancelled_session: currentSession,
+        new_session: newSessionData
+      }
+    });
+  } catch (error) {
+    console.error('[TABLE ACTIONS] Unexpected error cancelling reservation:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

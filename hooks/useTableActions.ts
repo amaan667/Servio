@@ -1,13 +1,14 @@
 import { useState } from 'react';
 
 export interface TableActionParams {
-  action: 'start_preparing' | 'mark_ready' | 'mark_served' | 'mark_awaiting_bill' | 'close_table' | 'reserve_table' | 'occupy_table' | 'move_table' | 'merge_table' | 'unmerge_table';
+  action: 'start_preparing' | 'mark_ready' | 'mark_served' | 'mark_awaiting_bill' | 'close_table' | 'reserve_table' | 'occupy_table' | 'move_table' | 'merge_table' | 'unmerge_table' | 'cancel_reservation';
   table_id: string;
   venue_id: string;
   order_id?: string;
   destination_table_id?: string;
   customer_name?: string;
   reservation_time?: string;
+  reservation_id?: string;
 }
 
 export function useTableActions() {

@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TableRuntimeState } from '@/hooks/useTableRuntimeState';
-import { useCloseTable, useAssignReservation, useCancelReservation, useNoShowReservation, useRemoveTable } from '@/hooks/useTableRuntimeState';
+import { useCloseTable, useAssignReservation, useNoShowReservation, useRemoveTable } from '@/hooks/useTableRuntimeState';
 import { useTableActions } from '@/hooks/useTableActions';
 import { formatDistanceToNow } from 'date-fns';
 import { ReservationDialog } from './ReservationDialog';
@@ -49,10 +49,9 @@ export function TableCardRefactored({
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [noShowMessage, setNoShowMessage] = useState<string | null>(null);
   
-  const { occupyTable } = useTableActions();
+  const { occupyTable, executeAction } = useTableActions();
   const closeTable = useCloseTable();
   const assignReservation = useAssignReservation();
-  const cancelReservation = useCancelReservation();
   const noShowReservation = useNoShowReservation();
   const removeTable = useRemoveTable();
 
@@ -97,7 +96,12 @@ export function TableCardRefactored({
         case 'cancel':
           if (reservationId) {
             console.log('[TABLE CARD] Cancelling reservation:', reservationId);
-            await cancelReservation.mutateAsync({ reservationId });
+            await executeAction({
+              action: 'cancel_reservation',
+              table_id: table.table_id,
+              venue_id: venueId,
+              reservation_id: reservationId
+            });
           }
           break;
         case 'no-show':
@@ -259,6 +263,16 @@ export function TableCardRefactored({
         label: 'Mark No-Show',
         action: 'no-show',
         reservationId: table.reserved_now_id,
+        variant: 'outline' as const
+      });
+    }
+
+    // Reservation actions for future reservations
+    if (table.reservation_status === 'RESERVED_LATER' && table.next_reservation_id) {
+      actions.push({
+        label: 'Cancel Reservation',
+        action: 'cancel',
+        reservationId: table.next_reservation_id,
         variant: 'outline' as const
       });
     }
