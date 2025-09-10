@@ -47,8 +47,18 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       });
 
       if (error) {
+        // Log the actual error message for debugging
+        console.log('Sign-up error:', error.message);
+        
         // Check if the error is due to email already existing
-        if (error.message.includes('already registered') || error.message.includes('already exists') || error.message.includes('User already registered')) {
+        const errorMessage = error.message.toLowerCase();
+        if (errorMessage.includes('already registered') || 
+            errorMessage.includes('already exists') || 
+            errorMessage.includes('user already registered') ||
+            errorMessage.includes('email address is already registered') ||
+            errorMessage.includes('email already in use') ||
+            errorMessage.includes('duplicate key value') ||
+            error.code === 'user_already_registered') {
           setError('You already have an account. Please sign in instead.');
         } else {
           setError(error.message);
@@ -58,14 +68,35 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       }
 
       if (data.user) {
+        // Log the sign-up result for debugging
+        console.log('Sign-up successful, user data:', data.user);
+        
+        // Check if this is actually a new user or an existing user
+        // If the user has identities but we're trying to sign up with email, they might already exist
+        if (data.user.identities && data.user.identities.length > 0) {
+          const hasEmailIdentity = data.user.identities.some((identity: any) => identity.provider === 'email');
+          const hasOAuthIdentity = data.user.identities.some((identity: any) => 
+            identity.provider === 'google' || identity.provider === 'oauth'
+          );
+          
+          // If user has OAuth identity but we're trying to add email, they already have an account
+          if (hasOAuthIdentity && !hasEmailIdentity) {
+            setError('You already have an account with Google. Please sign in instead.');
+            setLoading(false);
+            return;
+          }
+        }
+        
         // Check if user is immediately authenticated (no email confirmation required)
         const { data: { user: currentUser } } = await supabaseBrowser().auth.getUser();
         
         if (currentUser) {
           // User is immediately authenticated, redirect to dashboard
+          console.log('User immediately authenticated, redirecting to dashboard');
           router.push('/dashboard');
         } else {
           // Email confirmation is required - redirect to sign-in page
+          console.log('Email confirmation required, redirecting to sign-in');
           router.push('/sign-in');
         }
       }
