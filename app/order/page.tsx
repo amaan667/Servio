@@ -373,6 +373,27 @@ export default function CustomerOrderPage() {
   const submitOrder = async () => {
     // Customer details are now collected in the checkout modal, not here
 
+    // Validate order data before submission
+    if (!customerInfo.name.trim()) {
+      alert("Please enter your name before placing the order.");
+      return;
+    }
+    
+    if (!customerInfo.phone.trim()) {
+      alert("Please enter your phone number before placing the order.");
+      return;
+    }
+    
+    if (cart.length === 0) {
+      alert("Your cart is empty. Please add items before placing the order.");
+      return;
+    }
+    
+    if (!venueSlug) {
+      alert("Invalid venue. Please check your QR code and try again.");
+      return;
+    }
+
     setIsSubmitting(true);
       try {
         const safeTable = parseInt(tableNumber) || 1;
@@ -461,6 +482,11 @@ export default function CustomerOrderPage() {
       // Create the order immediately via API
       console.log('[ORDER SUBMIT] Calling orders API...');
       console.log('[ORDER SUBMIT] Order data being sent:', JSON.stringify(orderData, null, 2));
+      console.log('[ORDER SUBMIT] Validation check - venueSlug:', venueSlug);
+      console.log('[ORDER SUBMIT] Validation check - customerName:', customerInfo.name.trim());
+      console.log('[ORDER SUBMIT] Validation check - customerPhone:', customerInfo.phone.trim());
+      console.log('[ORDER SUBMIT] Validation check - cart length:', cart.length);
+      console.log('[ORDER SUBMIT] Validation check - total amount:', getTotalPrice());
       
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -548,7 +574,31 @@ export default function CustomerOrderPage() {
     } catch (error) {
       console.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
       console.error('[ORDER SUBMIT] ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      alert("Failed to prepare order. Please try again.");
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to place order. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('venue_id is required')) {
+          errorMessage = "Invalid venue. Please check your QR code and try again.";
+        } else if (error.message.includes('customer_name is required')) {
+          errorMessage = "Please enter your name before placing the order.";
+        } else if (error.message.includes('customer_phone is required')) {
+          errorMessage = "Please enter your phone number before placing the order.";
+        } else if (error.message.includes('items must be a non-empty array')) {
+          errorMessage = "Your cart is empty. Please add items before placing the order.";
+        } else if (error.message.includes('total_amount must be a number')) {
+          errorMessage = "Invalid order total. Please try again.";
+        } else if (error.message.includes('Failed to create order')) {
+          errorMessage = "Unable to create order. Please check your connection and try again.";
+        } else if (error.message.includes('Failed to verify venue')) {
+          errorMessage = "Invalid venue. Please check your QR code and try again.";
+        } else {
+          errorMessage = `Order failed: ${error.message}`;
+        }
+      }
+      
+      alert(errorMessage);
       setIsSubmitting(false);
     }
   };
