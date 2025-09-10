@@ -32,6 +32,40 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     setLoading(true);
     setError(null);
 
+    // Validate all required fields
+    if (!formData.fullName.trim()) {
+      setError('Full name is required.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError('Email address is required.');
+      setLoading(false);
+      return;
+    }
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.password.trim()) {
+      setError('Password is required.');
+      setLoading(false);
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.venueName.trim()) {
+      setError('Business name is required.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabaseBrowser().auth.signUp({
         email: formData.email,
@@ -108,8 +142,9 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           });
           
           if (signInData.user && !signInError) {
-            // Account already exists and password is correct
-            console.log('Account already exists, showing error message');
+            // Account already exists - sign them out and show error message
+            console.log('Account already exists, signing out and showing error message');
+            await supabaseBrowser().auth.signOut();
             setError('You already have an account with this email. Please sign in instead.');
             setLoading(false);
             return;
@@ -150,13 +185,16 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           {error && (
             <Alert variant="destructive">
               <AlertDescription>
-                {error}
-                {error.includes('already have an account') && (
-                  <div className="mt-2">
-                    <Link href="/sign-in" className="text-sm underline hover:no-underline font-medium">
-                      Sign in instead →
-                    </Link>
-                  </div>
+                {error.includes('already have an account') ? (
+                  <>
+                    You already have an account with this email. Please{' '}
+                    <Link href="/sign-in" className="underline hover:no-underline font-medium">
+                      sign in
+                    </Link>{' '}
+                    instead.
+                  </>
+                ) : (
+                  error
                 )}
               </AlertDescription>
             </Alert>
