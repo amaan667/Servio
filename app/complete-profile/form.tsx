@@ -30,7 +30,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   });
 
   // Check if user signed up with OAuth (Google) and needs to set a password
-  const isOAuthUser = user?.identities?.some((identity: any) => 
+  const isOAuthUser = (user as any)?.identities?.some((identity: any) => 
     identity.provider === 'google' || identity.provider === 'oauth'
   );
 

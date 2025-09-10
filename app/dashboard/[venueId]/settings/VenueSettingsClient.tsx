@@ -59,7 +59,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   // Check if user signed up with OAuth (Google) and doesn't have a password yet
-  const isOAuthUser = user?.identities?.some((identity: any) => 
+  const isOAuthUser = (user as any)?.identities?.some((identity: any) => 
     identity.provider === 'google' || identity.provider === 'oauth'
   );
 
