@@ -11,9 +11,10 @@ import Link from 'next/link';
 
 interface SignUpFormProps {
   onGoogleSignIn: () => Promise<void>;
+  isSigningUp?: boolean;
 }
 
-export default function SignUpForm({ onGoogleSignIn }: SignUpFormProps) {
+export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: SignUpFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -87,7 +88,7 @@ export default function SignUpForm({ onGoogleSignIn }: SignUpFormProps) {
           {/* Google Sign Up Button */}
           <Button
             onClick={handleGoogleSignUp}
-            disabled={loading}
+            disabled={loading || isSigningUp}
             className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 48 48">
@@ -99,7 +100,7 @@ export default function SignUpForm({ onGoogleSignIn }: SignUpFormProps) {
                 <path fill="none" d="M0 0h48v48H0z"/>
               </g>
             </svg>
-            {loading ? 'Creating account...' : 'Sign up with Google'}
+            {loading || isSigningUp ? 'Creating account...' : 'Sign up with Google'}
           </Button>
 
           <div className="relative">

@@ -201,8 +201,26 @@ function CallbackContent() {
             }
             
             if (retryData?.session) {
-              addDebugLog('[AUTH CALLBACK] Fallback authentication successful');
-              router.push('/');
+              addDebugLog('[AUTH CALLBACK] Fallback authentication successful, checking venues');
+              // Check if this is a new user who needs to complete their profile
+              try {
+                const { data: venues, error: venueError } = await supabaseBrowser()
+                  .from('venues')
+                  .select('venue_id')
+                  .eq('owner_id', retryData.session.user.id)
+                  .limit(1);
+                
+                if (!venues || venues.length === 0) {
+                  addDebugLog('[AUTH CALLBACK] No venues found, redirecting to complete profile');
+                  router.push('/complete-profile');
+                } else {
+                  addDebugLog('[AUTH CALLBACK] User has venues, redirecting to home');
+                  router.push('/');
+                }
+              } catch (checkError) {
+                addDebugLog(`[AUTH CALLBACK] Error checking user venues: ${checkError}`);
+                router.push('/');
+              }
               return;
             }
           } catch (fallbackErr: any) {
@@ -218,16 +236,37 @@ function CallbackContent() {
         }
 
         if (data?.session) {
-          addDebugLog('[AUTH CALLBACK] Session created successfully, redirecting to home');
+          addDebugLog('[AUTH CALLBACK] Session created successfully, checking if user needs to complete profile');
           addDebugLog(`[AUTH CALLBACK] Session details: ${JSON.stringify({
             userId: data.session.user.id,
             expiresAt: data.session.expires_at,
             accessToken: data.session.access_token ? 'present' : 'missing'
           })}`);
           
-          // Redirect immediately without delay
-          addDebugLog('[AUTH CALLBACK] Redirecting to home...');
-          router.push('/');
+          // Check if this is a new user who needs to complete their profile
+          try {
+            const { data: venues, error: venueError } = await supabaseBrowser()
+              .from('venues')
+              .select('venue_id')
+              .eq('owner_id', data.session.user.id)
+              .limit(1);
+            
+            if (venueError) {
+              addDebugLog(`[AUTH CALLBACK] Error checking venues: ${venueError.message}`);
+            }
+            
+            if (!venues || venues.length === 0) {
+              addDebugLog('[AUTH CALLBACK] No venues found, redirecting to complete profile');
+              router.push('/complete-profile');
+            } else {
+              addDebugLog('[AUTH CALLBACK] User has venues, redirecting to home');
+              router.push('/');
+            }
+          } catch (checkError) {
+            addDebugLog(`[AUTH CALLBACK] Error checking user venues: ${checkError}`);
+            // Fallback to home page if venue check fails
+            router.push('/');
+          }
         } else {
           addDebugLog('[AUTH CALLBACK] No session returned from exchange');
           addDebugLog(`[AUTH CALLBACK] Data received: ${JSON.stringify(data)}`);
