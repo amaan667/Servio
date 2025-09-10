@@ -1,10 +1,49 @@
--- Fix dashboard_counts function to include UNPAID orders
--- This will make the dashboard counts match what's shown in Live Orders
+// Simple script to run the SQL fix for dashboard counts
+// This can be run with: node run-sql-fix.js
 
--- Drop the function if it exists (to recreate it)
+const { createClient } = require('@supabase/supabase-js');
+
+// You'll need to replace these with your actual Supabase credentials
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+async function runSQLFix() {
+  console.log('Running SQL fix for dashboard counts...');
+  
+  try {
+    // Test current function first
+    console.log('Testing current dashboard_counts function...');
+    const { data: testResult, error: testError } = await supabase
+      .rpc('dashboard_counts', { 
+        p_venue_id: 'venue-1e02af4d', 
+        p_tz: 'Europe/London', 
+        p_live_window_mins: 30 
+      })
+      .single();
+
+    if (testError) {
+      console.error('Error testing current function:', testError);
+      return;
+    }
+
+    console.log('Current dashboard_counts result:', testResult);
+    
+    // The function exists and works, but we need to update it
+    // Since we can't run DDL through RPC, we need to run this in the Supabase dashboard
+    console.log('\n=== MANUAL STEP REQUIRED ===');
+    console.log('Please run the following SQL in your Supabase dashboard:');
+    console.log('\n' + '='.repeat(50));
+    console.log(`
+-- Fix dashboard_counts function to include UNPAID orders
 DROP FUNCTION IF EXISTS dashboard_counts(text, text, integer);
 
--- Create the updated dashboard_counts function
 CREATE OR REPLACE FUNCTION dashboard_counts(
     p_venue_id text,
     p_tz text DEFAULT 'Europe/London',
@@ -99,21 +138,19 @@ BEGIN
 END;
 $$;
 
--- Grant execute permission to authenticated users
+-- Grant execute permission
 GRANT EXECUTE ON FUNCTION dashboard_counts(text, text, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION dashboard_counts(text, text, integer) TO anon;
 
--- Test the function
-SELECT 
-    'Testing updated dashboard_counts function...' as info,
-    *
-FROM dashboard_counts('venue-1e02af4d', 'Europe/London', 30);
+-- Test the updated function
+SELECT 'Testing updated function...' as info, * FROM dashboard_counts('venue-1e02af4d', 'Europe/London', 30);
+    `);
+    console.log('='.repeat(50));
+    console.log('\nAfter running the SQL above, the dashboard counts should show the correct numbers including UNPAID orders.');
+    
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
 
--- Show the function definition
-SELECT 
-    'Function updated successfully!' as info,
-    proname as function_name,
-    pg_get_function_arguments(oid) as arguments,
-    pg_get_function_result(oid) as return_type
-FROM pg_proc 
-WHERE proname = 'dashboard_counts';
+runSQLFix();

@@ -435,15 +435,15 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
   // Update or create table session status to RESERVED and store reservation info
   console.log('[TABLE ACTIONS] Checking for existing session for table:', table_id);
   
-  const { data: currentSession, error: sessionCheckError } = await supabase
+  const { data: currentSession, error: currentSessionError } = await supabase
     .from('table_sessions')
     .select('id, status')
     .eq('table_id', table_id)
     .is('closed_at', null)
     .maybeSingle();
 
-  if (sessionCheckError) {
-    console.error('[TABLE ACTIONS] Error checking existing session:', sessionCheckError);
+  if (currentSessionError) {
+    console.error('[TABLE ACTIONS] Error checking existing session:', currentSessionError);
     return NextResponse.json({ error: 'Failed to check existing session' }, { status: 500 });
   }
 
