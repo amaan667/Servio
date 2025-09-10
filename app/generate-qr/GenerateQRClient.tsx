@@ -24,9 +24,24 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     activeTablesCount: activeTablesCount
   });
 
-  // Parse URL parameters to get selected tables
+  // Parse URL parameters and localStorage to get selected tables
   const getInitialTables = () => {
     if (typeof window !== 'undefined') {
+      // First check localStorage for persisted tables
+      const storageKey = `qr-selected-tables-${venueId}`;
+      const storedTables = localStorage.getItem(storageKey);
+      
+      if (storedTables) {
+        try {
+          const parsedTables = JSON.parse(storedTables);
+          console.log('🔍 [QR CLIENT] Loaded tables from localStorage:', parsedTables);
+          return parsedTables;
+        } catch (error) {
+          console.error('🔍 [QR CLIENT] Error parsing stored tables:', error);
+        }
+      }
+      
+      // Fallback to URL parameters if no localStorage data
       const urlParams = new URLSearchParams(window.location.search);
       const tablesParam = urlParams.get('tables');
       const tableParam = urlParams.get('table');
@@ -49,7 +64,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         return [decodeURIComponent(tableParam)];
       }
     }
-    console.log('🔍 [QR CLIENT] No tables in URL, showing empty state');
+    console.log('🔍 [QR CLIENT] No tables found, showing empty state');
     return []; // No tables selected - show empty state
   };
 
@@ -65,6 +80,21 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     includeVenueInfo: true
   });
   const router = useRouter();
+
+  // Function to persist selected tables to localStorage
+  const persistSelectedTables = (tables: string[]) => {
+    if (typeof window !== 'undefined') {
+      const storageKey = `qr-selected-tables-${venueId}`;
+      localStorage.setItem(storageKey, JSON.stringify(tables));
+      console.log('🔍 [QR CLIENT] Persisted tables to localStorage:', tables);
+    }
+  };
+
+  // Function to update selected tables and persist them
+  const updateSelectedTables = (newTables: string[]) => {
+    setSelectedTables(newTables);
+    persistSelectedTables(newTables);
+  };
 
   // Helper function to clean table names (remove "table" prefix if it exists)
   const cleanTableName = (tableName: string) => {
@@ -107,7 +137,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       const trimmedName = tableName.trim();
       // Check if table already exists
       if (!selectedTables.includes(trimmedName)) {
-        setSelectedTables([...selectedTables, trimmedName]);
+        updateSelectedTables([...selectedTables, trimmedName]);
       } else {
         alert(`Table "${trimmedName}" is already added.`);
       }
@@ -121,24 +151,26 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         ? 1 
         : Math.max(...selectedTables.map(t => parseInt(t) || 0), 0) + 1;
       const newTables = Array.from({length: count}, (_, i) => (startNumber + i).toString());
-      setSelectedTables([...selectedTables, ...newTables]);
+      updateSelectedTables([...selectedTables, ...newTables]);
     }
   };
 
   const clearAllTables = () => {
     // Clear all tables - start with empty state
-    setSelectedTables([]);
+    updateSelectedTables([]);
     console.log('🔍 [QR CLIENT] Cleared all tables, starting with empty state');
   };
 
   const removeTable = (tableNumber: string) => {
-    setSelectedTables(selectedTables.filter(t => t !== tableNumber));
-    console.log('🔍 [QR CLIENT] Removed table', tableNumber, 'remaining tables:', selectedTables.filter(t => t !== tableNumber));
+    const newTables = selectedTables.filter(t => t !== tableNumber);
+    updateSelectedTables(newTables);
+    console.log('🔍 [QR CLIENT] Removed table', tableNumber, 'remaining tables:', newTables);
   };
 
   const updateTableNumber = (oldTableNumber: string, newTableNumber: string) => {
     if (newTableNumber && !selectedTables.includes(newTableNumber)) {
-      setSelectedTables(selectedTables.map(t => t === oldTableNumber ? newTableNumber : t));
+      const newTables = selectedTables.map(t => t === oldTableNumber ? newTableNumber : t);
+      updateSelectedTables(newTables);
     }
   };
 
@@ -726,7 +758,15 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 {selectedTables.map((tableNumber, index) => {
                   const tableOrderUrl = `${siteOrigin()}/order?venue=${venueId}&table=${tableNumber}`;
                   return (
-                    <div key={index} className="text-center p-2 sm:p-3 border rounded-lg bg-card">
+                    <div key={index} className="text-center p-2 sm:p-3 border rounded-lg bg-card relative">
+                      <Button
+                        onClick={() => removeTable(tableNumber)}
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-1 right-1 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                       <div className="bg-card p-2 rounded-lg shadow-sm inline-block">
                         <img
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 120)}x${Math.min(printSettings.qrSize, 120)}&data=${encodeURIComponent(tableOrderUrl)}&format=png&margin=2`}
