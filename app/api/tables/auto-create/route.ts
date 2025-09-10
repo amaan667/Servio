@@ -31,28 +31,40 @@ export async function POST(req: Request) {
 
     console.log('[AUTO CREATE TABLE] Creating table for QR scan:', { venue_id, table_number, table_label });
 
-    // Use upsert to prevent duplicates - this will insert if not exists, or return existing if it does
-    const { data: table, error: tableError } = await supabase
+    // Check if table already exists first
+    const { data: existingTable } = await supabase
       .from('tables')
-      .upsert({
-        venue_id: venue_id,
-        label: table_label || table_number.toString(),
-        seat_count: seat_count,
-        area: area,
-        is_active: true
-      }, {
-        onConflict: 'venue_id,label',
-        ignoreDuplicates: false
-      })
-      .select()
-      .single();
+      .select('id, label')
+      .eq('venue_id', venue_id)
+      .eq('label', table_label || table_number.toString())
+      .eq('is_active', true)
+      .maybeSingle();
 
-    if (tableError) {
-      console.error('[AUTO CREATE TABLE] Table creation error:', tableError);
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Failed to create table' 
-      }, { status: 500 });
+    let table;
+    if (existingTable) {
+      table = existingTable;
+    } else {
+      // Insert new table
+      const { data: newTable, error: tableError } = await supabase
+        .from('tables')
+        .insert({
+          venue_id: venue_id,
+          label: table_label || table_number.toString(),
+          seat_count: seat_count,
+          area: area,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (tableError) {
+        console.error('[AUTO CREATE TABLE] Table creation error:', tableError);
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Failed to create table' 
+        }, { status: 500 });
+      }
+      table = newTable;
     }
 
     console.log('[AUTO CREATE TABLE] Table created/updated successfully:', table.id);

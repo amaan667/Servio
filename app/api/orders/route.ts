@@ -151,18 +151,15 @@ export async function POST(req: Request) {
       } else {
         console.log('[ORDERS POST] Table not found, auto-creating table for QR code...');
         
-        // Use upsert to prevent duplicates - this will insert if not exists, or return existing if it does
+        // Insert new table - check for existing first to avoid duplicates
         const { data: newTable, error: tableCreateErr } = await supabase
           .from('tables')
-          .upsert({
+          .insert({
             venue_id: body.venue_id,
             label: body.table_number.toString(),
             seat_count: 4, // Default seat count
             area: null,
             is_active: true
-          }, {
-            onConflict: 'venue_id,label',
-            ignoreDuplicates: false
           })
           .select('id, label')
           .single();
