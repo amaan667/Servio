@@ -92,10 +92,16 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   };
 
   const addTable = () => {
-    const nextTableNumber = selectedTables.length === 0 
-      ? 1 
-      : Math.max(...selectedTables.map(t => parseInt(t) || 0), 0) + 1;
-    setSelectedTables([...selectedTables, nextTableNumber.toString()]);
+    const tableName = prompt("Enter table name or number (e.g., 1, 101, VIP-1):");
+    if (tableName && tableName.trim()) {
+      const trimmedName = tableName.trim();
+      // Check if table already exists
+      if (!selectedTables.includes(trimmedName)) {
+        setSelectedTables([...selectedTables, trimmedName]);
+      } else {
+        alert(`Table "${trimmedName}" is already added.`);
+      }
+    }
   };
 
   const addMultipleTables = () => {
@@ -617,7 +623,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                     onClick={addTable}
                     className="flex-1"
                   >
-                    + Add 1 Table
+                    + Add a Table
                   </Button>
                   <Button
                     variant="outline"
@@ -697,7 +703,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 <div className="flex gap-2 justify-center">
                   <Button onClick={addTable} variant="outline">
                     <Plus className="mr-2 h-4 w-4" />
-                    Add 1 Table
+                    Add a Table
                   </Button>
                   <Button onClick={addMultipleTables} variant="outline">
                     <Plus className="mr-2 h-4 w-4" />
