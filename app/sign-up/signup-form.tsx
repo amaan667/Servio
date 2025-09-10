@@ -95,9 +95,29 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           console.log('User immediately authenticated, redirecting to home');
           router.push('/');
         } else {
-          // Email confirmation is required - redirect to sign-in page with success message
-          console.log('Email confirmation required, redirecting to sign-in');
-          router.push('/sign-in?message=' + encodeURIComponent('Please check your email to confirm your account before signing in.'));
+          // User is not authenticated after sign-up attempt
+          // This could mean either:
+          // 1. New account requiring email confirmation
+          // 2. Existing account (Supabase doesn't return error for existing emails)
+          
+          // Check if this is an existing account by attempting to sign in
+          console.log('User not authenticated after sign-up, checking if account exists...');
+          const { data: signInData, error: signInError } = await supabaseBrowser().auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
+          
+          if (signInData.user && !signInError) {
+            // Account already exists and password is correct
+            console.log('Account already exists, showing error message');
+            setError('You already have an account with this email. Please sign in instead.');
+            setLoading(false);
+            return;
+          } else {
+            // This is a new account, email confirmation is required
+            console.log('Email confirmation required, redirecting to sign-in');
+            router.push('/sign-in?message=' + encodeURIComponent('Please check your email to confirm your account before signing in.'));
+          }
         }
       }
     } catch (err: any) {
