@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react";
+import { ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
 import React from "react";
@@ -641,8 +641,6 @@ export default function CustomerOrderPage() {
           <div className="lg:col-span-2">
         {(() => {
           
-          // Remove loading check - render immediately
-          
           if (menuError) {
             return (
               <Alert variant="destructive">
@@ -651,6 +649,7 @@ export default function CustomerOrderPage() {
             );
           }
           
+          // Only show "no items" if there are actually no items
           if (menuItems.length === 0) {
             return (
               <div className="text-center py-12">
