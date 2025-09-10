@@ -491,7 +491,7 @@ export default function CustomerOrderPage() {
         payment_status: 'UNPAID', // Start as unpaid
         payment_method: null, // Will be updated based on payment choice
         session_id: sessionId,
-        source: 'qr',
+        source: orderType === 'counter' ? 'counter' : 'qr',
       };
 
       // Create the order immediately via API
@@ -551,6 +551,7 @@ export default function CustomerOrderPage() {
         orderId: orderResult.data?.id || orderResult.id, // Include the created order ID
         orderNumber: orderResult.data?.order_number || orderResult.order_number,
         sessionId: sessionId, // Include session ID for resume functionality
+        orderType: orderType, // Include order type for source determination
       };
 
       // Store checkout data for payment page

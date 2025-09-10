@@ -66,6 +66,7 @@ interface CheckoutData {
   customerName: string;
   customerPhone: string;
   cartId?: string;
+  orderType?: string; // Add orderType for source determination
 }
 
 type CheckoutPhase = 'review' | 'processing' | 'confirmed' | 'feedback' | 'timeline' | 'complete' | 'error';
@@ -556,6 +557,7 @@ function StripePaymentForm({
         total_amount: totalInPence, // Use pence for consistency
         order_status: 'PLACED',
         payment_status: 'PAID',
+        source: checkoutData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
         notes: `Stripe payment order - Payment Intent: ${clientSecret?.split('_secret_')[0] || 'unknown'}`
       };
       
@@ -805,6 +807,7 @@ export default function CheckoutPage() {
             total_amount: totalInPence, // Use pence for consistency
             order_status: 'PLACED',
             payment_status: 'PAID',
+            source: checkoutData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
             notes: `Stripe payment order - Payment Intent: ${paymentIntent}`
           };
 
@@ -1019,6 +1022,7 @@ export default function CheckoutPage() {
           total_amount: totalInPence, // Use pence for consistency with Stripe
           order_status: 'PLACED',
           payment_status: 'PAID',
+          source: checkoutData?.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
           notes: 'Demo payment order'
         };
         

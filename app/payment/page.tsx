@@ -36,6 +36,7 @@ interface CheckoutData {
   orderNumber?: string;
   customerName?: string;
   customerPhone?: string;
+  orderType?: string; // Add orderType for source determination
 }
 
 type PaymentAction = 'demo' | 'stripe' | 'till' | 'later';
@@ -107,6 +108,7 @@ export default function PaymentPage() {
         order_status: 'PLACED',
         payment_status: action === 'till' ? 'TILL' : action === 'later' ? 'PAY_LATER' : 'PAID',
         payment_method: action === 'demo' ? 'demo' : action === 'stripe' ? 'stripe' : action === 'till' ? 'till' : 'later',
+        source: checkoutData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
         notes: `${action} payment order`
       };
 
