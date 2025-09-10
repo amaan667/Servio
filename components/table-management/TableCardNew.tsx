@@ -268,6 +268,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         onClose={() => setShowReservationDialog(false)}
         tableId={table.id}
         tableLabel={table.label}
+        tableSeatCount={table.seat_count}
         venueId={venueId}
         onReservationComplete={onActionComplete}
       />

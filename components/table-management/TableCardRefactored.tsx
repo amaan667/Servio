@@ -457,6 +457,7 @@ export function TableCardRefactored({
       onClose={() => setShowReservationDialog(false)}
       tableId={table.table_id}
       tableLabel={table.label}
+      tableSeatCount={table.seat_count}
       venueId={venueId}
       onReservationComplete={onActionComplete}
     />
