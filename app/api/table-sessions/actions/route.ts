@@ -435,7 +435,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
   // Update or create table session status to RESERVED and store reservation info
   console.log('[TABLE ACTIONS] Checking for existing session for table:', table_id);
   
-  const { data: existingSession, error: sessionCheckError } = await supabase
+  const { data: currentSession, error: sessionCheckError } = await supabase
     .from('table_sessions')
     .select('id, status')
     .eq('table_id', table_id)
@@ -447,11 +447,11 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     return NextResponse.json({ error: 'Failed to check existing session' }, { status: 500 });
   }
 
-  console.log('[TABLE ACTIONS] Existing session found:', existingSession);
+  console.log('[TABLE ACTIONS] Existing session found:', currentSession);
 
-  if (existingSession) {
+  if (currentSession) {
     // Update existing session
-    console.log('[TABLE ACTIONS] Updating existing session:', existingSession.id, 'from status:', existingSession.status);
+    console.log('[TABLE ACTIONS] Updating existing session:', currentSession.id, 'from status:', currentSession.status);
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .update({ 
@@ -461,19 +461,19 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
         reservation_duration_minutes: reservation_duration,
         updated_at: new Date().toISOString()
       })
-      .eq('id', existingSession.id);
+      .eq('id', currentSession.id);
 
     if (sessionError) {
       console.error('[TABLE ACTIONS] Error updating session status:', sessionError);
       console.error('[TABLE ACTIONS] Session update details:', {
-        sessionId: existingSession.id,
+        sessionId: currentSession.id,
         tableId: table_id,
-        currentStatus: existingSession.status,
+        currentStatus: currentSession.status,
         error: sessionError
       });
       return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
     }
-    console.log('[TABLE ACTIONS] Successfully updated session:', existingSession.id);
+    console.log('[TABLE ACTIONS] Successfully updated session:', currentSession.id);
   } else {
     // Create new session
     console.log('[TABLE ACTIONS] No existing session found, creating new session for table:', table_id);
