@@ -25,7 +25,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TableRuntimeState } from '@/hooks/useTableRuntimeState';
-import { useSeatParty, useCloseTable, useAssignReservation, useCancelReservation, useNoShowReservation, useRemoveTable } from '@/hooks/useTableRuntimeState';
+import { useCloseTable, useAssignReservation, useCancelReservation, useNoShowReservation, useRemoveTable } from '@/hooks/useTableRuntimeState';
+import { useTableActions } from '@/hooks/useTableActions';
 import { formatDistanceToNow } from 'date-fns';
 import { ReservationDialog } from './ReservationDialog';
 import { TableSelectionDialog } from './TableSelectionDialog';
@@ -48,7 +49,7 @@ export function TableCardRefactored({
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [noShowMessage, setNoShowMessage] = useState<string | null>(null);
   
-  const seatParty = useSeatParty();
+  const { occupyTable } = useTableActions();
   const closeTable = useCloseTable();
   const assignReservation = useAssignReservation();
   const cancelReservation = useCancelReservation();
@@ -66,11 +67,7 @@ export function TableCardRefactored({
       switch (action) {
         case 'seat':
           console.log('[TABLE CARD] Seating party at table:', table.table_id);
-          await seatParty.mutateAsync({ 
-            tableId: table.table_id,
-            venueId: venueId,
-            serverId: undefined // Could be passed from user context
-          });
+          await occupyTable(table.table_id, venueId);
           break;
         case 'free':
           console.log('[TABLE CARD] Freeing table:', table.table_id);
