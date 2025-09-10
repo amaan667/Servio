@@ -582,6 +582,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         tableLabel={table.label}
         tableSeatCount={table.seat_count}
         venueId={venueId}
+        tableStatus={table.status}
         onReservationComplete={onActionComplete}
       />
       

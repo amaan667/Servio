@@ -21,6 +21,7 @@ interface ReservationDialogProps {
   tableLabel: string;
   tableSeatCount: number;
   venueId: string;
+  tableStatus?: string; // Current table status to check if already reserved
   onReservationComplete?: () => void;
 }
 
@@ -31,6 +32,7 @@ export function ReservationDialog({
   tableLabel,
   tableSeatCount,
   venueId,
+  tableStatus,
   onReservationComplete
 }: ReservationDialogProps) {
   const [customerName, setCustomerName] = useState('');
@@ -145,6 +147,15 @@ export function ReservationDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Warning if table is already reserved */}
+          {tableStatus === 'RESERVED' && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm text-yellow-700">
+                ⚠️ This table is already reserved. Creating a new reservation will conflict with the existing one.
+              </p>
+            </div>
+          )}
+          
           <div className="space-y-2">
             <Label htmlFor="customerName" className="flex items-center gap-2">
               <User className="h-4 w-4" />

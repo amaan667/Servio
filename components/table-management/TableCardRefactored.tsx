@@ -451,6 +451,7 @@ export function TableCardRefactored({
       tableLabel={table.label}
       tableSeatCount={table.seat_count}
       venueId={venueId}
+      tableStatus={table.primary_status}
       onReservationComplete={onActionComplete}
     />
 

@@ -270,6 +270,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         tableLabel={table.label}
         tableSeatCount={table.seat_count}
         venueId={venueId}
+        tableStatus={table.status}
         onReservationComplete={onActionComplete}
       />
     </Card>

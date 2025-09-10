@@ -324,10 +324,65 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     return NextResponse.json({ error: 'Table not found' }, { status: 404 });
   }
 
-  // Check if there's already a reservation for this table
+  // Check if there's already an active session/reservation for this table
+  const { data: existingSession, error: sessionCheckError } = await supabase
+    .from('table_sessions')
+    .select('id, status, reservation_time')
+    .eq('table_id', table_id)
+    .is('closed_at', null)
+    .single();
+
+  if (sessionCheckError && sessionCheckError.code !== 'PGRST116') {
+    console.error('[TABLE ACTIONS] Error checking existing session:', sessionCheckError);
+    return NextResponse.json({ error: 'Failed to check table availability' }, { status: 500 });
+  }
+
+  // If there's an active session, check if it's a reservation
+  if (existingSession) {
+    if (existingSession.status === 'RESERVED') {
+      const existingTime = existingSession.reservation_time;
+      const requestedTime = new Date(reservation_time);
+      
+      // Check if the requested time conflicts with existing reservation
+      if (existingTime) {
+        const existingReservationTime = new Date(existingTime);
+        const timeDiff = Math.abs(requestedTime.getTime() - existingReservationTime.getTime());
+        const conflictWindow = 30 * 60 * 1000; // 30 minutes in milliseconds
+        
+        if (timeDiff < conflictWindow) {
+          console.log('[TABLE ACTIONS] Reservation conflict detected:', {
+            existingTime: existingTime,
+            requestedTime: reservation_time,
+            timeDiff: timeDiff
+          });
+          return NextResponse.json({ 
+            error: 'Table is already reserved at this time. Please choose a different time.',
+            conflict: {
+              existingTime: existingTime,
+              requestedTime: reservation_time
+            }
+          }, { status: 409 });
+        }
+      } else {
+        // If there's a reserved session without a specific time, block the reservation
+        console.log('[TABLE ACTIONS] Table already has active reservation session');
+        return NextResponse.json({ 
+          error: 'Table is already reserved. Please choose a different table or time.'
+        }, { status: 409 });
+      }
+    } else if (existingSession.status === 'ORDERING' || existingSession.status === 'IN_PREP' || existingSession.status === 'READY' || existingSession.status === 'SERVED' || existingSession.status === 'AWAITING_BILL') {
+      // Table is currently in use
+      console.log('[TABLE ACTIONS] Table is currently in use:', existingSession.status);
+      return NextResponse.json({ 
+        error: 'Table is currently in use. Please choose a different table.'
+      }, { status: 409 });
+    }
+  }
+
+  // Also check the reservations table for additional validation
   const { data: existingReservation, error: checkError } = await supabase
     .from('reservations')
-    .select('id')
+    .select('id, start_at, end_at')
     .eq('table_id', table_id)
     .eq('status', 'BOOKED')
     .single();
