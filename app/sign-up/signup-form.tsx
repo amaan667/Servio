@@ -59,7 +59,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
             errorMessage.includes('email already in use') ||
             errorMessage.includes('duplicate key value') ||
             error.code === 'user_already_registered') {
-          setError('You already have an account. Please sign in instead.');
+          setError('You already have an account with this email. Please sign in instead.');
         } else {
           setError(error.message);
         }
@@ -95,9 +95,9 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           console.log('User immediately authenticated, redirecting to home');
           router.push('/');
         } else {
-          // Email confirmation is required - redirect to sign-in page
+          // Email confirmation is required - redirect to sign-in page with success message
           console.log('Email confirmation required, redirecting to sign-in');
-          router.push('/sign-in');
+          router.push('/sign-in?message=' + encodeURIComponent('Please check your email to confirm your account before signing in.'));
         }
       }
     } catch (err: any) {
@@ -129,7 +129,16 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
         <CardContent className="space-y-4">
           {error && (
             <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error}
+                {error.includes('already have an account') && (
+                  <div className="mt-2">
+                    <Link href="/sign-in" className="text-sm underline hover:no-underline font-medium">
+                      Sign in instead →
+                    </Link>
+                  </div>
+                )}
+              </AlertDescription>
             </Alert>
           )}
           
