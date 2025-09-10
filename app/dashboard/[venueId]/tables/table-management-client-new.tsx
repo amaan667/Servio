@@ -14,7 +14,9 @@ import {
   Loader2
 } from 'lucide-react';
 import { useTableGrid, useTableCounters, useReservations } from '@/hooks/useTableReservations';
+import { useCounterOrders, useCounterOrderCounts } from '@/hooks/useCounterOrders';
 import { TableCardNew } from '@/components/table-management/TableCardNew';
+import { CounterOrderCard } from '@/components/table-management/CounterOrderCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFiltersNew } from '@/components/table-management/TabFiltersNew';
 import { ReservationsPanel } from '@/components/table-management/ReservationsPanel';
@@ -45,6 +47,18 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     data: reservations = [], 
     isLoading: reservationsLoading 
   } = useReservations(venueId);
+
+  const { 
+    data: counterOrders = [], 
+    isLoading: counterOrdersLoading, 
+    error: counterOrdersError, 
+    refetch: refetchCounterOrders 
+  } = useCounterOrders(venueId);
+  
+  const { 
+    data: counterOrderCounts = { total: 0, placed: 0, in_prep: 0, ready: 0, serving: 0 }, 
+    isLoading: counterOrderCountsLoading 
+  } = useCounterOrderCounts(venueId);
 
   const filteredTables = useMemo(() => {
     let filtered = tables;
@@ -86,10 +100,11 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
   const handleTableActionComplete = () => {
     refetchTables();
+    refetchCounterOrders();
   };
 
-  const isLoading = tablesLoading || countersLoading;
-  const error = tablesError;
+  const isLoading = tablesLoading || countersLoading || counterOrdersLoading || counterOrderCountsLoading;
+  const error = tablesError || counterOrdersError;
 
   if (isLoading) {
     return (
@@ -158,6 +173,38 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           />
         </div>
       )}
+
+      {/* Counter Orders Section */}
+      {counterOrders.length > 0 && (
+        <section className="mt-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Counter Orders</h2>
+            <p className="text-sm text-gray-600">
+              Active orders placed at the counter ({counterOrderCounts.total} total)
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            {counterOrders.map((order) => (
+              <CounterOrderCard
+                key={order.id}
+                order={order}
+                venueId={venueId}
+                onActionComplete={handleTableActionComplete}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Tables Section */}
+      <section className="mt-6">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Table Orders</h2>
+          <p className="text-sm text-gray-600">
+            Orders from QR code tables ({counters.total_tables} tables set up)
+          </p>
+        </div>
+      </section>
 
       {/* Content */}
       {filteredTables.length === 0 ? (
