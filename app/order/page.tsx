@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react";
+import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
 import React from "react";
