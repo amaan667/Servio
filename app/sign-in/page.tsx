@@ -27,11 +27,14 @@ function SignInPageContent() {
       return;
     }
     
-    // Check for error parameters in URL
+    // Check for error and message parameters in URL
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get('error');
+    const messageParam = urlParams.get('message');
     
-    if (errorParam) {
+    if (messageParam) {
+      setError(messageParam);
+    } else if (errorParam) {
       switch (errorParam) {
         case 'pkce_error':
           setError('Authentication failed due to security verification. Please try signing in again.');

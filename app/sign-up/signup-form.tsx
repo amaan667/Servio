@@ -47,7 +47,12 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
       });
 
       if (error) {
-        setError(error.message);
+        // Check if the error is due to email already existing
+        if (error.message.includes('already registered') || error.message.includes('already exists') || error.message.includes('User already registered')) {
+          setError('You already have an account. Please sign in instead.');
+        } else {
+          setError(error.message);
+        }
         setLoading(false);
         return;
       }
@@ -60,9 +65,8 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           // User is immediately authenticated, redirect to dashboard
           router.push('/dashboard');
         } else {
-          // Email confirmation is required
-          setError('Please check your email to confirm your account.');
-          setLoading(false);
+          // Email confirmation is required - redirect to sign-in with message
+          router.push('/sign-in?message=Please check your email to confirm your account, then sign in.');
         }
       }
     } catch (err: any) {
