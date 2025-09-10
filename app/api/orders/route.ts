@@ -22,7 +22,7 @@ type OrderPayload = {
   order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED";
   payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
   payment_method?: "demo" | "stripe" | "till" | null;
-  // Note: table_id, session_id, and source columns don't exist in current database schema
+  source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
   scheduled_for?: string | null;
   prep_lead_minutes?: number;
 };
@@ -224,8 +224,7 @@ export async function POST(req: Request) {
       order_status: body.order_status || 'PLACED', // Use provided status or default to 'PLACED'
       payment_status: body.payment_status || 'UNPAID', // Use provided status or default to 'UNPAID'
       payment_method: body.payment_method || null,
-      // Note: table_id, session_id, and source columns don't exist in current database schema
-      // These will be stored in localStorage for now until database schema is updated
+      source: body.source || 'qr', // Default to 'qr' for table orders, 'counter' for counter orders
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,

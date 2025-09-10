@@ -93,6 +93,7 @@ export default function OrderSummaryPage() {
         total_amount: orderData.total,
         order_status: 'PLACED',
         payment_status: 'UNPAID',
+        source: orderData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
         notes: 'Order placed - payment pending'
       };
 

@@ -46,6 +46,7 @@ interface Order {
   notes?: string;
   scheduled_for?: string;
   prep_lead_minutes?: number;
+  source?: 'qr' | 'counter'; // Order source - qr for table orders, counter for counter orders
 }
 
 interface LiveOrdersClientProps {
@@ -583,7 +584,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               </div>
               <div className="text-sm text-gray-500">•</div>
               <div className="font-semibold text-gray-900">
-                Table {order.table_number || 'Takeaway'}
+                {order.source === 'counter' ? 'Counter' : 'Table'} {order.table_number || 'Takeaway'}
               </div>
             </div>
             {order.customer_name && (
