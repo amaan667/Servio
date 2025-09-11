@@ -82,8 +82,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         filtered = filtered.filter(table => table.session_status === 'OCCUPIED');
         break;
       case 'RESERVED':
-        // For now, show all tables when "Reserved" is selected
-        // In a full implementation, you'd filter by tables with overlapping reservations
+        filtered = filtered.filter(table => table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER');
         break;
       // 'ALL' shows all tables
     }
@@ -96,7 +95,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     const totalTables = tables.length;
     const freeTables = tables.filter(table => table.session_status === 'FREE').length;
     const occupiedTables = tables.filter(table => table.session_status === 'OCCUPIED').length;
-    const reservedTables = tables.filter(table => table.session_status === 'RESERVED').length;
+    const reservedTables = tables.filter(table => table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER').length;
     
     return {
       all: totalTables,

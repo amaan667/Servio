@@ -8,6 +8,7 @@ export interface TableGridItem {
   label: string;
   seat_count: number;
   session_status: 'FREE' | 'OCCUPIED';
+  reservation_status: 'RESERVED_NOW' | 'RESERVED_LATER' | 'NONE';
   opened_at: string | null;
   order_id: string | null;
   total_amount: number | null;
@@ -54,6 +55,7 @@ export function useTableGrid(venueId: string) {
         label: item.label,
         seat_count: item.seat_count,
         session_status: item.primary_status === 'OCCUPIED' ? 'OCCUPIED' : 'FREE',
+        reservation_status: item.reservation_status || 'NONE',
         opened_at: item.opened_at,
         order_id: null, // This would need to be fetched separately if needed
         total_amount: null, // This would need to be fetched separately if needed
