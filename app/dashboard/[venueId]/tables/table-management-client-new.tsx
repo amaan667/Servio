@@ -11,7 +11,9 @@ import {
   Users, 
   Clock,
   AlertCircle,
-  Loader2
+  Loader2,
+  Receipt,
+  CheckCircle2
 } from 'lucide-react';
 import { useTableGrid, useTableCounters, useReservations } from '@/hooks/useTableReservations';
 import { useCounterOrders, useCounterOrderCounts } from '@/hooks/useCounterOrders';
@@ -90,13 +92,19 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   }, [tables, filter, searchQuery]);
 
   const filterCounts = useMemo(() => {
+    // Calculate counts from the actual tables data, not from API counters
+    const totalTables = tables.length;
+    const freeTables = tables.filter(table => table.session_status === 'FREE').length;
+    const occupiedTables = tables.filter(table => table.session_status === 'OCCUPIED').length;
+    const reservedTables = tables.filter(table => table.session_status === 'RESERVED').length;
+    
     return {
-      all: counters.total_tables,
-      free: counters.available,
-      occupied: counters.occupied,
-      reserved: counters.reserved_overlapping_now,
+      all: totalTables,
+      free: freeTables,
+      occupied: occupiedTables,
+      reserved: reservedTables,
     };
-  }, [counters]);
+  }, [tables]);
 
   const handleTableActionComplete = () => {
     refetchTables();
@@ -167,7 +175,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Counter Orders</h2>
             <p className="text-sm text-gray-600">
-              Active orders placed at the counter ({counterOrderCounts.total} total)
+              Active orders placed at the counter ({counterOrders.length} total)
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -180,6 +188,63 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               />
             ))}
           </div>
+          
+          {/* Counter Orders Summary */}
+          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Counter Orders</p>
+                    <p className="text-2xl font-bold">{counterOrders.length}</p>
+                  </div>
+                  <Receipt className="h-8 w-8 text-gray-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Placed</p>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {counterOrders.filter(order => order.order_status === 'PLACED').length}
+                    </p>
+                  </div>
+                  <Clock className="h-8 w-8 text-yellow-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">In Prep</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {counterOrders.filter(order => order.order_status === 'IN_PREP').length}
+                    </p>
+                  </div>
+                  <Users className="h-8 w-8 text-blue-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Ready</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {counterOrders.filter(order => order.order_status === 'READY').length}
+                    </p>
+                  </div>
+                  <CheckCircle2 className="h-8 w-8 text-green-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </section>
       )}
 
@@ -188,7 +253,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <div className="mb-4">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Table Orders</h2>
           <p className="text-sm text-gray-600">
-            Orders from QR code tables ({counters.total_tables} tables set up)
+            Orders from QR code tables ({filterCounts.all} tables set up)
           </p>
         </div>
       </section>
@@ -268,7 +333,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Tables</p>
-                  <p className="text-2xl font-bold">{counters.total_tables}</p>
+                  <p className="text-2xl font-bold">{filterCounts.all}</p>
                 </div>
                 <Users className="h-8 w-8 text-gray-400" />
               </div>
@@ -280,7 +345,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Available</p>
-                  <p className="text-2xl font-bold text-green-600">{counters.available}</p>
+                  <p className="text-2xl font-bold text-green-600">{filterCounts.free}</p>
                 </div>
                 <Clock className="h-8 w-8 text-green-400" />
               </div>
@@ -292,7 +357,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Occupied</p>
-                  <p className="text-2xl font-bold text-amber-600">{counters.occupied}</p>
+                  <p className="text-2xl font-bold text-amber-600">{filterCounts.occupied}</p>
                 </div>
                 <Users className="h-8 w-8 text-amber-400" />
               </div>
@@ -304,7 +369,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Reserved</p>
-                  <p className="text-2xl font-bold text-blue-600">{counters.reserved_overlapping_now}</p>
+                  <p className="text-2xl font-bold text-blue-600">{filterCounts.reserved}</p>
                 </div>
                 <Clock className="h-8 w-8 text-blue-400" />
               </div>
