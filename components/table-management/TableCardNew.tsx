@@ -189,7 +189,15 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         </div>
 
         <div className="space-y-2">
-          <StatusPill status={table.session_status as any} />
+          <div className="flex items-center gap-2">
+            <StatusPill status={table.session_status as any} />
+            {table.reservation_status === 'RESERVED_NOW' && (
+              <Badge variant="outline" className="bg-sky-50 text-sky-700 ring-sky-100 text-xs">
+                <Calendar className="h-3 w-3 mr-1" />
+                Reserved
+              </Badge>
+            )}
+          </div>
           
           {table.order_id && (
             <div className="text-sm text-gray-600 space-y-1">

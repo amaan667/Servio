@@ -106,7 +106,16 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
     }
   };
 
-  const activeReservations = reservations.filter(r => r.status === 'BOOKED');
+  const activeReservations = reservations.filter(r => {
+    // Only show reservations that are BOOKED and haven't expired
+    if (r.status !== 'BOOKED') return false;
+    
+    // Check if the reservation has expired
+    const now = new Date();
+    const endTime = new Date(r.end_at);
+    
+    return endTime > now;
+  });
 
   if (activeReservations.length === 0) {
     return (

@@ -50,18 +50,34 @@ export function useTableGrid(venueId: string) {
       if (error) throw error;
       
       // Transform the data to match the expected TableGridItem interface
-      return data.map((item: any) => ({
-        id: item.table_id,
-        label: item.label,
-        seat_count: item.seat_count,
-        session_status: item.primary_status === 'OCCUPIED' ? 'OCCUPIED' : 'FREE',
-        reservation_status: item.reservation_status || 'NONE',
-        opened_at: item.opened_at,
-        order_id: null, // This would need to be fetched separately if needed
-        total_amount: null, // This would need to be fetched separately if needed
-        order_status: null, // This would need to be fetched separately if needed
-        order_updated_at: null // This would need to be fetched separately if needed
-      })) as TableGridItem[];
+      return data.map((item: any) => {
+        // Check if reservation has expired
+        let reservationStatus = item.reservation_status || 'NONE';
+        
+        // If there's a reservation, check if it has expired
+        if (reservationStatus !== 'NONE' && item.reserved_now_end) {
+          const now = new Date();
+          const endTime = new Date(item.reserved_now_end);
+          
+          if (endTime <= now) {
+            // Reservation has expired, set status to NONE
+            reservationStatus = 'NONE';
+          }
+        }
+        
+        return {
+          id: item.table_id,
+          label: item.label,
+          seat_count: item.seat_count,
+          session_status: item.primary_status === 'OCCUPIED' ? 'OCCUPIED' : 'FREE',
+          reservation_status: reservationStatus,
+          opened_at: item.opened_at,
+          order_id: null, // This would need to be fetched separately if needed
+          total_amount: null, // This would need to be fetched separately if needed
+          order_status: null, // This would need to be fetched separately if needed
+          order_updated_at: null // This would need to be fetched separately if needed
+        };
+      }) as TableGridItem[];
     },
     refetchInterval: 15000,
     enabled: !!venueId
