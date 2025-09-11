@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -127,9 +127,18 @@ export default function PaymentSuccessPage() {
             </p>
           </div>
 
-          <Button onClick={handleReturn} className="w-full">
-            Return to Menu
-          </Button>
+          <div className="space-y-3">
+            <Button 
+              onClick={() => router.push(`/order-summary/${orderId}`)}
+              className="w-full bg-servio-purple hover:bg-servio-purple-dark"
+            >
+              <Receipt className="h-4 w-4 mr-2" />
+              View Order Summary
+            </Button>
+            <Button onClick={handleReturn} variant="outline" className="w-full">
+              Return to Menu
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -30,6 +30,7 @@ interface Order {
   items: OrderItem[];
   created_at: string;
   updated_at: string;
+  source?: 'qr' | 'counter';
 }
 
 const ORDER_STATUSES = [
@@ -192,6 +193,17 @@ export default function OrderTrackingPage() {
     });
   };
 
+  // Generate short order number
+  const getShortOrderNumber = (orderId: string) => {
+    // Use last 6 characters of UUID for shorter display
+    return orderId.slice(-6).toUpperCase();
+  };
+
+  // Determine if it's a counter order
+  const isCounterOrder = (order: Order) => {
+    return order.source === 'counter' || order.table_number >= 10;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -216,6 +228,7 @@ export default function OrderTrackingPage() {
   }
 
   const currentStatusIndex = getCurrentStatusIndex();
+  const isCounter = isCounterOrder(order);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -230,9 +243,9 @@ export default function OrderTrackingPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Order #{order.id.slice(0, 8).toUpperCase()}</span>
+              <span>Order #{getShortOrderNumber(order.id)}</span>
               <Badge variant="outline" className="text-sm">
-                Table {order.table_number}
+                {isCounter ? `Counter ${order.table_number}` : `Table ${order.table_number}`}
               </Badge>
             </CardTitle>
           </CardHeader>

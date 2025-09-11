@@ -539,6 +539,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     });
   };
 
+  // Generate short order number
+  const getShortOrderNumber = (orderId: string) => {
+    // Use last 6 characters of UUID for shorter display
+    return orderId.slice(-6).toUpperCase();
+  };
+
+  // Determine if it's a counter order
+  const isCounterOrder = (order: Order) => {
+    return order.source === 'counter' || order.table_number >= 10;
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -584,7 +595,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               </div>
               <div className="text-sm text-gray-500">•</div>
               <div className="font-semibold text-gray-900">
-                {order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}
+                {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}
               </div>
             </div>
             {order.customer_name && (

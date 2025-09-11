@@ -1226,7 +1226,7 @@ export default function CheckoutPage() {
               Share Your Experience
             </Button>
             <Button
-              onClick={() => router.push(`/order-tracking/${order?.id}`)}
+              onClick={() => router.push(`/order-summary/${order?.id}`)}
               className="flex-1"
             >
               <Clock className="w-4 h-4 mr-2" />
@@ -1510,7 +1510,7 @@ export default function CheckoutPage() {
           {/* Action Buttons */}
           <div className="flex space-x-4">
             <Button
-              onClick={() => router.push(`/order-tracking/${order?.id}`)}
+              onClick={() => router.push(`/order-summary/${order?.id}`)}
               className="flex-1"
             >
               <Clock className="w-4 h-4 mr-2" />

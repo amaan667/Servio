@@ -21,7 +21,7 @@ export async function POST() {
     console.log('[FIX COUNTER 10 ORDERS] Starting to fix counter 10 orders...');
 
     // Update orders placed on counter 10 to have source='counter'
-    const { error: updateError } = await supabase
+    const { data: updateResult, error: updateError } = await supabase
       .from('orders')
       .update({ source: 'counter' })
       .eq('table_number', 10)
@@ -58,6 +58,7 @@ export async function POST() {
     return NextResponse.json({
       success: true,
       message: 'Counter 10 orders fixed successfully',
+      ordersUpdated: updateResult?.length || 0,
       updatedOrders: updatedOrders
     });
 

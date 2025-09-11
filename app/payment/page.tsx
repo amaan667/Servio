@@ -296,15 +296,14 @@ export default function PaymentPage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            {paymentAction === 'demo' || paymentAction === 'stripe' ? (
-              <Button
-                onClick={() => router.push(`/order-tracking/${orderNumber}`)}
-                className="w-full bg-servio-purple hover:bg-servio-purple-dark"
-              >
-                <Receipt className="h-4 w-4 mr-2" />
-                View Receipt
-              </Button>
-            ) : null}
+            {/* Universal Order Summary Button - Available for all payment methods */}
+            <Button
+              onClick={() => router.push(`/order-summary/${orderNumber}`)}
+              className="w-full bg-servio-purple hover:bg-servio-purple-dark"
+            >
+              <Receipt className="h-4 w-4 mr-2" />
+              {paymentAction === 'demo' || paymentAction === 'stripe' ? 'View Receipt' : 'View Order Summary'}
+            </Button>
             
             <Button
               onClick={() =>

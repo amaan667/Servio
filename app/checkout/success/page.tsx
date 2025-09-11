@@ -76,10 +76,17 @@ export default function SuccessPage() {
                 <p className="text-gray-600">
                   ✅ Payment received. Thanks! Your order #{orderId?.slice(-6)} is being prepared.
                 </p>
-                <div className="pt-4">
+                <div className="pt-4 space-y-3">
+                  <Button 
+                    onClick={() => window.location.href = `/order-summary/${orderId}`}
+                    className="w-full bg-servio-purple hover:bg-servio-purple-dark"
+                  >
+                    View Order Summary
+                  </Button>
                   <Button 
                     onClick={() => window.location.href = '/'}
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    variant="outline"
+                    className="w-full"
                   >
                     Return to Home
                   </Button>
