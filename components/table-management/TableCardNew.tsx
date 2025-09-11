@@ -86,12 +86,13 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
     }
   };
 
-  const handleRemoveTable = async () => {
+  const handleRemoveTable = async (retryCount = 0) => {
     try {
       console.log('🔍 [REMOVE TABLE] Starting removal process:', {
         tableId: table.id,
         tableLabel: table.label,
-        venueId: venueId
+        venueId: venueId,
+        retryCount
       });
       
       setIsLoading(true);
@@ -119,7 +120,22 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       console.log('🔍 [REMOVE TABLE] Response data:', responseData);
 
       if (!response.ok) {
-        throw new Error(responseData.error || 'Failed to remove table');
+        // Handle specific error cases with more user-friendly messages
+        if (responseData.error?.includes('Failed to check for active orders')) {
+          // If this is a database connectivity issue, try once more
+          if (retryCount < 1) {
+            console.log('🔍 [REMOVE TABLE] Retrying due to database connectivity issue...');
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+            return handleRemoveTable(retryCount + 1);
+          }
+          throw new Error('Unable to verify table status. Please try again or contact support if the issue persists.');
+        } else if (responseData.error?.includes('active orders')) {
+          throw new Error('Cannot remove table with active orders. Please close all orders first.');
+        } else if (responseData.error?.includes('active reservations')) {
+          throw new Error('Cannot remove table with active reservations. Please cancel all reservations first.');
+        } else {
+          throw new Error(responseData.error || 'Failed to remove table');
+        }
       }
 
       console.log('🔍 [REMOVE TABLE] Table removed successfully');
