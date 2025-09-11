@@ -25,6 +25,11 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     venueName,
     activeTablesCount: activeTablesCount
   });
+  console.log('🔍 [QR CLIENT] Initial state values:', {
+    loading: true, // Initial state
+    selectedTables: [],
+    selectedCounters: []
+  });
 
   const searchParams = useSearchParams();
 
@@ -568,7 +573,11 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         console.log('🔍 [QR CLIENT] ===== Starting loadStats =====');
         console.log('🔍 [QR CLIENT] loadStats inputs:', {
           venueId,
-          activeTablesCount: activeTablesCount
+          activeTablesCount: activeTablesCount,
+          activeTablesCountType: typeof activeTablesCount,
+          activeTablesCountIsZero: activeTablesCount === 0,
+          activeTablesCountIsNull: activeTablesCount === null,
+          activeTablesCountIsUndefined: activeTablesCount === undefined
         });
         
         setLoading(true);
@@ -617,6 +626,14 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         
         setLoading(false);
         console.log('🔍 [QR CLIENT] ===== loadStats completed successfully =====');
+        console.log('🔍 [QR CLIENT] Final state after loadStats:', {
+          loading: false,
+          selectedTables: currentSelectedTables === null 
+            ? (activeTables > 0 ? Array.from({length: activeTables}, (_, i) => (i + 1).toString()) : [])
+            : currentSelectedTables,
+          activeTables,
+          currentSelectedTables
+        });
       } catch (error: any) {
         console.error('🔍 [QR CLIENT] Error in loadStats:', error);
         setError(`Failed to load stats: ${error.message}`);
@@ -655,11 +672,21 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
   // Show loading state
   if (loading) {
-    console.log('🔍 [QR CLIENT] Rendering loading state');
+    console.log('🔍 [QR CLIENT] Rendering loading state - loading is true');
+    console.log('🔍 [QR CLIENT] Loading state details:', {
+      loading,
+      selectedTables,
+      selectedCounters,
+      activeTablesCount,
+      venueId
+    });
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <p className="mt-2 text-muted-foreground">Loading QR codes...</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Debug: activeTablesCount={activeTablesCount}, venueId={venueId}
+          </p>
         </div>
       </div>
     );
