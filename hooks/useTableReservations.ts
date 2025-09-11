@@ -60,7 +60,7 @@ export function useTableGrid(venueId: string) {
       
       // Filter out expired reservations
       const now = new Date();
-      const activeReservations = reservations.filter(r => {
+      const activeReservations = reservations.filter((r: { table_id: string; end_at: string }) => {
         const endTime = new Date(r.end_at);
         return endTime > now;
       });
