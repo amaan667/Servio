@@ -61,7 +61,74 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
 
     console.log('[TABLES API] Found table to delete:', existingTable);
 
+    // Check if the table has any active orders
+    console.log('[TABLES API] Checking for active orders...', { tableId, venueId: existingTable.venue_id });
+    const { data: activeOrders, error: ordersError } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('table_id', tableId)
+      .eq('venue_id', existingTable.venue_id)
+      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+    
+    console.log('[TABLES API] Active orders check result:', { activeOrders, ordersError });
+
+    if (ordersError) {
+      console.error('[TABLES API] Error checking active orders:', ordersError);
+      return NextResponse.json(
+        { error: 'Failed to check for active orders' },
+        { status: 500 }
+      );
+    }
+
+    // Check if the table has any active reservations
+    console.log('[TABLES API] Checking for active reservations...', { tableId, venueId: existingTable.venue_id });
+    const { data: activeReservations, error: reservationsError } = await supabase
+      .from('reservations')
+      .select('id')
+      .eq('table_id', tableId)
+      .eq('venue_id', existingTable.venue_id)
+      .eq('status', 'BOOKED');
+    
+    console.log('[TABLES API] Active reservations check result:', { activeReservations, reservationsError });
+
+    if (reservationsError) {
+      console.error('[TABLES API] Error checking active reservations:', reservationsError);
+      return NextResponse.json(
+        { error: 'Failed to check for active reservations' },
+        { status: 500 }
+      );
+    }
+
+    // If there are active orders or reservations, prevent deletion
+    console.log('[TABLES API] Checking if table can be removed...', {
+      activeOrdersCount: activeOrders?.length || 0,
+      activeReservationsCount: activeReservations?.length || 0
+    });
+
+    if (activeOrders && activeOrders.length > 0) {
+      console.log('[TABLES API] Table has active orders, preventing removal');
+      return NextResponse.json(
+        { 
+          error: 'Cannot remove table with active orders. Please close all orders first.',
+          hasActiveOrders: true
+        },
+        { status: 400 }
+      );
+    }
+
+    if (activeReservations && activeReservations.length > 0) {
+      console.log('[TABLES API] Table has active reservations, preventing removal');
+      return NextResponse.json(
+        { 
+          error: 'Cannot remove table with active reservations. Please cancel all reservations first.',
+          hasActiveReservations: true
+        },
+        { status: 400 }
+      );
+    }
+
     // Delete table (this will cascade to table_sessions)
+    console.log('[TABLES API] Attempting to delete table...');
     const { error } = await supabase
       .from('tables')
       .delete()

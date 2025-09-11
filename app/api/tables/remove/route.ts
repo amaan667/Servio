@@ -39,30 +39,46 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if the table has any active orders or reservations
+    console.log('🔍 [API] Checking for active orders...', { tableId, venueId });
     const { data: activeOrders, error: ordersError } = await supabase
       .from('orders')
       .select('id')
       .eq('table_id', tableId)
       .eq('venue_id', venueId)
-      .in('status', ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED']);
+      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+    
+    console.log('🔍 [API] Active orders check result:', { activeOrders, ordersError });
 
     if (ordersError) {
       console.error('Error checking active orders:', ordersError);
+      console.error('Orders query details:', {
+        tableId,
+        venueId,
+        error: ordersError
+      });
       return NextResponse.json(
         { error: 'Failed to check for active orders' },
         { status: 500 }
       );
     }
 
+    console.log('🔍 [API] Checking for active reservations...', { tableId, venueId });
     const { data: activeReservations, error: reservationsError } = await supabase
       .from('reservations')
       .select('id')
       .eq('table_id', tableId)
       .eq('venue_id', venueId)
       .eq('status', 'BOOKED');
+    
+    console.log('🔍 [API] Active reservations check result:', { activeReservations, reservationsError });
 
     if (reservationsError) {
       console.error('Error checking active reservations:', reservationsError);
+      console.error('Reservations query details:', {
+        tableId,
+        venueId,
+        error: reservationsError
+      });
       return NextResponse.json(
         { error: 'Failed to check for active reservations' },
         { status: 500 }
@@ -70,7 +86,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     // If there are active orders or reservations, prevent deletion
+    console.log('🔍 [API] Checking if table can be removed...', {
+      activeOrdersCount: activeOrders?.length || 0,
+      activeReservationsCount: activeReservations?.length || 0
+    });
+
     if (activeOrders && activeOrders.length > 0) {
+      console.log('🔍 [API] Table has active orders, preventing removal');
       return NextResponse.json(
         { 
           error: 'Cannot remove table with active orders. Please close all orders first.',
@@ -81,6 +103,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (activeReservations && activeReservations.length > 0) {
+      console.log('🔍 [API] Table has active reservations, preventing removal');
       return NextResponse.json(
         { 
           error: 'Cannot remove table with active reservations. Please cancel all reservations first.',

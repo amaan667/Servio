@@ -80,11 +80,56 @@ export async function POST(req: Request) {
 
     console.log(`[CLEANUP DUPLICATES] Found ${duplicatesToRemove.length} duplicate tables to remove`);
 
-    // Remove duplicate tables
+    // Check for active orders and reservations before removing duplicates
+    const { data: activeOrders, error: ordersError } = await supabase
+      .from('orders')
+      .select('table_id')
+      .in('table_id', duplicatesToRemove)
+      .eq('venue_id', venue_id)
+      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+
+    if (ordersError) {
+      console.error('[CLEANUP DUPLICATES] Error checking active orders:', ordersError);
+      return NextResponse.json({ ok: false, error: 'Failed to check for active orders' }, { status: 500 });
+    }
+
+    const { data: activeReservations, error: reservationsError } = await supabase
+      .from('reservations')
+      .select('table_id')
+      .in('table_id', duplicatesToRemove)
+      .eq('venue_id', venue_id)
+      .eq('status', 'BOOKED');
+
+    if (reservationsError) {
+      console.error('[CLEANUP DUPLICATES] Error checking active reservations:', reservationsError);
+      return NextResponse.json({ ok: false, error: 'Failed to check for active reservations' }, { status: 500 });
+    }
+
+    // Filter out tables that have active orders or reservations
+    const tablesWithActiveOrders = new Set(activeOrders?.map(o => o.table_id) || []);
+    const tablesWithActiveReservations = new Set(activeReservations?.map(r => r.table_id) || []);
+    
+    const safeToRemove = duplicatesToRemove.filter(tableId => 
+      !tablesWithActiveOrders.has(tableId) && !tablesWithActiveReservations.has(tableId)
+    );
+
+    if (safeToRemove.length === 0) {
+      return NextResponse.json({ 
+        ok: true, 
+        message: 'No duplicate tables can be safely removed (all have active orders or reservations)', 
+        duplicates_removed: 0 
+      });
+    }
+
+    if (safeToRemove.length < duplicatesToRemove.length) {
+      console.log(`[CLEANUP DUPLICATES] Skipping ${duplicatesToRemove.length - safeToRemove.length} tables with active orders/reservations`);
+    }
+
+    // Remove duplicate tables that are safe to remove
     const { error: deleteError } = await supabase
       .from('tables')
       .delete()
-      .in('id', duplicatesToRemove);
+      .in('id', safeToRemove);
 
     if (deleteError) {
       console.error('[CLEANUP DUPLICATES] Delete error:', deleteError);
@@ -93,8 +138,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      message: `Successfully removed ${duplicatesToRemove.length} duplicate tables`,
-      duplicates_removed: duplicatesToRemove.length
+      message: `Successfully removed ${safeToRemove.length} duplicate tables`,
+      duplicates_removed: safeToRemove.length
     });
 
   } catch (error) {
