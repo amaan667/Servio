@@ -91,11 +91,14 @@ export function useReservations(venueId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reservations')
-        .select('*')
+        .select(`
+          *,
+          table:table_id(label)
+        `)
         .eq('venue_id', venueId)
         .order('start_at', { ascending: true });
       if (error) throw error;
-      return data as Reservation[];
+      return data as (Reservation & { table?: { label: string } })[];
     },
     refetchInterval: 30000,
     enabled: !!venueId

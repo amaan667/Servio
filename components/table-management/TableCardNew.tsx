@@ -16,8 +16,7 @@ import {
   Play,
   Pause,
   Square,
-  QrCode,
-  UserPlus
+  QrCode
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -32,7 +31,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { StatusPill } from './StatusPill';
-import { useSeatWalkIn, useCloseTable, TableGridItem } from '@/hooks/useTableReservations';
+import { useCloseTable, TableGridItem } from '@/hooks/useTableReservations';
 import { useTableActions } from '@/hooks/useTableActions';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
@@ -49,21 +48,8 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showReservationDialog, setShowReservationDialog] = useState(false);
-  const seatWalkIn = useSeatWalkIn();
   const closeTable = useCloseTable();
   const { occupyTable } = useTableActions();
-
-  const handleSeatWalkIn = async () => {
-    try {
-      setIsLoading(true);
-      await seatWalkIn.mutateAsync({ venueId, tableId: table.id });
-      onActionComplete?.();
-    } catch (error) {
-      console.error('Failed to seat walk-in:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleOccupyTable = async () => {
     try {
@@ -93,10 +79,6 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
     if (table.session_status === 'FREE') {
       return (
         <>
-          <DropdownMenuItem onClick={handleSeatWalkIn} disabled={isLoading}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Seat Walk-in
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleOccupyTable} disabled={isLoading}>
             <Users className="h-4 w-4 mr-2" />
             Occupy Table

@@ -146,6 +146,12 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
                     {reservation.phone}
                   </div>
                 )}
+                {reservation.table_id && (
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Table {(reservation as any).table?.label || reservation.table_id}
+                  </div>
+                )}
               </div>
             </div>
 
