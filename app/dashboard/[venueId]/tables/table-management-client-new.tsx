@@ -17,8 +17,11 @@ import {
 } from 'lucide-react';
 import { useTableGrid, useTableCounters, useReservations } from '@/hooks/useTableReservations';
 import { useCounterOrders, useCounterOrderCounts } from '@/hooks/useCounterOrders';
+import { useTableOrders, useTableOrderCounts } from '@/hooks/useTableOrders';
 import { TableCardNew } from '@/components/table-management/TableCardNew';
 import { CounterOrderCard } from '@/components/table-management/CounterOrderCard';
+import { TableOrderCard } from '@/components/table-management/TableOrderCard';
+import { TableOrderGroupCard } from '@/components/table-management/TableOrderGroupCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFiltersNew } from '@/components/table-management/TabFiltersNew';
 import { ReservationsPanel } from '@/components/table-management/ReservationsPanel';
@@ -61,6 +64,18 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     data: counterOrderCounts = { total: 0, placed: 0, in_prep: 0, ready: 0, serving: 0 }, 
     isLoading: counterOrderCountsLoading 
   } = useCounterOrderCounts(venueId);
+
+  const { 
+    data: tableOrders = [], 
+    isLoading: tableOrdersLoading, 
+    error: tableOrdersError, 
+    refetch: refetchTableOrders 
+  } = useTableOrders(venueId);
+  
+  const { 
+    data: tableOrderCounts = { total: 0, placed: 0, in_prep: 0, ready: 0, serving: 0 }, 
+    isLoading: tableOrderCountsLoading 
+  } = useTableOrderCounts(venueId);
 
   const filteredTables = useMemo(() => {
     let filtered = tables;
@@ -105,12 +120,28 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     };
   }, [tables]);
 
+  // Group table orders by table
+  const groupedTableOrders = useMemo(() => {
+    const groups: { [key: string]: any[] } = {};
+    
+    tableOrders.forEach(order => {
+      const tableKey = order.table_label || `Table ${order.table_number}`;
+      if (!groups[tableKey]) {
+        groups[tableKey] = [];
+      }
+      groups[tableKey].push(order);
+    });
+    
+    return groups;
+  }, [tableOrders]);
+
   const handleTableActionComplete = () => {
     refetchTables();
     refetchCounterOrders();
+    refetchTableOrders();
   };
 
-  const error = tablesError || counterOrdersError;
+  const error = tablesError || counterOrdersError || tableOrdersError;
 
   // Remove loading state - render immediately with empty state if needed
   if (error) {
@@ -247,12 +278,92 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         </section>
       )}
 
+      {/* Table Orders Section */}
+      {tableOrders.length > 0 && (
+        <section className="mt-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Table Orders</h2>
+            <p className="text-sm text-gray-600">
+              Active orders from QR code tables ({tableOrders.length} total)
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            {Object.entries(groupedTableOrders).map(([tableLabel, orders]) => (
+              <TableOrderGroupCard
+                key={tableLabel}
+                tableLabel={tableLabel}
+                orders={orders}
+                venueId={venueId}
+                onActionComplete={handleTableActionComplete}
+              />
+            ))}
+          </div>
+          
+          {/* Table Orders Summary */}
+          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Table Orders</p>
+                    <p className="text-2xl font-bold">{tableOrders.length}</p>
+                  </div>
+                  <Receipt className="h-8 w-8 text-gray-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Placed</p>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {tableOrders.filter(order => order.order_status === 'PLACED').length}
+                    </p>
+                  </div>
+                  <Clock className="h-8 w-8 text-yellow-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">In Prep</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {tableOrders.filter(order => order.order_status === 'IN_PREP').length}
+                    </p>
+                  </div>
+                  <Users className="h-8 w-8 text-blue-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Ready</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {tableOrders.filter(order => order.order_status === 'READY').length}
+                    </p>
+                  </div>
+                  <CheckCircle2 className="h-8 w-8 text-green-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
+
       {/* Tables Section */}
       <section className="mt-6">
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Table Orders</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Table Management</h2>
           <p className="text-sm text-gray-600">
-            Orders from QR code tables ({filterCounts.all} tables set up)
+            Manage your table setup and seating ({filterCounts.all} tables set up)
           </p>
         </div>
       </section>

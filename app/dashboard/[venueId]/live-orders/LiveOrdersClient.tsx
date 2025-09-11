@@ -597,6 +597,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <div className="font-semibold text-gray-900">
                 {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}
               </div>
+              {/* Order type badge */}
+              <div className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                {isCounterOrder(order) ? 'Counter' : 'QR Table'}
+              </div>
             </div>
             {order.customer_name && (
               <div className="flex items-center text-sm text-gray-600">
@@ -810,29 +814,81 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
           {/* Content based on active tab */}
           {activeTab === 'live' && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-6">
               {orders.length === 0 ? (
-                <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
                   <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No Live Orders</h3>
                   <p className="text-slate-500">Orders placed within the last 30 minutes will appear here</p>
                 </div>
               ) : (
-                orders.map((order) => renderOrderCard(order, true))
+                <>
+                  {/* Counter Orders */}
+                  {orders.filter(order => isCounterOrder(order)).length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                        Counter Orders ({orders.filter(order => isCounterOrder(order)).length})
+                      </h3>
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {orders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, true))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Table Orders */}
+                  {orders.filter(order => !isCounterOrder(order)).length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                        Table Orders ({orders.filter(order => !isCounterOrder(order)).length})
+                      </h3>
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {orders.filter(order => !isCounterOrder(order)).map((order) => renderOrderCard(order, true))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
 
           {activeTab === 'all' && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-6">
               {allTodayOrders.length === 0 ? (
-                <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
                   <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No Earlier Orders Today</h3>
                   <p className="text-slate-500">Orders from earlier today will appear here</p>
                 </div>
               ) : (
-                allTodayOrders.map((order) => renderOrderCard(order, false))
+                <>
+                  {/* Counter Orders */}
+                  {allTodayOrders.filter(order => isCounterOrder(order)).length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                        Counter Orders ({allTodayOrders.filter(order => isCounterOrder(order)).length})
+                      </h3>
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {allTodayOrders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Table Orders */}
+                  {allTodayOrders.filter(order => !isCounterOrder(order)).length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                        Table Orders ({allTodayOrders.filter(order => !isCounterOrder(order)).length})
+                      </h3>
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {allTodayOrders.filter(order => !isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -852,9 +908,32 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                       <h3 className="text-lg font-semibold text-slate-900">{date}</h3>
                       <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full">{orders.length} orders</span>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {orders.map((order) => renderOrderCard(order, false))}
-                    </div>
+                    
+                    {/* Counter Orders for this date */}
+                    {orders.filter(order => isCounterOrder(order)).length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-md font-medium text-gray-700 flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                          Counter Orders ({orders.filter(order => isCounterOrder(order)).length})
+                        </h4>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                          {orders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Table Orders for this date */}
+                    {orders.filter(order => !isCounterOrder(order)).length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-md font-medium text-gray-700 flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                          Table Orders ({orders.filter(order => !isCounterOrder(order)).length})
+                        </h4>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                          {orders.filter(order => !isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
