@@ -550,6 +550,72 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return order.source === 'counter' || (order.table_number !== null && order.table_number >= 10);
   };
 
+  // Group table orders by table number
+  const groupOrdersByTable = (orders: Order[]) => {
+    const tableGroups: { [tableNumber: number]: Order[] } = {};
+    
+    orders.forEach(order => {
+      const tableNum = order.table_number || 0;
+      if (!tableGroups[tableNum]) {
+        tableGroups[tableNum] = [];
+      }
+      tableGroups[tableNum].push(order);
+    });
+
+    // Sort orders within each table by creation time (earliest first)
+    Object.keys(tableGroups).forEach(tableNum => {
+      tableGroups[Number(tableNum)].sort((a, b) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
+
+    return tableGroups;
+  };
+
+  // Calculate table total and status summary
+  const getTableSummary = (orders: Order[]) => {
+    const total = orders.reduce((sum, order) => {
+      let amount = order.total_amount;
+      if (!amount || amount <= 0) {
+        amount = order.items.reduce((itemSum, item) => {
+          const quantity = Number(item.quantity) || 0;
+          const price = Number(item.price) || 0;
+          return itemSum + (quantity * price);
+        }, 0);
+      }
+      return sum + amount;
+    }, 0);
+
+    const statuses = orders.map(order => order.order_status);
+    const paymentStatuses = orders.map(order => order.payment_status).filter(Boolean);
+    
+    // Determine overall status
+    let overallStatus = 'MIXED';
+    const uniqueStatuses = [...new Set(statuses)];
+    if (uniqueStatuses.length === 1) {
+      overallStatus = uniqueStatuses[0];
+    } else if (uniqueStatuses.includes('READY')) {
+      overallStatus = 'MIXED_READY';
+    } else if (uniqueStatuses.includes('IN_PREP')) {
+      overallStatus = 'MIXED_PREP';
+    }
+
+    const uniquePaymentStatuses = [...new Set(paymentStatuses)];
+    let overallPaymentStatus = 'MIXED';
+    if (uniquePaymentStatuses.length === 1) {
+      overallPaymentStatus = uniquePaymentStatuses[0];
+    }
+
+    return {
+      total,
+      orderCount: orders.length,
+      overallStatus,
+      overallPaymentStatus,
+      statuses: uniqueStatuses,
+      paymentStatuses: uniquePaymentStatuses
+    };
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -564,6 +630,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       case 'IN_PREP': return 'bg-blue-100 text-blue-800';
       case 'READY': return 'bg-green-100 text-green-800';
       case 'COMPLETED': return 'bg-green-100 text-green-800';
+      case 'MIXED': return 'bg-purple-100 text-purple-800';
+      case 'MIXED_READY': return 'bg-emerald-100 text-emerald-800';
+      case 'MIXED_PREP': return 'bg-indigo-100 text-indigo-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -571,10 +640,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const getPaymentStatusColor = (paymentStatus: string) => {
     switch (paymentStatus) {
       case 'PAID': return 'bg-green-100 text-green-800';
-      case 'UNPAID': return 'bg-yellow-100 text-yellow-800';
+      case 'UNPAID': return 'bg-red-100 text-red-800';
       case 'PAY_LATER': return 'bg-blue-100 text-blue-800';
       case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
       case 'REFUNDED': return 'bg-red-100 text-red-800';
+      case 'MIXED': return 'bg-amber-100 text-amber-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -589,19 +659,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         {/* Header - Modern SaaS Layout */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-3">
               <div className="text-sm font-medium text-gray-500">
                 {formatTime(order.created_at)}
               </div>
               <div className="h-1 w-1 rounded-full bg-gray-300"></div>
-              <div className="font-semibold text-gray-900 text-base">
+              <div className="font-semibold text-gray-900 text-lg">
                 {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}
               </div>
               <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
                 {isCounterOrder(order) ? 'Counter' : 'QR Table'}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <User className="h-4 w-4 text-gray-400" />
               <span className="text-sm font-medium text-gray-700">
                 {order.customer_name || 'Guest'}
@@ -609,7 +679,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-3xl font-bold text-gray-900 mb-1">
               £{(() => {
                 // Calculate total from items if total_amount is 0 or missing
                 let amount = order.total_amount;
@@ -639,19 +709,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         </div>
 
         {/* Order Items - Modern SaaS Layout */}
-        <div className="space-y-3 mb-6">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Order Items</h4>
+        <div className="space-y-4 mb-6">
+          <h4 className="text-sm font-semibold text-gray-700 mb-4">Order Items</h4>
           {order.items.map((item, index) => {
             console.log('[LIVE ORDERS DEBUG] Rendering item:', item);
             return (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                <div className="flex items-center gap-3">
+              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="flex items-center gap-4">
                   <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
                     {item.quantity}
                   </div>
-                  <span className="font-medium text-gray-900">{item.item_name}</span>
+                  <span className="font-medium text-gray-900 text-base">{item.item_name}</span>
                 </div>
-                <span className="font-semibold text-gray-900">£{(item.quantity * item.price).toFixed(2)}</span>
+                <span className="font-semibold text-gray-900 text-lg">£{(item.quantity * item.price).toFixed(2)}</span>
               </div>
             );
           })}
@@ -659,7 +729,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
         {/* Action Buttons - Modern SaaS Design */}
         {showActions && !isCompleted && (
-          <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center gap-3 pt-5 border-t border-gray-100">
             {order.order_status === 'PLACED' && (
               <Button 
                 size="sm"
@@ -700,6 +770,197 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         )}
       </div>
     </article>
+    );
+  };
+
+  // Render table group card with expandable orders
+  const renderTableGroupCard = (tableNumber: number, orders: Order[], showActions: boolean = true) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const summary = getTableSummary(orders);
+    const earliestOrder = orders[0];
+    const latestOrder = orders[orders.length - 1];
+
+    return (
+      <div key={tableNumber} className="rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg">
+        {/* Table Header */}
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="text-sm font-medium text-gray-500">
+                  {formatTime(earliestOrder.created_at)}
+                  {orders.length > 1 && (
+                    <>
+                      <span className="mx-2">•</span>
+                      <span>Latest: {formatTime(latestOrder.created_at)}</span>
+                    </>
+                  )}
+                </div>
+                <div className="h-1 w-1 rounded-full bg-gray-300"></div>
+                <div className="font-semibold text-gray-900 text-lg">
+                  Table {tableNumber}
+                </div>
+                <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
+                  QR Table
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-600">
+                    {summary.orderCount} order{summary.orderCount > 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Total:</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    £{summary.total.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Status badges */}
+              <div className="flex items-center gap-2">
+                <Badge className={`${getStatusColor(summary.overallStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+                  {summary.overallStatus.replace('_', ' ').toLowerCase()}
+                </Badge>
+                <Badge className={`${getPaymentStatusColor(summary.overallPaymentStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+                  {summary.overallPaymentStatus.toLowerCase()}
+                </Badge>
+              </div>
+              
+              {/* Expand/Collapse button */}
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <span>{isExpanded ? 'Hide' : 'Show'} individual orders</span>
+                <svg
+                  className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded Orders List */}
+        {isExpanded && (
+          <div className="p-6 pt-4">
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Individual Orders</h4>
+              {orders.map((order, index) => (
+                <div key={order.id} className="border border-gray-100 rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {formatTime(order.created_at)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Order #{getShortOrderNumber(order.id)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-gray-900">
+                        £{(() => {
+                          let amount = order.total_amount;
+                          if (!amount || amount <= 0) {
+                            amount = order.items.reduce((sum, item) => {
+                              const quantity = Number(item.quantity) || 0;
+                              const price = Number(item.price) || 0;
+                              return sum + (quantity * price);
+                            }, 0);
+                          }
+                          return amount.toFixed(2);
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 mb-3">
+                    <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
+                      {order.order_status.replace('_', ' ').toLowerCase()}
+                    </Badge>
+                    {order.payment_status && (
+                      <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
+                        {order.payment_status.toLowerCase()}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-gray-600 mb-2">Items:</div>
+                    {order.items.map((item, itemIndex) => (
+                      <div key={itemIndex} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
+                            {item.quantity}
+                          </span>
+                          <span className="text-gray-900">{item.item_name}</span>
+                        </div>
+                        <span className="font-medium text-gray-900">£{(item.quantity * item.price).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Action buttons for individual orders */}
+                  {showActions && order.order_status !== 'COMPLETED' && (
+                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
+                      {order.order_status === 'PLACED' && (
+                        <Button 
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs"
+                        >
+                          Start Preparing
+                        </Button>
+                      )}
+                      {order.order_status === 'IN_PREP' && (
+                        <Button 
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, 'READY')}
+                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs"
+                        >
+                          Mark Ready
+                        </Button>
+                      )}
+                      {order.order_status === 'READY' && (
+                        <Button 
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, 'SERVING')}
+                          className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs"
+                        >
+                          Mark Served
+                        </Button>
+                      )}
+                      {order.order_status === 'SERVING' && (
+                        <Button 
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
+                          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs"
+                        >
+                          Mark Complete
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -842,8 +1103,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                         Table Orders ({orders.filter(order => !isCounterOrder(order)).length})
                       </h3>
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {orders.filter(order => !isCounterOrder(order)).map((order) => renderOrderCard(order, true))}
+                      <div className="grid gap-4">
+                        {(() => {
+                          const tableOrders = orders.filter(order => !isCounterOrder(order));
+                          const tableGroups = groupOrdersByTable(tableOrders);
+                          return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
+                            renderTableGroupCard(Number(tableNumber), tableOrdersList, true)
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
@@ -882,8 +1149,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                         Table Orders ({allTodayOrders.filter(order => !isCounterOrder(order)).length})
                       </h3>
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {allTodayOrders.filter(order => !isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
+                      <div className="grid gap-4">
+                        {(() => {
+                          const tableOrders = allTodayOrders.filter(order => !isCounterOrder(order));
+                          const tableGroups = groupOrdersByTable(tableOrders);
+                          return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
+                            renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
@@ -928,8 +1201,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({orders.filter(order => !isCounterOrder(order)).length})
                         </h4>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                          {orders.filter(order => !isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
+                        <div className="grid gap-4">
+                          {(() => {
+                            const tableOrders = orders.filter(order => !isCounterOrder(order));
+                            const tableGroups = groupOrdersByTable(tableOrders);
+                            return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
+                              renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
+                            );
+                          })()}
                         </div>
                       </div>
                     )}

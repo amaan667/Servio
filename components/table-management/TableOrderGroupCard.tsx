@@ -30,6 +30,9 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
       case 'IN_PREP': return 'bg-blue-100 text-blue-800';
       case 'READY': return 'bg-green-100 text-green-800';
       case 'SERVING': return 'bg-purple-100 text-purple-800';
+      case 'MIXED': return 'bg-purple-100 text-purple-800';
+      case 'MIXED_READY': return 'bg-emerald-100 text-emerald-800';
+      case 'MIXED_PREP': return 'bg-indigo-100 text-indigo-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -39,6 +42,7 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
       case 'PAID': return 'bg-green-100 text-green-800';
       case 'UNPAID': return 'bg-red-100 text-red-800';
       case 'TILL': return 'bg-blue-100 text-blue-800';
+      case 'MIXED': return 'bg-amber-100 text-amber-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -78,38 +82,71 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
     return counts;
   };
 
+  const getOverallStatus = () => {
+    const statuses = orders.map(order => order.order_status);
+    const uniqueStatuses = [...new Set(statuses)];
+    
+    if (uniqueStatuses.length === 1) {
+      return uniqueStatuses[0];
+    } else if (uniqueStatuses.includes('READY')) {
+      return 'MIXED_READY';
+    } else if (uniqueStatuses.includes('IN_PREP')) {
+      return 'MIXED_PREP';
+    } else {
+      return 'MIXED';
+    }
+  };
+
+  const getOverallPaymentStatus = () => {
+    const paymentStatuses = orders.map(order => order.payment_status).filter(Boolean);
+    const uniquePaymentStatuses = [...new Set(paymentStatuses)];
+    
+    if (uniquePaymentStatuses.length === 1) {
+      return uniquePaymentStatuses[0];
+    } else {
+      return 'MIXED';
+    }
+  };
+
   const statusCounts = getOrderStatusCounts();
+  const overallStatus = getOverallStatus();
+  const overallPaymentStatus = getOverallPaymentStatus();
   const hasMultipleOrders = orders.length > 1;
 
   return (
     <Card className="w-full">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg">{tableLabel}</h3>
-            <Badge variant="secondary" className="text-xs">
-              <QrCode className="h-3 w-3 mr-1" />
-              QR Table
-            </Badge>
-            {hasMultipleOrders && (
-              <Badge variant="outline" className="text-xs">
-                {orders.length} orders
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="text-sm font-medium text-gray-500">{getLatestOrderTime()}</div>
+              <div className="h-1 w-1 rounded-full bg-gray-300"></div>
+              <div className="font-semibold text-gray-900 text-lg">{tableLabel}</div>
+              <Badge variant="secondary" className="text-xs">
+                <QrCode className="h-3 w-3 mr-1" />
+                QR Table
               </Badge>
-            )}
+              {hasMultipleOrders && (
+                <Badge variant="outline" className="text-xs">
+                  {orders.length} orders
+                </Badge>
+              )}
+            </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-500">{getLatestOrderTime()}</div>
-            <div className="font-bold text-lg">£{getTotalAmountForAllOrders()}</div>
+            <div className="text-xl font-bold text-gray-900 mb-1">£{getTotalAmountForAllOrders()}</div>
+            <div className="text-sm text-gray-500">Total</div>
           </div>
         </div>
 
         {/* Status Summary */}
-        <div className="flex gap-2 mb-3 flex-wrap">
-          {Object.entries(statusCounts).map(([status, count]) => (
-            <Badge key={status} className={getStatusColor(status)}>
-              {count > 1 ? `${count}x ` : ''}{status.replace('_', ' ')}
-            </Badge>
-          ))}
+        <div className="flex gap-3 mb-4 flex-wrap">
+          <Badge className={`${getStatusColor(overallStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+            {overallStatus.replace('_', ' ').toLowerCase()}
+          </Badge>
+          <Badge className={`${getPaymentStatusColor(overallPaymentStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+            {overallPaymentStatus.toLowerCase()}
+          </Badge>
         </div>
 
         {/* Expandable Orders */}
@@ -136,49 +173,63 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
 
         {/* Individual Orders */}
         {(isExpanded || !hasMultipleOrders) && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {orders.map((order, index) => (
-              <div key={order.id} className="border-l-2 border-gray-200 pl-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    {hasMultipleOrders && (
-                      <span className="text-xs text-gray-500">Order {index + 1}</span>
-                    )}
-                    <span className="text-sm text-gray-500">{formatTime(order.created_at)}</span>
+              <div key={order.id} className="border border-gray-100 rounded-lg p-4 bg-gray-50">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatTime(order.created_at)}
+                      </div>
+                      {hasMultipleOrders && (
+                        <div className="text-xs text-gray-500">
+                          Order #{order.id.slice(-6).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-sm font-medium">£{getTotalAmount(order)}</span>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-900">£{getTotalAmount(order)}</div>
+                  </div>
                 </div>
 
                 {/* Customer Info */}
                 {order.customer_name && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <User className="h-3 w-3 text-gray-500" />
-                    <span className="text-xs text-gray-600">{order.customer_name}</span>
+                  <div className="flex items-center gap-2 mb-3">
+                    <User className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700">{order.customer_name}</span>
                   </div>
                 )}
 
                 {/* Status Badges */}
-                <div className="flex gap-1 mb-2">
-                  <Badge className={`text-xs ${getStatusColor(order.order_status)}`}>
-                    {order.order_status.replace('_', ' ')}
+                <div className="flex gap-3 mb-3">
+                  <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
+                    {order.order_status.replace('_', ' ').toLowerCase()}
                   </Badge>
-                  <Badge className={`text-xs ${getPaymentStatusColor(order.payment_status)}`}>
-                    {order.payment_status}
+                  <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
+                    {order.payment_status.toLowerCase()}
                   </Badge>
                 </div>
 
                 {/* Order Items */}
                 {order.items && order.items.length > 0 && (
-                  <div className="mb-2">
-                    <div className="text-xs font-medium text-gray-700 mb-1">Items:</div>
-                    <div className="space-y-1">
-                      {order.items.map((item, itemIndex) => (
-                        <div key={itemIndex} className="flex justify-between text-xs">
-                          <span>{item.quantity}x {item.item_name}</span>
-                          <span>£{formatPrice(normalizePrice(item.price))}</span>
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-gray-600 mb-2">Items:</div>
+                    {order.items.map((item, itemIndex) => (
+                      <div key={itemIndex} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
+                            {item.quantity}
+                          </span>
+                          <span className="text-gray-900">{item.item_name}</span>
                         </div>
-                      ))}
-                    </div>
+                        <span className="font-medium text-gray-900">£{formatPrice(normalizePrice(item.price))}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
