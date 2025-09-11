@@ -58,7 +58,7 @@ export async function POST() {
     return NextResponse.json({
       success: true,
       message: 'Counter 10 orders fixed successfully',
-      ordersUpdated: updateResult?.length || 0,
+      ordersUpdated: updatedOrders?.length || 0,
       updatedOrders: updatedOrders
     });
 
