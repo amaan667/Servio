@@ -42,43 +42,52 @@ export function useTableGrid(venueId: string) {
   return useQuery({
     queryKey: ['tables', 'grid', venueId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First, get the table data
+      const { data: tableData, error: tableError } = await supabase
         .from('table_runtime_state')
         .select('*')
         .eq('venue_id', venueId)
         .order('label');
-      if (error) throw error;
+      if (tableError) throw tableError;
+      
+      // Then, get active reservations to cross-reference
+      const { data: reservations, error: reservationError } = await supabase
+        .from('reservations')
+        .select('table_id, end_at')
+        .eq('venue_id', venueId)
+        .eq('status', 'BOOKED');
+      if (reservationError) throw reservationError;
+      
+      // Filter out expired reservations
+      const now = new Date();
+      const activeReservations = reservations.filter(r => {
+        const endTime = new Date(r.end_at);
+        return endTime > now;
+      });
+      
+      console.log('🔍 [TABLE GRID] Active reservations:', activeReservations);
+      
+      // Get table IDs with active reservations
+      const tablesWithActiveReservations = new Set(
+        activeReservations.map(r => r.table_id)
+      );
+      
+      console.log('🔍 [TABLE GRID] Tables with active reservations:', tablesWithActiveReservations);
       
       // Transform the data to match the expected TableGridItem interface
-      return data.map((item: any) => {
+      return tableData.map((item: any) => {
         // Debug: Log the raw item data to see what fields are available
         console.log('🔍 [TABLE GRID] Raw item data:', item);
         
-        // Check if reservation has expired
-        let reservationStatus = item.reservation_status || 'NONE';
+        // Determine reservation status based on active reservations
+        let reservationStatus = 'NONE';
         
-        // If there's a reservation, check if it has expired
-        // Try different possible field names for the end time
-        const endTimeField = item.reserved_now_end || item.end_at || item.reservation_end;
-        
-        if (reservationStatus !== 'NONE' && endTimeField) {
-          const now = new Date();
-          const endTime = new Date(endTimeField);
-          
-          console.log('🔍 [TABLE GRID] Checking expiration:', {
-            tableId: item.table_id,
-            reservationStatus,
-            endTime: endTimeField,
-            now: now.toISOString(),
-            endTimeISO: endTime.toISOString(),
-            isExpired: endTime <= now
-          });
-          
-          if (endTime <= now) {
-            // Reservation has expired, set status to NONE
-            reservationStatus = 'NONE';
-            console.log('🔍 [TABLE GRID] Reservation expired, setting status to NONE for table:', item.table_id);
-          }
+        // Check if this table has an active reservation
+        if (tablesWithActiveReservations.has(item.table_id)) {
+          reservationStatus = 'RESERVED_NOW';
+          console.log('🔍 [TABLE GRID] Table has active reservation:', item.table_id);
+        } else {
+          console.log('🔍 [TABLE GRID] Table has no active reservation:', item.table_id);
         }
         
         return {
