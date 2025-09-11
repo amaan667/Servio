@@ -59,6 +59,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [showReservationDialog, setShowReservationDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const [forceRemove, setForceRemove] = useState(false);
   const closeTable = useCloseTable();
   const { occupyTable } = useTableActions();
 
@@ -101,6 +102,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       const requestBody = {
         tableId: table.id,
         venueId: venueId,
+        force: forceRemove,
       };
       
       console.log('🔍 [REMOVE TABLE] Request body:', requestBody);
@@ -141,6 +143,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       console.log('🔍 [REMOVE TABLE] Table removed successfully');
       onActionComplete?.();
       setShowRemoveDialog(false);
+      setForceRemove(false);
     } catch (error) {
       console.error('🔍 [REMOVE TABLE] Failed to remove table:', error);
       setRemoveError(error instanceof Error ? error.message : 'Failed to remove table');
@@ -387,6 +390,21 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
                   ❌ {removeError}
                 </span>
               )}
+              {removeError && removeError.includes('active orders') && (
+                <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={forceRemove}
+                      onChange={(e) => setForceRemove(e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-orange-800">
+                      Force remove (complete active orders and remove table anyway)
+                    </span>
+                  </label>
+                </div>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -395,6 +413,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
               onClick={() => {
                 setShowRemoveDialog(false);
                 setRemoveError(null);
+                setForceRemove(false);
               }}
               disabled={isLoading}
             >

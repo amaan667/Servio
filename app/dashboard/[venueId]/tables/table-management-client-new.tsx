@@ -24,6 +24,7 @@ import { TableOrderCard } from '@/components/table-management/TableOrderCard';
 import { TableOrderGroupCard } from '@/components/table-management/TableOrderGroupCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { ReservationsPanel } from '@/components/table-management/ReservationsPanel';
+import { DailyResetButton } from '@/components/daily-reset/DailyResetButton';
 
 interface TableManagementClientNewProps {
   venueId: string;
@@ -159,6 +160,14 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                 className="h-9 w-56 pl-10 rounded-xl border border-slate-200 px-3 text-sm shadow-sm"
               />
             </div>
+            <DailyResetButton 
+              venueId={venueId} 
+              onResetComplete={() => {
+                refetchTables();
+                refetchCounterOrders();
+                refetchTableOrders();
+              }} 
+            />
             <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
             <Button variant="outline" size="sm">
               <HelpCircle className="h-4 w-4 mr-2" />

@@ -5,8 +5,8 @@ export async function DELETE(request: NextRequest) {
   try {
     console.log('🔍 [API] Remove table endpoint called');
     
-    const { tableId, venueId } = await request.json();
-    console.log('🔍 [API] Request data:', { tableId, venueId });
+    const { tableId, venueId, force = false } = await request.json();
+    console.log('🔍 [API] Request data:', { tableId, venueId, force });
 
     if (!tableId || !venueId) {
       console.log('🔍 [API] Missing required fields');
@@ -48,19 +48,46 @@ export async function DELETE(request: NextRequest) {
     let ordersError: any = null;
     
     try {
+      // Check for orders by both table_number and table_id (if it exists)
+      const ordersQuery = supabase
+        .from('orders')
+        .select('id, table_number, table_id, order_status')
+        .eq('venue_id', venueId)
+        .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+
+      // If we have a table number, check by table_number
       if (tableNumber) {
-        const ordersResult = await supabase
+        ordersQuery.eq('table_number', tableNumber);
+      }
+
+      const ordersResult = await ordersQuery;
+      activeOrders = ordersResult.data || [];
+      ordersError = ordersResult.error;
+      
+      // Also check by table_id if it exists
+      if (!ordersError && tableId) {
+        const ordersByTableIdResult = await supabase
           .from('orders')
-          .select('id')
-          .eq('table_number', tableNumber)
+          .select('id, table_number, table_id, order_status')
           .eq('venue_id', venueId)
+          .eq('table_id', tableId)
           .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
         
-        activeOrders = ordersResult.data || [];
-        ordersError = ordersResult.error;
+        if (!ordersByTableIdResult.error && ordersByTableIdResult.data) {
+          // Merge results and remove duplicates
+          const existingIds = new Set(activeOrders.map(o => o.id));
+          const newOrders = ordersByTableIdResult.data.filter(o => !existingIds.has(o.id));
+          activeOrders = [...activeOrders, ...newOrders];
+        }
       }
       
-      console.log('🔍 [API] Active orders check result:', { activeOrders, ordersError });
+      console.log('🔍 [API] Active orders check result:', { 
+        activeOrders, 
+        ordersError,
+        tableNumber,
+        tableId,
+        ordersFound: activeOrders.length
+      });
     } catch (error) {
       console.error('🔍 [API] Exception during active orders check:', error);
       ordersError = error;
@@ -122,7 +149,8 @@ export async function DELETE(request: NextRequest) {
     });
 
     // Only prevent deletion if we successfully checked and found active orders/reservations
-    if (!ordersError && activeOrders && activeOrders.length > 0) {
+    // Unless force is true
+    if (!force && !ordersError && activeOrders && activeOrders.length > 0) {
       console.log('🔍 [API] Table has active orders, preventing removal');
       return NextResponse.json(
         { 
@@ -133,7 +161,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!reservationsError && activeReservations && activeReservations.length > 0) {
+    if (!force && !reservationsError && activeReservations && activeReservations.length > 0) {
       console.log('🔍 [API] Table has active reservations, preventing removal');
       return NextResponse.json(
         { 
@@ -142,6 +170,45 @@ export async function DELETE(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // If force is true and there are active orders/reservations, complete/cancel them first
+    if (force && activeOrders && activeOrders.length > 0) {
+      console.log('🔍 [API] Force mode: completing active orders before removal');
+      const { error: completeOrdersError } = await supabase
+        .from('orders')
+        .update({ 
+          order_status: 'COMPLETED',
+          updated_at: new Date().toISOString()
+        })
+        .in('id', activeOrders.map(o => o.id));
+
+      if (completeOrdersError) {
+        console.error('🔍 [API] Error completing orders in force mode:', completeOrdersError);
+        return NextResponse.json(
+          { error: 'Failed to complete active orders' },
+          { status: 500 }
+        );
+      }
+    }
+
+    if (force && activeReservations && activeReservations.length > 0) {
+      console.log('🔍 [API] Force mode: canceling active reservations before removal');
+      const { error: cancelReservationsError } = await supabase
+        .from('reservations')
+        .update({ 
+          status: 'CANCELLED',
+          updated_at: new Date().toISOString()
+        })
+        .in('id', activeReservations.map(r => r.id));
+
+      if (cancelReservationsError) {
+        console.error('🔍 [API] Error canceling reservations in force mode:', cancelReservationsError);
+        return NextResponse.json(
+          { error: 'Failed to cancel active reservations' },
+          { status: 500 }
+        );
+      }
     }
 
     // If both checks failed, we'll proceed with a warning
