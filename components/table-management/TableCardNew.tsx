@@ -150,6 +150,8 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
     }
   };
 
+  const qrHref = `/generate-qr?venue=${encodeURIComponent(venueId)}&table=${encodeURIComponent(String(table.label))}`;
+
   return (
     <Card className="hover:shadow-md transition-shadow duration-200">
       <CardContent className="p-4">
@@ -172,7 +174,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
                     className="h-8 w-8 p-0"
                     asChild
                   >
-                    <a href={`/generate-qr?venue=${venueId}&table=${table.label}`} target="_blank" rel="noopener noreferrer">
+                    <a href={qrHref} target="_blank" rel="noopener noreferrer">
                       <QrCode className="h-4 w-4" />
                     </a>
                   </Button>
