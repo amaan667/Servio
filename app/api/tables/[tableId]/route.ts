@@ -64,8 +64,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     // Check if the table has any active orders
     console.log('[TABLES API] Checking for active orders...', { tableId, venueId: existingTable.venue_id });
     
-    let activeOrders = [];
-    let ordersError = null;
+    let activeOrders: { id: string }[] = [];
+    let ordersError: any = null;
     
     try {
       const ordersResult = await supabase
@@ -109,8 +109,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     // Check if the table has any active reservations
     console.log('[TABLES API] Checking for active reservations...', { tableId, venueId: existingTable.venue_id });
     
-    let activeReservations = [];
-    let reservationsError = null;
+    let activeReservations: { id: string }[] = [];
+    let reservationsError: any = null;
     
     try {
       const reservationsResult = await supabase
