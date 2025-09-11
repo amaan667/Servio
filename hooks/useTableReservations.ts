@@ -69,7 +69,7 @@ export function useTableGrid(venueId: string) {
       
       // Get table IDs with active reservations
       const tablesWithActiveReservations = new Set(
-        activeReservations.map(r => r.table_id)
+        activeReservations.map((r: { table_id: string; end_at: string }) => r.table_id)
       );
       
       console.log('🔍 [TABLE GRID] Tables with active reservations:', tablesWithActiveReservations);
