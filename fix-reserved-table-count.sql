@@ -24,8 +24,7 @@ SELECT
     table_id,
     start_at,
     end_at,
-    status,
-    name
+    status
 FROM reservations 
 WHERE venue_id = 'venue-1e02af4d' 
   AND status = 'BOOKED'
