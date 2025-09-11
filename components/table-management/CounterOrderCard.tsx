@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { StatusPill } from './StatusPill';
 import { CounterOrder } from '@/hooks/useCounterOrders';
+import { calculateOrderTotal, formatPrice, normalizePrice } from '@/lib/pricing-utils';
 
 interface CounterOrderCardProps {
   order: CounterOrder;
@@ -52,10 +53,9 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
   };
 
   const getTotalAmount = () => {
-    if (order.total_amount) {
-      return (order.total_amount / 100).toFixed(2);
-    }
-    return '0.00';
+    // Use the standardized pricing calculation
+    const total = calculateOrderTotal({ total_amount: order.total_amount, items: order.items });
+    return formatPrice(total);
   };
 
   const handleStatusUpdate = async (newStatus: string) => {
@@ -125,24 +125,24 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
               {order.items.map((item, index) => (
                 <div key={index} className="flex justify-between text-sm">
                   <span>{item.quantity}x {item.item_name}</span>
-                  <span>£{(item.price / 100).toFixed(2)}</span>
+                  <span>£{formatPrice(normalizePrice(item.price))}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Skip preparing state */}
         <div className="flex gap-2">
           {order.order_status === 'PLACED' && (
             <Button
               size="sm"
-              onClick={() => handleStatusUpdate('IN_PREP')}
+              onClick={() => handleStatusUpdate('READY')}
               disabled={isLoading}
               className="flex-1"
             >
-              <Play className="h-4 w-4 mr-1" />
-              Start Preparing
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              Mark Ready
             </Button>
           )}
           

@@ -131,7 +131,7 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
     ? order.total_amount 
     : calculateTotalFromItems(order.items);
 
-  // Primary action button logic as specified
+  // Primary action button logic - removed preparing state
   function primaryActionFor(order: Order) {
     if (['SERVED','CANCELLED','REFUNDED','EXPIRED'].includes(order.order_status)) return null;
 
@@ -140,7 +140,7 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
     }
 
     switch (order.order_status) {
-      case 'PLACED':   return { label: 'Start Preparing', onClick: () => setOrderStatus(order.id, 'IN_PREP') };
+      case 'PLACED':   return { label: 'Mark Ready', onClick: () => setOrderStatus(order.id, 'READY') };
       case 'IN_PREP':  return { label: 'Mark Ready',      onClick: () => setOrderStatus(order.id, 'READY') };
       case 'READY':    return { label: 'Start Serving',   onClick: () => setOrderStatus(order.id, 'SERVING') };
       case 'SERVING':  return { label: 'Mark Served',     onClick: () => setOrderStatus(order.id, 'SERVED') };
