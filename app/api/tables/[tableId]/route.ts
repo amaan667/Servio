@@ -64,7 +64,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     // Check if the table has any active orders
     console.log('[TABLES API] Checking for active orders...', { tableId, venueId: existingTable.venue_id });
     
-    let activeOrders = [];
+    let activeOrders: { id: string }[] = [];
     let ordersError = null;
     
     try {
@@ -109,7 +109,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     // Check if the table has any active reservations
     console.log('[TABLES API] Checking for active reservations...', { tableId, venueId: existingTable.venue_id });
     
-    let activeReservations = [];
+    let activeReservations: { id: string }[] = [];
     let reservationsError = null;
     
     try {

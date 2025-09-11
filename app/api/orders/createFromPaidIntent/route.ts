@@ -4,9 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 import { ENV } from '@/lib/env';
 import { v4 as uuidv4 } from 'uuid';
 
-const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
+const stripe = ENV.STRIPE_SECRET_KEY ? new Stripe(ENV.STRIPE_SECRET_KEY, {
   apiVersion: '2025-08-27.basil',
-});
+}) : null;
 
 const supabase = createClient(
   ENV.SUPABASE_URL,
@@ -38,6 +38,17 @@ export async function POST(req: NextRequest) {
     // Handle demo mode
     if (paymentIntentId.startsWith('demo-')) {
       return await createDemoOrder(cartId);
+    }
+
+    // Check if Stripe is configured
+    if (!stripe) {
+      return NextResponse.json(
+        { 
+          ok: false, 
+          message: 'Payment processing is not configured' 
+        },
+        { status: 503 }
+      );
     }
 
     // Retrieve payment intent from Stripe

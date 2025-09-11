@@ -2,15 +2,24 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { headers } from "next/headers";
 import { createServerClient } from '@supabase/ssr';
+import { ENV } from '@/lib/env';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-08-27.basil" });
+const stripe = ENV.STRIPE_SECRET_KEY ? new Stripe(ENV.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" }) : null;
 
 export async function POST(req: Request) {
+  // Check if Stripe is configured
+  if (!stripe || !ENV.STRIPE_WEBHOOK_SECRET) {
+    return NextResponse.json(
+      { error: 'Payment processing is not configured' },
+      { status: 503 }
+    );
+  }
+
   const buf = await req.text();
   const headersList = await headers();
   const sig = headersList.get("stripe-signature")!;
   try {
-    const event = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+    const event = stripe.webhooks.constructEvent(buf, sig, ENV.STRIPE_WEBHOOK_SECRET);
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
