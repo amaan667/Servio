@@ -1,16 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Clock, 
-  CheckCircle2, 
-  UserCheck, 
   Receipt,
-  Play,
-  Square,
   User
 } from 'lucide-react';
 import { StatusPill } from './StatusPill';
@@ -24,7 +18,6 @@ interface CounterOrderCardProps {
 }
 
 export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOrderCardProps) {
-  const [isLoading, setIsLoading] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -58,29 +51,6 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
     return formatPrice(total);
   };
 
-  const handleStatusUpdate = async (newStatus: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/orders/update-status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId: order.id,
-          status: newStatus,
-        }),
-      });
-
-      if (response.ok) {
-        onActionComplete?.();
-      }
-    } catch (error) {
-      console.error('Error updating order status:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <Card className="w-full">
@@ -132,56 +102,7 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
           </div>
         )}
 
-        {/* Action Buttons - Skip preparing state */}
-        <div className="flex gap-2">
-          {order.order_status === 'PLACED' && (
-            <Button
-              size="sm"
-              onClick={() => handleStatusUpdate('READY')}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Mark Ready
-            </Button>
-          )}
-          
-          {order.order_status === 'IN_PREP' && (
-            <Button
-              size="sm"
-              onClick={() => handleStatusUpdate('READY')}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Mark Ready
-            </Button>
-          )}
-          
-          {order.order_status === 'READY' && (
-            <Button
-              size="sm"
-              onClick={() => handleStatusUpdate('SERVING')}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              <UserCheck className="h-4 w-4 mr-1" />
-              Mark Served
-            </Button>
-          )}
-          
-          {order.order_status === 'SERVING' && (
-            <Button
-              size="sm"
-              onClick={() => handleStatusUpdate('COMPLETED')}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              <Square className="h-4 w-4 mr-1" />
-              Complete Order
-            </Button>
-          )}
-        </div>
+        {/* Action buttons removed - order management is now handled on the live orders page */}
       </CardContent>
     </Card>
   );
