@@ -88,8 +88,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [refreshInterval, setRefreshInterval] = useState(15000); // 15 seconds
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Use the authoritative tab counts hook
-  const { data: tabCounts, refetch: refetchCounts } = useTabCounts(venueId, 'Europe/London', 30);
+  // Use the authoritative tab counts hook with error handling
+  const { data: tabCounts, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useTabCounts(venueId, 'Europe/London', 30);
   // Local fallback counts if RPC is unavailable or returns 0
   const [localCounts, setLocalCounts] = useState<{ live_count: number; earlier_today_count: number; history_count: number } | null>(null);
 
@@ -99,6 +99,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       refetchCounts();
     }
   }, [venueId, refetchCounts]);
+
+  // Handle RPC function errors by using fallback logic
+  useEffect(() => {
+    if (countsError) {
+      console.error('[LIVE_ORDERS] RPC function error, using fallback logic:', countsError);
+      // If RPC fails, we'll rely on local counts calculation
+      recalcLocalCounts();
+    }
+  }, [countsError]);
 
   // Debug log when tab counts change
   useEffect(() => {
@@ -157,6 +166,32 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   useEffect(() => {
     recalcLocalCounts();
   }, [todayWindow]);
+
+  // Set up today window when component mounts
+  useEffect(() => {
+    const window = todayWindowForTZ('Europe/London');
+    setTodayWindow(window);
+  }, []);
+
+  // Prevent infinite loading by setting a timeout
+  useEffect(() => {
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn('[LIVE_ORDERS] Loading timeout reached, setting loading to false');
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(loadingTimeout);
+  }, [loading]);
+
+  // Force loading to false if RPC function fails
+  useEffect(() => {
+    if (countsError && loading) {
+      console.warn('[LIVE_ORDERS] RPC function failed, forcing loading to false');
+      setLoading(false);
+    }
+  }, [countsError, loading]);
 
   // Prefer local counts if RPC is missing or reports 0 while local > 0
   const getDisplayCount = (key: 'live' | 'all' | 'history') => {
