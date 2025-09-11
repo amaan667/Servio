@@ -58,6 +58,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showReservationDialog, setShowReservationDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const closeTable = useCloseTable();
   const { occupyTable } = useTableActions();
 
@@ -87,26 +88,46 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
 
   const handleRemoveTable = async () => {
     try {
+      console.log('🔍 [REMOVE TABLE] Starting removal process:', {
+        tableId: table.id,
+        tableLabel: table.label,
+        venueId: venueId
+      });
+      
       setIsLoading(true);
+      setRemoveError(null);
+      
+      const requestBody = {
+        tableId: table.id,
+        venueId: venueId,
+      };
+      
+      console.log('🔍 [REMOVE TABLE] Request body:', requestBody);
+      
       const response = await fetch('/api/tables/remove', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          tableId: table.id,
-          venueId: venueId,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('🔍 [REMOVE TABLE] Response status:', response.status);
+      console.log('🔍 [REMOVE TABLE] Response ok:', response.ok);
+
+      const responseData = await response.json();
+      console.log('🔍 [REMOVE TABLE] Response data:', responseData);
+
       if (!response.ok) {
-        throw new Error('Failed to remove table');
+        throw new Error(responseData.error || 'Failed to remove table');
       }
 
+      console.log('🔍 [REMOVE TABLE] Table removed successfully');
       onActionComplete?.();
       setShowRemoveDialog(false);
     } catch (error) {
-      console.error('Failed to remove table:', error);
+      console.error('🔍 [REMOVE TABLE] Failed to remove table:', error);
+      setRemoveError(error instanceof Error ? error.message : 'Failed to remove table');
     } finally {
       setIsLoading(false);
     }
@@ -345,12 +366,20 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
                   ⚠️ This table is currently occupied. Removing it may affect active orders.
                 </span>
               )}
+              {removeError && (
+                <span className="block mt-2 text-red-600 font-medium">
+                  ❌ {removeError}
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowRemoveDialog(false)}
+              onClick={() => {
+                setShowRemoveDialog(false);
+                setRemoveError(null);
+              }}
               disabled={isLoading}
             >
               Cancel

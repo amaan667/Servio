@@ -3,9 +3,13 @@ import { createServerSupabase } from '@/lib/supabase/server';
 
 export async function DELETE(request: NextRequest) {
   try {
+    console.log('🔍 [API] Remove table endpoint called');
+    
     const { tableId, venueId } = await request.json();
+    console.log('🔍 [API] Request data:', { tableId, venueId });
 
     if (!tableId || !venueId) {
+      console.log('🔍 [API] Missing required fields');
       return NextResponse.json(
         { error: 'Table ID and Venue ID are required' },
         { status: 400 }
@@ -13,8 +17,10 @@ export async function DELETE(request: NextRequest) {
     }
 
     const supabase = await createServerSupabase();
+    console.log('🔍 [API] Supabase client created');
 
     // Check if the table exists and belongs to the venue
+    console.log('🔍 [API] Checking if table exists...');
     const { data: table, error: tableError } = await supabase
       .from('tables')
       .select('id, label, venue_id')
@@ -22,7 +28,10 @@ export async function DELETE(request: NextRequest) {
       .eq('venue_id', venueId)
       .single();
 
+    console.log('🔍 [API] Table query result:', { table, tableError });
+
     if (tableError || !table) {
+      console.log('🔍 [API] Table not found or error:', tableError);
       return NextResponse.json(
         { error: 'Table not found or does not belong to this venue' },
         { status: 404 }
@@ -82,21 +91,24 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete the table
+    console.log('🔍 [API] Attempting to delete table...');
     const { error: deleteError } = await supabase
       .from('tables')
       .delete()
       .eq('id', tableId)
       .eq('venue_id', venueId);
 
+    console.log('🔍 [API] Delete operation result:', { deleteError });
+
     if (deleteError) {
-      console.error('Error deleting table:', deleteError);
+      console.error('🔍 [API] Error deleting table:', deleteError);
       return NextResponse.json(
         { error: 'Failed to remove table' },
         { status: 500 }
       );
     }
 
-    console.log(`Table ${table.label} (${tableId}) removed from venue ${venueId}`);
+    console.log(`🔍 [API] Table ${table.label} (${tableId}) removed from venue ${venueId}`);
 
     return NextResponse.json({
       success: true,
