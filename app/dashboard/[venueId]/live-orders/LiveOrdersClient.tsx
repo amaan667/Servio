@@ -92,6 +92,26 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const { data: tabCounts, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useTabCounts(venueId, 'Europe/London', 30);
   // Local fallback counts if RPC is unavailable or returns 0
   const [localCounts, setLocalCounts] = useState<{ live_count: number; earlier_today_count: number; history_count: number } | null>(null);
+  
+  // State for managing table group expansion
+  const [expandedTables, setExpandedTables] = useState<Set<number>>(new Set());
+  
+  // Helper functions for table expansion
+  const toggleTableExpansion = (tableNumber: number) => {
+    setExpandedTables(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(tableNumber)) {
+        newSet.delete(tableNumber);
+      } else {
+        newSet.add(tableNumber);
+      }
+      return newSet;
+    });
+  };
+  
+  const isTableExpanded = (tableNumber: number) => {
+    return expandedTables.has(tableNumber);
+  };
 
   // Refresh counts when component mounts or venue changes
   useEffect(() => {
@@ -818,7 +838,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   // Render table group card with expandable orders
   const renderTableGroupCard = (tableNumber: number, orders: Order[], showActions: boolean = true) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const isExpanded = isTableExpanded(tableNumber);
     const summary = getTableSummary(orders);
     const earliestOrder = orders[0];
     const latestOrder = orders[orders.length - 1];
@@ -876,7 +896,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               
               {/* Expand/Collapse button */}
               <button
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() => toggleTableExpansion(tableNumber)}
                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <span>{isExpanded ? 'Hide' : 'Show'} individual orders</span>
