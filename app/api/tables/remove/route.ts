@@ -39,15 +39,29 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if the table has any active orders or reservations
-    const { data: activeOrders, error: ordersError } = await supabase
-      .from('orders')
-      .select('id')
-      .eq('table_id', tableId)
-      .eq('venue_id', venueId)
-      .in('status', ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED']);
+    // First, get the table number from the table record
+    const tableNumber = parseInt(table.label.replace(/\D/g, '')) || null;
+    console.log('🔍 [API] Table number extracted:', tableNumber);
+    
+    let activeOrders = [];
+    let ordersError = null;
+    
+    if (tableNumber) {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('table_number', tableNumber)
+        .eq('venue_id', venueId)
+        .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+      
+      activeOrders = data;
+      ordersError = error;
+    }
 
+    console.log('🔍 [API] Active orders check result:', { activeOrders, ordersError });
+    
     if (ordersError) {
-      console.error('Error checking active orders:', ordersError);
+      console.error('🔍 [API] Error checking active orders:', ordersError);
       return NextResponse.json(
         { error: 'Failed to check for active orders' },
         { status: 500 }
@@ -61,8 +75,10 @@ export async function DELETE(request: NextRequest) {
       .eq('venue_id', venueId)
       .eq('status', 'BOOKED');
 
+    console.log('🔍 [API] Active reservations check result:', { activeReservations, reservationsError });
+
     if (reservationsError) {
-      console.error('Error checking active reservations:', reservationsError);
+      console.error('🔍 [API] Error checking active reservations:', reservationsError);
       return NextResponse.json(
         { error: 'Failed to check for active reservations' },
         { status: 500 }
