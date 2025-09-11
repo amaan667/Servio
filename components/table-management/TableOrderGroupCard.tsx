@@ -101,7 +101,7 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
     const paymentStatuses = orders.map(order => order.payment_status).filter(Boolean);
     const uniquePaymentStatuses = [...new Set(paymentStatuses)];
     
-    if (uniquePaymentStatuses.length === 1) {
+    if (uniquePaymentStatuses.length === 1 && uniquePaymentStatuses[0]) {
       return uniquePaymentStatuses[0];
     } else {
       return 'MIXED';

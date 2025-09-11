@@ -602,7 +602,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
     const uniquePaymentStatuses = [...new Set(paymentStatuses)];
     let overallPaymentStatus = 'MIXED';
-    if (uniquePaymentStatuses.length === 1) {
+    if (uniquePaymentStatuses.length === 1 && uniquePaymentStatuses[0]) {
       overallPaymentStatus = uniquePaymentStatuses[0];
     }
 
