@@ -13,7 +13,6 @@ export interface TableOrder {
   created_at: string;
   updated_at: string;
   source: 'qr';
-  table_id: string | null;
   table_label: string | null;
   items: Array<{
     item_name: string;
@@ -39,7 +38,6 @@ export function useTableOrders(venueId: string) {
           created_at,
           updated_at,
           source,
-          table_id,
           items
         `)
         .eq('venue_id', venueId)
@@ -49,17 +47,18 @@ export function useTableOrders(venueId: string) {
 
       if (error) throw error;
       
-      // Get table labels for each order
+      // Get table labels for each order using table_number
       const ordersWithTableLabels = await Promise.all(
         (data || []).map(async (order: any) => {
           let tableLabel = null;
-          if (order.table_id) {
+          if (order.table_number) {
             const { data: tableData } = await supabase
               .from('table_runtime_state')
               .select('label')
-              .eq('id', order.table_id)
+              .eq('venue_id', venueId)
+              .eq('label', `Table ${order.table_number}`)
               .single();
-            tableLabel = tableData?.label || null;
+            tableLabel = tableData?.label || `Table ${order.table_number}`;
           }
           
           return {

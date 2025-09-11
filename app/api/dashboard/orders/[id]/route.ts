@@ -36,14 +36,16 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   // Handle table state transitions when order is completed or cancelled
   if (order_status === 'COMPLETED' || order_status === 'CANCELLED') {
     const order = data;
-    if (order && order.table_id) {
+    if (order && order.table_number && order.source === 'qr') {
       console.log('[DASHBOARD UPDATE] Order completed/cancelled, checking if table should be set to FREE');
       
       // Check if there are any other active orders for this table
       const { data: activeOrders, error: activeOrdersError } = await supa
         .from('orders')
         .select('id')
-        .eq('table_id', order.table_id)
+        .eq('venue_id', order.venue_id)
+        .eq('table_number', order.table_number)
+        .eq('source', 'qr')
         .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
         .neq('id', id);
 
@@ -53,21 +55,33 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
         // No other active orders for this table, set it back to FREE
         console.log('[DASHBOARD UPDATE] No other active orders for table, setting to FREE');
         
-        const { error: tableUpdateError } = await supa
-          .from('table_sessions')
-          .update({ 
-            status: 'FREE',
-            order_id: null,
-            closed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('table_id', order.table_id)
-          .is('closed_at', null);
+        // Find the table by venue_id and table_number
+        const { data: tableData, error: tableFindError } = await supa
+          .from('table_runtime_state')
+          .select('id')
+          .eq('venue_id', order.venue_id)
+          .eq('label', `Table ${order.table_number}`)
+          .single();
 
-        if (tableUpdateError) {
-          console.error('[DASHBOARD UPDATE] Error updating table to FREE:', tableUpdateError);
-        } else {
-          console.log('[DASHBOARD UPDATE] Successfully set table to FREE');
+        if (tableFindError) {
+          console.error('[DASHBOARD UPDATE] Error finding table:', tableFindError);
+        } else if (tableData) {
+          const { error: tableUpdateError } = await supa
+            .from('table_sessions')
+            .update({ 
+              status: 'FREE',
+              order_id: null,
+              closed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('table_id', tableData.id)
+            .is('closed_at', null);
+
+          if (tableUpdateError) {
+            console.error('[DASHBOARD UPDATE] Error updating table to FREE:', tableUpdateError);
+          } else {
+            console.log('[DASHBOARD UPDATE] Successfully set table to FREE');
+          }
         }
       } else {
         console.log('[DASHBOARD UPDATE] Other active orders exist for table, keeping OCCUPIED');

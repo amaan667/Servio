@@ -30,14 +30,16 @@ export async function POST(req: Request) {
     // Handle table state transitions when order is completed or cancelled
     if (status === 'COMPLETED' || status === 'CANCELLED') {
       const order = data?.[0];
-      if (order && order.table_id) {
+      if (order && order.table_number && order.source === 'qr') {
         console.log('[UPDATE STATUS] Order completed/cancelled, checking if table should be set to FREE');
         
         // Check if there are any other active orders for this table
         const { data: activeOrders, error: activeOrdersError } = await supabase
           .from('orders')
           .select('id')
-          .eq('table_id', order.table_id)
+          .eq('venue_id', order.venue_id)
+          .eq('table_number', order.table_number)
+          .eq('source', 'qr')
           .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
           .neq('id', orderId);
 
@@ -47,21 +49,33 @@ export async function POST(req: Request) {
           // No other active orders for this table, set it back to FREE
           console.log('[UPDATE STATUS] No other active orders for table, setting to FREE');
           
-          const { error: tableUpdateError } = await supabase
-            .from('table_sessions')
-            .update({ 
-              status: 'FREE',
-              order_id: null,
-              closed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('table_id', order.table_id)
-            .is('closed_at', null);
+          // Find the table by venue_id and table_number
+          const { data: tableData, error: tableFindError } = await supabase
+            .from('table_runtime_state')
+            .select('id')
+            .eq('venue_id', order.venue_id)
+            .eq('label', `Table ${order.table_number}`)
+            .single();
 
-          if (tableUpdateError) {
-            console.error('[UPDATE STATUS] Error updating table to FREE:', tableUpdateError);
-          } else {
-            console.log('[UPDATE STATUS] Successfully set table to FREE');
+          if (tableFindError) {
+            console.error('[UPDATE STATUS] Error finding table:', tableFindError);
+          } else if (tableData) {
+            const { error: tableUpdateError } = await supabase
+              .from('table_sessions')
+              .update({ 
+                status: 'FREE',
+                order_id: null,
+                closed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('table_id', tableData.id)
+              .is('closed_at', null);
+
+            if (tableUpdateError) {
+              console.error('[UPDATE STATUS] Error updating table to FREE:', tableUpdateError);
+            } else {
+              console.log('[UPDATE STATUS] Successfully set table to FREE');
+            }
           }
         } else {
           console.log('[UPDATE STATUS] Other active orders exist for table, keeping OCCUPIED');
