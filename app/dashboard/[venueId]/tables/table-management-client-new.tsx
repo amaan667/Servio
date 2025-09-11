@@ -188,7 +188,168 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <TabFiltersNew value={filter} onChange={setFilter} counts={filterCounts} />
       </header>
 
-      {/* Reservations Panel */}
+      {/* 🔹 COUNTER ORDERS - Always at the top (lane view) */}
+      {counterOrders.length > 0 && (
+        <section className="mt-6">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Counter Orders</h2>
+            <p className="text-sm text-gray-600">
+              Fast-moving orders from counter service - work FIFO ({counterOrders.length} active)
+            </p>
+          </div>
+          
+          {/* Horizontal scroll lane for counter orders */}
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-4 min-w-max">
+              {counterOrders
+                .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) // Oldest first
+                .map((order) => (
+                <div key={order.id} className="flex-shrink-0 w-80">
+                  <CounterOrderCard
+                    order={order}
+                    venueId={venueId}
+                    onActionComplete={handleTableActionComplete}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Counter Orders Quick Stats */}
+          <div className="mt-4 grid grid-cols-4 gap-3">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="text-center">
+                <p className="text-sm font-medium text-yellow-800">Placed</p>
+                <p className="text-xl font-bold text-yellow-600">
+                  {counterOrders.filter(order => order.order_status === 'PLACED').length}
+                </p>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="text-center">
+                <p className="text-sm font-medium text-blue-800">Preparing</p>
+                <p className="text-xl font-bold text-blue-600">
+                  {counterOrders.filter(order => order.order_status === 'IN_PREP').length}
+                </p>
+              </div>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="text-center">
+                <p className="text-sm font-medium text-green-800">Ready</p>
+                <p className="text-xl font-bold text-green-600">
+                  {counterOrders.filter(order => order.order_status === 'READY').length}
+                </p>
+              </div>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-800">Total</p>
+                <p className="text-xl font-bold text-gray-600">{counterOrders.length}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 🔹 TABLE ORDERS - Active orders only in grid format */}
+      {tableOrders.length > 0 && (
+        <section className="mt-8">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Table Orders (Active Only)</h2>
+            <p className="text-sm text-gray-600">
+              Dine-in orders requiring staff attention - grouped by table ({tableOrders.length} active orders)
+            </p>
+          </div>
+          
+          {/* Table Orders Grid - Each table shows active orders */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Object.entries(groupedTableOrders).map(([tableLabel, orders]) => (
+              <div key={tableLabel} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900">{tableLabel}</h3>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-xs text-gray-600">{orders.length} active</span>
+                  </div>
+                </div>
+                
+                {/* Show mixed status if orders are at different stages */}
+                <div className="mb-3">
+                  {(() => {
+                    const statuses = [...new Set(orders.map(o => o.order_status))];
+                    if (statuses.length > 1) {
+                      return (
+                        <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                          Mixed status
+                        </div>
+                      );
+                    } else {
+                      const status = statuses[0];
+                      const statusColors = {
+                        'PLACED': 'bg-yellow-100 text-yellow-800',
+                        'IN_PREP': 'bg-blue-100 text-blue-800',
+                        'READY': 'bg-green-100 text-green-800',
+                        'SERVING': 'bg-purple-100 text-purple-800'
+                      };
+                      return (
+                        <div className={`text-xs px-2 py-1 rounded ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+                          {status.replace('_', ' ').toLowerCase()}
+                        </div>
+                      );
+                    }
+                  })()}
+                </div>
+                
+                {/* Click to expand orders */}
+                <div className="space-y-2">
+                  {orders.slice(0, 2).map((order) => (
+                    <div key={order.id} className="text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">#{order.id.slice(0, 6)}</span>
+                        <span className="font-medium">£{order.total_amount?.toFixed(2) || '0.00'}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(order.created_at).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ))}
+                  {orders.length > 2 && (
+                    <div className="text-xs text-gray-500 text-center">
+                      +{orders.length - 2} more orders
+                    </div>
+                  )}
+                </div>
+                
+                {/* Quick action button */}
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <Button 
+                    size="sm" 
+                    className="w-full text-xs"
+                    onClick={() => {
+                      // This would open a drawer with full order details
+                      console.log('Open table orders drawer for', tableLabel);
+                    }}
+                  >
+                    View Orders
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 🔹 TABLE MANAGEMENT - Admin/layout tools at bottom */}
+      <section className="mt-8">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Table Management</h2>
+          <p className="text-sm text-gray-600">
+            Configure table setup and seating layout ({filterCounts.all} tables set up)
+          </p>
+        </div>
+      </section>
+
+      {/* 🔹 RESERVATIONS - Secondary position (toggleable sidebar/drawer) */}
       {!reservationsLoading && reservations.length > 0 && (
         <div className="mt-6">
           <ReservationsPanel 
@@ -199,176 +360,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         </div>
       )}
 
-      {/* Counter Orders Section */}
-      {counterOrders.length > 0 && (
-        <section className="mt-6">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Counter Orders</h2>
-            <p className="text-sm text-gray-600">
-              Active orders placed at the counter ({counterOrders.length} total)
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-            {counterOrders.map((order) => (
-              <CounterOrderCard
-                key={order.id}
-                order={order}
-                venueId={venueId}
-                onActionComplete={handleTableActionComplete}
-              />
-            ))}
-          </div>
-          
-          {/* Counter Orders Summary */}
-          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Counter Orders</p>
-                    <p className="text-2xl font-bold">{counterOrders.length}</p>
-                  </div>
-                  <Receipt className="h-8 w-8 text-gray-400" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Placed</p>
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {counterOrders.filter(order => order.order_status === 'PLACED').length}
-                    </p>
-                  </div>
-                  <Clock className="h-8 w-8 text-yellow-400" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">In Prep</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {counterOrders.filter(order => order.order_status === 'IN_PREP').length}
-                    </p>
-                  </div>
-                  <Users className="h-8 w-8 text-blue-400" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Ready</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {counterOrders.filter(order => order.order_status === 'READY').length}
-                    </p>
-                  </div>
-                  <CheckCircle2 className="h-8 w-8 text-green-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      )}
-
-      {/* Table Orders Section */}
-      {tableOrders.length > 0 && (
-        <section className="mt-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Active Table Orders</h2>
-            <p className="text-base text-gray-600">
-              Orders from QR code tables that need staff attention ({tableOrders.length} total orders)
-            </p>
-          </div>
-          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-            {Object.entries(groupedTableOrders).map(([tableLabel, orders]) => (
-              <TableOrderGroupCard
-                key={tableLabel}
-                tableLabel={tableLabel}
-                orders={orders}
-                venueId={venueId}
-                onActionComplete={handleTableActionComplete}
-              />
-            ))}
-          </div>
-          
-          {/* Table Orders Summary */}
-          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Table Orders</p>
-                    <p className="text-2xl font-bold">{tableOrders.length}</p>
-                  </div>
-                  <Receipt className="h-8 w-8 text-gray-400" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Placed</p>
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {tableOrders.filter(order => order.order_status === 'PLACED').length}
-                    </p>
-                  </div>
-                  <Clock className="h-8 w-8 text-yellow-400" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">In Prep</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {tableOrders.filter(order => order.order_status === 'IN_PREP').length}
-                    </p>
-                  </div>
-                  <Users className="h-8 w-8 text-blue-400" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Ready</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {tableOrders.filter(order => order.order_status === 'READY').length}
-                    </p>
-                  </div>
-                  <CheckCircle2 className="h-8 w-8 text-green-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      )}
-
-      {/* Tables Section */}
-      <section className="mt-6">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Table Management</h2>
-          <p className="text-sm text-gray-600">
-            Manage your table setup and seating ({filterCounts.all} tables set up)
-          </p>
-        </div>
-      </section>
-
-      {/* Content */}
+      {/* Table Grid - Shows table tiles with occupancy state */}
       {filteredTables.length === 0 ? (
         <div className="mt-8">
           {tables.length === 0 ? (
@@ -421,70 +413,82 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         </div>
       ) : (
         <section className="mt-6">
+          {/* Table Grid - Each tile shows occupancy state and badge count */}
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
             {filteredTables.map((table) => (
-              <TableCardNew
-                key={table.id}
-                table={table}
-                venueId={venueId}
-                onActionComplete={handleTableActionComplete}
-                availableTables={tables}
-              />
+              <div key={table.id} className="relative">
+                <TableCardNew
+                  table={table}
+                  venueId={venueId}
+                  onActionComplete={handleTableActionComplete}
+                  availableTables={tables}
+                />
+                
+                {/* Overlay reservation info if table is reserved */}
+                {(table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER') && (
+                  <div className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full border border-blue-200">
+                    Reserved
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </section>
       )}
 
-      {/* Stats Summary */}
+      {/* 🔹 SUMMARY STATS - Table occupancy overview */}
       {tables.length > 0 && (
-        <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Tables</p>
-                  <p className="text-2xl font-bold">{filterCounts.all}</p>
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Table Status Overview</h3>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Tables</p>
+                    <p className="text-2xl font-bold">{filterCounts.all}</p>
+                  </div>
+                  <Users className="h-8 w-8 text-gray-400" />
                 </div>
-                <Users className="h-8 w-8 text-gray-400" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Available</p>
-                  <p className="text-2xl font-bold text-green-600">{filterCounts.free}</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Available</p>
+                    <p className="text-2xl font-bold text-green-600">{filterCounts.free}</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-green-400" />
                 </div>
-                <Clock className="h-8 w-8 text-green-400" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Occupied</p>
-                  <p className="text-2xl font-bold text-amber-600">{filterCounts.occupied}</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Occupied</p>
+                    <p className="text-2xl font-bold text-amber-600">{filterCounts.occupied}</p>
+                  </div>
+                  <Users className="h-8 w-8 text-amber-400" />
                 </div>
-                <Users className="h-8 w-8 text-amber-400" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Reserved</p>
-                  <p className="text-2xl font-bold text-blue-600">{filterCounts.reserved}</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Reserved</p>
+                    <p className="text-2xl font-bold text-blue-600">{filterCounts.reserved}</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-blue-400" />
                 </div>
-                <Clock className="h-8 w-8 text-blue-400" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </div>
