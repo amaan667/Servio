@@ -77,6 +77,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
   const LIVE_WINDOW_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING', 'COMPLETED']; // Include COMPLETED for 30-min window
+  const ACTIVE_TABLE_ORDER_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']; // Only active orders for table management
   const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
   
   // Define what constitutes a "live" order - orders placed within the last 30 minutes
@@ -564,9 +565,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
     // Sort orders within each table by creation time (earliest first)
     Object.keys(tableGroups).forEach(tableNum => {
-      tableGroups[Number(tableNum)].sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
+      tableGroups[Number(tableNum)].sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+        return dateA.getTime() - dateB.getTime(); // Ascending order (earliest first)
+      });
     });
 
     return tableGroups;
@@ -786,7 +789,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="text-sm font-medium text-gray-500">
                   {formatTime(earliestOrder.created_at)}
                   {orders.length > 1 && (
@@ -797,7 +800,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   )}
                 </div>
                 <div className="h-1 w-1 rounded-full bg-gray-300"></div>
-                <div className="font-semibold text-gray-900 text-lg">
+                <div className="font-semibold text-gray-900 text-xl">
                   Table {tableNumber}
                 </div>
                 <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
@@ -805,7 +808,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 </div>
               </div>
               
-              <div className="flex items-center gap-4 mb-3">
+              <div className="flex items-center gap-6 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-600">
                     {summary.orderCount} order{summary.orderCount > 1 ? 's' : ''}
@@ -813,7 +816,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">Total:</span>
-                  <span className="text-xl font-bold text-gray-900">
+                  <span className="text-2xl font-bold text-gray-900">
                     £{summary.total.toFixed(2)}
                   </span>
                 </div>
@@ -899,17 +902,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="text-xs font-medium text-gray-600 mb-2">Items:</div>
+                  <div className="space-y-3">
+                    <div className="text-xs font-medium text-gray-600 mb-3">Items:</div>
                     {order.items.map((item, itemIndex) => (
-                      <div key={itemIndex} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
+                      <div key={itemIndex} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 h-6 bg-gray-50 rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
                             {item.quantity}
                           </span>
-                          <span className="text-gray-900">{item.item_name}</span>
+                          <span className="text-gray-900 font-medium">{item.item_name}</span>
                         </div>
-                        <span className="font-medium text-gray-900">£{(item.quantity * item.price).toFixed(2)}</span>
+                        <span className="font-semibold text-gray-900">£{(item.quantity * item.price).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
@@ -1097,23 +1100,27 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   )}
                   
                   {/* Table Orders */}
-                  {orders.filter(order => !isCounterOrder(order)).length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                        Table Orders ({orders.filter(order => !isCounterOrder(order)).length})
-                      </h3>
-                      <div className="grid gap-4">
-                        {(() => {
-                          const tableOrders = orders.filter(order => !isCounterOrder(order));
-                          const tableGroups = groupOrdersByTable(tableOrders);
-                          return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
-                            renderTableGroupCard(Number(tableNumber), tableOrdersList, true)
-                          );
-                        })()}
+                  {(() => {
+                    const activeTableOrders = orders.filter(order => 
+                      !isCounterOrder(order) && ACTIVE_TABLE_ORDER_STATUSES.includes(order.order_status)
+                    );
+                    return activeTableOrders.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                          Table Orders ({activeTableOrders.length})
+                        </h3>
+                        <div className="grid gap-4">
+                          {(() => {
+                            const tableGroups = groupOrdersByTable(activeTableOrders);
+                            return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
+                              renderTableGroupCard(Number(tableNumber), tableOrdersList, true)
+                            );
+                          })()}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </>
               )}
             </div>
@@ -1143,23 +1150,27 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   )}
                   
                   {/* Table Orders */}
-                  {allTodayOrders.filter(order => !isCounterOrder(order)).length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                        Table Orders ({allTodayOrders.filter(order => !isCounterOrder(order)).length})
-                      </h3>
-                      <div className="grid gap-4">
-                        {(() => {
-                          const tableOrders = allTodayOrders.filter(order => !isCounterOrder(order));
-                          const tableGroups = groupOrdersByTable(tableOrders);
-                          return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
-                            renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
-                          );
-                        })()}
+                  {(() => {
+                    const activeTableOrders = allTodayOrders.filter(order => 
+                      !isCounterOrder(order) && ACTIVE_TABLE_ORDER_STATUSES.includes(order.order_status)
+                    );
+                    return activeTableOrders.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                          Table Orders ({activeTableOrders.length})
+                        </h3>
+                        <div className="grid gap-4">
+                          {(() => {
+                            const tableGroups = groupOrdersByTable(activeTableOrders);
+                            return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
+                              renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
+                            );
+                          })()}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </>
               )}
             </div>
