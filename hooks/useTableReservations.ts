@@ -51,17 +51,33 @@ export function useTableGrid(venueId: string) {
       
       // Transform the data to match the expected TableGridItem interface
       return data.map((item: any) => {
+        // Debug: Log the raw item data to see what fields are available
+        console.log('🔍 [TABLE GRID] Raw item data:', item);
+        
         // Check if reservation has expired
         let reservationStatus = item.reservation_status || 'NONE';
         
         // If there's a reservation, check if it has expired
-        if (reservationStatus !== 'NONE' && item.reserved_now_end) {
+        // Try different possible field names for the end time
+        const endTimeField = item.reserved_now_end || item.end_at || item.reservation_end;
+        
+        if (reservationStatus !== 'NONE' && endTimeField) {
           const now = new Date();
-          const endTime = new Date(item.reserved_now_end);
+          const endTime = new Date(endTimeField);
+          
+          console.log('🔍 [TABLE GRID] Checking expiration:', {
+            tableId: item.table_id,
+            reservationStatus,
+            endTime: endTimeField,
+            now: now.toISOString(),
+            endTimeISO: endTime.toISOString(),
+            isExpired: endTime <= now
+          });
           
           if (endTime <= now) {
             // Reservation has expired, set status to NONE
             reservationStatus = 'NONE';
+            console.log('🔍 [TABLE GRID] Reservation expired, setting status to NONE for table:', item.table_id);
           }
         }
         
