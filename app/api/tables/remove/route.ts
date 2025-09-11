@@ -44,8 +44,8 @@ export async function DELETE(request: NextRequest) {
     console.log('🔍 [API] Table number extracted:', tableNumber);
     console.log('🔍 [API] Checking for active orders...', { tableId, venueId, tableNumber });
     
-    let activeOrders = [];
-    let ordersError = null;
+    let activeOrders: { id: string }[] = [];
+    let ordersError: any = null;
     
     try {
       if (tableNumber) {
@@ -81,8 +81,8 @@ export async function DELETE(request: NextRequest) {
 
     console.log('🔍 [API] Checking for active reservations...', { tableId, venueId });
     
-    let activeReservations = [];
-    let reservationsError = null;
+    let activeReservations: { id: string }[] = [];
+    let reservationsError: any = null;
     
     try {
       const reservationsResult = await supabase
