@@ -402,7 +402,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
             </Button>
             <Button
               variant="destructive"
-              onClick={handleRemoveTable}
+              onClick={() => handleRemoveTable()}
               disabled={isLoading}
             >
               {isLoading ? 'Removing...' : 'Remove Table'}
