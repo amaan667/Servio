@@ -547,7 +547,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   // Determine if it's a counter order
   const isCounterOrder = (order: Order) => {
-    return order.source === 'counter' || order.table_number >= 10;
+    return order.source === 'counter' || (order.table_number !== null && order.table_number >= 10);
   };
 
   const formatDate = (dateString: string) => {
