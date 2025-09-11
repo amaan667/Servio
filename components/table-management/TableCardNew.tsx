@@ -60,6 +60,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [forceRemove, setForceRemove] = useState(false);
+  const [showHoverRemove, setShowHoverRemove] = useState(false);
   const closeTable = useCloseTable();
   const { occupyTable } = useTableActions();
 
@@ -212,7 +213,11 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const qrHref = `/generate-qr?venue=${encodeURIComponent(venueId)}&table=${encodeURIComponent(String(table.label))}`;
 
   return (
-    <Card className="group hover:shadow-md transition-shadow duration-200">
+    <Card 
+      className="group hover:shadow-md transition-shadow duration-200 relative"
+      onMouseEnter={() => setShowHoverRemove(true)}
+      onMouseLeave={() => setShowHoverRemove(false)}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -225,7 +230,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           
           <div className="flex items-center gap-1">
             {/* Remove Table Button - appears on hover */}
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div className={`transition-opacity duration-200 ${showHoverRemove ? 'opacity-100' : 'opacity-0'}`}>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

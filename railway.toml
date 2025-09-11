@@ -7,3 +7,8 @@ startCommand = "pnpm start"
 healthcheckPath = "/api/status"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
+
+# Cron job for daily reset at midnight
+[[cron]]
+schedule = "0 0 * * *"
+command = "curl -X POST -H 'Authorization: Bearer $CRON_SECRET' $RAILWAY_PUBLIC_DOMAIN/api/cron/daily-reset"

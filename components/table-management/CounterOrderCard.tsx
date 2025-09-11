@@ -1,12 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   Clock, 
   Receipt,
-  User
+  User,
+  X
 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { StatusPill } from './StatusPill';
 import { CounterOrder } from '@/hooks/useCounterOrders';
 import { calculateOrderTotal, formatPrice, normalizePrice } from '@/lib/pricing-utils';
@@ -18,6 +27,35 @@ interface CounterOrderCardProps {
 }
 
 export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOrderCardProps) {
+  const [showHoverRemove, setShowHoverRemove] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+
+  const handleRemoveOrder = async () => {
+    try {
+      setIsRemoving(true);
+      
+      const response = await fetch('/api/orders/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          venue_id: venueId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete order');
+      }
+
+      onActionComplete?.();
+    } catch (error) {
+      console.error('Error removing order:', error);
+    } finally {
+      setIsRemoving(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -53,7 +91,11 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
 
 
   return (
-    <Card className="w-full shadow-sm hover:shadow-md transition-all duration-200">
+    <Card 
+      className="w-full shadow-sm hover:shadow-md transition-all duration-200 relative"
+      onMouseEnter={() => setShowHoverRemove(true)}
+      onMouseLeave={() => setShowHoverRemove(false)}
+    >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1 min-w-0">
@@ -68,8 +110,29 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
               <div className="text-sm text-gray-500">{formatTime(order.created_at)}</div>
             </div>
           </div>
-          <div className="text-right ml-4">
+          <div className="text-right ml-4 flex items-center gap-2">
             <div className="text-2xl font-bold text-gray-900">£{getTotalAmount()}</div>
+            {/* Remove Order Button - appears on hover */}
+            <div className={`transition-opacity duration-200 ${showHoverRemove ? 'opacity-100' : 'opacity-0'}`}>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={handleRemoveOrder}
+                      disabled={isRemoving}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Remove Order</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </div>
 

@@ -19,6 +19,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if it's actually midnight (within 5 minutes of 00:00)
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Only run if it's between 00:00 and 00:05
+    if (currentHour !== 0 || currentMinute > 5) {
+      console.log('🕛 [CRON DAILY RESET] Not midnight, skipping reset', { currentHour, currentMinute });
+      return NextResponse.json({
+        success: true,
+        message: 'Not midnight, skipping reset',
+        currentTime: now.toISOString()
+      });
+    }
+
     const supabase = await createServerSupabase();
     
     // Get all venues that need daily reset
