@@ -30,8 +30,8 @@ export interface Reservation {
   start_at: string;
   end_at: string;
   party_size: number;
-  name: string | null;
-  phone: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
   status: 'BOOKED' | 'CHECKED_IN' | 'CANCELLED' | 'NO_SHOW';
   created_at: string;
   updated_at: string;

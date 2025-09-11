@@ -124,7 +124,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-medium">
-                  {reservation.name || 'Unnamed Reservation'}
+                  {reservation.customer_name || 'Unnamed Reservation'}
                 </span>
                 <Badge variant="outline" className={getStatusColor(reservation.status)}>
                   {reservation.status}
@@ -140,16 +140,23 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
                   <Users className="h-3 w-3" />
                   {reservation.party_size} people
                 </div>
-                {reservation.phone && (
+                {reservation.customer_phone && (
                   <div className="flex items-center gap-1">
                     <Phone className="h-3 w-3" />
-                    {reservation.phone}
+                    {reservation.customer_phone}
                   </div>
                 )}
                 {reservation.table_id && (
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    Table {(reservation as any).table?.label || reservation.table_id}
+                    {(() => {
+                      const tableLabel = (reservation as any).table?.label || reservation.table_id;
+                      // If the label already starts with "table", don't add "Table" prefix
+                      if (tableLabel.toLowerCase().startsWith('table')) {
+                        return tableLabel;
+                      }
+                      return `Table ${tableLabel}`;
+                    })()}
                   </div>
                 )}
               </div>
