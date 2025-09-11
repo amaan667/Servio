@@ -103,22 +103,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     refetchCounterOrders();
   };
 
-  const isLoading = tablesLoading || countersLoading || counterOrdersLoading || counterOrderCountsLoading;
   const error = tablesError || counterOrdersError;
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl p-4 md:p-6">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
-            <p className="text-gray-600">Loading tables...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Remove loading state - render immediately with empty state if needed
   if (error) {
     return (
       <div className="mx-auto max-w-7xl p-4 md:p-6">

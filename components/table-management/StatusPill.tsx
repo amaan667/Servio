@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 interface StatusPillProps {
-  status: 'FREE' | 'ORDERING' | 'IN_PREP' | 'READY' | 'SERVED' | 'AWAITING_BILL' | 'RESERVED' | 'CLOSED';
+  status: 'FREE' | 'OCCUPIED' | 'ORDERING' | 'IN_PREP' | 'READY' | 'SERVED' | 'AWAITING_BILL' | 'RESERVED' | 'CLOSED';
   className?: string;
 }
 
@@ -21,10 +21,15 @@ const statusConfig = {
     className: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     label: 'Free'
   },
-  ORDERING: {
+  OCCUPIED: {
     icon: Clock,
     className: 'bg-amber-50 text-amber-700 ring-amber-100',
     label: 'Occupied'
+  },
+  ORDERING: {
+    icon: Clock,
+    className: 'bg-amber-50 text-amber-700 ring-amber-100',
+    label: 'Ordering'
   },
   IN_PREP: {
     icon: Utensils,
@@ -60,6 +65,19 @@ const statusConfig = {
 
 export function StatusPill({ status, className = '' }: StatusPillProps) {
   const config = statusConfig[status];
+  
+  // Handle undefined config gracefully
+  if (!config) {
+    return (
+      <Badge 
+        variant="outline" 
+        className={`bg-gray-50 text-gray-700 ring-gray-100 ${className} flex items-center gap-1.5 px-2.5 py-1`}
+      >
+        <span className="text-xs font-medium">{status}</span>
+      </Badge>
+    );
+  }
+  
   const Icon = config.icon;
 
   return (
