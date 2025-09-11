@@ -16,7 +16,8 @@ import {
   Play,
   Pause,
   Square,
-  QrCode
+  QrCode,
+  X
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -35,6 +36,14 @@ import { useCloseTable, TableGridItem } from '@/hooks/useTableReservations';
 import { useTableActions } from '@/hooks/useTableActions';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface TableCardNewProps {
   table: TableGridItem;
@@ -48,6 +57,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showReservationDialog, setShowReservationDialog] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const closeTable = useCloseTable();
   const { occupyTable } = useTableActions();
 
@@ -70,6 +80,33 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       onActionComplete?.();
     } catch (error) {
       console.error('Failed to close table:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveTable = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/tables/remove', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tableId: table.id,
+          venueId: venueId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove table');
+      }
+
+      onActionComplete?.();
+      setShowRemoveDialog(false);
+    } catch (error) {
+      console.error('Failed to remove table:', error);
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +172,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const qrHref = `/generate-qr?venue=${encodeURIComponent(venueId)}&table=${encodeURIComponent(String(table.label))}`;
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
+    <Card className="group hover:shadow-md transition-shadow duration-200">
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -147,6 +184,27 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           </div>
           
           <div className="flex items-center gap-1">
+            {/* Remove Table Button - appears on hover */}
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => setShowRemoveDialog(true)}
+                      disabled={isLoading}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Remove Table</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -274,6 +332,39 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         tableStatus={table.session_status}
         onReservationComplete={onActionComplete}
       />
+      
+      {/* Remove Table Confirmation Dialog */}
+      <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Table</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove "{table.label}"? This action cannot be undone.
+              {table.session_status === 'OCCUPIED' && (
+                <span className="block mt-2 text-amber-600 font-medium">
+                  ⚠️ This table is currently occupied. Removing it may affect active orders.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowRemoveDialog(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRemoveTable}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Removing...' : 'Remove Table'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
