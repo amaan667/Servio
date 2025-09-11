@@ -11,7 +11,8 @@ import {
   Phone, 
   CheckCircle2, 
   X,
-  UserCheck
+  UserCheck,
+  Timer
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -69,6 +70,25 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
       month: 'short', 
       day: 'numeric' 
     });
+  };
+
+  const getDuration = (startAt: string, endAt: string) => {
+    const start = new Date(startAt);
+    const end = new Date(endAt);
+    const diffMs = end.getTime() - start.getTime();
+    const diffMins = Math.round(diffMs / (1000 * 60));
+    
+    if (diffMins < 60) {
+      return `${diffMins} minutes`;
+    } else {
+      const hours = Math.floor(diffMins / 60);
+      const mins = diffMins % 60;
+      if (mins === 0) {
+        return `${hours} hour${hours > 1 ? 's' : ''}`;
+      } else {
+        return `${hours}h ${mins}m`;
+      }
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -139,6 +159,10 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
                 <div className="flex items-center gap-1">
                   <Users className="h-3 w-3" />
                   {reservation.party_size} people
+                </div>
+                <div className="flex items-center gap-1">
+                  <Timer className="h-3 w-3" />
+                  {getDuration(reservation.start_at, reservation.end_at)}
                 </div>
                 {reservation.customer_phone && (
                   <div className="flex items-center gap-1">
