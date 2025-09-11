@@ -53,49 +53,56 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
 
 
   return (
-    <Card className="w-full">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg">Counter {order.table_number}</h3>
-            <Badge variant="secondary" className="text-xs">
-              <User className="h-3 w-3 mr-1" />
-              Counter Order
-            </Badge>
+    <Card className="w-full shadow-sm hover:shadow-md transition-all duration-200">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="font-semibold text-lg text-gray-900">Counter {order.table_number}</h3>
+              <Badge variant="secondary" className="text-xs px-2 py-1 bg-orange-50 text-orange-700">
+                <User className="h-3 w-3 mr-1" />
+                Counter Order
+              </Badge>
+            </div>
+            <div className="text-sm text-gray-500">{formatTime(order.created_at)}</div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-500">{formatTime(order.created_at)}</div>
-            <div className="font-bold text-lg">£{getTotalAmount()}</div>
+            <div className="text-2xl font-bold text-gray-900">£{getTotalAmount()}</div>
           </div>
         </div>
 
         {/* Customer Info */}
         {order.customer_name && (
-          <div className="flex items-center gap-2 mb-3">
-            <User className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium">{order.customer_name}</span>
+          <div className="flex items-center gap-2 mb-4">
+            <User className="h-4 w-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-700">{order.customer_name}</span>
           </div>
         )}
 
         {/* Status Badges */}
-        <div className="flex gap-2 mb-3">
-          <Badge className={getStatusColor(order.order_status)}>
+        <div className="flex items-center gap-3 mb-6">
+          <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
             {order.order_status.replace('_', ' ')}
           </Badge>
-          <Badge className={getPaymentStatusColor(order.payment_status)}>
+          <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
             {order.payment_status}
           </Badge>
         </div>
 
         {/* Order Items */}
         {order.items && order.items.length > 0 && (
-          <div className="mb-3">
-            <div className="text-sm font-medium text-gray-700 mb-1">Items:</div>
-            <div className="space-y-1">
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Order Items</h4>
+            <div className="space-y-2">
               {order.items.map((item, index) => (
-                <div key={index} className="flex justify-between text-sm">
-                  <span>{item.quantity}x {item.item_name}</span>
-                  <span>£{formatPrice(normalizePrice(item.price))}</span>
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
+                      {item.quantity}
+                    </div>
+                    <span className="font-medium text-gray-900">{item.item_name}</span>
+                  </div>
+                  <span className="font-semibold text-gray-900">£{formatPrice(normalizePrice(item.price))}</span>
                 </div>
               ))}
             </div>

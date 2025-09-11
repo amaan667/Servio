@@ -584,39 +584,32 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     const borderColor = isCompleted ? 'border-l-green-500' : 'border-l-blue-500';
     
     return (
-    <article key={order.id} className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md border-l-4 ${borderColor}`}>
-      <div className="p-4 sm:p-6">
-        {/* Header - Mobile optimized */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="text-sm font-medium text-gray-900">
+    <article key={order.id} className={`rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg border-l-4 ${borderColor}`}>
+      <div className="p-6">
+        {/* Header - Modern SaaS Layout */}
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="text-sm font-medium text-gray-500">
                 {formatTime(order.created_at)}
               </div>
-              <div className="text-sm text-gray-500">•</div>
-              <div className="font-semibold text-gray-900">
+              <div className="h-1 w-1 rounded-full bg-gray-300"></div>
+              <div className="font-semibold text-gray-900 text-base">
                 {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}
               </div>
-              {/* Order type badge */}
-              <div className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+              <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
                 {isCounterOrder(order) ? 'Counter' : 'QR Table'}
               </div>
             </div>
-            {order.customer_name && (
-              <div className="flex items-center text-sm text-gray-600">
-                <User className="h-4 w-4 mr-1" />
-                {order.customer_name}
-              </div>
-            )}
-            {!order.customer_name && (
-              <div className="flex items-center text-sm text-gray-500">
-                <User className="h-4 w-4 mr-1" />
-                Guest
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-gray-400" />
+              <span className="text-sm font-medium text-gray-700">
+                {order.customer_name || 'Guest'}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between sm:justify-end space-x-2">
-            <div className="text-lg font-bold text-gray-900">
+          <div className="text-right">
+            <div className="text-2xl font-bold text-gray-900">
               £{(() => {
                 // Calculate total from items if total_amount is 0 or missing
                 let amount = order.total_amount;
@@ -633,39 +626,45 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           </div>
         </div>
 
-        {/* Status badges - Mobile optimized */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <Badge className={`${getStatusColor(order.order_status)} text-xs font-medium px-2 py-1`}>
+        {/* Status badges - Modern Design */}
+        <div className="flex items-center gap-3 mb-6">
+          <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
             {order.order_status.replace('_', ' ').toLowerCase()}
           </Badge>
           {order.payment_status && (
-            <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-medium px-2 py-1`}>
+            <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
               {order.payment_status.toUpperCase()}
             </Badge>
           )}
         </div>
 
-        {/* Order Items - Mobile optimized */}
-        <div className="space-y-2 mb-4">
+        {/* Order Items - Modern SaaS Layout */}
+        <div className="space-y-3 mb-6">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Order Items</h4>
           {order.items.map((item, index) => {
             console.log('[LIVE ORDERS DEBUG] Rendering item:', item);
             return (
-              <div key={index} className="flex justify-between items-center text-sm bg-gray-50 rounded-md p-2">
-                <span className="font-medium text-gray-900">{item.quantity}x {item.item_name}</span>
-                <span className="font-semibold text-gray-700">£{(item.quantity * item.price).toFixed(2)}</span>
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
+                    {item.quantity}
+                  </div>
+                  <span className="font-medium text-gray-900">{item.item_name}</span>
+                </div>
+                <span className="font-semibold text-gray-900">£{(item.quantity * item.price).toFixed(2)}</span>
               </div>
             );
           })}
         </div>
 
-        {/* Action Buttons - Mobile optimized */}
+        {/* Action Buttons - Modern SaaS Design */}
         {showActions && !isCompleted && (
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
             {order.order_status === 'PLACED' && (
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
               >
                 Start Preparing
               </Button>
@@ -674,7 +673,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'READY')}
-                className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
               >
                 Mark Ready
               </Button>
@@ -683,7 +682,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'SERVING')}
-                className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
               >
                 Mark Served
               </Button>
@@ -692,7 +691,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
-                className="w-full sm:w-auto bg-gray-600 hover:bg-gray-700"
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
               >
                 Mark Complete
               </Button>
