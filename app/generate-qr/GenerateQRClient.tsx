@@ -67,8 +67,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         return [decodeURIComponent(tableParam)];
       }
     }
-    console.log('🔍 [QR CLIENT] No tables found, showing empty state');
-    return []; // No tables selected - show empty state
+    console.log('🔍 [QR CLIENT] No tables found in URL or localStorage');
+    return null; // Return null to indicate no specific tables were requested
   };
 
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
@@ -584,22 +584,34 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
         setStats({ activeTablesNow: activeTables });
         
-        // Check if tables were specified in URL parameters
+        // Check if tables were specified in URL parameters or localStorage
         const currentSelectedTables = getInitialTables();
-        if (currentSelectedTables.length === 0) {
-          // No tables in URL - start with empty state, let user choose what to generate
+        if (currentSelectedTables === null) {
+          // No tables in URL or localStorage - auto-populate based on activeTablesCount
+          if (activeTables > 0) {
+            const autoTables = Array.from({length: activeTables}, (_, i) => (i + 1).toString());
+            setSelectedTables(autoTables);
+            persistSelectedTables(autoTables);
+            console.log('🔍 [QR CLIENT] Auto-populated tables based on activeTablesCount:', autoTables.join(', '));
+          } else {
+            // No active tables - start with empty state
+            setSelectedTables([]);
+            console.log('🔍 [QR CLIENT] No active tables found, starting with empty state');
+          }
+        } else if (currentSelectedTables.length === 0) {
+          // Empty array from localStorage - start with empty state
           setSelectedTables([]);
-          console.log('🔍 [QR CLIENT] No tables in URL, starting with empty state - user must choose tables to generate');
+          console.log('🔍 [QR CLIENT] Empty tables from localStorage, starting with empty state');
         } else {
-          // Tables were specified in URL, keep them (including single table like '1')
-          console.log('🔍 [QR CLIENT] Using tables from URL:', currentSelectedTables.join(', '));
+          // Tables were specified in URL or localStorage, keep them
+          console.log('🔍 [QR CLIENT] Using tables from URL/localStorage:', currentSelectedTables.join(', '));
           setSelectedTables(currentSelectedTables);
         }
         
         console.log('🔍 [QR CLIENT] Final stats:', {
           activeTables,
-          selectedTables: currentSelectedTables.length === 0 
-            ? []
+          selectedTables: currentSelectedTables === null 
+            ? (activeTables > 0 ? Array.from({length: activeTables}, (_, i) => (i + 1).toString()) : [])
             : currentSelectedTables
         });
         
@@ -629,11 +641,17 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     const currentSelectedTables = getInitialTables();
     console.log('🔍 [QR CLIENT] URL params effect - current selected tables:', currentSelectedTables);
     
-    if (currentSelectedTables.length > 0) {
+    if (currentSelectedTables !== null && currentSelectedTables.length > 0) {
       setSelectedTables(currentSelectedTables);
       console.log('🔍 [QR CLIENT] Updated selected tables from URL params:', currentSelectedTables);
+    } else if (currentSelectedTables === null && activeTablesCount > 0) {
+      // No specific tables in URL, auto-populate if we have active tables
+      const autoTables = Array.from({length: activeTablesCount}, (_, i) => (i + 1).toString());
+      setSelectedTables(autoTables);
+      persistSelectedTables(autoTables);
+      console.log('🔍 [QR CLIENT] Auto-populated tables from URL params effect:', autoTables.join(', '));
     }
-  }, [searchParams, venueId]);
+  }, [searchParams, venueId, activeTablesCount]);
 
   // Show loading state
   if (loading) {
@@ -677,8 +695,12 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     error,
     stats,
     selectedTables,
+    selectedCounters,
+    qrType,
+    currentSelection,
     venueId,
-    venueName
+    venueName,
+    activeTablesCount
   });
 
   return (
@@ -769,7 +791,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 )}
                 
                 <p className="text-xs text-muted-foreground">
-                  💡 QR codes automatically match your active {qrType} count
+                  💡 QR codes automatically match your active {qrType} count ({activeTablesCount} active {qrType}s)
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -788,6 +810,27 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                     + Add Multiple {qrType === 'table' ? 'Tables' : 'Counters'}
                   </Button>
                 </div>
+                
+                {currentSelection.length === 0 && activeTablesCount > 0 && (
+                  <div className="mt-2">
+                    <Button
+                      variant="default"
+                      onClick={() => {
+                        const autoTables = Array.from({length: activeTablesCount}, (_, i) => (i + 1).toString());
+                        if (qrType === 'table') {
+                          updateSelectedTables(autoTables);
+                        } else {
+                          updateSelectedCounters(autoTables);
+                        }
+                        console.log('🔍 [QR CLIENT] Auto-populated via button click:', autoTables.join(', '));
+                      }}
+                      className="w-full"
+                    >
+                      <QrCode className="mr-2 h-4 w-4" />
+                      Auto-Generate for All {activeTablesCount} Active {qrType === 'table' ? 'Tables' : 'Counters'}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -853,17 +896,42 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 <div className="text-muted-foreground mb-4">
                   <QrCode className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p className="text-lg font-medium">No QR Codes Generated</p>
-                  <p className="text-sm">Select {qrType}s below to generate QR codes for your venue</p>
+                  <p className="text-sm">
+                    {activeTablesCount > 0 
+                      ? `You have ${activeTablesCount} active ${qrType}s. Click the auto-generate button below to create QR codes for all of them.`
+                      : `Select ${qrType}s below to generate QR codes for your venue`
+                    }
+                  </p>
                 </div>
-                <div className="flex gap-2 justify-center">
-                  <Button onClick={qrType === 'table' ? addTable : addCounter} variant="outline">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add a {qrType === 'table' ? 'Table' : 'Counter'}
-                  </Button>
-                  <Button onClick={qrType === 'table' ? addMultipleTables : addMultipleCounters} variant="outline">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Multiple {qrType === 'table' ? 'Tables' : 'Counters'}
-                  </Button>
+                <div className="flex flex-col gap-2 justify-center">
+                  {activeTablesCount > 0 && (
+                    <Button
+                      onClick={() => {
+                        const autoTables = Array.from({length: activeTablesCount}, (_, i) => (i + 1).toString());
+                        if (qrType === 'table') {
+                          updateSelectedTables(autoTables);
+                        } else {
+                          updateSelectedCounters(autoTables);
+                        }
+                        console.log('🔍 [QR CLIENT] Auto-populated via empty state button:', autoTables.join(', '));
+                      }}
+                      variant="default"
+                      className="w-full"
+                    >
+                      <QrCode className="mr-2 h-4 w-4" />
+                      Auto-Generate for All {activeTablesCount} Active {qrType === 'table' ? 'Tables' : 'Counters'}
+                    </Button>
+                  )}
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={qrType === 'table' ? addTable : addCounter} variant="outline">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add a {qrType === 'table' ? 'Table' : 'Counter'}
+                    </Button>
+                    <Button onClick={qrType === 'table' ? addMultipleTables : addMultipleCounters} variant="outline">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Multiple {qrType === 'table' ? 'Tables' : 'Counters'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (
