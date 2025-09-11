@@ -114,57 +114,62 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
   const hasMultipleOrders = orders.length > 1;
 
   return (
-    <Card className="w-full">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="text-sm font-medium text-gray-500">{getLatestOrderTime()}</div>
-              <div className="h-1 w-1 rounded-full bg-gray-300"></div>
-              <div className="font-semibold text-gray-900 text-lg">{tableLabel}</div>
-              <Badge variant="secondary" className="text-xs">
+    <Card className="w-full border-2 border-gray-200 hover:border-blue-300 transition-all duration-200 shadow-sm hover:shadow-md">
+      <CardContent className="p-6">
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="text-2xl font-bold text-gray-900">{tableLabel}</div>
+              <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                 <QrCode className="h-3 w-3 mr-1" />
                 QR Table
               </Badge>
               {hasMultipleOrders && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
                   {orders.length} orders
                 </Badge>
               )}
             </div>
+            <div className="text-sm text-gray-600">
+              Latest: {getLatestOrderTime()}
+              {hasMultipleOrders && (
+                <span className="ml-2">• {orders.length} active orders</span>
+              )}
+            </div>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold text-gray-900 mb-1">£{getTotalAmountForAllOrders()}</div>
-            <div className="text-sm text-gray-500">Total</div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">£{getTotalAmountForAllOrders()}</div>
+            <div className="text-sm text-gray-500 font-medium">Table Total</div>
           </div>
         </div>
 
-        {/* Status Summary */}
-        <div className="flex gap-3 mb-4 flex-wrap">
-          <Badge className={`${getStatusColor(overallStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+        {/* Status Section */}
+        <div className="flex gap-3 mb-6">
+          <Badge className={`${getStatusColor(overallStatus)} text-sm font-semibold px-4 py-2 rounded-full`}>
             {overallStatus.replace('_', ' ').toLowerCase()}
           </Badge>
-          <Badge className={`${getPaymentStatusColor(overallPaymentStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+          <Badge className={`${getPaymentStatusColor(overallPaymentStatus)} text-sm font-semibold px-4 py-2 rounded-full`}>
             {overallPaymentStatus.toLowerCase()}
           </Badge>
         </div>
 
-        {/* Expandable Orders */}
+        {/* Expand/Collapse Button for Multiple Orders */}
         {hasMultipleOrders && (
-          <div className="mb-3">
+          <div className="mb-4">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-all duration-200 w-full text-left"
             >
               {isExpanded ? (
                 <>
-                  <ChevronUp className="h-4 w-4" />
-                  Hide individual orders
+                  <ChevronUp className="h-5 w-5 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-700">Hide individual orders</span>
                 </>
               ) : (
                 <>
-                  <ChevronDown className="h-4 w-4" />
-                  Show {orders.length} individual orders
+                  <ChevronDown className="h-5 w-5 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-700">Show {orders.length} individual orders</span>
                 </>
               )}
             </button>
@@ -173,67 +178,72 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
 
         {/* Individual Orders */}
         {(isExpanded || !hasMultipleOrders) && (
-          <div className="space-y-4">
-            {orders.map((order, index) => (
-              <div key={order.id} className="border border-gray-100 rounded-lg p-4 bg-gray-50">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {formatTime(order.created_at)}
+          <div className="space-y-6">
+            <div className="border-t border-gray-200 pt-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4">Individual Orders</h4>
+              {orders.map((order, index) => (
+                <div key={order.id} className="border-2 border-gray-200 rounded-xl p-5 bg-white shadow-sm mb-4">
+                  {/* Order Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-sm font-bold text-blue-700 border-2 border-blue-200">
+                        {index + 1}
                       </div>
-                      {hasMultipleOrders && (
-                        <div className="text-xs text-gray-500">
-                          Order #{order.id.slice(-6).toUpperCase()}
+                      <div>
+                        <div className="text-base font-semibold text-gray-900">
+                          {formatTime(order.created_at)}
                         </div>
-                      )}
+                        {hasMultipleOrders && (
+                          <div className="text-xs text-gray-500 font-medium">
+                            Order #{order.id.slice(-6).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-gray-900">£{getTotalAmount(order)}</div>
+                      <div className="text-xs text-gray-500">Order Total</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-gray-900">£{getTotalAmount(order)}</div>
+
+                  {/* Customer Info */}
+                  {order.customer_name && (
+                    <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                      <User className="h-5 w-5 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">{order.customer_name}</span>
+                    </div>
+                  )}
+
+                  {/* Status Badges */}
+                  <div className="flex gap-3 mb-4">
+                    <Badge className={`${getStatusColor(order.order_status)} text-sm font-semibold px-3 py-1.5 rounded-full`}>
+                      {order.order_status.replace('_', ' ').toLowerCase()}
+                    </Badge>
+                    <Badge className={`${getPaymentStatusColor(order.payment_status)} text-sm font-semibold px-3 py-1.5 rounded-full`}>
+                      {order.payment_status.toLowerCase()}
+                    </Badge>
                   </div>
-                </div>
 
-                {/* Customer Info */}
-                {order.customer_name && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-700">{order.customer_name}</span>
-                  </div>
-                )}
-
-                {/* Status Badges */}
-                <div className="flex gap-3 mb-3">
-                  <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
-                    {order.order_status.replace('_', ' ').toLowerCase()}
-                  </Badge>
-                  <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
-                    {order.payment_status.toLowerCase()}
-                  </Badge>
-                </div>
-
-                {/* Order Items */}
-                {order.items && order.items.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="text-xs font-medium text-gray-600 mb-2">Items:</div>
-                    {order.items.map((item, itemIndex) => (
-                      <div key={itemIndex} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
-                            {item.quantity}
-                          </span>
-                          <span className="text-gray-900">{item.item_name}</span>
+                  {/* Order Items */}
+                  {order.items && order.items.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-gray-700 mb-3">Order Items</div>
+                      {order.items.map((item, itemIndex) => (
+                        <div key={itemIndex} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                          <div className="flex items-center gap-4">
+                            <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-gray-700 border-2 border-gray-200">
+                              {item.quantity}
+                            </span>
+                            <span className="text-gray-900 font-medium text-base">{item.item_name}</span>
+                          </div>
+                          <span className="font-bold text-gray-900 text-lg">£{formatPrice(normalizePrice(item.price))}</span>
                         </div>
-                        <span className="font-medium text-gray-900">£{formatPrice(normalizePrice(item.price))}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

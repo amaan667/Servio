@@ -280,14 +280,14 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
 
       {/* Table Orders Section */}
       {tableOrders.length > 0 && (
-        <section className="mt-6">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Table Orders</h2>
-            <p className="text-sm text-gray-600">
-              Active orders from QR code tables ({tableOrders.length} total)
+        <section className="mt-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Active Table Orders</h2>
+            <p className="text-base text-gray-600">
+              Orders from QR code tables that need staff attention ({tableOrders.length} total orders)
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
             {Object.entries(groupedTableOrders).map(([tableLabel, orders]) => (
               <TableOrderGroupCard
                 key={tableLabel}
