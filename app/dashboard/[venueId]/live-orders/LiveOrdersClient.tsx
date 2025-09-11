@@ -170,7 +170,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Set up today window when component mounts
   useEffect(() => {
     const window = todayWindowForTZ('Europe/London');
-    setTodayWindow(window);
+    if (window.startUtcISO && window.endUtcISO) {
+      setTodayWindow({
+        startUtcISO: window.startUtcISO,
+        endUtcISO: window.endUtcISO
+      });
+    }
   }, []);
 
   // Prevent infinite loading by setting a timeout
