@@ -170,7 +170,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       </header>
 
       {/* 🔹 COUNTER ORDERS - Always at the top (lane view) */}
-      {counterOrders.length > 0 && (
+      {counterOrders.length > 0 ? (
         <section className="mt-6">
           <div className="mb-4">
             <h2 className="text-xl font-bold text-gray-900 mb-2">Counter Orders</h2>
@@ -230,10 +230,20 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
             </div>
           </div>
         </section>
+      ) : (
+        <section className="mt-6">
+          <Card>
+            <CardContent className="py-10">
+              <div className="text-center text-sm text-gray-600">
+                <p>Currently no counter orders.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
       )}
 
       {/* 🔹 TABLE ORDERS - Active orders only in grid format */}
-      {tableOrders.length > 0 && (
+      {tableOrders.length > 0 ? (
         <section className="mt-8">
           <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-2">Table Orders (Active Only)</h2>
@@ -317,6 +327,16 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               </div>
             ))}
           </div>
+        </section>
+      ) : (
+        <section className="mt-8">
+          <Card>
+            <CardContent className="py-10">
+              <div className="text-center text-sm text-gray-600">
+                <p>Currently no table orders.</p>
+              </div>
+            </CardContent>
+          </Card>
         </section>
       )}
 
