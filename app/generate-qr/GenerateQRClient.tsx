@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     activeTablesCount: activeTablesCount
   });
 
+  const searchParams = useSearchParams();
+
   // Parse URL parameters and localStorage to get selected tables
   const getInitialTables = () => {
     if (typeof window !== 'undefined') {
@@ -43,10 +45,9 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         }
       }
       
-      // Fallback to URL parameters if no localStorage data
-      const urlParams = new URLSearchParams(window.location.search);
-      const tablesParam = urlParams.get('tables');
-      const tableParam = urlParams.get('table');
+      // Use searchParams for URL parameters
+      const tablesParam = searchParams?.get('tables');
+      const tableParam = searchParams?.get('table');
       
       console.log('🔍 [QR CLIENT] URL params:', {
         tablesParam,
@@ -70,7 +71,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     return []; // No tables selected - show empty state
   };
 
-  const [selectedTables, setSelectedTables] = useState<string[]>(getInitialTables());
+  const [selectedTables, setSelectedTables] = useState<string[]>([]);
   const [selectedCounters, setSelectedCounters] = useState<string[]>([]);
   const [qrType, setQrType] = useState<QRType>('table');
   const [copied, setCopied] = useState(false);
@@ -622,6 +623,17 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       setLoading(false);
     }
   }, [venueId, activeTablesCount]);
+
+  // Effect to handle URL parameter changes
+  useEffect(() => {
+    const currentSelectedTables = getInitialTables();
+    console.log('🔍 [QR CLIENT] URL params effect - current selected tables:', currentSelectedTables);
+    
+    if (currentSelectedTables.length > 0) {
+      setSelectedTables(currentSelectedTables);
+      console.log('🔍 [QR CLIENT] Updated selected tables from URL params:', currentSelectedTables);
+    }
+  }, [searchParams, venueId]);
 
   // Show loading state
   if (loading) {
