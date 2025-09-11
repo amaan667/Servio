@@ -36,21 +36,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   // Parse URL parameters and localStorage to get selected tables
   const getInitialTables = () => {
     if (typeof window !== 'undefined') {
-      // First check localStorage for persisted tables
-      const storageKey = `qr-selected-tables-${venueId}`;
-      const storedTables = localStorage.getItem(storageKey);
-      
-      if (storedTables) {
-        try {
-          const parsedTables = JSON.parse(storedTables);
-          console.log('🔍 [QR CLIENT] Loaded tables from localStorage:', parsedTables);
-          return parsedTables;
-        } catch (error) {
-          console.error('🔍 [QR CLIENT] Error parsing stored tables:', error);
-        }
-      }
-      
-      // Use searchParams for URL parameters
+      // PRIORITY 1: Check URL parameters first (these take precedence)
       const tablesParam = searchParams?.get('tables');
       const tableParam = searchParams?.get('table');
       
@@ -63,13 +49,27 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       if (tablesParam) {
         // Multiple tables selected
         const tables = tablesParam.split(',').filter(Boolean);
-        console.log('🔍 [QR CLIENT] Parsed multiple tables:', tables);
+        console.log('🔍 [QR CLIENT] Parsed multiple tables from URL:', tables);
         return tables;
       } else if (tableParam) {
         // Single table selected
-        console.log('🔍 [QR CLIENT] Parsed single table:', tableParam);
+        console.log('🔍 [QR CLIENT] Parsed single table from URL:', tableParam);
         console.log('🔍 [QR CLIENT] Single table decoded:', decodeURIComponent(tableParam));
         return [decodeURIComponent(tableParam)];
+      }
+      
+      // PRIORITY 2: Check localStorage for persisted tables (only if no URL params)
+      const storageKey = `qr-selected-tables-${venueId}`;
+      const storedTables = localStorage.getItem(storageKey);
+      
+      if (storedTables) {
+        try {
+          const parsedTables = JSON.parse(storedTables);
+          console.log('🔍 [QR CLIENT] Loaded tables from localStorage:', parsedTables);
+          return parsedTables;
+        } catch (error) {
+          console.error('🔍 [QR CLIENT] Error parsing stored tables:', error);
+        }
       }
     }
     console.log('🔍 [QR CLIENT] No tables found in URL or localStorage');
@@ -595,6 +595,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         
         // Check if tables were specified in URL parameters or localStorage
         const currentSelectedTables = getInitialTables();
+        console.log('🔍 [QR CLIENT] getInitialTables() returned:', currentSelectedTables);
+        
         if (currentSelectedTables === null) {
           // No tables in URL or localStorage - auto-populate based on activeTablesCount
           if (activeTables > 0) {
@@ -664,7 +666,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     
     if (currentSelectedTables !== null && currentSelectedTables.length > 0) {
       setSelectedTables(currentSelectedTables);
-      console.log('🔍 [QR CLIENT] Updated selected tables from URL params:', currentSelectedTables);
+      // Don't persist URL-based table selections to localStorage to avoid conflicts
+      console.log('🔍 [QR CLIENT] Updated selected tables from URL params (not persisting):', currentSelectedTables);
     } else if (currentSelectedTables === null) {
       // No specific tables in URL, auto-populate based on active tables or provide default
       if (activeTablesCount > 0) {
