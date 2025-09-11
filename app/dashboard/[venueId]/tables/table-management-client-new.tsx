@@ -23,17 +23,13 @@ import { CounterOrderCard } from '@/components/table-management/CounterOrderCard
 import { TableOrderCard } from '@/components/table-management/TableOrderCard';
 import { TableOrderGroupCard } from '@/components/table-management/TableOrderGroupCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
-import { TabFiltersNew } from '@/components/table-management/TabFiltersNew';
 import { ReservationsPanel } from '@/components/table-management/ReservationsPanel';
-
-type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED';
 
 interface TableManagementClientNewProps {
   venueId: string;
 }
 
 export function TableManagementClientNew({ venueId }: TableManagementClientNewProps) {
-  const [filter, setFilter] = useState<FilterType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   
   const { 
@@ -80,7 +76,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   const filteredTables = useMemo(() => {
     let filtered = tables;
 
-    // Apply search filter
+    // Apply search filter only
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(table => 
@@ -88,25 +84,11 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       );
     }
 
-    // Apply status filter
-    switch (filter) {
-      case 'FREE':
-        filtered = filtered.filter(table => table.session_status === 'FREE');
-        break;
-      case 'OCCUPIED':
-        filtered = filtered.filter(table => table.session_status === 'OCCUPIED');
-        break;
-      case 'RESERVED':
-        filtered = filtered.filter(table => table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER');
-        break;
-      // 'ALL' shows all tables
-    }
-
     return filtered;
-  }, [tables, filter, searchQuery]);
+  }, [tables, searchQuery]);
 
   const filterCounts = useMemo(() => {
-    // Calculate counts from the actual tables data, not from API counters
+    // Calculate counts from the actual tables data
     const totalTables = tables.length;
     const freeTables = tables.filter(table => table.session_status === 'FREE').length;
     const occupiedTables = tables.filter(table => table.session_status === 'OCCUPIED').length;
@@ -185,7 +167,6 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           </div>
         </div>
         
-        <TabFiltersNew value={filter} onChange={setFilter} counts={filterCounts} />
       </header>
 
       {/* 🔹 COUNTER ORDERS - Always at the top (lane view) */}
@@ -388,8 +369,8 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                   <h3 className="text-lg font-semibold text-foreground mb-2">No tables found</h3>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                     {searchQuery.trim() 
-                      ? `No tables match "${searchQuery}". Try adjusting your search or filter.`
-                      : `No tables match the "${filter.toLowerCase()}" filter.`
+                      ? `No tables match "${searchQuery}". Try adjusting your search.`
+                      : 'No tables found.'
                     }
                   </p>
                   <div className="flex gap-2 justify-center">
@@ -398,12 +379,6 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                       onClick={() => setSearchQuery('')}
                     >
                       Clear Search
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setFilter('ALL')}
-                    >
-                      Show All
                     </Button>
                   </div>
                 </div>

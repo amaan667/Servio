@@ -59,14 +59,16 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="font-semibold text-lg text-gray-900">Counter {order.table_number}</h3>
+            </div>
+            <div className="flex items-center gap-3 mb-2">
               <Badge variant="secondary" className="text-xs px-2 py-1 bg-orange-50 text-orange-700">
                 <User className="h-3 w-3 mr-1" />
                 Counter Order
               </Badge>
+              <div className="text-sm text-gray-500">{formatTime(order.created_at)}</div>
             </div>
-            <div className="text-sm text-gray-500">{formatTime(order.created_at)}</div>
           </div>
-          <div className="text-right">
+          <div className="text-right ml-4">
             <div className="text-2xl font-bold text-gray-900">£{getTotalAmount()}</div>
           </div>
         </div>
