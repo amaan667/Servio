@@ -2,20 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
 
-const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
+const stripe = ENV.STRIPE_SECRET_KEY ? new Stripe(ENV.STRIPE_SECRET_KEY, {
   apiVersion: '2025-08-27.basil',
-});
+}) : null;
 
 const webhookSecret = ENV.STRIPE_WEBHOOK_SECRET;
 
 export async function POST(req: NextRequest) {
+  // Check if Stripe is configured
+  if (!stripe || !webhookSecret) {
+    return NextResponse.json(
+      { error: 'Payment processing is not configured' },
+      { status: 503 }
+    );
+  }
+
   const body = await req.text();
   const signature = req.headers.get('stripe-signature')!;
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret || '');
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     console.error('[STRIPE WEBHOOK] Signature verification failed:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });

@@ -41,7 +41,7 @@ export async function DELETE(request: NextRequest) {
     // Check if the table has any active orders or reservations
     console.log('🔍 [API] Checking for active orders...', { tableId, venueId });
     
-    let activeOrders = [];
+    let activeOrders: { id: string }[] = [];
     let ordersError = null;
     
     try {
@@ -90,7 +90,7 @@ export async function DELETE(request: NextRequest) {
 
     console.log('🔍 [API] Checking for active reservations...', { tableId, venueId });
     
-    let activeReservations = [];
+    let activeReservations: { id: string }[] = [];
     let reservationsError = null;
     
     try {

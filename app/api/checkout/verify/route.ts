@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServerClient } from '@supabase/ssr';
+import { ENV } from '@/lib/env';
 
 export const runtime = 'nodejs';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-08-27.basil" });
+const stripe = ENV.STRIPE_SECRET_KEY ? new Stripe(ENV.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" }) : null;
 
 export async function GET(req: Request) {
   try {
+    // Check if Stripe is configured
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Payment processing is not configured' },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const orderId = searchParams.get("orderId")!;
     const sessionId = searchParams.get("sessionId")!;

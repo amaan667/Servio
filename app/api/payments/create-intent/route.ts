@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
 
-const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
+const stripe = ENV.STRIPE_SECRET_KEY ? new Stripe(ENV.STRIPE_SECRET_KEY, {
   apiVersion: '2025-08-27.basil',
-});
+}) : null;
 
 interface CreateIntentRequest {
   cartId: string;
@@ -60,6 +60,14 @@ export async function POST(req: NextRequest) {
       totalAmount,
       customerName,
     });
+
+    // Check if Stripe is configured
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Payment processing is not configured' },
+        { status: 503 }
+      );
+    }
 
     // Store cart data for later retrieval
     const cartData = {
