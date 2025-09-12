@@ -254,13 +254,6 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <div className="flex flex-wrap items-center gap-3 pb-3">
           <h1 className="text-2xl font-semibold">Table Management</h1>
           
-          {/* Daily Reset Status */}
-          {isResetting && (
-            <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Checking daily reset...</span>
-            </div>
-          )}
           
           {resetResult && resetResult.success && !resetResult.alreadyReset && (
             <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
