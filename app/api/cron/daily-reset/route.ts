@@ -125,16 +125,25 @@ export async function POST(request: NextRequest) {
             .eq('status', 'BOOKED');
         }
 
-        // Reset all tables to FREE
-        await supabase
+        // Delete all tables for complete reset
+        const { data: venueTables } = await supabase
           .from('tables')
-          .update({ 
-            session_status: 'FREE',
-            order_id: null,
-            opened_at: null,
-            updated_at: new Date().toISOString()
-          })
+          .select('id')
           .eq('venue_id', venue.venue_id);
+
+        if (venueTables && venueTables.length > 0) {
+          // Delete all table sessions first
+          await supabase
+            .from('table_sessions')
+            .delete()
+            .eq('venue_id', venue.venue_id);
+
+          // Delete all tables
+          await supabase
+            .from('tables')
+            .delete()
+            .eq('venue_id', venue.venue_id);
+        }
 
         // Clear table runtime state
         await supabase
@@ -148,7 +157,7 @@ export async function POST(request: NextRequest) {
           reset: true,
           completedOrders: activeOrders?.length || 0,
           canceledReservations: activeReservations?.length || 0,
-          resetTables: occupiedTables?.length || 0
+          deletedTables: venueTables?.length || 0
         });
 
         console.log(`🕛 [CRON DAILY RESET] Successfully reset venue: ${venue.name}`);

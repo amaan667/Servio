@@ -114,8 +114,8 @@ export async function POST(request: NextRequest) {
       console.log('🔄 [DAILY RESET] Canceled', activeReservations.length, 'active reservations');
     }
 
-    // Step 3: Reset all tables to FREE status
-    console.log('🔄 [DAILY RESET] Step 3: Resetting all tables to FREE status...');
+    // Step 3: Delete all tables for the venue (complete reset)
+    console.log('🔄 [DAILY RESET] Step 3: Deleting all tables for complete reset...');
     const { data: tables, error: tablesError } = await supabase
       .from('tables')
       .select('id, label, session_status')
@@ -129,28 +129,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [DAILY RESET] Found tables:', tables?.length || 0);
+    console.log('🔄 [DAILY RESET] Found tables to delete:', tables?.length || 0);
 
     if (tables && tables.length > 0) {
-      const { error: resetTablesError } = await supabase
-        .from('tables')
-        .update({ 
-          session_status: 'FREE',
-          order_id: null,
-          opened_at: null,
-          updated_at: new Date().toISOString()
-        })
+      // Delete all table sessions first (if they exist)
+      const { error: deleteSessionsError } = await supabase
+        .from('table_sessions')
+        .delete()
         .eq('venue_id', venueId);
 
-      if (resetTablesError) {
-        console.error('🔄 [DAILY RESET] Error resetting tables:', resetTablesError);
+      if (deleteSessionsError) {
+        console.warn('🔄 [DAILY RESET] Warning clearing table sessions:', deleteSessionsError);
+        // Don't fail for this, continue
+      }
+
+      // Delete all tables for the venue
+      const { error: deleteTablesError } = await supabase
+        .from('tables')
+        .delete()
+        .eq('venue_id', venueId);
+
+      if (deleteTablesError) {
+        console.error('🔄 [DAILY RESET] Error deleting tables:', deleteTablesError);
         return NextResponse.json(
-          { error: 'Failed to reset tables' },
+          { error: 'Failed to delete tables' },
           { status: 500 }
         );
       }
 
-      console.log('🔄 [DAILY RESET] Reset', tables.length, 'tables to FREE status');
+      console.log('🔄 [DAILY RESET] Deleted', tables.length, 'tables completely');
     }
 
     // Step 4: Clear any table runtime state
@@ -168,30 +175,24 @@ export async function POST(request: NextRequest) {
       console.log('🔄 [DAILY RESET] Cleared table runtime state');
     }
 
-    // Step 5: If force is true, also delete all orders from today
+    // Step 5: If force is true, also delete ALL orders for this venue
     if (force) {
-      console.log('🔄 [DAILY RESET] Step 5: Force mode - deleting all orders from today...');
+      console.log('🔄 [DAILY RESET] Step 5: Force mode - deleting ALL orders for venue...');
       
-      const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-
       const { error: deleteOrdersError } = await supabase
         .from('orders')
         .delete()
-        .eq('venue_id', venueId)
-        .gte('created_at', startOfDay.toISOString())
-        .lt('created_at', endOfDay.toISOString());
+        .eq('venue_id', venueId);
 
       if (deleteOrdersError) {
-        console.error('🔄 [DAILY RESET] Error deleting today\'s orders:', deleteOrdersError);
+        console.error('🔄 [DAILY RESET] Error deleting all orders:', deleteOrdersError);
         return NextResponse.json(
-          { error: 'Failed to delete today\'s orders' },
+          { error: 'Failed to delete all orders' },
           { status: 500 }
         );
       }
 
-      console.log('🔄 [DAILY RESET] Deleted all orders from today');
+      console.log('🔄 [DAILY RESET] Deleted ALL orders for venue');
     }
 
     console.log('🔄 [DAILY RESET] Daily reset completed successfully for venue:', venue.name);
@@ -204,7 +205,7 @@ export async function POST(request: NextRequest) {
         venueName: venue.name,
         completedOrders: activeOrders?.length || 0,
         canceledReservations: activeReservations?.length || 0,
-        resetTables: tables?.length || 0,
+        deletedTables: tables?.length || 0,
         forceMode: force,
         timestamp: new Date().toISOString()
       }

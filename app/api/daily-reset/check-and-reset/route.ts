@@ -173,8 +173,8 @@ export async function POST(request: NextRequest) {
       console.log('🔄 [DAILY RESET CHECK] Canceled', activeReservations.length, 'active reservations');
     }
 
-    // Step 3: Reset all tables to FREE status
-    console.log('🔄 [DAILY RESET CHECK] Step 3: Resetting all tables to FREE status...');
+    // Step 3: Delete all tables for complete reset
+    console.log('🔄 [DAILY RESET CHECK] Step 3: Deleting all tables for complete reset...');
     const { data: tables, error: tablesError } = await supabase
       .from('tables')
       .select('id, label, session_status')
@@ -188,29 +188,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [DAILY RESET CHECK] Found tables:', tables?.length || 0);
+    console.log('🔄 [DAILY RESET CHECK] Found tables to delete:', tables?.length || 0);
 
     if (tables && tables.length > 0) {
-      const { error: resetTablesError } = await supabase
-        .from('tables')
-        .update({ 
-          session_status: 'FREE',
-          order_id: null,
-          opened_at: null,
-          updated_at: new Date().toISOString()
-        })
+      // Delete all table sessions first (if they exist)
+      const { error: deleteSessionsError } = await supabase
+        .from('table_sessions')
+        .delete()
         .eq('venue_id', venueId);
 
-      if (resetTablesError) {
-        console.error('🔄 [DAILY RESET CHECK] Error resetting tables:', resetTablesError);
+      if (deleteSessionsError) {
+        console.warn('🔄 [DAILY RESET CHECK] Warning clearing table sessions:', deleteSessionsError);
+        // Don't fail for this, continue
+      }
+
+      // Delete all tables for the venue
+      const { error: deleteTablesError } = await supabase
+        .from('tables')
+        .delete()
+        .eq('venue_id', venueId);
+
+      if (deleteTablesError) {
+        console.error('🔄 [DAILY RESET CHECK] Error deleting tables:', deleteTablesError);
         return NextResponse.json(
-          { error: 'Failed to reset tables' },
+          { error: 'Failed to delete tables' },
           { status: 500 }
         );
       }
 
       resetSummary.resetTables = tables.length;
-      console.log('🔄 [DAILY RESET CHECK] Reset', tables.length, 'tables to FREE status');
+      console.log('🔄 [DAILY RESET CHECK] Deleted', tables.length, 'tables completely');
     }
 
     // Step 4: Clear any table runtime state
@@ -260,7 +267,7 @@ export async function POST(request: NextRequest) {
         venueName: venue.name,
         completedOrders: resetSummary.completedOrders,
         canceledReservations: resetSummary.canceledReservations,
-        resetTables: resetSummary.resetTables,
+        deletedTables: resetSummary.resetTables,
         timestamp: new Date().toISOString()
       }
     });

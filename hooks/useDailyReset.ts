@@ -10,7 +10,7 @@ interface DailyResetResult {
     venueName: string;
     completedOrders: number;
     canceledReservations: number;
-    resetTables: number;
+    deletedTables: number;
     timestamp: string;
   };
 }
@@ -47,17 +47,17 @@ export function useDailyReset(venueId: string) {
 
         // If a reset was performed, show a notification
         if (result.success && !result.alreadyReset && result.summary) {
-          const { completedOrders, canceledReservations, resetTables } = result.summary;
+          const { completedOrders, canceledReservations, deletedTables } = result.summary;
           
-          if (completedOrders > 0 || canceledReservations > 0 || resetTables > 0) {
+          if (completedOrders > 0 || canceledReservations > 0 || deletedTables > 0) {
             console.log('🔄 [DAILY RESET HOOK] Daily reset performed:', {
               completedOrders,
               canceledReservations,
-              resetTables
+              deletedTables
             });
             
             // You could show a toast notification here
-            // toast.success(`Daily reset completed: ${completedOrders} orders completed, ${resetTables} tables reset`);
+            // toast.success(`Daily reset completed: ${completedOrders} orders completed, ${deletedTables} tables deleted`);
           }
         }
       } else {
