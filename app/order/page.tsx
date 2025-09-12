@@ -39,6 +39,15 @@ export default function CustomerOrderPage() {
   const counterNumber = searchParams?.get("counter") || "";
   const isDemo = searchParams?.get("demo") === "1";
   
+  // Debug table number extraction
+  console.log('[ORDER PAGE] ===== URL PARAMETER DEBUG =====');
+  console.log('[ORDER PAGE] Full URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
+  console.log('[ORDER PAGE] searchParams:', searchParams?.toString());
+  console.log('[ORDER PAGE] Raw tableNumber from URL:', tableNumber);
+  console.log('[ORDER PAGE] Raw counterNumber from URL:', counterNumber);
+  console.log('[ORDER PAGE] venueSlug:', venueSlug);
+  console.log('[ORDER PAGE] ===== END URL PARAMETER DEBUG =====');
+  
   // Determine if this is a counter order or table order
   const isCounterOrder = !!counterNumber;
   const orderLocation = isCounterOrder ? counterNumber : tableNumber;
@@ -405,7 +414,15 @@ export default function CustomerOrderPage() {
 
     setIsSubmitting(true);
       try {
+        console.log('[ORDER SUBMIT] ===== TABLE NUMBER DEBUG =====');
+        console.log('[ORDER SUBMIT] Raw tableNumber from URL:', tableNumber);
+        console.log('[ORDER SUBMIT] Type of tableNumber:', typeof tableNumber);
+        console.log('[ORDER SUBMIT] parseInt(tableNumber):', parseInt(tableNumber));
+        console.log('[ORDER SUBMIT] isNaN(parseInt(tableNumber)):', isNaN(parseInt(tableNumber)));
+        
         const safeTable = parseInt(tableNumber) || 1;
+        console.log('[ORDER SUBMIT] Final safeTable value:', safeTable);
+        console.log('[ORDER SUBMIT] ===== END TABLE NUMBER DEBUG =====');
 
       // For demo orders, redirect to checkout with demo mode
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
