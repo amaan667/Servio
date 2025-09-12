@@ -62,7 +62,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     const hasActiveOrders = counterOrders.length > 0 || tableOrders.length > 0;
     const hasActiveTables = tables.some(table => table.session_status === 'OCCUPIED');
     const hasActiveReservations = reservations.some(reservation => 
-      reservation.status === 'CONFIRMED' || reservation.status === 'CHECKED_IN'
+      reservation.status === 'BOOKED' || reservation.status === 'CHECKED_IN'
     );
     
     // Also check for any orders that are not completed (in any status except COMPLETED)
