@@ -247,3 +247,104 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--servio-purple-dark));
 }
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  /* Ensure touch targets are at least 44px */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent horizontal scroll on mobile */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Better tap highlighting */
+  * {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Improve form inputs on mobile */
+  input, textarea, select {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  /* Ensure minimum readable text sizes */
+  html {
+    -webkit-text-size-adjust: 100%; /* Prevent iOS font scaling */
+    text-size-adjust: 100%;
+  }
+  
+  /* Improve readability of very small text on mobile */
+  .text-xs {
+    font-size: max(12px, 0.75rem); /* Ensure minimum 12px */
+  }
+  
+  /* Better button spacing for mobile */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Ensure interactive elements meet touch target requirements */
+  [role="button"], 
+  input[type="button"], 
+  input[type="submit"], 
+  input[type="reset"], 
+  .btn,
+  .button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Links that act as buttons should also meet touch targets */
+  a[role="button"] {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Line clamp utility */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  
+  .safe-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
