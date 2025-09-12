@@ -215,7 +215,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           table: 'reservations',
           filter: `venue_id=eq.${venueId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('[RESERVATIONS] Real-time update:', payload);
           // Invalidate and refetch reservations data
           refetchTables();
