@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerSupabase();
-    console.log('🔄 [MANUAL DAILY RESET] Supabase client created');
+    const supabase = createAdminClient();
+    console.log('🔄 [MANUAL DAILY RESET] Admin Supabase client created');
 
     // Check if venue exists
     const { data: venue, error: venueError } = await supabase

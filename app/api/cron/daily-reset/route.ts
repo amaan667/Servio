@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // This endpoint can be called by a cron job or scheduled task
 // to automatically perform daily reset at midnight
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     
     console.log('🕛 [CRON DAILY RESET] Current time:', currentTime, { currentHour, currentMinute });
 
-    const supabase = await createServerSupabase();
+    const supabase = createAdminClient();
     
     // Get all venues that need daily reset at the current time (within 5 minutes)
     const { data: venues, error: venuesError } = await supabase
