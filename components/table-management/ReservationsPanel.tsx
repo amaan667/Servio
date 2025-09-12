@@ -97,6 +97,8 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'CHECKED_IN':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'COMPLETED':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'CANCELLED':
         return 'bg-gray-100 text-gray-800 border-gray-200';
       case 'NO_SHOW':
@@ -196,7 +198,7 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
             </div>
 
             <div className="flex items-center gap-2">
-              {reservation.table_id && (
+              {reservation.table_id && reservation.status === 'BOOKED' && (
                 <Button
                   size="sm"
                   onClick={() => handleCheckIn(reservation.id, reservation.table_id!)}

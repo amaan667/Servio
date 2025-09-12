@@ -32,7 +32,7 @@ export interface Reservation {
   party_size: number;
   customer_name: string | null;
   customer_phone: string | null;
-  status: 'BOOKED' | 'CHECKED_IN' | 'CANCELLED' | 'NO_SHOW';
+  status: 'BOOKED' | 'CHECKED_IN' | 'CANCELLED' | 'NO_SHOW' | 'COMPLETED';
   created_at: string;
   updated_at: string;
 }
@@ -323,6 +323,35 @@ export function useAutoCompleteReservations() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to auto-complete reservations');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reservations'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'grid'] });
+    }
+  });
+}
+
+// Check and complete reservations for a specific table
+export function useCheckReservationCompletion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ venueId, tableId }: { venueId: string; tableId: string }) => {
+      const response = await fetch('/api/reservations/check-completion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for authentication
+        body: JSON.stringify({ venueId, tableId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to check reservation completion');
       }
 
       return response.json();

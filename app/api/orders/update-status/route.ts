@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     // Handle table state transitions when order is completed or cancelled
     if (status === 'COMPLETED' || status === 'CANCELLED') {
       const order = data?.[0];
-      if (order && order.table_number && order.source === 'qr') {
+      if (order && order.table_id && order.source === 'qr') {
         console.log('[UPDATE STATUS] Order completed/cancelled, checking if table should be set to FREE');
         
         // Check if there are any other active orders for this table
@@ -38,47 +38,54 @@ export async function POST(req: Request) {
           .from('orders')
           .select('id')
           .eq('venue_id', order.venue_id)
-          .eq('table_number', order.table_number)
-          .eq('source', 'qr')
-          .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
-          .neq('id', orderId);
+          .eq('table_id', order.table_id)
+          .in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING'])
+          .limit(1);
 
         if (activeOrdersError) {
           console.error('[UPDATE STATUS] Error checking active orders:', activeOrdersError);
         } else if (!activeOrders || activeOrders.length === 0) {
-          // No other active orders for this table, set it back to FREE
-          console.log('[UPDATE STATUS] No other active orders for table, setting to FREE');
+          console.log('[UPDATE STATUS] No active orders found, setting table to FREE');
           
-          // Find the table by venue_id and table_number
-          const { data: tableData, error: tableFindError } = await supabase
-            .from('table_runtime_state')
-            .select('id')
-            .eq('venue_id', order.venue_id)
-            .eq('label', `Table ${order.table_number}`)
-            .single();
+          // Set table session to FREE
+          const { error: tableError } = await supabase
+            .from('table_sessions')
+            .upsert({
+              table_id: order.table_id,
+              status: 'FREE',
+              closed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'table_id'
+            });
 
-          if (tableFindError) {
-            console.error('[UPDATE STATUS] Error finding table:', tableFindError);
-          } else if (tableData) {
-            const { error: tableUpdateError } = await supabase
-              .from('table_sessions')
-              .update({ 
-                status: 'FREE',
-                order_id: null,
-                closed_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq('table_id', tableData.id)
-              .is('closed_at', null);
+          if (tableError) {
+            console.error('[UPDATE STATUS] Error updating table session:', tableError);
+          }
 
-            if (tableUpdateError) {
-              console.error('[UPDATE STATUS] Error updating table to FREE:', tableUpdateError);
-            } else {
-              console.log('[UPDATE STATUS] Successfully set table to FREE');
+          // If order is completed and paid, check if reservations should be auto-completed
+          if (status === 'COMPLETED' && order.payment_status === 'PAID') {
+            try {
+              const completionResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/reservations/check-completion`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  venueId: order.venue_id,
+                  tableId: order.table_id
+                }),
+              });
+
+              if (completionResponse.ok) {
+                const completionResult = await completionResponse.json();
+                console.log('[UPDATE STATUS] Auto-completion check result:', completionResult);
+              }
+            } catch (completionError) {
+              console.error('[UPDATE STATUS] Error checking reservation completion:', completionError);
+              // Don't fail the main request if completion check fails
             }
           }
-        } else {
-          console.log('[UPDATE STATUS] Other active orders exist for table, keeping OCCUPIED');
         }
       }
     }
@@ -89,5 +96,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }
-
-
