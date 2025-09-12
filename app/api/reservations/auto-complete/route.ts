@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getAuthenticatedUser } from '@/lib/auth';
+import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
