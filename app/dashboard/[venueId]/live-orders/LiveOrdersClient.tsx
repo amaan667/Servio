@@ -718,31 +718,31 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     
     return (
     <article key={order.id} className={`rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg border-l-4 ${borderColor}`}>
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Header - Modern SaaS Layout */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
               <div className="text-sm font-medium text-gray-500">
                 {formatTime(order.created_at)}
               </div>
-              <div className="h-1 w-1 rounded-full bg-gray-300"></div>
-              <div className="font-semibold text-gray-900 text-lg">
+              <div className="hidden sm:block h-1 w-1 rounded-full bg-gray-300"></div>
+              <div className="font-semibold text-gray-900 text-base sm:text-lg">
                 {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}
               </div>
-              <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
+              <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium w-fit">
                 {isCounterOrder(order) ? 'Counter' : 'QR Table'}
               </div>
             </div>
             <div className="flex items-center gap-2 mb-2">
-              <User className="h-4 w-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">
+              <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <span className="text-sm font-medium text-gray-700 truncate">
                 {order.customer_name || 'Guest'}
               </span>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-gray-900 mb-1">
+          <div className="text-right flex-shrink-0">
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
               £{(() => {
                 // Calculate total from items if total_amount is 0 or missing
                 let amount = order.total_amount;
@@ -760,7 +760,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         </div>
 
         {/* Status badges - Modern Design */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
             {order.order_status.replace('_', ' ').toLowerCase()}
           </Badge>
@@ -772,19 +772,19 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         </div>
 
         {/* Order Items - Modern SaaS Layout */}
-        <div className="space-y-4 mb-6">
-          <h4 className="text-sm font-semibold text-gray-700 mb-4">Order Items</h4>
+        <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3 sm:mb-4">Order Items</h4>
           {order.items.map((item, index) => {
             console.log('[LIVE ORDERS DEBUG] Rendering item:', item);
             return (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
+              <div key={index} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200 flex-shrink-0">
                     {item.quantity}
                   </div>
-                  <span className="font-medium text-gray-900 text-base">{item.item_name}</span>
+                  <span className="font-medium text-gray-900 text-sm sm:text-base truncate">{item.item_name}</span>
                 </div>
-                <span className="font-semibold text-gray-900 text-lg">£{(item.quantity * item.price).toFixed(2)}</span>
+                <span className="font-semibold text-gray-900 text-base sm:text-lg ml-2 flex-shrink-0">£{(item.quantity * item.price).toFixed(2)}</span>
               </div>
             );
           })}
@@ -792,12 +792,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
         {/* Action Buttons - Modern SaaS Design */}
         {showActions && !isCompleted && (
-          <div className="flex items-center gap-3 pt-5 border-t border-gray-100">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-4 sm:pt-5 border-t border-gray-100">
             {order.order_status === 'PLACED' && (
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm min-h-[36px]"
               >
                 Start Preparing
               </Button>
@@ -806,7 +806,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'READY')}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm min-h-[36px]"
               >
                 Mark Ready
               </Button>
@@ -815,7 +815,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'SERVING')}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm min-h-[36px]"
               >
                 Mark Served
               </Button>
@@ -824,7 +824,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm min-h-[36px]"
               >
                 Mark Complete
               </Button>
@@ -1067,21 +1067,23 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         {/* Modern Header */}
-        <section className="flex flex-col gap-3 mb-6">
+        <section className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
           {/* Status row */}
-          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3 text-sm text-slate-600">
+            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100 text-xs sm:text-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Real-time monitoring active
             </span>
-            <span>• {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} (today)</span>
-            <span>• Current time: {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+            <div className="hidden sm:flex items-center gap-3 text-xs sm:text-sm">
+              <span>• {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} (today)</span>
+              <span>• Current time: {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
 
-            <div className="ml-auto flex items-center gap-2">
-              <label className="text-slate-500">Auto-refresh:</label>
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <label className="text-slate-500 text-xs sm:text-sm">Auto-refresh:</label>
               <select
-                className="rounded-md border-slate-200 bg-white px-2 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-200"
+                className="rounded-md border-slate-200 bg-white px-2 py-1 text-xs sm:text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-200 min-h-[32px]"
                 value={refreshInterval / 1000}
                 onChange={(e) => changeRefreshInterval(Number(e.target.value))}
                 disabled={!autoRefreshEnabled}
@@ -1093,15 +1095,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <button
                 onClick={toggleAutoRefresh}
                 className={`
-                  relative inline-flex h-7 w-12 items-center rounded-full transition
+                  relative inline-flex h-6 w-10 sm:h-7 sm:w-12 items-center rounded-full transition min-h-[32px] min-w-[40px]
                   ${autoRefreshEnabled ? 'bg-violet-600' : 'bg-slate-200'}
                 `}
                 aria-pressed={autoRefreshEnabled}
               >
                 <span
                   className={`
-                    inline-block h-5 w-5 transform rounded-full bg-white shadow transition
-                    ${autoRefreshEnabled ? 'translate-x-6' : 'translate-x-1'}
+                    inline-block h-4 w-4 sm:h-5 sm:w-5 transform rounded-full bg-white shadow transition
+                    ${autoRefreshEnabled ? 'translate-x-5 sm:translate-x-6' : 'translate-x-1'}
                   `}
                 />
               </button>
@@ -1109,32 +1111,35 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center justify-center gap-3">
-            <div className="inline-flex rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 overflow-x-auto">
+            <div className="inline-flex rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-200 min-w-max">
               {[
-                { key:'live',  label:'Live Orders',    hint:'Last 30 min', count: getDisplayCount('live') },
-                { key:'all', label:'Earlier Today',  hint:"Today's orders", count: getDisplayCount('all') },
-                { key:'history',  label:'History',        hint:'Previous days', count: getDisplayCount('history') },
+                { key:'live',  label:'Live',    longLabel: 'Live Orders', hint:'Last 30 min', count: getDisplayCount('live') },
+                { key:'all', label:'Earlier',  longLabel: 'Earlier Today', hint:"Today's orders", count: getDisplayCount('all') },
+                { key:'history',  label:'History',  longLabel: 'History',      hint:'Previous days', count: getDisplayCount('history') },
               ].map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`
-                    group relative grid w-[11rem] grid-rows-[1fr_auto] rounded-xl px-4 py-2 text-left transition
+                    group relative grid grid-rows-[1fr_auto] rounded-xl px-3 py-2 sm:px-4 text-left transition min-w-[5rem] sm:w-[11rem]
                     ${activeTab === tab.key ? 'bg-violet-600 text-white' : 'text-slate-700 hover:bg-slate-50'}
                   `}
                 >
                   <span className="flex items-center justify-between">
-                    <span className="font-medium">{tab.label}</span>
+                    <span className="font-medium text-sm sm:text-base">
+                      <span className="sm:hidden">{tab.label}</span>
+                      <span className="hidden sm:inline">{tab.longLabel}</span>
+                    </span>
                     <span className={`
-                      ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs
+                      ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 sm:px-2 text-xs
                       ${activeTab === tab.key ? 'bg-violet-500/70 text-white' : 'bg-slate-200 text-slate-700'}
                     `}>
                       {tab.count}
                     </span>
                   </span>
                   <span className={`
-                    mt-0.5 text-xs
+                    mt-0.5 text-xs hidden sm:block
                     ${activeTab === tab.key ? 'text-violet-100' : 'text-slate-400'}
                   `}>
                     {tab.hint}
@@ -1142,7 +1147,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 </button>
               ))}
             </div>
-
           </div>
 
           {/* Slim alert (only for Live tab) - centered below tabs */}
@@ -1178,7 +1182,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                         Counter Orders ({orders.filter(order => isCounterOrder(order)).length})
                       </h3>
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                         {orders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, true))}
                       </div>
                     </div>
@@ -1195,7 +1199,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({activeTableOrders.length})
                         </h3>
-                        <div className="grid gap-4">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1">
                           {(() => {
                             const tableGroups = groupOrdersByTable(activeTableOrders);
                             return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
@@ -1228,7 +1232,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                         Counter Orders ({allTodayOrders.filter(order => isCounterOrder(order)).length})
                       </h3>
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                         {allTodayOrders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
                       </div>
                     </div>
@@ -1245,7 +1249,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({activeTableOrders.length})
                         </h3>
-                        <div className="grid gap-4">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1">
                           {(() => {
                             const tableGroups = groupOrdersByTable(activeTableOrders);
                             return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
@@ -1284,7 +1288,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                           Counter Orders ({orders.filter(order => isCounterOrder(order)).length})
                         </h4>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                           {orders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
                         </div>
                       </div>
@@ -1297,7 +1301,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({orders.filter(order => !isCounterOrder(order)).length})
                         </h4>
-                        <div className="grid gap-4">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1">
                           {(() => {
                             const tableOrders = orders.filter(order => !isCounterOrder(order));
                             const tableGroups = groupOrdersByTable(tableOrders);
