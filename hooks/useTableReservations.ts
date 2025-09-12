@@ -141,7 +141,7 @@ export function useReservations(venueId: string) {
       if (error) throw error;
       return data as (Reservation & { table?: { label: string } })[];
     },
-    refetchInterval: 30000,
+    refetchInterval: 5000, // Reduced from 30 seconds to 5 seconds for faster updates
     enabled: !!venueId
   });
 }
@@ -191,6 +191,7 @@ export function useReserveTable() {
     onSuccess: (_, { venueId }) => {
       qc.invalidateQueries({ queryKey: ['tables', 'counters', venueId] });
       qc.invalidateQueries({ queryKey: ['reservations', venueId] });
+      qc.invalidateQueries({ queryKey: ['tables', 'grid', venueId] }); // Also invalidate table grid to update reservation status
     }
   });
 }
@@ -209,6 +210,7 @@ export function useCheckInReservation() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tables'] });
       qc.invalidateQueries({ queryKey: ['reservations'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'grid'] }); // Also invalidate table grid
     }
   });
 }
@@ -244,6 +246,7 @@ export function useCancelReservation() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reservations'] });
       qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'grid'] }); // Also invalidate table grid
     }
   });
 }

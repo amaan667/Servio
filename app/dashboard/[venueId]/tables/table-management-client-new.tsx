@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +27,7 @@ import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { ReservationsPanel } from '@/components/table-management/ReservationsPanel';
 import { DailyResetModal } from '@/components/daily-reset/DailyResetModal';
 import { toast } from '@/hooks/use-toast';
+import { createClient } from '@/lib/supabase/client';
 
 interface TableManagementClientNewProps {
   venueId: string;
@@ -196,6 +197,36 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     refetchCounterOrders();
     refetchTableOrders();
   };
+
+  // Add real-time subscriptions for instant updates
+  useEffect(() => {
+    if (!venueId) return;
+
+    const supabase = createClient();
+    
+    // Subscribe to reservation changes for instant updates
+    const reservationSubscription = supabase
+      .channel('reservations-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        (payload) => {
+          console.log('[RESERVATIONS] Real-time update:', payload);
+          // Invalidate and refetch reservations data
+          refetchTables();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      reservationSubscription.unsubscribe();
+    };
+  }, [venueId, refetchTables]);
 
   const error = tablesError || counterOrdersError || tableOrdersError;
 
