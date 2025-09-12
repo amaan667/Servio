@@ -15,7 +15,7 @@ import {
   Receipt,
   CheckCircle2
 } from 'lucide-react';
-import { useTableGrid, useTableCounters, useReservations } from '@/hooks/useTableReservations';
+import { useTableGrid, useTableCounters, useReservations, useAutoCompleteReservations } from '@/hooks/useTableReservations';
 import { useCounterOrders, useCounterOrderCounts } from '@/hooks/useCounterOrders';
 import { useTableOrders, useTableOrderCounts } from '@/hooks/useTableOrders';
 import { useDailyReset } from '@/hooks/useDailyReset';
@@ -54,6 +54,8 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     data: reservations = [], 
     isLoading: reservationsLoading 
   } = useReservations(venueId);
+
+  const autoCompleteReservations = useAutoCompleteReservations();
 
   // Check for daily reset when component loads
   const { isChecking: isResetting, resetResult, checkAndReset } = useDailyReset(venueId);
@@ -165,9 +167,14 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   const filterCounts = useMemo(() => {
     // Calculate counts from the actual tables data
     const totalTables = tables.length;
-    const freeTables = tables.filter(table => table.session_status === 'FREE').length;
+    // A table is only truly "free" if it has no session AND no reservation
+    const freeTables = tables.filter(table => 
+      table.session_status === 'FREE' && table.reservation_status === 'NONE'
+    ).length;
     const occupiedTables = tables.filter(table => table.session_status === 'OCCUPIED').length;
-    const reservedTables = tables.filter(table => table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER').length;
+    const reservedTables = tables.filter(table => 
+      table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER'
+    ).length;
     
     return {
       all: totalTables,
@@ -227,6 +234,36 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       reservationSubscription.unsubscribe();
     };
   }, [venueId, refetchTables]);
+
+  // Auto-complete expired reservations every 5 minutes
+  useEffect(() => {
+    if (!venueId) return;
+
+    const autoCompleteInterval = setInterval(async () => {
+      try {
+        await autoCompleteReservations.mutateAsync({ venueId });
+        console.log('[AUTO COMPLETE] Checked for expired reservations');
+      } catch (error) {
+        console.error('[AUTO COMPLETE] Error:', error);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    // Also run once on component mount
+    const runInitialCheck = async () => {
+      try {
+        await autoCompleteReservations.mutateAsync({ venueId });
+        console.log('[AUTO COMPLETE] Initial check for expired reservations');
+      } catch (error) {
+        console.error('[AUTO COMPLETE] Initial check error:', error);
+      }
+    };
+
+    runInitialCheck();
+
+    return () => {
+      clearInterval(autoCompleteInterval);
+    };
+  }, [venueId, autoCompleteReservations]);
 
   const error = tablesError || counterOrdersError || tableOrdersError;
 
@@ -579,13 +616,6 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                   onActionComplete={handleTableActionComplete}
                   availableTables={tables}
                 />
-                
-                {/* Overlay reservation info if table is reserved */}
-                {(table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER') && (
-                  <div className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full border border-blue-200">
-                    Reserved
-                  </div>
-                )}
               </div>
             ))}
           </div>

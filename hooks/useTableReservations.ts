@@ -225,11 +225,20 @@ export function useCheckInReservation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ reservationId, tableId }: { reservationId: string; tableId: string }) => {
-      const { error } = await supabase.rpc('api_checkin_reservation', {
-        p_reservation_id: reservationId,
-        p_table_id: tableId
+      const response = await fetch('/api/reservations/checkin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reservationId, tableId }),
       });
-      if (error) throw error;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to check in reservation');
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tables'] });
@@ -271,6 +280,34 @@ export function useCancelReservation() {
       qc.invalidateQueries({ queryKey: ['reservations'] });
       qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
       qc.invalidateQueries({ queryKey: ['tables', 'grid'] }); // Also invalidate table grid
+    }
+  });
+}
+
+// Auto-complete expired reservations
+export function useAutoCompleteReservations() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ venueId }: { venueId: string }) => {
+      const response = await fetch('/api/reservations/auto-complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ venueId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to auto-complete reservations');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reservations'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'grid'] });
     }
   });
 }

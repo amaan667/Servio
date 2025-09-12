@@ -294,21 +294,6 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <StatusPill status={table.session_status as any} />
-            {(() => {
-              console.log('🔍 [TABLE CARD] Table status check:', {
-                tableId: table.id,
-                label: table.label,
-                reservationStatus: table.reservation_status,
-                sessionStatus: table.session_status,
-                shouldShowReserved: table.reservation_status === 'RESERVED_NOW'
-              });
-              return table.reservation_status === 'RESERVED_NOW';
-            })() && (
-              <Badge variant="outline" className="bg-sky-50 text-sky-700 ring-sky-100 text-xs">
-                <Calendar className="h-3 w-3 mr-1" />
-                Reserved
-              </Badge>
-            )}
           </div>
           
           {table.order_id && (
@@ -344,6 +329,23 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
             </div>
           )}
         </div>
+
+        {/* Reserved Badge - positioned in bottom right corner */}
+        {(table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER') && (
+          <div className="absolute bottom-3 right-3">
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${
+                table.reservation_status === 'RESERVED_NOW' 
+                  ? 'bg-red-50 text-red-700 border-red-200' 
+                  : 'bg-blue-50 text-blue-700 border-blue-200'
+              }`}
+            >
+              <Calendar className="h-3 w-3 mr-1" />
+              {table.reservation_status === 'RESERVED_NOW' ? 'Reserved Now' : 'Reserved Later'}
+            </Badge>
+          </div>
+        )}
       </CardContent>
 
       {/* Table Selection Dialogs */}
