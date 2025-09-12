@@ -605,18 +605,16 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
             persistSelectedTables(autoTables);
             console.log('🔍 [QR CLIENT] Auto-populated tables based on activeTablesCount:', autoTables.join(', '));
           } else {
-            // No active tables - provide default table for QR generation
-            const defaultTables = ['1']; // Always provide at least one table for QR generation
-            setSelectedTables(defaultTables);
-            persistSelectedTables(defaultTables);
-            console.log('🔍 [QR CLIENT] No active tables found, providing default table for QR generation:', defaultTables.join(', '));
+            // No active tables - don't create any default tables
+            setSelectedTables([]);
+            persistSelectedTables([]);
+            console.log('🔍 [QR CLIENT] No active tables found, not creating any default tables');
           }
         } else if (currentSelectedTables.length === 0) {
-          // Empty array from localStorage - provide default table
-          const defaultTables = ['1'];
-          setSelectedTables(defaultTables);
-          persistSelectedTables(defaultTables);
-          console.log('🔍 [QR CLIENT] Empty tables from localStorage, providing default table:', defaultTables.join(', '));
+          // Empty array from localStorage - don't create any default tables
+          setSelectedTables([]);
+          persistSelectedTables([]);
+          console.log('🔍 [QR CLIENT] Empty tables from localStorage, not creating any default tables');
         } else {
           // Tables were specified in URL or localStorage, keep them
           console.log('🔍 [QR CLIENT] Using tables from URL/localStorage:', currentSelectedTables.join(', '));
@@ -626,7 +624,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         console.log('🔍 [QR CLIENT] Final stats:', {
           activeTables,
           selectedTables: currentSelectedTables === null 
-            ? (activeTables > 0 ? Array.from({length: activeTables}, (_, i) => (i + 1).toString()) : ['1'])
+            ? (activeTables > 0 ? Array.from({length: activeTables}, (_, i) => (i + 1).toString()) : [])
             : currentSelectedTables
         });
         
@@ -635,7 +633,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         console.log('🔍 [QR CLIENT] Final state after loadStats:', {
           loading: false,
           selectedTables: currentSelectedTables === null 
-            ? (activeTables > 0 ? Array.from({length: activeTables}, (_, i) => (i + 1).toString()) : ['1'])
+            ? (activeTables > 0 ? Array.from({length: activeTables}, (_, i) => (i + 1).toString()) : [])
             : currentSelectedTables,
           activeTables,
           currentSelectedTables
@@ -676,11 +674,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         persistSelectedTables(autoTables);
         console.log('🔍 [QR CLIENT] Auto-populated tables from URL params effect:', autoTables.join(', '));
       } else {
-        // No active tables, provide default table
-        const defaultTables = ['1'];
-        setSelectedTables(defaultTables);
-        persistSelectedTables(defaultTables);
-        console.log('🔍 [QR CLIENT] No active tables, providing default table from URL params effect:', defaultTables.join(', '));
+        // No active tables, don't create any default tables
+        setSelectedTables([]);
+        persistSelectedTables([]);
+        console.log('🔍 [QR CLIENT] No active tables, not creating any default tables from URL params effect');
       }
     }
   }, [searchParams, venueId, activeTablesCount]);
