@@ -27,7 +27,12 @@ interface User {
   email: string;
   user_metadata?: {
     full_name?: string;
+    hasPasswordSet?: boolean;
   };
+  identities?: Array<{
+    provider: string;
+    id: string;
+  }>;
 }
 
 interface VenueSettingsClientProps {
@@ -59,14 +64,26 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   // Check if user signed up with OAuth (Google)
-  const isOAuthUser = (user as any)?.identities?.some((identity: any) => 
+  // OAuth users will have identities array with provider information
+  const isOAuthUser = user?.identities?.some((identity) => 
     identity.provider === 'google' || identity.provider === 'oauth'
-  );
+  ) || false;
 
   // Check if user has set a password (tracked in user metadata)
-  const hasPasswordSet = (user?.user_metadata as any)?.hasPasswordSet === true;
+  const hasPasswordSet = user?.user_metadata?.hasPasswordSet === true;
+  
+  // Debug logging
+  console.log('[AUTH DEBUG] User data:', {
+    hasIdentities: !!user?.identities,
+    identities: user?.identities,
+    isOAuthUser,
+    hasPasswordSet,
+    userMetadata: user?.user_metadata
+  });
   
   // Determine if we should show "Set Password" or "Change Password"
+  // Show "Set Password" only for OAuth users who haven't set a password yet
+  // Show "Change Password" for all other cases (OAuth users with password set, or form signup users)
   const shouldShowSetPassword = isOAuthUser && !hasPasswordSet;
 
   const updateVenueSettings = async () => {
@@ -139,6 +156,8 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         
         if (metadataError) {
           console.error('Error updating password metadata:', metadataError);
+        } else {
+          console.log('[AUTH DEBUG] Successfully marked password as set in metadata');
         }
       }
 

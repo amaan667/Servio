@@ -23,7 +23,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     const supabase = await createServerSupabase();
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    log('SETTINGS SSR user', { hasUser: !!user, error: userError?.message });
+    log('SETTINGS SSR user', { hasUser: !!user, error: userError?.message, hasIdentities: !!user?.identities });
     
     if (userError) {
       console.error('[SETTINGS] Auth error:', userError);
