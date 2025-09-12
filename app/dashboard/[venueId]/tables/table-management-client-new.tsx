@@ -26,6 +26,7 @@ import { TableOrderGroupCard } from '@/components/table-management/TableOrderGro
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { ReservationsPanel } from '@/components/table-management/ReservationsPanel';
 import { DailyResetModal } from '@/components/daily-reset/DailyResetModal';
+import { toast } from '@/hooks/use-toast';
 
 interface TableManagementClientNewProps {
   venueId: string;
@@ -57,6 +58,30 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   const { isChecking: isResetting, resetResult, checkAndReset } = useDailyReset(venueId);
 
   const handleManualReset = () => {
+    // Check if there's anything to reset
+    const hasActiveOrders = counterOrders.length > 0 || tableOrders.length > 0;
+    const hasActiveTables = tables.some(table => table.session_status === 'OCCUPIED');
+    const hasActiveReservations = reservations.some(reservation => 
+      reservation.status === 'CONFIRMED' || reservation.status === 'CHECKED_IN'
+    );
+    
+    // Also check for any orders that are not completed (in any status except COMPLETED)
+    const hasIncompleteOrders = counterOrders.some(order => order.order_status !== 'COMPLETED') ||
+                               tableOrders.some(order => order.order_status !== 'COMPLETED');
+    
+    const hasAnythingToReset = hasActiveOrders || hasActiveTables || hasActiveReservations || hasIncompleteOrders;
+    
+    if (!hasAnythingToReset) {
+      // Show toast that there's nothing to reset
+      toast({
+        title: "Nothing to Reset",
+        description: "There's currently nothing to reset. No active orders, occupied tables, or confirmed reservations found.",
+        variant: "default",
+      });
+      return;
+    }
+    
+    // If there's something to reset, show the confirmation modal
     setShowResetModal(true);
   };
 
