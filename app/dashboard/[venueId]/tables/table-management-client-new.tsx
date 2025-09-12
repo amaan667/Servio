@@ -216,9 +216,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
             </div>
             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
               <div className="text-center">
-                <p className="text-sm font-medium text-green-800">Ready</p>
+                <p className="text-sm font-medium text-green-800">Completed</p>
                 <p className="text-xl font-bold text-green-600">
-                  {counterOrders.filter(order => order.order_status === 'READY').length}
+                  {counterOrders.filter(order => order.order_status === 'COMPLETED').length}
                 </p>
               </div>
             </div>
@@ -326,6 +326,40 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                 </div>
               </div>
             ))}
+          </div>
+          
+          {/* Table Orders Quick Stats */}
+          <div className="mt-4 grid grid-cols-4 gap-3">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="text-center">
+                <p className="text-sm font-medium text-yellow-800">Placed</p>
+                <p className="text-xl font-bold text-yellow-600">
+                  {tableOrders.filter(order => order.order_status === 'PLACED').length}
+                </p>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="text-center">
+                <p className="text-sm font-medium text-blue-800">Preparing</p>
+                <p className="text-xl font-bold text-blue-600">
+                  {tableOrders.filter(order => order.order_status === 'IN_PREP').length}
+                </p>
+              </div>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="text-center">
+                <p className="text-sm font-medium text-green-800">Completed</p>
+                <p className="text-xl font-bold text-green-600">
+                  {tableOrders.filter(order => order.order_status === 'COMPLETED').length}
+                </p>
+              </div>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-800">Total</p>
+                <p className="text-xl font-bold text-gray-600">{tableOrders.length}</p>
+              </div>
+            </div>
           </div>
         </section>
       ) : (
