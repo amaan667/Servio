@@ -39,6 +39,7 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           orderId: order.id,
           venue_id: venueId,

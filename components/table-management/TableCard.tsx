@@ -100,6 +100,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       const response = await fetch('/api/table-sessions/actions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           action: 'occupy_table',
           table_id: table.id,

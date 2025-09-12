@@ -95,6 +95,7 @@ export function ReservationDialog({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           action: 'reserve_table',
           table_id: tableId,

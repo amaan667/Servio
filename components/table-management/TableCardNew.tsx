@@ -113,6 +113,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify(requestBody),
       });
 
