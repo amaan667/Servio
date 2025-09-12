@@ -16,18 +16,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if service role key is available
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('🔄 [MANUAL DAILY RESET] SUPABASE_SERVICE_ROLE_KEY not found');
+      return NextResponse.json(
+        { error: 'Service role key not configured' },
+        { status: 500 }
+      );
+    }
+
     const supabase = createAdminClient();
     console.log('🔄 [MANUAL DAILY RESET] Admin Supabase client created');
 
     // Check if venue exists
+    console.log('🔄 [MANUAL DAILY RESET] Checking if venue exists...');
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('venue_id, name')
       .eq('venue_id', venueId)
       .single();
 
-    if (venueError || !venue) {
-      console.log('🔄 [MANUAL DAILY RESET] Venue not found:', venueError);
+    if (venueError) {
+      console.error('🔄 [MANUAL DAILY RESET] Error fetching venue:', venueError);
+      return NextResponse.json(
+        { error: `Database error: ${venueError.message}` },
+        { status: 500 }
+      );
+    }
+
+    if (!venue) {
+      console.log('🔄 [MANUAL DAILY RESET] Venue not found for ID:', venueId);
       return NextResponse.json(
         { error: 'Venue not found' },
         { status: 404 }
