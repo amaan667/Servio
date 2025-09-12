@@ -186,6 +186,17 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       );
     }
 
+    if (table.session_status === 'RESERVED') {
+      return (
+        <>
+          <DropdownMenuItem onClick={() => setShowReservationDialog(true)}>
+            <Calendar className="h-4 w-4 mr-2" />
+            Modify Reservation
+          </DropdownMenuItem>
+        </>
+      );
+    }
+
     return null;
   };
 
@@ -328,10 +339,16 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
               Available for seating
             </div>
           )}
+          
+          {table.session_status === 'RESERVED' && (
+            <div className="text-sm text-gray-500">
+              {table.reservation_status === 'RESERVED_NOW' ? 'Reserved - Check in available' : 'Reserved for later'}
+            </div>
+          )}
         </div>
 
-        {/* Reserved Badge - positioned in bottom right corner */}
-        {(table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER') && (
+        {/* Reserved Badge - only show if table is FREE but has a reservation (edge case) */}
+        {table.session_status === 'FREE' && (table.reservation_status === 'RESERVED_NOW' || table.reservation_status === 'RESERVED_LATER') && (
           <div className="absolute bottom-3 right-3">
             <Badge 
               variant="outline" 

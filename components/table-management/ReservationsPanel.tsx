@@ -107,8 +107,8 @@ export function ReservationsPanel({ venueId, reservations, onActionComplete }: R
   };
 
   const activeReservations = reservations.filter(r => {
-    // Only show reservations that are BOOKED and haven't expired
-    if (r.status !== 'BOOKED') return false;
+    // Show reservations that are BOOKED or CHECKED_IN and haven't expired
+    if (!['BOOKED', 'CHECKED_IN'].includes(r.status)) return false;
     
     // Check if the reservation has expired
     const now = new Date();

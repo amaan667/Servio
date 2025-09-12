@@ -7,7 +7,7 @@ export interface TableGridItem {
   id: string;
   label: string;
   seat_count: number;
-  session_status: 'FREE' | 'OCCUPIED';
+  session_status: 'FREE' | 'OCCUPIED' | 'RESERVED';
   reservation_status: 'RESERVED_NOW' | 'RESERVED_LATER' | 'NONE';
   opened_at: string | null;
   order_id: string | null;
@@ -114,11 +114,19 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           console.log('🔍 [TABLE GRID] Table has no active reservation:', item.table_id);
         }
         
+        // Determine the primary session status based on both table status and reservations
+        let sessionStatus = item.primary_status === 'OCCUPIED' ? 'OCCUPIED' : 'FREE';
+        
+        // If there's an active reservation, the table should be considered RESERVED, not FREE
+        if (reservationStatus === 'RESERVED_NOW' || reservationStatus === 'RESERVED_LATER') {
+          sessionStatus = 'RESERVED';
+        }
+        
         return {
           id: item.table_id,
           label: item.label,
           seat_count: item.seat_count,
-          session_status: item.primary_status === 'OCCUPIED' ? 'OCCUPIED' : 'FREE',
+          session_status: sessionStatus,
           reservation_status: reservationStatus,
           opened_at: item.opened_at,
           order_id: null, // This would need to be fetched separately if needed
