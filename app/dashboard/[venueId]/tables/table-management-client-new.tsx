@@ -43,7 +43,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     isLoading: tablesLoading, 
     error: tablesError, 
     refetch: refetchTables 
-  } = useTableGrid(venueId);
+  } = useTableGrid(venueId, 30); // 30 minutes lead time - configurable
   
   const { 
     data: counters = { total_tables: 0, available: 0, occupied: 0, reserved_overlapping_now: 0 }, 

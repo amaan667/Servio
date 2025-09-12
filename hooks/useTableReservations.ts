@@ -38,9 +38,9 @@ export interface Reservation {
 }
 
 // Get table grid data
-export function useTableGrid(venueId: string) {
+export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
   return useQuery({
-    queryKey: ['tables', 'grid', venueId],
+    queryKey: ['tables', 'grid', venueId, leadTimeMinutes],
     queryFn: async () => {
       // First, get the table data
       const { data: tableData, error: tableError } = await supabase
@@ -50,43 +50,67 @@ export function useTableGrid(venueId: string) {
         .order('label');
       if (tableError) throw tableError;
       
-      // Then, get active reservations to cross-reference
+      // Get all active reservations for this venue
       const { data: reservations, error: reservationError } = await supabase
         .from('reservations')
-        .select('table_id, end_at')
+        .select('*')
         .eq('venue_id', venueId)
-        .eq('status', 'BOOKED');
+        .in('status', ['BOOKED', 'CHECKED_IN']) // Active reservation statuses
+        .order('start_at', { ascending: true });
       if (reservationError) throw reservationError;
       
-      // Filter out expired reservations
       const now = new Date();
-      const activeReservations = reservations.filter((r: { table_id: string; end_at: string }) => {
-        const endTime = new Date(r.end_at);
-        return endTime > now;
-      });
+      // Use the configurable lead time - reservations become active X minutes before start
       
-      console.log('🔍 [TABLE GRID] Active reservations:', activeReservations);
-      
-      // Get table IDs with active reservations
-      const tablesWithActiveReservations = new Set(
-        activeReservations.map((r: { table_id: string; end_at: string }) => r.table_id)
-      );
-      
-      console.log('🔍 [TABLE GRID] Tables with active reservations:', tablesWithActiveReservations);
+      console.log('🔍 [TABLE GRID] All reservations:', reservations);
+      console.log('🔍 [TABLE GRID] Current time:', now.toISOString());
       
       // Transform the data to match the expected TableGridItem interface
       return tableData.map((item: any) => {
-        // Debug: Log the raw item data to see what fields are available
-        console.log('🔍 [TABLE GRID] Raw item data:', item);
+        // Find reservations for this table
+        const tableReservations = reservations.filter((r: any) => r.table_id === item.table_id);
         
-        // Determine reservation status based on active reservations
         let reservationStatus = 'NONE';
+        let activeReservation = null;
         
-        // Check if this table has an active reservation
-        if (tablesWithActiveReservations.has(item.table_id)) {
-          reservationStatus = 'RESERVED_NOW';
-          console.log('🔍 [TABLE GRID] Table has active reservation:', item.table_id);
-        } else {
+        // Check for active reservations based on time and status
+        for (const reservation of tableReservations) {
+          const startTime = new Date(reservation.start_at);
+          const endTime = new Date(reservation.end_at);
+          const leadTime = new Date(startTime.getTime() - (leadTimeMinutes * 60 * 1000));
+          
+          console.log('🔍 [TABLE GRID] Checking reservation:', {
+            id: reservation.id,
+            table_id: reservation.table_id,
+            status: reservation.status,
+            start_at: reservation.start_at,
+            end_at: reservation.end_at,
+            leadTime: leadTime.toISOString(),
+            now: now.toISOString(),
+            isInLeadWindow: now >= leadTime,
+            isBeforeEnd: now <= endTime
+          });
+          
+          // Reservation is active if:
+          // 1. We're within the lead time window (30 minutes before start)
+          // 2. We haven't passed the end time
+          // 3. Status is not cancelled/completed
+          if (now >= leadTime && now <= endTime) {
+            activeReservation = reservation;
+            
+            // Determine if it's "now" or "later"
+            if (now >= startTime) {
+              reservationStatus = 'RESERVED_NOW';
+              console.log('🔍 [TABLE GRID] Table has RESERVED_NOW reservation:', item.table_id, reservation.id);
+            } else {
+              reservationStatus = 'RESERVED_LATER';
+              console.log('🔍 [TABLE GRID] Table has RESERVED_LATER reservation:', item.table_id, reservation.id);
+            }
+            break; // Use the first active reservation found
+          }
+        }
+        
+        if (!activeReservation) {
           console.log('🔍 [TABLE GRID] Table has no active reservation:', item.table_id);
         }
         
@@ -129,7 +153,7 @@ export function useTableCounters(venueId: string) {
 export function useReservations(venueId: string) {
   return useQuery({
     queryKey: ['reservations', venueId],
-    queryFn: async () => {
+    queryFn: async (): Promise<(Reservation & { table?: { label: string } })[]> => {
       const { data, error } = await supabase
         .from('reservations')
         .select(`
