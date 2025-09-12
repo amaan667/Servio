@@ -25,6 +25,7 @@ import { TableOrderCard } from '@/components/table-management/TableOrderCard';
 import { TableOrderGroupCard } from '@/components/table-management/TableOrderGroupCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { ReservationsPanel } from '@/components/table-management/ReservationsPanel';
+import { DailyResetModal } from '@/components/daily-reset/DailyResetModal';
 
 interface TableManagementClientNewProps {
   venueId: string;
@@ -32,6 +33,7 @@ interface TableManagementClientNewProps {
 
 export function TableManagementClientNew({ venueId }: TableManagementClientNewProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showResetModal, setShowResetModal] = useState(false);
   
   const { 
     data: tables = [], 
@@ -53,10 +55,12 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   // Check for daily reset when component loads
   const { isChecking: isResetting, resetResult, checkAndReset } = useDailyReset(venueId);
 
-  const handleManualReset = async () => {
-    if (confirm('Are you sure you want to perform a manual daily reset? This will complete all active orders and reset all tables.')) {
-      await checkAndReset();
-    }
+  const handleManualReset = () => {
+    setShowResetModal(true);
+  };
+
+  const handleConfirmReset = async () => {
+    await checkAndReset();
   };
 
   const { 
@@ -559,6 +563,15 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           </div>
         </div>
       )}
+
+      {/* Daily Reset Confirmation Modal */}
+      <DailyResetModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={handleConfirmReset}
+        isResetting={isResetting}
+        venueName="this venue"
+      />
     </div>
   );
 }

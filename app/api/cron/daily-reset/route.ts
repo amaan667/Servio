@@ -19,27 +19,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if it's actually midnight (within 5 minutes of 00:00)
+    // Check if it's time for any venue's daily reset
     const now = new Date();
+    const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS format
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
-    // Only run if it's between 00:00 and 00:05
-    if (currentHour !== 0 || currentMinute > 5) {
-      console.log('🕛 [CRON DAILY RESET] Not midnight, skipping reset', { currentHour, currentMinute });
-      return NextResponse.json({
-        success: true,
-        message: 'Not midnight, skipping reset',
-        currentTime: now.toISOString()
-      });
-    }
+    console.log('🕛 [CRON DAILY RESET] Current time:', currentTime, { currentHour, currentMinute });
 
     const supabase = await createServerSupabase();
     
-    // Get all venues that need daily reset
+    // Get all venues that need daily reset at the current time (within 5 minutes)
     const { data: venues, error: venuesError } = await supabase
       .from('venues')
-      .select('venue_id, name');
+      .select('venue_id, name, daily_reset_time')
+      .not('daily_reset_time', 'is', null);
 
     if (venuesError) {
       console.error('🕛 [CRON DAILY RESET] Error fetching venues:', venuesError);
@@ -58,9 +52,32 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Filter venues that should reset at the current time (within 5 minutes)
+    const venuesToReset = venues.filter(venue => {
+      if (!venue.daily_reset_time) return false;
+      
+      const [resetHour, resetMinute] = venue.daily_reset_time.split(':').map(Number);
+      const timeDiff = Math.abs((currentHour * 60 + currentMinute) - (resetHour * 60 + resetMinute));
+      
+      // Reset if within 5 minutes of the scheduled time
+      return timeDiff <= 5;
+    });
+
+    if (venuesToReset.length === 0) {
+      console.log('🕛 [CRON DAILY RESET] No venues scheduled for reset at this time');
+      return NextResponse.json({
+        success: true,
+        message: 'No venues scheduled for reset at this time',
+        currentTime,
+        resetVenues: []
+      });
+    }
+
+    console.log(`🕛 [CRON DAILY RESET] Found ${venuesToReset.length} venues to reset at ${currentTime}`);
+
     const resetResults = [];
 
-    for (const venue of venues) {
+    for (const venue of venuesToReset) {
       try {
         console.log(`🕛 [CRON DAILY RESET] Processing venue: ${venue.name} (${venue.venue_id})`);
 
@@ -174,7 +191,7 @@ export async function POST(request: NextRequest) {
     }
 
     const successfulResets = resetResults.filter(r => r.reset).length;
-    const totalVenues = venues.length;
+    const totalVenues = venuesToReset.length;
 
     console.log(`🕛 [CRON DAILY RESET] Daily reset completed: ${successfulResets}/${totalVenues} venues reset`);
 
