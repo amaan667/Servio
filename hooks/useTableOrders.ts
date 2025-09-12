@@ -7,6 +7,7 @@ export interface TableOrder {
 	id: string;
 	table_number: number;
 	customer_name: string | null;
+	customer_phone: string | null;
 	order_status: string;
 	payment_status: string;
 	total_amount: number;
@@ -34,6 +35,7 @@ export function useTableOrders(venueId: string) {
 					id,
 					table_number,
 					customer_name,
+					customer_phone,
 					order_status,
 					payment_status,
 					total_amount,
