@@ -230,6 +230,7 @@ export function useCheckInReservation() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({ reservationId, tableId }),
       });
 
@@ -294,6 +295,7 @@ export function useAutoCompleteReservations() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({ venueId }),
       });
 
