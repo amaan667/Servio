@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -56,6 +56,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   } = useReservations(venueId);
 
   const autoCompleteReservations = useAutoCompleteReservations();
+  const autoCompleteRef = useRef(autoCompleteReservations);
 
   // Check for daily reset when component loads
   const { isChecking: isResetting, resetResult, checkAndReset } = useDailyReset(venueId);
@@ -240,9 +241,12 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   useEffect(() => {
     if (!venueId) return;
 
+    // Update ref with current mutation function
+    autoCompleteRef.current = autoCompleteReservations;
+
     const autoCompleteInterval = setInterval(async () => {
       try {
-        await autoCompleteReservations.mutateAsync({ venueId });
+        await autoCompleteRef.current.mutateAsync({ venueId });
         console.log('[AUTO COMPLETE] Checked for expired reservations');
       } catch (error) {
         console.error('[AUTO COMPLETE] Error:', error);
@@ -252,7 +256,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     // Also run once on component mount
     const runInitialCheck = async () => {
       try {
-        await autoCompleteReservations.mutateAsync({ venueId });
+        await autoCompleteRef.current.mutateAsync({ venueId });
         console.log('[AUTO COMPLETE] Initial check for expired reservations');
       } catch (error) {
         console.error('[AUTO COMPLETE] Initial check error:', error);
@@ -264,7 +268,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     return () => {
       clearInterval(autoCompleteInterval);
     };
-  }, [venueId, autoCompleteReservations]);
+  }, [venueId]); // Removed autoCompleteReservations from dependencies
 
   const error = tablesError || counterOrdersError || tableOrdersError;
 
