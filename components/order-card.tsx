@@ -235,10 +235,11 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
             <span className="ml-1">{order.order_status.replace('_', ' ')}</span>
           </Badge>
           <Badge className={getPaymentStatusColor(order.payment_status)}>
-            {order.payment_status === 'paid' ? '✅ Paid' :
-             order.payment_status === 'unpaid' ? '❌ Unpaid' :
-             order.payment_status === 'till' ? '🏪 Till' :
+            {order.payment_status === 'paid' || order.payment_status === 'PAID' ? '✅ Paid' :
+             order.payment_status === 'unpaid' || order.payment_status === 'UNPAID' ? '❌ Unpaid' :
+             order.payment_status === 'till' || order.payment_status === 'TILL' ? '🏪 Till' :
              order.payment_status === 'PAY_LATER' ? '⏰ Pay Later' :
+             order.payment_status === 'REFUNDED' ? '🔄 Refunded' :
              order.payment_status}
           </Badge>
         </div>

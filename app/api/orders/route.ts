@@ -242,7 +242,7 @@ export async function POST(req: Request) {
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')
       .insert(payload)
-      .select('id, created_at');
+      .select('*');
 
     if (insertErr) {
       console.log('[ORDERS POST] DATABASE INSERT FAILED:', insertErr);
