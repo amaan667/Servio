@@ -6,6 +6,7 @@ const supabase = createClient();
 export interface TableOrder {
 	id: string;
 	table_number: number;
+	table_id?: string | null; // Add table_id field
 	customer_name: string | null;
 	customer_phone: string | null;
 	order_status: string;
@@ -34,6 +35,7 @@ export function useTableOrders(venueId: string) {
 				.select(`
 					id,
 					table_number,
+					table_id,
 					customer_name,
 					customer_phone,
 					order_status,
@@ -54,11 +56,26 @@ export function useTableOrders(venueId: string) {
 
 			if (error) throw error;
 			
-			// Get table labels for each order using table_number
+			// Get table labels for each order using table_id (preferred) or table_number
 			const ordersWithTableLabels = await Promise.all(
 				(data || []).map(async (order: any) => {
 					let tableLabel = null;
-					if (order.table_number) {
+					
+					// First try to get table label using table_id (more reliable)
+					if (order.table_id) {
+						const { data: tableData } = await supabase
+							.from('tables')
+							.select('label')
+							.eq('id', order.table_id)
+							.single();
+						
+						if (tableData?.label) {
+							tableLabel = tableData.label;
+						}
+					}
+					
+					// Fallback to table_number if table_id lookup failed
+					if (!tableLabel && order.table_number) {
 						const { data: tableData } = await supabase
 							.from('table_runtime_state')
 							.select('label')
@@ -70,7 +87,7 @@ export function useTableOrders(venueId: string) {
 					
 					return {
 						...order,
-						table_label: tableLabel,
+						table_label: tableLabel || (order.table_number ? `Table ${order.table_number}` : 'Unknown Table'),
 					} as TableOrder;
 				})
 			);

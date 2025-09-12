@@ -14,6 +14,7 @@ type OrderItem = {
 type OrderPayload = {
   venue_id: string;
   table_number?: number | null;
+  table_id?: string | null; // Add table_id field
   customer_name: string;
   customer_phone: string; // Make required since database requires it
   items: OrderItem[];
@@ -131,12 +132,12 @@ export async function POST(req: Request) {
     if (body.table_number) {
       console.log('[ORDERS POST] Checking if table exists for table_number:', body.table_number);
       
-      // Check if table exists - use more robust lookup
+      // Check if table exists - first try to find by table number directly
       const { data: existingTable, error: lookupError } = await supabase
         .from('tables')
         .select('id, label')
         .eq('venue_id', body.venue_id)
-        .eq('label', body.table_number.toString())
+        .or(`id.eq.${body.table_number},label.eq.${body.table_number}`)
         .eq('is_active', true)
         .maybeSingle();
 
@@ -216,6 +217,7 @@ export async function POST(req: Request) {
     const payload: OrderPayload = {
       venue_id: body.venue_id,
       table_number,
+      table_id: tableId, // Add table_id to the payload
       customer_name: body.customer_name.trim(),
       customer_phone: body.customer_phone!.trim(), // Required field, already validated
       items: safeItems,
@@ -229,6 +231,7 @@ export async function POST(req: Request) {
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
       table_number: payload.table_number,
+      table_id: payload.table_id,
       order_status: payload.order_status,
       payment_status: payload.payment_status,
       total_amount: payload.total_amount,

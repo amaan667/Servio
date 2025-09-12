@@ -3,9 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
   try {
+    console.log('[MARK PAID] ===== MARK ORDER AS PAID API CALLED =====');
+    console.log('[MARK PAID] Request received at:', new Date().toISOString());
+    
     const { orderId } = await req.json();
+    console.log('[MARK PAID] Order ID:', orderId);
     
     if (!orderId) {
+      console.log('[MARK PAID] ERROR: Order ID is required');
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
@@ -26,7 +31,10 @@ export async function POST(req: Request) {
     // Update payment status
     const { error } = await supabase
       .from('orders')
-      .update({ payment_status: 'PAID' })
+      .update({ 
+        payment_status: 'PAID',
+        updated_at: new Date().toISOString()
+      })
       .eq('id', orderId);
 
     if (error) {
@@ -58,9 +66,17 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ success: true });
+    console.log('[MARK PAID] Successfully marked order as paid:', orderId);
+    console.log('[MARK PAID] ===== MARK ORDER AS PAID COMPLETED SUCCESSFULLY =====');
+    
+    return NextResponse.json({ 
+      success: true,
+      orderId,
+      payment_status: 'PAID',
+      updated_at: new Date().toISOString()
+    });
   } catch (error: any) {
-    console.error('Mark paid error:', error);
+    console.error('[MARK PAID] Error marking order as paid:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
