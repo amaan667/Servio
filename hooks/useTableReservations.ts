@@ -363,3 +363,67 @@ export function useCheckReservationCompletion() {
     }
   });
 }
+
+// Modify an existing reservation
+export function useModifyReservation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      reservationId: string;
+      customerName: string;
+      startAt: string;
+      endAt: string;
+      partySize: number;
+      customerPhone?: string;
+    }) => {
+      const response = await fetch(`/api/reservations/${payload.reservationId}/modify`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for authentication
+        body: JSON.stringify({
+          customerName: payload.customerName,
+          startAt: payload.startAt,
+          endAt: payload.endAt,
+          partySize: payload.partySize,
+          customerPhone: payload.customerPhone
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to modify reservation');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reservations'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
+      qc.invalidateQueries({ queryKey: ['tables', 'grid'] });
+    }
+  });
+}
+
+// Get reservation by table ID
+export function useReservationByTable(tableId: string) {
+  return useQuery({
+    queryKey: ['reservation', 'by-table', tableId],
+    queryFn: async () => {
+      const response = await fetch(`/api/reservations/by-table/${tableId}`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch reservation');
+      }
+
+      const result = await response.json();
+      return result.reservation;
+    },
+    enabled: !!tableId,
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+  });
+}

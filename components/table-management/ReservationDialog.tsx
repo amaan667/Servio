@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, Clock, User } from 'lucide-react';
-import { useReserveTable } from '@/hooks/useTableReservations';
+import { useReserveTable, useModifyReservation } from '@/hooks/useTableReservations';
 
 interface ReservationDialogProps {
   isOpen: boolean;
@@ -24,6 +24,16 @@ interface ReservationDialogProps {
   venueId: string;
   tableStatus?: string; // Current table status to check if already reserved
   onReservationComplete?: () => void;
+  // Modification mode props
+  isModifyMode?: boolean;
+  existingReservation?: {
+    id: string;
+    customer_name: string;
+    start_at: string;
+    end_at: string;
+    party_size: number;
+    customer_phone?: string;
+  };
 }
 
 export function ReservationDialog({
@@ -34,21 +44,52 @@ export function ReservationDialog({
   tableSeatCount,
   venueId,
   tableStatus,
-  onReservationComplete
+  onReservationComplete,
+  isModifyMode = false,
+  existingReservation
 }: ReservationDialogProps) {
   const [customerName, setCustomerName] = useState('');
   const [reservationTime, setReservationTime] = useState('');
   const [reservationDuration, setReservationDuration] = useState(60); // Default to 60 minutes
+  const [customerPhone, setCustomerPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   
   const reserveTable = useReserveTable();
+  const modifyReservation = useModifyReservation();
 
-  // Initialize reservation time with current time when dialog opens
+  // Initialize form data when dialog opens
   useEffect(() => {
-    if (isOpen && !reservationTime) {
-      setReservationTime(getDefaultTime());
+    if (isOpen) {
+      if (isModifyMode && existingReservation) {
+        // Populate form with existing reservation data
+        setCustomerName(existingReservation.customer_name || '');
+        setCustomerPhone(existingReservation.customer_phone || '');
+        
+        // Convert UTC times to local datetime-local format
+        const startTime = new Date(existingReservation.start_at);
+        const endTime = new Date(existingReservation.end_at);
+        
+        // Format for datetime-local input
+        const year = startTime.getFullYear();
+        const month = String(startTime.getMonth() + 1).padStart(2, '0');
+        const day = String(startTime.getDate()).padStart(2, '0');
+        const hours = String(startTime.getHours()).padStart(2, '0');
+        const minutes = String(startTime.getMinutes()).padStart(2, '0');
+        setReservationTime(`${year}-${month}-${day}T${hours}:${minutes}`);
+        
+        // Calculate duration in minutes
+        const durationMs = endTime.getTime() - startTime.getTime();
+        const durationMinutes = Math.round(durationMs / (1000 * 60));
+        setReservationDuration(durationMinutes);
+      } else if (!reservationTime) {
+        // Default to current time for new reservations
+        setReservationTime(getDefaultTime());
+        setCustomerName('');
+        setCustomerPhone('');
+        setReservationDuration(60);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isModifyMode, existingReservation]);
 
   // Set default time to current time in local timezone
   const getDefaultTime = () => {
@@ -73,7 +114,6 @@ export function ReservationDialog({
       return;
     }
 
-
     // Validate reservation time is not too far in the past (allow current time)
     const selectedTime = new Date(reservationTime);
     const now = new Date();
@@ -91,23 +131,35 @@ export function ReservationDialog({
       const startAt = new Date(reservationTime).toISOString();
       const endAt = new Date(new Date(reservationTime).getTime() + (reservationDuration * 60 * 1000)).toISOString();
 
-      await reserveTable.mutateAsync({
-        venueId,
-        tableId,
-        startAt,
-        endAt,
-        partySize: tableSeatCount,
-        name: customerName.trim(),
-        phone: '' // Add phone field if needed
-      });
+      if (isModifyMode && existingReservation) {
+        // Modify existing reservation
+        await modifyReservation.mutateAsync({
+          reservationId: existingReservation.id,
+          customerName: customerName.trim(),
+          startAt,
+          endAt,
+          partySize: tableSeatCount,
+          customerPhone: customerPhone.trim() || undefined
+        });
+      } else {
+        // Create new reservation
+        await reserveTable.mutateAsync({
+          venueId,
+          tableId,
+          startAt,
+          endAt,
+          partySize: tableSeatCount,
+          name: customerName.trim(),
+          phone: customerPhone.trim() || ''
+        });
+      }
 
       onReservationComplete?.();
       onClose();
-      setCustomerName('');
-      setReservationTime('');
+      handleClose();
     } catch (error) {
-      console.error('Failed to create reservation:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create reservation');
+      console.error(`Failed to ${isModifyMode ? 'modify' : 'create'} reservation:`, error);
+      setError(error instanceof Error ? error.message : `Failed to ${isModifyMode ? 'modify' : 'create'} reservation`);
     }
   };
 
@@ -115,6 +167,7 @@ export function ReservationDialog({
     setCustomerName('');
     setReservationTime('');
     setReservationDuration(60);
+    setCustomerPhone('');
     setError(null);
     onClose();
   };
@@ -152,7 +205,21 @@ export function ReservationDialog({
               placeholder="Enter customer name"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              disabled={reserveTable.isPending}
+              disabled={reserveTable.isPending || modifyReservation.isPending}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="customerPhone" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Customer Phone (Optional)
+            </Label>
+            <Input
+              id="customerPhone"
+              placeholder="Enter customer phone"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              disabled={reserveTable.isPending || modifyReservation.isPending}
             />
           </div>
 
@@ -166,7 +233,7 @@ export function ReservationDialog({
               type="datetime-local"
               value={reservationTime || getDefaultTime()}
               onChange={(e) => setReservationTime(e.target.value)}
-              disabled={reserveTable.isPending}
+              disabled={reserveTable.isPending || modifyReservation.isPending}
               min={new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16)}
             />
           </div>
@@ -180,7 +247,7 @@ export function ReservationDialog({
               id="reservationDuration"
               value={reservationDuration}
               onChange={(e) => setReservationDuration(Number(e.target.value))}
-              disabled={reserveTable.isPending}
+              disabled={reserveTable.isPending || modifyReservation.isPending}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value={30}>30 minutes</option>
@@ -199,21 +266,21 @@ export function ReservationDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={reserveTable.isPending}>
+          <Button variant="outline" onClick={handleClose} disabled={reserveTable.isPending || modifyReservation.isPending}>
             Cancel
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={reserveTable.isPending || !customerName.trim() || !reservationTime}
+            disabled={reserveTable.isPending || modifyReservation.isPending || !customerName.trim() || !reservationTime}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {reserveTable.isPending ? (
+            {(reserveTable.isPending || modifyReservation.isPending) ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Updating...
+                {isModifyMode ? 'Updating...' : 'Creating...'}
               </>
             ) : (
-              'Update Reservation'
+              isModifyMode ? 'Update Reservation' : 'Create Reservation'
             )}
           </Button>
         </DialogFooter>
