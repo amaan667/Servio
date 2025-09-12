@@ -34,6 +34,7 @@ interface TableManagementClientNewProps {
 export function TableManagementClientNew({ venueId }: TableManagementClientNewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
+  const [isManualResetting, setIsManualResetting] = useState(false);
   
   const { 
     data: tables = [], 
@@ -60,7 +61,41 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   };
 
   const handleConfirmReset = async () => {
-    await checkAndReset();
+    try {
+      setIsManualResetting(true);
+      console.log('🔄 [MANUAL RESET] Starting manual reset...');
+      
+      const response = await fetch('/api/daily-reset/manual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ venueId }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('🔄 [MANUAL RESET] Reset completed successfully:', result);
+        
+        // Refresh all data after reset
+        refetchTables();
+        refetchCounterOrders();
+        refetchTableOrders();
+        
+        // Close modal and show success message
+        setShowResetModal(false);
+        alert(`Daily reset completed successfully!\n\nSummary:\n- Completed orders: ${result.summary.completedOrders}\n- Canceled reservations: ${result.summary.canceledReservations}\n- Deleted tables: ${result.summary.deletedTables}`);
+      } else {
+        console.error('🔄 [MANUAL RESET] Reset failed:', result);
+        alert(`Reset failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('🔄 [MANUAL RESET] Error during reset:', error);
+      alert('Reset failed: Network error');
+    } finally {
+      setIsManualResetting(false);
+    }
   };
 
   const { 
@@ -569,7 +604,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         isOpen={showResetModal}
         onClose={() => setShowResetModal(false)}
         onConfirm={handleConfirmReset}
-        isResetting={isResetting}
+        isResetting={isManualResetting}
         venueName="this venue"
       />
     </div>
