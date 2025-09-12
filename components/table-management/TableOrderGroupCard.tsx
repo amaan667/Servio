@@ -210,7 +210,15 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
                   {order.customer_name && (
                     <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
                       <User className="h-5 w-5 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-700">{order.customer_name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">{order.customer_name}</span>
+                        {order.customer_phone && (
+                          <>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-sm text-gray-600">{order.customer_phone}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
 

@@ -881,6 +881,22 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   </span>
                 </div>
               </div>
+              
+              {/* Customer Details */}
+              {earliestOrder.customer_name && (
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="font-medium">{earliestOrder.customer_name}</span>
+                  </div>
+                  {earliestOrder.customer_phone && (
+                    <>
+                      <div className="h-1 w-1 rounded-full bg-gray-300"></div>
+                      <span>{earliestOrder.customer_phone}</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-3">
@@ -932,6 +948,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <div className="text-xs text-gray-500">
                           Order #{getShortOrderNumber(order.id)}
                         </div>
+                        {order.customer_name && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <User className="h-3 w-3 text-gray-400" />
+                            <span className="text-xs text-gray-600">{order.customer_name}</span>
+                            {order.customer_phone && (
+                              <span className="text-xs text-gray-500">• {order.customer_phone}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
