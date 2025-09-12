@@ -65,11 +65,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Update expired reservations to COMPLETED status
+    // Update expired reservations to CANCELLED status (since they've expired)
     const { data: updatedReservations, error: updateError } = await supabase
       .from('reservations')
       .update({ 
-        status: 'COMPLETED',
+        status: 'CANCELLED',
         updated_at: now
       })
       .in('id', expiredReservations.map(r => r.id))
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       console.error('[AUTO COMPLETE] Error updating reservations:', updateError);
       return NextResponse.json({ 
         ok: false, 
-        error: 'Failed to complete expired reservations' 
+        error: 'Failed to cancel expired reservations' 
       }, { status: 500 });
     }
 
@@ -110,11 +110,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log('[AUTO COMPLETE] Successfully completed', updatedReservations?.length || 0, 'expired reservations');
+    console.log('[AUTO COMPLETE] Successfully cancelled', updatedReservations?.length || 0, 'expired reservations');
 
     return NextResponse.json({
       ok: true,
-      message: `Completed ${updatedReservations?.length || 0} expired reservations`,
+      message: `Cancelled ${updatedReservations?.length || 0} expired reservations`,
       completedCount: updatedReservations?.length || 0,
       reservations: updatedReservations
     });
