@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, Clock, User } from 'lucide-react';
+import { useReserveTable } from '@/hooks/useTableReservations';
 
 interface ReservationDialogProps {
   isOpen: boolean;
@@ -38,8 +39,9 @@ export function ReservationDialog({
   const [customerName, setCustomerName] = useState('');
   const [reservationTime, setReservationTime] = useState('');
   const [reservationDuration, setReservationDuration] = useState(60); // Default to 60 minutes
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const reserveTable = useReserveTable();
 
   // Initialize reservation time with current time when dialog opens
   useEffect(() => {
@@ -83,36 +85,21 @@ export function ReservationDialog({
     }
 
     try {
-      setIsLoading(true);
       setError(null);
 
       // Convert local time to UTC for server
-      const localDateTime = new Date(reservationTime);
-      const utcDateTime = localDateTime.toISOString();
+      const startAt = new Date(reservationTime).toISOString();
+      const endAt = new Date(new Date(reservationTime).getTime() + (reservationDuration * 60 * 1000)).toISOString();
 
-      const response = await fetch('/api/table-sessions/actions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify({
-          action: 'reserve_table',
-          table_id: tableId,
-          venue_id: venueId,
-          customer_name: customerName.trim(),
-          customer_phone: '', // Add phone field if needed
-          party_size: tableSeatCount,
-          reservation_time: utcDateTime,
-          reservation_duration: reservationDuration
-        }),
+      await reserveTable.mutateAsync({
+        venueId,
+        tableId,
+        startAt,
+        endAt,
+        partySize: tableSeatCount,
+        name: customerName.trim(),
+        phone: '' // Add phone field if needed
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create reservation');
-      }
 
       onReservationComplete?.();
       onClose();
@@ -121,8 +108,6 @@ export function ReservationDialog({
     } catch (error) {
       console.error('Failed to create reservation:', error);
       setError(error instanceof Error ? error.message : 'Failed to create reservation');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -167,7 +152,7 @@ export function ReservationDialog({
               placeholder="Enter customer name"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              disabled={isLoading}
+              disabled={reserveTable.isPending}
             />
           </div>
 
@@ -181,7 +166,7 @@ export function ReservationDialog({
               type="datetime-local"
               value={reservationTime || getDefaultTime()}
               onChange={(e) => setReservationTime(e.target.value)}
-              disabled={isLoading}
+              disabled={reserveTable.isPending}
               min={new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16)}
             />
           </div>
@@ -195,7 +180,7 @@ export function ReservationDialog({
               id="reservationDuration"
               value={reservationDuration}
               onChange={(e) => setReservationDuration(Number(e.target.value))}
-              disabled={isLoading}
+              disabled={reserveTable.isPending}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value={30}>30 minutes</option>
@@ -214,15 +199,15 @@ export function ReservationDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+          <Button variant="outline" onClick={handleClose} disabled={reserveTable.isPending}>
             Cancel
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={isLoading || !customerName.trim() || !reservationTime}
+            disabled={reserveTable.isPending || !customerName.trim() || !reservationTime}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {isLoading ? (
+            {reserveTable.isPending ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Creating...
