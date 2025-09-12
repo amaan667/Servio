@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     console.log('🔄 [DAILY RESET] Step 3: Deleting all tables for complete reset...');
     const { data: tables, error: tablesError } = await supabase
       .from('tables')
-      .select('id, label, session_status')
+      .select('id, label')
       .eq('venue_id', venueId);
 
     if (tablesError) {
@@ -249,12 +249,12 @@ export async function GET(request: NextRequest) {
       .eq('venue_id', venueId)
       .eq('status', 'BOOKED');
 
-    // Check for occupied tables
+    // Check for occupied tables by looking at table_sessions instead
     const { data: occupiedTables, error: tablesError } = await supabase
-      .from('tables')
-      .select('id')
+      .from('table_sessions')
+      .select('table_id')
       .eq('venue_id', venueId)
-      .eq('session_status', 'OCCUPIED');
+      .eq('status', 'ACTIVE');
 
     const needsReset = (activeOrders?.length || 0) > 0 || 
                       (activeReservations?.length || 0) > 0 || 

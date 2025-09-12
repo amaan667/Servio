@@ -94,11 +94,12 @@ export async function POST(request: NextRequest) {
           .eq('venue_id', venue.venue_id)
           .eq('status', 'BOOKED');
 
+        // Check for occupied tables by looking at table_sessions instead
         const { data: occupiedTables } = await supabase
-          .from('tables')
-          .select('id')
+          .from('table_sessions')
+          .select('table_id')
           .eq('venue_id', venue.venue_id)
-          .eq('session_status', 'OCCUPIED');
+          .eq('status', 'ACTIVE');
 
         const needsReset = (activeOrders?.length || 0) > 0 || 
                           (activeReservations?.length || 0) > 0 || 

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     console.log('🧪 [TEST TABLES ACCESS] Test 2: Venue-specific tables query...');
     const { data: venueTables, error: venueTablesError } = await supabase
       .from('tables')
-      .select('id, label, session_status, venue_id')
+      .select('id, label, venue_id')
       .eq('venue_id', venueId);
 
     if (venueTablesError) {

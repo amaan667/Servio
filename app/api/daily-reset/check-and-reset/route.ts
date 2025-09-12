@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
     console.log('🔄 [DAILY RESET CHECK] Step 3: Deleting all tables for complete reset...');
     const { data: tables, error: tablesError } = await supabase
       .from('tables')
-      .select('id, label, session_status')
+      .select('id, label')
       .eq('venue_id', venueId);
 
     if (tablesError) {
