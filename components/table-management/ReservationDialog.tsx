@@ -125,19 +125,19 @@ export function ReservationDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Make Reservation
+            Modify Reservation
           </DialogTitle>
           <DialogDescription>
-            Create a reservation for {tableLabel}
+            Update the reservation for {tableLabel}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Warning if table is already reserved */}
+          {/* Info message for modifying existing reservation */}
           {tableStatus === 'RESERVED' && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-              <p className="text-sm text-yellow-700">
-                ⚠️ This table is already reserved. Creating a new reservation will conflict with the existing one.
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-700">
+                ℹ️ This table has an existing reservation. You are modifying the current reservation details.
               </p>
             </div>
           )}
@@ -210,10 +210,10 @@ export function ReservationDialog({
             {reserveTable.isPending ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Creating...
+                Updating...
               </>
             ) : (
-              'Create Reservation'
+              'Update Reservation'
             )}
           </Button>
         </DialogFooter>
