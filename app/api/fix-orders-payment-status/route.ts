@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Group by status
-    const statusCounts = currentOrders.reduce((acc, order) => {
+    const statusCounts = currentOrders.reduce((acc: Record<string, number>, order) => {
       const key = `${order.order_status}-${order.payment_status}`;
       acc[key] = (acc[key] || 0) + 1;
       return acc;
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Group by status after update
-    const newStatusCounts = verifyOrders.reduce((acc, order) => {
+    const newStatusCounts = verifyOrders.reduce((acc: Record<string, number>, order) => {
       const key = `${order.order_status}-${order.payment_status}`;
       acc[key] = (acc[key] || 0) + 1;
       return acc;
