@@ -15,7 +15,7 @@ import {
   Receipt,
   CheckCircle2
 } from 'lucide-react';
-import { useTableGrid, useTableCounters, useReservations, useAutoCompleteReservations } from '@/hooks/useTableReservations';
+import { useTableGrid, useTableCounters, useReservations } from '@/hooks/useTableReservations';
 import { useCounterOrders, useCounterOrderCounts } from '@/hooks/useCounterOrders';
 import { useTableOrders, useTableOrderCounts } from '@/hooks/useTableOrders';
 import { useDailyReset } from '@/hooks/useDailyReset';
@@ -55,8 +55,8 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     isLoading: reservationsLoading 
   } = useReservations(venueId);
 
-  const autoCompleteReservations = useAutoCompleteReservations();
-  const autoCompleteRef = useRef(autoCompleteReservations);
+  // const autoCompleteReservations = useAutoCompleteReservations();
+  // const autoCompleteRef = useRef(autoCompleteReservations);
 
   // Check for daily reset when component loads
   const { isChecking: isResetting, resetResult, checkAndReset } = useDailyReset(venueId);
@@ -238,6 +238,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   }, [venueId, refetchTables]);
 
   // Auto-complete expired reservations every 5 minutes
+  // TEMPORARILY DISABLED due to resource exhaustion issues
+  // TODO: Re-enable once the useEffect dependency issue is resolved
+  /*
   useEffect(() => {
     if (!venueId) return;
 
@@ -269,6 +272,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       clearInterval(autoCompleteInterval);
     };
   }, [venueId]); // Removed autoCompleteReservations from dependencies
+  */
 
   const error = tablesError || counterOrdersError || tableOrdersError;
 
