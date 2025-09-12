@@ -18,6 +18,7 @@ import {
 import { useTableGrid, useTableCounters, useReservations } from '@/hooks/useTableReservations';
 import { useCounterOrders, useCounterOrderCounts } from '@/hooks/useCounterOrders';
 import { useTableOrders, useTableOrderCounts } from '@/hooks/useTableOrders';
+import { useDailyReset } from '@/hooks/useDailyReset';
 import { TableCardNew } from '@/components/table-management/TableCardNew';
 import { CounterOrderCard } from '@/components/table-management/CounterOrderCard';
 import { TableOrderCard } from '@/components/table-management/TableOrderCard';
@@ -48,6 +49,15 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     data: reservations = [], 
     isLoading: reservationsLoading 
   } = useReservations(venueId);
+
+  // Check for daily reset when component loads
+  const { isChecking: isResetting, resetResult, checkAndReset } = useDailyReset(venueId);
+
+  const handleManualReset = async () => {
+    if (confirm('Are you sure you want to perform a manual daily reset? This will complete all active orders and reset all tables.')) {
+      await checkAndReset();
+    }
+  };
 
   const { 
     data: counterOrders = [], 
@@ -149,6 +159,21 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <div className="flex flex-wrap items-center gap-3 pb-3">
           <h1 className="text-2xl font-semibold">Table Management</h1>
           
+          {/* Daily Reset Status */}
+          {isResetting && (
+            <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Checking daily reset...</span>
+            </div>
+          )}
+          
+          {resetResult && resetResult.success && !resetResult.alreadyReset && (
+            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Daily reset completed</span>
+            </div>
+          )}
+          
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -160,6 +185,20 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               />
             </div>
             <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleManualReset}
+              disabled={isResetting}
+              className="text-orange-600 border-orange-200 hover:bg-orange-50"
+            >
+              {isResetting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+              )}
+              {isResetting ? 'Resetting...' : 'Daily Reset'}
+            </Button>
             <Button variant="outline" size="sm">
               <HelpCircle className="h-4 w-4 mr-2" />
               Help
