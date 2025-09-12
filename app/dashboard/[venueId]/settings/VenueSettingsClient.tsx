@@ -29,6 +29,10 @@ interface User {
     full_name?: string;
     hasPasswordSet?: boolean;
   };
+  app_metadata?: {
+    provider?: string;
+    providers?: string[];
+  };
   identities?: Array<{
     provider: string;
     id: string;
@@ -63,28 +67,44 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
-  // Check if user signed up with OAuth (Google)
-  // OAuth users will have identities array with provider information
-  const isOAuthUser = user?.identities?.some((identity) => 
+  // Check if user signed up with OAuth (Google) using multiple methods
+  const hasGoogleIdentity = user?.identities?.some((identity) => 
     identity.provider === 'google' || identity.provider === 'oauth'
   ) || false;
+  
+  const hasGoogleProvider = user?.app_metadata?.providers?.includes('google') || 
+                           user?.app_metadata?.provider === 'google' || false;
+  
+  // OAuth user if they have Google identity or provider info
+  const isOAuthUser = hasGoogleIdentity || hasGoogleProvider;
 
   // Check if user has set a password (tracked in user metadata)
   const hasPasswordSet = user?.user_metadata?.hasPasswordSet === true;
+  
+  // Fallback: If we can't detect OAuth but user doesn't have hasPasswordSet flag,
+  // and they have a Gmail address, assume they're an OAuth user
+  const isGmailUser = user?.email?.endsWith('@gmail.com') || false;
+  const isLikelyOAuthUser = isOAuthUser || (isGmailUser && !hasPasswordSet);
   
   // Debug logging
   console.log('[AUTH DEBUG] User data:', {
     hasIdentities: !!user?.identities,
     identities: user?.identities,
+    appMetadata: user?.app_metadata,
+    hasGoogleIdentity,
+    hasGoogleProvider,
     isOAuthUser,
+    isGmailUser,
+    isLikelyOAuthUser,
     hasPasswordSet,
-    userMetadata: user?.user_metadata
+    userMetadata: user?.user_metadata,
+    email: user?.email
   });
   
   // Determine if we should show "Set Password" or "Change Password"
   // Show "Set Password" only for OAuth users who haven't set a password yet
   // Show "Change Password" for all other cases (OAuth users with password set, or form signup users)
-  const shouldShowSetPassword = isOAuthUser && !hasPasswordSet;
+  const shouldShowSetPassword = isLikelyOAuthUser && !hasPasswordSet;
 
   const updateVenueSettings = async () => {
     setLoading(true);
@@ -158,6 +178,8 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
           console.error('Error updating password metadata:', metadataError);
         } else {
           console.log('[AUTH DEBUG] Successfully marked password as set in metadata');
+          // Force a page refresh to update the UI
+          window.location.reload();
         }
       }
 

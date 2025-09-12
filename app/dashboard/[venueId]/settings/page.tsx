@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
@@ -23,7 +24,36 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     const supabase = await createServerSupabase();
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    log('SETTINGS SSR user', { hasUser: !!user, error: userError?.message, hasIdentities: !!user?.identities });
+    
+    // Get full user data with identities using admin client
+    let fullUserData = user;
+    if (user) {
+      try {
+        const adminClient = createAdminClient();
+        const { data: adminUser, error: adminError } = await adminClient.auth.admin.getUserById(user.id);
+        if (!adminError && adminUser.user) {
+          fullUserData = adminUser.user;
+          log('SETTINGS SSR admin user data', { 
+            hasIdentities: !!adminUser.user.identities,
+            identities: adminUser.user.identities,
+            userMetadata: adminUser.user.user_metadata,
+            appMetadata: adminUser.user.app_metadata
+          });
+        }
+      } catch (error) {
+        console.error('[SETTINGS] Error getting admin user data:', error);
+      }
+    }
+    
+    log('SETTINGS SSR user', { 
+      hasUser: !!user, 
+      error: userError?.message, 
+      hasIdentities: !!fullUserData?.identities,
+      userMetadata: fullUserData?.user_metadata,
+      appMetadata: fullUserData?.app_metadata,
+      createdAt: fullUserData?.created_at,
+      emailConfirmedAt: fullUserData?.email_confirmed_at
+    });
     
     if (userError) {
       console.error('[SETTINGS] Auth error:', userError);
@@ -74,7 +104,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
           </div>
           
           <VenueSettingsClient 
-            user={user} 
+            user={fullUserData || user} 
             venue={venue} 
             venues={venues || []} 
           />
