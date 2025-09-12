@@ -209,16 +209,29 @@ export function useReserveTable() {
       name?: string;
       phone?: string;
     }) => {
-      const { error } = await supabase.rpc('api_reserve_table', {
-        p_venue_id: payload.venueId,
-        p_table_id: payload.tableId,
-        p_start_at: payload.startAt,
-        p_end_at: payload.endAt,
-        p_party_size: payload.partySize,
-        p_name: payload.name ?? null,
-        p_phone: payload.phone ?? null
+      const response = await fetch('/api/reservations/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for authentication
+        body: JSON.stringify({
+          venueId: payload.venueId,
+          tableId: payload.tableId,
+          startAt: payload.startAt,
+          endAt: payload.endAt,
+          partySize: payload.partySize,
+          name: payload.name,
+          phone: payload.phone
+        }),
       });
-      if (error) throw error;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create reservation');
+      }
+
+      return response.json();
     },
     onSuccess: (_, { venueId }) => {
       qc.invalidateQueries({ queryKey: ['tables', 'counters', venueId] });
