@@ -62,8 +62,8 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       const now = new Date();
       // Use the configurable lead time - reservations become active X minutes before start
       
-      console.log('🔍 [TABLE GRID] All reservations:', reservations);
-      console.log('🔍 [TABLE GRID] Current time:', now.toISOString());
+      // console.log('🔍 [TABLE GRID] All reservations:', reservations);
+      // console.log('🔍 [TABLE GRID] Current time:', now.toISOString());
       
       // Transform the data to match the expected TableGridItem interface
       return tableData.map((item: any) => {
@@ -79,17 +79,17 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           const endTime = new Date(reservation.end_at);
           const leadTime = new Date(startTime.getTime() - (leadTimeMinutes * 60 * 1000));
           
-          console.log('🔍 [TABLE GRID] Checking reservation:', {
-            id: reservation.id,
-            table_id: reservation.table_id,
-            status: reservation.status,
-            start_at: reservation.start_at,
-            end_at: reservation.end_at,
-            leadTime: leadTime.toISOString(),
-            now: now.toISOString(),
-            isInLeadWindow: now >= leadTime,
-            isBeforeEnd: now <= endTime
-          });
+          // console.log('🔍 [TABLE GRID] Checking reservation:', {
+          //   id: reservation.id,
+          //   table_id: reservation.table_id,
+          //   status: reservation.status,
+          //   start_at: reservation.start_at,
+          //   end_at: reservation.end_at,
+          //   leadTime: leadTime.toISOString(),
+          //   now: now.toISOString(),
+          //   isInLeadWindow: now >= leadTime,
+          //   isBeforeEnd: now <= endTime
+          // });
           
           // Reservation is active if:
           // 1. We're within the lead time window (30 minutes before start)
@@ -101,18 +101,18 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
             // Determine if it's "now" or "later"
             if (now >= startTime) {
               reservationStatus = 'RESERVED_NOW';
-              console.log('🔍 [TABLE GRID] Table has RESERVED_NOW reservation:', item.table_id, reservation.id);
+              // console.log('🔍 [TABLE GRID] Table has RESERVED_NOW reservation:', item.table_id, reservation.id);
             } else {
               reservationStatus = 'RESERVED_LATER';
-              console.log('🔍 [TABLE GRID] Table has RESERVED_LATER reservation:', item.table_id, reservation.id);
+              // console.log('🔍 [TABLE GRID] Table has RESERVED_LATER reservation:', item.table_id, reservation.id);
             }
             break; // Use the first active reservation found
           }
         }
         
-        if (!activeReservation) {
-          console.log('🔍 [TABLE GRID] Table has no active reservation:', item.table_id);
-        }
+        // if (!activeReservation) {
+        //   console.log('🔍 [TABLE GRID] Table has no active reservation:', item.table_id);
+        // }
         
         // Determine the primary session status based on both table status and reservations
         let sessionStatus = item.primary_status === 'OCCUPIED' ? 'OCCUPIED' : 'FREE';
