@@ -143,6 +143,7 @@ export default function PaymentPage() {
       // Check if we have a valid order ID
       if (!orderData.order?.id) {
         console.error('[PAYMENT DEBUG] ERROR: No order ID in response:', orderData);
+        console.error('[PAYMENT DEBUG] Full response structure:', JSON.stringify(orderData, null, 2));
         throw new Error('Order was created but no order ID was returned');
       }
 

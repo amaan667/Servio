@@ -113,6 +113,8 @@ export default function OrderSummaryPage() {
       console.log('[ORDER SUMMARY DEBUG] Order created:', orderResult);
       
       if (!orderResult.order?.id) {
+        console.error('[ORDER SUMMARY DEBUG] ERROR: No order ID in response:', orderResult);
+        console.error('[ORDER SUMMARY DEBUG] Full response structure:', JSON.stringify(orderResult, null, 2));
         throw new Error('Order was created but no order ID was returned');
       }
 

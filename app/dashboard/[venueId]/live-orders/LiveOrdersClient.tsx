@@ -701,9 +701,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return orderId.slice(-6).toUpperCase();
   };
 
-  // Determine if it's a counter order
+  // Determine if it's a counter order - use source field as primary indicator
   const isCounterOrder = (order: Order) => {
-    return order.source === 'counter' || (order.table_number !== null && order.table_number >= 10);
+    return order.source === 'counter';
   };
 
   // Group table orders by table number
@@ -815,21 +815,21 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     <article key={order.id} className={`rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg border-l-4 ${borderColor}`}>
       <div className="p-4 sm:p-6">
         {/* Header - Modern SaaS Layout */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 space-y-4 sm:space-y-0">
           <div className="flex-1 min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
               <div className="text-sm font-medium text-gray-500">
                 {formatTime(order.created_at)}
               </div>
               <div className="hidden sm:block h-1 w-1 rounded-full bg-gray-300"></div>
-              <div className="font-semibold text-gray-900 text-base sm:text-lg">
+              <div className="font-semibold text-gray-900 text-lg sm:text-xl">
                 {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}
               </div>
-              <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium w-fit">
+              <div className="text-xs px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 font-medium w-fit">
                 {isCounterOrder(order) ? 'Counter' : 'QR Table'}
               </div>
             </div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-3 mb-3">
               <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
               <span className="text-sm font-medium text-gray-700 truncate">
                 {order.customer_name || 'Guest'}
@@ -837,7 +837,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </div>
           </div>
           <div className="text-right flex-shrink-0">
-            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+            <div className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
               £{(() => {
                 // Calculate total from items if total_amount is 0 or missing
                 let amount = order.total_amount;
@@ -855,31 +855,31 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         </div>
 
         {/* Status badges - Modern Design */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
+          <Badge className={`${getStatusColor(order.order_status)} text-sm font-semibold px-4 py-2 rounded-full`}>
             {order.order_status.replace('_', ' ').toLowerCase()}
           </Badge>
           {order.payment_status && (
-            <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+            <Badge className={`${getPaymentStatusColor(order.payment_status)} text-sm font-semibold px-4 py-2 rounded-full`}>
               {order.payment_status.toUpperCase()}
             </Badge>
           )}
         </div>
 
         {/* Order Items - Modern SaaS Layout */}
-        <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3 sm:mb-4">Order Items</h4>
+        <div className="space-y-4 mb-6">
+          <h4 className="text-base font-semibold text-gray-700 mb-4">Order Items</h4>
           {order.items.map((item, index) => {
             console.log('[LIVE ORDERS DEBUG] Rendering item:', item);
             return (
-              <div key={index} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-100">
-                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200 flex-shrink-0">
+              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-gray-600 border border-gray-200 flex-shrink-0">
                     {item.quantity}
                   </div>
-                  <span className="font-medium text-gray-900 text-sm sm:text-base truncate">{item.item_name}</span>
+                  <span className="font-medium text-gray-900 text-base truncate">{item.item_name}</span>
                 </div>
-                <span className="font-semibold text-gray-900 text-base sm:text-lg ml-2 flex-shrink-0">£{(item.quantity * item.price).toFixed(2)}</span>
+                <span className="font-semibold text-gray-900 text-lg ml-3 flex-shrink-0">£{(item.quantity * item.price).toFixed(2)}</span>
               </div>
             );
           })}
@@ -887,7 +887,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
         {/* Action Buttons - Modern SaaS Design */}
         {showActions && !isCompleted && (
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-4 sm:pt-5 border-t border-gray-100">
+          <div className="flex flex-wrap items-center gap-3 pt-6 border-t border-gray-100">
             {order.order_status === 'PLACED' && (
               <Button 
                 size="sm"

@@ -41,9 +41,9 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardProps) {
-  // Determine if it's a counter order
+  // Determine if it's a counter order - use source field as primary indicator
   const isCounterOrder = (order: Order) => {
-    return order.source === 'counter' || (order.table_number !== null && order.table_number >= 10);
+    return order.source === 'counter';
   };
   const [updating, setUpdating] = useState(false);
 
@@ -203,42 +203,42 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
 
   return (
     <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-4">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Hash className="h-4 w-4 text-gray-500" />
+            <CardTitle className="text-xl flex items-center gap-3 mb-3">
+              <Hash className="h-5 w-5 text-gray-500" />
               Order #{order.id.slice(0, 8)}
             </CardTitle>
-            <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
-              <User className="h-3 w-3" />
-              {order.customer_name}
+            <div className="flex items-center gap-3 mb-2 text-sm text-gray-600">
+              <User className="h-4 w-4" />
+              <span className="font-medium">{order.customer_name}</span>
               {order.customer_phone && (
                 <>
                   <span>•</span>
-                  {order.customer_phone}
+                  <span>{order.customer_phone}</span>
                 </>
               )}
             </div>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-servio-purple">
-              {formatCurrency(amount, venueCurrency)}
-            </div>
             <div className="text-sm text-gray-500">
               {isCounterOrder(order) ? 'Counter' : 'Table'} {order.table_number}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-servio-purple mb-2">
+              {formatCurrency(amount, venueCurrency)}
             </div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         {/* Status Badges */}
-        <div className="flex items-center gap-2 mb-4">
-          <Badge className={getStatusColor(order.order_status)}>
+        <div className="flex items-center gap-3 mb-6">
+          <Badge className={`${getStatusColor(order.order_status)} text-sm font-semibold px-3 py-1.5`}>
             {getStatusIcon(order.order_status)}
-            <span className="ml-1">{order.order_status.replace('_', ' ')}</span>
+            <span className="ml-2">{order.order_status.replace('_', ' ')}</span>
           </Badge>
-          <Badge className={getPaymentStatusColor(order.payment_status)}>
+          <Badge className={`${getPaymentStatusColor(order.payment_status)} text-sm font-semibold px-3 py-1.5`}>
             {order.payment_status === 'paid' || order.payment_status === 'PAID' ? '✅ Paid' :
              order.payment_status === 'unpaid' || order.payment_status === 'UNPAID' ? '❌ Unpaid' :
              order.payment_status === 'till' || order.payment_status === 'TILL' ? '🏪 Till' :
@@ -249,20 +249,20 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
         </div>
 
         {/* Order Items */}
-        <div className="space-y-2 mb-4">
+        <div className="space-y-3 mb-6">
           {order.items.map((item, index) => (
-            <div key={index} className="flex justify-between items-start text-sm">
+            <div key={index} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
               <div className="flex-1">
-                <div className="font-medium">
+                <div className="font-medium text-base">
                   {item.quantity} × {item.item_name}
                 </div>
                 {item.specialInstructions && (
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-sm text-gray-500 mt-1">
                     Note: {item.specialInstructions}
                   </div>
                 )}
               </div>
-              <div className="text-right font-medium">
+              <div className="text-right font-semibold text-base">
                 {formatCurrency(item.price * item.quantity, venueCurrency)}
               </div>
             </div>
@@ -271,14 +271,14 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
 
         {/* Notes */}
         {order.notes && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <div className="text-sm font-medium text-gray-900 mb-1">Special Instructions</div>
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <div className="text-sm font-medium text-gray-900 mb-2">Special Instructions</div>
             <div className="text-sm text-gray-600">{order.notes}</div>
           </div>
         )}
 
         {/* Timestamps */}
-        <div className="text-xs text-gray-500 mb-4">
+        <div className="text-xs text-gray-500 mb-6">
           <div>Created: {new Date(order.created_at).toLocaleString('en-GB')}</div>
           <div>Updated: {new Date(order.updated_at).toLocaleString('en-GB')}</div>
         </div>
