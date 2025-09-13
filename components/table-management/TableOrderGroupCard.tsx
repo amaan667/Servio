@@ -145,11 +145,11 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
         </div>
 
         {/* Status Section */}
-        <div className="flex gap-3 mb-6">
-          <Badge className={`${getStatusColor(overallStatus)} text-sm font-semibold px-4 py-2 rounded-full`}>
+        <div className="flex items-center flex-wrap gap-3 mb-6">
+          <Badge className={`${getStatusColor(overallStatus)} text-sm font-semibold px-4 py-2 rounded-full whitespace-nowrap`}>
             {overallStatus.replace('_', ' ').toLowerCase()}
           </Badge>
-          <Badge className={`${getPaymentStatusColor(overallPaymentStatus)} text-sm font-semibold px-4 py-2 rounded-full`}>
+          <Badge className={`${getPaymentStatusColor(overallPaymentStatus)} text-sm font-semibold px-4 py-2 rounded-full whitespace-nowrap`}>
             {overallPaymentStatus.toLowerCase()}
           </Badge>
         </div>
@@ -223,11 +223,11 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
                   )}
 
                   {/* Status Badges */}
-                  <div className="flex gap-3 mb-4">
-                    <Badge className={`${getStatusColor(order.order_status)} text-sm font-semibold px-3 py-1.5 rounded-full`}>
+                  <div className="flex items-center flex-wrap gap-2 mb-4">
+                    <Badge className={`${getStatusColor(order.order_status)} text-sm font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}>
                       {order.order_status.replace('_', ' ').toLowerCase()}
                     </Badge>
-                    <Badge className={`${getPaymentStatusColor(order.payment_status)} text-sm font-semibold px-3 py-1.5 rounded-full`}>
+                    <Badge className={`${getPaymentStatusColor(order.payment_status)} text-sm font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}>
                       {order.payment_status.toLowerCase()}
                     </Badge>
                   </div>

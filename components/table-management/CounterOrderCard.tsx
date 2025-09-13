@@ -146,11 +146,11 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
         )}
 
         {/* Status Badges */}
-        <div className="flex items-center gap-3 mb-6">
-          <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+        <div className="flex items-center flex-wrap gap-2 mb-6">
+          <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}>
             {order.order_status.replace('_', ' ')}
           </Badge>
-          <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+          <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}>
             {order.payment_status}
           </Badge>
         </div>
