@@ -341,6 +341,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           // No special filtering needed for completed orders
           
           return true;
+        }).map((order: any) => {
+          // Mark all orders not in live orders as PAID and COMPLETED
+          console.log('[LIVE ORDERS DEBUG] Processing earlier today order - marking as PAID and COMPLETED:', order.id);
+          return {
+            ...order,
+            payment_status: 'PAID',
+            order_status: 'COMPLETED' as const
+          };
         });
         
         console.log('[LIVE ORDERS DEBUG] Filtered all today orders (excluding live orders):', {
@@ -350,13 +358,27 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         });
         
         setAllTodayOrders(allTodayFiltered as Order[]);
+        
+        // Update the database for these orders to reflect the status change
+        allTodayFiltered.forEach((order: any) => {
+          updateOrderToCompletedAndPaid(order.id);
+        });
       }
       if (!historyError && historyData) {
-        const history = historyData as Order[];
-        setHistoryOrders(history);
+        // Mark all historical orders as PAID and COMPLETED
+        const processedHistory = (historyData as Order[]).map((order: Order) => {
+          console.log('[LIVE ORDERS DEBUG] Processing historical order - marking as PAID and COMPLETED:', order.id);
+          return {
+            ...order,
+            payment_status: 'PAID',
+            order_status: 'COMPLETED' as const
+          };
+        });
+        
+        setHistoryOrders(processedHistory);
         
         // Group history orders by date
-        const grouped = history.reduce((acc: GroupedHistoryOrders, order) => {
+        const grouped = processedHistory.reduce((acc: GroupedHistoryOrders, order) => {
           const date = new Date(order.created_at).toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
@@ -369,6 +391,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           return acc;
         }, {});
         setGroupedHistoryOrders(grouped);
+        
+        // Update the database for these orders to reflect the status change
+        processedHistory.forEach((order: Order) => {
+          updateOrderToCompletedAndPaid(order.id);
+        });
       }
       // Compute local counts as a robust fallback for badges
       try {
@@ -426,26 +453,46 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               orderCreatedAt >= new Date(todayWindow.startUtcISO) && 
               orderCreatedAt < new Date(todayWindow.endUtcISO);
             
-                      if (isInTodayWindow) {
-            // Only add to all today if it's NOT already in live orders
-            if (!(isLiveOrder && isRecentOrder)) {
-              console.log('[LIVE ORDERS DEBUG] Adding to all today orders - not a live order');
-              setAllTodayOrders(prev => [newOrder, ...prev]);
+            if (isInTodayWindow) {
+              // Only add to all today if it's NOT already in live orders
+              if (!(isLiveOrder && isRecentOrder)) {
+                console.log('[LIVE ORDERS DEBUG] Adding to all today orders - not a live order, marking as PAID and COMPLETED');
+                // Mark orders not in live tab as PAID and COMPLETED
+                const processedOrder = {
+                  ...newOrder,
+                  payment_status: 'PAID',
+                  order_status: 'COMPLETED' as const
+                };
+                setAllTodayOrders(prev => [processedOrder, ...prev]);
+                
+                // Update the order in database to reflect the status change
+                updateOrderToCompletedAndPaid(newOrder.id);
+              } else {
+                setAllTodayOrders(prev => [newOrder, ...prev]);
+              }
+            } else {
+              console.log('[LIVE ORDERS DEBUG] Adding to history orders - not from today, marking as PAID and COMPLETED');
+              // Mark historical orders as PAID and COMPLETED
+              const processedOrder = {
+                ...newOrder,
+                payment_status: 'PAID',
+                order_status: 'COMPLETED' as const
+              };
+              setHistoryOrders(prev => [processedOrder, ...prev]);
+              // Update grouped history
+              const date = new Date(newOrder.created_at).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+              });
+              setGroupedHistoryOrders(prev => ({
+                ...prev,
+                [date]: [processedOrder, ...(prev[date] || [])]
+              }));
+              
+              // Update the order in database to reflect the status change
+              updateOrderToCompletedAndPaid(newOrder.id);
             }
-          } else {
-            console.log('[LIVE ORDERS DEBUG] Adding to history orders - not from today');
-            setHistoryOrders(prev => [newOrder, ...prev]);
-            // Update grouped history
-            const date = new Date(newOrder.created_at).toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric'
-            });
-            setGroupedHistoryOrders(prev => ({
-              ...prev,
-              [date]: [newOrder, ...(prev[date] || [])]
-            }));
-          }
           
           // Refresh the authoritative counts
           refetchCounts();
@@ -487,17 +534,28 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               
               // Add to all today orders if it's from today and not recent
               if (todayWindow && orderCreatedAt >= new Date(todayWindow.startUtcISO) && orderCreatedAt < new Date(todayWindow.endUtcISO)) {
-                console.log('[LIVE ORDERS DEBUG] Adding order to all today orders:', {
+                console.log('[LIVE ORDERS DEBUG] Adding order to all today orders - marking as PAID and COMPLETED:', {
                   orderId: newOrder.id,
                   newStatus: newOrder.order_status
                 });
+                
+                // Mark order as PAID and COMPLETED when moving to "Earlier Today"
+                const processedOrder = {
+                  ...newOrder,
+                  payment_status: 'PAID',
+                  order_status: 'COMPLETED' as const
+                };
+                
                 setAllTodayOrders(prev => {
                   const exists = prev.find(order => order.id === newOrder.id);
                   if (!exists) {
-                    return [newOrder, ...prev];
+                    return [processedOrder, ...prev];
                   }
-                  return prev.map(order => order.id === newOrder.id ? newOrder : order);
+                  return prev.map(order => order.id === newOrder.id ? processedOrder : order);
                 });
+                
+                // Update the order in database to reflect the status change
+                updateOrderToCompletedAndPaid(newOrder.id);
               }
             }
             
@@ -556,8 +614,21 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         
         // Move aged-out or completed orders to all today
         if (movedToAllToday.length > 0) {
-          console.log('[LIVE ORDERS DEBUG] Moving orders from live to all today:', movedToAllToday.length);
-          setAllTodayOrders(prev => [...movedToAllToday, ...prev]);
+          console.log('[LIVE ORDERS DEBUG] Moving orders from live to all today - marking as PAID and COMPLETED:', movedToAllToday.length);
+          
+          // Mark moved orders as PAID and COMPLETED
+          const processedMovedOrders = movedToAllToday.map((order: Order) => ({
+            ...order,
+            payment_status: 'PAID',
+            order_status: 'COMPLETED' as const
+          }));
+          
+          setAllTodayOrders(prev => [...processedMovedOrders, ...prev]);
+          
+          // Update the database for these orders to reflect the status change
+          processedMovedOrders.forEach((order: Order) => {
+            updateOrderToCompletedAndPaid(order.id);
+          });
           
           // Refresh the authoritative counts after moving orders
           refetchCounts();
@@ -590,6 +661,30 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       // Refresh the authoritative counts after status update
       refetchCounts();
+    }
+  };
+
+  // Helper function to update orders to COMPLETED and PAID when they're not in live orders
+  const updateOrderToCompletedAndPaid = async (orderId: string) => {
+    try {
+      console.log('[LIVE ORDERS DEBUG] Updating order to COMPLETED and PAID:', orderId);
+      const { error } = await createClient()
+        .from('orders')
+        .update({ 
+          order_status: 'COMPLETED',
+          payment_status: 'PAID',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .eq('venue_id', venueId);
+
+      if (error) {
+        console.error('[LIVE ORDERS DEBUG] Failed to update order to COMPLETED and PAID:', error);
+      } else {
+        console.log('[LIVE ORDERS DEBUG] Successfully updated order to COMPLETED and PAID:', orderId);
+      }
+    } catch (error) {
+      console.error('[LIVE ORDERS DEBUG] Exception updating order to COMPLETED and PAID:', error);
     }
   };
 
