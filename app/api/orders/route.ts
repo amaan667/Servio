@@ -214,16 +214,15 @@ export async function POST(req: Request) {
     }));
     console.log('[ORDERS POST] normalized safeItems', safeItems);
 
-    // Determine if this is a counter order or table order
-    // Rule: table_number >= 10 = counter order, table_number < 10 = table order
-    const isCounterOrder = table_number !== null && table_number >= 10;
-    const orderSource = body.source || (isCounterOrder ? 'counter' : 'qr');
+    // Use the source provided by the client (determined from URL parameters)
+    // The client already determines this based on whether the QR code URL contains ?table=X or ?counter=X
+    const orderSource = body.source || 'qr'; // Default to 'qr' if not provided
     
     console.log('[ORDERS POST] Order source determination:', {
       table_number,
-      isCounterOrder,
       provided_source: body.source,
-      final_source: orderSource
+      final_source: orderSource,
+      logic: 'Using source from client request (based on QR code URL parameters)'
     });
 
     const payload: OrderPayload = {
@@ -238,7 +237,7 @@ export async function POST(req: Request) {
       order_status: body.order_status || 'PLACED', // Use provided status or default to 'PLACED'
       payment_status: body.payment_status || 'UNPAID', // Use provided status or default to 'UNPAID'
       payment_method: body.payment_method || null,
-      source: orderSource, // Automatically determine based on table number: >= 10 = counter, < 10 = table
+      source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
@@ -304,7 +303,8 @@ export async function POST(req: Request) {
       table_auto_created: tableId !== null, // True if we auto-created a table
       table_id: tableId,
       session_id: (body as any).session_id || null, // Include session_id in response for client-side storage
-      source: (body as any).source || 'qr' // Include source in response for client-side storage
+      source: orderSource, // Include the correctly determined source
+      display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}` // Include display name for UI
     };
     console.log('[ORDERS POST] ===== ORDER SUBMISSION COMPLETED SUCCESSFULLY =====');
     console.log('[ORDERS POST] Final response:', JSON.stringify(response, null, 2));
