@@ -9,7 +9,10 @@ import {
   Receipt,
   User,
   QrCode,
-  X
+  X,
+  CreditCard,
+  Split,
+  CheckCircle
 } from 'lucide-react';
 import {
   Tooltip,
@@ -29,6 +32,7 @@ interface TableOrderCardProps {
 export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderCardProps) {
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const handleRemoveOrder = async () => {
     try {
@@ -88,6 +92,36 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
     // Use the standardized pricing calculation
     const total = calculateOrderTotal({ total_amount: order.total_amount, items: order.items });
     return formatPrice(total);
+  };
+
+  const handlePayment = async (paymentMethod: 'till' | 'card') => {
+    try {
+      setIsProcessingPayment(true);
+      
+      const response = await fetch('/api/orders/payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          orderId: order.id,
+          venue_id: venueId,
+          payment_method: paymentMethod,
+          payment_status: 'PAID'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process payment');
+      }
+
+      onActionComplete?.();
+    } catch (error) {
+      console.error('Error processing payment:', error);
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   return (
@@ -183,7 +217,67 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
           </div>
         )}
 
-        {/* Action buttons removed - order management is now handled on the live orders page */}
+        {/* Payment Actions */}
+        {order.payment_status === 'UNPAID' && (
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">Payment Required:</span> £{getTotalAmount()}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePayment('till')}
+                  disabled={isProcessingPayment}
+                  className="text-green-600 border-green-200 hover:bg-green-50"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Till Payment
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handlePayment('card')}
+                  disabled={isProcessingPayment}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <CreditCard className="h-4 w-4 mr-1" />
+                  Card Payment
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {/* TODO: Implement bill splitting */}}
+                  disabled={isProcessingPayment}
+                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                >
+                  <Split className="h-4 w-4 mr-1" />
+                  Split Bill
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Order Complete Actions */}
+        {order.payment_status === 'PAID' && order.order_status !== 'COMPLETED' && (
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-green-600">
+                <span className="font-medium">Payment Complete</span>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => handlePayment('till')} // Reuse payment function to mark as completed
+                disabled={isProcessingPayment}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Mark Complete
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

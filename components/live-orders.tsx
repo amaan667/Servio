@@ -78,6 +78,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const [recentlyUpdatedOrders, setRecentlyUpdatedOrders] = useState<Set<string>>(new Set());
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
+  // Determine if it's a counter order
+  const isCounterOrder = (order: OrderWithItems) => {
+    return order.source === 'counter' || (order.table_number !== null && order.table_number >= 10);
+  };
+
   // Add comprehensive logging function
   const logTabState = useCallback(() => {
     console.log("🔍 [TAB STATE DEBUG] Current tab state:", {
@@ -1336,7 +1341,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-600">
-                          {order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`}
+                          {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number}`}
                         </p>
                         <p className="text-lg font-bold text-green-600">
                           £{(() => {
@@ -1355,33 +1360,64 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                       </div>
                     </div>
 
-                    <div className="mb-3">
-                      <p className="text-sm text-gray-600">
-                        Customer: {order.customer_name}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Placed: {new Date(order.created_at).toLocaleString()}
-                      </p>
+                    <div className="mb-3 grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">
+                          <span className="font-medium">Customer:</span> {order.customer_name}
+                        </p>
+                        {order.customer_phone && (
+                          <p className="text-gray-600">
+                            <span className="font-medium">Phone:</span> {order.customer_phone}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-gray-600">
+                          <span className="font-medium">Placed:</span> {new Date(order.created_at).toLocaleTimeString()}
+                        </p>
+                        <p className="text-gray-600">
+                          <span className="font-medium">Date:</span> {new Date(order.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
 
                     {order.items && order.items.length > 0 && (
                       <div className="mb-4">
-                        <h4 className="font-medium mb-2">Items:</h4>
-                        <div className="space-y-1">
+                        <h4 className="font-medium mb-2 text-gray-800">Order Items:</h4>
+                        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
                           {order.items.map((item, index) => (
                             <div
                               key={index}
-                              className="flex justify-between text-sm"
+                              className="flex justify-between items-start text-sm border-b border-gray-200 pb-2 last:border-b-0"
                             >
-                              <span>
-                                {item.quantity}x {item.item_name}
-                              </span>
-                              <span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-800">
+                                    {item.quantity}x {item.item_name}
+                                  </span>
+                                  <span className="text-gray-500">
+                                    @ £{item.price.toFixed(2)} each
+                                  </span>
+                                </div>
+                                {item.specialInstructions && (
+                                  <p className="text-xs text-orange-600 mt-1 italic">
+                                    Note: {item.specialInstructions}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="font-semibold text-gray-800 ml-2">
                                 £{(item.price * item.quantity).toFixed(2)}
                               </span>
                             </div>
                           ))}
                         </div>
+                        {order.notes && (
+                          <div className="mt-2 p-2 bg-yellow-50 rounded border-l-4 border-yellow-400">
+                            <p className="text-sm text-yellow-800">
+                              <span className="font-medium">Order Notes:</span> {order.notes}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
 

@@ -144,6 +144,10 @@ const ORDER_STATUSES = {
 };
 
 export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecycleProps) {
+  // Determine if it's a counter order
+  const isCounterOrder = (order: Order) => {
+    return order.source === 'counter' || (order.table_number !== null && order.table_number >= 10);
+  };
   const [updating, setUpdating] = useState(false);
   const [autoTransitionTimer, setAutoTransitionTimer] = useState<NodeJS.Timeout | null>(null);
   const [timeInCurrentStatus, setTimeInCurrentStatus] = useState(0);
@@ -488,7 +492,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
           <div className="text-sm font-medium">Order Details</div>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-600">{order.source === 'counter' ? 'Counter' : 'Table'}:</span>
+              <span className="text-gray-600">{isCounterOrder(order) ? 'Counter' : 'Table'}:</span>
               <span className="ml-2 font-medium">{order.table_number}</span>
             </div>
             <div>

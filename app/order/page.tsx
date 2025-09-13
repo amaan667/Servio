@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard } from "lucide-react";
+import { Loader2, ShoppingCart, Plus, Minus, X, CreditCard, Table, Receipt } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
 import React from "react";
@@ -422,6 +422,9 @@ export default function CustomerOrderPage() {
         
         // For counter orders, use counter number; for table orders, use table number
         const safeTable = isCounterOrder ? (parseInt(counterNumber) || 1) : (parseInt(tableNumber) || 1);
+        
+        // Determine payment mode based on source
+        const paymentMode = isCounterOrder ? 'pay_at_till' : 'online';
         console.log('[ORDER SUBMIT] Final safeTable value:', safeTable);
         console.log('[ORDER SUBMIT] Order type:', orderType);
         console.log('[ORDER SUBMIT] Is counter order:', isCounterOrder);
@@ -491,6 +494,7 @@ export default function CustomerOrderPage() {
       const orderData = {
         venue_id: venueSlug,
         table_number: safeTable,
+        table_id: null, // Will be set by API based on table lookup
         counter_number: counterNumber,
         order_type: orderType,
         order_location: orderLocation,
@@ -510,6 +514,7 @@ export default function CustomerOrderPage() {
           .join("; "),
         order_status: 'PLACED',
         payment_status: 'UNPAID', // Start as unpaid
+        payment_mode: paymentMode, // New field for payment mode
         payment_method: null, // Will be updated based on payment choice
         session_id: sessionId,
         source: orderType === 'counter' ? 'counter' : 'qr',
@@ -700,14 +705,34 @@ export default function CustomerOrderPage() {
                 />
               </div>
               
-              {/* Business Name and Table */}
+              {/* Business Name and Location */}
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">
                   {isDemo ? "Servio Café" : venueName}
                 </h1>
-                <p className="text-sm sm:text-base text-gray-600">
-                  {isCounterOrder ? `Counter ${counterNumber}` : `Table ${tableNumber}`}
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  {isCounterOrder ? (
+                    <>
+                      <Receipt className="h-4 w-4 text-orange-600" />
+                      <span className="text-sm sm:text-base text-orange-600 font-medium">
+                        Counter {counterNumber}
+                      </span>
+                      <Badge variant="secondary" className="bg-orange-50 text-orange-700 text-xs">
+                        Counter Order
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <Table className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm sm:text-base text-blue-600 font-medium">
+                        Table {tableNumber}
+                      </span>
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 text-xs">
+                        Table Order
+                      </Badge>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -785,14 +810,14 @@ export default function CustomerOrderPage() {
                                   </div>
                                   
                                   {/* Add to Cart Button */}
-                                  <div className="flex justify-center sm:justify-end">
+                                  <div className="flex justify-end">
                                     <Button
                                       onClick={() => addToCart(item)}
                                       size="sm"
-                                      className="min-h-[44px] min-w-[44px] px-4 sm:px-3"
+                                      className="min-h-[44px] min-w-[44px] px-4"
                                     >
                                       <Plus className="h-4 w-4" />
-                                      <span className="ml-2 sm:hidden">Add</span>
+                                      <span className="ml-2">Add</span>
                                     </Button>
                                   </div>
                                 </div>

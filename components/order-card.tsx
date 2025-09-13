@@ -41,6 +41,10 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardProps) {
+  // Determine if it's a counter order
+  const isCounterOrder = (order: Order) => {
+    return order.source === 'counter' || (order.table_number !== null && order.table_number >= 10);
+  };
   const [updating, setUpdating] = useState(false);
 
   const getStatusIcon = (status: string) => {
@@ -222,7 +226,7 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
               {formatCurrency(amount, venueCurrency)}
             </div>
             <div className="text-sm text-gray-500">
-              {order.source === 'counter' ? 'Counter' : 'Table'} {order.table_number}
+              {isCounterOrder(order) ? 'Counter' : 'Table'} {order.table_number}
             </div>
           </div>
         </div>

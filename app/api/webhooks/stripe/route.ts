@@ -1,240 +1,165 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import Stripe from 'stripe';
-import { ENV } from '@/lib/env';
 
-const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-08-27.basil',
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-12-18.acacia',
 });
 
-const webhookSecret = ENV.STRIPE_WEBHOOK_SECRET;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(req: NextRequest) {
-  const body = await req.text();
-  const signature = req.headers.get('stripe-signature')!;
-
-  let event: Stripe.Event;
-
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret || '');
-  } catch (err) {
-    console.error('[STRIPE WEBHOOK] Signature verification failed:', err);
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-  }
+    const body = await req.text();
+    const signature = req.headers.get('stripe-signature');
 
-  console.log('[STRIPE WEBHOOK] Received event:', event.type, event.id);
+    if (!signature) {
+      console.error('[STRIPE WEBHOOK] No signature provided');
+      return NextResponse.json({ error: 'No signature' }, { status: 400 });
+    }
 
-  try {
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    } catch (err) {
+      console.error('[STRIPE WEBHOOK] Webhook signature verification failed:', err);
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+    }
+
+    console.log('[STRIPE WEBHOOK] Received event:', event.type);
+
+    const supabase = await createClient();
+
     switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session, supabase);
+        break;
+
       case 'payment_intent.succeeded':
-        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent, supabase);
         break;
-      
+
       case 'payment_intent.payment_failed':
-        await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
+        await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent, supabase);
         break;
-      
-      case 'payment_intent.canceled':
-        await handlePaymentIntentCanceled(event.data.object as Stripe.PaymentIntent);
-        break;
-      
-      case 'payment_method.attached':
-        await handlePaymentMethodAttached(event.data.object as Stripe.PaymentMethod);
-        break;
-      
-      case 'customer.created':
-        await handleCustomerCreated(event.data.object as Stripe.Customer);
-        break;
-      
-      case 'customer.updated':
-        await handleCustomerUpdated(event.data.object as Stripe.Customer);
-        break;
-      
+
       default:
         console.log(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('[STRIPE WEBHOOK] Handler error:', error);
-    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
+    console.error('[STRIPE WEBHOOK] Unexpected error:', error);
+    return NextResponse.json({ error: 'Webhook error' }, { status: 500 });
   }
 }
 
-async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  console.log('[STRIPE WEBHOOK] Payment succeeded:', {
-    id: paymentIntent.id,
-    amount: paymentIntent.amount,
-    currency: paymentIntent.currency,
-    metadata: paymentIntent.metadata
-  });
-
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, supabase: any) {
   try {
-    // Extract order information from metadata
-    const { cart_id, venue_id, table_number, customer_name, customer_phone, items_summary, total_amount } = paymentIntent.metadata;
-    
-    if (!cart_id || !venue_id) {
-      console.error('[STRIPE WEBHOOK] Missing required metadata for order creation');
-      return;
-    }
+    console.log('[STRIPE WEBHOOK] Processing checkout.session.completed:', session.id);
 
-    // Step 1: Create the order first (unpaid)
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
-
-    // Parse items from metadata (simplified for now)
-    const items = items_summary ? items_summary.split(',').map((item: string, index: number) => ({
-      menu_item_id: `item_${index}`,
-      quantity: 1,
-      price: Math.round(parseFloat(total_amount) / items_summary.split(',').length),
-      item_name: item.trim()
-    })) : [];
-
-    const orderData = {
-      venue_id: venue_id,
-      table_number: parseInt(table_number) || 1,
-      customer_name: customer_name || 'Customer',
-      customer_phone: customer_phone || '',
-      items: items,
-      total_amount: parseFloat(total_amount) / 100, // Convert from pence to pounds
-      order_status: 'PLACED',
-      payment_status: 'UNPAID', // Start as unpaid
-      payment_method: 'online',
-      payment_intent_id: paymentIntent.id
-    };
-
-    console.log('[STRIPE WEBHOOK] Creating order:', orderData);
-
+    // Find order by stripe_session_id
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert(orderData)
-      .select()
+      .select('id, venue_id, payment_mode')
+      .eq('stripe_session_id', session.id)
       .single();
 
     if (orderError) {
-      console.error('[STRIPE WEBHOOK] Failed to create order:', orderError);
+      console.error('[STRIPE WEBHOOK] Order not found for session:', session.id);
       return;
     }
 
-    console.log('[STRIPE WEBHOOK] Order created successfully:', order);
-
-    // Step 2: Update payment status to paid
+    // Update order payment status
     const { error: updateError } = await supabase
       .from('orders')
-      .update({ 
-        payment_status: 'paid',
-        payment_method: 'online',
-        updated_at: new Date().toISOString()
+      .update({
+        payment_status: 'PAID',
+        payment_method: 'stripe',
+        stripe_payment_intent_id: session.payment_intent as string
       })
       .eq('id', order.id);
 
     if (updateError) {
-      console.error('[STRIPE WEBHOOK] Failed to update payment status:', updateError);
-      // Order exists but payment status update failed - this is recoverable
-    } else {
-      console.log('[STRIPE WEBHOOK] Payment status updated to paid successfully');
-    }
-    
-  } catch (error) {
-    console.error('[STRIPE WEBHOOK] Error processing successful payment:', error);
-  }
-}
-
-async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
-  console.log('[STRIPE WEBHOOK] Payment failed:', {
-    id: paymentIntent.id,
-    amount: paymentIntent.amount,
-    currency: paymentIntent.currency,
-    last_payment_error: paymentIntent.last_payment_error
-  });
-
-  try {
-    const { cart_id, venue_id, customer_name, customer_phone } = paymentIntent.metadata;
-    
-    if (!cart_id || !venue_id) {
-      console.error('[STRIPE WEBHOOK] Missing required metadata for failed payment handling');
+      console.error('[STRIPE WEBHOOK] Error updating order:', updateError);
       return;
     }
 
-    // Update order status to failed
-    console.log('[STRIPE WEBHOOK] Order should be marked as payment failed:', {
-      cartId: cart_id,
-      venueId: venue_id,
-      customerName: customer_name,
-      customerPhone: customer_phone,
-      paymentIntentId: paymentIntent.id,
-      error: paymentIntent.last_payment_error?.message
-    });
-
-    // TODO: Implement database update
-    // await updateOrderStatus(cart_id, 'payment_failed', paymentIntent.id);
-    
-    // TODO: Send failure notification
-    // await sendPaymentFailureNotification(customer_phone, orderDetails);
-    
+    console.log('[STRIPE WEBHOOK] Order payment updated successfully:', order.id);
   } catch (error) {
-    console.error('[STRIPE WEBHOOK] Error processing failed payment:', error);
+    console.error('[STRIPE WEBHOOK] Error handling checkout session completed:', error);
   }
 }
 
-async function handlePaymentIntentCanceled(paymentIntent: Stripe.PaymentIntent) {
-  console.log('[STRIPE WEBHOOK] Payment canceled:', {
-    id: paymentIntent.id,
-    amount: paymentIntent.amount,
-    currency: paymentIntent.currency,
-    cancellation_reason: paymentIntent.cancellation_reason
-  });
-
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent, supabase: any) {
   try {
-    const { cart_id, venue_id } = paymentIntent.metadata;
-    
-    if (!cart_id || !venue_id) {
-      console.error('[STRIPE WEBHOOK] Missing required metadata for canceled payment handling');
+    console.log('[STRIPE WEBHOOK] Processing payment_intent.succeeded:', paymentIntent.id);
+
+    // Find order by stripe_payment_intent_id
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id, venue_id')
+      .eq('stripe_payment_intent_id', paymentIntent.id)
+      .single();
+
+    if (orderError) {
+      console.error('[STRIPE WEBHOOK] Order not found for payment intent:', paymentIntent.id);
       return;
     }
 
-    // Update order status to canceled
-    console.log('[STRIPE WEBHOOK] Order should be marked as canceled:', {
-      cartId: cart_id,
-      venueId: venue_id,
-      paymentIntentId: paymentIntent.id,
-      reason: paymentIntent.cancellation_reason
-    });
+    // Update order payment status
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({
+        payment_status: 'PAID',
+        payment_method: 'stripe'
+      })
+      .eq('id', order.id);
 
-    // TODO: Implement database update
-    // await updateOrderStatus(cart_id, 'canceled', paymentIntent.id);
-    
+    if (updateError) {
+      console.error('[STRIPE WEBHOOK] Error updating order:', updateError);
+      return;
+    }
+
+    console.log('[STRIPE WEBHOOK] Order payment updated successfully:', order.id);
   } catch (error) {
-    console.error('[STRIPE WEBHOOK] Error processing canceled payment:', error);
+    console.error('[STRIPE WEBHOOK] Error handling payment intent succeeded:', error);
   }
 }
 
-async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) {
-  console.log('[STRIPE WEBHOOK] Payment method attached:', {
-    id: paymentMethod.id,
-    type: paymentMethod.type,
-    customer: paymentMethod.customer
-  });
+async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent, supabase: any) {
+  try {
+    console.log('[STRIPE WEBHOOK] Processing payment_intent.payment_failed:', paymentIntent.id);
 
-  // This is useful for storing customer payment methods for future use
-  // TODO: Store payment method in customer profile
-}
+    // Find order by stripe_payment_intent_id
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id, venue_id')
+      .eq('stripe_payment_intent_id', paymentIntent.id)
+      .single();
 
-async function handleCustomerCreated(customer: Stripe.Customer) {
-  console.log('[STRIPE WEBHOOK] Customer created:', {
-    id: customer.id,
-    email: customer.email,
-    name: customer.name
-  });
+    if (orderError) {
+      console.error('[STRIPE WEBHOOK] Order not found for payment intent:', paymentIntent.id);
+      return;
+    }
 
-  // TODO: Sync customer data with your database
-}
+    // Update order payment status to failed
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({
+        payment_status: 'FAILED',
+        payment_method: 'stripe'
+      })
+      .eq('id', order.id);
 
-async function handleCustomerUpdated(customer: Stripe.Customer) {
-  console.log('[STRIPE WEBHOOK] Customer updated:', {
-    id: customer.id,
-    email: customer.email,
-    name: customer.name
-  });
+    if (updateError) {
+      console.error('[STRIPE WEBHOOK] Error updating order:', updateError);
+      return;
+    }
 
-  // TODO: Update customer data in your database
+    console.log('[STRIPE WEBHOOK] Order payment marked as failed:', order.id);
+  } catch (error) {
+    console.error('[STRIPE WEBHOOK] Error handling payment intent failed:', error);
+  }
 }

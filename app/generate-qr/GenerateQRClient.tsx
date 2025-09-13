@@ -138,10 +138,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   // Get current selection based on QR type
   const currentSelection = qrType === 'table' ? selectedTables : selectedCounters;
   
-  // Ensure we always have a valid order URL
+  // Ensure we always have a valid order URL with proper source parameter
   const orderUrl = currentSelection.length > 0 
-    ? `${siteOrigin()}/order?venue=${venueId}&${qrType}=${currentSelection[0]}`
-    : `${siteOrigin()}/order?venue=${venueId}&table=1`;
+    ? `${siteOrigin()}/order?venue=${venueId}&${qrType}=${currentSelection[0]}&source=${qrType}`
+    : `${siteOrigin()}/order?venue=${venueId}&table=1&source=table`;
 
   console.log('🔍 [QR CLIENT] Order URL:', orderUrl);
   console.log('🔍 [QR CLIENT] QR Type:', qrType);

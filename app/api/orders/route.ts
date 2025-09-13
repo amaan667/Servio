@@ -22,6 +22,7 @@ type OrderPayload = {
   notes?: string | null;
   order_status?: "PLACED" | "ACCEPTED" | "IN_PREP" | "READY" | "SERVING" | "COMPLETED" | "CANCELLED" | "REFUNDED";
   payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
+  payment_mode?: "online" | "pay_later" | "pay_at_till";
   payment_method?: "demo" | "stripe" | "till" | null;
   source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
   scheduled_for?: string | null;
@@ -137,7 +138,7 @@ export async function POST(req: Request) {
         .from('tables')
         .select('id, label')
         .eq('venue_id', body.venue_id)
-        .or(`id.eq.${body.table_number},label.eq.${body.table_number}`)
+        .eq('label', body.table_number.toString())
         .eq('is_active', true)
         .maybeSingle();
 
@@ -236,6 +237,7 @@ export async function POST(req: Request) {
       notes: body.notes ?? null,
       order_status: body.order_status || 'PLACED', // Use provided status or default to 'PLACED'
       payment_status: body.payment_status || 'UNPAID', // Use provided status or default to 'UNPAID'
+      payment_mode: body.payment_mode || 'online', // New field for payment mode
       payment_method: body.payment_method || null,
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
     };
