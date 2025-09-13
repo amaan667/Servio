@@ -117,6 +117,33 @@ export async function POST() {
       }
     }
     
+    // 5. Fix order source classification
+    console.log('📋 Fixing order source classification...');
+    const { error: orderSourceError } = await supabase.rpc('exec_sql', {
+      sql: `ALTER TABLE orders 
+            ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'qr' CHECK (source IN ('qr', 'counter'));`
+    });
+    
+    if (orderSourceError) {
+      console.log('⚠️  Order source column might already exist:', orderSourceError.message);
+    } else {
+      console.log('✅ Order source column ensured');
+    }
+    
+    // Fix orders that are incorrectly marked as counter orders
+    const { error: orderUpdateError } = await supabase.rpc('exec_sql', {
+      sql: `UPDATE orders 
+            SET source = 'qr' 
+            WHERE source = 'counter' 
+            AND created_at >= NOW() - INTERVAL '24 hours';`
+    });
+    
+    if (orderUpdateError) {
+      console.log('⚠️  Error updating order source:', orderUpdateError.message);
+    } else {
+      console.log('✅ Order source classification fixed');
+    }
+    
     return NextResponse.json({
       success: true,
       message: 'Emergency fix applied successfully',
@@ -124,7 +151,8 @@ export async function POST() {
         columnAdded: !columnError,
         missingStatuses: missingStatuses,
         dataUpdated: !updateError,
-        tablesProcessed: tables?.length || 0
+        tablesProcessed: tables?.length || 0,
+        orderSourceFixed: !orderUpdateError
       }
     });
     
