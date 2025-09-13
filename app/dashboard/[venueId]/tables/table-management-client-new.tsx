@@ -115,7 +115,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         
         // Close modal and show success message
         setShowResetModal(false);
-        alert(`Daily reset completed successfully!\n\nSummary:\n- Completed orders: ${result.summary.completedOrders}\n- Canceled reservations: ${result.summary.canceledReservations}\n- Deleted tables: ${result.summary.deletedTables}`);
+        alert(`Reset completed successfully!\n\nSummary:\n- Completed orders: ${result.summary.completedOrders}\n- Canceled reservations: ${result.summary.canceledReservations}\n- Deleted tables: ${result.summary.deletedTables}`);
       } else {
         console.error('🔄 [MANUAL RESET] Reset failed:', result);
         alert(`Reset failed: ${result.error}`);
@@ -331,7 +331,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               ) : (
                 <CheckCircle2 className="h-4 w-4 mr-2" />
               )}
-              {isResetting ? 'Resetting...' : 'Daily Reset'}
+              {isResetting ? 'Resetting...' : 'Reset'}
             </Button>
             <Button variant="outline" size="sm">
               <HelpCircle className="h-4 w-4 mr-2" />
@@ -687,7 +687,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         </div>
       )}
 
-      {/* Daily Reset Confirmation Modal */}
+      {/* Reset Confirmation Modal */}
       <DailyResetModal
         isOpen={showResetModal}
         onClose={() => setShowResetModal(false)}

@@ -106,7 +106,7 @@ export function DailyResetSettings({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
-          Daily Reset Settings
+          Reset Settings
         </CardTitle>
         <CardDescription>
           Configure when the automatic daily reset should run for {venueName}.
@@ -191,7 +191,7 @@ export function DailyResetSettings({
           </ul>
           <p className="mt-2">
             The system will automatically reset within 5 minutes of your chosen time.
-            You can also use the manual "Daily Reset" button anytime for immediate reset.
+            You can also use the manual "Reset" button anytime for immediate reset.
           </p>
         </div>
       </CardContent>

@@ -48,10 +48,10 @@ export async function DELETE(request: NextRequest) {
     let ordersError: any = null;
     
     try {
-      // Check for orders by both table_number and table_id (if it exists)
+      // Check for orders by table_number
       const ordersQuery = supabase
         .from('orders')
-        .select('id, table_number, table_id, order_status')
+        .select('id, table_number, order_status')
         .eq('venue_id', venueId)
         .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
@@ -63,23 +63,6 @@ export async function DELETE(request: NextRequest) {
       const ordersResult = await ordersQuery;
       activeOrders = ordersResult.data || [];
       ordersError = ordersResult.error;
-      
-      // Also check by table_id if it exists
-      if (!ordersError && tableId) {
-        const ordersByTableIdResult = await supabase
-          .from('orders')
-          .select('id, table_number, table_id, order_status')
-          .eq('venue_id', venueId)
-          .eq('table_id', tableId)
-          .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
-        
-        if (!ordersByTableIdResult.error && ordersByTableIdResult.data) {
-          // Merge results and remove duplicates
-          const existingIds = new Set(activeOrders.map(o => o.id));
-          const newOrders = ordersByTableIdResult.data.filter(o => !existingIds.has(o.id));
-          activeOrders = [...activeOrders, ...newOrders];
-        }
-      }
       
       console.log('🔍 [API] Active orders check result:', { 
         activeOrders, 
