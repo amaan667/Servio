@@ -1334,7 +1334,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-600">
-                          Table {order.table_number}
+                          {order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`}
                         </p>
                         <p className="text-lg font-bold text-green-600">
                           £{(() => {
