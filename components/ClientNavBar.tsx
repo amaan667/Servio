@@ -154,7 +154,7 @@ export default function ClientNavBar() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44 2xl:h-48 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-32 sm:h-40 md:h-48 lg:h-56 xl:h-64 2xl:h-72 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                 priority
               />
             </Link>

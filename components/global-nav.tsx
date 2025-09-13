@@ -147,7 +147,7 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-24 sm:h-28 md:h-32 lg:h-36 xl:h-40 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-32 sm:h-40 md:h-48 lg:h-56 xl:h-64 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>

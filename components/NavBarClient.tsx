@@ -38,7 +38,7 @@ export default function NavBarClient() {
             width={800}
             height={250}
             priority
-            className="h-36 sm:h-42 md:h-48 lg:h-54 xl:h-60 w-auto hover:opacity-80 transition-opacity"
+            className="h-32 sm:h-40 md:h-48 lg:h-56 xl:h-64 w-auto hover:opacity-80 transition-opacity"
           />
         </Link>
       </div>
