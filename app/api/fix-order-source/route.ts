@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       console.error('[FIX ORDER SOURCE] Update error:', updateError);
       return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
     } else {
-      console.log(`[FIX ORDER SOURCE] ✓ Updated ${updateData?.length || 0} orders`);
+      console.log(`[FIX ORDER SOURCE] ✓ Updated orders successfully`);
     }
 
     // Step 3: Verify the fix
