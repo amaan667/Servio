@@ -27,7 +27,7 @@ UPDATE orders SET payment_mode = 'pay_later' WHERE payment_status = 'UNPAID' AND
 
 CREATE TABLE IF NOT EXISTS table_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(venue_id),
+  venue_id TEXT NOT NULL REFERENCES venues(venue_id),
   table_id UUID NOT NULL REFERENCES tables(id),
   server_id UUID REFERENCES auth.users(id),
   opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -51,7 +51,7 @@ CREATE INDEX IF NOT EXISTS idx_table_sessions_opened_at ON table_sessions(opened
 
 CREATE TABLE IF NOT EXISTS counters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(venue_id),
+  venue_id TEXT NOT NULL REFERENCES venues(venue_id),
   label VARCHAR(50) NOT NULL,
   area VARCHAR(50),
   is_active BOOLEAN DEFAULT true,
@@ -70,7 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_counters_active ON counters(is_active);
 
 CREATE TABLE IF NOT EXISTS counter_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(venue_id),
+  venue_id TEXT NOT NULL REFERENCES venues(venue_id),
   counter_id UUID NOT NULL REFERENCES counters(id),
   server_id UUID REFERENCES auth.users(id),
   opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -92,7 +92,7 @@ CREATE INDEX IF NOT EXISTS idx_counter_sessions_status ON counter_sessions(statu
 
 CREATE TABLE IF NOT EXISTS bill_splits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(venue_id),
+  venue_id TEXT NOT NULL REFERENCES venues(venue_id),
   table_session_id UUID REFERENCES table_sessions(id),
   counter_session_id UUID REFERENCES counter_sessions(id),
   split_number INTEGER NOT NULL,
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS order_bill_splits (
 
 CREATE TABLE IF NOT EXISTS service_charges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id UUID NOT NULL REFERENCES venues(venue_id),
+  venue_id TEXT NOT NULL REFERENCES venues(venue_id),
   table_session_id UUID REFERENCES table_sessions(id),
   counter_session_id UUID REFERENCES counter_sessions(id),
   charge_type VARCHAR(20) NOT NULL CHECK (charge_type IN ('SERVICE_CHARGE', 'DISCOUNT', 'COMP', 'VOID')),
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS service_charges (
 -- ========================================
 
 -- Function to get table status with order counts and totals
-CREATE OR REPLACE FUNCTION get_table_status(p_venue_id UUID)
+CREATE OR REPLACE FUNCTION get_table_status(p_venue_id TEXT)
 RETURNS TABLE (
   table_id UUID,
   table_label VARCHAR,
@@ -235,7 +235,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to get counter status
-CREATE OR REPLACE FUNCTION get_counter_status(p_venue_id UUID)
+CREATE OR REPLACE FUNCTION get_counter_status(p_venue_id TEXT)
 RETURNS TABLE (
   counter_id UUID,
   counter_label VARCHAR,
@@ -315,18 +315,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_table_sessions_updated_at ON table_sessions;
 CREATE TRIGGER update_table_sessions_updated_at 
   BEFORE UPDATE ON table_sessions 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_counters_updated_at ON counters;
 CREATE TRIGGER update_counters_updated_at 
   BEFORE UPDATE ON counters 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_counter_sessions_updated_at ON counter_sessions;
 CREATE TRIGGER update_counter_sessions_updated_at 
   BEFORE UPDATE ON counter_sessions 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_bill_splits_updated_at ON bill_splits;
 CREATE TRIGGER update_bill_splits_updated_at 
   BEFORE UPDATE ON bill_splits 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
