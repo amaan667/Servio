@@ -31,6 +31,8 @@ interface OrderWithItems {
   id: string;
   venue_id: string;
   table_number: number;
+  session_id?: string | null; // Guest session token
+  source?: "qr" | "counter"; // Order source
   customer_name: string;
   customer_phone?: string;
   customer_email?: string;
@@ -252,16 +254,32 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             reason: 'active status within 30 minutes'
           });
         } else {
-          console.log("LIVE_ORDERS: Order excluded from live tab", {
+          console.log("LIVE_ORDERS: Order excluded from live tab - marking as PAID and COMPLETED", {
             id: order.id,
             status: order.order_status,
             created: order.created_at,
             reason: 'inactive status or older than 30 minutes'
           });
+          // Update non-live orders to be PAID and COMPLETED
+          updateOrderToCompletedAndPaid(order.id);
         }
         
         return isActive;
       }) || [];
+
+      // Process all non-live orders to mark them as PAID and COMPLETED
+      const nonLiveOrders = allVenueOrders?.filter((order: any) => {
+        const orderCreatedAt = new Date(order.created_at);
+        const isActive = ACTIVE_STATUSES.includes(order.order_status) && 
+                        orderCreatedAt >= new Date(thirtyMinutesAgo);
+        return !isActive;
+      }) || [];
+
+      // Mark non-live orders as PAID and COMPLETED in the UI
+      nonLiveOrders.forEach((order: any) => {
+        order.payment_status = 'PAID';
+        order.order_status = 'COMPLETED';
+      });
 
       console.log("LIVE_ORDERS: Live orders filtering results", {
         totalOrders: allVenueOrders?.length || 0,
@@ -763,8 +781,6 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
               customer: newOrder.customer_name
             });
             
-            setAllOrders(prev => [newOrder, ...prev]);
-            
             // Check if it should be in live orders
             const orderCreatedAt = new Date(newOrder.created_at);
             const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
@@ -774,6 +790,19 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             if (isActive) {
               console.log("LIVE_ORDERS: Adding new order to live orders list");
               setOrders(prev => [newOrder, ...prev]);
+              setAllOrders(prev => [newOrder, ...prev]);
+            } else {
+              console.log("LIVE_ORDERS: Adding new order to non-live orders - marking as PAID and COMPLETED");
+              // Mark orders not in live orders as PAID and COMPLETED
+              const processedOrder = {
+                ...newOrder,
+                payment_status: 'PAID',
+                order_status: 'COMPLETED'
+              };
+              setAllOrders(prev => [processedOrder, ...prev]);
+              
+              // Update the order in database to reflect the status change
+              updateOrderToCompletedAndPaid(newOrder.id);
             }
             
             // Trigger a custom event to notify other components
@@ -932,6 +961,32 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     } finally {
       setUpdating(null);
       setIsUpdatingOrder(false);
+    }
+  };
+
+  // Helper function to update orders to COMPLETED and PAID when they're not in live orders
+  const updateOrderToCompletedAndPaid = async (orderId: string) => {
+    try {
+      console.log("LIVE_ORDERS: Updating order to COMPLETED and PAID:", orderId);
+      const supabase = createClient();
+      if (!supabase) return;
+
+      const { error } = await supabase
+        .from("orders")
+        .update({ 
+          order_status: 'COMPLETED',
+          payment_status: 'PAID',
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", orderId);
+
+      if (error) {
+        console.error("LIVE_ORDERS: Failed to update order to COMPLETED and PAID:", error);
+      } else {
+        console.log("LIVE_ORDERS: Successfully updated order to COMPLETED and PAID:", orderId);
+      }
+    } catch (error) {
+      console.error("LIVE_ORDERS: Exception updating order to COMPLETED and PAID:", error);
     }
   };
 
@@ -1281,7 +1336,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-600">
-                          Table {order.table_number}
+                          {order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`}
                         </p>
                         <p className="text-lg font-bold text-green-600">
                           £{(() => {

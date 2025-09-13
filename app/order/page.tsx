@@ -420,8 +420,12 @@ export default function CustomerOrderPage() {
         console.log('[ORDER SUBMIT] parseInt(tableNumber):', parseInt(tableNumber));
         console.log('[ORDER SUBMIT] isNaN(parseInt(tableNumber)):', isNaN(parseInt(tableNumber)));
         
-        const safeTable = parseInt(tableNumber) || 1;
+        // For counter orders, use counter number; for table orders, use table number
+        const safeTable = isCounterOrder ? (parseInt(counterNumber) || 1) : (parseInt(tableNumber) || 1);
         console.log('[ORDER SUBMIT] Final safeTable value:', safeTable);
+        console.log('[ORDER SUBMIT] Order type:', orderType);
+        console.log('[ORDER SUBMIT] Is counter order:', isCounterOrder);
+        console.log('[ORDER SUBMIT] Counter number:', counterNumber);
         console.log('[ORDER SUBMIT] ===== END TABLE NUMBER DEBUG =====');
 
       // For demo orders, redirect to checkout with demo mode
@@ -669,10 +673,10 @@ export default function CustomerOrderPage() {
 
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
           {/* Breadcrumb Navigation for Demo */}
           {isDemo && (
-            <div className="mb-4">
+            <div className="mb-3 sm:mb-4">
               <NavigationBreadcrumb 
                 customBackPath="/dashboard" 
                 customBackLabel="Dashboard"
@@ -683,9 +687,9 @@ export default function CustomerOrderPage() {
           )}
           
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
               {/* Servio Logo */}
-              <div className="flex items-center">
+              <div className="flex items-center flex-shrink-0">
                 <Image
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
@@ -697,11 +701,11 @@ export default function CustomerOrderPage() {
               </div>
               
               {/* Business Name and Table */}
-              <div className="ml-6">
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">
                   {isDemo ? "Servio Café" : venueName}
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600">
                   {isCounterOrder ? `Counter ${counterNumber}` : `Table ${tableNumber}`}
                 </p>
               </div>
@@ -710,18 +714,18 @@ export default function CustomerOrderPage() {
             {/* Mobile Cart Button */}
             <Button
               onClick={() => setShowMobileCart(!showMobileCart)}
-              className="md:hidden"
+              className="md:hidden ml-2 flex-shrink-0 min-h-[44px] min-w-[44px]"
               size="sm"
             >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              {getTotalItems()}
+              <ShoppingCart className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="text-sm">{getTotalItems()}</span>
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Menu */}
           <div className="lg:col-span-2">
         {(() => {
@@ -736,7 +740,7 @@ export default function CustomerOrderPage() {
           
           // Always render the menu structure - items will appear as they load
           return (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {(() => {
                   const categoryPriority = [
                     "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course",
@@ -754,24 +758,24 @@ export default function CustomerOrderPage() {
                   });
                   return sortedCats.map((category) => (
                     <div key={category}>
-                      <h2 className="text-xl font-semibold text-gray-900 mb-4 capitalize">
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 capitalize">
                         {category}
                       </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         {menuItems
                           .filter((item) => item.category === category)
                           .sort((a,b)=> String(a.name).localeCompare(String(b.name)))
                           .map((item) => (
                             <Card key={item.id} className="hover:shadow-md transition-shadow">
-                              <CardContent className="p-4">
-                                <div className="flex space-x-4">
+                              <CardContent className="p-3 sm:p-4">
+                                <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0">
                                   {/* Item Details */}
-                                  <div className="flex-1">
-                                    <h3 className="font-semibold text-gray-900">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-gray-900 text-base sm:text-lg">
                                       {item.name}
                                     </h3>
                                     {item.description && (
-                                      <p className="text-sm text-gray-600 mt-1">
+                                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                                         {item.description}
                                       </p>
                                     )}
@@ -781,13 +785,16 @@ export default function CustomerOrderPage() {
                                   </div>
                                   
                                   {/* Add to Cart Button */}
-                                  <Button
-                                    onClick={() => addToCart(item)}
-                                    size="sm"
-                                    className="ml-4"
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
+                                  <div className="flex justify-center sm:justify-end">
+                                    <Button
+                                      onClick={() => addToCart(item)}
+                                      size="sm"
+                                      className="min-h-[44px] min-w-[44px] px-4 sm:px-3"
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                      <span className="ml-2 sm:hidden">Add</span>
+                                    </Button>
+                                  </div>
                                 </div>
                               </CardContent>
                             </Card>
@@ -902,12 +909,12 @@ export default function CustomerOrderPage() {
         <div className="lg:hidden fixed bottom-4 right-4 z-40">
           <Button
             onClick={() => setShowMobileCart(true)}
-            className="rounded-full w-14 h-14 shadow-lg relative"
+            className="rounded-full w-14 h-14 shadow-lg relative min-h-[56px] min-w-[56px]"
             disabled={cart.length === 0}
           >
             <ShoppingCart className="h-6 w-6" />
             {getTotalItems() > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-medium">
                 {getTotalItems()}
               </span>
             )}
@@ -917,11 +924,11 @@ export default function CustomerOrderPage() {
         {/* Mobile Cart Modal */}
         {showMobileCart && (
           <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50">
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[80vh] overflow-y-auto">
-              <div className="p-4 border-b">
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] overflow-hidden flex flex-col">
+              <div className="p-4 border-b flex-shrink-0">
                 <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-semibold">Your Order</h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-semibold truncate">Your Order</h3>
                     <p className="text-sm text-gray-600">
                       {getTotalItems()} items • £{getTotalPrice().toFixed(2)}
                     </p>
@@ -930,13 +937,14 @@ export default function CustomerOrderPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowMobileCart(false)}
+                    className="ml-2 min-h-[44px] min-w-[44px] flex-shrink-0"
                   >
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
               
-              <div className="p-4">
+              <div className="flex-1 overflow-y-auto p-4">
                 {cart.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
                     Your cart is empty. Add some items to get started!
@@ -945,81 +953,92 @@ export default function CustomerOrderPage() {
                   <div className="space-y-4">
                     {cart.map((item) => (
                       <div key={item.id} className="border-b pb-4 last:border-b-0">
-                        <div className="flex space-x-3">
+                        <div className="flex flex-col space-y-3">
                           {/* Mobile Cart Item Details */}
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">
-                              {item.name}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              £{item.price.toFixed(2)} each
-                            </p>
-                            {item.specialInstructions && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                Note: {item.specialInstructions}
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 text-base">
+                                {item.name}
+                              </h4>
+                              <p className="text-sm text-gray-600">
+                                £{item.price.toFixed(2)} each
                               </p>
-                            )}
+                              {item.specialInstructions && (
+                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                  Note: {item.specialInstructions}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2 ml-4">
-                            <Button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              size="sm"
-                              variant="outline"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center">{item.quantity}</span>
-                            <Button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              size="sm"
-                              variant="outline"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
+                          
+                          {/* Quantity Controls */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Button
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                size="sm"
+                                variant="outline"
+                                className="min-h-[44px] min-w-[44px]"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="text-lg font-medium min-w-[2rem] text-center">{item.quantity}</span>
+                              <Button
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                size="sm"
+                                variant="outline"
+                                className="min-h-[44px] min-w-[44px]"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
                             <Button
                               onClick={() => removeFromCart(item.id)}
                               size="sm"
                               variant="ghost"
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 min-h-[44px] min-w-[44px]"
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-4 w-4" />
                             </Button>
                           </div>
+                          
+                          <Textarea
+                            placeholder="Special instructions (optional)"
+                            value={item.specialInstructions || ""}
+                            onChange={(e) =>
+                              updateSpecialInstructions(item.id, e.target.value)
+                            }
+                            className="text-sm resize-none"
+                            rows={2}
+                          />
                         </div>
-                        <Textarea
-                          placeholder="Special instructions (optional)"
-                          value={item.specialInstructions || ""}
-                          onChange={(e) =>
-                            updateSpecialInstructions(item.id, e.target.value)
-                          }
-                          className="mt-2 text-xs"
-                          rows={2}
-                        />
                       </div>
                     ))}
-
-                    <div className="border-t pt-4">
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="font-semibold text-gray-900">Total</span>
-                        <span className="text-xl font-bold text-purple-600">
-                          £{getTotalPrice().toFixed(2)}
-                        </span>
-                      </div>
-
-                      <Button
-                        onClick={() => {
-                          setShowMobileCart(false);
-                          setShowCheckout(true);
-                        }}
-                        className="w-full"
-                        disabled={cart.length === 0}
-                      >
-                        Proceed to Checkout
-                      </Button>
-                    </div>
                   </div>
                 )}
               </div>
+              
+              {cart.length > 0 && (
+                <div className="border-t p-4 flex-shrink-0 bg-white">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-lg font-semibold text-gray-900">Total</span>
+                    <span className="text-xl font-bold text-purple-600">
+                      £{getTotalPrice().toFixed(2)}
+                    </span>
+                  </div>
+
+                  <Button
+                    onClick={() => {
+                      setShowMobileCart(false);
+                      setShowCheckout(true);
+                    }}
+                    className="w-full min-h-[48px] text-base font-medium"
+                    disabled={cart.length === 0}
+                  >
+                    Proceed to Checkout
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1027,17 +1046,29 @@ export default function CustomerOrderPage() {
 
       {/* Checkout Modal */}
       {showCheckout && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>Complete Your Order</CardTitle>
-              <CardDescription>
-                Enter your details to complete the order
-              </CardDescription>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+          <Card className="w-full sm:max-w-md sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col rounded-t-2xl sm:rounded-lg">
+            <CardHeader className="flex-shrink-0">
+              <div className="flex justify-between items-start">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-lg sm:text-xl">Complete Your Order</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">
+                    Enter your details to complete the order
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCheckout(false)}
+                  className="ml-2 min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex-1 overflow-y-auto space-y-4 sm:space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Name *
                 </label>
                 <Input
@@ -1047,11 +1078,12 @@ export default function CustomerOrderPage() {
                   }
                   placeholder="Enter your name"
                   required
+                  className="min-h-[48px] text-base"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Phone Number *
                 </label>
                 <Input
@@ -1061,22 +1093,23 @@ export default function CustomerOrderPage() {
                   }
                   placeholder="Enter your phone number"
                   type="tel"
+                  className="min-h-[48px] text-base"
                 />
               </div>
 
               <div className="border-t pt-4">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="font-semibold text-gray-900">Total</span>
+                <div className="flex justify-between items-center mb-6">
+                  <span className="text-lg font-semibold text-gray-900">Total</span>
                   <span className="text-xl font-bold text-purple-600">
                     £{getTotalPrice().toFixed(2)}
                   </span>
                 </div>
 
-                <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                   <Button
                     onClick={() => setShowCheckout(false)}
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 min-h-[48px] text-base font-medium order-2 sm:order-1"
                   >
                     Cancel
                   </Button>
@@ -1084,7 +1117,7 @@ export default function CustomerOrderPage() {
                     onClick={() => {
                       submitOrder();
                     }}
-                    className="flex-1"
+                    className="flex-1 min-h-[48px] text-base font-medium order-1 sm:order-2"
                     disabled={isSubmitting || !customerInfo.name.trim() || !customerInfo.phone.trim()}
                   >
                     {isSubmitting ? (

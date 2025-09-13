@@ -101,11 +101,20 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="font-semibold text-lg text-gray-900">
-                {order.table_label || `Table ${order.table_number}`}
+                {order.table_label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)}
               </h3>
-              <Badge variant="secondary" className="text-xs px-2 py-1 bg-blue-50 text-blue-700">
-                <QrCode className="h-3 w-3 mr-1" />
-                QR Order
+              <Badge variant="secondary" className={`text-xs px-2 py-1 ${order.source === 'counter' ? 'bg-orange-50 text-orange-700' : 'bg-blue-50 text-blue-700'}`}>
+                {order.source === 'counter' ? (
+                  <>
+                    <Receipt className="h-3 w-3 mr-1" />
+                    Counter Order
+                  </>
+                ) : (
+                  <>
+                    <QrCode className="h-3 w-3 mr-1" />
+                    QR Order
+                  </>
+                )}
               </Badge>
             </div>
             <div className="text-sm text-gray-500">{formatTime(order.created_at)}</div>
@@ -145,11 +154,11 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
         )}
 
         {/* Status Badges */}
-        <div className="flex items-center gap-3 mb-6">
-          <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+        <div className="flex items-center flex-wrap gap-2 mb-6">
+          <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}>
             {order.order_status.replace('_', ' ')}
           </Badge>
-          <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+          <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap`}>
             {order.payment_status}
           </Badge>
         </div>

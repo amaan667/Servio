@@ -54,10 +54,10 @@ export function DailyResetModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
-            Daily Reset Confirmation
+            Reset Confirmation
           </DialogTitle>
           <DialogDescription className="text-left">
-            This action will perform a complete daily reset for <strong>{venueName}</strong>.
+            This action will perform a complete reset for <strong>{venueName}</strong>.
           </DialogDescription>
         </DialogHeader>
 
@@ -116,7 +116,7 @@ export function DailyResetModal({
                 Resetting...
               </>
             ) : (
-              'Confirm Daily Reset'
+              'Confirm Reset'
             )}
           </Button>
         </DialogFooter>

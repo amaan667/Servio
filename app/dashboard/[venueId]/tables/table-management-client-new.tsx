@@ -7,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { 
   Search, 
   Plus, 
-  HelpCircle, 
   Users, 
   Clock,
   AlertCircle,
@@ -115,7 +114,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         
         // Close modal and show success message
         setShowResetModal(false);
-        alert(`Daily reset completed successfully!\n\nSummary:\n- Completed orders: ${result.summary.completedOrders}\n- Canceled reservations: ${result.summary.canceledReservations}\n- Deleted tables: ${result.summary.deletedTables}`);
+        alert(`Reset completed successfully!\n\nSummary:\n- Completed orders: ${result.summary.completedOrders}\n- Canceled reservations: ${result.summary.canceledReservations}\n- Deleted tables: ${result.summary.deletedTables}`);
       } else {
         console.error('🔄 [MANUAL RESET] Reset failed:', result);
         alert(`Reset failed: ${result.error}`);
@@ -297,46 +296,44 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     <div className="mx-auto max-w-7xl p-4 md:p-6">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="flex flex-wrap items-center gap-3 pb-3">
-          <h1 className="text-2xl font-semibold">Table Management</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 pb-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-semibold">Table Management</h1>
+            {resetResult && resetResult.success && !resetResult.alreadyReset && (
+              <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Daily reset completed</span>
+              </div>
+            )}
+          </div>
           
-          
-          {resetResult && resetResult.success && !resetResult.alreadyReset && (
-            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Daily reset completed</span>
-            </div>
-          )}
-          
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:ml-auto w-full sm:w-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search tables…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 w-56 pl-10 rounded-xl border border-slate-200 px-3 text-sm shadow-sm"
+                className="h-9 w-full sm:w-56 pl-10 rounded-xl border border-slate-200 px-3 text-sm shadow-sm"
               />
             </div>
-            <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleManualReset}
-              disabled={isResetting}
-              className="text-orange-600 border-orange-200 hover:bg-orange-50"
-            >
-              {isResetting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-              )}
-              {isResetting ? 'Resetting...' : 'Daily Reset'}
-            </Button>
-            <Button variant="outline" size="sm">
-              <HelpCircle className="h-4 w-4 mr-2" />
-              Help
-            </Button>
+            <div className="flex items-center gap-2">
+              <AddTableDialog venueId={venueId} onTableAdded={handleTableActionComplete} />
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleManualReset}
+                disabled={isResetting}
+                className="text-orange-600 border-orange-200 hover:bg-orange-50 flex-shrink-0"
+              >
+                {isResetting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                )}
+                {isResetting ? 'Resetting...' : 'Reset'}
+              </Button>
+            </div>
           </div>
         </div>
         
@@ -687,7 +684,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         </div>
       )}
 
-      {/* Daily Reset Confirmation Modal */}
+      {/* Reset Confirmation Modal */}
       <DailyResetModal
         isOpen={showResetModal}
         onClose={() => setShowResetModal(false)}
