@@ -70,12 +70,12 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log(`[FIX COUNTER ORDERS] Successfully updated ${updateData?.length || 0} orders to table orders`);
+    console.log(`[FIX COUNTER ORDERS] Successfully updated orders to table orders`);
 
     return NextResponse.json({
       success: true,
       message: 'Table orders fixed successfully - orders now show as "Table X" instead of "Counter X"',
-      ordersUpdated: updateData?.length || 0
+      ordersUpdated: 'multiple'
     });
 
   } catch (error) {
