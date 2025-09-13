@@ -214,6 +214,18 @@ export async function POST(req: Request) {
     }));
     console.log('[ORDERS POST] normalized safeItems', safeItems);
 
+    // Determine if this is a counter order or table order
+    // Rule: table_number >= 10 = counter order, table_number < 10 = table order
+    const isCounterOrder = table_number !== null && table_number >= 10;
+    const orderSource = body.source || (isCounterOrder ? 'counter' : 'qr');
+    
+    console.log('[ORDERS POST] Order source determination:', {
+      table_number,
+      isCounterOrder,
+      provided_source: body.source,
+      final_source: orderSource
+    });
+
     const payload: OrderPayload = {
       venue_id: body.venue_id,
       table_number,
@@ -226,7 +238,7 @@ export async function POST(req: Request) {
       order_status: body.order_status || 'PLACED', // Use provided status or default to 'PLACED'
       payment_status: body.payment_status || 'UNPAID', // Use provided status or default to 'UNPAID'
       payment_method: body.payment_method || null,
-      source: body.source || 'qr', // Default to 'qr' for table orders, 'counter' for counter orders
+      source: orderSource, // Automatically determine based on table number: >= 10 = counter, < 10 = table
     };
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
