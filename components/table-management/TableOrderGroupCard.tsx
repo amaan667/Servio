@@ -121,9 +121,18 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-3">
               <div className="text-2xl font-bold text-gray-900">{tableLabel}</div>
-              <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                <QrCode className="h-3 w-3 mr-1" />
-                QR Table
+              <Badge variant="secondary" className={`text-xs border-blue-200 ${orders[0]?.source === 'counter' ? 'bg-orange-50 text-orange-700' : 'bg-blue-50 text-blue-700'}`}>
+                {orders[0]?.source === 'counter' ? (
+                  <>
+                    <Receipt className="h-3 w-3 mr-1" />
+                    Counter Orders
+                  </>
+                ) : (
+                  <>
+                    <QrCode className="h-3 w-3 mr-1" />
+                    QR Table
+                  </>
+                )}
               </Badge>
               {hasMultipleOrders && (
                 <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
