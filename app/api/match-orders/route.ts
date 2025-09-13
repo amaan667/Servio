@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
 
 export const runtime = 'nodejs';
 
@@ -8,7 +8,18 @@ export async function GET(req: Request) {
   try {
     console.log('[MATCH ORDERS] Starting order matching...');
     
-    const adminSupabase = createAdminClient();
+    // Create admin client to bypass RLS
+    const adminSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          get(name: string) { return undefined; },
+          set(name: string, value: string, options: any) { },
+          remove(name: string, options: any) { },
+        },
+      }
+    );
     
     if (!adminSupabase) {
       console.error('[MATCH ORDERS] Failed to create admin client');
