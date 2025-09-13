@@ -695,7 +695,7 @@ export default function CustomerOrderPage() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-28 sm:h-32 md:h-36 w-auto"
+                  className="h-28 sm:h-32 md:h-36 lg:h-56 xl:h-64 2xl:h-72 w-auto"
                   priority
                 />
               </div>

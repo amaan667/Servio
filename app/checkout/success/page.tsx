@@ -44,7 +44,7 @@ export default function SuccessPage() {
               alt="Servio"
               width={300}
               height={90}
-              className="h-20 w-auto"
+              className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-36 w-auto"
               priority
             />
           </div>

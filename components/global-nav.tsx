@@ -138,7 +138,7 @@ export default function GlobalNav() {
   return (
     <nav className={navClasses}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
-        <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-40 xl:h-44">
+        <div className="flex justify-between items-center h-28 sm:h-32 md:h-36 lg:h-56 xl:h-64 2xl:h-72">
           {/* Logo - Positioned closer to top left corner */}
           <div className="flex-shrink-0 -ml-2 sm:-ml-1">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
@@ -147,7 +147,7 @@ export default function GlobalNav() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-24 sm:h-28 md:h-32 lg:h-36 xl:h-40 w-auto transition-all duration-300 group-hover:scale-105"
+                className="h-24 sm:h-28 md:h-32 lg:h-56 xl:h-64 2xl:h-72 w-auto transition-all duration-300 group-hover:scale-105"
                 priority
               />
             </Link>
