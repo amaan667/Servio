@@ -253,9 +253,9 @@ export default function OrderSummaryPage() {
               <Image
                 src="/assets/servio-logo-updated.png"
                 alt="Servio"
-                width={300}
-                height={90}
-                className="h-20 w-auto"
+                width={800}
+                height={250}
+                className="h-28 sm:h-32 md:h-36 w-auto"
                 priority
               />
             </div>
