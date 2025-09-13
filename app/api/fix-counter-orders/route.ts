@@ -53,31 +53,29 @@ export async function POST(req: Request) {
 
     console.log('[FIX COUNTER ORDERS] Found orders:', orders);
 
-    // Update the most recent order to be a counter order (assuming it's the one you placed)
-    if (orders && orders.length > 0) {
-      const mostRecentOrder = orders[0];
-      console.log('[FIX COUNTER ORDERS] Updating most recent order to counter:', mostRecentOrder.id);
-      
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ source: 'counter' })
-        .eq('id', mostRecentOrder.id);
+    // Fix orders that are incorrectly marked as counter orders but should be table orders
+    console.log('[FIX COUNTER ORDERS] Fixing orders marked as counter but should be table orders...');
+    
+    const { data: updateData, error: updateError } = await supabase
+      .from('orders')
+      .update({ source: 'qr' })
+      .eq('source', 'counter')
+      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()); // Last 24 hours
 
-      if (updateError) {
-        console.error('[FIX COUNTER ORDERS] Error updating order:', updateError);
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Failed to update order' 
-        }, { status: 500 });
-      }
-
-      console.log('[FIX COUNTER ORDERS] Successfully updated order to counter');
+    if (updateError) {
+      console.error('[FIX COUNTER ORDERS] Error updating orders:', updateError);
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Failed to update orders' 
+      }, { status: 500 });
     }
+
+    console.log(`[FIX COUNTER ORDERS] Successfully updated ${updateData?.length || 0} orders to table orders`);
 
     return NextResponse.json({
       success: true,
-      message: 'Counter orders fixed successfully',
-      ordersUpdated: orders?.length || 0
+      message: 'Table orders fixed successfully - orders now show as "Table X" instead of "Counter X"',
+      ordersUpdated: updateData?.length || 0
     });
 
   } catch (error) {
