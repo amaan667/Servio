@@ -144,6 +144,22 @@ export async function POST() {
       console.log('✅ Order source classification fixed');
     }
     
+    // Fix table 10 order visibility - ensure it shows in Earlier Today tab
+    console.log('📋 Fixing table 10 order visibility...');
+    const { error: table10Error } = await supabase.rpc('exec_sql', {
+      sql: `UPDATE orders 
+            SET payment_status = 'PAID', source = 'qr'
+            WHERE table_number = 10 
+            AND created_at >= NOW() - INTERVAL '24 hours'
+            AND (payment_status != 'PAID' OR source != 'qr');`
+    });
+    
+    if (table10Error) {
+      console.log('⚠️  Error fixing table 10 order:', table10Error.message);
+    } else {
+      console.log('✅ Table 10 order visibility fixed');
+    }
+    
     return NextResponse.json({
       success: true,
       message: 'Emergency fix applied successfully',
@@ -152,7 +168,8 @@ export async function POST() {
         missingStatuses: missingStatuses,
         dataUpdated: !updateError,
         tablesProcessed: tables?.length || 0,
-        orderSourceFixed: !orderUpdateError
+        orderSourceFixed: !orderUpdateError,
+        table10OrderFixed: !table10Error
       }
     });
     
