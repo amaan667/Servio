@@ -31,6 +31,9 @@ interface OrderWithItems {
   id: string;
   venue_id: string;
   table_number: number;
+  table_id?: string | null; // For table-bound orders
+  session_id?: string | null; // Guest session token
+  source?: "qr" | "counter"; // Order source
   customer_name: string;
   customer_phone?: string;
   customer_email?: string;
