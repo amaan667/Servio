@@ -11,11 +11,14 @@ export default function ConditionalHeader() {
     console.log('[CONDITIONAL HEADER] Rendering:', { pathname });
   }
   
-  // Don't show header on customer order pages and checkout
-  const isCustomerOrderPage = pathname?.startsWith('/order') && !pathname?.includes('/demo');
+  // Don't show header on customer-facing pages
+  const isCustomerOrderPage = pathname?.startsWith('/order');
   const isCheckoutPage = pathname?.startsWith('/checkout');
+  const isPaymentPage = pathname?.startsWith('/payment');
+  const isOrderSummaryPage = pathname?.startsWith('/order-summary');
+  const isOrderTrackingPage = pathname?.startsWith('/order-tracking');
   
-  if (isCustomerOrderPage || isCheckoutPage) {
+  if (isCustomerOrderPage || isCheckoutPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage) {
     return null;
   }
   
