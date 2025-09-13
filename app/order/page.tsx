@@ -420,8 +420,12 @@ export default function CustomerOrderPage() {
         console.log('[ORDER SUBMIT] parseInt(tableNumber):', parseInt(tableNumber));
         console.log('[ORDER SUBMIT] isNaN(parseInt(tableNumber)):', isNaN(parseInt(tableNumber)));
         
-        const safeTable = parseInt(tableNumber) || 1;
+        // For counter orders, use counter number; for table orders, use table number
+        const safeTable = isCounterOrder ? (parseInt(counterNumber) || 1) : (parseInt(tableNumber) || 1);
         console.log('[ORDER SUBMIT] Final safeTable value:', safeTable);
+        console.log('[ORDER SUBMIT] Order type:', orderType);
+        console.log('[ORDER SUBMIT] Is counter order:', isCounterOrder);
+        console.log('[ORDER SUBMIT] Counter number:', counterNumber);
         console.log('[ORDER SUBMIT] ===== END TABLE NUMBER DEBUG =====');
 
       // For demo orders, redirect to checkout with demo mode
