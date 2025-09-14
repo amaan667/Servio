@@ -940,171 +940,243 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
     return (
       <div key={tableNumber} className="rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg">
-        {/* Table Header */}
+        {/* Table Header - POS System Style */}
         <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="text-sm font-medium text-gray-500">
-                  {formatTime(earliestOrder.created_at)}
-                  {orders.length > 1 && (
-                    <>
-                      <span className="mx-2">•</span>
-                      <span>Latest: {formatTime(latestOrder.created_at)}</span>
-                    </>
-                  )}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Time and Table Info */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-blue-600" />
                 </div>
-                <div className="h-1 w-1 rounded-full bg-gray-300"></div>
-                <div className="font-semibold text-gray-900 text-xl">
-                  Table {tableNumber}
-                </div>
-                <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
-                  QR Table
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-6 mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-600">
-                    {summary.orderCount} order{summary.orderCount > 1 ? 's' : ''}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Total:</span>
-                  <span className="text-2xl font-bold text-gray-900">
-                    £{summary.total.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Customer Details */}
-              {earliestOrder.customer_name && (
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span className="font-medium">{earliestOrder.customer_name}</span>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Order Time</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {formatTime(earliestOrder.created_at)}
                   </div>
-                  {earliestOrder.customer_phone && (
-                    <>
-                      <div className="h-1 w-1 rounded-full bg-gray-300"></div>
-                      <span>{earliestOrder.customer_phone}</span>
-                    </>
+                  {orders.length > 1 && (
+                    <div className="text-xs text-gray-500">
+                      Latest: {formatTime(latestOrder.created_at)}
+                    </div>
                   )}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold text-green-600">T</span>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Table Number</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    Table {tableNumber}
+                  </div>
+                  <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium w-fit">
+                    QR Table
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Middle Column - Customer and Order Info */}
+            <div className="space-y-4">
+              {earliestOrder.customer_name && (
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <User className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-500">Customer</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {earliestOrder.customer_name}
+                    </div>
+                    {earliestOrder.customer_phone && (
+                      <div className="text-sm text-gray-600">
+                        {earliestOrder.customer_phone}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
+              
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold text-orange-600">#</span>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Orders</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {summary.orderCount} order{summary.orderCount > 1 ? 's' : ''}
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Status badges */}
-              <div className="flex items-center gap-2">
-                <Badge className={`${getStatusColor(summary.overallStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
-                  {summary.overallStatus.replace('_', ' ').toLowerCase()}
-                </Badge>
-                <Badge className={`${getPaymentStatusColor(summary.overallPaymentStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
-                  {summary.overallPaymentStatus.toLowerCase()}
-                </Badge>
+
+            {/* Right Column - Total and Status */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold text-emerald-600">£</span>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Total Amount</div>
+                  <div className="text-3xl font-bold text-gray-900">
+                    £{summary.total.toFixed(2)}
+                  </div>
+                </div>
               </div>
               
-              {/* Expand/Collapse button */}
-              <button
-                onClick={() => toggleTableExpansion(tableNumber)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                <span>{isExpanded ? 'Hide' : 'Show'} individual orders</span>
-                <svg
-                  className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold text-gray-600">✓</span>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Status</div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`${getStatusColor(summary.overallStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+                      {summary.overallStatus.replace('_', ' ').toLowerCase()}
+                    </Badge>
+                    <Badge className={`${getPaymentStatusColor(summary.overallPaymentStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+                      {summary.overallPaymentStatus.toLowerCase()}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+          
+          {/* Expand/Collapse button - Full width */}
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <button
+              onClick={() => toggleTableExpansion(tableNumber)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <span>{isExpanded ? 'Hide' : 'Show'} individual orders</span>
+              <svg
+                className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
           </div>
         </div>
 
         {/* Expanded Orders List */}
         {isExpanded && (
           <div className="p-6 pt-4">
-            <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Individual Orders</h4>
+            <div className="space-y-6">
+              <h4 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                Individual Orders
+              </h4>
               {orders.map((order, index) => (
-                <div key={order.id} className="border border-gray-100 rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center justify-between mb-3">
+                <div key={order.id} className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm">
+                  {/* Order Header */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {/* Order Info */}
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
-                        {index + 1}
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <span className="text-sm font-bold text-blue-600">#{index + 1}</span>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-500">Order Time</div>
+                        <div className="text-lg font-semibold text-gray-900">
                           {formatTime(order.created_at)}
                         </div>
                         <div className="text-xs text-gray-500">
                           Order #{getShortOrderNumber(order.id)}
                         </div>
-                        {order.customer_name && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <User className="h-3 w-3 text-gray-400" />
-                            <span className="text-xs text-gray-600">{order.customer_name}</span>
-                            {order.customer_phone && (
-                              <span className="text-xs text-gray-500">• {order.customer_phone}</span>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-gray-900">
-                        £{(() => {
-                          let amount = order.total_amount;
-                          if (!amount || amount <= 0) {
-                            amount = order.items.reduce((sum, item) => {
-                              const quantity = Number(item.quantity) || 0;
-                              const price = Number(item.price) || 0;
-                              return sum + (quantity * price);
-                            }, 0);
-                          }
-                          return amount.toFixed(2);
-                        })()}
+
+                    {/* Customer Info */}
+                    {order.customer_name && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                          <User className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-500">Customer</div>
+                          <div className="text-lg font-semibold text-gray-900">
+                            {order.customer_name}
+                          </div>
+                          {order.customer_phone && (
+                            <div className="text-sm text-gray-600">
+                              {order.customer_phone}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Total Amount */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <span className="text-sm font-bold text-emerald-600">£</span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-500">Total</div>
+                        <div className="text-2xl font-bold text-gray-900">
+                          £{(() => {
+                            let amount = order.total_amount;
+                            if (!amount || amount <= 0) {
+                              amount = order.items.reduce((sum, item) => {
+                                const quantity = Number(item.quantity) || 0;
+                                const price = Number(item.price) || 0;
+                                return sum + (quantity * price);
+                              }, 0);
+                            }
+                            return amount.toFixed(2);
+                          })()}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 mb-3">
-                    <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
+                  {/* Status Badges */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <Badge className={`${getStatusColor(order.order_status)} text-sm font-semibold px-4 py-2 rounded-full`}>
                       {order.order_status.replace('_', ' ').toLowerCase()}
                     </Badge>
                     {order.payment_status && (
-                      <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
+                      <Badge className={`${getPaymentStatusColor(order.payment_status)} text-sm font-semibold px-4 py-2 rounded-full`}>
                         {order.payment_status.toLowerCase()}
                       </Badge>
                     )}
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="text-xs font-medium text-gray-600 mb-3">Items:</div>
-                    {order.items.map((item, itemIndex) => (
-                      <div key={itemIndex} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
-                        <div className="flex items-center gap-3">
-                          <span className="w-6 h-6 bg-gray-50 rounded-full flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">
-                            {item.quantity}
-                          </span>
-                          <span className="text-gray-900 font-medium">{item.item_name}</span>
+                  {/* Order Items */}
+                  <div className="space-y-4">
+                    <h5 className="text-base font-semibold text-gray-700 flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                      Order Items ({order.items.length})
+                    </h5>
+                    <div className="grid gap-3">
+                      {order.items.map((item, itemIndex) => (
+                        <div key={itemIndex} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                          <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-gray-600 border border-gray-200">
+                              {item.quantity}
+                            </div>
+                            <span className="text-gray-900 font-medium text-base">{item.item_name}</span>
+                          </div>
+                          <span className="font-semibold text-gray-900 text-lg">£{(item.quantity * item.price).toFixed(2)}</span>
                         </div>
-                        <span className="font-semibold text-gray-900">£{(item.quantity * item.price).toFixed(2)}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
 
                   {/* Action buttons for individual orders */}
                   {showActions && order.order_status !== 'COMPLETED' && (
-                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
+                    <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
                       {order.order_status === 'PLACED' && (
                         <Button 
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs"
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
                         >
                           Start Preparing
                         </Button>
@@ -1113,7 +1185,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <Button 
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, 'READY')}
-                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs"
+                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
                         >
                           Mark Ready
                         </Button>
@@ -1122,7 +1194,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <Button 
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, 'SERVING')}
-                          className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs"
+                          className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
                         >
                           Mark Served
                         </Button>
@@ -1131,7 +1203,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <Button 
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
-                          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs"
+                          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
                         >
                           Mark Complete
                         </Button>
