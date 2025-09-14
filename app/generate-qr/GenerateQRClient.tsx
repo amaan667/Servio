@@ -33,10 +33,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
   const searchParams = useSearchParams();
 
-  // Parse URL parameters and localStorage to get selected tables
+  // Parse URL parameters to get selected tables (only from URL, not localStorage)
   const getInitialTables = () => {
     if (typeof window !== 'undefined') {
-      // PRIORITY 1: Check URL parameters first (these take precedence)
+      // Only check URL parameters - don't fall back to localStorage
       const tablesParam = searchParams?.get('tables');
       const tableParam = searchParams?.get('table');
       
@@ -57,22 +57,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         console.log('🔍 [QR CLIENT] Single table decoded:', decodeURIComponent(tableParam));
         return [decodeURIComponent(tableParam)];
       }
-      
-      // PRIORITY 2: Check localStorage for persisted tables (only if no URL params)
-      const storageKey = `qr-selected-tables-${venueId}`;
-      const storedTables = localStorage.getItem(storageKey);
-      
-      if (storedTables) {
-        try {
-          const parsedTables = JSON.parse(storedTables);
-          console.log('🔍 [QR CLIENT] Loaded tables from localStorage:', parsedTables);
-          return parsedTables;
-        } catch (error) {
-          console.error('🔍 [QR CLIENT] Error parsing stored tables:', error);
-        }
-      }
     }
-    console.log('🔍 [QR CLIENT] No tables found in URL or localStorage');
+    console.log('🔍 [QR CLIENT] No tables found in URL - starting with empty state');
     return null; // Return null to indicate no specific tables were requested
   };
 
@@ -665,6 +651,20 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       console.log('🔍 [QR CLIENT] No tables in URL, starting with empty state from URL params effect');
     }
   }, [searchParams, venueId, activeTablesCount]);
+
+  // Cleanup effect to clear localStorage when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clear localStorage when navigating away from QR page
+      if (typeof window !== 'undefined') {
+        const storageKey = `qr-selected-tables-${venueId}`;
+        const counterStorageKey = `qr-selected-counters-${venueId}`;
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(counterStorageKey);
+        console.log('🔍 [QR CLIENT] Cleared localStorage on component unmount');
+      }
+    };
+  }, [venueId]);
 
   // Show loading state
   if (loading) {
