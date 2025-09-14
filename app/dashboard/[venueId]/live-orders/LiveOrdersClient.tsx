@@ -706,7 +706,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return order.source === 'counter';
   };
 
-  // Group table orders by table number
+  // Group table orders by table number, but only group orders that are actually related
   const groupOrdersByTable = (orders: Order[]) => {
     const tableGroups: { [tableNumber: number]: Order[] } = {};
     
@@ -718,16 +718,51 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       tableGroups[tableNum].push(order);
     });
 
-    // Sort orders within each table by creation time (earliest first)
+    // Filter out groups that have orders from different customers or are too far apart in time
+    const filteredGroups: { [tableNumber: number]: Order[] } = {};
+    
     Object.keys(tableGroups).forEach(tableNum => {
-      tableGroups[Number(tableNum)].sort((a, b) => {
+      const orders = tableGroups[Number(tableNum)];
+      
+      // If only one order, keep it as is
+      if (orders.length === 1) {
+        filteredGroups[Number(tableNum)] = orders;
+        return;
+      }
+      
+      // Sort orders by creation time
+      orders.sort((a, b) => {
         const dateA = new Date(a.created_at);
         const dateB = new Date(b.created_at);
-        return dateA.getTime() - dateB.getTime(); // Ascending order (earliest first)
+        return dateA.getTime() - dateB.getTime();
       });
+      
+      // Check if orders should be grouped together
+      const shouldGroup = orders.every((order, index) => {
+        if (index === 0) return true; // First order is always included
+        
+        const prevOrder = orders[index - 1];
+        const timeDiff = new Date(order.created_at).getTime() - new Date(prevOrder.created_at).getTime();
+        const timeDiffMinutes = timeDiff / (1000 * 60);
+        
+        // Group orders if they're from the same customer AND within 30 minutes of each other
+        const sameCustomer = order.customer_name === prevOrder.customer_name;
+        const withinTimeWindow = timeDiffMinutes <= 30;
+        
+        return sameCustomer && withinTimeWindow;
+      });
+      
+      if (shouldGroup) {
+        // All orders can be grouped together
+        filteredGroups[Number(tableNum)] = orders;
+      } else {
+        // Orders should be treated as individual orders
+        // We'll handle this by not adding them to filteredGroups
+        // and they'll be displayed as individual orders instead
+      }
     });
 
-    return tableGroups;
+    return filteredGroups;
   };
 
   // Calculate table total and status summary
@@ -1375,8 +1410,28 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <div className="grid gap-3 sm:gap-4 grid-cols-1">
                           {(() => {
                             const tableGroups = groupOrdersByTable(activeTableOrders);
-                            return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
-                              renderTableGroupCard(Number(tableNumber), tableOrdersList, true)
+                            const groupedOrderIds = new Set();
+                            
+                            // Collect all order IDs that are in groups
+                            Object.values(tableGroups).forEach(group => {
+                              group.forEach(order => groupedOrderIds.add(order.id));
+                            });
+                            
+                            // Find orders that couldn't be grouped (different customers, etc.)
+                            const ungroupedOrders = activeTableOrders.filter(order => 
+                              !groupedOrderIds.has(order.id)
+                            );
+                            
+                            return (
+                              <>
+                                {/* Render grouped orders */}
+                                {Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
+                                  renderTableGroupCard(Number(tableNumber), tableOrdersList, true)
+                                )}
+                                
+                                {/* Render ungrouped orders as individual cards */}
+                                {ungroupedOrders.map(order => renderOrderCard(order, true))}
+                              </>
                             );
                           })()}
                         </div>
@@ -1425,8 +1480,28 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <div className="grid gap-3 sm:gap-4 grid-cols-1">
                           {(() => {
                             const tableGroups = groupOrdersByTable(activeTableOrders);
-                            return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
-                              renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
+                            const groupedOrderIds = new Set();
+                            
+                            // Collect all order IDs that are in groups
+                            Object.values(tableGroups).forEach(group => {
+                              group.forEach(order => groupedOrderIds.add(order.id));
+                            });
+                            
+                            // Find orders that couldn't be grouped (different customers, etc.)
+                            const ungroupedOrders = activeTableOrders.filter(order => 
+                              !groupedOrderIds.has(order.id)
+                            );
+                            
+                            return (
+                              <>
+                                {/* Render grouped orders */}
+                                {Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
+                                  renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
+                                )}
+                                
+                                {/* Render ungrouped orders as individual cards */}
+                                {ungroupedOrders.map(order => renderOrderCard(order, false))}
+                              </>
                             );
                           })()}
                         </div>
@@ -1478,8 +1553,28 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           {(() => {
                             const tableOrders = orders.filter(order => !isCounterOrder(order));
                             const tableGroups = groupOrdersByTable(tableOrders);
-                            return Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
-                              renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
+                            const groupedOrderIds = new Set();
+                            
+                            // Collect all order IDs that are in groups
+                            Object.values(tableGroups).forEach(group => {
+                              group.forEach(order => groupedOrderIds.add(order.id));
+                            });
+                            
+                            // Find orders that couldn't be grouped (different customers, etc.)
+                            const ungroupedOrders = tableOrders.filter(order => 
+                              !groupedOrderIds.has(order.id)
+                            );
+                            
+                            return (
+                              <>
+                                {/* Render grouped orders */}
+                                {Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
+                                  renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
+                                )}
+                                
+                                {/* Render ungrouped orders as individual cards */}
+                                {ungroupedOrders.map(order => renderOrderCard(order, false))}
+                              </>
                             );
                           })()}
                         </div>
