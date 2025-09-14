@@ -820,184 +820,119 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       }, 0);
     }
 
-    // Determine entity type and display
-    const getEntityInfo = () => {
-      if (isCounterOrder(order)) {
-        return {
-          icon: '#',
-          iconBg: 'bg-orange-100',
-          iconColor: 'text-orange-600',
-          label: 'Counter Number',
-          value: `Counter ${order.table_number || 'A'}`,
-          subLabel: 'Counter'
-        };
-      } else if (order.table_number) {
-        return {
-          icon: 'T',
-          iconBg: 'bg-green-100',
-          iconColor: 'text-green-600',
-          label: 'Table Number',
-          value: `Table ${order.table_number}`,
-          subLabel: 'QR Table'
-        };
-      } else {
-        return {
-          icon: '?',
-          iconBg: 'bg-gray-100',
-          iconColor: 'text-gray-600',
-          label: 'Entity',
-          value: 'Unassigned',
-          subLabel: 'No seat info'
-        };
-      }
-    };
-
-    const entityInfo = getEntityInfo();
+    // Generate order ID for display (last 6 characters)
+    const orderId = order.id.slice(-6).toUpperCase();
+    
+    // Create items summary for POS-style display
+    const itemsSummary = order.items.map(item => 
+      `${item.quantity}x ${item.item_name}`
+    ).join(', ');
     
     return (
-      <article key={order.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow px-4 py-3 md:px-5 md:py-4">
-        {/* Grid Layout - 6 columns on mobile, 12 on md+ */}
-        <div className="grid grid-cols-6 md:grid-cols-12 gap-3 md:gap-4">
-          {/* Order Time */}
-          <div className="col-span-3 md:col-span-2">
+      <article key={order.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+        {/* POS-Style Header */}
+        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 rounded-t-lg">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Clock className="h-4 w-4 text-blue-600" />
+              <div className="bg-blue-600 text-white px-3 py-1 rounded-md font-bold text-sm">
+                #{orderId}
               </div>
-              <div className="min-w-0">
-                <div className="text-xs text-slate-500">Order Time</div>
-                <div className="font-medium text-sm md:text-base truncate">
-                  {formatTime(order.created_at)}
-                </div>
+              <div className="text-sm text-gray-600">
+                {formatTime(order.created_at)}
               </div>
             </div>
-          </div>
-
-          {/* Entity (Table/Counter) */}
-          <div className="col-span-3 md:col-span-2">
-            <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 ${entityInfo.iconBg} rounded-full flex items-center justify-center flex-shrink-0`}>
-                <span className={`text-sm font-bold ${entityInfo.iconColor}`}>{entityInfo.icon}</span>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">
+                £{totalAmount.toFixed(2)}
               </div>
-              <div className="min-w-0">
-                <div className="text-xs text-slate-500">{entityInfo.label}</div>
-                <div className="font-medium text-sm md:text-base truncate">
-                  {entityInfo.value}
-                </div>
-                <div className="text-xs text-slate-400 truncate">
-                  {entityInfo.subLabel}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Customer */}
-          <div className="col-span-6 md:col-span-2">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="h-4 w-4 text-purple-600" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs text-slate-500">Customer</div>
-                <div className="font-medium text-sm md:text-base truncate">
-                  {order.customer_name || 'Guest'}
-                </div>
-                {order.customer_phone && (
-                  <div className="text-xs text-slate-400 truncate">
-                    {order.customer_phone}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Orders */}
-          <div className="col-span-3 md:col-span-2">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-sm font-bold text-orange-600">#</span>
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs text-slate-500">Orders</div>
-                <div className="font-medium text-sm md:text-base">
-                  1 order
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Amount - Right aligned on md+ */}
-          <div className="col-span-3 md:col-span-2 md:text-right">
-            <div className="flex items-center gap-3 md:justify-end">
-              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-sm font-bold text-emerald-600">£</span>
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs text-slate-500">Total Amount</div>
-                <div className="text-lg font-semibold text-slate-900">
-                  £{totalAmount.toFixed(2)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Status Badges - Full width under grid */}
-          <div className="col-span-6 md:col-span-2">
-            <div className="text-xs text-slate-500 mb-2">Status</div>
-            <div className="flex flex-wrap gap-2">
-              <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
-                {order.order_status.replace('_', ' ').toLowerCase()}
-              </Badge>
-              {order.payment_status && (
-                <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
-                  {order.payment_status.toLowerCase()}
-                </Badge>
-              )}
             </div>
           </div>
         </div>
 
-        {/* Action Buttons - Only show for live orders with actions */}
-        {showActions && !isCompleted && (
-          <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-slate-100">
-            {order.order_status === 'PLACED' && (
-              <Button 
-                size="sm"
-                onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
-              >
-                Start Preparing
-              </Button>
-            )}
-            {order.order_status === 'IN_PREP' && (
-              <Button 
-                size="sm"
-                onClick={() => updateOrderStatus(order.id, 'READY')}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
-              >
-                Mark Ready
-              </Button>
-            )}
-            {order.order_status === 'READY' && (
-              <Button 
-                size="sm"
-                onClick={() => updateOrderStatus(order.id, 'SERVING')}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
-              >
-                Mark Served
-              </Button>
-            )}
-            {order.order_status === 'SERVING' && (
-              <Button 
-                size="sm"
-                onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
-              >
-                Mark Complete
-              </Button>
+        {/* Main Content */}
+        <div className="p-4">
+          {/* Customer Info */}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <User className="h-4 w-4 text-gray-500" />
+              <span className="font-semibold text-gray-900">
+                {order.customer_name || 'Guest Customer'}
+              </span>
+            </div>
+            {order.customer_phone && (
+              <div className="text-sm text-gray-600 ml-6">
+                {order.customer_phone}
+              </div>
             )}
           </div>
-        )}
+
+          {/* Items Summary - POS Style */}
+          <div className="mb-4">
+            <div className="text-sm font-medium text-gray-700 mb-2">Order Items:</div>
+            <div className="bg-gray-50 rounded-md p-3">
+              <div className="text-sm text-gray-800 leading-relaxed">
+                {itemsSummary}
+              </div>
+            </div>
+          </div>
+
+          {/* Status and Actions Row */}
+          <div className="flex items-center justify-between">
+            {/* Status Badges */}
+            <div className="flex items-center gap-2">
+              <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1 rounded-full`}>
+                {order.order_status.replace('_', ' ').toLowerCase()}
+              </Badge>
+              {order.payment_status && (
+                <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1 rounded-full`}>
+                  {order.payment_status.toLowerCase()}
+                </Badge>
+              )}
+            </div>
+
+            {/* Action Buttons - Only show for live orders with actions */}
+            {showActions && !isCompleted && (
+              <div className="flex items-center gap-2">
+                {order.order_status === 'PLACED' && (
+                  <Button 
+                    size="sm"
+                    onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
+                  >
+                    Start Preparing
+                  </Button>
+                )}
+                {order.order_status === 'IN_PREP' && (
+                  <Button 
+                    size="sm"
+                    onClick={() => updateOrderStatus(order.id, 'READY')}
+                    className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
+                  >
+                    Mark Ready
+                  </Button>
+                )}
+                {order.order_status === 'READY' && (
+                  <Button 
+                    size="sm"
+                    onClick={() => updateOrderStatus(order.id, 'SERVING')}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
+                  >
+                    Mark Served
+                  </Button>
+                )}
+                {order.order_status === 'SERVING' && (
+                  <Button 
+                    size="sm"
+                    onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
+                  >
+                    Mark Complete
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </article>
     );
   };
