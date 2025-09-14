@@ -809,90 +809,162 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   const renderOrderCard = (order: Order, showActions: boolean = true) => {
     const isCompleted = order.order_status === 'COMPLETED';
-    const borderColor = isCompleted ? 'border-l-green-500' : 'border-l-blue-500';
+    
+    // Calculate total amount
+    let totalAmount = order.total_amount;
+    if (!totalAmount || totalAmount <= 0) {
+      totalAmount = order.items.reduce((sum, item) => {
+        const quantity = Number(item.quantity) || 0;
+        const price = Number(item.price) || 0;
+        return sum + (quantity * price);
+      }, 0);
+    }
+
+    // Determine entity type and display
+    const getEntityInfo = () => {
+      if (isCounterOrder(order)) {
+        return {
+          icon: '#',
+          iconBg: 'bg-orange-100',
+          iconColor: 'text-orange-600',
+          label: 'Counter Number',
+          value: `Counter ${order.table_number || 'A'}`,
+          subLabel: 'Counter'
+        };
+      } else if (order.table_number) {
+        return {
+          icon: 'T',
+          iconBg: 'bg-green-100',
+          iconColor: 'text-green-600',
+          label: 'Table Number',
+          value: `Table ${order.table_number}`,
+          subLabel: 'QR Table'
+        };
+      } else {
+        return {
+          icon: '?',
+          iconBg: 'bg-gray-100',
+          iconColor: 'text-gray-600',
+          label: 'Entity',
+          value: 'Unassigned',
+          subLabel: 'No seat info'
+        };
+      }
+    };
+
+    const entityInfo = getEntityInfo();
     
     return (
-    <article key={order.id} className={`rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg border-l-4 ${borderColor}`}>
-      <div className="p-4 sm:p-6">
-        {/* Header - Modern SaaS Layout */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 space-y-4 sm:space-y-0">
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
-              <div className="text-sm font-medium text-gray-500">
-                {formatTime(order.created_at)}
+      <article key={order.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow px-4 py-3 md:px-5 md:py-4">
+        {/* Grid Layout - 6 columns on mobile, 12 on md+ */}
+        <div className="grid grid-cols-6 md:grid-cols-12 gap-3 md:gap-4">
+          {/* Order Time */}
+          <div className="col-span-3 md:col-span-2">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Clock className="h-4 w-4 text-blue-600" />
               </div>
-              <div className="hidden sm:block h-1 w-1 rounded-full bg-gray-300"></div>
-              <div className="font-semibold text-gray-900 text-lg sm:text-xl">
-                {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}
-              </div>
-              <div className="text-xs px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 font-medium w-fit">
-                {isCounterOrder(order) ? 'Counter' : 'QR Table'}
-              </div>
-            </div>
-            <div className="flex items-center gap-3 mb-3">
-              <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm font-medium text-gray-700 truncate">
-                {order.customer_name || 'Guest'}
-              </span>
-            </div>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <div className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-              £{(() => {
-                // Calculate total from items if total_amount is 0 or missing
-                let amount = order.total_amount;
-                if (!amount || amount <= 0) {
-                  amount = order.items.reduce((sum, item) => {
-                    const quantity = Number(item.quantity) || 0;
-                    const price = Number(item.price) || 0;
-                    return sum + (quantity * price);
-                  }, 0);
-                }
-                return amount.toFixed(2);
-              })()}
-            </div>
-          </div>
-        </div>
-
-        {/* Status badges - Modern Design */}
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
-          <Badge className={`${getStatusColor(order.order_status)} text-sm font-semibold px-4 py-2 rounded-full`}>
-            {order.order_status.replace('_', ' ').toLowerCase()}
-          </Badge>
-          {order.payment_status && (
-            <Badge className={`${getPaymentStatusColor(order.payment_status)} text-sm font-semibold px-4 py-2 rounded-full`}>
-              {order.payment_status.toUpperCase()}
-            </Badge>
-          )}
-        </div>
-
-        {/* Order Items - Modern SaaS Layout */}
-        <div className="space-y-4 mb-6">
-          <h4 className="text-base font-semibold text-gray-700 mb-4">Order Items</h4>
-          {order.items.map((item, index) => {
-            console.log('[LIVE ORDERS DEBUG] Rendering item:', item);
-            return (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                <div className="flex items-center gap-4 min-w-0 flex-1">
-                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-gray-600 border border-gray-200 flex-shrink-0">
-                    {item.quantity}
-                  </div>
-                  <span className="font-medium text-gray-900 text-base truncate">{item.item_name}</span>
+              <div className="min-w-0">
+                <div className="text-xs text-slate-500">Order Time</div>
+                <div className="font-medium text-sm md:text-base truncate">
+                  {formatTime(order.created_at)}
                 </div>
-                <span className="font-semibold text-gray-900 text-lg ml-3 flex-shrink-0">£{(item.quantity * item.price).toFixed(2)}</span>
               </div>
-            );
-          })}
+            </div>
+          </div>
+
+          {/* Entity (Table/Counter) */}
+          <div className="col-span-3 md:col-span-2">
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 ${entityInfo.iconBg} rounded-full flex items-center justify-center flex-shrink-0`}>
+                <span className={`text-sm font-bold ${entityInfo.iconColor}`}>{entityInfo.icon}</span>
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs text-slate-500">{entityInfo.label}</div>
+                <div className="font-medium text-sm md:text-base truncate">
+                  {entityInfo.value}
+                </div>
+                <div className="text-xs text-slate-400 truncate">
+                  {entityInfo.subLabel}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Customer */}
+          <div className="col-span-6 md:col-span-2">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <User className="h-4 w-4 text-purple-600" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs text-slate-500">Customer</div>
+                <div className="font-medium text-sm md:text-base truncate">
+                  {order.customer_name || 'Guest'}
+                </div>
+                {order.customer_phone && (
+                  <div className="text-xs text-slate-400 truncate">
+                    {order.customer_phone}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Orders */}
+          <div className="col-span-3 md:col-span-2">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-bold text-orange-600">#</span>
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs text-slate-500">Orders</div>
+                <div className="font-medium text-sm md:text-base">
+                  1 order
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Amount - Right aligned on md+ */}
+          <div className="col-span-3 md:col-span-2 md:text-right">
+            <div className="flex items-center gap-3 md:justify-end">
+              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-bold text-emerald-600">£</span>
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs text-slate-500">Total Amount</div>
+                <div className="text-lg font-semibold text-slate-900">
+                  £{totalAmount.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Badges - Full width under grid */}
+          <div className="col-span-6 md:col-span-2">
+            <div className="text-xs text-slate-500 mb-2">Status</div>
+            <div className="flex flex-wrap gap-2">
+              <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
+                {order.order_status.replace('_', ' ').toLowerCase()}
+              </Badge>
+              {order.payment_status && (
+                <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-2 py-1 rounded-full`}>
+                  {order.payment_status.toLowerCase()}
+                </Badge>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Action Buttons - Modern SaaS Design */}
+        {/* Action Buttons - Only show for live orders with actions */}
         {showActions && !isCompleted && (
-          <div className="flex flex-wrap items-center gap-3 pt-6 border-t border-gray-100">
+          <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-slate-100">
             {order.order_status === 'PLACED' && (
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm min-h-[36px]"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
               >
                 Start Preparing
               </Button>
@@ -901,7 +973,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'READY')}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm min-h-[36px]"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
               >
                 Mark Ready
               </Button>
@@ -910,7 +982,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'SERVING')}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm min-h-[36px]"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
               >
                 Mark Served
               </Button>
@@ -919,15 +991,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               <Button 
                 size="sm"
                 onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm min-h-[36px]"
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
               >
                 Mark Complete
               </Button>
             )}
           </div>
         )}
-      </div>
-    </article>
+      </article>
     );
   };
 
