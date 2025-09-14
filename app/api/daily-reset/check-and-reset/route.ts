@@ -209,7 +209,23 @@ export async function POST(request: NextRequest) {
     console.log('🔄 [DAILY RESET CHECK] Found tables to delete:', tables?.length || 0);
 
     if (tables && tables.length > 0) {
-      // Delete all table sessions first (if they exist)
+      // Step 3a: Clear table references from all orders to avoid foreign key constraint
+      console.log('🔄 [DAILY RESET CHECK] Step 3a: Clearing table references from orders...');
+      const { error: clearTableRefsError } = await supabase
+        .from('orders')
+        .update({ table_id: null })
+        .eq('venue_id', venueId);
+
+      if (clearTableRefsError) {
+        console.error('🔄 [DAILY RESET CHECK] Error clearing table references:', clearTableRefsError);
+        return NextResponse.json(
+          { error: 'Failed to clear table references from orders' },
+          { status: 500 }
+        );
+      }
+      console.log('🔄 [DAILY RESET CHECK] Cleared table references from all orders');
+
+      // Step 3b: Delete all table sessions first (if they exist)
       const { error: deleteSessionsError } = await supabase
         .from('table_sessions')
         .delete()
@@ -220,7 +236,7 @@ export async function POST(request: NextRequest) {
         // Don't fail for this, continue
       }
 
-      // Delete all tables for the venue
+      // Step 3c: Delete all tables for the venue
       const { error: deleteTablesError } = await supabase
         .from('tables')
         .delete()

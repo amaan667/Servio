@@ -199,6 +199,23 @@ export async function DELETE(request: NextRequest) {
       console.warn('🔍 [API] Both orders and reservations checks failed - proceeding with table removal but logging the issue');
     }
 
+    // Clear table references from orders before deleting the table
+    console.log('🔍 [API] Clearing table references from orders before deletion...');
+    const { error: clearTableRefsError } = await supabase
+      .from('orders')
+      .update({ table_id: null })
+      .eq('table_id', tableId)
+      .eq('venue_id', venueId);
+
+    if (clearTableRefsError) {
+      console.error('🔍 [API] Error clearing table references:', clearTableRefsError);
+      return NextResponse.json(
+        { error: 'Failed to clear table references from orders' },
+        { status: 500 }
+      );
+    }
+    console.log('🔍 [API] Cleared table references from orders');
+
     // Delete the table
     console.log('🔍 [API] Attempting to delete table...');
     const { error: deleteError } = await supabase
