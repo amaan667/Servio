@@ -1430,18 +1430,20 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   
                   {/* Table Orders */}
                   {(() => {
-                    const activeTableOrders = allTodayOrders.filter(order => 
-                      !isCounterOrder(order) && ACTIVE_TABLE_ORDER_STATUSES.includes(order.order_status)
+                    // Earlier Today should show ALL table orders from today (older than 30 mins)
+                    // regardless of whether they are active or terminal statuses
+                    const earlierTableOrders = allTodayOrders.filter(order => 
+                      !isCounterOrder(order)
                     );
-                    return activeTableOrders.length > 0 && (
+                    return earlierTableOrders.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                          Table Orders ({activeTableOrders.length})
+                          Table Orders ({earlierTableOrders.length})
                         </h3>
                         <div className="grid gap-3 sm:gap-4 grid-cols-1">
                           {(() => {
-                            const tableGroups = groupOrdersByTable(activeTableOrders);
+                            const tableGroups = groupOrdersByTable(earlierTableOrders);
                             const groupedOrderIds = new Set();
                             
                             // Collect all order IDs that are in groups
@@ -1450,7 +1452,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                             });
                             
                             // Find orders that couldn't be grouped (different customers, etc.)
-                            const ungroupedOrders = activeTableOrders.filter(order => 
+                            const ungroupedOrders = earlierTableOrders.filter(order => 
                               !groupedOrderIds.has(order.id)
                             );
                             
