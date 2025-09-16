@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     }
 
     // Validate status
-    const validStatuses = ['IN_PREP', 'READY', 'SERVING', 'SERVED', 'CANCELLED'];
+    const validStatuses = ['IN_PREP', 'READY', 'SERVING', 'SERVED', 'COMPLETED', 'CANCELLED'];
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }

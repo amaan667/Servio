@@ -14,7 +14,7 @@ export type Order = {
   customer_name: string;
   customer_phone?: string;
   customer_email?: string;
-  order_status: 'PLACED'|'IN_PREP'|'READY'|'SERVING'|'SERVED'|'CANCELLED'|'REFUNDED'|'EXPIRED';
+  order_status: 'PLACED'|'IN_PREP'|'READY'|'SERVING'|'SERVED'|'COMPLETED'|'CANCELLED'|'REFUNDED'|'EXPIRED';
   payment_status: 'unpaid'|'paid'|'till'|'UNPAID'|'PAID'|'TILL'|'PAY_LATER'|'REFUNDED';
   total_amount: number;
   calc_total_amount?: number;
@@ -59,6 +59,8 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
         return <CheckCircle className="h-3 w-3" />;
       case 'SERVED':
         return <CheckCircle className="h-3 w-3" />;
+      case 'COMPLETED':
+        return <CheckCircle className="h-3 w-3" />;
       case 'CANCELLED':
         return <XCircle className="h-3 w-3" />;
       case 'REFUNDED':
@@ -81,6 +83,8 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
       case 'SERVING':
         return 'bg-purple-100 text-purple-800';
       case 'SERVED':
+        return 'bg-green-100 text-green-800';
+      case 'COMPLETED':
         return 'bg-green-100 text-green-800';
       case 'CANCELLED':
         return 'bg-red-100 text-red-800';
@@ -137,7 +141,8 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
 
   // Primary action button logic - removed preparing state
   function primaryActionFor(order: Order) {
-    if (['SERVED','CANCELLED','REFUNDED','EXPIRED'].includes(order.order_status)) return null;
+    // Only hide action buttons for truly terminal states
+    if (['CANCELLED','REFUNDED','EXPIRED'].includes(order.order_status)) return null;
 
     if (order.payment_status !== 'PAID') {
       return { label: 'Mark Paid', onClick: () => markOrderPaid(order.id) };
@@ -148,6 +153,8 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
       case 'IN_PREP':  return { label: 'Mark Ready',      onClick: () => setOrderStatus(order.id, 'READY') };
       case 'READY':    return { label: 'Start Serving',   onClick: () => setOrderStatus(order.id, 'SERVING') };
       case 'SERVING':  return { label: 'Mark Served',     onClick: () => setOrderStatus(order.id, 'SERVED') };
+      case 'SERVED':   return { label: 'Mark Completed',  onClick: () => setOrderStatus(order.id, 'COMPLETED') };
+      case 'COMPLETED': return { label: 'Reopen Order',   onClick: () => setOrderStatus(order.id, 'SERVING') };
       default:         return null;
     }
   }
@@ -303,7 +310,7 @@ export function OrderCard({ order, onUpdate, venueCurrency = 'GBP' }: OrderCardP
         )}
 
         {/* Cancel Button (only for non-terminal states) */}
-        {!['SERVED','CANCELLED','REFUNDED','EXPIRED'].includes(order.order_status) && (
+        {!['CANCELLED','REFUNDED','EXPIRED'].includes(order.order_status) && (
           <Button
             onClick={() => handleAction(() => setOrderStatus(order.id, 'CANCELLED'))}
             disabled={updating}

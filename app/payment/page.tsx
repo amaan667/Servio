@@ -16,7 +16,7 @@ import {
   Loader2
 } from "lucide-react";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
-import { OrderTimeline } from "@/components/order-timeline";
+import OrderTimeline from "@/components/OrderTimeline";
 
 interface CheckoutData {
   venueId: string;
@@ -106,7 +106,7 @@ export default function PaymentPage() {
         })),
         total_amount: Math.round(checkoutData.total * 100), // Convert to pence
         order_status: 'PLACED',
-        payment_status: action === 'till' ? 'TILL' : action === 'later' ? 'PAY_LATER' : 'PAID',
+        payment_status: action === 'till' ? 'TILL' : action === 'later' ? 'PAY_LATER' : 'UNPAID',
         payment_method: action === 'demo' ? 'demo' : action === 'stripe' ? 'stripe' : action === 'till' ? 'till' : 'later',
         source: checkoutData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
         notes: `${action} payment order`
