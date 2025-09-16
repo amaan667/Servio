@@ -16,7 +16,7 @@ import {
   Loader2
 } from "lucide-react";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
-import OrderTimeline from "@/components/OrderTimeline";
+import { OrderTimeline } from "@/components/order-timeline";
 
 interface CheckoutData {
   venueId: string;
