@@ -160,6 +160,23 @@ export async function POST() {
       console.log('✅ Table 10 order visibility fixed');
     }
     
+    // Fix Earlier Today order status - change from COMPLETED to IN_PREP so action buttons appear
+    console.log('📋 Fixing Earlier Today order status...');
+    const { error: earlierTodayError } = await supabase.rpc('exec_sql', {
+      sql: `UPDATE orders 
+            SET order_status = 'IN_PREP', payment_status = 'PAID', updated_at = NOW()
+            WHERE venue_id = 'venue-1e02af4d' 
+            AND table_number = 1 
+            AND customer_name = 'Amaan Tanveer'
+            AND order_status = 'COMPLETED';`
+    });
+    
+    if (earlierTodayError) {
+      console.log('⚠️  Error fixing Earlier Today order:', earlierTodayError.message);
+    } else {
+      console.log('✅ Earlier Today order fixed - should now show action buttons');
+    }
+    
     return NextResponse.json({
       success: true,
       message: 'Emergency fix applied successfully',
@@ -169,7 +186,8 @@ export async function POST() {
         dataUpdated: !updateError,
         tablesProcessed: tables?.length || 0,
         orderSourceFixed: !orderUpdateError,
-        table10OrderFixed: !table10Error
+        table10OrderFixed: !table10Error,
+        earlierTodayOrderFixed: !earlierTodayError
       }
     });
     
