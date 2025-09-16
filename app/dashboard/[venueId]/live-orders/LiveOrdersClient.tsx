@@ -338,13 +338,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             return false;
           }
           
-          // Show completed orders in Earlier Today (they move from Live Orders when completed)
-          // No special filtering needed for completed orders
-          
+          // Show all orders from earlier today - keep their original status
           return true;
         }).map((order: any) => {
           // Keep orders in their original status - don't auto-complete them
-          console.log('[LIVE ORDERS DEBUG] Processing earlier today order - keeping original status:', order.id);
+          console.log('[LIVE ORDERS DEBUG] Processing earlier today order - keeping original status:', order.id, order.order_status);
           return order;
         });
         
@@ -448,17 +446,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             if (isInTodayWindow) {
               // Only add to all today if it's NOT already in live orders
               if (!(isLiveOrder && isRecentOrder)) {
-                console.log('[LIVE ORDERS DEBUG] Adding to all today orders - not a live order, marking as PAID and COMPLETED');
-                // Mark orders not in live tab as PAID and COMPLETED
-                const processedOrder = {
-                  ...newOrder,
-                  payment_status: 'PAID',
-                  order_status: 'COMPLETED' as const
-                };
-                setAllTodayOrders(prev => [processedOrder, ...prev]);
-                
-                // Update the order in database to reflect the status change
-                updateOrderToCompletedAndPaid(newOrder.id);
+                console.log('[LIVE ORDERS DEBUG] Adding to all today orders - keeping original status');
+                // Keep original status - don't auto-complete orders
+                setAllTodayOrders(prev => [newOrder, ...prev]);
               } else {
                 setAllTodayOrders(prev => [newOrder, ...prev]);
               }
@@ -532,17 +522,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 });
                 
                 // Keep original status when moving to "Earlier Today"
-                const processedOrder = { ...newOrder };
-                
                 setAllTodayOrders(prev => {
                   const exists = prev.find(order => order.id === newOrder.id);
                   if (!exists) {
-                    return [processedOrder, ...prev];
+                    return [newOrder, ...prev];
                   }
-                  return prev.map(order => order.id === newOrder.id ? processedOrder : order);
+                  return prev.map(order => order.id === newOrder.id ? newOrder : order);
                 });
-                
-                // Do not mutate database status here
               }
             }
             
@@ -601,21 +587,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         
         // Move aged-out or completed orders to all today
         if (movedToAllToday.length > 0) {
-          console.log('[LIVE ORDERS DEBUG] Moving orders from live to all today - marking as PAID and COMPLETED:', movedToAllToday.length);
+          console.log('[LIVE ORDERS DEBUG] Moving orders from live to all today - keeping original status:', movedToAllToday.length);
           
-          // Mark moved orders as PAID and COMPLETED
-          const processedMovedOrders = movedToAllToday.map((order: Order) => ({
-            ...order,
-            payment_status: 'PAID',
-            order_status: 'COMPLETED' as const
-          }));
-          
-          setAllTodayOrders(prev => [...processedMovedOrders, ...prev]);
-          
-          // Update the database for these orders to reflect the status change
-          processedMovedOrders.forEach((order: Order) => {
-            updateOrderToCompletedAndPaid(order.id);
-          });
+          // Keep original status - don't auto-complete orders
+          setAllTodayOrders(prev => [...movedToAllToday, ...prev]);
           
           // Refresh the authoritative counts after moving orders
           refetchCounts();
@@ -897,8 +872,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               )}
             </div>
 
-            {/* Action Buttons - Only show for live orders with actions */}
-            {showActions && !isCompleted && (
+            {/* Action Buttons - Show for orders that aren't completed */}
+            {showActions && order.order_status !== 'COMPLETED' && (
               <div className="flex items-center gap-2">
                 {order.order_status === 'PLACED' && (
                   <Button 
