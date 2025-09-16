@@ -83,29 +83,52 @@ export default function CustomerOrderPage() {
       if (sessionParam) {
         console.log('[ORDER PAGE] Checking for existing order with session:', sessionParam);
         
-        // Check localStorage for existing order data with this session
-        const storedOrderData = localStorage.getItem(`servio-order-${sessionParam}`);
-        if (storedOrderData) {
-          const orderData = JSON.parse(storedOrderData);
-          console.log('[ORDER PAGE] Found existing unpaid order in localStorage:', orderData);
+        // First check if the order exists in the database and is still active
+        const { data: orderInDb, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', sessionParam)
+          .eq('venue_id', venueSlug)
+          .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
+          .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
+          .single();
+
+        if (error) {
+          console.log('[ORDER PAGE] Order not found in database or not active:', error);
+        }
+
+        // Only proceed with localStorage check if order exists and is active in database
+        if (orderInDb) {
+          console.log('[ORDER PAGE] Found active order in database:', orderInDb);
           
-          // Redirect to payment page with existing order data
-          const checkoutData = {
-            venueId: orderData.venueId,
-            venueName: 'Restaurant',
-            tableNumber: orderData.tableNumber,
-            customerName: orderData.customerName,
-            customerPhone: orderData.customerPhone,
-            cart: orderData.cart || [],
-            total: orderData.total,
-            orderId: orderData.orderId,
-            orderNumber: orderData.orderNumber,
-            sessionId: sessionParam,
-          };
-          
-          localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
-          window.location.href = '/payment';
-          return;
+          // Check localStorage for existing order data with this session
+          const storedOrderData = localStorage.getItem(`servio-order-${sessionParam}`);
+          if (storedOrderData) {
+            const orderData = JSON.parse(storedOrderData);
+            console.log('[ORDER PAGE] Found existing unpaid order in localStorage:', orderData);
+            
+            // Redirect to payment page with existing order data
+            const checkoutData = {
+              venueId: orderData.venueId,
+              venueName: 'Restaurant',
+              tableNumber: orderData.tableNumber,
+              customerName: orderData.customerName,
+              customerPhone: orderData.customerPhone,
+              cart: orderData.cart || [],
+              total: orderData.total,
+              orderId: orderData.orderId,
+              orderNumber: orderData.orderNumber,
+              sessionId: sessionParam,
+            };
+            
+            localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
+            window.location.href = '/payment';
+            return;
+          }
+        } else {
+          // Order not active in database, clear localStorage
+          console.log('[ORDER PAGE] Order not active in database, clearing localStorage');
+          localStorage.removeItem(`servio-order-${sessionParam}`);
         }
       }
       
@@ -114,27 +137,44 @@ export default function CustomerOrderPage() {
       if (storedSession && !sessionParam) {
         console.log('[ORDER PAGE] Checking localStorage session:', storedSession);
         
-        const storedOrderData = localStorage.getItem(`servio-order-${storedSession}`);
-        if (storedOrderData) {
-          const orderData = JSON.parse(storedOrderData);
-          console.log('[ORDER PAGE] Found existing unpaid order in localStorage session:', orderData);
-          
-          const checkoutData = {
-            venueId: orderData.venueId,
-            venueName: 'Restaurant',
-            tableNumber: orderData.tableNumber,
-            customerName: orderData.customerName,
-            customerPhone: orderData.customerPhone,
-            cart: orderData.cart || [],
-            total: orderData.total,
-            orderId: orderData.orderId,
-            orderNumber: orderData.orderNumber,
-            sessionId: storedSession,
-          };
-          
-          localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
-          window.location.href = '/payment';
-          return;
+        // Check if the session order exists and is active in database
+        const { data: sessionOrderInDb, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', storedSession)
+          .eq('venue_id', venueSlug)
+          .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
+          .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS'])
+          .single();
+
+        if (sessionOrderInDb) {
+          const storedOrderData = localStorage.getItem(`servio-order-${storedSession}`);
+          if (storedOrderData) {
+            const orderData = JSON.parse(storedOrderData);
+            console.log('[ORDER PAGE] Found existing unpaid order in localStorage session:', orderData);
+            
+            const checkoutData = {
+              venueId: orderData.venueId,
+              venueName: 'Restaurant',
+              tableNumber: orderData.tableNumber,
+              customerName: orderData.customerName,
+              customerPhone: orderData.customerPhone,
+              cart: orderData.cart || [],
+              total: orderData.total,
+              orderId: orderData.orderId,
+              orderNumber: orderData.orderNumber,
+              sessionId: storedSession,
+            };
+            
+            localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
+            window.location.href = '/payment';
+            return;
+          }
+        } else {
+          // Session order not active in database, clear localStorage
+          console.log('[ORDER PAGE] Session order not active in database, clearing localStorage');
+          localStorage.removeItem(`servio-order-${storedSession}`);
+          localStorage.removeItem('servio-current-session');
         }
       }
       
@@ -178,45 +218,82 @@ export default function CustomerOrderPage() {
     getUser();
 
     // Check for existing unpaid orders
-    const checkUnpaidOrders = () => {
-      // Check for table-based session
-      const tableSessionKey = `servio-session-${tableNumber}`;
-      const tableSessionData = localStorage.getItem(tableSessionKey);
-      
-      // Check for session-based session (if sessionId exists in URL)
-      const sessionId = searchParams?.get('sessionId');
-      const sessionSessionKey = sessionId ? `servio-session-${sessionId}` : null;
-      const sessionSessionData = sessionSessionKey ? localStorage.getItem(sessionSessionKey) : null;
-      
-      const sessionData = tableSessionData || sessionSessionData;
-      
-      if (sessionData) {
-        try {
-          const session = JSON.parse(sessionData);
-          console.log('[ORDER PAGE] Found existing session:', session);
-          
-          // If there's an unpaid order, redirect to order summary
-          if (session.paymentStatus === 'unpaid' || session.paymentStatus === 'till') {
-            console.log('[ORDER PAGE] Unpaid order detected, redirecting to summary...');
-            
-            // Store the session data for the summary page
-            localStorage.setItem('servio-unpaid-order', JSON.stringify(session));
-            
-            // Redirect to order summary page
-            router.push(`/order-summary?${isCounterOrder ? 'counter' : 'table'}=${orderLocation}&session=${session.orderId}`);
-            return;
-          }
-          
-          // If paid order, show checkout form for new order
-          setShowCheckout(true);
-          setCustomerInfo({
-            name: session.customerName,
-            phone: session.customerPhone
-          });
-          
-        } catch (error) {
-          console.error('[ORDER PAGE] Error parsing session data:', error);
+    const checkUnpaidOrders = async () => {
+      try {
+        // First, check if there are active orders in the database for this table
+        const { data: activeOrders, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('venue_id', venueSlug)
+          .eq('table_number', tableNumber)
+          .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
+          .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS']);
+
+        if (error) {
+          console.error('[ORDER PAGE] Error checking for active orders:', error);
         }
+
+        console.log('[ORDER PAGE] Active orders in database:', activeOrders);
+
+        // If there are active orders in the database, check localStorage for session data
+        if (activeOrders && activeOrders.length > 0) {
+          // Check for table-based session
+          const tableSessionKey = `servio-session-${tableNumber}`;
+          const tableSessionData = localStorage.getItem(tableSessionKey);
+          
+          // Check for session-based session (if sessionId exists in URL)
+          const sessionId = searchParams?.get('sessionId');
+          const sessionSessionKey = sessionId ? `servio-session-${sessionId}` : null;
+          const sessionSessionData = sessionSessionKey ? localStorage.getItem(sessionSessionKey) : null;
+          
+          const sessionData = tableSessionData || sessionSessionData;
+          
+          if (sessionData) {
+            try {
+              const session = JSON.parse(sessionData);
+              console.log('[ORDER PAGE] Found existing session with active orders:', session);
+              
+              // If there's an unpaid order, redirect to order summary
+              if (session.paymentStatus === 'unpaid' || session.paymentStatus === 'till') {
+                console.log('[ORDER PAGE] Unpaid order detected with active orders in DB, redirecting to summary...');
+                
+                // Store the session data for the summary page
+                localStorage.setItem('servio-unpaid-order', JSON.stringify(session));
+                
+                // Redirect to order summary page
+                router.push(`/order-summary?${isCounterOrder ? 'counter' : 'table'}=${orderLocation}&session=${session.orderId}`);
+                return;
+              }
+              
+              // If paid order, show checkout form for new order
+              setShowCheckout(true);
+              setCustomerInfo({
+                name: session.customerName,
+                phone: session.customerPhone
+              });
+              
+            } catch (error) {
+              console.error('[ORDER PAGE] Error parsing session data:', error);
+            }
+          } else {
+            // No session data but active orders exist - this shouldn't happen normally
+            console.log('[ORDER PAGE] Active orders exist but no session data found');
+          }
+        } else {
+          // No active orders in database - clear any stale localStorage data
+          console.log('[ORDER PAGE] No active orders in database, clearing stale session data');
+          const tableSessionKey = `servio-session-${tableNumber}`;
+          localStorage.removeItem(tableSessionKey);
+          
+          // Also clear any session-based data
+          const sessionId = searchParams?.get('sessionId');
+          if (sessionId) {
+            const sessionSessionKey = `servio-session-${sessionId}`;
+            localStorage.removeItem(sessionSessionKey);
+          }
+        }
+      } catch (error) {
+        console.error('[ORDER PAGE] Error in checkUnpaidOrders:', error);
       }
     };
 
