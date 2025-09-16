@@ -343,13 +343,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           
           return true;
         }).map((order: any) => {
-          // Mark all orders not in live orders as PAID and COMPLETED
-          console.log('[LIVE ORDERS DEBUG] Processing earlier today order - marking as PAID and COMPLETED:', order.id);
-          return {
-            ...order,
-            payment_status: 'PAID',
-            order_status: 'COMPLETED' as const
-          };
+          // Keep orders in their original status - don't auto-complete them
+          console.log('[LIVE ORDERS DEBUG] Processing earlier today order - keeping original status:', order.id);
+          return order;
         });
         
         console.log('[LIVE ORDERS DEBUG] Filtered all today orders (excluding live orders):', {
@@ -359,11 +355,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         });
         
         setAllTodayOrders(allTodayFiltered as Order[]);
-        
-        // Update the database for these orders to reflect the status change
-        allTodayFiltered.forEach((order: any) => {
-          updateOrderToCompletedAndPaid(order.id);
-        });
       }
       if (!historyError && historyData) {
         // Mark all historical orders as PAID and COMPLETED
@@ -535,17 +526,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               
               // Add to all today orders if it's from today and not recent
               if (todayWindow && orderCreatedAt >= new Date(todayWindow.startUtcISO) && orderCreatedAt < new Date(todayWindow.endUtcISO)) {
-                console.log('[LIVE ORDERS DEBUG] Adding order to all today orders - marking as PAID and COMPLETED:', {
+                console.log('[LIVE ORDERS DEBUG] Adding order to all today orders - keeping original status:', {
                   orderId: newOrder.id,
                   newStatus: newOrder.order_status
                 });
                 
-                // Mark order as PAID and COMPLETED when moving to "Earlier Today"
-                const processedOrder = {
-                  ...newOrder,
-                  payment_status: 'PAID',
-                  order_status: 'COMPLETED' as const
-                };
+                // Keep original status when moving to "Earlier Today"
+                const processedOrder = { ...newOrder };
                 
                 setAllTodayOrders(prev => {
                   const exists = prev.find(order => order.id === newOrder.id);
@@ -555,8 +542,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   return prev.map(order => order.id === newOrder.id ? processedOrder : order);
                 });
                 
-                // Update the order in database to reflect the status change
-                updateOrderToCompletedAndPaid(newOrder.id);
+                // Do not mutate database status here
               }
             }
             
@@ -1437,7 +1423,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         Counter Orders ({allTodayOrders.filter(order => isCounterOrder(order)).length})
                       </h3>
                       <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                        {allTodayOrders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
+                        {allTodayOrders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, true))}
                       </div>
                     </div>
                   )}
@@ -1472,11 +1458,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                               <>
                                 {/* Render grouped orders */}
                                 {Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
-                                  renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
+                                  renderTableGroupCard(Number(tableNumber), tableOrdersList, true)
                                 )}
                                 
                                 {/* Render ungrouped orders as individual cards */}
-                                {ungroupedOrders.map(order => renderOrderCard(order, false))}
+                                {ungroupedOrders.map(order => renderOrderCard(order, true))}
                               </>
                             );
                           })()}
