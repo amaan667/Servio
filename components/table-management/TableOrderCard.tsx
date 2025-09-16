@@ -133,6 +133,14 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1 min-w-0">
+            {/* Order ID - Prominently displayed */}
+            <div className="mb-3">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Order ID</div>
+              <div className="text-xl font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg inline-block">
+                #{order.id.slice(-6).toUpperCase()}
+              </div>
+            </div>
+            
             <div className="flex items-center gap-3 mb-2">
               <h3 className="font-semibold text-lg text-gray-900">
                 {order.table_label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)}
@@ -154,7 +162,13 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
             <div className="text-sm text-gray-500">{formatTime(order.created_at)}</div>
           </div>
           <div className="text-right flex items-center gap-2">
-            <div className="text-2xl font-bold text-gray-900">£{getTotalAmount()}</div>
+            {/* Total Amount - More prominent */}
+            <div className="text-right">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Total</div>
+              <div className="text-3xl font-bold text-green-600 bg-green-50 px-4 py-2 rounded-lg">
+                £{getTotalAmount()}
+              </div>
+            </div>
             {/* Remove Order Button - appears on hover */}
             <div className={`transition-opacity duration-200 ${showHoverRemove ? 'opacity-100' : 'opacity-0'}`}>
               <TooltipProvider>
@@ -179,11 +193,17 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
           </div>
         </div>
 
-        {/* Customer Info */}
+        {/* Customer Info - More prominent */}
         {order.customer_name && (
-          <div className="flex items-center gap-2 mb-4">
-            <User className="h-4 w-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-700">{order.customer_name}</span>
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Customer</div>
+            <div className="flex items-center gap-2">
+              <User className="h-5 w-5 text-gray-600" />
+              <span className="text-lg font-bold text-gray-900">{order.customer_name}</span>
+              {order.customer_phone && (
+                <span className="text-sm text-gray-600 ml-2">• {order.customer_phone}</span>
+              )}
+            </div>
           </div>
         )}
 

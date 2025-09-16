@@ -148,8 +148,10 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
             </div>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-gray-900 mb-1">£{getTotalAmountForAllOrders()}</div>
-            <div className="text-sm text-gray-500 font-medium">Table Total</div>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Table Total</div>
+            <div className="text-4xl font-bold text-green-600 bg-green-50 px-4 py-3 rounded-lg">
+              £{getTotalAmountForAllOrders()}
+            </div>
           </div>
         </div>
 
@@ -202,31 +204,35 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId, onActionCompl
                         <div className="text-base font-semibold text-gray-900">
                           {formatTime(order.created_at)}
                         </div>
-                        {hasMultipleOrders && (
-                          <div className="text-xs text-gray-500 font-medium">
-                            Order #{order.id.slice(-6).toUpperCase()}
-                          </div>
-                        )}
+                        {/* Order ID - Always show prominently */}
+                        <div className="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block mt-1">
+                          Order #{order.id.slice(-6).toUpperCase()}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-gray-900">£{getTotalAmount(order)}</div>
-                      <div className="text-xs text-gray-500">Order Total</div>
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Total</div>
+                      <div className="text-3xl font-bold text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                        £{getTotalAmount(order)}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Customer Info */}
+                  {/* Customer Info - More prominent */}
                   {order.customer_name && (
-                    <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-                      <User className="h-5 w-5 text-gray-500" />
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">{order.customer_name}</span>
-                        {order.customer_phone && (
-                          <>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-sm text-gray-600">{order.customer_phone}</span>
-                          </>
-                        )}
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Customer</div>
+                      <div className="flex items-center gap-3">
+                        <User className="h-6 w-6 text-gray-600" />
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-gray-900">{order.customer_name}</span>
+                          {order.customer_phone && (
+                            <>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-sm text-gray-600">{order.customer_phone}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}

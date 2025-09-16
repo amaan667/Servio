@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
 import { useTabCounts } from "@/hooks/use-tab-counts";
+import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-utils";
 
 
 interface Order {
@@ -768,15 +769,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Calculate table total and status summary
   const getTableSummary = (orders: Order[]) => {
     const total = orders.reduce((sum, order) => {
-      let amount = order.total_amount;
-      if (!amount || amount <= 0) {
-        amount = order.items.reduce((itemSum, item) => {
-          const quantity = Number(item.quantity) || 0;
-          const price = Number(item.price) || 0;
-          return itemSum + (quantity * price);
-        }, 0);
-      }
-      return sum + amount;
+      return sum + calculateOrderTotal({ total_amount: order.total_amount, items: order.items });
     }, 0);
 
     const statuses = orders.map(order => order.order_status);
@@ -845,15 +838,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const renderOrderCard = (order: Order, showActions: boolean = true) => {
     const isCompleted = order.order_status === 'COMPLETED';
     
-    // Calculate total amount
-    let totalAmount = order.total_amount;
-    if (!totalAmount || totalAmount <= 0) {
-      totalAmount = order.items.reduce((sum, item) => {
-        const quantity = Number(item.quantity) || 0;
-        const price = Number(item.price) || 0;
-        return sum + (quantity * price);
-      }, 0);
-    }
+    // Calculate total amount using standardized function
+    const totalAmount = calculateOrderTotal({ total_amount: order.total_amount, items: order.items });
 
     // Generate order ID for display (last 6 characters)
     const orderId = order.id.slice(-6).toUpperCase();
@@ -1062,7 +1048,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 <div>
                   <div className="text-sm font-medium text-gray-500">Total Amount</div>
                   <div className="text-3xl font-bold text-gray-900">
-                    £{summary.total.toFixed(2)}
+                    £{formatPrice(summary.total)}
                   </div>
                 </div>
               </div>
@@ -1161,17 +1147,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                       <div>
                         <div className="text-sm font-medium text-gray-500">Total</div>
                         <div className="text-2xl font-bold text-gray-900">
-                          £{(() => {
-                            let amount = order.total_amount;
-                            if (!amount || amount <= 0) {
-                              amount = order.items.reduce((sum, item) => {
-                                const quantity = Number(item.quantity) || 0;
-                                const price = Number(item.price) || 0;
-                                return sum + (quantity * price);
-                              }, 0);
-                            }
-                            return amount.toFixed(2);
-                          })()}
+                          £{formatPrice(calculateOrderTotal({ total_amount: order.total_amount, items: order.items }))}
                         </div>
                       </div>
                     </div>
