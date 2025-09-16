@@ -259,32 +259,20 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             reason: 'active status within 30 minutes'
           });
         } else {
-          console.log("LIVE_ORDERS: Order excluded from live tab - marking as PAID and COMPLETED", {
+          console.log("LIVE_ORDERS: Order excluded from live tab - keeping original status", {
             id: order.id,
             status: order.order_status,
             created: order.created_at,
             reason: 'inactive status or older than 30 minutes'
           });
-          // Update non-live orders to be PAID and COMPLETED
-          updateOrderToCompletedAndPaid(order.id);
+          // Keep original status - don't auto-complete orders
         }
         
         return isActive;
       }) || [];
 
-      // Process all non-live orders to mark them as PAID and COMPLETED
-      const nonLiveOrders = allVenueOrders?.filter((order: any) => {
-        const orderCreatedAt = new Date(order.created_at);
-        const isActive = ACTIVE_STATUSES.includes(order.order_status) && 
-                        orderCreatedAt >= new Date(thirtyMinutesAgo);
-        return !isActive;
-      }) || [];
-
-      // Mark non-live orders as PAID and COMPLETED in the UI
-      nonLiveOrders.forEach((order: any) => {
-        order.payment_status = 'PAID';
-        order.order_status = 'COMPLETED';
-      });
+      // Keep all orders in their original status - don't auto-complete them
+      // Only mark orders as completed when they're actually completed
 
       console.log("LIVE_ORDERS: Live orders filtering results", {
         totalOrders: allVenueOrders?.length || 0,
@@ -797,17 +785,9 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
               setOrders(prev => [newOrder, ...prev]);
               setAllOrders(prev => [newOrder, ...prev]);
             } else {
-              console.log("LIVE_ORDERS: Adding new order to non-live orders - marking as PAID and COMPLETED");
-              // Mark orders not in live orders as PAID and COMPLETED
-              const processedOrder = {
-                ...newOrder,
-                payment_status: 'PAID',
-                order_status: 'COMPLETED'
-              };
-              setAllOrders(prev => [processedOrder, ...prev]);
-              
-              // Update the order in database to reflect the status change
-              updateOrderToCompletedAndPaid(newOrder.id);
+              console.log("LIVE_ORDERS: Adding new order to non-live orders - keeping original status");
+              // Keep original status - don't auto-complete orders
+              setAllOrders(prev => [newOrder, ...prev]);
             }
             
             // Trigger a custom event to notify other components

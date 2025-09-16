@@ -342,6 +342,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           return true;
         }).map((order: any) => {
           // Keep orders in their original status - don't auto-complete them
+          // Only mark as completed/paid if they are from previous days (history)
           console.log('[LIVE ORDERS DEBUG] Processing earlier today order - keeping original status:', order.id, order.order_status);
           return order;
         });
