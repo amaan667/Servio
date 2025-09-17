@@ -19,6 +19,8 @@ interface Order {
   id: string;
   venue_id: string;
   table_number: number;
+  counter_number?: number;
+  order_type?: 'table' | 'counter';
   customer_name: string;
   customer_phone: string;
   customer_email?: string;
@@ -29,14 +31,25 @@ interface Order {
   items: OrderItem[];
   created_at: string;
   updated_at: string;
+  source?: 'qr' | 'counter';
 }
 
-const ORDER_STATUSES = [
+// Table order timeline (includes serving step)
+const TABLE_ORDER_STATUSES = [
   { key: 'PLACED', label: 'Order Placed', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Order has been placed.' },
   { key: 'ACCEPTED', label: 'Order Accepted', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Your order has been accepted by the kitchen.' },
   { key: 'IN_PREP', label: 'In Preparation', icon: RefreshCw, color: 'bg-orange-100 text-orange-800', description: 'Your order is being prepared in the kitchen.' },
   { key: 'READY', label: 'Ready for Pickup / Serving', icon: CheckCircle, color: 'bg-blue-100 text-blue-800', description: 'Your order is ready for pickup / serving.' },
   { key: 'SERVING', label: 'Being Served', icon: CheckCircle, color: 'bg-purple-100 text-purple-800', description: 'Your order has been served. Enjoy your meal!' },
+  { key: 'COMPLETED', label: 'Completed', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Thank you for your order!' }
+];
+
+// Counter order timeline (no serving step - goes directly from ready to completed)
+const COUNTER_ORDER_STATUSES = [
+  { key: 'PLACED', label: 'Order Placed', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Order has been placed.' },
+  { key: 'ACCEPTED', label: 'Order Accepted', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Your order has been accepted by the kitchen.' },
+  { key: 'IN_PREP', label: 'In Preparation', icon: RefreshCw, color: 'bg-orange-100 text-orange-800', description: 'Your order is being prepared in the kitchen.' },
+  { key: 'READY', label: 'Ready for Pickup', icon: CheckCircle, color: 'bg-blue-100 text-blue-800', description: 'Your order is ready for pickup at the counter.' },
   { key: 'COMPLETED', label: 'Completed', icon: CheckCircle, color: 'bg-green-100 text-green-800', description: 'Thank you for your order!' }
 ];
 
@@ -60,6 +73,11 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   const supabase = createClient();
+
+  // Determine if it's a counter order
+  const isCounterOrder = (order: Order) => {
+    return order.source === 'counter' || order.order_type === 'counter';
+  };
 
   const fetchOrder = async () => {
     if (!orderId) return;
@@ -150,8 +168,9 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
     }
   }, [orderId, supabase]);
 
-  const getStatusInfo = (status: string) => {
-    return ORDER_STATUSES.find(s => s.key === status) || GREYED_OUT_STATUSES.find(s => s.key === status) || {
+  const getStatusInfo = (status: string, order: Order) => {
+    const statusArray = isCounterOrder(order) ? COUNTER_ORDER_STATUSES : TABLE_ORDER_STATUSES;
+    return statusArray.find(s => s.key === status) || GREYED_OUT_STATUSES.find(s => s.key === status) || {
       key: status,
       label: status.replace('_', ' '),
       icon: Clock,
@@ -162,23 +181,24 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
 
   const getCurrentStatusIndex = () => {
     if (!order) return 0;
-    const currentStatus = order.order_status;
-    return ORDER_STATUSES.findIndex(status => status.key === currentStatus);
+    const statusArray = isCounterOrder(order) ? COUNTER_ORDER_STATUSES : TABLE_ORDER_STATUSES;
+    return statusArray.findIndex(status => status.key === order.order_status);
   };
 
   const getDisplayStatuses = () => {
-    if (!order) return ORDER_STATUSES;
+    if (!order) return TABLE_ORDER_STATUSES;
     
+    const statusArray = isCounterOrder(order) ? COUNTER_ORDER_STATUSES : TABLE_ORDER_STATUSES;
     const currentStatus = order.order_status;
     const isGreyedOutStatus = GREYED_OUT_STATUSES.some(status => status.key === currentStatus);
     
     if (isGreyedOutStatus) {
       // If order is in a greyed-out status, show all normal statuses + the greyed-out one
       const greyedOutStatus = GREYED_OUT_STATUSES.find(status => status.key === currentStatus);
-      return [...ORDER_STATUSES, greyedOutStatus!];
+      return [...statusArray, greyedOutStatus!];
     }
     
-    return ORDER_STATUSES;
+    return statusArray;
   };
 
   if (loading) {

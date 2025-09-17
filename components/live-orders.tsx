@@ -80,7 +80,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
   // Determine if it's a counter order
   const isCounterOrder = (order: OrderWithItems) => {
-    return order.source === 'counter' || (order.table_number !== null && order.table_number >= 10);
+    return order.source === 'counter';
   };
 
   // Add comprehensive logging function

@@ -17,9 +17,64 @@ interface Order {
   order_status: string;
   updated_at: string;
   created_at: string;
+  source?: 'qr' | 'counter';
+  order_type?: 'table' | 'counter';
 }
 
-const ORDER_STATUSES = [
+// Table order timeline (includes serving step)
+const TABLE_ORDER_STATUSES = [
+  { 
+    key: 'PLACED', 
+    label: 'Order Placed', 
+    icon: Clock, 
+    color: 'bg-yellow-100 text-yellow-800',
+    dotColor: 'bg-yellow-500',
+    description: 'Your order has been received and is being prepared' 
+  },
+  { 
+    key: 'ACCEPTED', 
+    label: 'Order Accepted', 
+    icon: CheckCircle, 
+    color: 'bg-blue-100 text-blue-800',
+    dotColor: 'bg-blue-500',
+    description: 'Your order has been accepted by the kitchen' 
+  },
+  { 
+    key: 'IN_PREP', 
+    label: 'In Preparation', 
+    icon: ChefHat, 
+    color: 'bg-orange-100 text-orange-800',
+    dotColor: 'bg-orange-500',
+    description: 'Your food is being prepared in the kitchen' 
+  },
+  { 
+    key: 'READY', 
+    label: 'Ready for Pickup / Serving', 
+    icon: Utensils, 
+    color: 'bg-green-100 text-green-800',
+    dotColor: 'bg-green-500',
+    description: 'Your order is ready for pickup / serving' 
+  },
+  { 
+    key: 'SERVING', 
+    label: 'Being Served', 
+    icon: CheckCircle, 
+    color: 'bg-green-100 text-green-800',
+    dotColor: 'bg-green-500',
+    description: 'Your order is being served to your table' 
+  },
+  { 
+    key: 'COMPLETED', 
+    label: 'Order Completed', 
+    icon: CheckCircle, 
+    color: 'bg-green-100 text-green-800',
+    dotColor: 'bg-green-500',
+    description: 'Thank you for your order!' 
+  }
+];
+
+// Counter order timeline (no serving step - goes directly from ready to completed)
+const COUNTER_ORDER_STATUSES = [
   { 
     key: 'PLACED', 
     label: 'Order Placed', 
@@ -53,29 +108,17 @@ const ORDER_STATUSES = [
     description: 'Your order is ready! Please collect from the counter' 
   },
   { 
-    key: 'OUT_FOR_DELIVERY', 
-    label: 'Out for Delivery', 
-    icon: Truck, 
-    color: 'bg-purple-100 text-purple-800',
-    dotColor: 'bg-purple-500',
-    description: 'Your order is on its way to you' 
-  },
-  { 
-    key: 'SERVING', 
-    label: 'Being Served', 
-    icon: CheckCircle, 
-    color: 'bg-green-100 text-green-800',
-    dotColor: 'bg-green-500',
-    description: 'Your order is being served to your table' 
-  },
-  { 
     key: 'COMPLETED', 
     label: 'Order Completed', 
     icon: CheckCircle, 
     color: 'bg-green-100 text-green-800',
     dotColor: 'bg-green-500',
     description: 'Thank you for your order!' 
-  },
+  }
+];
+
+// Greyed out statuses (for cancelled, refunded, expired orders)
+const GREYED_OUT_STATUSES = [
   { 
     key: 'CANCELLED', 
     label: 'Order Cancelled', 
@@ -110,6 +153,11 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
 
   const supabase = createClient();
 
+  // Determine if it's a counter order
+  const isCounterOrder = (order: Order) => {
+    return order.source === 'counter' || order.order_type === 'counter';
+  };
+
   const fetchOrder = async () => {
     if (!orderId) return;
 
@@ -121,7 +169,7 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
 
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_status, updated_at, created_at')
+        .select('id, order_status, updated_at, created_at, source, order_type')
         .eq('id', orderId)
         .single();
 
@@ -176,7 +224,23 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
 
   const getCurrentStatusIndex = () => {
     if (!order) return -1;
-    return ORDER_STATUSES.findIndex(status => status.key === order.order_status);
+    const statusArray = isCounterOrder(order) ? COUNTER_ORDER_STATUSES : TABLE_ORDER_STATUSES;
+    return statusArray.findIndex(status => status.key === order.order_status);
+  };
+
+  const getDisplayStatuses = () => {
+    if (!order) return TABLE_ORDER_STATUSES;
+    
+    const statusArray = isCounterOrder(order) ? COUNTER_ORDER_STATUSES : TABLE_ORDER_STATUSES;
+    const currentStatus = order.order_status;
+    const isGreyedOutStatus = GREYED_OUT_STATUSES.some(status => status.key === currentStatus);
+    
+    if (isGreyedOutStatus) {
+      const greyedOutStatus = GREYED_OUT_STATUSES.find(status => status.key === currentStatus);
+      return [...statusArray, greyedOutStatus!];
+    }
+    
+    return statusArray;
   };
 
   const formatTime = (dateString: string) => {
@@ -225,7 +289,8 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
   }
 
   const currentStatusIndex = getCurrentStatusIndex();
-  const currentStatus = ORDER_STATUSES[currentStatusIndex];
+  const displayStatuses = getDisplayStatuses();
+  const currentStatus = displayStatuses[currentStatusIndex];
 
   return (
     <Card className={className}>
@@ -262,7 +327,7 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
 
           {/* Timeline Steps */}
           <div className="space-y-3">
-            {ORDER_STATUSES.map((status, index) => {
+            {displayStatuses.map((status, index) => {
               const isCompleted = index <= currentStatusIndex;
               const isCurrent = index === currentStatusIndex;
               const StatusIcon = status.icon;
@@ -279,7 +344,7 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
                         isCompleted ? 'text-white' : 'text-gray-400'
                       }`} />
                     </div>
-                    {index < ORDER_STATUSES.length - 1 && (
+                    {index < displayStatuses.length - 1 && (
                       <div className={`w-0.5 h-8 ${
                         isCompleted ? 'bg-gray-300' : 'bg-gray-200'
                       }`}></div>

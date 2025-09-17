@@ -201,7 +201,7 @@ export default function OrderTrackingPage() {
 
   // Determine if it's a counter order
   const isCounterOrder = (order: Order) => {
-    return order.source === 'counter' || order.table_number >= 10;
+    return order.source === 'counter';
   };
 
   if (loading) {
