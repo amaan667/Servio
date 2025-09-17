@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,6 +34,7 @@ interface TableManagementClientNewProps {
 }
 
 export function TableManagementClientNew({ venueId }: TableManagementClientNewProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [isManualResetting, setIsManualResetting] = useState(false);
@@ -487,8 +489,8 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                     size="sm" 
                     className="w-full text-xs"
                     onClick={() => {
-                      // This would open a drawer with full order details
-                      console.log('Open table orders drawer for', tableLabel);
+                      // Navigate to live orders page with table filter
+                      router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}`);
                     }}
                   >
                     View Orders

@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +62,9 @@ interface GroupedHistoryOrders {
 
 
 export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: LiveOrdersClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tableFilter = searchParams?.get('table');
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [allTodayOrders, setAllTodayOrders] = useState<Order[]>([]);
@@ -1307,6 +1310,25 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         </section>
 
 
+        {/* Table Filter Header */}
+        {tableFilter && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                <span className="text-blue-800 font-medium">Filtering by Table {tableFilter}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(`/dashboard/${venueId}/live-orders`)}
+              >
+                Clear Filter
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Content */}
         <main className="mt-4 space-y-4">
 
@@ -1322,14 +1344,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               ) : (
                 <>
                   {/* Counter Orders */}
-                  {orders.filter(order => isCounterOrder(order)).length > 0 && (
+                  {orders.filter(order => isCounterOrder(order) && (!tableFilter || order.table_number?.toString() === tableFilter)).length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-orange-500"></span>
-                        Counter Orders ({orders.filter(order => isCounterOrder(order)).length})
+                        Counter Orders ({orders.filter(order => isCounterOrder(order) && (!tableFilter || order.table_number?.toString() === tableFilter)).length})
                       </h3>
                       <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                        {orders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, true))}
+                        {orders.filter(order => isCounterOrder(order) && (!tableFilter || order.table_number?.toString() === tableFilter)).map((order) => renderOrderCard(order, true))}
                       </div>
                     </div>
                   )}
@@ -1337,7 +1359,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   {/* Table Orders */}
                   {(() => {
                     const activeTableOrders = orders.filter(order => 
-                      !isCounterOrder(order) && ACTIVE_TABLE_ORDER_STATUSES.includes(order.order_status)
+                      !isCounterOrder(order) && 
+                      ACTIVE_TABLE_ORDER_STATUSES.includes(order.order_status) &&
+                      (!tableFilter || order.table_number?.toString() === tableFilter)
                     );
                     return activeTableOrders.length > 0 && (
                       <div>
