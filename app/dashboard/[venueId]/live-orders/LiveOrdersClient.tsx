@@ -12,6 +12,7 @@
  * 
  * FIXED: Now uses authoritative dashboard_counts function to ensure proper date filtering
  * and prevent orders from yesterday appearing in "Earlier Today" tab
+ * FIXED: Added table filtering to all tabs - Earlier Today and History tabs now properly filter by table
  */
 
 import { useEffect, useState, useRef } from "react";
@@ -1477,25 +1478,26 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 </div>
               ) : (
                 <>
-                  {/* Counter Orders */}
-                  {allTodayOrders.filter(order => isCounterOrder(order)).length > 0 && (
+                  {/* Counter Orders - FIXED: Added table filtering */}
+                  {allTodayOrders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-orange-500"></span>
-                        Counter Orders ({allTodayOrders.filter(order => isCounterOrder(order)).length})
+                        Counter Orders ({allTodayOrders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                       </h3>
                       <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                        {allTodayOrders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, true))}
+                        {allTodayOrders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).map((order) => renderOrderCard(order, true))}
                       </div>
                     </div>
                   )}
                   
-                  {/* Table Orders */}
+                  {/* Table Orders - FIXED: Added table filtering */}
                   {(() => {
                     // Earlier Today should show ALL table orders from today (older than 30 mins)
                     // regardless of whether they are active or terminal statuses
                     const earlierTableOrders = allTodayOrders.filter(order => 
-                      !isCounterOrder(order)
+                      !isCounterOrder(order) && 
+                      (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)
                     );
                     return earlierTableOrders.length > 0 && (
                       <div>
@@ -1555,29 +1557,29 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                       <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full">{orders.length} orders</span>
                     </div>
                     
-                    {/* Counter Orders for this date */}
-                    {orders.filter(order => isCounterOrder(order)).length > 0 && (
+                    {/* Counter Orders for this date - FIXED: Added table filtering */}
+                    {orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                       <div className="space-y-3">
                         <h4 className="text-md font-medium text-gray-700 flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-orange-500"></span>
-                          Counter Orders ({orders.filter(order => isCounterOrder(order)).length})
+                          Counter Orders ({orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                         </h4>
                         <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                          {orders.filter(order => isCounterOrder(order)).map((order) => renderOrderCard(order, false))}
+                          {orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).map((order) => renderOrderCard(order, false))}
                         </div>
                       </div>
                     )}
                     
-                    {/* Table Orders for this date */}
-                    {orders.filter(order => !isCounterOrder(order)).length > 0 && (
+                    {/* Table Orders for this date - FIXED: Added table filtering */}
+                    {orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                       <div className="space-y-3">
                         <h4 className="text-md font-medium text-gray-700 flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                          Table Orders ({orders.filter(order => !isCounterOrder(order)).length})
+                          Table Orders ({orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                         </h4>
                         <div className="grid gap-3 sm:gap-4 grid-cols-1">
                           {(() => {
-                            const tableOrders = orders.filter(order => !isCounterOrder(order));
+                            const tableOrders = orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter));
                             const tableGroups = groupOrdersByTable(tableOrders);
                             const groupedOrderIds = new Set();
                             

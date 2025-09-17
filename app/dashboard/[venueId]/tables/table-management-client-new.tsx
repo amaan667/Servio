@@ -492,14 +492,27 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                       // Determine which tab to navigate to based on order age
                       const now = new Date();
                       const thirtyMinutesAgo = new Date(now.getTime() - (30 * 60 * 1000));
+                      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                       
-                      // Check if any orders are recent (within 30 minutes)
-                      const hasRecentOrders = tableOrders.some(order => {
+                      // Filter to only today's orders (not historical)
+                      const todayOrders = tableOrders.filter(order => {
+                        const orderCreatedAt = new Date(order.created_at);
+                        return orderCreatedAt >= startOfToday;
+                      });
+                      
+                      // If no orders from today, don't navigate (shouldn't happen but safety check)
+                      if (todayOrders.length === 0) {
+                        router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=live`);
+                        return;
+                      }
+                      
+                      // Check if any of today's orders are recent (within 30 minutes)
+                      const hasRecentOrders = todayOrders.some(order => {
                         const orderCreatedAt = new Date(order.created_at);
                         return orderCreatedAt > thirtyMinutesAgo;
                       });
                       
-                      // Navigate to appropriate tab
+                      // Navigate to appropriate tab (only 'live' or 'all', never 'history')
                       const tab = hasRecentOrders ? 'live' : 'all';
                       router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=${tab}`);
                     }}
