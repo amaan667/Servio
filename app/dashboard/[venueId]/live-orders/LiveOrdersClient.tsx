@@ -515,14 +515,27 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               // Remove from all today orders if it was there
               setAllTodayOrders(prev => prev.filter(order => order.id !== newOrder.id));
             } else {
-              // Remove from live orders if status changed to terminal or not recent
-              console.log('[LIVE ORDERS DEBUG] Removing order from live orders:', {
-                orderId: newOrder.id,
-                newStatus: newOrder.order_status,
-                isLiveOrder,
-                isRecentOrder
-              });
-              setOrders(prev => prev.filter(order => order.id !== newOrder.id));
+              // Only remove from live orders if it's not recent (older than 30 minutes)
+              // Keep COMPLETED orders in live orders if they're within 30-minute window
+              if (!isRecentOrder) {
+                console.log('[LIVE ORDERS DEBUG] Removing order from live orders - not recent:', {
+                  orderId: newOrder.id,
+                  newStatus: newOrder.order_status,
+                  isLiveOrder,
+                  isRecentOrder,
+                  orderCreatedAt: newOrder.created_at
+                });
+                setOrders(prev => prev.filter(order => order.id !== newOrder.id));
+              } else {
+                // Order is recent, keep it in live orders even if status changed
+                console.log('[LIVE ORDERS DEBUG] Keeping recent order in live orders despite status change:', {
+                  orderId: newOrder.id,
+                  newStatus: newOrder.order_status,
+                  isLiveOrder,
+                  isRecentOrder
+                });
+                setOrders(prev => prev.map(order => order.id === newOrder.id ? newOrder : order));
+              }
               
               // Add to all today orders if it's from today and not recent
               if (todayWindow && orderCreatedAt >= new Date(todayWindow.startUtcISO) && orderCreatedAt < new Date(todayWindow.endUtcISO)) {
@@ -585,8 +598,24 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       setOrders(prevOrders => {
         const stillLive = prevOrders.filter(order => {
           const orderCreatedAt = new Date(order.created_at);
+          const isRecent = orderCreatedAt > cutoff;
+          const isLiveStatus = LIVE_WINDOW_STATUSES.includes(order.order_status);
+          
+          // Log completed orders specifically
+          if (order.order_status === 'COMPLETED') {
+            console.log('[LIVE ORDERS DEBUG] Checking COMPLETED order:', {
+              orderId: order.id,
+              orderStatus: order.order_status,
+              orderCreatedAt: order.created_at,
+              cutoff: cutoff.toISOString(),
+              isRecent,
+              isLiveStatus,
+              willKeepInLive: isRecent && isLiveStatus
+            });
+          }
+          
           // Keep order in live if it's both recent AND in live window statuses (including completed)
-          return orderCreatedAt > cutoff && LIVE_WINDOW_STATUSES.includes(order.order_status);
+          return isRecent && isLiveStatus;
         });
         
         const movedToAllToday = prevOrders.filter(order => {
