@@ -489,8 +489,19 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                     size="sm" 
                     className="w-full text-xs"
                     onClick={() => {
-                      // Navigate to live orders page with table filter
-                      router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}`);
+                      // Determine which tab to navigate to based on order age
+                      const now = new Date();
+                      const thirtyMinutesAgo = new Date(now.getTime() - (30 * 60 * 1000));
+                      
+                      // Check if any orders are recent (within 30 minutes)
+                      const hasRecentOrders = tableOrders.some(order => {
+                        const orderCreatedAt = new Date(order.created_at);
+                        return orderCreatedAt > thirtyMinutesAgo;
+                      });
+                      
+                      // Navigate to appropriate tab
+                      const tab = hasRecentOrders ? 'live' : 'all';
+                      router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=${tab}`);
                     }}
                   >
                     View Orders

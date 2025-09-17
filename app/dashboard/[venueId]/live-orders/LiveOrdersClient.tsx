@@ -65,6 +65,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const router = useRouter();
   const searchParams = useSearchParams();
   const tableFilter = searchParams?.get('table');
+  const tabParam = searchParams?.get('tab');
   
   // Parse table filter - handle both "8" and "Table 8" formats
   const parsedTableFilter = tableFilter ? 
@@ -78,9 +79,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(null);
-  const [activeTab, setActiveTab] = useState("live");
+  const [activeTab, setActiveTab] = useState(tabParam || "live");
   // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
+  
+  // Update active tab when URL parameter changes
+  useEffect(() => {
+    if (tabParam && ['live', 'all', 'history'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
   
   // Constants for order statuses
   const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
@@ -1304,7 +1312,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               ].map(tab => (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => {
+                    setActiveTab(tab.key);
+                    // Update URL to preserve table filter when switching tabs
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.set('tab', tab.key);
+                    if (parsedTableFilter) {
+                      newUrl.searchParams.set('table', `Table ${parsedTableFilter}`);
+                    }
+                    window.history.replaceState({}, '', newUrl.toString());
+                  }}
                   className={`
                     group relative grid grid-rows-[1fr_auto] rounded-xl px-3 py-2 sm:px-4 text-left transition min-w-[5rem] sm:w-[11rem]
                     ${activeTab === tab.key ? 'bg-violet-600 text-white' : 'text-slate-700 hover:bg-slate-50'}
