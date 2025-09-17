@@ -14,8 +14,6 @@ import {
   Clock, 
   CheckCircle, 
   XCircle, 
-  RefreshCw, 
-  Truck, 
   User, 
   Hash, 
   Star,
@@ -540,17 +538,11 @@ export default function OrderSummaryPage() {
             {/* Order Status Timeline */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                <CardTitle className="flex items-center justify-between">
                   <span>Order Progress</span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={fetchOrder}
-                    className="flex items-center gap-2 w-full sm:w-auto"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Refresh
-                  </Button>
+                  <Badge variant="outline" className="text-xs">
+                    Live Updates
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>

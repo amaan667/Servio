@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, XCircle, RefreshCw, Truck, User, Hash, Loader2 } from "lucide-react";
+import { Clock, CheckCircle, XCircle, User, Hash, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface OrderItem {
@@ -268,20 +267,14 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+        <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-blue-500" />
             Order Timeline
           </span>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={fetchOrder}
-            className="flex items-center gap-2 w-full sm:w-auto"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
+          <Badge variant="outline" className="text-xs">
+            Live Updates
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
