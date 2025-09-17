@@ -822,9 +822,9 @@ export default function CustomerOrderPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-          {/* Menu */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Menu Section */}
+          <div className="lg:col-span-2 space-y-6">
         {(() => {
           
           if (menuError) {
@@ -837,7 +837,7 @@ export default function CustomerOrderPage() {
           
           // Always render the menu structure - items will appear as they load
           return (
-              <div className="space-y-4 sm:space-y-6">
+              <div className="space-y-8">
                 {(() => {
                   const categoryPriority = [
                     "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course",
@@ -854,48 +854,50 @@ export default function CustomerOrderPage() {
                     return String(a||'').localeCompare(String(b||''));
                   });
                   return sortedCats.map((category) => (
-                    <div key={category}>
-                      <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 capitalize">
-                        {category}
-                      </h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div key={category} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                      <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-4 py-3 border-b border-gray-100">
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 capitalize">
+                          {category}
+                        </h2>
+                      </div>
+                      <div className="p-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {menuItems
                           .filter((item) => item.category === category)
                           .sort((a,b)=> String(a.name).localeCompare(String(b.name)))
                           .map((item) => (
-                            <Card key={item.id} className="hover:shadow-md transition-shadow">
-                              <CardContent className="p-3 sm:p-4">
-                                <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0">
+                            <Card key={item.id} className="hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-purple-300">
+                              <CardContent className="p-4">
+                                <div className="flex flex-col space-y-3">
                                   {/* Item Details */}
-                                  <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-gray-900 text-base sm:text-lg">
+                                  <div className="flex-1">
+                                    <h3 className="font-semibold text-gray-900 text-lg mb-2">
                                       {item.name}
                                     </h3>
                                     {item.description && (
-                                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                                         {item.description}
                                       </p>
                                     )}
-                                    <p className="text-lg font-bold text-purple-600 mt-2">
-                                      £{item.price.toFixed(2)}
-                                    </p>
-                                  </div>
-                                  
-                                  {/* Add to Cart Button */}
-                                  <div className="flex justify-end">
-                                    <Button
-                                      onClick={() => addToCart(item)}
-                                      size="sm"
-                                      className="min-h-[44px] min-w-[44px] px-4"
-                                    >
-                                      <Plus className="h-4 w-4" />
-                                      <span className="ml-2">Add</span>
-                                    </Button>
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-xl font-bold text-purple-600">
+                                        £{item.price.toFixed(2)}
+                                      </p>
+                                      <Button
+                                        onClick={() => addToCart(item)}
+                                        size="sm"
+                                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2"
+                                      >
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add to Cart
+                                      </Button>
+                                    </div>
                                   </div>
                                 </div>
                               </CardContent>
                             </Card>
                           ))}
+                        </div>
                       </div>
                     </div>
                   ));
@@ -907,13 +909,13 @@ export default function CustomerOrderPage() {
 
           {/* Desktop Cart */}
           <div className="hidden lg:block">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ShoppingCart className="mr-2 h-5 w-5" />
+            <Card className="sticky top-4 shadow-lg border border-gray-200">
+              <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-gray-100">
+                <CardTitle className="flex items-center text-lg">
+                  <ShoppingCart className="mr-2 h-5 w-5 text-purple-600" />
                   Your Order
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-gray-600">
                   {getTotalItems()} items • £{getTotalPrice().toFixed(2)}
                 </CardDescription>
               </CardHeader>
@@ -925,73 +927,83 @@ export default function CustomerOrderPage() {
                 ) : (
                   <div className="space-y-4">
                     {cart.map((item) => (
-                      <div key={item.id} className="border-b pb-4 last:border-b-0">
-                        <div className="flex space-x-3">
-                          {/* Cart Item Details */}
+                      <div key={item.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">
+                            <h4 className="font-medium text-gray-900 text-sm">
                               {item.name}
                             </h4>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-xs text-gray-600">
                               £{item.price.toFixed(2)} each
                             </p>
-                            {item.specialInstructions && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                Note: {item.specialInstructions}
-                              </p>
-                            )}
                           </div>
-                          <div className="flex items-center space-x-2 ml-4">
+                          <Button
+                            onClick={() => removeFromCart(item.id)}
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 p-1 h-6 w-6"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
                             <Button
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
                               size="sm"
                               variant="outline"
+                              className="h-7 w-7 p-0"
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
-                            <span className="w-8 text-center">{item.quantity}</span>
+                            <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                             <Button
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               size="sm"
                               variant="outline"
+                              className="h-7 w-7 p-0"
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
-                            <Button
-                              onClick={() => removeFromCart(item.id)}
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
                           </div>
+                          <span className="text-sm font-semibold text-purple-600">
+                            £{(item.price * item.quantity).toFixed(2)}
+                          </span>
                         </div>
+                        
+                        {item.specialInstructions && (
+                          <p className="text-xs text-gray-500 mb-2">
+                            Note: {item.specialInstructions}
+                          </p>
+                        )}
+                        
                         <Textarea
                           placeholder="Special instructions (optional)"
                           value={item.specialInstructions || ""}
                           onChange={(e) =>
                             updateSpecialInstructions(item.id, e.target.value)
                           }
-                          className="mt-2 text-xs"
+                          className="text-xs resize-none"
                           rows={2}
                         />
                       </div>
                     ))}
 
-                    <div className="border-t pt-4">
+                    <div className="border-t pt-4 bg-white rounded-lg p-4">
                       <div className="flex justify-between items-center mb-4">
-                        <span className="font-semibold text-gray-900">Total</span>
-                        <span className="text-xl font-bold text-purple-600">
+                        <span className="text-lg font-semibold text-gray-900">Total</span>
+                        <span className="text-2xl font-bold text-purple-600">
                           £{getTotalPrice().toFixed(2)}
                         </span>
                       </div>
 
                       <Button
                         onClick={() => setShowCheckout(true)}
-                        className="w-full"
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 text-lg font-medium"
                         disabled={cart.length === 0}
                       >
+                        <CreditCard className="h-5 w-5 mr-2" />
                         Proceed to Checkout
                       </Button>
                     </div>
@@ -1021,11 +1033,11 @@ export default function CustomerOrderPage() {
         {/* Mobile Cart Modal */}
         {showMobileCart && (
           <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50">
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] overflow-hidden flex flex-col">
-              <div className="p-4 border-b flex-shrink-0">
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+              <div className="p-4 border-b flex-shrink-0 bg-gradient-to-r from-purple-50 to-blue-50">
                 <div className="flex justify-between items-center">
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-semibold truncate">Your Order</h3>
+                    <h3 className="text-lg font-semibold truncate text-gray-900">Your Order</h3>
                     <p className="text-sm text-gray-600">
                       {getTotalItems()} items • £{getTotalPrice().toFixed(2)}
                     </p>
@@ -1034,7 +1046,7 @@ export default function CustomerOrderPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowMobileCart(false)}
-                    className="ml-2 min-h-[44px] min-w-[44px] flex-shrink-0"
+                    className="ml-2 min-h-[44px] min-w-[44px] flex-shrink-0 text-gray-600 hover:text-gray-900"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -1049,66 +1061,66 @@ export default function CustomerOrderPage() {
                 ) : (
                   <div className="space-y-4">
                     {cart.map((item) => (
-                      <div key={item.id} className="border-b pb-4 last:border-b-0">
-                        <div className="flex flex-col space-y-3">
-                          {/* Mobile Cart Item Details */}
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-gray-900 text-base">
-                                {item.name}
-                              </h4>
-                              <p className="text-sm text-gray-600">
-                                £{item.price.toFixed(2)} each
-                              </p>
-                              {item.specialInstructions && (
-                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                  Note: {item.specialInstructions}
-                                </p>
-                              )}
-                            </div>
+                      <div key={item.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-gray-900 text-base">
+                              {item.name}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              £{item.price.toFixed(2)} each
+                            </p>
                           </div>
-                          
-                          {/* Quantity Controls */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <Button
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                size="sm"
-                                variant="outline"
-                                className="min-h-[44px] min-w-[44px]"
-                              >
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <span className="text-lg font-medium min-w-[2rem] text-center">{item.quantity}</span>
-                              <Button
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                size="sm"
-                                variant="outline"
-                                className="min-h-[44px] min-w-[44px]"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
+                          <Button
+                            onClick={() => removeFromCart(item.id)}
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 p-1 h-8 w-8"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
                             <Button
-                              onClick={() => removeFromCart(item.id)}
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
                               size="sm"
-                              variant="ghost"
-                              className="text-red-600 hover:text-red-700 min-h-[44px] min-w-[44px]"
+                              variant="outline"
+                              className="min-h-[40px] min-w-[40px]"
                             >
-                              <X className="h-4 w-4" />
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="text-lg font-medium min-w-[2rem] text-center">{item.quantity}</span>
+                            <Button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              size="sm"
+                              variant="outline"
+                              className="min-h-[40px] min-w-[40px]"
+                            >
+                              <Plus className="h-4 w-4" />
                             </Button>
                           </div>
-                          
-                          <Textarea
-                            placeholder="Special instructions (optional)"
-                            value={item.specialInstructions || ""}
-                            onChange={(e) =>
-                              updateSpecialInstructions(item.id, e.target.value)
-                            }
-                            className="text-sm resize-none"
-                            rows={2}
-                          />
+                          <span className="text-lg font-semibold text-purple-600">
+                            £{(item.price * item.quantity).toFixed(2)}
+                          </span>
                         </div>
+                        
+                        {item.specialInstructions && (
+                          <p className="text-xs text-gray-500 mb-2">
+                            Note: {item.specialInstructions}
+                          </p>
+                        )}
+                        
+                        <Textarea
+                          placeholder="Special instructions (optional)"
+                          value={item.specialInstructions || ""}
+                          onChange={(e) =>
+                            updateSpecialInstructions(item.id, e.target.value)
+                          }
+                          className="text-sm resize-none"
+                          rows={2}
+                        />
                       </div>
                     ))}
                   </div>
@@ -1119,7 +1131,7 @@ export default function CustomerOrderPage() {
                 <div className="border-t p-4 flex-shrink-0 bg-white">
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-lg font-semibold text-gray-900">Total</span>
-                    <span className="text-xl font-bold text-purple-600">
+                    <span className="text-2xl font-bold text-purple-600">
                       £{getTotalPrice().toFixed(2)}
                     </span>
                   </div>
@@ -1129,9 +1141,10 @@ export default function CustomerOrderPage() {
                       setShowMobileCart(false);
                       setShowCheckout(true);
                     }}
-                    className="w-full min-h-[48px] text-base font-medium"
+                    className="w-full min-h-[48px] text-base font-medium bg-purple-600 hover:bg-purple-700 text-white"
                     disabled={cart.length === 0}
                   >
+                    <CreditCard className="h-5 w-5 mr-2" />
                     Proceed to Checkout
                   </Button>
                 </div>
