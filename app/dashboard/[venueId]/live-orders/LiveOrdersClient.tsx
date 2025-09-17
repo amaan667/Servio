@@ -66,6 +66,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const searchParams = useSearchParams();
   const tableFilter = searchParams?.get('table');
   
+  // Parse table filter - handle both "8" and "Table 8" formats
+  const parsedTableFilter = tableFilter ? 
+    (tableFilter.startsWith('Table ') ? tableFilter.replace('Table ', '') : tableFilter) : 
+    null;
+  
   const [orders, setOrders] = useState<Order[]>([]);
   const [allTodayOrders, setAllTodayOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
@@ -82,6 +87,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'];
   const LIVE_WINDOW_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING', 'COMPLETED']; // Include COMPLETED for 30-min window
   const ACTIVE_TABLE_ORDER_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']; // Only active orders for table management
+  const LIVE_TABLE_ORDER_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING', 'COMPLETED']; // Include COMPLETED for live orders display
   const prepLeadMs = 30 * 60 * 1000; // 30 minutes default
   
   // Define what constitutes a "live" order - orders placed within the last 30 minutes
@@ -1311,12 +1317,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
 
         {/* Table Filter Header */}
-        {tableFilter && (
+        {parsedTableFilter && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                <span className="text-blue-800 font-medium">Filtering by Table {tableFilter}</span>
+                <span className="text-blue-800 font-medium">Filtering by Table {parsedTableFilter}</span>
               </div>
               <Button
                 variant="outline"
@@ -1344,34 +1350,44 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               ) : (
                 <>
                   {/* Counter Orders */}
-                  {orders.filter(order => isCounterOrder(order) && (!tableFilter || order.table_number?.toString() === tableFilter)).length > 0 && (
+                  {orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-orange-500"></span>
-                        Counter Orders ({orders.filter(order => isCounterOrder(order) && (!tableFilter || order.table_number?.toString() === tableFilter)).length})
+                        Counter Orders ({orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                       </h3>
                       <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                        {orders.filter(order => isCounterOrder(order) && (!tableFilter || order.table_number?.toString() === tableFilter)).map((order) => renderOrderCard(order, true))}
+                        {orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).map((order) => renderOrderCard(order, true))}
                       </div>
                     </div>
                   )}
                   
                   {/* Table Orders */}
                   {(() => {
-                    const activeTableOrders = orders.filter(order => 
+                    const allTableOrders = orders.filter(order => 
                       !isCounterOrder(order) && 
-                      ACTIVE_TABLE_ORDER_STATUSES.includes(order.order_status) &&
-                      (!tableFilter || order.table_number?.toString() === tableFilter)
+                      LIVE_TABLE_ORDER_STATUSES.includes(order.order_status) &&
+                      (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)
                     );
-                    return activeTableOrders.length > 0 && (
+                    
+                    // Sort orders: active orders first, then completed orders
+                    const sortedTableOrders = allTableOrders.sort((a, b) => {
+                      const aIsActive = ACTIVE_TABLE_ORDER_STATUSES.includes(a.order_status);
+                      const bIsActive = ACTIVE_TABLE_ORDER_STATUSES.includes(b.order_status);
+                      
+                      if (aIsActive && !bIsActive) return -1; // a comes first
+                      if (!aIsActive && bIsActive) return 1;  // b comes first
+                      return 0; // same priority, maintain original order
+                    });
+                    return sortedTableOrders.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                          Table Orders ({activeTableOrders.length})
+                          Table Orders ({sortedTableOrders.length})
                         </h3>
                         <div className="grid gap-3 sm:gap-4 grid-cols-1">
                           {(() => {
-                            const tableGroups = groupOrdersByTable(activeTableOrders);
+                            const tableGroups = groupOrdersByTable(sortedTableOrders);
                             const groupedOrderIds = new Set();
                             
                             // Collect all order IDs that are in groups
@@ -1380,7 +1396,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                             });
                             
                             // Find orders that couldn't be grouped (different customers, etc.)
-                            const ungroupedOrders = activeTableOrders.filter(order => 
+                            const ungroupedOrders = sortedTableOrders.filter(order => 
                               !groupedOrderIds.has(order.id)
                             );
                             
