@@ -587,7 +587,7 @@ export default function CustomerOrderPage() {
         order_status: 'PLACED',
         payment_status: 'UNPAID', // Start as unpaid
         payment_mode: paymentMode, // New field for payment mode
-        payment_method: null, // Will be updated based on payment choice
+        payment_method: paymentMode === 'pay_at_till' ? 'till' : null, // Counter orders pay at till, table orders choose later
         session_id: sessionId,
         source: orderType === 'counter' ? 'counter' : 'qr',
       };
