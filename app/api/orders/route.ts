@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 
@@ -79,19 +80,20 @@ export async function POST(req: Request) {
       return bad('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY', 500);
     }
     console.log('[ORDERS POST] Creating admin client to bypass RLS...');
-    // Create admin client directly with service role key to bypass RLS
-    const supabase = createServerClient(
+    // Try using the direct Supabase client with service role key
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
-        cookies: {
-          get(name: string) { return undefined; },
-          set(name: string, value: string, options: any) { },
-          remove(name: string, options: any) { },
-        },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
       }
     );
     console.log('[ORDERS POST] Admin client created successfully');
+    console.log('[ORDERS POST] Service role key available:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    console.log('[ORDERS POST] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 
     // Verify venue exists, create if it doesn't (for demo purposes)
     const { data: venue, error: venueErr } = await supabase
@@ -276,7 +278,9 @@ export async function POST(req: Request) {
       hasError: !!insertErr,
       errorMessage: insertErr?.message,
       errorCode: insertErr?.code,
-      errorDetails: insertErr?.details
+      errorDetails: insertErr?.details,
+      insertedData: inserted,
+      payloadSent: payload
     });
 
     if (insertErr) {
@@ -331,13 +335,36 @@ export async function POST(req: Request) {
     }
     
     // Ensure we have a valid order object
+    let createdOrder;
     if (!inserted || inserted.length === 0 || !inserted[0]) {
       console.log('[ORDERS POST] ERROR: Database insertion succeeded but no order data returned');
       console.log('[ORDERS POST] Inserted data:', inserted);
-      return bad('Order creation failed: No order data returned from database', 500);
+      console.log('[ORDERS POST] This might be due to RLS policies or database constraints');
+      
+      // Try to fetch the order we just created by querying the database
+      console.log('[ORDERS POST] Attempting to fetch the order by querying the database...');
+      
+      const { data: fetchedOrder, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('venue_id', payload.venue_id)
+        .eq('customer_name', payload.customer_name)
+        .eq('total_amount', payload.total_amount)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (fetchError || !fetchedOrder) {
+        console.log('[ORDERS POST] Failed to fetch order after insertion:', fetchError);
+        return bad('Order creation failed: No order data returned from database', 500);
+      }
+      
+      console.log('[ORDERS POST] Successfully fetched order after insertion:', fetchedOrder.id);
+      createdOrder = fetchedOrder;
+    } else {
+      createdOrder = inserted[0];
     }
 
-    const createdOrder = inserted[0];
     console.log('[ORDERS POST] Successfully created order with ID:', createdOrder.id);
 
     const response = { 
