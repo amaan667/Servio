@@ -129,23 +129,28 @@ export default function PaymentPage() {
       }
 
       const orderData = await orderResponse.json();
-      console.log('[PAYMENT DEBUG] Order created successfully:', orderData);
-      console.log('[PAYMENT DEBUG] Order details:', {
-        id: orderData.order?.id,
-        status: orderData.order?.order_status,
-        created_at: orderData.order?.created_at,
-        venue_id: orderData.order?.venue_id,
-        table_number: orderData.order?.table_number,
-        customer_name: orderData.order?.customer_name,
-        total_amount: orderData.order?.total_amount
+      console.log('[PAYMENT DEBUG] Order creation response:', orderData);
+      console.log('[PAYMENT DEBUG] Response structure check:', {
+        hasOrder: !!orderData.order,
+        orderId: orderData.order?.id,
+        orderStatus: orderData.order?.order_status,
+        responseOk: orderData.ok,
+        fullResponse: JSON.stringify(orderData, null, 2)
       });
 
       // Check if we have a valid order ID
       if (!orderData.order?.id) {
-        console.error('[PAYMENT DEBUG] ERROR: No order ID in response:', orderData);
-        console.error('[PAYMENT DEBUG] Full response structure:', JSON.stringify(orderData, null, 2));
+        console.error('[PAYMENT DEBUG] ERROR: No order ID in response');
+        console.error('[PAYMENT DEBUG] Response structure:', {
+          ok: orderData.ok,
+          hasOrder: !!orderData.order,
+          orderKeys: orderData.order ? Object.keys(orderData.order) : 'no order object',
+          fullResponse: JSON.stringify(orderData, null, 2)
+        });
         throw new Error('Order was created but no order ID was returned');
       }
+
+      console.log('[PAYMENT DEBUG] Order created successfully with ID:', orderData.order.id);
 
       // For demo and stripe payments, we need to update the payment status
       if (action === 'demo' || action === 'stripe') {

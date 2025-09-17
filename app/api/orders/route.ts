@@ -241,6 +241,16 @@ export async function POST(req: Request) {
       payment_method: body.payment_method || null,
       source: orderSource, // Use source from client (based on QR code URL: ?table=X -> 'qr', ?counter=X -> 'counter')
     };
+
+    // Final validation before insertion
+    console.log('[ORDERS POST] Final payload validation:');
+    console.log('[ORDERS POST] - venue_id:', payload.venue_id, '(type:', typeof payload.venue_id, ')');
+    console.log('[ORDERS POST] - customer_name:', payload.customer_name, '(length:', payload.customer_name.length, ')');
+    console.log('[ORDERS POST] - customer_phone:', payload.customer_phone, '(length:', payload.customer_phone.length, ')');
+    console.log('[ORDERS POST] - total_amount:', payload.total_amount, '(type:', typeof payload.total_amount, ')');
+    console.log('[ORDERS POST] - items count:', payload.items.length);
+    console.log('[ORDERS POST] - order_status:', payload.order_status);
+    console.log('[ORDERS POST] - payment_status:', payload.payment_status);
     console.log('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
       table_number: payload.table_number,
@@ -259,6 +269,15 @@ export async function POST(req: Request) {
       .from('orders')
       .insert(payload)
       .select('*');
+    
+    console.log('[ORDERS POST] Database insertion result:', {
+      hasData: !!inserted,
+      dataLength: inserted?.length,
+      hasError: !!insertErr,
+      errorMessage: insertErr?.message,
+      errorCode: insertErr?.code,
+      errorDetails: insertErr?.details
+    });
 
     if (insertErr) {
       console.log('[ORDERS POST] DATABASE INSERT FAILED:', insertErr);
@@ -266,7 +285,19 @@ export async function POST(req: Request) {
       console.log('[ORDERS POST] Error message:', insertErr.message);
       console.log('[ORDERS POST] Error details:', insertErr.details);
       console.log('[ORDERS POST] Error hint:', insertErr.hint);
-      return bad(`Insert failed: ${insertErr.message}`, 400);
+      console.log('[ORDERS POST] Full error object:', JSON.stringify(insertErr, null, 2));
+      
+      // Try to provide more specific error messages
+      let errorMessage = insertErr.message;
+      if (insertErr.code === '23505') {
+        errorMessage = 'Order already exists with this ID';
+      } else if (insertErr.code === '23503') {
+        errorMessage = 'Referenced venue or table does not exist';
+      } else if (insertErr.code === '23514') {
+        errorMessage = 'Data validation failed - check required fields';
+      }
+      
+      return bad(`Insert failed: ${errorMessage}`, 400);
     }
     
     console.log('[ORDERS POST] Database insertion successful');
@@ -299,9 +330,19 @@ export async function POST(req: Request) {
       }
     }
     
+    // Ensure we have a valid order object
+    if (!inserted || inserted.length === 0 || !inserted[0]) {
+      console.log('[ORDERS POST] ERROR: Database insertion succeeded but no order data returned');
+      console.log('[ORDERS POST] Inserted data:', inserted);
+      return bad('Order creation failed: No order data returned from database', 500);
+    }
+
+    const createdOrder = inserted[0];
+    console.log('[ORDERS POST] Successfully created order with ID:', createdOrder.id);
+
     const response = { 
       ok: true, 
-      order: inserted?.[0] ?? null,
+      order: createdOrder,
       table_auto_created: tableId !== null, // True if we auto-created a table
       table_id: tableId,
       session_id: (body as any).session_id || null, // Include session_id in response for client-side storage
