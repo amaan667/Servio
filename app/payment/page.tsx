@@ -182,8 +182,8 @@ export default function PaymentPage() {
       
       setOrderNumber(orderData.order.id || "ORD-001");
       
-      // Redirect to payment success page with order ID
-      const successUrl = `/payment/success?orderId=${orderData.order.id}&tableNumber=${checkoutData.tableNumber}&total=${checkoutData.total}`;
+      // Redirect to payment success page with order ID and additional data
+      const successUrl = `/payment/success?orderId=${orderData.order.id}&tableNumber=${checkoutData.tableNumber}&total=${checkoutData.total}&venueId=${checkoutData.venueId}&customerName=${encodeURIComponent(checkoutData.customerName || 'Customer')}`;
       console.log('[PAYMENT DEBUG] Redirecting to success page:', successUrl);
       router.push(successUrl);
       

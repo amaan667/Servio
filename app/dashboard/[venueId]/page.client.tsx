@@ -127,11 +127,11 @@ export default function VenueDashboardClient({
           setStatsLoaded(false);
           setStats({ revenue: 0, menuItems: 0, unpaid: 0 });
           
-          // Clear all table runtime state for new day
+          // Clear all tables and sessions for new day
           if (venue) {
             try {
-              console.log('[DASHBOARD] Clearing table runtime state for new day');
-              const response = await fetch('/api/tables/clear', {
+              console.log('[DASHBOARD] Clearing all tables and sessions for new day');
+              const response = await fetch('/api/tables/clear-all', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -140,12 +140,12 @@ export default function VenueDashboardClient({
               });
 
               if (response.ok) {
-                console.log('[DASHBOARD] Table runtime state cleared successfully');
+                console.log('[DASHBOARD] All tables and sessions cleared successfully');
               } else {
-                console.error('[DASHBOARD] Failed to clear table runtime state:', response.status);
+                console.error('[DASHBOARD] Failed to clear all tables and sessions:', response.status);
               }
             } catch (error) {
-              console.error('[DASHBOARD] Error clearing table runtime state:', error);
+              console.error('[DASHBOARD] Error clearing all tables and sessions:', error);
             }
 
             // Reload stats for new day

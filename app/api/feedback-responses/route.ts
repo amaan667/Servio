@@ -62,30 +62,55 @@ export async function POST(req: Request) {
       }
     }
 
-    // Verify questions exist and are active
+    // Verify questions exist and are active (skip validation for generic questions)
     const serviceClient = getServiceClient();
     const questionIds = answers.map(a => a.question_id);
     
-    const { data: questions, error: questionsError } = await serviceClient
-      .from('feedback_questions')
-      .select('id, type, choices')
-      .in('id', questionIds)
-      .eq('venue_id', venue_id)
-      .eq('is_active', true);
+    // Filter out generic questions (they start with 'generic-')
+    const nonGenericQuestionIds = questionIds.filter(id => !id.startsWith('generic-'));
+    
+    let questions: any[] = [];
+    if (nonGenericQuestionIds.length > 0) {
+      const { data: dbQuestions, error: questionsError } = await serviceClient
+        .from('feedback_questions')
+        .select('id, type, choices')
+        .in('id', nonGenericQuestionIds)
+        .eq('venue_id', venue_id)
+        .eq('is_active', true);
 
-    if (questionsError) {
-      console.error('[FEEDBACK][R] questions fetch error:', questionsError.message);
-      return NextResponse.json({ error: 'Failed to validate questions' }, { status: 500 });
+      if (questionsError) {
+        console.error('[FEEDBACK][R] questions fetch error:', questionsError.message);
+        return NextResponse.json({ error: 'Failed to validate questions' }, { status: 500 });
+      }
+      
+      questions = dbQuestions || [];
     }
-
-    if (!questions || questions.length !== answers.length) {
-      return NextResponse.json({ error: 'Some questions not found or inactive' }, { status: 400 });
-    }
+    
+    // For generic questions, we'll create mock question data for validation
+    const genericQuestions = questionIds
+      .filter(id => id.startsWith('generic-'))
+      .map(id => {
+        // Create mock question data based on the generic question ID
+        if (id === 'generic-recommendation') {
+          return {
+            id,
+            type: 'multiple_choice',
+            choices: ['Yes, definitely', 'Yes, probably', 'Maybe', 'No, probably not', 'No, definitely not']
+          };
+        }
+        return {
+          id,
+          type: 'stars',
+          choices: null
+        };
+      });
+    
+    const allQuestions = [...questions, ...genericQuestions];
 
     // Validate answer choices for multiple choice questions
     for (const answer of answers) {
       if (answer.type === 'multiple_choice') {
-        const question = questions.find(q => q.id === answer.question_id);
+        const question = allQuestions.find(q => q.id === answer.question_id);
         if (question && question.choices && !question.choices.includes(answer.answer_choice)) {
           return NextResponse.json({ 
             error: 'Invalid choice for multiple choice question' 

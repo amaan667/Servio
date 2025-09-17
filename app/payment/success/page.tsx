@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, Loader2, Receipt } from "lucide-react";
+import { Check, Loader2, Receipt, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
@@ -15,11 +16,16 @@ export default function PaymentSuccessPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [tableNumber, setTableNumber] = useState<string | null>(null);
   const [total, setTotal] = useState<string | null>(null);
+  const [venueId, setVenueId] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     const orderIdParam = searchParams?.get('orderId');
     const tableNumberParam = searchParams?.get('tableNumber');
     const totalParam = searchParams?.get('total');
+    const venueIdParam = searchParams?.get('venueId');
+    const customerNameParam = searchParams?.get('customerName');
 
     if (!orderIdParam) {
       setError('Invalid payment session - no order ID provided');
@@ -30,6 +36,8 @@ export default function PaymentSuccessPage() {
     setOrderId(orderIdParam);
     setTableNumber(tableNumberParam || null);
     setTotal(totalParam || null);
+    setVenueId(venueIdParam || null);
+    setCustomerName(customerNameParam || null);
 
     // Simulate order confirmation
     const createOrderAfterPayment = async () => {
@@ -129,6 +137,13 @@ export default function PaymentSuccessPage() {
 
           <div className="space-y-3">
             <Button 
+              onClick={() => setShowFeedback(true)}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              <Star className="h-4 w-4 mr-2" />
+              Leave Feedback
+            </Button>
+            <Button 
               onClick={() => router.push(`/order-summary/${orderId}`)}
               className="w-full bg-servio-purple hover:bg-servio-purple-dark"
             >
@@ -141,6 +156,36 @@ export default function PaymentSuccessPage() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Feedback Form Modal */}
+      {showFeedback && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Feedback</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFeedback(false)}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+            <div className="p-4">
+              {venueId && (
+                <UnifiedFeedbackForm
+                  venueId={venueId}
+                  orderId={orderId || undefined}
+                  customerName={customerName || undefined}
+                  onSubmit={() => setShowFeedback(false)}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
