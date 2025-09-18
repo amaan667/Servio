@@ -22,6 +22,12 @@ export default function PaymentSuccessPage() {
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [orderType, setOrderType] = useState<string | null>(null);
 
+  // Generate short order number for display
+  const getShortOrderNumber = (orderId: string) => {
+    // Use last 6 characters of UUID for shorter display
+    return orderId.slice(-6).toUpperCase();
+  };
+
   useEffect(() => {
     const orderIdParam = searchParams?.get('orderId');
     const tableNumberParam = searchParams?.get('tableNumber');
@@ -90,14 +96,14 @@ export default function PaymentSuccessPage() {
         };
       case 'till':
         return {
-          title: "Bill Sent to Counter!",
+          title: "Bill Sent to Till!",
           description: "Please pay with staff when ready. Your order is being prepared.",
           icon: "📨"
         };
       case 'later':
         return {
           title: "Order Created!",
-          description: "You can pay later by scanning this table's QR again or at the counter.",
+          description: "You can pay later by scanning this table's QR again or at the till.",
           icon: "⏳"
         };
       default:
@@ -160,7 +166,7 @@ export default function PaymentSuccessPage() {
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <p className="text-sm text-gray-600">Order Number</p>
             <p className="font-bold text-lg text-servio-purple mb-2">
-              {orderId}
+              #{orderId ? getShortOrderNumber(orderId) : 'N/A'}
             </p>
             {tableNumber && (
               <>
