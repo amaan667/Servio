@@ -66,7 +66,16 @@ export default function PaymentSuccessPage() {
     if (returnUrl) {
       window.location.href = returnUrl;
     } else {
-      router.push('/');
+      // Construct the correct return URL to the table's menu page
+      if (venueId && tableNumber && orderType) {
+        const menuUrl = orderType === 'counter' 
+          ? `/order?venue=${venueId}&counter=${tableNumber}`
+          : `/order?venue=${venueId}&table=${tableNumber}`;
+        router.push(menuUrl);
+      } else {
+        // Fallback to home page if we don't have the necessary parameters
+        router.push('/');
+      }
     }
   };
 
