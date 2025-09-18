@@ -494,27 +494,44 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                       const thirtyMinutesAgo = new Date(now.getTime() - (30 * 60 * 1000));
                       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                       
-                      // Filter to only today's orders (not historical)
-                      const todayOrders = tableOrders.filter(order => {
-                        const orderCreatedAt = new Date(order.created_at);
-                        return orderCreatedAt >= startOfToday;
-                      });
-                      
-                      // If no orders from today, don't navigate (shouldn't happen but safety check)
-                      if (todayOrders.length === 0) {
-                        router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=live`);
-                        return;
-                      }
-                      
-                      // Check if any of today's orders are recent (within 30 minutes)
-                      const hasRecentOrders = todayOrders.some(order => {
+                      // Check if any orders are recent (within 30 minutes) - these go to 'live' tab
+                      const hasRecentOrders = tableOrders.some(order => {
                         const orderCreatedAt = new Date(order.created_at);
                         return orderCreatedAt > thirtyMinutesAgo;
                       });
                       
-                      // Navigate to appropriate tab (only 'live' or 'all', never 'history')
-                      const tab = hasRecentOrders ? 'live' : 'all';
-                      router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=${tab}`);
+                      if (hasRecentOrders) {
+                        // Navigate to live tab if there are recent orders
+                        router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=live`);
+                        return;
+                      }
+                      
+                      // Check if any orders are from today (but not recent) - these go to 'all' tab
+                      const hasTodayOrders = tableOrders.some(order => {
+                        const orderCreatedAt = new Date(order.created_at);
+                        return orderCreatedAt >= startOfToday;
+                      });
+                      
+                      if (hasTodayOrders) {
+                        // Navigate to all tab if there are today's orders (but not recent)
+                        router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=all`);
+                        return;
+                      }
+                      
+                      // If no today's orders, check if there are any historical orders - these go to 'history' tab
+                      const hasHistoryOrders = tableOrders.some(order => {
+                        const orderCreatedAt = new Date(order.created_at);
+                        return orderCreatedAt < startOfToday;
+                      });
+                      
+                      if (hasHistoryOrders) {
+                        // Navigate to history tab if there are historical orders
+                        router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=history`);
+                        return;
+                      }
+                      
+                      // Fallback: if no orders at all, go to live tab
+                      router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=live`);
                     }}
                   >
                     View Orders
