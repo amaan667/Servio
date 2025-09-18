@@ -468,7 +468,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                   {orders.slice(0, 2).map((order) => (
                     <div key={order.id} className="text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">#{order.id.slice(0, 6)}</span>
+                        <span className="text-gray-600">#{order.id.slice(-6).toUpperCase()}</span>
                         <span className="font-medium">£{order.total_amount?.toFixed(2) || '0.00'}</span>
                       </div>
                       <div className="text-xs text-gray-500">

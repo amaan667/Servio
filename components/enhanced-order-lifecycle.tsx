@@ -326,7 +326,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Order #{order.id.slice(0, 8)}</span>
+          <span>Order #{order.id.slice(-6).toUpperCase()}</span>
           <Badge className={currentStatus?.color || 'bg-gray-100 text-gray-800'}>
             {currentStatus?.icon && <currentStatus.icon className="h-3 w-3 mr-1" />}
             {currentStatus?.label || order.order_status}

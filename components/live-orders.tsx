@@ -1312,7 +1312,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <h3 className="font-semibold text-lg">
-                          Order #{order.id.slice(0, 8)}
+                          Order #{order.id.slice(-6).toUpperCase()}
                         </h3>
                         <Badge className={getStatusColor(order.order_status)}>
                           {getStatusIcon(order.order_status)}
