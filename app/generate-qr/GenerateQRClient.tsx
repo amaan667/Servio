@@ -424,6 +424,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     // Create a new window for printing multiple QR codes
     const printWindow = window.open('', '_blank', 'width=1000,height=800');
     
+    console.log('[QR PRINT] Starting print all with tables:', currentSelection);
+    console.log('[QR PRINT] Venue ID:', venueId);
+    console.log('[QR PRINT] QR Type:', qrType);
+    
     if (printWindow) {
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -536,6 +540,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 width: 100%;
                 flex: 1;
                 min-height: 0;
+                height: 100%;
               }
               
               .qr-item { 
@@ -600,7 +605,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNum}`;
               const cleanName = qrType === 'table' ? cleanTableName(itemNum) : cleanCounterName(itemNum);
               const label = qrType === 'table' ? 'Table' : 'Counter';
-              const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 200)}x${Math.min(printSettings.qrSize, 200)}&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2`;
+              const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2&bgcolor=ffffff&color=000000`;
               
               // Start a new page every 4 QR codes
               if (index % 4 === 0) {
@@ -608,14 +613,15 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                   <div class="page-header">
                     <div class="venue-name">${venueName || "My Venue"}</div>
                     <div class="venue-subtitle">QR Code Ordering System - ${qrType === 'table' ? 'Tables' : 'Counters'} ${currentSelection.join(', ')}</div>
-                  </div>`;
+                  </div>
+                  <div class="qr-grid">`;
               }
               
               html += `
                 <div class="qr-item">
                   <div class="table-number">${label} ${cleanName}</div>
                   <div class="qr-code">
-                    <img src="${qrCodeUrl}" alt="QR Code for ${label} ${itemNum}" />
+                    <img src="${qrCodeUrl}" alt="QR Code for ${label} ${itemNum}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlFSIENvZGUgRXJyb3I8L3RleHQ+PC9zdmc+'" />
                   </div>
                   <div class="scan-text">Scan to order</div>
                   <div class="venue-info">${venueName || "My Venue"}</div>
@@ -625,6 +631,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               // Close the page container every 4 QR codes or at the end
               if ((index + 1) % 4 === 0 || index === currentSelection.length - 1) {
                 html += `
+                  </div>
                   <div class="page-footer">
                     <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Venue ID: ${venueId}</p>
                     <p>Print and cut along the borders for individual QR codes</p>
