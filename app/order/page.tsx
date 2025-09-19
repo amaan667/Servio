@@ -750,10 +750,10 @@ export default function CustomerOrderPage() {
 
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
           {/* Breadcrumb Navigation for Demo */}
           {isDemo && (
-            <div className="mb-3 sm:mb-4">
+            <div className="mb-2 sm:mb-3">
               <NavigationBreadcrumb 
                 customBackPath="/dashboard" 
                 customBackLabel="Dashboard"
@@ -765,14 +765,14 @@ export default function CustomerOrderPage() {
           
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
-              {/* Servio Logo */}
+              {/* Servio Logo - Large and prominent */}
               <div className="flex items-center flex-shrink-0">
                 <Image
                   src="/assets/servio-logo-updated.png"
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-32 sm:h-40 md:h-48 lg:h-56 xl:h-64 w-auto"
+                  className="h-12 sm:h-16 md:h-20 lg:h-24 xl:h-28 w-auto"
                   priority
                 />
               </div>
