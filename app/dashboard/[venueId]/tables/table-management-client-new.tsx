@@ -38,6 +38,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   const [searchQuery, setSearchQuery] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [isManualResetting, setIsManualResetting] = useState(false);
+  const [isSettingUpDailyReset, setIsSettingUpDailyReset] = useState(false);
   
   const { 
     data: tables = [], 
@@ -126,6 +127,37 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       alert('Reset failed: Network error');
     } finally {
       setIsManualResetting(false);
+    }
+  };
+
+  const handleSetupDailyReset = async () => {
+    try {
+      setIsSettingUpDailyReset(true);
+      console.log('🔧 [SETUP DAILY RESET] Setting up automatic daily reset...');
+
+      const response = await fetch('/api/setup-daily-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ venueId }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('🔧 [SETUP DAILY RESET] Setup completed successfully:', result);
+        alert(`Daily reset configured successfully!\n\nYour venue will automatically reset all tables every day at midnight (00:00:00).\n\nNext reset: Tonight at midnight`);
+      } else {
+        console.error('🔧 [SETUP DAILY RESET] Setup failed:', result);
+        alert(`Setup failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('🔧 [SETUP DAILY RESET] Error during setup:', error);
+      alert('Setup failed: Network error');
+    } finally {
+      setIsSettingUpDailyReset(false);
     }
   };
 
@@ -333,6 +365,20 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                 className="text-blue-600 border-blue-200 hover:bg-blue-50 flex-shrink-0"
               >
                 Debug
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleSetupDailyReset}
+                disabled={isSettingUpDailyReset}
+                className="text-green-600 border-green-200 hover:bg-green-50 flex-shrink-0"
+              >
+                {isSettingUpDailyReset ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                )}
+                {isSettingUpDailyReset ? 'Setting up...' : 'Setup Auto Reset'}
               </Button>
               <Button 
                 variant="outline" 
