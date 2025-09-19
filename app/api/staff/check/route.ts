@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey) return NextResponse.json({ ok:false, error:'Missing service role key' }, { status:500 });
-
   const { searchParams } = new URL(req.url);
   const venue_id = searchParams.get('venue_id');
 
-  const admin = await createClient();
+  const admin = createAdminClient();
   try {
     // If venue_id is provided, return staff for that venue (excluding deleted staff)
     if (venue_id) {

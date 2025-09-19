@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const staff_id = searchParams.get('staff_id');
   if (!venue_id) return NextResponse.json({ error: 'venue_id required' }, { status: 400 });
 
-  const admin = await createClient();
+  const admin = createAdminClient();
 
   let q = admin.from('staff_shifts')
     .select(`
