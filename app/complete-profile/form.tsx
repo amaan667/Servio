@@ -75,13 +75,39 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         return;
       }
 
-      // Validate password if OAuth user is setting one
-      if (isOAuthUser && formData.password) {
+      // Validate all required fields
+      if (!formData.venueName.trim()) {
+        setError("Business name is required.");
+        setLoading(false);
+        return;
+      }
+      
+      if (!formData.address.trim()) {
+        setError("Business address is required.");
+        setLoading(false);
+        return;
+      }
+      
+      if (!formData.phone.trim()) {
+        setError("Phone number is required.");
+        setLoading(false);
+        return;
+      }
+
+      // Validate password for OAuth users (now required)
+      if (isOAuthUser) {
+        if (!formData.password.trim()) {
+          setError("Password is required for Google sign-up users.");
+          setLoading(false);
+          return;
+        }
+        
         if (formData.password !== formData.confirmPassword) {
           setError("Passwords do not match.");
           setLoading(false);
           return;
         }
+        
         if (formData.password.length < 6) {
           setError("Password must be at least 6 characters long.");
           setLoading(false);
@@ -89,8 +115,8 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         }
       }
 
-      // Set password for OAuth users if provided
-      if (isOAuthUser && formData.password) {
+      // Set password for OAuth users (now required)
+      if (isOAuthUser) {
         console.log("[COMPLETE-PROFILE] Setting password for OAuth user");
         const { error: passwordError } = await createClient().auth.updateUser({
           password: formData.password
@@ -233,7 +259,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Address (Optional)</Label>
+                <Label htmlFor="address">Business Address *</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
@@ -243,11 +269,12 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   placeholder="Enter your business address"
                   disabled={loading}
                   rows={3}
+                  required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number (Optional)</Label>
+                <Label htmlFor="phone">Phone Number *</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -257,20 +284,21 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                   }
                   placeholder="Enter your phone number"
                   disabled={loading}
+                  required
                 />
               </div>
 
               {isOAuthUser && (
                 <>
                   <div className="border-t pt-4 mt-4">
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">Set Up Password (Optional)</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Set Up Password *</h3>
                     <p className="text-sm text-gray-600 mb-4">
                       Set a password so you can also sign in with your email and password in the future.
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password (Optional)</Label>
+                    <Label htmlFor="password">Password *</Label>
                     <Input
                       id="password"
                       type="password"
@@ -280,11 +308,12 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                       }
                       placeholder="Create a password"
                       disabled={loading}
+                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
                     <Input
                       id="confirmPassword"
                       type="password"
@@ -294,6 +323,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
                       }
                       placeholder="Confirm your password"
                       disabled={loading}
+                      required
                     />
                   </div>
                 </>
