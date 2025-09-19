@@ -440,7 +440,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 }
                 .page-break { page-break-after: always; }
                 .no-break { page-break-inside: avoid; }
-                .qr-grid { 
+                .page-container { 
                   display: grid !important; 
                   grid-template-columns: repeat(2, 1fr) !important; 
                   grid-template-rows: repeat(2, 1fr) !important;
@@ -450,6 +450,11 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                   width: 100% !important;
                   height: calc(100vh - 80px) !important;
                   page-break-inside: avoid !important;
+                }
+                
+                .qr-grid { 
+                  display: block !important;
+                  width: 100% !important;
                 }
                 .qr-item { 
                   border: 1px solid #000 !important;
@@ -506,7 +511,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 margin-bottom: 10px;
               }
               
-              .qr-grid { 
+              .page-container {
                 display: grid; 
                 grid-template-columns: repeat(2, 1fr); 
                 grid-template-rows: repeat(2, 1fr);
@@ -516,6 +521,12 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 width: 100%;
                 height: calc(100vh - 120px);
                 min-height: calc(100vh - 120px);
+                page-break-inside: avoid;
+              }
+              
+              .qr-grid { 
+                display: block;
+                width: 100%;
               }
               
               .qr-item { 
@@ -593,26 +604,39 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               <div class="venue-subtitle">QR Code Ordering System - ${qrType === 'table' ? 'Tables' : 'Counters'} ${currentSelection.join(', ')}</div>
             </div>
             
-            <div class="qr-grid">
-              ${currentSelection.map((itemNum, index) => {
-                const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNum}`;
-                const cleanName = qrType === 'table' ? cleanTableName(itemNum) : cleanCounterName(itemNum);
-                const label = qrType === 'table' ? 'Table' : 'Counter';
-                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 200)}x${Math.min(printSettings.qrSize, 200)}&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2`;
-                
-                return `
-                  <div class="qr-item">
-                    <div class="table-number">${label} ${cleanName}</div>
-                    <div class="qr-code">
-                      <img src="${qrCodeUrl}" alt="QR Code for ${label} ${itemNum}" />
-                    </div>
-                    <div class="scan-text">Scan to order</div>
-                    <div class="venue-info">${venueName || "My Venue"}</div>
+            ${currentSelection.reduce((html, itemNum, index) => {
+              const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNum}`;
+              const cleanName = qrType === 'table' ? cleanTableName(itemNum) : cleanCounterName(itemNum);
+              const label = qrType === 'table' ? 'Table' : 'Counter';
+              const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 200)}x${Math.min(printSettings.qrSize, 200)}&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2`;
+              
+              // Start a new page every 4 QR codes
+              if (index % 4 === 0) {
+                html += '<div class="page-container">';
+              }
+              
+              html += `
+                <div class="qr-item">
+                  <div class="table-number">${label} ${cleanName}</div>
+                  <div class="qr-code">
+                    <img src="${qrCodeUrl}" alt="QR Code for ${label} ${itemNum}" />
                   </div>
-                  ${(index + 1) % 4 === 0 && index < currentSelection.length - 1 ? '<div class="page-break"></div>' : ''}
-                `;
-              }).join('')}
-            </div>
+                  <div class="scan-text">Scan to order</div>
+                  <div class="venue-info">${venueName || "My Venue"}</div>
+                </div>
+              `;
+              
+              // Close the page container every 4 QR codes or at the end
+              if ((index + 1) % 4 === 0 || index === currentSelection.length - 1) {
+                html += '</div>';
+                // Add page break except for the last page
+                if (index < currentSelection.length - 1) {
+                  html += '<div class="page-break"></div>';
+                }
+              }
+              
+              return html;
+            }, '')}
             
             <div class="footer">
               <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Venue ID: ${venueId}</p>
