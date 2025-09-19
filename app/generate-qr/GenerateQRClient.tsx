@@ -441,20 +441,30 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 .page-break { page-break-after: always; }
                 .no-break { page-break-inside: avoid; }
                 .page-container { 
-                  display: grid !important; 
-                  grid-template-columns: repeat(2, 1fr) !important; 
-                  grid-template-rows: repeat(2, 1fr) !important;
-                  gap: 0 !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
+                  display: flex !important;
+                  flex-direction: column !important;
                   width: 100% !important;
-                  height: calc(100vh - 80px) !important;
+                  height: 100vh !important;
                   page-break-inside: avoid !important;
                 }
                 
+                .page-header {
+                  flex-shrink: 0 !important;
+                  height: 60px !important;
+                }
+                
+                .page-footer {
+                  flex-shrink: 0 !important;
+                  height: 40px !important;
+                }
+                
                 .qr-grid { 
-                  display: block !important;
-                  width: 100% !important;
+                  display: grid !important;
+                  grid-template-columns: repeat(2, 1fr) !important; 
+                  grid-template-rows: repeat(2, 1fr) !important;
+                  gap: 0 !important;
+                  flex: 1 !important;
+                  min-height: 0 !important;
                 }
                 .qr-item { 
                   border: 1px solid #000 !important;
@@ -467,14 +477,6 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                   align-items: center !important;
                   page-break-inside: avoid !important;
                 }
-                .header {
-                  height: 60px !important;
-                  margin-bottom: 20px !important;
-                }
-                .footer {
-                  height: 40px !important;
-                  margin-top: 20px !important;
-                }
               }
               
               body { 
@@ -484,18 +486,6 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 background: white;
                 -webkit-print-color-adjust: exact;
                 color-adjust: exact;
-              }
-              
-              .header { 
-                text-align: center; 
-                margin-bottom: 10px; 
-                padding: 8px;
-                background: #f0f0f0;
-                border-bottom: 2px solid #333;
-                height: 50px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
               }
               
               .venue-name { 
@@ -512,21 +502,40 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               }
               
               .page-container {
-                display: grid; 
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                height: 100vh;
+                page-break-inside: avoid;
+              }
+              
+              .page-header {
+                text-align: center; 
+                padding: 10px;
+                background: #f0f0f0;
+                border-bottom: 2px solid #333;
+                flex-shrink: 0;
+              }
+              
+              .page-footer {
+                text-align: center; 
+                color: #999; 
+                font-size: 10px;
+                border-top: 1px solid #eee;
+                padding: 10px;
+                flex-shrink: 0;
+              }
+              
+              .qr-grid { 
+                display: grid;
                 grid-template-columns: repeat(2, 1fr); 
                 grid-template-rows: repeat(2, 1fr);
                 gap: 0;
                 margin: 0;
                 padding: 0;
                 width: 100%;
-                height: calc(100vh - 120px);
-                min-height: calc(100vh - 120px);
-                page-break-inside: avoid;
-              }
-              
-              .qr-grid { 
-                display: block;
-                width: 100%;
+                flex: 1;
+                min-height: 0;
               }
               
               .qr-item { 
@@ -583,27 +592,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 font-weight: 500;
               }
               
-              .footer { 
-                margin-top: 10px; 
-                text-align: center; 
-                color: #999; 
-                font-size: 10px;
-                border-top: 1px solid #eee;
-                padding-top: 8px;
-                height: 30px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-              }
               
             </style>
           </head>
           <body>
-            <div class="header">
-              <div class="venue-name">${venueName || "My Venue"}</div>
-              <div class="venue-subtitle">QR Code Ordering System - ${qrType === 'table' ? 'Tables' : 'Counters'} ${currentSelection.join(', ')}</div>
-            </div>
-            
             ${currentSelection.reduce((html, itemNum, index) => {
               const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNum}`;
               const cleanName = qrType === 'table' ? cleanTableName(itemNum) : cleanCounterName(itemNum);
@@ -612,7 +604,11 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               // Start a new page every 4 QR codes
               if (index % 4 === 0) {
-                html += '<div class="page-container">';
+                html += `<div class="page-container">
+                  <div class="page-header">
+                    <div class="venue-name">${venueName || "My Venue"}</div>
+                    <div class="venue-subtitle">QR Code Ordering System - ${qrType === 'table' ? 'Tables' : 'Counters'} ${currentSelection.join(', ')}</div>
+                  </div>`;
               }
               
               html += `
@@ -628,7 +624,12 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               // Close the page container every 4 QR codes or at the end
               if ((index + 1) % 4 === 0 || index === currentSelection.length - 1) {
-                html += '</div>';
+                html += `
+                  <div class="page-footer">
+                    <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Venue ID: ${venueId}</p>
+                    <p>Print and cut along the borders for individual QR codes</p>
+                  </div>
+                </div>`;
                 // Add page break except for the last page
                 if (index < currentSelection.length - 1) {
                   html += '<div class="page-break"></div>';
@@ -637,11 +638,6 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               return html;
             }, '')}
-            
-            <div class="footer">
-              <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Venue ID: ${venueId}</p>
-              <p>Print and cut along the borders for individual QR codes</p>
-            </div>
           </body>
         </html>
       `);
