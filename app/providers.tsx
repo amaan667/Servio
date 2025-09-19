@@ -17,11 +17,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     },
   }));
   
-  // Only enable dark mode for dashboard and authenticated pages
+  // Only enable dark mode for dashboard, settings, and order pages
   // Disable it for the main homepage to prevent logo dark mode issues
   const isAuthenticatedRoute = pathname?.startsWith('/dashboard') || 
                                pathname?.startsWith('/generate-qr') || 
                                pathname?.startsWith('/settings') ||
+                               pathname?.startsWith('/order') ||
                                pathname?.startsWith('/complete-profile') ||
                                pathname?.startsWith('/sign-in') ||
                                pathname?.startsWith('/sign-up');

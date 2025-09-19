@@ -2,18 +2,25 @@
 import { useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function ThemeToggleFloat() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
   // Ensure component is mounted before rendering
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Only show theme toggle on dashboard, settings, and order pages
+  const shouldShowToggle = pathname?.startsWith('/dashboard') || 
+                          pathname?.startsWith('/settings') ||
+                          pathname?.startsWith('/order');
+
   // Don't render until mounted to avoid hydration mismatch
-  if (!mounted) {
+  if (!mounted || !shouldShowToggle) {
     return null;
   }
 
@@ -29,9 +36,15 @@ export default function ThemeToggleFloat() {
       type="button"
       onClick={toggle}
       aria-label="Toggle theme"
-      className="fixed bottom-4 left-4 z-50 rounded-full border bg-background/90 backdrop-blur px-3 py-3 shadow-lg hover:scale-105 transition-transform md:left-auto md:right-4"
+      className="fixed bottom-6 right-6 z-50 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 dark:shadow-gray-900/50"
     >
-      {currentTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      <div className="flex items-center justify-center">
+        {currentTheme === 'dark' ? (
+          <Sun className="h-5 w-5 text-yellow-500" />
+        ) : (
+          <Moon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+        )}
+      </div>
     </button>
   );
 }
