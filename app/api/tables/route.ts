@@ -46,12 +46,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: tablesError.message }, { status: 500 });
     }
 
-    // Get current sessions for each table
+    // Get current sessions for each table (only active sessions)
     const { data: sessions, error: sessionsError } = await supabase
       .from('table_sessions')
       .select('*')
       .eq('venue_id', venueId)
-      .in('table_id', tables?.map(t => t.id) || []);
+      .in('table_id', tables?.map(t => t.id) || [])
+      .is('closed_at', null); // Only get active sessions
 
     if (sessionsError) {
       console.error('[TABLES GET] Sessions error:', sessionsError);
@@ -61,7 +62,7 @@ export async function GET(req: Request) {
     // Combine tables with their sessions
     const tablesWithSessions = tables?.map(table => {
       const session = sessions?.find(s => s.table_id === table.id);
-      return {
+      const result = {
         ...table,
         table_id: table.id, // Add table_id field for consistency with TableRuntimeState interface
         session_id: session?.id || null,
@@ -91,7 +92,69 @@ export async function GET(req: Request) {
         reserved_later_phone: null,
         block_window_mins: 0
       };
+      
+      console.log('[TABLES API DEBUG] Table processed:', {
+        id: table.id,
+        label: table.label,
+        hasSession: !!session,
+        status: result.status,
+        sessionStatus: session?.status
+      });
+      
+      return result;
     }) || [];
+
+    // Ensure all tables have active sessions (create missing ones)
+    const adminSupabase = createAdminClient();
+    const tablesWithoutSessions = tablesWithSessions.filter(t => !t.session_id);
+    
+    if (tablesWithoutSessions.length > 0) {
+      console.log('[TABLES API DEBUG] Creating missing sessions for tables:', tablesWithoutSessions.map(t => t.id));
+      
+      for (const table of tablesWithoutSessions) {
+        const { error: sessionError } = await adminSupabase
+          .from('table_sessions')
+          .insert({
+            venue_id: venueId,
+            table_id: table.id,
+            status: 'FREE',
+            opened_at: new Date().toISOString(),
+            closed_at: null
+          });
+
+        if (sessionError) {
+          console.error('[TABLES API DEBUG] Error creating session for table:', table.id, sessionError);
+        } else {
+          console.log('[TABLES API DEBUG] Created session for table:', table.id);
+        }
+      }
+      
+      // Refetch sessions after creating missing ones
+      const { data: updatedSessions } = await adminSupabase
+        .from('table_sessions')
+        .select('*')
+        .eq('venue_id', venueId)
+        .in('table_id', tables?.map(t => t.id) || [])
+        .is('closed_at', null);
+      
+      // Update the tables with the new sessions
+      tablesWithSessions.forEach(table => {
+        if (!table.session_id) {
+          const newSession = updatedSessions?.find(s => s.table_id === table.id);
+          if (newSession) {
+            table.session_id = newSession.id;
+            table.status = newSession.status;
+            table.opened_at = newSession.opened_at;
+          }
+        }
+      });
+    }
+
+    console.log('[TABLES API DEBUG] Final tables data:', {
+      tablesCount: tablesWithSessions.length,
+      sessionsCount: sessions?.length || 0,
+      tableStatuses: tablesWithSessions.map(t => ({ id: t.id, label: t.label, status: t.status }))
+    });
 
     return NextResponse.json({
       ok: true,

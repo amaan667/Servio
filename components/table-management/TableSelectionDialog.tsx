@@ -50,32 +50,78 @@ export function TableSelectionDialog({
 
   // Filter available tables based on action
   const getAvailableTables = () => {
+    console.log('[TABLE MERGE DEBUG] Filtering tables for action:', action);
+    console.log('[TABLE MERGE DEBUG] Source table:', {
+      id: sourceTable.id,
+      label: sourceTable.label,
+      status: sourceTable.status
+    });
+    console.log('[TABLE MERGE DEBUG] Available tables:', availableTables.map(t => ({
+      id: t.id,
+      label: t.label,
+      status: t.status
+    })));
+
     if (action === 'move') {
       // For move, only show FREE tables
-      return availableTables.filter(table => 
+      const filtered = availableTables.filter(table => 
         table.id !== sourceTable.id && 
         table.status === 'FREE'
       );
+      console.log('[TABLE MERGE DEBUG] Move filtered tables:', filtered.map(t => ({ id: t.id, label: t.label, status: t.status })));
+      return filtered;
     } else {
       // For merge, apply strict eligibility rules
-      return availableTables.filter(table => {
-        if (table.id === sourceTable.id) return false;
+      const filtered = availableTables.filter(table => {
+        if (table.id === sourceTable.id) {
+          console.log('[TABLE MERGE DEBUG] Skipping source table:', table.id);
+          return false;
+        }
         
         // Source table status determines what we can merge with
         if (sourceTable.status === 'FREE') {
           // FREE can merge with FREE, RESERVED, or any occupied status
           const occupiedStatuses = ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'];
-          return ['FREE', 'RESERVED'].includes(table.status) || occupiedStatuses.includes(table.status);
+          const canMerge = ['FREE', 'RESERVED'].includes(table.status) || occupiedStatuses.includes(table.status);
+          console.log('[TABLE MERGE DEBUG] FREE table merge check:', {
+            targetTable: { id: table.id, label: table.label, status: table.status, statusType: typeof table.status },
+            sourceTable: { id: sourceTable.id, label: sourceTable.label, status: sourceTable.status, statusType: typeof sourceTable.status },
+            canMerge,
+            reason: canMerge ? 'Allowed' : 'Not allowed',
+            statusCheck: {
+              isFree: table.status === 'FREE',
+              isReserved: table.status === 'RESERVED',
+              isOccupied: occupiedStatuses.includes(table.status),
+              freeCheck: ['FREE', 'RESERVED'].includes(table.status),
+              occupiedCheck: occupiedStatuses.includes(table.status)
+            }
+          });
+          return canMerge;
         } else if (sourceTable.status === 'RESERVED') {
           // RESERVED can only merge with FREE
-          return table.status === 'FREE';
+          const canMerge = table.status === 'FREE';
+          console.log('[TABLE MERGE DEBUG] RESERVED table merge check:', {
+            targetTable: { id: table.id, label: table.label, status: table.status },
+            canMerge,
+            reason: canMerge ? 'Target is FREE' : 'Target is not FREE'
+          });
+          return canMerge;
         } else if (['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(sourceTable.status)) {
           // OCCUPIED tables (any occupied status) can only merge with FREE
-          return table.status === 'FREE';
+          const canMerge = table.status === 'FREE';
+          console.log('[TABLE MERGE DEBUG] OCCUPIED table merge check:', {
+            targetTable: { id: table.id, label: table.label, status: table.status },
+            canMerge,
+            reason: canMerge ? 'Target is FREE' : 'Target is not FREE'
+          });
+          return canMerge;
         }
         
+        console.log('[TABLE MERGE DEBUG] Unknown source table status:', sourceTable.status);
         return false;
       });
+      console.log('[TABLE MERGE DEBUG] Merge filtered tables:', filtered.map(t => ({ id: t.id, label: t.label, status: t.status })));
+      return filtered;
     }
   };
 
