@@ -112,8 +112,31 @@ function CallbackContent() {
         }
         
         if (existingSession) {
-          addDebugLog('[AUTH CALLBACK] Session already exists, redirecting to dashboard');
-          router.push('/dashboard');
+          addDebugLog('[AUTH CALLBACK] Session already exists, checking for venues');
+          // Check if user has venues and redirect appropriately
+          try {
+            const { data: venues, error: venueError } = await supabaseBrowser()
+              .from('venues')
+              .select('venue_id')
+              .eq('owner_id', existingSession.user.id)
+              .limit(1);
+            
+            if (!venues || venues.length === 0) {
+              addDebugLog('[AUTH CALLBACK] Existing session but no venues, redirecting to complete profile');
+              router.push('/complete-profile');
+            } else {
+              addDebugLog('[AUTH CALLBACK] Existing session with venues, redirecting to dashboard');
+              const venueId = venues[0]?.venue_id;
+              if (venueId) {
+                router.push(`/dashboard/${venueId}`);
+              } else {
+                router.push('/dashboard');
+              }
+            }
+          } catch (checkError) {
+            addDebugLog(`[AUTH CALLBACK] Error checking venues for existing session: ${checkError}`);
+            router.push('/dashboard');
+          }
           return;
         }
 
@@ -210,13 +233,18 @@ function CallbackContent() {
                   .eq('owner_id', retryData.session.user.id)
                   .limit(1);
                 
-                if (!venues || venues.length === 0) {
-                  addDebugLog('[AUTH CALLBACK] No venues found, redirecting to complete profile');
-                  router.push('/complete-profile');
-                } else {
-                  addDebugLog('[AUTH CALLBACK] User has venues, redirecting to home');
-                  router.push('/');
-                }
+            if (!venues || venues.length === 0) {
+              addDebugLog('[AUTH CALLBACK] No venues found, redirecting to complete profile');
+              router.push('/complete-profile');
+            } else {
+              addDebugLog('[AUTH CALLBACK] User has venues, redirecting to dashboard');
+              const venueId = venues[0]?.venue_id;
+              if (venueId) {
+                router.push(`/dashboard/${venueId}`);
+              } else {
+                router.push('/dashboard');
+              }
+            }
               } catch (checkError) {
                 addDebugLog(`[AUTH CALLBACK] Error checking user venues: ${checkError}`);
                 router.push('/');
@@ -259,8 +287,13 @@ function CallbackContent() {
               addDebugLog('[AUTH CALLBACK] No venues found, redirecting to complete profile');
               router.push('/complete-profile');
             } else {
-              addDebugLog('[AUTH CALLBACK] User has venues, redirecting to home');
-              router.push('/');
+              addDebugLog('[AUTH CALLBACK] User has venues, redirecting to dashboard');
+              const venueId = venues[0]?.venue_id;
+              if (venueId) {
+                router.push(`/dashboard/${venueId}`);
+              } else {
+                router.push('/dashboard');
+              }
             }
           } catch (checkError) {
             addDebugLog(`[AUTH CALLBACK] Error checking user venues: ${checkError}`);

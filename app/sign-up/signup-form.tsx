@@ -166,9 +166,11 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     setError(null);
     
     try {
+      console.log('[SIGN-UP] Starting Google OAuth sign-up process');
       await onGoogleSignIn();
       // The redirect will happen automatically
     } catch (err: any) {
+      console.error('[SIGN-UP] Google sign-up error:', err);
       setError(err.message || 'Google sign-up failed. Please try again.');
       setLoading(false);
     }

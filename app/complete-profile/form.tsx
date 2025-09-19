@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,10 +21,10 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    venueName: user?.user_metadata?.venue_name || "",
+    venueName: user?.user_metadata?.venue_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "",
     businessType: user?.user_metadata?.business_type || "Restaurant",
-    address: "",
-    phone: "",
+    address: user?.user_metadata?.address || "",
+    phone: user?.user_metadata?.phone || "",
     password: "",
     confirmPassword: "",
   });
@@ -33,6 +33,36 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   const isOAuthUser = (user as any)?.identities?.some((identity: any) => 
     identity.provider === 'google' || identity.provider === 'oauth'
   );
+
+  // Debug logging for user data
+  console.log("[COMPLETE-PROFILE] User data:", {
+    userId: user?.id,
+    email: user?.email,
+    userMetadata: user?.user_metadata,
+    identities: user?.identities,
+    isOAuthUser
+  });
+
+  // Pre-populate form with Google data if available
+  useEffect(() => {
+    if (user && isOAuthUser) {
+      const googleName = user.user_metadata?.full_name || user.user_metadata?.name;
+      const googleEmail = user.email;
+      
+      if (googleName && !formData.venueName) {
+        setFormData(prev => ({
+          ...prev,
+          venueName: `${googleName}'s Business`
+        }));
+      }
+      
+      console.log("[COMPLETE-PROFILE] Pre-populated form data:", {
+        googleName,
+        googleEmail,
+        venueName: formData.venueName
+      });
+    }
+  }, [user, isOAuthUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,28 +104,48 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       }
 
       console.log("[COMPLETE-PROFILE] Upserting venue via server route (service role)", user.id);
+      
+      // Ensure we have a valid venue name
+      const venueName = formData.venueName.trim() || `${user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'My'}'s Business`;
+      
+      // Generate venue ID based on user ID
+      const venueId = `venue-${user.id.slice(0, 8)}`;
+      
       const res = await fetch('/api/venues/upsert', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          name: formData.venueName,
+          venueId: venueId,
+          name: venueName,
           business_type: formData.businessType,
           address: formData.address || null,
           phone: formData.phone || null,
         })
       });
+      
       const j = await res.json().catch(()=>({}));
-      if (!res.ok || !j?.ok) throw new Error(j?.error || 'Failed to save venue');
+      console.log("[COMPLETE-PROFILE] Venue upsert response:", j);
+      
+      if (!res.ok || !j?.ok) {
+        console.error("[COMPLETE-PROFILE] Venue upsert failed:", j);
+        throw new Error(j?.error || 'Failed to save venue');
+      }
 
-      const venueId = j.venue_id as string;
+      const returnedVenueId = j.venue?.venue_id || venueId;
 
-      // Update user metadata to mark profile as complete
+      // Update user metadata to mark profile as complete and save additional info
       const { error: metadataError } = await createClient().auth.updateUser({
-        data: { profileComplete: true }
+        data: { 
+          profileComplete: true,
+          venue_name: venueName,
+          business_type: formData.businessType,
+          address: formData.address || null,
+          phone: formData.phone || null
+        }
       });
       if (metadataError) console.error('[COMPLETE-PROFILE] metadata update error', metadataError);
 
-      router.replace(`/dashboard/${venueId}`);
+      router.replace(`/dashboard/${returnedVenueId}`);
     } catch (error: any) {
       console.error("[COMPLETE-PROFILE] Failed to complete profile:", error);
       logger.error("Failed to complete profile", { error });
