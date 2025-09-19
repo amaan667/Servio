@@ -145,7 +145,7 @@ export default function ClientNavBar() {
   return (
     <nav className="bg-white/90 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-0 sm:px-1 lg:px-2">
-        <div className="flex justify-between items-center h-16 sm:h-20 md:h-24">
+        <div className="flex justify-between items-center h-20 sm:h-24 md:h-28">
           {/* Logo */}
           <div className="flex-shrink-0 -ml-4">
             <Link href={isAuthenticated ? (venueId ? `/dashboard/${venueId}` : "/dashboard") : "/"} className="flex items-center group">
@@ -154,7 +154,7 @@ export default function ClientNavBar() {
                 alt="Servio"
                 width={800}
                 height={250}
-                className="h-12 sm:h-16 md:h-20 lg:h-24 xl:h-28 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
+                className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-xl filter brightness-110 contrast-110"
                 priority
               />
             </Link>

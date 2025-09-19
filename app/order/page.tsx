@@ -750,10 +750,10 @@ export default function CustomerOrderPage() {
 
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
           {/* Breadcrumb Navigation for Demo */}
           {isDemo && (
-            <div className="mb-2 sm:mb-3">
+            <div className="mb-3 sm:mb-4">
               <NavigationBreadcrumb 
                 customBackPath="/dashboard" 
                 customBackLabel="Dashboard"
@@ -772,7 +772,7 @@ export default function CustomerOrderPage() {
                   alt="Servio"
                   width={800}
                   height={250}
-                  className="h-12 sm:h-16 md:h-20 lg:h-24 xl:h-28 w-auto"
+                  className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto"
                   priority
                 />
               </div>
