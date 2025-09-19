@@ -63,13 +63,14 @@ export function TableSelectionDialog({
         
         // Source table status determines what we can merge with
         if (sourceTable.status === 'FREE') {
-          // FREE can merge with FREE, RESERVED, or OCCUPIED
-          return ['FREE', 'RESERVED', 'OCCUPIED'].includes(table.status);
+          // FREE can merge with FREE, RESERVED, or any occupied status
+          const occupiedStatuses = ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'];
+          return ['FREE', 'RESERVED'].includes(table.status) || occupiedStatuses.includes(table.status);
         } else if (sourceTable.status === 'RESERVED') {
           // RESERVED can only merge with FREE
           return table.status === 'FREE';
-        } else if (sourceTable.status === 'OCCUPIED') {
-          // OCCUPIED can only merge with FREE
+        } else if (['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(sourceTable.status)) {
+          // OCCUPIED tables (any occupied status) can only merge with FREE
           return table.status === 'FREE';
         }
         
@@ -170,8 +171,8 @@ export function TableSelectionDialog({
             }
             {action === 'merge' && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                <strong>Merge Rules:</strong> FREE tables can merge with FREE, RESERVED, or OCCUPIED tables. 
-                RESERVED and OCCUPIED tables can only merge with FREE tables.
+                <strong>Merge Rules:</strong> FREE tables can merge with FREE, RESERVED, or any occupied tables (ORDERING, IN_PREP, READY, SERVED, AWAITING_BILL). 
+                RESERVED and occupied tables can only merge with FREE tables.
               </div>
             )}
           </DialogDescription>
