@@ -441,24 +441,34 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 .page-break { page-break-after: always; }
                 .no-break { page-break-inside: avoid; }
                 .qr-grid { 
-                  display: grid; 
-                  grid-template-columns: repeat(2, 1fr); 
-                  gap: 0;
-                  margin: 0;
-                  padding: 0;
-                  width: 100%;
-                  height: 100vh;
+                  display: grid !important; 
+                  grid-template-columns: repeat(2, 1fr) !important; 
+                  grid-template-rows: repeat(2, 1fr) !important;
+                  gap: 0 !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  width: 100% !important;
+                  height: calc(100vh - 80px) !important;
+                  page-break-inside: avoid !important;
                 }
                 .qr-item { 
-                  border: 1px solid #000;
-                  padding: 10px;
-                  box-sizing: border-box;
-                  height: 50vh;
-                  display: flex;
-                  flex-direction: column;
-                  justify-content: center;
-                  align-items: center;
-                  page-break-inside: avoid;
+                  border: 1px solid #000 !important;
+                  padding: 8px !important;
+                  box-sizing: border-box !important;
+                  height: 100% !important;
+                  display: flex !important;
+                  flex-direction: column !important;
+                  justify-content: center !important;
+                  align-items: center !important;
+                  page-break-inside: avoid !important;
+                }
+                .header {
+                  height: 60px !important;
+                  margin-bottom: 20px !important;
+                }
+                .footer {
+                  height: 40px !important;
+                  margin-top: 20px !important;
                 }
               }
               
@@ -473,10 +483,14 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               
               .header { 
                 text-align: center; 
-                margin-bottom: 20px; 
-                padding: 10px;
+                margin-bottom: 10px; 
+                padding: 8px;
                 background: #f0f0f0;
                 border-bottom: 2px solid #333;
+                height: 50px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
               }
               
               .venue-name { 
@@ -495,16 +509,18 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .qr-grid { 
                 display: grid; 
                 grid-template-columns: repeat(2, 1fr); 
+                grid-template-rows: repeat(2, 1fr);
                 gap: 0;
                 margin: 0;
                 padding: 0;
                 width: 100%;
-                min-height: calc(100vh - 100px);
+                height: calc(100vh - 120px);
+                min-height: calc(100vh - 120px);
               }
               
               .qr-item { 
-                border: 1px solid #ddd; 
-                padding: 15px;
+                border: 1px solid #000; 
+                padding: 10px;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
@@ -514,6 +530,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
                 background: white;
                 page-break-inside: avoid;
                 position: relative;
+                height: 100%;
               }
               
               .table-number { 
@@ -556,35 +573,18 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               }
               
               .footer { 
-                margin-top: 20px; 
+                margin-top: 10px; 
                 text-align: center; 
                 color: #999; 
                 font-size: 10px;
                 border-top: 1px solid #eee;
-                padding-top: 10px;
+                padding-top: 8px;
+                height: 30px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
               }
               
-              /* Cut lines for easier cutting */
-              .qr-item::before,
-              .qr-item::after {
-                content: '';
-                position: absolute;
-                background: #000;
-              }
-              
-              .qr-item::before {
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 1px;
-              }
-              
-              .qr-item::after {
-                left: 0;
-                top: 0;
-                bottom: 0;
-                width: 1px;
-              }
             </style>
           </head>
           <body>
