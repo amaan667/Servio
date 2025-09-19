@@ -236,110 +236,123 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   };
 
   const handlePrint = () => {
-    // Create a hidden iframe for printing instead of opening a new window
-    const printFrame = document.createElement('iframe');
-    printFrame.style.position = 'absolute';
-    printFrame.style.left = '-9999px';
-    printFrame.style.top = '-9999px';
-    document.body.appendChild(printFrame);
+    // Create a new window for printing instead of iframe
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
     
-    const printContent = printFrame.contentDocument || printFrame.contentWindow?.document;
-    if (printContent) {
-      printContent.write(`
+    if (printWindow) {
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(orderUrl)}&format=png&margin=2`;
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
           <head>
             <title>QR Code - ${qrType === 'table' ? 'Table' : 'Counter'} ${currentSelection[0]}</title>
             <style>
               @media print {
-                body { margin: 0; padding: 0; }
+                body { 
+                  margin: 0; 
+                  padding: 0; 
+                  -webkit-print-color-adjust: exact;
+                  color-adjust: exact;
+                }
                 .page-break { page-break-after: always; }
                 .no-break { page-break-inside: avoid; }
+                .qr-container {
+                  width: 100%;
+                  height: 100vh;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  padding: 20px;
+                  box-sizing: border-box;
+                }
               }
               
               body { 
                 font-family: Arial, sans-serif; 
                 margin: 0; 
-                padding: 20px; 
+                padding: 0; 
                 background: white;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
               }
               
-              .header { 
-                text-align: center; 
-                margin-bottom: 30px; 
-                border-bottom: 2px solid #333;
-                padding-bottom: 20px;
+              .qr-container {
+                width: 100%;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+                box-sizing: border-box;
+                text-align: center;
               }
               
               .venue-name { 
-                font-size: 28px; 
-                font-weight: bold; 
-                color: #333;
-                margin-bottom: 10px;
-              }
-              
-              .venue-subtitle { 
-                font-size: 16px; 
-                color: #666;
-                margin-bottom: 20px;
-              }
-              
-              .qr-grid { 
-                display: grid; 
-                grid-template-columns: repeat(2, 1fr); 
-                gap: 40px; 
-                margin-bottom: 40px;
-              }
-              
-              .qr-item { 
-                text-align: center; 
-                padding: 20px; 
-                border: 2px solid #ddd; 
-                border-radius: 12px;
-                background: white;
-                page-break-inside: avoid;
-              }
-              
-              .table-number { 
-                font-size: 24px; 
+                font-size: 32px; 
                 font-weight: bold; 
                 color: #333;
                 margin-bottom: 15px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+              }
+              
+              .table-number { 
+                font-size: 28px; 
+                font-weight: bold; 
+                color: #333;
+                margin-bottom: 20px;
+                background: #f0f0f0;
+                padding: 10px 20px;
+                border-radius: 8px;
+                display: inline-block;
               }
               
               .qr-code { 
-                margin: 15px 0; 
-                display: flex;
-                justify-content: center;
+                margin: 30px 0; 
+                padding: 20px;
+                background: white;
+                border: 2px solid #333;
+                border-radius: 12px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
               }
               
               .qr-code img { 
-                border: 1px solid #ccc;
-                border-radius: 8px;
+                display: block;
+                max-width: 100%;
+                height: auto;
               }
               
               .scan-text { 
-                font-size: 18px; 
+                font-size: 24px; 
                 color: #666;
-                margin-bottom: 10px;
-              }
-              
-              .venue-info { 
-                font-size: 16px; 
-                color: #333;
+                margin-bottom: 15px;
                 font-weight: 500;
               }
               
+              .venue-info { 
+                font-size: 20px; 
+                color: #333;
+                font-weight: 600;
+                margin-bottom: 20px;
+              }
+              
               .instructions { 
-                margin-top: 40px; 
+                margin-top: 30px; 
                 padding: 20px; 
                 background: #f8f9fa; 
                 border-radius: 8px;
                 border-left: 4px solid #007bff;
+                max-width: 600px;
+                text-align: left;
               }
               
               .instructions h3 { 
                 color: #007bff; 
                 margin-bottom: 15px;
+                text-align: center;
               }
               
               .instructions ul { 
@@ -350,166 +363,227 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               .instructions li { 
                 margin-bottom: 8px; 
                 color: #555;
+                font-size: 16px;
               }
               
               .footer { 
                 margin-top: 30px; 
                 text-align: center; 
                 color: #999; 
-                font-size: 12px;
+                font-size: 14px;
                 border-top: 1px solid #eee;
                 padding-top: 20px;
               }
             </style>
           </head>
           <body>
-            <div class="header">
+            <div class="qr-container">
               <div class="venue-name">${venueName || "My Venue"}</div>
-              <div class="venue-subtitle">QR Code Ordering System</div>
-            </div>
-            
-            <div class="qr-grid">
-              <div class="qr-item">
-                <div class="table-number">${qrType === 'table' ? 'Table' : 'Counter'} ${qrType === 'table' ? cleanTableName(currentSelection[0]) : cleanCounterName(currentSelection[0])}</div>
-                <div class="qr-code">
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(orderUrl)}&format=png&margin=2" alt="QR Code for ${qrType === 'table' ? 'Table' : 'Counter'} ${currentSelection[0]}" />
-                </div>
-                <div class="scan-text">Scan to order</div>
-                <div class="venue-info">${venueName || "My Venue"}</div>
+              <div class="table-number">${qrType === 'table' ? 'Table' : 'Counter'} ${qrType === 'table' ? cleanTableName(currentSelection[0]) : cleanCounterName(currentSelection[0])}</div>
+              <div class="qr-code">
+                <img src="${qrCodeUrl}" alt="QR Code for ${qrType === 'table' ? 'Table' : 'Counter'} ${currentSelection[0]}" onload="window.focus(); window.print();" />
               </div>
-            </div>
-            
-            ${printSettings.includeInstructions ? `
-            <div class="instructions">
-              <h3>Instructions for Customers:</h3>
-              <ul>
-                <li>Scan the QR code with your phone's camera</li>
-                <li>Browse the menu and select your items</li>
-                <li>Add special instructions if needed</li>
-                <li>Complete your order and payment</li>
-                <li>Your order will be prepared and served</li>
-              </ul>
-            </div>
-            ` : ''}
-            
-            <div class="footer">
-              <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
-              <p>Venue ID: ${venueId}</p>
+              <div class="scan-text">Scan to order</div>
+              <div class="venue-info">${venueName || "My Venue"}</div>
+              
+              ${printSettings.includeInstructions ? `
+              <div class="instructions">
+                <h3>Instructions for Customers:</h3>
+                <ul>
+                  <li>Scan the QR code with your phone's camera</li>
+                  <li>Browse the menu and select your items</li>
+                  <li>Add special instructions if needed</li>
+                  <li>Complete your order and payment</li>
+                  <li>Your order will be prepared and served</li>
+                </ul>
+              </div>
+              ` : ''}
+              
+              <div class="footer">
+                <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                <p>Venue ID: ${venueId}</p>
+              </div>
             </div>
           </body>
         </html>
       `);
-      printContent.close();
       
-      // Print immediately - no artificial delay
-      printFrame.contentWindow?.print();
-      setTimeout(() => {
-        document.body.removeChild(printFrame);
-      }, 500); // Reduced delay
+      printWindow.document.close();
+      
+      // Wait for the image to load before printing
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 1000);
+      };
     }
   };
 
   const handlePrintAll = () => {
-    // Create a hidden iframe for printing instead of opening a new window
-    const printFrame = document.createElement('iframe');
-    printFrame.style.position = 'absolute';
-    printFrame.style.left = '-9999px';
-    printFrame.style.top = '-9999px';
-    document.body.appendChild(printFrame);
+    // Create a new window for printing multiple QR codes
+    const printWindow = window.open('', '_blank', 'width=1000,height=800');
     
-    const printContent = printFrame.contentDocument || printFrame.contentWindow?.document;
-    if (printContent) {
-      printContent.write(`
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
           <head>
             <title>Multiple QR Codes - ${venueName}</title>
             <style>
               @media print {
-                body { margin: 0; padding: 0; }
+                body { 
+                  margin: 0; 
+                  padding: 0; 
+                  -webkit-print-color-adjust: exact;
+                  color-adjust: exact;
+                }
                 .page-break { page-break-after: always; }
                 .no-break { page-break-inside: avoid; }
+                .qr-grid { 
+                  display: grid; 
+                  grid-template-columns: repeat(2, 1fr); 
+                  gap: 0;
+                  margin: 0;
+                  padding: 0;
+                  width: 100%;
+                  height: 100vh;
+                }
+                .qr-item { 
+                  border: 1px solid #000;
+                  padding: 10px;
+                  box-sizing: border-box;
+                  height: 50vh;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  page-break-inside: avoid;
+                }
               }
               
               body { 
                 font-family: Arial, sans-serif; 
                 margin: 0; 
-                padding: 20px; 
+                padding: 0; 
                 background: white;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
               }
               
               .header { 
                 text-align: center; 
-                margin-bottom: 30px; 
+                margin-bottom: 20px; 
+                padding: 10px;
+                background: #f0f0f0;
                 border-bottom: 2px solid #333;
-                padding-bottom: 20px;
               }
               
               .venue-name { 
-                font-size: 28px; 
+                font-size: 24px; 
                 font-weight: bold; 
                 color: #333;
-                margin-bottom: 10px;
+                margin-bottom: 5px;
               }
               
               .venue-subtitle { 
-                font-size: 16px; 
+                font-size: 14px; 
                 color: #666;
-                margin-bottom: 20px;
+                margin-bottom: 10px;
               }
               
               .qr-grid { 
                 display: grid; 
                 grid-template-columns: repeat(2, 1fr); 
-                gap: 30px; 
-                margin-bottom: 40px;
+                gap: 0;
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                min-height: calc(100vh - 100px);
               }
               
               .qr-item { 
-                text-align: center; 
-                padding: 15px; 
-                border: 2px solid #ddd; 
-                border-radius: 8px;
+                border: 1px solid #ddd; 
+                padding: 15px;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
                 background: white;
                 page-break-inside: avoid;
+                position: relative;
               }
               
               .table-number { 
-                font-size: 20px; 
+                font-size: 18px; 
                 font-weight: bold; 
                 color: #333;
                 margin-bottom: 10px;
+                background: #f0f0f0;
+                padding: 5px 10px;
+                border-radius: 4px;
               }
               
               .qr-code { 
                 margin: 10px 0; 
                 display: flex;
                 justify-content: center;
+                align-items: center;
+                flex: 1;
               }
               
               .qr-code img { 
                 border: 1px solid #ccc;
-                border-radius: 6px;
+                border-radius: 4px;
+                max-width: 100%;
+                max-height: 100%;
+                object-fit: contain;
               }
               
               .scan-text { 
                 font-size: 14px; 
                 color: #666;
-                margin-bottom: 8px;
+                margin-bottom: 5px;
+                font-weight: 500;
               }
               
               .venue-info { 
-                font-size: 14px; 
+                font-size: 12px; 
                 color: #333;
                 font-weight: 500;
               }
               
               .footer { 
-                margin-top: 30px; 
+                margin-top: 20px; 
                 text-align: center; 
                 color: #999; 
-                font-size: 12px;
+                font-size: 10px;
                 border-top: 1px solid #eee;
-                padding-top: 20px;
+                padding-top: 10px;
+              }
+              
+              /* Cut lines for easier cutting */
+              .qr-item::before,
+              .qr-item::after {
+                content: '';
+                position: absolute;
+                background: #000;
+              }
+              
+              .qr-item::before {
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 1px;
+              }
+              
+              .qr-item::after {
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 1px;
               }
             </style>
           </head>
@@ -519,37 +593,44 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
               <div class="venue-subtitle">QR Code Ordering System - ${qrType === 'table' ? 'Tables' : 'Counters'} ${currentSelection.join(', ')}</div>
             </div>
             
-            ${currentSelection.map((itemNum, index) => {
-              const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNum}`;
-              const cleanName = qrType === 'table' ? cleanTableName(itemNum) : cleanCounterName(itemNum);
-              const label = qrType === 'table' ? 'Table' : 'Counter';
-              return `
-                <div class="qr-item">
-                  <div class="table-number">${label} ${cleanName}</div>
-                  <div class="qr-code">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=${printSettings.qrSize}x${printSettings.qrSize}&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2" alt="QR Code for ${label} ${itemNum}" />
+            <div class="qr-grid">
+              ${currentSelection.map((itemNum, index) => {
+                const itemOrderUrl = `${siteOrigin()}/order?venue=${venueId}&${qrType}=${itemNum}`;
+                const cleanName = qrType === 'table' ? cleanTableName(itemNum) : cleanCounterName(itemNum);
+                const label = qrType === 'table' ? 'Table' : 'Counter';
+                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${Math.min(printSettings.qrSize, 200)}x${Math.min(printSettings.qrSize, 200)}&data=${encodeURIComponent(itemOrderUrl)}&format=png&margin=2`;
+                
+                return `
+                  <div class="qr-item">
+                    <div class="table-number">${label} ${cleanName}</div>
+                    <div class="qr-code">
+                      <img src="${qrCodeUrl}" alt="QR Code for ${label} ${itemNum}" />
+                    </div>
+                    <div class="scan-text">Scan to order</div>
+                    <div class="venue-info">${venueName || "My Venue"}</div>
                   </div>
-                  <div class="scan-text">Scan to order</div>
-                  <div class="venue-info">${venueName || "My Venue"}</div>
-                </div>
-                ${(index + 1) % 4 === 0 && index < currentSelection.length - 1 ? '<div class="page-break"></div>' : ''}
-              `;
-            }).join('')}
+                  ${(index + 1) % 4 === 0 && index < currentSelection.length - 1 ? '<div class="page-break"></div>' : ''}
+                `;
+              }).join('')}
+            </div>
             
             <div class="footer">
-              <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
-              <p>Venue ID: ${venueId}</p>
+              <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Venue ID: ${venueId}</p>
+              <p>Print and cut along the borders for individual QR codes</p>
             </div>
           </body>
         </html>
       `);
-      printContent.close();
       
-      // Print immediately - no artificial delay
-      printFrame.contentWindow?.print();
-      setTimeout(() => {
-        document.body.removeChild(printFrame);
-      }, 500); // Reduced delay
+      printWindow.document.close();
+      
+      // Wait for images to load before printing
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 1500);
+      };
     }
   };
 
