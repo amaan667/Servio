@@ -324,6 +324,19 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <Button 
                 variant="outline" 
                 size="sm"
+                onClick={() => {
+                  console.log('[DEBUG] Current tables data:', tables);
+                  console.log('[DEBUG] Tables count:', tables.length);
+                  console.log('[DEBUG] Table statuses:', tables.map(t => ({ id: t.id, label: t.label, session_status: t.session_status, reservation_status: t.reservation_status })));
+                  alert(`Debug info logged to console. Tables: ${tables.length}, Statuses: ${tables.map(t => `${t.label}:${t.session_status}`).join(', ')}`);
+                }}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50 flex-shrink-0"
+              >
+                Debug
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
                 onClick={handleManualReset}
                 disabled={isResetting}
                 className="text-orange-600 border-orange-200 hover:bg-orange-50 flex-shrink-0"

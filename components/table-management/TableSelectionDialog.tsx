@@ -83,11 +83,18 @@ export function TableSelectionDialog({
           // FREE can merge with FREE, RESERVED, or any occupied status
           const occupiedStatuses = ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'];
           const canMerge = ['FREE', 'RESERVED'].includes(table.status) || occupiedStatuses.includes(table.status);
+          
+          // Additional fallback: if both tables are FREE, they should definitely be able to merge
+          const bothFree = sourceTable.status === 'FREE' && table.status === 'FREE';
+          const finalCanMerge = canMerge || bothFree;
+          
           console.log('[TABLE MERGE DEBUG] FREE table merge check:', {
             targetTable: { id: table.id, label: table.label, status: table.status, statusType: typeof table.status },
             sourceTable: { id: sourceTable.id, label: sourceTable.label, status: sourceTable.status, statusType: typeof sourceTable.status },
             canMerge,
-            reason: canMerge ? 'Allowed' : 'Not allowed',
+            bothFree,
+            finalCanMerge,
+            reason: finalCanMerge ? 'Allowed' : 'Not allowed',
             statusCheck: {
               isFree: table.status === 'FREE',
               isReserved: table.status === 'RESERVED',
@@ -96,7 +103,7 @@ export function TableSelectionDialog({
               occupiedCheck: occupiedStatuses.includes(table.status)
             }
           });
-          return canMerge;
+          return finalCanMerge;
         } else if (sourceTable.status === 'RESERVED') {
           // RESERVED can only merge with FREE
           const canMerge = table.status === 'FREE';
@@ -126,6 +133,17 @@ export function TableSelectionDialog({
   };
 
   const filteredTables = getAvailableTables();
+  
+  // Additional debugging
+  console.log('[TABLE MERGE DEBUG] Final filtered tables result:', {
+    action,
+    sourceTableId: sourceTable.id,
+    sourceTableStatus: sourceTable.status,
+    availableTablesCount: availableTables.length,
+    filteredTablesCount: filteredTables.length,
+    filteredTableIds: filteredTables.map(t => t.id),
+    filteredTableStatuses: filteredTables.map(t => t.status)
+  });
 
   const handleConfirm = async () => {
     if (!selectedTableId) {
