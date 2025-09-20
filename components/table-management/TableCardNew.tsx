@@ -375,10 +375,10 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           label: table.label,
           seat_count: table.seat_count,
           status: table.session_status,
-          order_id: table.order_id,
-          total_amount: table.total_amount,
-          order_status: table.order_status,
-          opened_at: table.opened_at
+          order_id: table.order_id || undefined,
+          total_amount: table.total_amount || undefined,
+          order_status: table.order_status || undefined,
+          opened_at: table.opened_at || undefined
         }}
         action="move"
         venueId={venueId}
@@ -387,10 +387,10 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           label: t.label,
           seat_count: t.seat_count,
           status: t.session_status,
-          order_id: t.order_id,
-          total_amount: t.total_amount,
-          order_status: t.order_status,
-          opened_at: t.opened_at
+          order_id: t.order_id || undefined,
+          total_amount: t.total_amount || undefined,
+          order_status: t.order_status || undefined,
+          opened_at: t.opened_at || undefined
         }))}
         onActionComplete={onActionComplete}
       />
@@ -403,10 +403,10 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           label: table.label,
           seat_count: table.seat_count,
           status: table.session_status,
-          order_id: table.order_id,
-          total_amount: table.total_amount,
-          order_status: table.order_status,
-          opened_at: table.opened_at
+          order_id: table.order_id || undefined,
+          total_amount: table.total_amount || undefined,
+          order_status: table.order_status || undefined,
+          opened_at: table.opened_at || undefined
         }}
         action="merge"
         venueId={venueId}
@@ -415,10 +415,10 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           label: t.label,
           seat_count: t.seat_count,
           status: t.session_status,
-          order_id: t.order_id,
-          total_amount: t.total_amount,
-          order_status: t.order_status,
-          opened_at: t.opened_at
+          order_id: t.order_id || undefined,
+          total_amount: t.total_amount || undefined,
+          order_status: t.order_status || undefined,
+          opened_at: t.opened_at || undefined
         }))}
         onActionComplete={onActionComplete}
       />
