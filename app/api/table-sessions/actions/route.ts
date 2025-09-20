@@ -801,8 +801,8 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
       }
       
       // Find tables that match the original numbers
-      const firstTable = allTables?.find(t => t.label.includes(firstTableNum) && t.id !== table_id);
-      const secondTable = allTables?.find(t => t.label.includes(secondTableNum) && t.id !== table_id);
+      const firstTable = allTables?.find((t: any) => t.label.includes(firstTableNum) && t.id !== table_id);
+      const secondTable = allTables?.find((t: any) => t.label.includes(secondTableNum) && t.id !== table_id);
       
       if (firstTable && secondTable) {
         console.log('[TABLE ACTIONS] Found potential original tables:', { firstTable, secondTable });

@@ -11,9 +11,9 @@ export default function FeedbackPage() {
   const [customerName, setCustomerName] = useState<string | null>(null);
 
   useEffect(() => {
-    const venueIdParam = searchParams?.get('venueId');
-    const orderIdParam = searchParams?.get('orderId');
-    const customerNameParam = searchParams?.get('customerName');
+    const venueIdParam = searchParams?.get('venueId') || null;
+    const orderIdParam = searchParams?.get('orderId') || null;
+    const customerNameParam = searchParams?.get('customerName') || null;
 
     setVenueId(venueIdParam);
     setOrderId(orderIdParam);
