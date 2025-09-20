@@ -40,9 +40,29 @@ export async function DELETE(request: NextRequest) {
 
     // Check if the table has any active orders or reservations
     // First, get the table number from the table record
-    const tableNumber = parseInt(table.label.replace(/\D/g, '')) || null;
-    console.log('🔍 [API] Table number extracted:', tableNumber);
-    console.log('🔍 [API] Checking for active orders...', { tableId, venueId, tableNumber });
+    // Handle merged tables (e.g., "4+6" or "6 (merged with 4)")
+    let tableNumbers: number[] = [];
+    
+    if (table.label.includes('+')) {
+      // Merged table like "4+6" - extract both numbers
+      const numbers = table.label.split('+').map(part => parseInt(part.replace(/\D/g, ''))).filter(n => !isNaN(n));
+      tableNumbers = numbers;
+    } else if (table.label.includes('(merged with')) {
+      // Secondary merged table like "6 (merged with 4)" - extract the first number
+      const firstNumber = parseInt(table.label.split(' ')[0].replace(/\D/g, ''));
+      if (!isNaN(firstNumber)) {
+        tableNumbers = [firstNumber];
+      }
+    } else {
+      // Regular table - extract single number
+      const tableNumber = parseInt(table.label.replace(/\D/g, '')) || null;
+      if (tableNumber) {
+        tableNumbers = [tableNumber];
+      }
+    }
+    
+    console.log('🔍 [API] Table numbers extracted:', tableNumbers);
+    console.log('🔍 [API] Checking for active orders...', { tableId, venueId, tableNumbers });
     
     let activeOrders: { id: string }[] = [];
     let ordersError: any = null;
@@ -55,9 +75,9 @@ export async function DELETE(request: NextRequest) {
         .eq('venue_id', venueId)
         .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
-      // If we have a table number, check by table_number
-      if (tableNumber) {
-        ordersQuery.eq('table_number', tableNumber);
+      // If we have table numbers, check by table_number
+      if (tableNumbers && tableNumbers.length > 0) {
+        ordersQuery.in('table_number', tableNumbers);
       }
 
       const ordersResult = await ordersQuery;
@@ -67,7 +87,7 @@ export async function DELETE(request: NextRequest) {
       console.log('🔍 [API] Active orders check result:', { 
         activeOrders, 
         ordersError,
-        tableNumber,
+        tableNumbers,
         tableId,
         ordersFound: activeOrders.length
       });
@@ -81,7 +101,7 @@ export async function DELETE(request: NextRequest) {
       console.error('Orders query details:', {
         tableId,
         venueId,
-        tableNumber,
+        tableNumbers,
         error: ordersError
       });
       
