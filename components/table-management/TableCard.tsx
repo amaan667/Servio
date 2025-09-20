@@ -205,7 +205,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   };
 
   const isMergedTable = () => {
-    return table.label && table.label.includes('merged with');
+    return table.label && (table.label.includes('merged with') || table.label.includes('+'));
   };
 
   const getContextualActions = () => {
