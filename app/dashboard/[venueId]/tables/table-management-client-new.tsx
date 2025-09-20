@@ -38,7 +38,6 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   const [searchQuery, setSearchQuery] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [isManualResetting, setIsManualResetting] = useState(false);
-  const [isSettingUpDailyReset, setIsSettingUpDailyReset] = useState(false);
   
   const { 
     data: tables = [], 
@@ -130,36 +129,6 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     }
   };
 
-  const handleSetupDailyReset = async () => {
-    try {
-      setIsSettingUpDailyReset(true);
-      console.log('🔧 [SETUP DAILY RESET] Setting up automatic daily reset...');
-
-      const response = await fetch('/api/setup-daily-reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ venueId }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        console.log('🔧 [SETUP DAILY RESET] Setup completed successfully:', result);
-        alert(`Daily reset configured successfully!\n\nYour venue will automatically reset all tables every day at midnight (00:00:00).\n\nNext reset: Tonight at midnight`);
-      } else {
-        console.error('🔧 [SETUP DAILY RESET] Setup failed:', result);
-        alert(`Setup failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('🔧 [SETUP DAILY RESET] Error during setup:', error);
-      alert('Setup failed: Network error');
-    } finally {
-      setIsSettingUpDailyReset(false);
-    }
-  };
 
   const { 
     data: counterOrders = [], 
@@ -333,12 +302,6 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 pb-3">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-semibold">Table Management</h1>
-            {resetResult && resetResult.success && !resetResult.alreadyReset && (
-              <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Daily reset completed</span>
-              </div>
-            )}
           </div>
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:ml-auto w-full sm:w-auto">
@@ -356,36 +319,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => {
-                  console.log('[DEBUG] Current tables data:', tables);
-                  console.log('[DEBUG] Tables count:', tables.length);
-                  console.log('[DEBUG] Table statuses:', tables.map(t => ({ id: t.id, label: t.label, session_status: t.session_status, reservation_status: t.reservation_status })));
-                  alert(`Debug info logged to console. Tables: ${tables.length}, Statuses: ${tables.map(t => `${t.label}:${t.session_status}`).join(', ')}`);
-                }}
-                className="text-blue-600 border-blue-200 hover:bg-blue-50 flex-shrink-0"
-              >
-                Debug
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleSetupDailyReset}
-                disabled={isSettingUpDailyReset}
-                className="text-green-600 border-green-200 hover:bg-green-50 flex-shrink-0"
-              >
-                {isSettingUpDailyReset ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                )}
-                {isSettingUpDailyReset ? 'Setting up...' : 'Setup Auto Reset'}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
                 onClick={handleManualReset}
                 disabled={isResetting}
-                className="text-orange-600 border-orange-200 hover:bg-orange-50 flex-shrink-0"
+                className="text-red-600 border-red-200 hover:bg-red-50 flex-shrink-0"
               >
                 {isResetting ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
