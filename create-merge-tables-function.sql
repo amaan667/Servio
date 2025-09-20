@@ -52,12 +52,14 @@ BEGIN
   END IF;
   
   -- Determine merge rules based on table statuses
-  -- FREE tables can merge with FREE, RESERVED, or OCCUPIED tables
+  -- FREE tables can only merge with other FREE tables
   -- RESERVED and OCCUPIED tables can only merge with FREE tables
   
   IF v_session_a.status = 'FREE' THEN
-    -- FREE table can merge with any table
-    NULL; -- Allow merge
+    -- FREE table can only merge with other FREE tables
+    IF v_session_b.status != 'FREE' THEN
+      RAISE EXCEPTION 'FREE tables can only merge with other FREE tables';
+    END IF;
   ELSIF v_session_a.status = 'RESERVED' OR v_session_a.status IN ('ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL') THEN
     -- RESERVED or OCCUPIED tables can only merge with FREE tables
     IF v_session_b.status != 'FREE' THEN
