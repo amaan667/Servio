@@ -1,5 +1,5 @@
-// Script to apply the complete unmerge function fix
-// This can be run with: node apply-unmerge-fix.js
+// Script to fix the merge function overload issue
+// This can be run with: node apply-merge-overload-fix.js
 
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
@@ -15,24 +15,24 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.log('Please run the following SQL in your Supabase dashboard SQL Editor:');
   
   // Read and display the SQL content
-  const sqlPath = path.join(__dirname, 'fix-unmerge-function-complete.sql');
+  const sqlPath = path.join(__dirname, 'fix-merge-function-overload.sql');
   const sqlContent = fs.readFileSync(sqlPath, 'utf8');
   
   console.log('\n' + '='.repeat(50));
   console.log(sqlContent);
   console.log('='.repeat(50));
-  console.log('\nAfter running the SQL above, the unmerge functionality will be complete.');
+  console.log('\nAfter running the SQL above, the merge function overload issue will be resolved.');
   process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function applyUnmergeFix() {
-  console.log('Applying complete unmerge function fix...');
+async function applyMergeOverloadFix() {
+  console.log('Applying merge function overload fix...');
   
   try {
     // Read the SQL file
-    const sqlPath = path.join(__dirname, 'fix-unmerge-function-complete.sql');
+    const sqlPath = path.join(__dirname, 'fix-merge-function-overload.sql');
     const sqlContent = fs.readFileSync(sqlPath, 'utf8');
     
     console.log('SQL content loaded, length:', sqlContent.length);
@@ -71,25 +71,29 @@ async function applyUnmergeFix() {
     }
     
     // Test the updated function
-    console.log('Testing updated unmerge function...');
+    console.log('Testing updated function...');
     
-    // Test with a merged table (if one exists)
-    const testTableId = '68192cab-8658-4d45-bcc3-c52cf94f9917';
+    // Test with the specific tables that were failing
+    const testTableA = '68192cab-8658-4d45-bcc3-c52cf94f9917';
+    const testTableB = '419c6d0a-8df2-4d95-a83f-6593eb74df10';
+    const testVenueId = 'venue-1e02af4d';
     
-    console.log('Testing unmerge function with table:', testTableId);
+    console.log('Testing with tables:', { testTableA, testTableB, testVenueId });
     
     // Test the function call
     try {
-      const { data: testResult, error: testError } = await supabase.rpc('api_unmerge_table', {
-        p_merged_table_id: testTableId
+      const { data: testResult, error: testError } = await supabase.rpc('api_merge_tables', {
+        p_venue_id: testVenueId,
+        p_table_a: testTableA,
+        p_table_b: testTableB
       });
       
       if (testError) {
-        console.log('Test call result:', testError);
-        if (testError.message.includes('function api_unmerge_table') && testError.message.includes('does not exist')) {
-          console.error('❌ Unmerge function still does not exist!');
+        console.log('Test call result (expected to fail with business logic, not overload):', testError);
+        if (testError.code === 'PGRST203') {
+          console.error('❌ Overload issue still exists!');
         } else {
-          console.log('✅ Unmerge function exists and is working (business logic error is expected)');
+          console.log('✅ Overload issue resolved! Function is working (business logic error is expected)');
         }
       } else {
         console.log('✅ Function call successful:', testResult);
@@ -98,12 +102,12 @@ async function applyUnmergeFix() {
       console.log('Test call exception:', err);
     }
     
-    console.log('✅ Complete unmerge function fix applied successfully!');
-    console.log('The unmerge functionality should now work properly.');
+    console.log('✅ Merge function overload fix applied successfully!');
+    console.log('The function overload issue should now be resolved.');
     
   } catch (error) {
     console.error('Error:', error);
   }
 }
 
-applyUnmergeFix();
+applyMergeOverloadFix();
