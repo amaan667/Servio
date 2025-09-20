@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
     // Split the SQL into individual statements
     const statements = sql
       .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+      .map((stmt: string) => stmt.trim())
+      .filter((stmt: string) => stmt.length > 0 && !stmt.startsWith('--'));
     
     console.log('[FIX UNMERGE FUNCTION] Found', statements.length, 'SQL statements');
     
