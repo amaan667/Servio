@@ -67,32 +67,82 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const closeTable = useCloseTable();
   const { occupyTable, unmergeTable } = useTableActions();
 
-  // Check if this table is merged (has other tables merged into it)
+  // Check if this table is merged (either has other tables merged into it OR is itself a merged result)
   useEffect(() => {
     const checkIfMerged = async () => {
       try {
         const supabase = createClient();
-        const { data: mergedTables, error } = await supabase
+        
+        // First check if this table has other tables merged into it (primary table)
+        const { data: mergedIntoThis, error: error1 } = await supabase
           .from('tables')
           .select('id')
           .eq('venue_id', venueId)
           .eq('merged_with_table_id', table.id)
           .eq('is_active', true);
         
-        if (!error && mergedTables && mergedTables.length > 0) {
+        // Also check if this table is itself merged into another table (secondary table)
+        const { data: thisMergedInto, error: error2 } = await supabase
+          .from('tables')
+          .select('id, merged_with_table_id')
+          .eq('venue_id', venueId)
+          .eq('id', table.id)
+          .eq('is_active', true)
+          .single();
+        
+        // Check if the label indicates a merged table (fallback for display purposes)
+        const isLabelMerged = table.label && (table.label.includes('+') || table.label.includes('merged with'));
+        
+        if (!error1 && !error2) {
+          // This table is merged if:
+          // 1. It has other tables merged into it (primary table), OR
+          // 2. It is merged into another table (secondary table), OR  
+          // 3. Its label indicates it's a merged result
+          const hasTablesMergedIntoThis = mergedIntoThis && mergedIntoThis.length > 0;
+          const isThisMergedIntoAnother = thisMergedInto && thisMergedInto.merged_with_table_id;
+          
+          if (hasTablesMergedIntoThis || isThisMergedIntoAnother || isLabelMerged) {
+            setIsMerged(true);
+            // For unmerge, we need the secondary table ID
+            if (isThisMergedIntoAnother) {
+              setMergedTableId(table.id); // This table is the secondary table
+            } else if (hasTablesMergedIntoThis) {
+              setMergedTableId(mergedIntoThis[0].id); // The first table merged into this one
+            } else {
+              // Fallback: if we can't determine the exact relationship, use this table's ID
+              setMergedTableId(table.id);
+            }
+          } else {
+            setIsMerged(false);
+            setMergedTableId(null);
+          }
+        } else {
+          console.error('Error checking if table is merged:', error1 || error2);
+          // Fallback to label-based detection
+          if (isLabelMerged) {
+            setIsMerged(true);
+            setMergedTableId(table.id);
+          } else {
+            setIsMerged(false);
+            setMergedTableId(null);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking if table is merged:', err);
+        // Fallback to label-based detection
+        const isLabelMerged = table.label && (table.label.includes('+') || table.label.includes('merged with'));
+        if (isLabelMerged) {
           setIsMerged(true);
-          setMergedTableId(mergedTables[0].id); // Store the first merged table ID for unmerge
+          setMergedTableId(table.id);
         } else {
           setIsMerged(false);
           setMergedTableId(null);
         }
-      } catch (err) {
-        console.error('Error checking if table is merged:', err);
       }
     };
 
     checkIfMerged();
-  }, [table.id, venueId]);
+  }, [table.id, venueId, table.label]);
 
   const handleOccupyTable = async () => {
     try {
