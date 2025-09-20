@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ import {
 import { StatusPill } from './StatusPill';
 import { useCloseTable, TableGridItem } from '@/hooks/useTableReservations';
 import { useTableActions } from '@/hooks/useTableActions';
+import { createClient } from '@/lib/supabase/client';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
 import {
@@ -61,8 +62,37 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [forceRemove, setForceRemove] = useState(false);
   const [showHoverRemove, setShowHoverRemove] = useState(false);
+  const [isMerged, setIsMerged] = useState(false);
+  const [mergedTableId, setMergedTableId] = useState<string | null>(null);
   const closeTable = useCloseTable();
-  const { occupyTable } = useTableActions();
+  const { occupyTable, unmergeTable } = useTableActions();
+
+  // Check if this table is merged (has other tables merged into it)
+  useEffect(() => {
+    const checkIfMerged = async () => {
+      try {
+        const supabase = createClient();
+        const { data: mergedTables, error } = await supabase
+          .from('tables')
+          .select('id')
+          .eq('venue_id', venueId)
+          .eq('merged_with_table_id', table.id)
+          .eq('is_active', true);
+        
+        if (!error && mergedTables && mergedTables.length > 0) {
+          setIsMerged(true);
+          setMergedTableId(mergedTables[0].id); // Store the first merged table ID for unmerge
+        } else {
+          setIsMerged(false);
+          setMergedTableId(null);
+        }
+      } catch (err) {
+        console.error('Error checking if table is merged:', err);
+      }
+    };
+
+    checkIfMerged();
+  }, [table.id, venueId]);
 
   const handleOccupyTable = async () => {
     try {
@@ -83,6 +113,20 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       onActionComplete?.();
     } catch (error) {
       console.error('Failed to close table:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUnmergeTable = async () => {
+    if (!mergedTableId) return;
+    
+    try {
+      setIsLoading(true);
+      await unmergeTable(mergedTableId, venueId);
+      onActionComplete?.();
+    } catch (error) {
+      console.error('Failed to unmerge table:', error);
     } finally {
       setIsLoading(false);
     }
@@ -155,50 +199,60 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   };
 
   const getContextualActions = () => {
+    const actions = [];
+
     if (table.session_status === 'FREE') {
-      return (
-        <>
-          <DropdownMenuItem onClick={handleOccupyTable} disabled={isLoading}>
-            <Users className="h-4 w-4 mr-2" />
-            Occupy Table
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowReservationDialog(true)}>
-            <Calendar className="h-4 w-4 mr-2" />
-            Make Reservation
-          </DropdownMenuItem>
-        </>
+      actions.push(
+        <DropdownMenuItem key="occupy" onClick={handleOccupyTable} disabled={isLoading}>
+          <Users className="h-4 w-4 mr-2" />
+          Occupy Table
+        </DropdownMenuItem>
+      );
+      actions.push(
+        <DropdownMenuItem key="reserve" onClick={() => setShowReservationDialog(true)}>
+          <Calendar className="h-4 w-4 mr-2" />
+          Make Reservation
+        </DropdownMenuItem>
       );
     }
 
     if (table.session_status === 'OCCUPIED') {
-      return (
-        <>
-          {table.order_id && (
-            <DropdownMenuItem>
-              <Receipt className="h-4 w-4 mr-2" />
-              View Order
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem onClick={handleCloseTable} disabled={isLoading}>
-            <Square className="h-4 w-4 mr-2" />
-            Close Table
+      if (table.order_id) {
+        actions.push(
+          <DropdownMenuItem key="view-order">
+            <Receipt className="h-4 w-4 mr-2" />
+            View Order
           </DropdownMenuItem>
-        </>
+        );
+      }
+      actions.push(
+        <DropdownMenuItem key="close" onClick={handleCloseTable} disabled={isLoading}>
+          <Square className="h-4 w-4 mr-2" />
+          Close Table
+        </DropdownMenuItem>
       );
     }
 
     if (table.session_status === 'RESERVED') {
-      return (
-        <>
-          <DropdownMenuItem onClick={() => setShowReservationDialog(true)}>
-            <Calendar className="h-4 w-4 mr-2" />
-            Modify Reservation
-          </DropdownMenuItem>
-        </>
+      actions.push(
+        <DropdownMenuItem key="modify-reservation" onClick={() => setShowReservationDialog(true)}>
+          <Calendar className="h-4 w-4 mr-2" />
+          Modify Reservation
+        </DropdownMenuItem>
       );
     }
 
-    return null;
+    // Add unmerge option if table is merged
+    if (isMerged) {
+      actions.push(
+        <DropdownMenuItem key="unmerge" onClick={handleUnmergeTable} disabled={isLoading}>
+          <X className="h-4 w-4 mr-2" />
+          Unmerge Table
+        </DropdownMenuItem>
+      );
+    }
+
+    return actions;
   };
 
   const formatTime = (dateString: string) => {
@@ -294,10 +348,12 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
                   <ArrowRight className="h-4 w-4 mr-2" />
                   Move to...
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowMergeDialog(true)}>
-                  <MoreHorizontal className="h-4 w-4 mr-2" />
-                  Merge with...
-                </DropdownMenuItem>
+                {!isMerged && (
+                  <DropdownMenuItem onClick={() => setShowMergeDialog(true)}>
+                    <MoreHorizontal className="h-4 w-4 mr-2" />
+                    Merge with...
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
