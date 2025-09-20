@@ -370,20 +370,56 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       <TableSelectionDialog
         isOpen={showMoveDialog}
         onClose={() => setShowMoveDialog(false)}
-        sourceTable={table as any}
+        sourceTable={{
+          id: table.id,
+          label: table.label,
+          seat_count: table.seat_count,
+          status: table.session_status,
+          order_id: table.order_id,
+          total_amount: table.total_amount,
+          order_status: table.order_status,
+          opened_at: table.opened_at
+        }}
         action="move"
         venueId={venueId}
-        availableTables={availableTables as any}
+        availableTables={availableTables.map(t => ({
+          id: t.id,
+          label: t.label,
+          seat_count: t.seat_count,
+          status: t.session_status,
+          order_id: t.order_id,
+          total_amount: t.total_amount,
+          order_status: t.order_status,
+          opened_at: t.opened_at
+        }))}
         onActionComplete={onActionComplete}
       />
       
       <TableSelectionDialog
         isOpen={showMergeDialog}
         onClose={() => setShowMergeDialog(false)}
-        sourceTable={table as any}
+        sourceTable={{
+          id: table.id,
+          label: table.label,
+          seat_count: table.seat_count,
+          status: table.session_status,
+          order_id: table.order_id,
+          total_amount: table.total_amount,
+          order_status: table.order_status,
+          opened_at: table.opened_at
+        }}
         action="merge"
         venueId={venueId}
-        availableTables={availableTables as any}
+        availableTables={availableTables.map(t => ({
+          id: t.id,
+          label: t.label,
+          seat_count: t.seat_count,
+          status: t.session_status,
+          order_id: t.order_id,
+          total_amount: t.total_amount,
+          order_status: t.order_status,
+          opened_at: t.opened_at
+        }))}
         onActionComplete={onActionComplete}
       />
       
