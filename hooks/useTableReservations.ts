@@ -42,11 +42,12 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
   return useQuery({
     queryKey: ['tables', 'grid', venueId, leadTimeMinutes],
     queryFn: async () => {
-      // First, get the table data
+      // First, get the table data from the main tables table (which has merged_with_table_id)
       const { data: tableData, error: tableError } = await supabase
-        .from('table_runtime_state')
+        .from('tables')
         .select('*')
         .eq('venue_id', venueId)
+        .eq('is_active', true)
         .is('merged_with_table_id', null) // Filter out merged tables
         .order('label');
       if (tableError) throw tableError;
@@ -69,7 +70,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       // Transform the data to match the expected TableGridItem interface
       return tableData.map((item: any) => {
         // Find reservations for this table
-        const tableReservations = reservations.filter((r: any) => r.table_id === item.table_id);
+        const tableReservations = reservations.filter((r: any) => r.table_id === item.id);
         
         let reservationStatus = 'NONE';
         let activeReservation = null;
@@ -115,8 +116,8 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         //   console.log('🔍 [TABLE GRID] Table has no active reservation:', item.table_id);
         // }
         
-        // Determine the primary session status based on both table status and reservations
-        let sessionStatus = item.primary_status === 'OCCUPIED' ? 'OCCUPIED' : 'FREE';
+        // Determine the primary session status based on reservations (default to FREE)
+        let sessionStatus = 'FREE';
         
         // If there's an active reservation, the table should be considered RESERVED, not FREE
         if (reservationStatus === 'RESERVED_NOW' || reservationStatus === 'RESERVED_LATER') {
@@ -124,12 +125,12 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         }
         
         return {
-          id: item.table_id,
+          id: item.id, // Use item.id instead of item.table_id since we're now querying tables directly
           label: item.label,
           seat_count: item.seat_count,
           session_status: sessionStatus,
           reservation_status: reservationStatus,
-          opened_at: item.opened_at,
+          opened_at: null, // This would need to be fetched from table_sessions if needed
           order_id: null, // This would need to be fetched separately if needed
           total_amount: null, // This would need to be fetched separately if needed
           order_status: null, // This would need to be fetched separately if needed
