@@ -173,16 +173,25 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       setIsLoading(true);
       console.log('[TABLE CARD] Unmerging table:', table.id);
       
-      // Extract the secondary table ID from the merged label
-      // Format: "Table1 merged with Table2" - we need to find the secondary table
-      // For now, we'll need to find the table that has merged_with_table_id pointing to this table
+      // First, find the secondary table that is merged with this primary table
+      const findSecondaryTableResponse = await fetch(`/api/tables/secondary?primary_table_id=${table.id}&venue_id=${venueId}`);
+      const secondaryTableData = await findSecondaryTableResponse.json();
+      
+      if (!secondaryTableData.success || !secondaryTableData.table) {
+        throw new Error('Could not find secondary table for unmerge');
+      }
+      
+      const secondaryTableId = secondaryTableData.table.id;
+      console.log('[TABLE CARD] Found secondary table:', secondaryTableId);
+      
+      // Now call unmerge with the secondary table ID
       const response = await fetch('/api/table-sessions/actions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           action: 'unmerge_table',
-          table_id: table.id,
+          table_id: secondaryTableId, // Use secondary table ID for unmerge
           venue_id: venueId
         })
       });
@@ -205,9 +214,9 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   };
 
   const isMergedTable = () => {
-    // A table is "merged" if it has a merged_with_table_id (meaning it's the secondary table)
-    // The primary table (with the merged label) should show merge options, not unmerge
-    return table.merged_with_table_id !== null && table.merged_with_table_id !== undefined;
+    // A table is "merged" if its label contains "merged with" (meaning it's a primary table with secondary tables merged into it)
+    // Only primary tables are shown in the UI, so we check the label to determine if it has merged tables
+    return table.label && table.label.includes('merged with');
   };
 
   const getContextualActions = () => {
