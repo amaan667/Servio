@@ -7,11 +7,11 @@ DROP FUNCTION IF EXISTS api_merge_tables(TEXT, UUID, UUID);
 DROP FUNCTION IF EXISTS api_unmerge_table(TEXT);
 DROP FUNCTION IF EXISTS api_unmerge_table(UUID);
 
--- Create function to merge two tables with TEXT parameters (correct for our use case)
+-- Create function to merge two tables with correct parameter types
 CREATE OR REPLACE FUNCTION api_merge_tables(
   p_venue_id TEXT,
-  p_table_a TEXT,
-  p_table_b TEXT
+  p_table_a UUID,
+  p_table_b UUID
 )
 RETURNS JSON
 LANGUAGE plpgsql
@@ -91,14 +91,14 @@ BEGIN
     updated_at = NOW()
   WHERE id = p_table_b;
   
-  -- Update table A session to reflect the merge
+  -- Update table A session to reflect the merge (keep it as OCCUPIED since it's now serving both tables)
   UPDATE table_sessions 
   SET 
-    status = 'MERGED',
+    status = 'OCCUPIED',
     updated_at = NOW()
   WHERE table_id = p_table_a AND closed_at IS NULL;
   
-  -- Create a MERGED session for table B to track the merge
+  -- Create an OCCUPIED session for table B to track the merge
   INSERT INTO table_sessions (
     table_id,
     venue_id,
@@ -109,7 +109,7 @@ BEGIN
   ) VALUES (
     p_table_b,
     p_venue_id,
-    'MERGED',
+    'OCCUPIED',
     NOW(),
     NOW(),
     NOW()
@@ -138,7 +138,7 @@ $$;
 
 -- Create function to unmerge tables
 CREATE OR REPLACE FUNCTION api_unmerge_table(
-  p_secondary_table_id TEXT
+  p_secondary_table_id UUID
 )
 RETURNS JSON
 LANGUAGE plpgsql
@@ -183,13 +183,13 @@ BEGIN
     updated_at = NOW()
   WHERE id = p_secondary_table_id;
   
-  -- Close the MERGED session for secondary table
+  -- Close the OCCUPIED session for secondary table (which was created during merge)
   UPDATE table_sessions 
   SET 
     closed_at = NOW(),
     updated_at = NOW()
   WHERE table_id = p_secondary_table_id 
-    AND status = 'MERGED' 
+    AND status = 'OCCUPIED' 
     AND closed_at IS NULL;
   
   -- Create new FREE session for secondary table
@@ -239,5 +239,5 @@ END;
 $$;
 
 -- Grant execute permissions to authenticated users
-GRANT EXECUTE ON FUNCTION api_merge_tables(TEXT, TEXT, TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION api_unmerge_table(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION api_merge_tables(TEXT, UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION api_unmerge_table(UUID) TO authenticated;
