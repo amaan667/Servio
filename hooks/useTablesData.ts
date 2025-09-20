@@ -8,6 +8,7 @@ export interface TableWithSession {
   seat_count: number;
   is_active: boolean;
   table_created_at: string;
+  merged_with_table_id: string | null;
   session_id: string | null;
   status: 'FREE' | 'ORDERING' | 'IN_PREP' | 'READY' | 'SERVED' | 'AWAITING_BILL' | 'RESERVED' | 'CLOSED';
   order_id: string | null;

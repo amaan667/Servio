@@ -205,7 +205,9 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   };
 
   const isMergedTable = () => {
-    return table.label && (table.label.includes('merged with') || table.label.includes('+'));
+    // A table is "merged" if it has a merged_with_table_id (meaning it's the secondary table)
+    // The primary table (with the merged label) should show merge options, not unmerge
+    return table.merged_with_table_id !== null && table.merged_with_table_id !== undefined;
   };
 
   const getContextualActions = () => {
