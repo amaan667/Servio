@@ -34,11 +34,13 @@ export async function GET(req: Request) {
     }
 
     // Get tables with their current sessions using a simpler approach
+    // Filter out merged tables (tables that have merged_with_table_id set)
     const { data: tables, error: tablesError } = await supabase
       .from('tables')
       .select('*')
       .eq('venue_id', venueId)
       .eq('is_active', true)
+      .is('merged_with_table_id', null) // Only show tables that are not merged into another table
       .order('label');
 
     if (tablesError) {

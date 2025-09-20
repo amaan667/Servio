@@ -47,6 +47,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         .from('table_runtime_state')
         .select('*')
         .eq('venue_id', venueId)
+        .is('merged_with_table_id', null) // Filter out merged tables
         .order('label');
       if (tableError) throw tableError;
       

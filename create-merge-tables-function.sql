@@ -69,8 +69,8 @@ BEGIN
     RAISE EXCEPTION 'Invalid table status for merging: %', v_session_a.status;
   END IF;
   
-  -- Create merged table name (combine both table labels)
-  v_merged_label := v_table_a_info.label || '+' || v_table_b_info.label;
+  -- Create merged table name (show which table was merged with which)
+  v_merged_label := v_table_a_info.label || ' merged with ' || v_table_b_info.label;
   
   -- Calculate total seat count
   v_merged_seat_count := v_table_a_info.seat_count + v_table_b_info.seat_count;
@@ -109,10 +109,10 @@ BEGIN
     NOW()
   );
   
-  -- Update table B to indicate it's merged
+  -- Update table B to indicate it's merged (this table will be hidden from display)
   UPDATE tables 
   SET 
-    label = v_table_b_info.label || ' (merged with ' || v_table_a_info.label || ')',
+    label = v_table_b_info.label || ' (merged into ' || v_table_a_info.label || ')',
     merged_with_table_id = p_table_a,
     updated_at = NOW()
   WHERE id = p_table_b;
