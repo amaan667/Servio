@@ -80,30 +80,16 @@ export function TableSelectionDialog({
         
         // Source table status determines what we can merge with
         if (sourceTable.status === 'FREE') {
-          // FREE can merge with FREE, RESERVED, or any occupied status
-          const occupiedStatuses = ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'];
-          const canMerge = ['FREE', 'RESERVED'].includes(table.status) || occupiedStatuses.includes(table.status);
-          
-          // Additional fallback: if both tables are FREE, they should definitely be able to merge
-          const bothFree = sourceTable.status === 'FREE' && table.status === 'FREE';
-          const finalCanMerge = canMerge || bothFree;
+          // FREE can only merge with other FREE tables
+          const canMerge = table.status === 'FREE';
           
           console.log('[TABLE MERGE DEBUG] FREE table merge check:', {
             targetTable: { id: table.id, label: table.label, status: table.status, statusType: typeof table.status },
             sourceTable: { id: sourceTable.id, label: sourceTable.label, status: sourceTable.status, statusType: typeof sourceTable.status },
             canMerge,
-            bothFree,
-            finalCanMerge,
-            reason: finalCanMerge ? 'Allowed' : 'Not allowed',
-            statusCheck: {
-              isFree: table.status === 'FREE',
-              isReserved: table.status === 'RESERVED',
-              isOccupied: occupiedStatuses.includes(table.status),
-              freeCheck: ['FREE', 'RESERVED'].includes(table.status),
-              occupiedCheck: occupiedStatuses.includes(table.status)
-            }
+            reason: canMerge ? 'Both tables are FREE' : 'Target table is not FREE'
           });
-          return finalCanMerge;
+          return canMerge;
         } else if (sourceTable.status === 'RESERVED') {
           // RESERVED can only merge with FREE
           const canMerge = table.status === 'FREE';
@@ -235,7 +221,7 @@ export function TableSelectionDialog({
             }
             {action === 'merge' && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                <strong>Merge Rules:</strong> FREE tables can merge with FREE, RESERVED, or any occupied tables (ORDERING, IN_PREP, READY, SERVED, AWAITING_BILL). 
+                <strong>Merge Rules:</strong> FREE tables can only merge with other FREE tables. 
                 RESERVED and occupied tables can only merge with FREE tables.
               </div>
             )}
