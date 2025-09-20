@@ -168,6 +168,46 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
     }
   };
 
+  const handleUnmergeTable = async () => {
+    try {
+      setIsLoading(true);
+      console.log('[TABLE CARD] Unmerging table:', table.id);
+      
+      // Extract the secondary table ID from the merged label
+      // Format: "Table1 merged with Table2" - we need to find the secondary table
+      // For now, we'll need to find the table that has merged_with_table_id pointing to this table
+      const response = await fetch('/api/table-sessions/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          action: 'unmerge_table',
+          table_id: table.id,
+          venue_id: venueId
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('[TABLE CARD] Unmerge successful:', result.data);
+        onActionComplete?.();
+      } else {
+        console.error('[TABLE CARD] Unmerge failed:', result.error);
+        alert(`Failed to unmerge table: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('[TABLE CARD] Unmerge error:', error);
+      alert(`Error unmerging table: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isMergedTable = () => {
+    return table.label && table.label.includes('merged with');
+  };
+
   const getContextualActions = () => {
     const actions = [];
 
@@ -399,15 +439,24 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
                 </DropdownMenuItem>
               )}
               
-              <DropdownMenuItem onClick={() => setShowMergeDialog(true)}>
-                <Merge className="h-4 w-4 mr-2" />
-                Merge Table
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
-                <ArrowRight className="h-4 w-4 mr-2" />
-                Move to...
-              </DropdownMenuItem>
+              {isMergedTable() ? (
+                <DropdownMenuItem onClick={handleUnmergeTable} disabled={isLoading}>
+                  <Split className="h-4 w-4 mr-2" />
+                  Unmerge Table
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => setShowMergeDialog(true)}>
+                    <Merge className="h-4 w-4 mr-2" />
+                    Merge Table
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Move to...
+                  </DropdownMenuItem>
+                </>
+              )}
               
               {table.status !== 'FREE' && (
                 <DropdownMenuItem 

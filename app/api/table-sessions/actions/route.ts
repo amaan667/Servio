@@ -707,9 +707,32 @@ async function handleMergeTable(supabase: any, venue_id: string, table_id: strin
 
 async function handleUnmergeTable(supabase: any, table_id: string) {
   try {
-    // Use the database RPC function for unmerge
+    console.log('[TABLE ACTIONS] Starting unmerge for table_id:', table_id);
+    
+    // First, find the secondary table that is merged with this primary table
+    const { data: secondaryTable, error: findError } = await supabase
+      .from('tables')
+      .select('id, label, seat_count, merged_with_table_id, venue_id')
+      .eq('merged_with_table_id', table_id)
+      .single();
+
+    if (findError) {
+      console.error('[TABLE ACTIONS] Error finding secondary table:', findError);
+      if (findError.code === 'PGRST116') {
+        return NextResponse.json({ error: 'No merged table found for this table' }, { status: 404 });
+      }
+      return NextResponse.json({ error: 'Failed to find merged table' }, { status: 500 });
+    }
+
+    if (!secondaryTable) {
+      return NextResponse.json({ error: 'No merged table found for this table' }, { status: 404 });
+    }
+
+    console.log('[TABLE ACTIONS] Found secondary table:', secondaryTable);
+
+    // Use the database RPC function for unmerge with the secondary table ID
     const { data, error } = await supabase.rpc('api_unmerge_table', {
-      p_secondary_table_id: table_id
+      p_secondary_table_id: secondaryTable.id
     });
 
     if (error) {
@@ -717,6 +740,7 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
       return NextResponse.json({ error: error.message || 'Failed to unmerge table' }, { status: 400 });
     }
 
+    console.log('[TABLE ACTIONS] Unmerge completed successfully:', data);
     return NextResponse.json({ 
       success: true, 
       data: data 

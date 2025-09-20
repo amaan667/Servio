@@ -185,10 +185,13 @@ BEGIN
   -- In a real implementation, you might want to store original values separately
   
   -- Restore secondary table to FREE status
+  -- Parse the original seat count from the merged label or use a sensible default
+  -- Format: "Table1 merged with Table2" - we need to extract the original seat count
+  -- For now, we'll restore to 2 seats as the default, but ideally we'd store original values
   UPDATE tables 
   SET 
     label = COALESCE(NULLIF(SPLIT_PART(v_secondary_table.label, ' (merged with ', 1), ''), 'Table'),
-    seat_count = 4, -- Default seat count
+    seat_count = 2, -- Restore to original seat count (assuming tables were 2 seats each)
     merged_with_table_id = NULL,
     updated_at = NOW()
   WHERE id = p_secondary_table_id;
@@ -222,8 +225,8 @@ BEGIN
   -- Restore primary table to its original state
   UPDATE tables 
   SET 
-    label = COALESCE(NULLIF(SPLIT_PART(v_primary_table.label, '+', 1), ''), 'Table'),
-    seat_count = 4, -- Default seat count
+    label = COALESCE(NULLIF(SPLIT_PART(v_primary_table.label, ' merged with ', 1), ''), 'Table'),
+    seat_count = 2, -- Restore to original seat count (assuming tables were 2 seats each)
     updated_at = NOW()
   WHERE id = v_primary_table.id;
   
@@ -231,7 +234,7 @@ BEGIN
   v_result := json_build_object(
     'success', true,
     'unmerged_tables', json_build_array(
-      json_build_object('id', v_primary_table.id, 'label', COALESCE(NULLIF(SPLIT_PART(v_primary_table.label, '+', 1), ''), 'Table')),
+      json_build_object('id', v_primary_table.id, 'label', COALESCE(NULLIF(SPLIT_PART(v_primary_table.label, ' merged with ', 1), ''), 'Table')),
       json_build_object('id', p_secondary_table_id, 'label', COALESCE(NULLIF(SPLIT_PART(v_secondary_table.label, ' (merged with ', 1), ''), 'Table'))
     )
   );

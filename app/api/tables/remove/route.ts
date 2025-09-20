@@ -40,15 +40,23 @@ export async function DELETE(request: NextRequest) {
 
     // Check if the table has any active orders or reservations
     // First, get the table number from the table record
-    // Handle merged tables (e.g., "4+6" or "6 (merged with 4)")
+    // Handle merged tables (e.g., "4+6", "6 (merged with 4)", or "16 merged with 19")
     let tableNumbers: number[] = [];
     
     if (table.label.includes('+')) {
-      // Merged table like "4+6" - extract both numbers
+      // Old merged table format like "4+6" - extract both numbers
       const numbers = table.label.split('+').map((part: string) => parseInt(part.replace(/\D/g, ''))).filter((n: number) => !isNaN(n));
       tableNumbers = numbers;
+    } else if (table.label.includes(' merged with ')) {
+      // Primary merged table format like "16 merged with 19" - extract both numbers
+      const parts = table.label.split(' merged with ');
+      const firstNumber = parseInt(parts[0].replace(/\D/g, ''));
+      const secondNumber = parseInt(parts[1].replace(/\D/g, ''));
+      if (!isNaN(firstNumber) && !isNaN(secondNumber)) {
+        tableNumbers = [firstNumber, secondNumber];
+      }
     } else if (table.label.includes('(merged with')) {
-      // Secondary merged table like "6 (merged with 4)" - extract the first number
+      // Secondary merged table format like "6 (merged with 4)" - extract the first number
       const firstNumber = parseInt(table.label.split(' ')[0].replace(/\D/g, ''));
       if (!isNaN(firstNumber)) {
         tableNumbers = [firstNumber];
@@ -219,12 +227,36 @@ export async function DELETE(request: NextRequest) {
       console.warn('🔍 [API] Both orders and reservations checks failed - proceeding with table removal but logging the issue');
     }
 
-    // Clear table references from orders before deleting the table
+    // Check if this is a merged table and find the secondary table
+    let secondaryTableId: string | null = null;
+    if (table.label.includes(' merged with ')) {
+      console.log('🔍 [API] Detected merged table, looking for secondary table...');
+      const { data: secondaryTable, error: secondaryError } = await supabase
+        .from('tables')
+        .select('id, label')
+        .eq('merged_with_table_id', tableId)
+        .eq('venue_id', venueId)
+        .single();
+      
+      if (secondaryTable && !secondaryError) {
+        secondaryTableId = secondaryTable.id;
+        console.log('🔍 [API] Found secondary table:', secondaryTable);
+      } else {
+        console.log('🔍 [API] No secondary table found or error:', secondaryError);
+      }
+    }
+
+    // Clear table references from orders before deleting the table(s)
     console.log('🔍 [API] Clearing table references from orders before deletion...');
+    const tableIdsToClear = [tableId];
+    if (secondaryTableId) {
+      tableIdsToClear.push(secondaryTableId);
+    }
+    
     const { error: clearTableRefsError } = await supabase
       .from('orders')
       .update({ table_id: null })
-      .eq('table_id', tableId)
+      .in('table_id', tableIdsToClear)
       .eq('venue_id', venueId);
 
     if (clearTableRefsError) {
@@ -236,8 +268,27 @@ export async function DELETE(request: NextRequest) {
     }
     console.log('🔍 [API] Cleared table references from orders');
 
-    // Delete the table
-    console.log('🔍 [API] Attempting to delete table...');
+    // Delete the secondary table first (if it exists)
+    if (secondaryTableId) {
+      console.log('🔍 [API] Deleting secondary merged table...');
+      const { error: deleteSecondaryError } = await supabase
+        .from('tables')
+        .delete()
+        .eq('id', secondaryTableId)
+        .eq('venue_id', venueId);
+
+      if (deleteSecondaryError) {
+        console.error('🔍 [API] Error deleting secondary table:', deleteSecondaryError);
+        return NextResponse.json(
+          { error: 'Failed to remove secondary table' },
+          { status: 500 }
+        );
+      }
+      console.log('🔍 [API] Secondary table deleted successfully');
+    }
+
+    // Delete the primary table
+    console.log('🔍 [API] Attempting to delete primary table...');
     const { error: deleteError } = await supabase
       .from('tables')
       .delete()
@@ -255,14 +306,21 @@ export async function DELETE(request: NextRequest) {
     }
 
     console.log(`🔍 [API] Table ${table.label} (${tableId}) removed from venue ${venueId}`);
+    
+    if (secondaryTableId) {
+      console.log(`🔍 [API] Secondary table also removed`);
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Table "${table.label}" has been removed successfully`,
+      message: secondaryTableId 
+        ? `Merged table "${table.label}" and its secondary table have been removed successfully`
+        : `Table "${table.label}" has been removed successfully`,
       removedTable: {
         id: tableId,
         label: table.label
-      }
+      },
+      secondaryTableRemoved: !!secondaryTableId
     });
 
   } catch (error) {
