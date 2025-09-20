@@ -709,42 +709,148 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
   try {
     console.log('[TABLE ACTIONS] Starting unmerge for table_id:', table_id);
     
-    // First, find the secondary table that is merged with this primary table
+    // Get the current table info to understand its state
+    const { data: currentTable, error: currentTableError } = await supabase
+      .from('tables')
+      .select('id, label, seat_count, merged_with_table_id, venue_id')
+      .eq('id', table_id)
+      .single();
+
+    if (currentTableError || !currentTable) {
+      console.error('[TABLE ACTIONS] Error getting current table:', currentTableError);
+      return NextResponse.json({ error: 'Table not found' }, { status: 404 });
+    }
+
+    console.log('[TABLE ACTIONS] Current table:', currentTable);
+
+    // Check if this table has a merged_with_table_id (it's a secondary table)
+    if (currentTable.merged_with_table_id) {
+      console.log('[TABLE ACTIONS] This is a secondary table, using RPC function');
+      
+      // Use the database RPC function for unmerge
+      const { data, error } = await supabase.rpc('api_unmerge_table', {
+        p_secondary_table_id: table_id
+      });
+
+      if (error) {
+        console.error('[TABLE ACTIONS] Error unmerging table:', error);
+        return NextResponse.json({ error: error.message || 'Failed to unmerge table' }, { status: 400 });
+      }
+
+      console.log('[TABLE ACTIONS] Unmerge completed successfully:', data);
+      return NextResponse.json({ 
+        success: true, 
+        data: data 
+      });
+    }
+
+    // If this is a primary table, look for the secondary table
     const { data: secondaryTable, error: findError } = await supabase
       .from('tables')
       .select('id, label, seat_count, merged_with_table_id, venue_id')
       .eq('merged_with_table_id', table_id)
       .single();
 
-    if (findError) {
+    if (findError && findError.code !== 'PGRST116') {
       console.error('[TABLE ACTIONS] Error finding secondary table:', findError);
-      if (findError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'No merged table found for this table' }, { status: 404 });
-      }
       return NextResponse.json({ error: 'Failed to find merged table' }, { status: 500 });
     }
 
-    if (!secondaryTable) {
-      return NextResponse.json({ error: 'No merged table found for this table' }, { status: 404 });
+    if (secondaryTable) {
+      console.log('[TABLE ACTIONS] Found secondary table, using RPC function:', secondaryTable);
+      
+      // Use the database RPC function for unmerge with the secondary table ID
+      const { data, error } = await supabase.rpc('api_unmerge_table', {
+        p_secondary_table_id: secondaryTable.id
+      });
+
+      if (error) {
+        console.error('[TABLE ACTIONS] Error unmerging table:', error);
+        return NextResponse.json({ error: error.message || 'Failed to unmerge table' }, { status: 400 });
+      }
+
+      console.log('[TABLE ACTIONS] Unmerge completed successfully:', data);
+      return NextResponse.json({ 
+        success: true, 
+        data: data 
+      });
     }
 
-    console.log('[TABLE ACTIONS] Found secondary table:', secondaryTable);
-
-    // Use the database RPC function for unmerge with the secondary table ID
-    const { data, error } = await supabase.rpc('api_unmerge_table', {
-      p_secondary_table_id: secondaryTable.id
-    });
-
-    if (error) {
-      console.error('[TABLE ACTIONS] Error unmerging table:', error);
-      return NextResponse.json({ error: error.message || 'Failed to unmerge table' }, { status: 400 });
+    // If no secondary table found with merged_with_table_id, this might be an old-style merge
+    // Try to handle it manually by parsing the label
+    if (currentTable.label && currentTable.label.includes(' merged with ')) {
+      console.log('[TABLE ACTIONS] No secondary table found, but label suggests merge. Attempting manual unmerge...');
+      
+      // Parse the merged label to extract the original table numbers
+      const parts = currentTable.label.split(' merged with ');
+      const firstTableNum = parts[0].replace(/\D/g, '');
+      const secondTableNum = parts[1].replace(/\D/g, '');
+      
+      console.log('[TABLE ACTIONS] Parsed table numbers:', { firstTableNum, secondTableNum });
+      
+      // Look for tables with these numbers in the same venue
+      const { data: allTables, error: allTablesError } = await supabase
+        .from('tables')
+        .select('id, label, seat_count')
+        .eq('venue_id', currentTable.venue_id)
+        .is('merged_with_table_id', null);
+      
+      if (allTablesError) {
+        console.error('[TABLE ACTIONS] Error fetching all tables:', allTablesError);
+        return NextResponse.json({ error: 'Failed to fetch tables for manual unmerge' }, { status: 500 });
+      }
+      
+      // Find tables that match the original numbers
+      const firstTable = allTables?.find(t => t.label.includes(firstTableNum) && t.id !== table_id);
+      const secondTable = allTables?.find(t => t.label.includes(secondTableNum) && t.id !== table_id);
+      
+      if (firstTable && secondTable) {
+        console.log('[TABLE ACTIONS] Found potential original tables:', { firstTable, secondTable });
+        
+        // Restore the current table to the first table's original state
+        const { error: updateError } = await supabase
+          .from('tables')
+          .update({
+            label: firstTable.label,
+            seat_count: 2, // Default seat count
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', table_id);
+        
+        if (updateError) {
+          console.error('[TABLE ACTIONS] Error updating primary table:', updateError);
+          return NextResponse.json({ error: 'Failed to restore primary table' }, { status: 500 });
+        }
+        
+        // Restore the second table
+        const { error: updateSecondError } = await supabase
+          .from('tables')
+          .update({
+            label: secondTable.label,
+            seat_count: 2, // Default seat count
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', secondTable.id);
+        
+        if (updateSecondError) {
+          console.error('[TABLE ACTIONS] Error updating secondary table:', updateSecondError);
+          return NextResponse.json({ error: 'Failed to restore secondary table' }, { status: 500 });
+        }
+        
+        console.log('[TABLE ACTIONS] Manual unmerge completed successfully');
+        return NextResponse.json({ 
+          success: true, 
+          data: {
+            unmerged_tables: [
+              { id: table_id, label: firstTable.label },
+              { id: secondTable.id, label: secondTable.label }
+            ]
+          }
+        });
+      }
     }
 
-    console.log('[TABLE ACTIONS] Unmerge completed successfully:', data);
-    return NextResponse.json({ 
-      success: true, 
-      data: data 
-    });
+    return NextResponse.json({ error: 'No merged table found for this table' }, { status: 404 });
   } catch (error) {
     console.error('[TABLE ACTIONS] Unexpected error unmerging table:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
