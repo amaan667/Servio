@@ -171,11 +171,13 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const handleUnmergeTable = async () => {
     try {
       setIsLoading(true);
-      console.log('[TABLE CARD] Unmerging table:', table.id);
+      console.log('[TABLE CARD] Unmerging table:', table.id, 'with label:', table.label);
       
       // First, find the secondary table that is merged with this primary table
       const findSecondaryTableResponse = await fetch(`/api/tables/secondary?primary_table_id=${table.id}&venue_id=${venueId}`);
       const secondaryTableData = await findSecondaryTableResponse.json();
+      
+      console.log('[TABLE CARD] Secondary table response:', secondaryTableData);
       
       if (!secondaryTableData.success || !secondaryTableData.table) {
         throw new Error('Could not find secondary table for unmerge');
@@ -197,10 +199,15 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       });
       
       const result = await response.json();
+      console.log('[TABLE CARD] Unmerge API response:', result);
       
       if (result.success) {
         console.log('[TABLE CARD] Unmerge successful:', result.data);
-        onActionComplete?.();
+        // Force refresh the table data
+        if (onActionComplete) {
+          console.log('[TABLE CARD] Calling onActionComplete to refresh data');
+          onActionComplete();
+        }
       } else {
         console.error('[TABLE CARD] Unmerge failed:', result.error);
         alert(`Failed to unmerge table: ${result.error}`);
@@ -215,7 +222,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
 
   const isMergedTable = () => {
     // A table is "merged" if its label contains "+" (current format) or "merged with" (legacy format)
-    // Only primary tables are shown in the UI, so we check the label to determine if it has merged tables
+    // This is a simple check - if the unmerge worked properly, the label should be restored
     return table.label && (table.label.includes('+') || table.label.includes('merged with'));
   };
 
