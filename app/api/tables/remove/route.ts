@@ -45,7 +45,7 @@ export async function DELETE(request: NextRequest) {
     
     if (table.label.includes('+')) {
       // Merged table like "4+6" - extract both numbers
-      const numbers = table.label.split('+').map((part: string) => parseInt(part.replace(/\D/g, ''))).filter(n => !isNaN(n));
+      const numbers = table.label.split('+').map((part: string) => parseInt(part.replace(/\D/g, ''))).filter((n: number) => !isNaN(n));
       tableNumbers = numbers;
     } else if (table.label.includes('(merged with')) {
       // Secondary merged table like "6 (merged with 4)" - extract the first number
