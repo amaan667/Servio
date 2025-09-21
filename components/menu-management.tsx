@@ -118,6 +118,15 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       
       console.log('[AUTH DEBUG] All menu items in database:', allItems);
       console.log('[AUTH DEBUG] All items error:', allItemsError);
+      
+      // Also check what venue IDs exist in the database
+      const { data: allVenues, error: venuesError } = await supabase
+        .from("venues")
+        .select("venue_id, name")
+        .limit(10);
+      
+      console.log('[AUTH DEBUG] All venues in database:', allVenues);
+      console.log('[AUTH DEBUG] Venues error:', venuesError);
 
       // Now query for this specific venue
       const { data, error } = await supabase
@@ -139,6 +148,16 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       console.log('[AUTH DEBUG] Upload data for category order:', uploadData);
       console.log('[AUTH DEBUG] Upload error:', uploadError);
       console.log('[AUTH DEBUG] Venue ID being used:', venueUuid);
+      
+      // Try to get more details about the upload error
+      if (uploadError) {
+        console.log('[AUTH DEBUG] Upload error details:', {
+          message: uploadError.message,
+          code: uploadError.code,
+          details: uploadError.details,
+          hint: uploadError.hint
+        });
+      }
 
       console.log('[AUTH DEBUG] Menu query result:', { 
         dataCount: data?.length || 0, 

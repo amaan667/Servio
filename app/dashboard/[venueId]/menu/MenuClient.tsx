@@ -81,6 +81,17 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
           console.log('[MENU CLIENT] No categories found in parsed_json:', uploadData?.parsed_json);
           console.log('[MENU CLIENT] Upload error:', uploadError);
           console.log('[MENU CLIENT] Venue ID being used:', transformedVenueId);
+          
+          // Try to get more details about the upload error
+          if (uploadError) {
+            console.log('[MENU CLIENT] Upload error details:', {
+              message: uploadError.message,
+              code: uploadError.code,
+              details: uploadError.details,
+              hint: uploadError.hint
+            });
+          }
+          
           setCategoryOrder(null);
         }
       } else if (error) {
