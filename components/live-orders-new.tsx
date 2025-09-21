@@ -9,6 +9,7 @@ import { RefreshCw, Clock, CheckCircle, XCircle, AlertTriangle, History, Calenda
 import { createClient } from "@/lib/supabase/client";
 import { OrderCard } from "@/components/orders/OrderCard";
 import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
+import { deriveEntityKind } from "@/lib/orders/entity-types";
 import { logger } from "@/lib/logger";
 import { useTabCounts } from '@/hooks/use-tab-counts';
 import { useCountsRealtime } from '@/hooks/use-counts-realtime';
@@ -628,35 +629,89 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
                 return dateB.getTime() - dateA.getTime();
               });
 
-              return sortedDates.map((dateKey) => (
-                <div key={dateKey} className="space-y-4">
-                  {/* Date Header */}
-                  <div className="flex items-center space-x-3">
-                    <div className="h-px flex-1 bg-gray-200"></div>
-                    <h3 className="text-lg font-semibold text-gray-700 bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
-                      {dateKey}
-                    </h3>
-                    <div className="h-px flex-1 bg-gray-200"></div>
+              return sortedDates.map((dateKey) => {
+                const dateOrders = ordersByDate[dateKey];
+                
+                // Group orders by type (table vs counter)
+                const tableOrders = dateOrders.filter(order => {
+                  const orderForCard = mapOrderToCardData(order, 'GBP');
+                  return deriveEntityKind(orderForCard) === 'table';
+                });
+                
+                const counterOrders = dateOrders.filter(order => {
+                  const orderForCard = mapOrderToCardData(order, 'GBP');
+                  return deriveEntityKind(orderForCard) === 'counter';
+                });
+
+                return (
+                  <div key={dateKey} className="space-y-6">
+                    {/* Date Header */}
+                    <div className="flex items-center space-x-3">
+                      <div className="h-px flex-1 bg-gray-200"></div>
+                      <h3 className="text-lg font-semibold text-gray-700 bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
+                        {dateKey} ({dateOrders.length} orders)
+                      </h3>
+                      <div className="h-px flex-1 bg-gray-200"></div>
+                    </div>
+                    
+                    {/* Table Orders Section */}
+                    {tableOrders.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-px flex-1 bg-blue-200"></div>
+                          <h4 className="text-md font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">
+                            Table Orders ({tableOrders.length})
+                          </h4>
+                          <div className="h-px flex-1 bg-blue-200"></div>
+                        </div>
+                        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                          {tableOrders.map((order) => {
+                            const orderForCard = mapOrderToCardData(order, 'GBP');
+                            return (
+                              <OrderCard
+                                key={order.id}
+                                order={orderForCard}
+                                variant="table"
+                                venueId={venueId}
+                                showActions={true}
+                                onActionComplete={handleOrderUpdate}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Counter Orders Section */}
+                    {counterOrders.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-px flex-1 bg-orange-200"></div>
+                          <h4 className="text-md font-semibold text-orange-700 bg-orange-50 px-3 py-1 rounded-lg border border-orange-200">
+                            Counter Orders ({counterOrders.length})
+                          </h4>
+                          <div className="h-px flex-1 bg-orange-200"></div>
+                        </div>
+                        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                          {counterOrders.map((order) => {
+                            const orderForCard = mapOrderToCardData(order, 'GBP');
+                            return (
+                              <OrderCard
+                                key={order.id}
+                                order={orderForCard}
+                                variant="counter"
+                                venueId={venueId}
+                                showActions={true}
+                                onActionComplete={handleOrderUpdate}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* Orders Grid for this date */}
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {ordersByDate[dateKey].map((order) => {
-                      const orderForCard = mapOrderToCardData(order, 'GBP');
-                      return (
-                        <OrderCard
-                          key={order.id}
-                          order={orderForCard}
-                          variant="auto"
-                          venueId={venueId}
-                          showActions={true}
-                          onActionComplete={handleOrderUpdate}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              ));
+                );
+              });
             })()}
           </div>
         )}

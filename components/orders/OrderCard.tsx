@@ -63,20 +63,22 @@ export function OrderCard({
         console.warn(`[OrderCard] Missing table_label for table order ${order.id}`);
       }
       return {
-        icon: <MapPin className="h-3 w-3" />,
+        icon: <MapPin className="h-4 w-4" />,
         label,
         badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+        type: 'Table Order',
       };
     } else {
       return {
-        icon: <Hash className="h-3 w-3" />,
+        icon: <Hash className="h-4 w-4" />,
         label: order.counter_label || 'Counter A',
         badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
+        type: 'Counter Order',
       };
     }
   };
 
-  const { icon, label, badgeColor } = getEntityDisplay();
+  const { icon, label, badgeColor, type } = getEntityDisplay();
 
   // Handle order actions
   const handleRemoveOrder = async () => {
@@ -140,12 +142,12 @@ export function OrderCard({
     if (showUnpaid && !isPaid) {
       // Show payment actions
       return (
-        <div className="mt-6 pt-4 border-t border-slate-200">
-          <div className="flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-slate-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="text-sm text-slate-600">
               <span className="font-medium">Payment Required:</span> {formatCurrency(order.total_amount, order.currency)}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 size="sm"
                 variant="outline"
@@ -186,8 +188,8 @@ export function OrderCard({
     if (isPaid && !isCompleted) {
       // Show completion action
       return (
-        <div className="mt-6 pt-4 border-t border-slate-200">
-          <div className="flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-slate-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="text-sm text-green-600">
               <span className="font-medium">Payment Complete</span>
             </div>
@@ -210,116 +212,108 @@ export function OrderCard({
 
   return (
     <Card 
-      className={`rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow ${className}`}
+      className={`rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow ${className}`}
       onMouseEnter={() => setShowHoverRemove(true)}
       onMouseLeave={() => setShowHoverRemove(false)}
     >
-      <CardContent className="px-4 py-3 md:px-5 md:py-4">
-        {/* Grid Layout */}
-        <div className="grid grid-cols-6 md:grid-cols-12 gap-3 md:gap-4 items-center">
-          
-          {/* Header Section - Left Aligned */}
-          <div className="col-span-4 md:col-span-6 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              {/* Order Short ID Chip */}
-              <Badge variant="outline" className="text-xs px-2 py-0.5">
+      <CardContent className="p-6">
+        {/* Header Section */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1 min-w-0">
+            {/* Order ID and Time */}
+            <div className="flex items-center gap-3 mb-3">
+              <Badge variant="outline" className="text-sm font-semibold px-3 py-1">
                 #{order.short_id}
               </Badge>
-              
-              {/* Order Time */}
-              <div className="flex items-center gap-1 text-xs text-slate-500">
-                <Clock className="h-3 w-3" />
+              <div className="flex items-center gap-1 text-sm text-slate-500">
+                <Clock className="h-4 w-4" />
                 {formatOrderTime(order.placed_at)}
               </div>
             </div>
 
-            {/* Entity Badge */}
-            <div className="flex items-center gap-2 mb-2">
-              <Badge className={`inline-flex items-center text-xs px-2 py-0.5 ${badgeColor}`}>
+            {/* Entity Badge and Status */}
+            <div className="flex items-center gap-3 mb-4">
+              <Badge className={`inline-flex items-center text-sm px-3 py-1.5 ${badgeColor}`}>
                 {icon}
-                <span className="ml-1">{label}</span>
+                <span className="ml-2 font-medium">{label}</span>
+                <span className="ml-2 text-xs opacity-75">({type})</span>
               </Badge>
-            </div>
-
-            {/* Status Chips */}
-            <div className="flex items-center gap-2 mb-2">
-              <OrderStatusChip status={order.order_status} />
-              {shouldShowUnpaidChip(order) && (
-                <PaymentStatusChip status="unpaid" />
-              )}
-              {order.payment.status === 'paid' && (
-                <PaymentStatusChip status="paid" />
-              )}
-              {order.payment.status === 'failed' && (
-                <PaymentStatusChip status="failed" />
-              )}
-              {order.payment.status === 'refunded' && (
-                <PaymentStatusChip status="refunded" />
-              )}
-            </div>
-          </div>
-
-          {/* Meta Section - Center */}
-          <div className="col-span-2 md:col-span-4 min-w-0">
-            {/* Customer Info */}
-            {order.customer?.name && (
-              <div className="mb-2">
-                <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
-                  <User className="h-3 w-3" />
-                  <span>Customer</span>
-                </div>
-                <div className="font-medium text-sm truncate">{order.customer.name}</div>
-                {order.customer.phone && (
-                  <div className="text-xs text-slate-500 truncate">{order.customer.phone}</div>
+              
+              {/* Status Chips */}
+              <div className="flex items-center gap-2">
+                <OrderStatusChip status={order.order_status} />
+                {shouldShowUnpaidChip(order) && (
+                  <PaymentStatusChip status="unpaid" />
+                )}
+                {order.payment.status === 'paid' && (
+                  <PaymentStatusChip status="paid" />
+                )}
+                {order.payment.status === 'failed' && (
+                  <PaymentStatusChip status="failed" />
+                )}
+                {order.payment.status === 'refunded' && (
+                  <PaymentStatusChip status="refunded" />
                 )}
               </div>
-            )}
+            </div>
+          </div>
 
-            {/* Items Preview */}
-            {order.items_preview && (
-              <div className="mb-2">
-                <div className="text-xs text-slate-500 mb-1">Items</div>
-                <div className="text-sm text-slate-700 line-clamp-2">{order.items_preview}</div>
+          {/* Total Amount and Remove Button */}
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(order.total_amount, order.currency)}
+              </div>
+            </div>
+            
+            {/* Remove Button - On Hover */}
+            {showActions && venueId && (
+              <div className={`transition-opacity duration-200 ${showHoverRemove ? 'opacity-100' : 'opacity-0'}`}>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={handleRemoveOrder}
+                        disabled={isProcessing}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Remove Order</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
           </div>
+        </div>
 
-          {/* Footer - Right Aligned */}
-          <div className="col-span-6 md:col-span-2 md:justify-self-end">
-            <div className="flex items-center justify-between md:flex-col md:items-end gap-2">
-              {/* Total Amount */}
-              <div className="text-right">
-                <div className="text-lg font-semibold">
-                  {formatCurrency(order.total_amount, order.currency)}
-                </div>
-              </div>
-
-              {/* Remove Button - On Hover */}
-              {showActions && venueId && (
-                <div className={`transition-opacity duration-200 ${showHoverRemove ? 'opacity-100' : 'opacity-0'}`}>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={handleRemoveOrder}
-                          disabled={isProcessing}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Remove Order</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+        {/* Customer Info */}
+        {order.customer?.name && (
+          <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-slate-600" />
+              <span className="font-semibold text-slate-900">{order.customer.name}</span>
+              {order.customer.phone && (
+                <span className="text-sm text-slate-600 ml-2">• {order.customer.phone}</span>
               )}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Items Preview */}
+        {order.items_preview && (
+          <div className="mb-4">
+            <div className="text-sm font-medium text-slate-700 mb-2">Order Items</div>
+            <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              {order.items_preview}
+            </div>
+          </div>
+        )}
 
         {/* Action Section */}
         {renderActions()}
