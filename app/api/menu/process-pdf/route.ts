@@ -290,7 +290,7 @@ export async function POST(req: Request) {
     console.log('[PDF_PROCESS] Items that were inserted:', upsertedItems);
     console.log('[PDF_PROCESS] Venue ID used for insertion:', venueId);
 
-    // Store audit trail
+    // Store audit trail with category order
     try {
       await supa.from('menu_uploads').insert({
         venue_id: venueId,
@@ -298,6 +298,7 @@ export async function POST(req: Request) {
         storage_path: storagePath,
         file_size: file.size,
         extracted_text_length: extractedText.length,
+        category_order: validated.categories, // Store category order in the new column
         parsed_json: {
           categories: validated.categories,
           mode: loose ? 'loose' : 'strict',
@@ -307,6 +308,7 @@ export async function POST(req: Request) {
         },
         created_at: new Date().toISOString()
       });
+      console.log('[PDF_PROCESS] Stored category order:', validated.categories);
     } catch (auditError) {
       console.warn('[PDF_PROCESS] Audit trail insertion failed:', auditError);
       // Don't fail the whole request for audit trail issues

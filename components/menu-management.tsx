@@ -154,10 +154,35 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         }
       }
 
-      // Skip menu_uploads query since parsed_json column doesn't exist
-      console.log('[AUTH DEBUG] Skipping menu_uploads query - using hardcoded category order');
-      const uploadData = null;
-      const uploadError = null;
+      // Fetch the most recent menu upload to get category order - try both venue ID formats
+      let { data: uploadData, error: uploadError } = await supabase
+        .from("menu_uploads")
+        .select("category_order")
+        .eq("venue_id", venueUuid)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // If no upload data found with transformed ID, try with original ID
+      if (!uploadData && !uploadError) {
+        console.log('[AUTH DEBUG] No upload data found with transformed ID, trying original ID');
+        const { data: fallbackUploadData, error: fallbackUploadError } = await supabase
+          .from("menu_uploads")
+          .select("category_order")
+          .eq("venue_id", originalVenueId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (fallbackUploadData) {
+          uploadData = fallbackUploadData;
+          uploadError = fallbackUploadError;
+          console.log('[AUTH DEBUG] Found upload data with original venue ID');
+        }
+      }
+
+      console.log('[AUTH DEBUG] Upload data for category order:', uploadData);
+      console.log('[AUTH DEBUG] Upload error:', uploadError);
 
       console.log('[AUTH DEBUG] Menu query result:', { 
         dataCount: data?.length || 0, 
@@ -184,17 +209,17 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         setMenuItems(data || []);
       }
 
-      // Extract categories from the parsed_json
-      if (uploadData?.parsed_json && uploadData.parsed_json.categories) {
+      // Extract categories from the category_order column
+      if (uploadData?.category_order && Array.isArray(uploadData.category_order)) {
         // Categories are stored as an array of strings in the correct PDF order
-        const categories = uploadData.parsed_json.categories;
+        const categories = uploadData.category_order;
         setCategoryOrder(categories);
         console.log('[AUTH DEBUG] Set category order from upload:', categories);
         console.log('[AUTH DEBUG] Current menu categories:', [...new Set(data?.map((item: any) => item.category) || [])]);
       } else {
         setCategoryOrder(null);
-        console.log('[AUTH DEBUG] No category order found in upload data:', uploadData?.parsed_json);
-        console.log('[AUTH DEBUG] Will use categoryPriority array as fallback');
+        console.log('[AUTH DEBUG] No category order found in upload data:', uploadData?.category_order);
+        console.log('[AUTH DEBUG] Will use dynamic category order as fallback');
       }
         
       // Debug: Log the actual items found
@@ -559,16 +584,25 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     categoryGroups[cat].push(item);
   });
   
-  // Define the correct category order for NUR CAFE menu
-  const correctCategoryOrder = [
-    'STARTERS',
-    'ALL DAY BRUNCH', 
-    'BRUNCH',
-    'KIDS',
-    'MAINS',
-    'DESSERTS',
-    'BEVERAGES'
-  ];
+  // Derive category order from the order items appear in the database (which reflects PDF order)
+  const deriveCategoryOrder = (items: MenuItem[]) => {
+    const categoryFirstAppearance: { [key: string]: number } = {};
+    
+    items.forEach((item, index) => {
+      const category = item.category || 'Uncategorized';
+      if (!(category in categoryFirstAppearance)) {
+        categoryFirstAppearance[category] = index;
+      }
+    });
+    
+    // Sort categories by their first appearance in the menu items
+    return Object.keys(categoryFirstAppearance).sort((a, b) => 
+      categoryFirstAppearance[a] - categoryFirstAppearance[b]
+    );
+  };
+
+  const dynamicCategoryOrder = deriveCategoryOrder(menuItems);
+  console.log('[AUTH DEBUG] Derived category order from menu items:', dynamicCategoryOrder);
 
   const sortedCategories: { name: string; position: number }[] = Object.keys(categoryGroups)
     .map((cat) => {
@@ -588,15 +622,15 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         }
       }
       
-      // Use hardcoded correct order for NUR CAFE menu
-      const correctOrderIndex = correctCategoryOrder.findIndex(correctCat => 
-        correctCat.toLowerCase() === cat.toLowerCase()
+      // Use dynamically derived order from menu items
+      const dynamicOrderIndex = dynamicCategoryOrder.findIndex(dynamicCat => 
+        dynamicCat.toLowerCase() === cat.toLowerCase()
       );
-      if (correctOrderIndex >= 0) {
-        console.log('[AUTH DEBUG] Category', cat, 'found in correct order at position', correctOrderIndex);
+      if (dynamicOrderIndex >= 0) {
+        console.log('[AUTH DEBUG] Category', cat, 'found in dynamic order at position', dynamicOrderIndex);
         return {
           name: cat,
-          position: correctOrderIndex
+          position: dynamicOrderIndex
         };
       }
       

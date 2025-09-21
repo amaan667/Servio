@@ -78,23 +78,48 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         }
       }
 
-      // Skip menu_uploads query since parsed_json column doesn't exist
-      console.log('[MENU CLIENT] Skipping menu_uploads query - using hardcoded category order');
-      const uploadData = null;
-      const uploadError = null;
+      // Fetch the most recent menu upload to get category order - try both venue ID formats
+      let { data: uploadData, error: uploadError } = await supabase
+        .from('menu_uploads')
+        .select('category_order')
+        .eq('venue_id', transformedVenueId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // If no upload data found with transformed ID, try with original ID
+      if (!uploadData && !uploadError) {
+        console.log('[MENU CLIENT] No upload data found with transformed ID, trying original ID');
+        const { data: fallbackUploadData, error: fallbackUploadError } = await supabase
+          .from('menu_uploads')
+          .select('category_order')
+          .eq('venue_id', originalVenueId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (fallbackUploadData) {
+          uploadData = fallbackUploadData;
+          uploadError = fallbackUploadError;
+          console.log('[MENU CLIENT] Found upload data with original venue ID');
+        }
+      }
+
+      console.log('[MENU CLIENT] Upload data for category order:', uploadData);
+      console.log('[MENU CLIENT] Upload error:', uploadError);
 
       if (!error && data) {
         setMenuItems(data);
         console.log('[MENU CLIENT] Successfully loaded', data.length, 'menu items');
         
-        // Extract categories from the parsed_json
-        if (uploadData?.parsed_json && uploadData.parsed_json.categories) {
+        // Extract categories from the category_order column
+        if (uploadData?.category_order && Array.isArray(uploadData.category_order)) {
           // Categories are stored as an array of strings in the correct PDF order
-          const categories = uploadData.parsed_json.categories;
+          const categories = uploadData.category_order;
           console.log('[MENU CLIENT] Retrieved categories:', categories);
           setCategoryOrder(categories);
         } else {
-          console.log('[MENU CLIENT] No categories found in parsed_json:', uploadData?.parsed_json);
+          console.log('[MENU CLIENT] No categories found in category_order:', uploadData?.category_order);
           console.log('[MENU CLIENT] Upload error:', uploadError);
           console.log('[MENU CLIENT] Venue ID being used:', transformedVenueId);
           
@@ -109,7 +134,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
             console.log('[MENU CLIENT] Full upload error object:', uploadError);
           }
           
-          console.log('[MENU CLIENT] Will use categoryPriority array as fallback for ordering');
+          console.log('[MENU CLIENT] Will use dynamic category order as fallback for ordering');
           setCategoryOrder(null);
         }
       } else if (error) {
@@ -422,16 +447,25 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
               ];
 
-              // Define the correct category order for NUR CAFE menu
-              const correctCategoryOrder = [
-                'STARTERS',
-                'ALL DAY BRUNCH', 
-                'BRUNCH',
-                'KIDS',
-                'MAINS',
-                'DESSERTS',
-                'BEVERAGES'
-              ];
+              // Derive category order from the order items appear in the database (which reflects PDF order)
+              const deriveCategoryOrder = (items: MenuItem[]) => {
+                const categoryFirstAppearance: { [key: string]: number } = {};
+                
+                items.forEach((item, index) => {
+                  const category = item.category || 'Uncategorized';
+                  if (!(category in categoryFirstAppearance)) {
+                    categoryFirstAppearance[category] = index;
+                  }
+                });
+                
+                // Sort categories by their first appearance in the menu items
+                return Object.keys(categoryFirstAppearance).sort((a, b) => 
+                  categoryFirstAppearance[a] - categoryFirstAppearance[b]
+                );
+              };
+
+              const dynamicCategoryOrder = deriveCategoryOrder(menuItems);
+              console.log('[MENU CLIENT] Derived category order from menu items:', dynamicCategoryOrder);
 
               // Sort categories based on stored order from PDF upload
               const sortedCategories = Object.entries(groupedItems).sort(([catA], [catB]) => {
@@ -454,19 +488,19 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                   if (orderB >= 0) return 1;
                 }
                 
-                // Use hardcoded correct order for NUR CAFE menu
-                const correctOrderA = correctCategoryOrder.findIndex(correctCat => 
-                  correctCat.toLowerCase() === catA.toLowerCase()
+                // Use dynamically derived order from menu items
+                const dynamicOrderA = dynamicCategoryOrder.findIndex(dynamicCat => 
+                  dynamicCat.toLowerCase() === catA.toLowerCase()
                 );
-                const correctOrderB = correctCategoryOrder.findIndex(correctCat => 
-                  correctCat.toLowerCase() === catB.toLowerCase()
+                const dynamicOrderB = dynamicCategoryOrder.findIndex(dynamicCat => 
+                  dynamicCat.toLowerCase() === catB.toLowerCase()
                 );
                 
-                if (correctOrderA >= 0 && correctOrderB >= 0) {
-                  return correctOrderA - correctOrderB;
+                if (dynamicOrderA >= 0 && dynamicOrderB >= 0) {
+                  return dynamicOrderA - dynamicOrderB;
                 }
-                if (correctOrderA >= 0) return -1;
-                if (correctOrderB >= 0) return 1;
+                if (dynamicOrderA >= 0) return -1;
+                if (dynamicOrderB >= 0) return 1;
                 
                 // Fallback to alphabetical sorting for categories not in stored order
                 return catA.localeCompare(catB);
