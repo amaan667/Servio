@@ -101,6 +101,13 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
       fullOrder: order
     });
     
+    // Additional debug for table number processing
+    if (order.table_number) {
+      console.log(`[mapOrderToCardData DEBUG] Order ${order.id} has table_number: ${order.table_number}`);
+    } else {
+      console.log(`[mapOrderToCardData DEBUG] Order ${order.id} has NO table_number`);
+    }
+    
     if (isCounterOrder) {
       // For counter orders, use counter_label if available, otherwise generate from table_number
       return {
@@ -127,6 +134,13 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
   };
 
   const { table_label, counter_label } = generateLabels(legacyOrder);
+
+  // Debug the final result
+  console.log(`[mapOrderToCardData DEBUG] Final result for order ${legacyOrder.id}:`, {
+    table_label,
+    counter_label,
+    original_table_number: legacyOrder.table_number
+  });
 
   return {
     id: legacyOrder.id,
