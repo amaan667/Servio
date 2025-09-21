@@ -375,13 +375,16 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 return acc;
               }, {});
 
-                            // Define category priority order to match PDF structure
+                            // Define category priority order to match PDF structure (NUR CAFE menu order)
               const categoryPriority = [
-                "burgers", "burger", "main courses", "main course", "mains", "main", "entrees", 
+                "starters", "starter", "appetizers", "appetizer",
+                "all day brunch", "brunch", "breakfast",
+                "kids", "children", "child",
+                "mains", "main", "main courses", "main course", "entrees", "burgers", "burger",
                 "fries", "fry", "chips", "side dishes", "sides", 
                 "extras", "extra", "add-ons", "add ons", "addons",
                 "sauces", "sauce", "condiments", "condiment",
-                "starters", "starter", "appetizers", "appetizer", "salads", "salad", "desserts", "dessert", 
+                "salads", "salad", "desserts", "dessert", 
                 "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
               ];
 
