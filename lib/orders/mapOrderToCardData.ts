@@ -97,7 +97,8 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
       table_number: order.table_number,
       table_id: order.table_id,
       table_label: order.table_label,
-      isCounterOrder
+      isCounterOrder,
+      fullOrder: order
     });
     
     if (isCounterOrder) {
