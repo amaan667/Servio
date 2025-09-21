@@ -50,6 +50,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
   useEffect(() => {
     loadMenuItems();
+    loadCategoryOrder();
   }, [venueId]);
 
   const loadMenuItems = async () => {
@@ -79,65 +80,9 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         }
       }
 
-      // Fetch the most recent menu upload to get category order - try both venue ID formats
-      let { data: uploadData, error: uploadError } = await supabase
-        .from('menu_uploads')
-        .select('category_order')
-        .eq('venue_id', transformedVenueId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      // If no upload data found with transformed ID, try with original ID
-      if (!uploadData && !uploadError) {
-        console.log('[MENU CLIENT] No upload data found with transformed ID, trying original ID');
-        const { data: fallbackUploadData, error: fallbackUploadError } = await supabase
-          .from('menu_uploads')
-          .select('category_order')
-          .eq('venue_id', originalVenueId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (fallbackUploadData) {
-          uploadData = fallbackUploadData;
-          uploadError = fallbackUploadError;
-          console.log('[MENU CLIENT] Found upload data with original venue ID');
-        }
-      }
-
-      console.log('[MENU CLIENT] Upload data for category order:', uploadData);
-      console.log('[MENU CLIENT] Upload error:', uploadError);
-
       if (!error && data) {
         setMenuItems(data);
         console.log('[MENU CLIENT] Successfully loaded', data.length, 'menu items');
-        
-        // Extract categories from the category_order column
-        if (uploadData?.category_order && Array.isArray(uploadData.category_order)) {
-          // Categories are stored as an array of strings in the correct PDF order
-          const categories = uploadData.category_order;
-          console.log('[MENU CLIENT] Retrieved categories:', categories);
-          setCategoryOrder(categories);
-        } else {
-          console.log('[MENU CLIENT] No categories found in category_order:', uploadData?.category_order);
-          console.log('[MENU CLIENT] Upload error:', uploadError);
-          console.log('[MENU CLIENT] Venue ID being used:', transformedVenueId);
-          
-          // Try to get more details about the upload error
-          if (uploadError) {
-            console.log('[MENU CLIENT] Upload error details:', {
-              message: uploadError.message,
-              code: uploadError.code,
-              details: uploadError.details,
-              hint: uploadError.hint
-            });
-            console.log('[MENU CLIENT] Full upload error object:', uploadError);
-          }
-          
-          console.log('[MENU CLIENT] Will use dynamic category order as fallback for ordering');
-          setCategoryOrder(null);
-        }
       } else if (error) {
         console.error('[MENU CLIENT] Error loading menu items:', error);
         toast({
@@ -155,6 +100,36 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategoryOrder = async () => {
+    try {
+      // First try to load from localStorage
+      const storedOrder = localStorage.getItem(`category-order-${transformedVenueId}`);
+      if (storedOrder) {
+        const parsedOrder = JSON.parse(storedOrder);
+        console.log('[MENU CLIENT] Loaded category order from localStorage:', parsedOrder);
+        setCategoryOrder(parsedOrder);
+        return;
+      }
+
+      // Fallback to API
+      const response = await fetch(`/api/menu/categories?venueId=${transformedVenueId}`);
+      const data = await response.json();
+      
+      if (response.ok && data.categories && Array.isArray(data.categories)) {
+        console.log('[MENU CLIENT] Loaded category order from API:', data.categories);
+        setCategoryOrder(data.categories);
+        // Store in localStorage for persistence
+        localStorage.setItem(`category-order-${transformedVenueId}`, JSON.stringify(data.categories));
+      } else {
+        console.log('[MENU CLIENT] No category order found, will use dynamic ordering');
+        setCategoryOrder(null);
+      }
+    } catch (error) {
+      console.error('[MENU CLIENT] Error loading category order:', error);
+      setCategoryOrder(null);
     }
   };
 
@@ -284,8 +259,9 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
   const handleCategoriesUpdate = (updatedCategories: string[]) => {
     setCategoryOrder(updatedCategories);
-    // Reload menu items to reflect any category changes
-    loadMenuItems();
+    // Store in localStorage for persistence
+    localStorage.setItem(`category-order-${transformedVenueId}`, JSON.stringify(updatedCategories));
+    console.log('[MENU CLIENT] Category order updated and stored:', updatedCategories);
   };
 
   const openEditModal = (item: MenuItem) => {

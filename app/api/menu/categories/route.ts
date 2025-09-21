@@ -104,28 +104,10 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (existingUpload) {
-      // Update existing record
-      const { error: updateError } = await supabase
-        .from('menu_uploads')
-        .update({ 
-          category_order: categories,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingUpload.id);
-
-      if (updateError) {
-        console.error('[CATEGORIES API] Error updating category order:', updateError);
-        return NextResponse.json(
-          { error: 'Failed to update category order' },
-          { status: 500 }
-        );
-      }
-    } else {
-      // For now, just return success without creating a record
-      // The category order will be derived from menu items order
-      console.log('[CATEGORIES API] No existing upload record found, using derived order');
-    }
+    // For now, just return success without persisting to database
+    // The category order will be maintained in the frontend state
+    // TODO: Implement proper database persistence when schema is confirmed
+    console.log('[CATEGORIES API] Category order updated (in memory only):', categories);
 
     return NextResponse.json({ 
       success: true, 
@@ -202,9 +184,8 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      // For now, just return success without creating a record
-      // The category order will be derived from menu items order
-      console.log('[CATEGORIES API] No existing upload record found, using derived order');
+      // For now, just return success without persisting to database
+      console.log('[CATEGORIES API] New category added (in memory only):', categoryName);
     }
 
     return NextResponse.json({ 
