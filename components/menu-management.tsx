@@ -94,7 +94,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [batchEditValue, setBatchEditValue] = useState<any>(null);
   const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
 
-  const venueUuid = venueId;
+  // Handle venue ID format - remove 'venue-' prefix if present
+  const venueUuid = venueId.startsWith('venue-') ? venueId.substring(6) : venueId;
   const supabase = createClient();
 
   const fetchMenu = async () => {
@@ -106,6 +107,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     }
 
     console.log('[AUTH DEBUG] Fetching menu for venue:', venueId, 'venueUuid:', venueUuid);
+    console.log('[AUTH DEBUG] Venue ID transformation:', { original: venueId, transformed: venueUuid });
 
     try {
       // First, let's check if there are ANY menu items in the database
