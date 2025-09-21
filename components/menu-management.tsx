@@ -76,6 +76,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   // PDF/URL upload removed
   // Remove menuUrl state
   const [newItem, setNewItem] = useState({
@@ -124,6 +125,17 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .order("category", { ascending: true })
         .order("name", { ascending: true });
 
+      // Fetch the most recent menu upload to get category order
+      const { data: uploadData, error: uploadError } = await supabase
+        .from("menu_uploads")
+        .select("categories")
+        .eq("venue_id", venueUuid)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      console.log('[AUTH DEBUG] Upload data for category order:', uploadData);
+
       console.log('[AUTH DEBUG] Menu query result:', { 
         dataCount: data?.length || 0, 
         error: error?.message,
@@ -146,6 +158,16 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           categories: [...new Set(data?.map((item: any) => item.category) || [])],
         });
         setMenuItems(data || []);
+      }
+
+      // Store the category order from the most recent upload
+      if (uploadData?.categories && Array.isArray(uploadData.categories)) {
+        setCategoryOrder(uploadData.categories);
+        console.log('[AUTH DEBUG] Set category order from upload:', uploadData.categories);
+      } else {
+        setCategoryOrder(null);
+        console.log('[AUTH DEBUG] No category order found in upload data');
+      }
         
         // Debug: Log the actual items found
         if (data && data.length > 0) {
@@ -510,20 +532,35 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     categoryGroups[cat].push(item);
   });
   
-  // Define category priority order
+  // Define category priority order to match PDF structure
   const categoryPriority = [
-    "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course", 
-    "mains", "main", "desserts", "dessert", "drinks", "beverages", "coffee", "tea", "wine", "beer"
+    "burgers", "burger", "main courses", "main course", "mains", "main", "entrees", 
+    "fries", "fry", "chips", "side dishes", "sides", 
+    "extras", "extra", "add-ons", "add ons", "addons",
+    "sauces", "sauce", "condiments", "condiment",
+    "starters", "starter", "appetizers", "appetizer", "desserts", "dessert", 
+    "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
   ];
   
   const sortedCategories: { name: string; position: number }[] = Object.keys(categoryGroups)
     .map((cat) => {
-      const priorityIndex = categoryPriority.findIndex(priority => 
-        cat.toLowerCase().includes(priority.toLowerCase())
-      );
+      // Check if we have stored category order from PDF upload
+      if (categoryOrder && Array.isArray(categoryOrder)) {
+        const orderIndex = categoryOrder.findIndex(storedCat => 
+          storedCat.toLowerCase() === cat.toLowerCase()
+        );
+        if (orderIndex >= 0) {
+          return {
+            name: cat,
+            position: orderIndex
+          };
+        }
+      }
+      
+      // Fallback to alphabetical sorting for categories not in stored order
       return {
         name: cat,
-        position: priorityIndex >= 0 ? priorityIndex : 999, // Put unknown categories at the end
+        position: 999 + cat.toLowerCase().localeCompare(''), // Put unknown categories at the end, sorted alphabetically
       };
     })
     .sort((a, b) => a.position - b.position);

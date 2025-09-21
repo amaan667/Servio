@@ -29,6 +29,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -55,8 +56,24 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         .order('category', { ascending: true })
         .order('name', { ascending: true });
 
+      // Fetch the most recent menu upload to get category order
+      const { data: uploadData, error: uploadError } = await supabase
+        .from('menu_uploads')
+        .select('categories')
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
       if (!error && data) {
         setMenuItems(data);
+        
+        // Store the category order from the most recent upload
+        if (uploadData?.categories && Array.isArray(uploadData.categories)) {
+          setCategoryOrder(uploadData.categories);
+        } else {
+          setCategoryOrder(null);
+        }
       } else if (error) {
         console.error('[MENU CLIENT] Error loading menu items:', error);
         toast({
@@ -356,30 +373,36 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
                             // Define category priority order to match PDF structure
               const categoryPriority = [
-                "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course", 
-                "mains", "main", "salads", "salad", "sides", "side dishes", "desserts", "dessert", 
+                "burgers", "burger", "main courses", "main course", "mains", "main", "entrees", 
+                "fries", "fry", "chips", "side dishes", "sides", 
+                "extras", "extra", "add-ons", "add ons", "addons",
+                "sauces", "sauce", "condiments", "condiment",
+                "starters", "starter", "appetizers", "appetizer", "salads", "salad", "desserts", "dessert", 
                 "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
               ];
 
-              // Sort categories based on priority and creation order
+              // Sort categories based on stored order from PDF upload
               const sortedCategories = Object.entries(groupedItems).sort(([catA], [catB]) => {
-                const priorityA = categoryPriority.findIndex(priority => 
-                  catA.toLowerCase().includes(priority.toLowerCase())
-                );
-                const priorityB = categoryPriority.findIndex(priority => 
-                  catB.toLowerCase().includes(priority.toLowerCase())
-                );
-                
-                // If both categories have priority, sort by priority
-                if (priorityA >= 0 && priorityB >= 0) {
-                  return priorityA - priorityB;
+                // Check if we have stored category order from PDF upload
+                if (categoryOrder && Array.isArray(categoryOrder)) {
+                  const orderA = categoryOrder.findIndex(storedCat => 
+                    storedCat.toLowerCase() === catA.toLowerCase()
+                  );
+                  const orderB = categoryOrder.findIndex(storedCat => 
+                    storedCat.toLowerCase() === catB.toLowerCase()
+                  );
+                  
+                  // If both categories are in stored order, sort by that order
+                  if (orderA >= 0 && orderB >= 0) {
+                    return orderA - orderB;
+                  }
+                  
+                  // If only one is in stored order, prioritize it
+                  if (orderA >= 0) return -1;
+                  if (orderB >= 0) return 1;
                 }
                 
-                // If only one has priority, prioritize it
-                if (priorityA >= 0) return -1;
-                if (priorityB >= 0) return 1;
-                
-                // If neither has priority, sort alphabetically
+                // Fallback to alphabetical sorting for categories not in stored order
                 return catA.localeCompare(catB);
               });
 

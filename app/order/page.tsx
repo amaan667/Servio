@@ -183,6 +183,7 @@ export default function CustomerOrderPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loadingMenu, setLoadingMenu] = useState(false); // Start with false for instant loading
   const [menuError, setMenuError] = useState<string | null>(null);
+  const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   const [isDemoFallback, setIsDemoFallback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -357,6 +358,20 @@ export default function CustomerOrderPage() {
       
       
       setMenuItems(normalized);
+      
+      // Fetch category order from the most recent menu upload
+      try {
+        const categoryOrderResponse = await fetch(`${window.location.origin}/api/menu/uploads/${venueSlug}/category-order`);
+        if (categoryOrderResponse.ok) {
+          const categoryOrderData = await categoryOrderResponse.json();
+          if (categoryOrderData.categories && Array.isArray(categoryOrderData.categories)) {
+            setCategoryOrder(categoryOrderData.categories);
+          }
+        }
+      } catch (error) {
+        console.log('[ORDER PAGE] Could not fetch category order:', error);
+        setCategoryOrder(null);
+      }
       
       if (!data.menuItems || data.menuItems.length === 0) {
         setMenuError("This venue has no available menu items yet.");
@@ -840,17 +855,35 @@ export default function CustomerOrderPage() {
               <div className="space-y-8">
                 {(() => {
                   const categoryPriority = [
-                    "starters", "starter", "appetizers", "appetizer", "entrees", "main courses", "main course",
-                    "mains", "main", "salads", "salad", "sides", "side", "desserts", "dessert",
+                    "burgers", "burger", "main courses", "main course", "mains", "main", "entrees", 
+                    "fries", "fry", "chips", "side dishes", "sides", 
+                    "extras", "extra", "add-ons", "add ons", "addons",
+                    "sauces", "sauce", "condiments", "condiment",
+                    "starters", "starter", "appetizers", "appetizer", "salads", "salad", "desserts", "dessert",
                     "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
                   ];
                   const categories = Array.from(new Set(menuItems.map((i) => i.category)));
                   const sortedCats = categories.sort((a,b)=>{
-                    const aIdx = categoryPriority.findIndex(p => (a||'').toLowerCase().includes(p));
-                    const bIdx = categoryPriority.findIndex(p => (b||'').toLowerCase().includes(p));
-                    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
-                    if (aIdx !== -1) return -1;
-                    if (bIdx !== -1) return 1;
+                    // Check if we have stored category order from PDF upload
+                    if (categoryOrder && Array.isArray(categoryOrder)) {
+                      const orderA = categoryOrder.findIndex(storedCat => 
+                        storedCat.toLowerCase() === (a||'').toLowerCase()
+                      );
+                      const orderB = categoryOrder.findIndex(storedCat => 
+                        storedCat.toLowerCase() === (b||'').toLowerCase()
+                      );
+                      
+                      // If both categories are in stored order, sort by that order
+                      if (orderA >= 0 && orderB >= 0) {
+                        return orderA - orderB;
+                      }
+                      
+                      // If only one is in stored order, prioritize it
+                      if (orderA >= 0) return -1;
+                      if (orderB >= 0) return 1;
+                    }
+                    
+                    // Fallback to alphabetical sorting for categories not in stored order
                     return String(a||'').localeCompare(String(b||''));
                   });
                   return sortedCats.map((category) => (
