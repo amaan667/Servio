@@ -89,7 +89,8 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     table_label?: string | null; 
     counter_label?: string | null; 
   } => {
-    const isCounterOrder = order.source === 'counter' || (!order.table_id && !order.table?.is_configured);
+    // Use the same logic as deriveEntityKind to determine order type
+    const isCounterOrder = order.source === 'counter';
     
     // Debug logging
     console.log(`[mapOrderToCardData DEBUG] Order ${order.id}:`, {
