@@ -456,9 +456,9 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               const dynamicCategoryOrder = deriveCategoryOrder(menuItems);
               console.log('[MENU CLIENT] Derived category order from menu items:', dynamicCategoryOrder);
 
-              // Sort categories based on stored order from PDF upload
+              // Sort categories based ONLY on PDF order - no alphabetical fallback
               const sortedCategories = Object.entries(groupedItems).sort(([catA], [catB]) => {
-                // Check if we have stored category order from PDF upload
+                // Use stored category order from PDF upload if available
                 if (categoryOrder && Array.isArray(categoryOrder)) {
                   const orderA = categoryOrder.findIndex(storedCat => 
                     storedCat.toLowerCase() === catA.toLowerCase()
@@ -491,8 +491,8 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 if (dynamicOrderA >= 0) return -1;
                 if (dynamicOrderB >= 0) return 1;
                 
-                // Final fallback to alphabetical sorting
-                return catA.localeCompare(catB);
+                // NO ALPHABETICAL FALLBACK - maintain database order
+                return 0;
               });
 
               return sortedCategories.map(([category, items]) => (

@@ -891,8 +891,8 @@ export default function CustomerOrderPage() {
                       return indexA - indexB;
                     }
                     
-                    // Final fallback to alphabetical sorting
-                    return String(a||'').localeCompare(String(b||''));
+                    // NO ALPHABETICAL FALLBACK - maintain database order
+                    return 0;
                   });
                   console.log('[ORDER PAGE] Final sorted categories:', sortedCats);
                   return sortedCats.map((category) => (
@@ -906,7 +906,6 @@ export default function CustomerOrderPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {menuItems
                           .filter((item) => item.category === category)
-                          .sort((a,b)=> String(a.name).localeCompare(String(b.name)))
                           .map((item) => (
                             <Card key={item.id} className="hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500 bg-white dark:bg-gray-800">
                               <CardContent className="p-4">
