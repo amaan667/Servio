@@ -857,15 +857,9 @@ export default function CustomerOrderPage() {
           return (
               <div className="space-y-8">
                 {(() => {
-                  const categoryPriority = [
-                    "burgers", "burger", "main courses", "main course", "mains", "main", "entrees", 
-                    "fries", "fry", "chips", "side dishes", "sides", 
-                    "extras", "extra", "add-ons", "add ons", "addons",
-                    "sauces", "sauce", "condiments", "condiment",
-                    "starters", "starter", "appetizers", "appetizer", "salads", "salad", "desserts", "dessert",
-                    "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
-                  ];
                   const categories = Array.from(new Set(menuItems.map((i) => i.category)));
+                  
+                  // Sort categories based on stored order from PDF upload
                   const sortedCats = categories.sort((a,b)=>{
                     // Check if we have stored category order from PDF upload
                     if (categoryOrder && Array.isArray(categoryOrder)) {
@@ -887,7 +881,17 @@ export default function CustomerOrderPage() {
                       if (orderB >= 0) return 1;
                     }
                     
-                    // Fallback to alphabetical sorting for categories not in stored order
+                    // If no stored order, derive order from the order items appear in the database (PDF order)
+                    const itemA = menuItems.find(item => item.category === a);
+                    const itemB = menuItems.find(item => item.category === b);
+                    
+                    if (itemA && itemB) {
+                      const indexA = menuItems.indexOf(itemA);
+                      const indexB = menuItems.indexOf(itemB);
+                      return indexA - indexB;
+                    }
+                    
+                    // Final fallback to alphabetical sorting
                     return String(a||'').localeCompare(String(b||''));
                   });
                   console.log('[ORDER PAGE] Final sorted categories:', sortedCats);
