@@ -168,7 +168,11 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       }) as TableGridItem[];
     },
     refetchInterval: 15000,
-    enabled: !!venueId
+    enabled: !!venueId,
+    staleTime: 5000, // Consider data fresh for 5 seconds
+    gcTime: 30000, // Keep in cache for 30 seconds
+    retry: 3, // Retry failed requests 3 times
+    retryDelay: 1000 // Wait 1 second between retries
   });
 
   // Set up real-time subscriptions for table updates
@@ -257,7 +261,11 @@ export function useTableCounters(venueId: string) {
       return data[0] as TableCounters;
     },
     refetchInterval: 15000,
-    enabled: !!venueId
+    enabled: !!venueId,
+    staleTime: 5000,
+    gcTime: 30000,
+    retry: 3,
+    retryDelay: 1000
   });
 }
 
@@ -278,7 +286,11 @@ export function useReservations(venueId: string) {
       return data as (Reservation & { table?: { label: string } })[];
     },
     refetchInterval: 5000, // Reduced from 30 seconds to 5 seconds for faster updates
-    enabled: !!venueId
+    enabled: !!venueId,
+    staleTime: 2000, // Consider data fresh for 2 seconds (reservations change frequently)
+    gcTime: 30000,
+    retry: 3,
+    retryDelay: 1000
   });
 }
 

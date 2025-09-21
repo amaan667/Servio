@@ -60,6 +60,10 @@ export function useCounterOrders(venueId: string) {
 			return data as CounterOrder[];
 		},
 		refetchInterval: 15000,
+		staleTime: 5000,
+		gcTime: 30000,
+		retry: 3,
+		retryDelay: 1000
 	});
 }
 
@@ -100,5 +104,9 @@ export function useCounterOrderCounts(venueId: string) {
 			};
 		},
 		refetchInterval: 15000,
+		staleTime: 5000,
+		gcTime: 30000,
+		retry: 3,
+		retryDelay: 1000
 	});
 }

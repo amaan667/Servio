@@ -277,8 +277,12 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   */
 
   const error = tablesError || counterOrdersError || tableOrdersError;
+  
+  // Show loading state while initial data is being fetched
+  const isLoading = tablesLoading || countersLoading || reservationsLoading || 
+                   counterOrdersLoading || counterOrderCountsLoading || 
+                   tableOrdersLoading || tableOrderCountsLoading;
 
-  // Remove loading state - render immediately with empty state if needed
   if (error) {
     return (
       <div className="mx-auto max-w-7xl p-4 md:p-6">
@@ -289,6 +293,20 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
             <Button onClick={() => refetchTables()} variant="outline">
               Try Again
             </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state for initial load
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl p-4 md:p-6">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 text-purple-600 mx-auto mb-4 animate-spin" />
+            <p className="text-gray-600">Loading table management...</p>
           </div>
         </div>
       </div>
