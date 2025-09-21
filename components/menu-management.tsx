@@ -169,29 +169,28 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         console.log('[AUTH DEBUG] No category order found in upload data');
       }
         
-        // Debug: Log the actual items found
-        if (data && data.length > 0) {
-          console.log('[AUTH DEBUG] Found menu items:', data.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            category: item.category,
-            venue_id: item.venue_id,
-            created_at: item.created_at
-          })));
+      // Debug: Log the actual items found
+      if (data && data.length > 0) {
+        console.log('[AUTH DEBUG] Found menu items:', data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          venue_id: item.venue_id,
+          created_at: item.created_at
+        })));
+      } else {
+        console.log('[AUTH DEBUG] No menu items found for venue:', venueUuid);
+        
+        // Try to check if there are any menu items at all in the database
+        const { data: allItems, error: allItemsError } = await supabase
+          .from("menu_items")
+          .select("venue_id, COUNT(*)")
+          .group("venue_id");
+        
+        if (allItemsError) {
+          console.log('[AUTH DEBUG] Could not check total items:', allItemsError.message);
         } else {
-          console.log('[AUTH DEBUG] No menu items found for venue:', venueUuid);
-          
-          // Try to check if there are any menu items at all in the database
-          const { data: allItems, error: allItemsError } = await supabase
-            .from("menu_items")
-            .select("venue_id, COUNT(*)")
-            .group("venue_id");
-          
-          if (allItemsError) {
-            console.log('[AUTH DEBUG] Could not check total items:', allItemsError.message);
-          } else {
-            console.log('[AUTH DEBUG] Total menu items by venue:', allItems);
-          }
+          console.log('[AUTH DEBUG] Total menu items by venue:', allItems);
         }
       }
     } catch (error: any) {
