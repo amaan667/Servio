@@ -121,26 +121,37 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         let orderStatus = null;
         let orderUpdatedAt = null;
         
-        // Priority 1: If there's an active table session, use its status
-        if (activeSession) {
-          // If the session status is FREE, the table is FREE
-          if (activeSession.status === 'FREE') {
-            sessionStatus = 'FREE';
-          } else {
-            // For all other session statuses (ORDERING, IN_PREP, etc.), table is OCCUPIED
-            sessionStatus = 'OCCUPIED';
-          }
+        // Priority 1: If there's an active table session with non-FREE status, table is OCCUPIED
+        if (activeSession && activeSession.status !== 'FREE') {
+          sessionStatus = 'OCCUPIED';
           openedAt = activeSession.opened_at;
           orderId = activeSession.order_id;
           totalAmount = activeSession.total_amount;
           orderStatus = activeSession.status;
           orderUpdatedAt = activeSession.updated_at;
         }
-        // Priority 2: If there's an active reservation, the table is RESERVED
+        // Priority 2: If there's an active reservation, the table is RESERVED (overrides FREE session)
         else if (reservationStatus === 'RESERVED_NOW' || reservationStatus === 'RESERVED_LATER') {
           sessionStatus = 'RESERVED';
+          // If there's a FREE session, still use its data for consistency
+          if (activeSession && activeSession.status === 'FREE') {
+            openedAt = activeSession.opened_at;
+            orderId = activeSession.order_id;
+            totalAmount = activeSession.total_amount;
+            orderStatus = activeSession.status;
+            orderUpdatedAt = activeSession.updated_at;
+          }
         }
-        // Priority 3: Otherwise, the table is FREE
+        // Priority 3: If there's a FREE session or no session, table is FREE
+        else if (activeSession && activeSession.status === 'FREE') {
+          sessionStatus = 'FREE';
+          openedAt = activeSession.opened_at;
+          orderId = activeSession.order_id;
+          totalAmount = activeSession.total_amount;
+          orderStatus = activeSession.status;
+          orderUpdatedAt = activeSession.updated_at;
+        }
+        // Priority 4: No session and no reservation = FREE
         
         return {
           id: item.id,
