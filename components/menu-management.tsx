@@ -166,6 +166,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         const categories = uploadData.parsed_json.categories;
         setCategoryOrder(categories);
         console.log('[AUTH DEBUG] Set category order from upload:', categories);
+        console.log('[AUTH DEBUG] Current menu categories:', [...new Set(data?.map((item: any) => item.category) || [])]);
       } else {
         setCategoryOrder(null);
         console.log('[AUTH DEBUG] No category order found in upload data:', uploadData?.parsed_json);
@@ -554,20 +555,38 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           storedCat.toLowerCase() === cat.toLowerCase()
         );
         if (orderIndex >= 0) {
+          console.log('[AUTH DEBUG] Category', cat, 'found in stored order at position', orderIndex);
           return {
             name: cat,
             position: orderIndex
           };
+        } else {
+          console.log('[AUTH DEBUG] Category', cat, 'NOT found in stored order:', categoryOrder);
         }
       }
       
+      // Fallback to categoryPriority array
+      const priorityIndex = categoryPriority.findIndex(priorityCat => 
+        priorityCat.toLowerCase() === cat.toLowerCase()
+      );
+      if (priorityIndex >= 0) {
+        console.log('[AUTH DEBUG] Category', cat, 'found in priority array at position', priorityIndex);
+        return {
+          name: cat,
+          position: 100 + priorityIndex // Use priority array with offset
+        };
+      }
+      
       // Fallback to alphabetical sorting for categories not in stored order
+      console.log('[AUTH DEBUG] Category', cat, 'using alphabetical fallback');
       return {
         name: cat,
         position: 999 + cat.toLowerCase().localeCompare(''), // Put unknown categories at the end, sorted alphabetically
       };
     })
     .sort((a, b) => a.position - b.position);
+
+  console.log('[AUTH DEBUG] Final sorted categories:', sortedCategories.map(c => c.name));
 
   return (
     <div className="space-y-6">
