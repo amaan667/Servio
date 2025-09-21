@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
@@ -39,7 +40,9 @@ export interface Reservation {
 
 // Get table grid data
 export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  
+  const query = useQuery({
     queryKey: ['tables', 'grid', venueId, leadTimeMinutes],
     queryFn: async () => {
       // First, get the table data from the main tables table (which has merged_with_table_id)
@@ -51,6 +54,15 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
         .is('merged_with_table_id', null) // Filter out merged tables
         .order('label');
       if (tableError) throw tableError;
+      
+      // Get all active table sessions for this venue
+      const { data: tableSessions, error: sessionsError } = await supabase
+        .from('table_sessions')
+        .select('*')
+        .eq('venue_id', venueId)
+        .in('status', ['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL']) // Active session statuses
+        .order('opened_at', { ascending: false });
+      if (sessionsError) throw sessionsError;
       
       // Get all active reservations for this venue
       const { data: reservations, error: reservationError } = await supabase
@@ -69,6 +81,9 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       
       // Transform the data to match the expected TableGridItem interface
       return tableData.map((item: any) => {
+        // Find active table session for this table
+        const activeSession = tableSessions.find((s: any) => s.table_id === item.id);
+        
         // Find reservations for this table
         const tableReservations = reservations.filter((r: any) => r.table_id === item.id);
         
@@ -81,18 +96,6 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           const endTime = new Date(reservation.end_at);
           const leadTime = new Date(startTime.getTime() - (leadTimeMinutes * 60 * 1000));
           
-          // console.log('🔍 [TABLE GRID] Checking reservation:', {
-          //   id: reservation.id,
-          //   table_id: reservation.table_id,
-          //   status: reservation.status,
-          //   start_at: reservation.start_at,
-          //   end_at: reservation.end_at,
-          //   leadTime: leadTime.toISOString(),
-          //   now: now.toISOString(),
-          //   isInLeadWindow: now >= leadTime,
-          //   isBeforeEnd: now <= endTime
-          // });
-          
           // Reservation is active if:
           // 1. We're within the lead time window (30 minutes before start)
           // 2. We haven't passed the end time
@@ -103,44 +106,126 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
             // Determine if it's "now" or "later"
             if (now >= startTime) {
               reservationStatus = 'RESERVED_NOW';
-              // console.log('🔍 [TABLE GRID] Table has RESERVED_NOW reservation:', item.table_id, reservation.id);
             } else {
               reservationStatus = 'RESERVED_LATER';
-              // console.log('🔍 [TABLE GRID] Table has RESERVED_LATER reservation:', item.table_id, reservation.id);
             }
             break; // Use the first active reservation found
           }
         }
         
-        // if (!activeReservation) {
-        //   console.log('🔍 [TABLE GRID] Table has no active reservation:', item.table_id);
-        // }
-        
-        // Determine the primary session status based on reservations (default to FREE)
+        // Determine the primary session status
         let sessionStatus = 'FREE';
+        let openedAt = null;
+        let orderId = null;
+        let totalAmount = null;
+        let orderStatus = null;
+        let orderUpdatedAt = null;
         
-        // If there's an active reservation, the table should be considered RESERVED, not FREE
-        if (reservationStatus === 'RESERVED_NOW' || reservationStatus === 'RESERVED_LATER') {
+        // Priority 1: If there's an active table session, the table is OCCUPIED
+        if (activeSession) {
+          sessionStatus = 'OCCUPIED';
+          openedAt = activeSession.opened_at;
+          orderId = activeSession.order_id;
+          totalAmount = activeSession.total_amount;
+          orderStatus = activeSession.status;
+          orderUpdatedAt = activeSession.updated_at;
+        }
+        // Priority 2: If there's an active reservation, the table is RESERVED
+        else if (reservationStatus === 'RESERVED_NOW' || reservationStatus === 'RESERVED_LATER') {
           sessionStatus = 'RESERVED';
         }
+        // Priority 3: Otherwise, the table is FREE
         
         return {
-          id: item.id, // Use item.id instead of item.table_id since we're now querying tables directly
+          id: item.id,
           label: item.label,
           seat_count: item.seat_count,
           session_status: sessionStatus,
           reservation_status: reservationStatus,
-          opened_at: null, // This would need to be fetched from table_sessions if needed
-          order_id: null, // This would need to be fetched separately if needed
-          total_amount: null, // This would need to be fetched separately if needed
-          order_status: null, // This would need to be fetched separately if needed
-          order_updated_at: null // This would need to be fetched separately if needed
+          opened_at: openedAt,
+          order_id: orderId,
+          total_amount: totalAmount,
+          order_status: orderStatus,
+          order_updated_at: orderUpdatedAt
         };
       }) as TableGridItem[];
     },
     refetchInterval: 15000,
     enabled: !!venueId
   });
+
+  // Set up real-time subscriptions for table updates
+  useEffect(() => {
+    if (!venueId) return;
+
+    console.log('[TABLE GRID] Setting up real-time subscriptions for venue:', venueId);
+
+    // Subscribe to table_sessions changes (for session status updates)
+    const tableSessionsChannel = supabase
+      .channel('table-grid-sessions')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'table_sessions',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        (payload: any) => {
+          console.log('[TABLE GRID] Real-time table_sessions update received:', payload);
+          // Invalidate and refetch the table grid data
+          queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to reservations changes
+    const reservationsChannel = supabase
+      .channel('table-grid-reservations')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        (payload: any) => {
+          console.log('[TABLE GRID] Real-time reservations update received:', payload);
+          // Invalidate and refetch the table grid data
+          queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to tables changes
+    const tablesChannel = supabase
+      .channel('table-grid-tables')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tables',
+          filter: `venue_id=eq.${venueId}`,
+        },
+        (payload: any) => {
+          console.log('[TABLE GRID] Real-time tables update received:', payload);
+          // Invalidate and refetch the table grid data
+          queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('[TABLE GRID] Cleaning up real-time subscriptions');
+      supabase.removeChannel(tableSessionsChannel);
+      supabase.removeChannel(reservationsChannel);
+      supabase.removeChannel(tablesChannel);
+    };
+  }, [venueId, leadTimeMinutes, queryClient]);
+
+  return query;
 }
 
 // Get table counters
