@@ -42,6 +42,9 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   const { toast } = useToast();
   const router = useRouter();
 
+  // Handle venue ID format - remove 'venue-' prefix if present
+  const transformedVenueId = venueId.startsWith('venue-') ? venueId.substring(6) : venueId;
+
   useEffect(() => {
     loadMenuItems();
   }, [venueId]);
@@ -52,7 +55,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
-        .eq('venue_id', venueId)
+        .eq('venue_id', transformedVenueId)
         .order('category', { ascending: true })
         .order('name', { ascending: true });
 
@@ -60,7 +63,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       const { data: uploadData, error: uploadError } = await supabase
         .from('menu_uploads')
         .select('parsed_json')
-        .eq('venue_id', venueId)
+        .eq('venue_id', transformedVenueId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -76,6 +79,8 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
           setCategoryOrder(categories);
         } else {
           console.log('[MENU CLIENT] No categories found in parsed_json:', uploadData?.parsed_json);
+          console.log('[MENU CLIENT] Upload error:', uploadError);
+          console.log('[MENU CLIENT] Venue ID being used:', transformedVenueId);
           setCategoryOrder(null);
         }
       } else if (error) {
