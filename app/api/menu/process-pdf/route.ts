@@ -226,13 +226,14 @@ export async function POST(req: Request) {
     const cleanName = (s: string) => s.replace(/\s+/g, ' ').trim();
     const seen = new Set<string>();
     const itemsToUpsert = validated.items
-      .map((item: any) => ({
+      .map((item: any, index: number) => ({
         venue_id: venueId,
         name: cleanName(item.name),
         description: item.description,
         price: item.price,
         category: item.category,
-        available: item.available
+        available: item.available,
+        order_index: item.order_index !== undefined ? item.order_index : index
       }))
       .filter((it) => {
         const key = `${it.venue_id}::${it.name.toLowerCase()}`;

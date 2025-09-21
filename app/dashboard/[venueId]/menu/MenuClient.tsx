@@ -58,8 +58,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         .from('menu_items')
         .select('*')
         .eq('venue_id', transformedVenueId)
-        .order('category', { ascending: true })
-        .order('name', { ascending: true });
+        .order('order_index', { ascending: true });
 
       // If no items found with transformed ID, try with original ID
       if (!data || data.length === 0) {
@@ -68,8 +67,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
           .from('menu_items')
           .select('*')
           .eq('venue_id', originalVenueId)
-          .order('category', { ascending: true })
-          .order('name', { ascending: true });
+          .order('order_index', { ascending: true });
         
         if (fallbackData && fallbackData.length > 0) {
           data = fallbackData;

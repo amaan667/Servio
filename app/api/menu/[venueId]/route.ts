@@ -47,8 +47,7 @@ export async function GET(
       .select('*')
       .eq('venue_id', venueId)
       .eq('available', true)
-      .order('category', { ascending: true })
-      .order('name', { ascending: true });
+      .order('order_index', { ascending: true });
 
     if (menuError) {
       console.error('[MENU API] Error fetching menu items:', menuError);
