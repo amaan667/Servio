@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     // Update the most recent menu upload with the correct category order
     const { data: uploads, error: fetchError } = await supabase
       .from('menu_uploads')
-      .select('id, venue_id, created_at, category_order, parsed_json')
+      .select('id, venue_id, created_at, category_order')
       .eq('venue_id', venueId)
       .order('created_at', { ascending: false })
       .limit(1);
@@ -80,11 +80,7 @@ export async function POST(req: NextRequest) {
     const { data: updateData, error: updateError } = await supabase
       .from('menu_uploads')
       .update({ 
-        category_order: correctCategoryOrder,
-        parsed_json: {
-          ...(latestUpload.parsed_json || {}),
-          categories: correctCategoryOrder
-        }
+        category_order: correctCategoryOrder
       })
       .eq('id', latestUpload.id)
       .select();
