@@ -42,12 +42,13 @@ export async function GET(
     }
 
     // Fetch menu items for the venue
+    // Use created_at ordering as fallback since order_index column may not exist
     const { data: menuItems, error: menuError } = await supabase
       .from('menu_items')
       .select('*')
       .eq('venue_id', venueId)
       .eq('available', true)
-      .order('order_index', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (menuError) {
       console.error('[MENU API] Error fetching menu items:', menuError);

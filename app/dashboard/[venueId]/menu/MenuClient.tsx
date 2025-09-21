@@ -54,11 +54,12 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     try {
       const supabase = createClient();
       // Try both venue ID formats to find menu items
+      // Use created_at ordering as fallback since order_index column may not exist
       let { data, error } = await supabase
         .from('menu_items')
         .select('*')
         .eq('venue_id', transformedVenueId)
-        .order('order_index', { ascending: true });
+        .order('created_at', { ascending: true });
 
       // If no items found with transformed ID, try with original ID
       if (!data || data.length === 0) {
@@ -67,7 +68,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
           .from('menu_items')
           .select('*')
           .eq('venue_id', originalVenueId)
-          .order('order_index', { ascending: true });
+          .order('created_at', { ascending: true });
         
         if (fallbackData && fallbackData.length > 0) {
           data = fallbackData;

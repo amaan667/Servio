@@ -21,9 +21,8 @@ export function normalizeForInsert(payload: MenuPayloadT) {
 
     const category = cleanStr(it.category);
 
-    const order_index = Number.isFinite(it.order_index as number)
-      ? (it.order_index as number)
-      : idx;
+    // Note: order_index column doesn't exist in database, so we don't include it
+    // Items will be ordered by created_at timestamp instead
 
     return {
       name,
@@ -31,7 +30,6 @@ export function normalizeForInsert(payload: MenuPayloadT) {
       price,
       category,
       available: Boolean(it.available ?? true),
-      order_index,
     };
   });
 
