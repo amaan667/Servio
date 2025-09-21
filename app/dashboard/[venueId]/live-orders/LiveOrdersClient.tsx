@@ -1472,33 +1472,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           Table Orders ({orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                         </h4>
                         <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                          {(() => {
-                            const tableOrders = orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter));
-                            const tableGroups = groupOrdersByTable(tableOrders);
-                            const groupedOrderIds = new Set();
-                            
-                            // Collect all order IDs that are in groups
-                            Object.values(tableGroups).forEach(group => {
-                              group.forEach(order => groupedOrderIds.add(order.id));
-                            });
-                            
-                            // Find orders that couldn't be grouped (different customers, etc.)
-                            const ungroupedOrders = tableOrders.filter(order => 
-                              !groupedOrderIds.has(order.id)
-                            );
-                            
-                            return (
-                              <>
-                                {/* Render grouped orders */}
-                                {Object.entries(tableGroups).map(([tableNumber, tableOrdersList]) => 
-                                  renderTableGroupCard(Number(tableNumber), tableOrdersList, false)
-                                )}
-                                
-                                {/* Render ungrouped orders as individual cards */}
-                                {ungroupedOrders.map(order => renderOrderCard(order, false))}
-                              </>
-                            );
-                          })()}
+                          {orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).map(order => renderOrderCard(order, false))}
                         </div>
                       </div>
                     )}
