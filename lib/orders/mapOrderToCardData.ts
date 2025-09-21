@@ -98,9 +98,9 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
         counter_label: order.counter_label || `Counter ${order.table_number || 'A'}`,
       };
     } else {
-      // For table orders, use table.label if available, otherwise fallback to table_label or generate from table_number  
+      // For table orders, use table_label if available, otherwise generate from table_number  
       return {
-        table_label: order.table?.label || order.table_label || `Table ${order.table_number || '—'}`,
+        table_label: order.table_label || `Table ${order.table_number || '—'}`,
         counter_label: null,
       };
     }
