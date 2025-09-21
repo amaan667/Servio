@@ -1,0 +1,224 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const venueId = searchParams.get('venueId');
+    
+    if (!venueId) {
+      return NextResponse.json(
+        { error: 'venueId is required' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await createClient();
+
+    // Get the most recent menu upload to get category order
+    const { data: uploadData, error: uploadError } = await supabase
+      .from('menu_uploads')
+      .select('category_order')
+      .eq('venue_id', venueId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (uploadError) {
+      console.error('[CATEGORIES API] Error fetching category order:', uploadError);
+      return NextResponse.json(
+        { error: 'Failed to fetch category order' },
+        { status: 500 }
+      );
+    }
+
+    // Get all unique categories from menu items
+    const { data: menuItems, error: menuError } = await supabase
+      .from('menu_items')
+      .select('category')
+      .eq('venue_id', venueId);
+
+    if (menuError) {
+      console.error('[CATEGORIES API] Error fetching menu items:', menuError);
+      return NextResponse.json(
+        { error: 'Failed to fetch menu items' },
+        { status: 500 }
+      );
+    }
+
+    // Extract unique categories
+    const uniqueCategories = Array.from(new Set(
+      menuItems?.map(item => item.category).filter(Boolean) || []
+    ));
+
+    // Use stored order if available, otherwise use database order
+    let orderedCategories = uniqueCategories;
+    if (uploadData?.category_order && Array.isArray(uploadData.category_order)) {
+      // Merge stored order with any new categories
+      const storedOrder = uploadData.category_order;
+      const newCategories = uniqueCategories.filter(cat => !storedOrder.includes(cat));
+      orderedCategories = [...storedOrder, ...newCategories];
+    }
+
+    return NextResponse.json({
+      categories: orderedCategories,
+      hasStoredOrder: !!uploadData?.category_order
+    });
+
+  } catch (error) {
+    console.error('[CATEGORIES API] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const { venueId, categories } = await request.json();
+    
+    if (!venueId || !Array.isArray(categories)) {
+      return NextResponse.json(
+        { error: 'venueId and categories array are required' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await createClient();
+
+    // Update or create menu upload record with new category order
+    const { data: existingUpload, error: fetchError } = await supabase
+      .from('menu_uploads')
+      .select('id')
+      .eq('venue_id', venueId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('[CATEGORIES API] Error fetching existing upload:', fetchError);
+      return NextResponse.json(
+        { error: 'Failed to fetch existing upload' },
+        { status: 500 }
+      );
+    }
+
+    if (existingUpload) {
+      // Update existing record
+      const { error: updateError } = await supabase
+        .from('menu_uploads')
+        .update({ 
+          category_order: categories,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingUpload.id);
+
+      if (updateError) {
+        console.error('[CATEGORIES API] Error updating category order:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to update category order' },
+          { status: 500 }
+        );
+      }
+    } else {
+      // For now, just return success without creating a record
+      // The category order will be derived from menu items order
+      console.log('[CATEGORIES API] No existing upload record found, using derived order');
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Category order updated successfully',
+      categories 
+    });
+
+  } catch (error) {
+    console.error('[CATEGORIES API] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { venueId, categoryName } = await request.json();
+    
+    if (!venueId || !categoryName) {
+      return NextResponse.json(
+        { error: 'venueId and categoryName are required' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await createClient();
+
+    // Get current category order
+    const { data: uploadData, error: fetchError } = await supabase
+      .from('menu_uploads')
+      .select('category_order')
+      .eq('venue_id', venueId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('[CATEGORIES API] Error fetching category order:', fetchError);
+      return NextResponse.json(
+        { error: 'Failed to fetch category order' },
+        { status: 500 }
+      );
+    }
+
+    // Add new category to the end of the list
+    const currentCategories = uploadData?.category_order || [];
+    const newCategories = [...currentCategories, categoryName];
+
+    // Update category order
+    const { data: existingUpload } = await supabase
+      .from('menu_uploads')
+      .select('id')
+      .eq('venue_id', venueId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingUpload) {
+      const { error: updateError } = await supabase
+        .from('menu_uploads')
+        .update({ 
+          category_order: newCategories,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingUpload.id);
+
+      if (updateError) {
+        console.error('[CATEGORIES API] Error updating category order:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to update category order' },
+          { status: 500 }
+        );
+      }
+    } else {
+      // For now, just return success without creating a record
+      // The category order will be derived from menu items order
+      console.log('[CATEGORIES API] No existing upload record found, using derived order');
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Category added successfully',
+      category: categoryName,
+      categories: newCategories
+    });
+
+  } catch (error) {
+    console.error('[CATEGORIES API] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

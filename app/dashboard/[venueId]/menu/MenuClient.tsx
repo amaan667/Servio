@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
+import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { useToast } from "@/hooks/use-toast";
 
 interface MenuItem {
@@ -31,6 +32,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [showCategories, setShowCategories] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -280,6 +282,12 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     setEditingItem(null);
   };
 
+  const handleCategoriesUpdate = (updatedCategories: string[]) => {
+    setCategoryOrder(updatedCategories);
+    // Reload menu items to reflect any category changes
+    loadMenuItems();
+  };
+
   const openEditModal = (item: MenuItem) => {
     setEditingItem(item);
     setFormData({
@@ -331,7 +339,13 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         {/* Action Buttons - Positioned between upload and menu items */}
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {/* Clear Menu button removed - now only in MenuUploadCard */}
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCategories(!showCategories)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Categories
+            </Button>
           </div>
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
@@ -406,6 +420,16 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Categories Management */}
+        {showCategories && (
+          <div className="mb-8">
+            <CategoriesManagement 
+              venueId={venueId} 
+              onCategoriesUpdate={handleCategoriesUpdate}
+            />
+          </div>
+        )}
 
         {/* Menu Items Grid */}
         <div className="space-y-6">

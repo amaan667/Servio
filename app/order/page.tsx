@@ -359,9 +359,9 @@ export default function CustomerOrderPage() {
       
       setMenuItems(normalized);
       
-      // Fetch category order from the most recent menu upload
+      // Fetch category order from the categories API
       try {
-        const categoryOrderResponse = await fetch(`${window.location.origin}/api/menu/uploads/${venueSlug}/category-order`);
+        const categoryOrderResponse = await fetch(`${window.location.origin}/api/menu/categories?venueId=${venueSlug}`);
         if (categoryOrderResponse.ok) {
           const categoryOrderData = await categoryOrderResponse.json();
           if (categoryOrderData.categories && Array.isArray(categoryOrderData.categories)) {
