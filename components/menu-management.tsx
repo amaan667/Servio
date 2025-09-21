@@ -135,6 +135,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .maybeSingle();
 
       console.log('[AUTH DEBUG] Upload data for category order:', uploadData);
+      console.log('[AUTH DEBUG] Upload error:', uploadError);
+      console.log('[AUTH DEBUG] Venue ID being used:', venueUuid);
 
       console.log('[AUTH DEBUG] Menu query result:', { 
         dataCount: data?.length || 0, 
@@ -170,6 +172,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       } else {
         setCategoryOrder(null);
         console.log('[AUTH DEBUG] No category order found in upload data:', uploadData?.parsed_json);
+        console.log('[AUTH DEBUG] Will use categoryPriority array as fallback');
       }
         
       // Debug: Log the actual items found
