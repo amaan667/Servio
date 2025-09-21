@@ -109,23 +109,28 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     }
     
     if (isCounterOrder) {
+      console.log(`[mapOrderToCardData DEBUG] Order ${order.id} classified as COUNTER order`);
       // For counter orders, use counter_label if available, otherwise generate from table_number
       return {
         table_label: null,
         counter_label: order.counter_label || `Counter ${order.table_number || 'A'}`,
       };
     } else {
+      console.log(`[mapOrderToCardData DEBUG] Order ${order.id} classified as TABLE order`);
       // For table orders, use table_label if available, otherwise generate from table_number  
       let generatedTableLabel;
       if (order.table_label) {
         generatedTableLabel = order.table_label;
+        console.log(`[mapOrderToCardData DEBUG] Using existing table_label: ${generatedTableLabel}`);
       } else if (order.table_number) {
         generatedTableLabel = `Table ${order.table_number}`;
+        console.log(`[mapOrderToCardData DEBUG] Generated table_label from table_number: ${generatedTableLabel}`);
       } else {
         // Fallback for orders without table numbers - use a generic label
         generatedTableLabel = 'Table Order';
+        console.log(`[mapOrderToCardData DEBUG] Using fallback table_label: ${generatedTableLabel}`);
       }
-      console.log(`[mapOrderToCardData DEBUG] Generated table_label: ${generatedTableLabel}`);
+      console.log(`[mapOrderToCardData DEBUG] Final generated table_label: ${generatedTableLabel}`);
       return {
         table_label: generatedTableLabel,
         counter_label: null,
@@ -141,6 +146,10 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     counter_label,
     original_table_number: legacyOrder.table_number
   });
+  
+  // Additional debug to see the actual values
+  console.log(`[mapOrderToCardData DEBUG] Final table_label value: "${table_label}"`);
+  console.log(`[mapOrderToCardData DEBUG] Final counter_label value: "${counter_label}"`);
 
   return {
     id: legacyOrder.id,
