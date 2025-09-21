@@ -18,8 +18,8 @@ interface Table {
   label: string;
   seat_count: number;
   order_id?: string | null;
-  total_amount?: number;
-  customer_name?: string;
+  total_amount?: number | null;
+  customer_name?: string | null;
   reserved_now_name?: string | null;
   reserved_later_name?: string | null;
 }

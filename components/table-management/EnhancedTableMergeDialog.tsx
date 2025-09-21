@@ -47,10 +47,10 @@ interface Table {
   status: string;
   session_id?: string | null;
   order_id?: string | null;
-  total_amount?: number;
+  total_amount?: number | null;
   order_status?: string;
-  opened_at?: string;
-  customer_name?: string;
+  opened_at?: string | null;
+  customer_name?: string | null;
   reserved_now_id?: string | null;
   reserved_now_start?: string | null;
   reserved_now_name?: string | null;
