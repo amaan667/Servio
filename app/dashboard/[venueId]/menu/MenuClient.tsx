@@ -437,14 +437,20 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                             // Define category priority order to match PDF structure (NUR CAFE menu order)
               const categoryPriority = [
                 "starters", "starter", "appetizers", "appetizer",
-                "all day brunch", "brunch", "breakfast",
+                "brunch", "all day brunch", "breakfast",
                 "kids", "children", "child",
                 "mains", "main", "main courses", "main course", "entrees", "burgers", "burger",
-                "fries", "fry", "chips", "side dishes", "sides", 
-                "extras", "extra", "add-ons", "add ons", "addons",
-                "sauces", "sauce", "condiments", "condiment",
-                "salads", "salad", "desserts", "dessert", 
-                "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
+                "milkshakes", "milkshake",
+                "salad", "salads",
+                "smoothies", "smoothie",
+                "speciality coffee", "specialty coffee", "special coffee",
+                "specials", "special",
+                "beverages", "drinks", "soft drinks",
+                "coffee", 
+                "desserts", "dessert",
+                "iced coffee",
+                "tea",
+                "wraps & sandwiches", "wraps", "sandwiches", "sandwich"
               ];
 
               // Derive category order from the order items appear in the database (which reflects PDF order)
@@ -467,7 +473,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               const dynamicCategoryOrder = deriveCategoryOrder(menuItems);
               console.log('[MENU CLIENT] Derived category order from menu items:', dynamicCategoryOrder);
 
-              // Sort categories based on stored order from PDF upload
+              // Sort categories based on stored order from PDF upload or priority order
               const sortedCategories = Object.entries(groupedItems).sort(([catA], [catB]) => {
                 // Check if we have stored category order from PDF upload
                 if (categoryOrder && Array.isArray(categoryOrder)) {
@@ -488,21 +494,21 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                   if (orderB >= 0) return 1;
                 }
                 
-                // Use dynamically derived order from menu items
-                const dynamicOrderA = dynamicCategoryOrder.findIndex(dynamicCat => 
-                  dynamicCat.toLowerCase() === catA.toLowerCase()
+                // Use category priority order for consistent PDF ordering
+                const priorityA = categoryPriority.findIndex(priority => 
+                  priority.toLowerCase() === catA.toLowerCase()
                 );
-                const dynamicOrderB = dynamicCategoryOrder.findIndex(dynamicCat => 
-                  dynamicCat.toLowerCase() === catB.toLowerCase()
+                const priorityB = categoryPriority.findIndex(priority => 
+                  priority.toLowerCase() === catB.toLowerCase()
                 );
                 
-                if (dynamicOrderA >= 0 && dynamicOrderB >= 0) {
-                  return dynamicOrderA - dynamicOrderB;
+                if (priorityA >= 0 && priorityB >= 0) {
+                  return priorityA - priorityB;
                 }
-                if (dynamicOrderA >= 0) return -1;
-                if (dynamicOrderB >= 0) return 1;
+                if (priorityA >= 0) return -1;
+                if (priorityB >= 0) return 1;
                 
-                // Fallback to alphabetical sorting for categories not in stored order
+                // Fallback to alphabetical sorting for categories not in priority order
                 return catA.localeCompare(catB);
               });
 
