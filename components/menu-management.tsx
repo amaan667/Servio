@@ -135,6 +135,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .select("*")
         .eq("venue_id", venueUuid)
         .order("category", { ascending: true })
+        .order("order_index", { ascending: true })
         .order("name", { ascending: true });
 
       // If no items found with transformed ID, try with original ID
@@ -145,6 +146,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           .select("*")
           .eq("venue_id", originalVenueId)
           .order("category", { ascending: true })
+          .order("order_index", { ascending: true })
           .order("name", { ascending: true });
         
         if (fallbackData && fallbackData.length > 0) {
@@ -595,22 +597,9 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     categoryGroups[cat].push(item);
   });
   
-  // Define category priority order to match PDF structure (NUR CAFE menu order)
-  const categoryPriority = [
-    "starters", "starter", "appetizers", "appetizer",
-    "all day brunch", "brunch", "breakfast",
-    "kids", "children", "child",
-    "mains", "main", "main courses", "main course", "entrees", "burgers", "burger",
-    "fries", "fry", "chips", "side dishes", "sides", 
-    "extras", "extra", "add-ons", "add ons", "addons",
-    "sauces", "sauce", "condiments", "condiment",
-    "desserts", "dessert", 
-    "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
-  ];
-  
   const sortedCategories: { name: string; position: number }[] = Object.keys(categoryGroups)
     .map((cat) => {
-      // Check if we have stored category order from PDF upload
+      // Always prioritize stored category order from PDF upload
       if (categoryOrder && Array.isArray(categoryOrder)) {
         const orderIndex = categoryOrder.findIndex(storedCat => 
           storedCat.toLowerCase() === cat.toLowerCase()
@@ -626,23 +615,11 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         }
       }
       
-      // Fallback to categoryPriority array
-      const priorityIndex = categoryPriority.findIndex(priorityCat => 
-        priorityCat.toLowerCase() === cat.toLowerCase()
-      );
-      if (priorityIndex >= 0) {
-        console.log('[AUTH DEBUG] Category', cat, 'found in priority array at position', priorityIndex);
-        return {
-          name: cat,
-          position: 100 + priorityIndex // Use priority array with offset
-        };
-      }
-      
-      // Fallback to alphabetical sorting for categories not in stored order
+      // If no stored order, use alphabetical sorting to maintain consistency
       console.log('[AUTH DEBUG] Category', cat, 'using alphabetical fallback');
       return {
         name: cat,
-        position: 999 + cat.toLowerCase().localeCompare(''), // Put unknown categories at the end, sorted alphabetically
+        position: 999 + cat.toLowerCase().localeCompare(''); // Put unknown categories at the end, sorted alphabetically
       };
     })
     .sort((a, b) => a.position - b.position);
