@@ -175,23 +175,25 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         console.log(`[LIVE_ORDERS] Live tab - 30 minutes ago: ${thirtyMinutesAgo}`);
         
         query = query
-          .or(`order_status.in.(${ACTIVE_STATUSES.join(',')}),status.in.(${ACTIVE_STATUSES.join(',')})`)
-          .gte('created_at', startUtc)
-          .lt('created_at', endUtc)
+          .in('order_status', ACTIVE_STATUSES)
+          .in('payment_status', ['PAID', 'UNPAID']) // Include both paid and unpaid orders
           .gte('created_at', thirtyMinutesAgo) // Only orders created within last 30 minutes
-          .order('updated_at', { ascending: false });
+          .order('created_at', { ascending: false });
         console.log(`[LIVE_ORDERS] Live query with statuses:`, ACTIVE_STATUSES);
         console.log(`[LIVE_ORDERS] Live query time filter: >= ${thirtyMinutesAgo}`);
       } else if (tab === 'earlier') {
-        // Earlier today: use simple query and filter in JavaScript for complex logic
+        // Earlier today: orders from today but more than 30 minutes ago
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
         query = query
+          .in('payment_status', ['PAID', 'UNPAID']) // Include both paid and unpaid orders
           .gte('created_at', startUtc)
-          .lt('created_at', endUtc)
+          .lt('created_at', thirtyMinutesAgo) // Before 30 minutes ago
           .order('created_at', { ascending: false });
-        console.log(`[LIVE_ORDERS] Earlier query - will filter in JavaScript for expired live orders`);
+        console.log(`[LIVE_ORDERS] Earlier query - orders from today before 30 minutes ago`);
       } else if (tab === 'history') {
         // History: All orders from previous days (regardless of status)
         query = query
+          .in('payment_status', ['PAID', 'UNPAID']) // Include both paid and unpaid orders
           .lt('created_at', startUtc)
           .order('created_at', { ascending: false });
         console.log(`[LIVE_ORDERS] History query for all orders before:`, startUtc);

@@ -67,6 +67,7 @@ export function useLiveOrders(venueId: string) {
         )
         .eq('venue_id', venueId)
         .in('order_status', LIVE_STATUSES as unknown as string[])
+        .in('payment_status', ['PAID', 'UNPAID']) // Include both paid and unpaid orders
         .gte('created_at', startOfToday) // today only
         .lte('created_at', endOfToday)
         .order('created_at', { ascending: false })
