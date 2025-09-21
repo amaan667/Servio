@@ -58,6 +58,13 @@ export function OrderCard({
   // Get appropriate label and icon
   const getEntityDisplay = () => {
     if (isTableVariant) {
+      // Debug logging to see what data we have
+      console.log(`[OrderCard DEBUG] Table order ${order.id}:`, {
+        table_label: order.table_label,
+        table_id: order.table_id,
+        entityKind: deriveEntityKind(order)
+      });
+      
       const label = order.table_label || `Table ${order.table_id || '—'}`;
       if (!order.table_label && order.table_id) {
         console.warn(`[OrderCard] Missing table_label for table order ${order.id}`);

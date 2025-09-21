@@ -91,6 +91,15 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
   } => {
     const isCounterOrder = order.source === 'counter' || (!order.table_id && !order.table?.is_configured);
     
+    // Debug logging
+    console.log(`[mapOrderToCardData DEBUG] Order ${order.id}:`, {
+      source: order.source,
+      table_number: order.table_number,
+      table_id: order.table_id,
+      table_label: order.table_label,
+      isCounterOrder
+    });
+    
     if (isCounterOrder) {
       // For counter orders, use counter_label if available, otherwise generate from table_number
       return {
@@ -99,8 +108,10 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
       };
     } else {
       // For table orders, use table_label if available, otherwise generate from table_number  
+      const generatedTableLabel = order.table_label || `Table ${order.table_number || '—'}`;
+      console.log(`[mapOrderToCardData DEBUG] Generated table_label: ${generatedTableLabel}`);
       return {
-        table_label: order.table_label || `Table ${order.table_number || '—'}`,
+        table_label: generatedTableLabel,
         counter_label: null,
       };
     }
