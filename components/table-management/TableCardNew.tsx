@@ -273,10 +273,49 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         actions.push(
           <DropdownMenuItem 
             key="view-order" 
-            onClick={() => {
+            onClick={async () => {
               // Use the same logic as the black "View Orders" button
-              // Filter by table and navigate to appropriate tab
+              // Determine which tab to navigate to based on order age
               const tableLabel = table.label;
+              
+              // If we have an order_id, we need to check when that specific order was created
+              if (table.order_id) {
+                try {
+                  const supabase = createClient();
+                  const { data: orderData, error } = await supabase
+                    .from('orders')
+                    .select('created_at')
+                    .eq('id', table.order_id)
+                    .single();
+                  
+                  if (orderData && !error) {
+                    const now = new Date();
+                    const thirtyMinutesAgo = new Date(now.getTime() - (30 * 60 * 1000));
+                    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const orderCreatedAt = new Date(orderData.created_at);
+                    
+                    let targetTab = 'live'; // fallback
+                    
+                    if (orderCreatedAt > thirtyMinutesAgo) {
+                      // Recent order (within 30 minutes) - go to live tab
+                      targetTab = 'live';
+                    } else if (orderCreatedAt >= startOfToday) {
+                      // Today's order (but not recent) - go to all tab
+                      targetTab = 'all';
+                    } else {
+                      // Historical order - go to history tab
+                      targetTab = 'history';
+                    }
+                    
+                    router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=${targetTab}`);
+                    return;
+                  }
+                } catch (error) {
+                  console.error('Error fetching order data:', error);
+                }
+              }
+              
+              // Fallback: if we can't determine the order age, go to live tab
               router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=live`);
             }}
           >
