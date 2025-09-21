@@ -1,333 +1,220 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
-export async function DELETE(request: NextRequest) {
+export const runtime = 'nodejs';
+
+export async function POST(req: Request) {
   try {
-    console.log('🔍 [API] Remove table endpoint called');
-    
-    const { tableId, venueId, force = false } = await request.json();
-    console.log('🔍 [API] Request data:', { tableId, venueId, force });
+    const body = await req.json();
+    const { tableNumbers, venueId } = body;
 
-    if (!tableId || !venueId) {
-      console.log('🔍 [API] Missing required fields');
-      return NextResponse.json(
-        { error: 'Table ID and Venue ID are required' },
-        { status: 400 }
-      );
+    // Validation
+    if (!Array.isArray(tableNumbers) || tableNumbers.length === 0) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Table numbers must be a non-empty array' 
+      }, { status: 400 });
     }
 
-    const supabase = await createServerSupabase();
-    console.log('🔍 [API] Supabase client created');
+    if (!tableNumbers.every(num => Number.isInteger(num) && num > 0)) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'All table numbers must be positive integers' 
+      }, { status: 400 });
+    }
 
-    // Check if the table exists and belongs to the venue
-    console.log('🔍 [API] Checking if table exists...');
-    const { data: table, error: tableError } = await supabase
-      .from('tables')
-      .select('id, label, venue_id')
-      .eq('id', tableId)
+    if (!venueId || typeof venueId !== 'string') {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Venue ID is required' 
+      }, { status: 400 });
+    }
+
+    // Get authenticated user
+    const { user } = await createClient().auth.getUser();
+    if (!user) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Not authenticated' 
+      }, { status: 401 });
+    }
+
+    // Check venue ownership
+    const supabase = createClient();
+    const { data: venue } = await supabase
+      .from('venues')
+      .select('venue_id')
       .eq('venue_id', venueId)
-      .single();
+      .eq('owner_id', user.id)
+      .maybeSingle();
 
-    console.log('🔍 [API] Table query result:', { table, tableError });
-
-    if (tableError || !table) {
-      console.log('🔍 [API] Table not found or error:', tableError);
-      return NextResponse.json(
-        { error: 'Table not found or does not belong to this venue' },
-        { status: 404 }
-      );
+    if (!venue) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Venue not found or access denied' 
+      }, { status: 403 });
     }
 
-    // Check if the table has any active orders or reservations
-    // First, get the table number from the table record
-    // Handle merged tables (e.g., "4+6", "6 (merged with 4)", or "16 merged with 19")
-    let tableNumbers: number[] = [];
-    
-    if (table.label.includes('+')) {
-      // Old merged table format like "4+6" - extract both numbers
-      const numbers = table.label.split('+').map((part: string) => parseInt(part.replace(/\D/g, ''))).filter((n: number) => !isNaN(n));
-      tableNumbers = numbers;
-    } else if (table.label.includes(' merged with ')) {
-      // Primary merged table format like "16 merged with 19" - extract both numbers
-      const parts = table.label.split(' merged with ');
-      const firstNumber = parseInt(parts[0].replace(/\D/g, ''));
-      const secondNumber = parseInt(parts[1].replace(/\D/g, ''));
-      if (!isNaN(firstNumber) && !isNaN(secondNumber)) {
-        tableNumbers = [firstNumber, secondNumber];
-      }
-    } else if (table.label.includes('(merged with')) {
-      // Secondary merged table format like "6 (merged with 4)" - extract the first number
-      const firstNumber = parseInt(table.label.split(' ')[0].replace(/\D/g, ''));
-      if (!isNaN(firstNumber)) {
-        tableNumbers = [firstNumber];
-      }
-    } else {
-      // Regular table - extract single number
-      const tableNumber = parseInt(table.label.replace(/\D/g, '')) || null;
-      if (tableNumber) {
-        tableNumbers = [tableNumber];
-      }
-    }
-    
-    console.log('🔍 [API] Table numbers extracted:', tableNumbers);
-    console.log('🔍 [API] Checking for active orders...', { tableId, venueId, tableNumbers });
-    
-    let activeOrders: { id: string }[] = [];
-    let ordersError: any = null;
-    
-    try {
-      // Check for orders by table_number
-      const ordersQuery = supabase
-        .from('orders')
-        .select('id, table_number, order_status')
-        .eq('venue_id', venueId)
-        .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
+    // Use admin client for database operations
+    const adminSupabase = createAdminClient();
 
-      // If we have table numbers, check by table_number
-      if (tableNumbers && tableNumbers.length > 0) {
-        ordersQuery.in('table_number', tableNumbers);
-      }
+    console.log(`[TABLE REMOVAL] Starting removal of tables: ${tableNumbers.join(', ')} for venue: ${venueId}`);
 
-      const ordersResult = await ordersQuery;
-      activeOrders = ordersResult.data || [];
-      ordersError = ordersResult.error;
-      
-      console.log('🔍 [API] Active orders check result:', { 
-        activeOrders, 
-        ordersError,
-        tableNumbers,
-        tableId,
-        ordersFound: activeOrders.length
-      });
-    } catch (error) {
-      console.error('🔍 [API] Exception during active orders check:', error);
-      ordersError = error;
-    }
-
-    if (ordersError) {
-      console.error('🔍 [API] Error checking active orders:', ordersError);
-      console.error('Orders query details:', {
-        tableId,
-        venueId,
-        tableNumbers,
-        error: ordersError
-      });
-      
-      // Instead of failing completely, we'll log the error and continue with a warning
-      console.warn('🔍 [API] Proceeding with table removal despite orders check failure - this may be due to database connectivity issues');
-    }
-
-    console.log('🔍 [API] Checking for active reservations...', { tableId, venueId });
-    
-    let activeReservations: { id: string }[] = [];
-    let reservationsError: any = null;
-    
-    try {
-      const reservationsResult = await supabase
-        .from('reservations')
-        .select('id')
-        .eq('table_id', tableId)
-        .eq('venue_id', venueId)
-        .eq('status', 'BOOKED');
-      
-      activeReservations = reservationsResult.data || [];
-      reservationsError = reservationsResult.error;
-      
-      console.log('🔍 [API] Active reservations check result:', { activeReservations, reservationsError });
-    } catch (error) {
-      console.error('🔍 [API] Exception during active reservations check:', error);
-      reservationsError = error;
-    }
-
-    if (reservationsError) {
-      console.error('🔍 [API] Error checking active reservations:', reservationsError);
-      console.error('Reservations query details:', {
-        tableId,
-        venueId,
-        error: reservationsError
-      });
-      
-      // Instead of failing completely, we'll log the error and continue with a warning
-      console.warn('🔍 [API] Proceeding with table removal despite reservations check failure - this may be due to database connectivity issues');
-    }
-
-    // If there are active orders or reservations, prevent deletion
-    console.log('🔍 [API] Checking if table can be removed...', {
-      activeOrdersCount: activeOrders?.length || 0,
-      activeReservationsCount: activeReservations?.length || 0,
-      ordersCheckFailed: !!ordersError,
-      reservationsCheckFailed: !!reservationsError
-    });
-
-    // Only prevent deletion if we successfully checked and found active orders/reservations
-    // Unless force is true
-    if (!force && !ordersError && activeOrders && activeOrders.length > 0) {
-      console.log('🔍 [API] Table has active orders, preventing removal');
-      return NextResponse.json(
-        { 
-          error: 'Cannot remove table with active orders. Please close all orders first.',
-          hasActiveOrders: true
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!force && !reservationsError && activeReservations && activeReservations.length > 0) {
-      console.log('🔍 [API] Table has active reservations, preventing removal');
-      return NextResponse.json(
-        { 
-          error: 'Cannot remove table with active reservations. Please cancel all reservations first.',
-          hasActiveReservations: true
-        },
-        { status: 400 }
-      );
-    }
-
-    // If force is true and there are active orders/reservations, complete/cancel them first
-    if (force && activeOrders && activeOrders.length > 0) {
-      console.log('🔍 [API] Force mode: completing active orders before removal');
-      const { error: completeOrdersError } = await supabase
-        .from('orders')
-        .update({ 
-          order_status: 'COMPLETED',
-          updated_at: new Date().toISOString()
-        })
-        .in('id', activeOrders.map(o => o.id));
-
-      if (completeOrdersError) {
-        console.error('🔍 [API] Error completing orders in force mode:', completeOrdersError);
-        return NextResponse.json(
-          { error: 'Failed to complete active orders' },
-          { status: 500 }
-        );
-      }
-    }
-
-    if (force && activeReservations && activeReservations.length > 0) {
-      console.log('🔍 [API] Force mode: canceling active reservations before removal');
-      const { error: cancelReservationsError } = await supabase
-        .from('reservations')
-        .update({ 
-          status: 'CANCELLED',
-          updated_at: new Date().toISOString()
-        })
-        .in('id', activeReservations.map(r => r.id));
-
-      if (cancelReservationsError) {
-        console.error('🔍 [API] Error canceling reservations in force mode:', cancelReservationsError);
-        return NextResponse.json(
-          { error: 'Failed to cancel active reservations' },
-          { status: 500 }
-        );
-      }
-    }
-
-    // If both checks failed, we'll proceed with a warning
-    if (ordersError && reservationsError) {
-      console.warn('🔍 [API] Both orders and reservations checks failed - proceeding with table removal but logging the issue');
-    }
-
-    // Check if this is a merged table and find the secondary table
-    let secondaryTableId: string | null = null;
-    if (table.label.includes(' merged with ')) {
-      console.log('🔍 [API] Detected merged table, looking for secondary table...');
-      const { data: secondaryTable, error: secondaryError } = await supabase
-        .from('tables')
-        .select('id, label')
-        .eq('merged_with_table_id', tableId)
-        .eq('venue_id', venueId)
-        .single();
-      
-      if (secondaryTable && !secondaryError) {
-        secondaryTableId = secondaryTable.id;
-        console.log('🔍 [API] Found secondary table:', secondaryTable);
-      } else {
-        console.log('🔍 [API] No secondary table found or error:', secondaryError);
-      }
-    }
-
-    // Clear table references from orders before deleting the table(s)
-    console.log('🔍 [API] Clearing table references from orders before deletion...');
-    const tableIdsToClear = [tableId];
-    if (secondaryTableId) {
-      tableIdsToClear.push(secondaryTableId);
-    }
-    
-    const { error: clearTableRefsError } = await supabase
+    // Step 1: Update active orders to COMPLETED status
+    const { data: updatedOrders, error: updateError } = await adminSupabase
       .from('orders')
-      .update({ table_id: null })
-      .in('table_id', tableIdsToClear)
+      .update({ 
+        order_status: 'COMPLETED',
+        updated_at: new Date().toISOString()
+      })
+      .in('table_number', tableNumbers)
+      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
+      .eq('venue_id', venueId)
+      .select('id, table_number, order_status');
+
+    if (updateError) {
+      console.error('[TABLE REMOVAL] Error updating orders:', updateError);
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Failed to update orders: ${updateError.message}` 
+      }, { status: 500 });
+    }
+
+    // Step 2: Get table IDs first
+    const { data: tablesToRemove, error: tablesError } = await adminSupabase
+      .from('tables')
+      .select('id, label')
+      .in('label', tableNumbers.map(String))
       .eq('venue_id', venueId);
 
-    if (clearTableRefsError) {
-      console.error('🔍 [API] Error clearing table references:', clearTableRefsError);
-      return NextResponse.json(
-        { error: 'Failed to clear table references from orders' },
-        { status: 500 }
-      );
-    }
-    console.log('🔍 [API] Cleared table references from orders');
-
-    // Delete the secondary table first (if it exists)
-    if (secondaryTableId) {
-      console.log('🔍 [API] Deleting secondary merged table...');
-      const { error: deleteSecondaryError } = await supabase
-        .from('tables')
-        .delete()
-        .eq('id', secondaryTableId)
-        .eq('venue_id', venueId);
-
-      if (deleteSecondaryError) {
-        console.error('🔍 [API] Error deleting secondary table:', deleteSecondaryError);
-        return NextResponse.json(
-          { error: 'Failed to remove secondary table' },
-          { status: 500 }
-        );
-      }
-      console.log('🔍 [API] Secondary table deleted successfully');
+    if (tablesError) {
+      console.error('[TABLE REMOVAL] Error fetching tables:', tablesError);
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Failed to fetch tables: ${tablesError.message}` 
+      }, { status: 500 });
     }
 
-    // Delete the primary table
-    console.log('🔍 [API] Attempting to delete primary table...');
-    const { error: deleteError } = await supabase
+    const tableIdsToRemove = tablesToRemove?.map(t => t.id) || [];
+
+    // Step 3: Clear table_id references in orders
+    const { data: clearedOrders, error: clearError } = await adminSupabase
+      .from('orders')
+      .update({ 
+        table_id: null,
+        updated_at: new Date().toISOString()
+      })
+      .in('table_id', tableIdsToRemove)
+      .eq('venue_id', venueId)
+      .select('id, table_id');
+
+    if (clearError) {
+      console.error('[TABLE REMOVAL] Error clearing table_id references:', clearError);
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Failed to clear table references: ${clearError.message}` 
+      }, { status: 500 });
+    }
+
+    // Step 4: Remove table records
+    const { data: removedTables, error: tableError } = await adminSupabase
       .from('tables')
       .delete()
-      .eq('id', tableId)
+      .in('id', tableIdsToRemove)
+      .eq('venue_id', venueId)
+      .select('id, label');
+
+    if (tableError) {
+      console.error('[TABLE REMOVAL] Error removing tables:', tableError);
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Failed to remove tables: ${tableError.message}` 
+      }, { status: 500 });
+    }
+
+    // Step 5: Remove table sessions
+    const removedTableIds = tableIdsToRemove;
+    let removedSessions = [];
+    
+    if (removedTableIds.length > 0) {
+      const { data: sessions, error: sessionError } = await adminSupabase
+        .from('table_sessions')
+        .delete()
+        .in('table_id', removedTableIds)
+        .eq('venue_id', venueId)
+        .select('id');
+
+      if (sessionError) {
+        console.error('[TABLE REMOVAL] Error removing table sessions:', sessionError);
+        return NextResponse.json({ 
+          ok: false, 
+          error: `Failed to remove table sessions: ${sessionError.message}` 
+        }, { status: 500 });
+      }
+      
+      removedSessions = sessions || [];
+    }
+
+    // Step 6: Remove reservations
+    let removedReservations = [];
+    
+    if (removedTableIds.length > 0) {
+      const { data: reservations, error: reservationError } = await adminSupabase
+        .from('reservations')
+        .delete()
+        .in('table_id', removedTableIds)
+        .eq('venue_id', venueId)
+        .select('id');
+
+      if (reservationError) {
+        console.error('[TABLE REMOVAL] Error removing reservations:', reservationError);
+        return NextResponse.json({ 
+          ok: false, 
+          error: `Failed to remove reservations: ${reservationError.message}` 
+        }, { status: 500 });
+      }
+      
+      removedReservations = reservations || [];
+    }
+
+    // Step 7: Verification
+    const { data: remainingTables } = await adminSupabase
+      .from('tables')
+      .select('id, label')
+      .in('label', tableNumbers.map(String))
+      .eq('venue_id', venueId);
+    
+    const { data: remainingOrders } = await adminSupabase
+      .from('orders')
+      .select('table_number, order_status')
+      .in('table_number', tableNumbers)
+      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
       .eq('venue_id', venueId);
 
-    console.log('🔍 [API] Delete operation result:', { deleteError });
+    const result = {
+      ok: true,
+      message: `Successfully removed tables ${tableNumbers.join(', ')}`,
+      data: {
+        removedTables: removedTables?.length || 0,
+        updatedOrders: updatedOrders?.length || 0,
+        clearedOrders: clearedOrders?.length || 0,
+        removedSessions: removedSessions?.length || 0,
+        removedReservations: removedReservations?.length || 0,
+        remainingTables: remainingTables?.length || 0,
+        remainingActiveOrders: remainingOrders?.length || 0
+      }
+    };
 
-    if (deleteError) {
-      console.error('🔍 [API] Error deleting table:', deleteError);
-      return NextResponse.json(
-        { error: 'Failed to remove table' },
-        { status: 500 }
-      );
-    }
+    console.log(`[TABLE REMOVAL] Completed successfully:`, result.data);
 
-    console.log(`🔍 [API] Table ${table.label} (${tableId}) removed from venue ${venueId}`);
-    
-    if (secondaryTableId) {
-      console.log(`🔍 [API] Secondary table also removed`);
-    }
+    return NextResponse.json(result);
 
-    return NextResponse.json({
-      success: true,
-      message: secondaryTableId 
-        ? `Merged table "${table.label}" and its secondary table have been removed successfully`
-        : `Table "${table.label}" has been removed successfully`,
-      removedTable: {
-        id: tableId,
-        label: table.label
-      },
-      secondaryTableRemoved: !!secondaryTableId
-    });
-
-  } catch (error) {
-    console.error('Error in remove table API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error('[TABLE REMOVAL] Unexpected error:', error);
+    return NextResponse.json({ 
+      ok: false, 
+      error: error.message || 'An unexpected error occurred' 
+    }, { status: 500 });
   }
 }

@@ -365,7 +365,10 @@ export default function CustomerOrderPage() {
         if (categoryOrderResponse.ok) {
           const categoryOrderData = await categoryOrderResponse.json();
           if (categoryOrderData.categories && Array.isArray(categoryOrderData.categories)) {
+            console.log('[ORDER PAGE] Retrieved category order:', categoryOrderData.categories);
             setCategoryOrder(categoryOrderData.categories);
+          } else {
+            console.log('[ORDER PAGE] No categories found in response:', categoryOrderData);
           }
         }
       } catch (error) {
@@ -875,6 +878,7 @@ export default function CustomerOrderPage() {
                       
                       // If both categories are in stored order, sort by that order
                       if (orderA >= 0 && orderB >= 0) {
+                        console.log(`[ORDER PAGE] Sorting ${a} (index ${orderA}) vs ${b} (index ${orderB})`);
                         return orderA - orderB;
                       }
                       
@@ -886,6 +890,7 @@ export default function CustomerOrderPage() {
                     // Fallback to alphabetical sorting for categories not in stored order
                     return String(a||'').localeCompare(String(b||''));
                   });
+                  console.log('[ORDER PAGE] Final sorted categories:', sortedCats);
                   return sortedCats.map((category) => (
                     <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                       <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-4 py-3 border-b border-gray-100 dark:border-gray-700">

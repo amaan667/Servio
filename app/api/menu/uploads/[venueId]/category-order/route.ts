@@ -17,7 +17,7 @@ export async function GET(
     // Fetch the most recent menu upload to get category order
     const { data: uploadData, error } = await supabase
       .from('menu_uploads')
-      .select('categories')
+      .select('parsed_json')
       .eq('venue_id', venueId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -28,8 +28,18 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch category order' }, { status: 500 });
     }
 
+    // Extract categories from the parsed_json
+    let categories = null;
+    if (uploadData?.parsed_json && uploadData.parsed_json.categories) {
+      // Categories are stored as an array of strings in the correct PDF order
+      categories = uploadData.parsed_json.categories;
+      console.log('[CATEGORY ORDER API] Retrieved categories:', categories);
+    } else {
+      console.log('[CATEGORY ORDER API] No categories found in parsed_json:', uploadData?.parsed_json);
+    }
+
     return NextResponse.json({
-      categories: uploadData?.categories || null
+      categories: categories || null
     });
 
   } catch (error: any) {

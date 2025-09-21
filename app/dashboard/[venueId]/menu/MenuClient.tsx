@@ -59,7 +59,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       // Fetch the most recent menu upload to get category order
       const { data: uploadData, error: uploadError } = await supabase
         .from('menu_uploads')
-        .select('categories')
+        .select('parsed_json')
         .eq('venue_id', venueId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -68,10 +68,14 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       if (!error && data) {
         setMenuItems(data);
         
-        // Store the category order from the most recent upload
-        if (uploadData?.categories && Array.isArray(uploadData.categories)) {
-          setCategoryOrder(uploadData.categories);
+        // Extract categories from the parsed_json
+        if (uploadData?.parsed_json && uploadData.parsed_json.categories) {
+          // Categories are stored as an array of strings in the correct PDF order
+          const categories = uploadData.parsed_json.categories;
+          console.log('[MENU CLIENT] Retrieved categories:', categories);
+          setCategoryOrder(categories);
         } else {
+          console.log('[MENU CLIENT] No categories found in parsed_json:', uploadData?.parsed_json);
           setCategoryOrder(null);
         }
       } else if (error) {

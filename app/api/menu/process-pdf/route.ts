@@ -298,11 +298,13 @@ export async function POST(req: Request) {
         storage_path: storagePath,
         file_size: file.size,
         extracted_text_length: extractedText.length,
-        mode: loose ? 'loose' : 'strict',
-        inserted_count: inserted,
-        skipped_count: skipped,
-        total_count: total,
-        categories: validated.categories,
+        parsed_json: {
+          categories: validated.categories,
+          mode: loose ? 'loose' : 'strict',
+          inserted_count: inserted,
+          skipped_count: skipped,
+          total_count: total
+        },
         created_at: new Date().toISOString()
       });
     } catch (auditError) {
