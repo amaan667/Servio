@@ -48,7 +48,7 @@ export async function GET(
       .eq('venue_id', venueId)
       .eq('available', true)
       .order('category', { ascending: true })
-      .order('order_index', { ascending: true })
+      .order('order_index', { ascending: true, nullsFirst: true })
       .order('name', { ascending: true });
 
     if (menuError) {

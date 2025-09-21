@@ -135,7 +135,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .select("*")
         .eq("venue_id", venueUuid)
         .order("category", { ascending: true })
-        .order("order_index", { ascending: true })
+        .order("order_index", { ascending: true, nullsFirst: true })
         .order("name", { ascending: true });
 
       // If no items found with transformed ID, try with original ID
@@ -146,7 +146,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           .select("*")
           .eq("venue_id", originalVenueId)
           .order("category", { ascending: true })
-          .order("order_index", { ascending: true })
+          .order("order_index", { ascending: true, nullsFirst: true })
           .order("name", { ascending: true });
         
         if (fallbackData && fallbackData.length > 0) {
