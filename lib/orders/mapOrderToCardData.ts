@@ -122,7 +122,7 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     counter_label,
     customer: legacyOrder.customer_name ? {
       name: legacyOrder.customer_name,
-      phone: legacyOrder.customer_phone,
+      phone: legacyOrder.customer_phone || undefined,
     } : null,
     items_preview: generateItemsPreview(legacyOrder.items),
     items: legacyOrder.items,
