@@ -35,8 +35,8 @@ export interface LegacyOrder {
   session_id?: string | null;
   source?: "qr" | "counter";
   customer_name: string;
-  customer_phone?: string;
-  customer_email?: string;
+  customer_phone?: string | null;
+  customer_email?: string | null;
   order_status: string;
   total_amount: number;
   notes?: string;
@@ -52,7 +52,7 @@ export interface LegacyOrder {
     specialInstructions?: string;
   }>;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   table_label?: string;
   counter_label?: string;
   table?: { is_configured: boolean } | null;

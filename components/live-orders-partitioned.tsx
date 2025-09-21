@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Clock, CheckCircle, XCircle, AlertTriangle, History, Calendar } from "lucide-react";
-import { OrderCard, type Order } from "@/components/order-card";
+import { OrderCard } from "@/components/orders/OrderCard";
+import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
 import { useLiveOrders, useTodayOrders, useHistoryOrders } from '@/hooks/usePartitionedOrders';
 
 interface LiveOrdersPartitionedProps {
@@ -193,9 +194,19 @@ export function LiveOrdersPartitioned({ venueId, venueTimezone = 'Europe/London'
             </div>
           ) : currentData?.rows && currentData.rows.length > 0 ? (
             <div className="space-y-4">
-              {currentData.rows.map((order: Order) => (
-                <OrderCard key={order.id} order={order} onUpdate={() => {}} />
-              ))}
+              {currentData.rows.map((order: Order) => {
+                const orderForCard = mapOrderToCardData(order, 'GBP');
+                return (
+                  <OrderCard 
+                    key={order.id} 
+                    order={orderForCard}
+                    variant="auto"
+                    venueId={venueId}
+                    showActions={true}
+                    onActionComplete={() => {}}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8">

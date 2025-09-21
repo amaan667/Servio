@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/client";
 import { liveOrdersWindow } from "@/lib/dates";
 import { todayWindowForTZ } from "@/lib/time";
 import { useTabCounts } from "@/hooks/use-tab-counts";
+import { OrderCard } from '@/components/orders/OrderCard';
+import { mapOrderToCardData } from '@/lib/orders/mapOrderToCardData';
 
 type OrdersClientProps = {
   venueId: string;
@@ -23,6 +25,8 @@ interface Order {
   id: string;
   venue_id: string;
   table_number: number | null;
+  table_id?: string | null;
+  session_id?: string | null;
   customer_name: string | null;
   customer_phone?: string | null;
   customer_email?: string | null;
@@ -35,12 +39,17 @@ interface Order {
   }>;
   total_amount: number;
   created_at: string;
+  updated_at?: string;
   order_status: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED';
   payment_status?: string;
+  payment_method?: string;
   notes?: string;
   scheduled_for?: string;
   prep_lead_minutes?: number;
   source?: 'qr' | 'counter'; // Order source - qr for table orders, counter for counter orders
+  table_label?: string;
+  counter_label?: string;
+  table?: { is_configured: boolean } | null;
 }
 
 interface GroupedHistoryOrders {
@@ -98,7 +107,10 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       if (!allOrdersData || allOrdersData.length === 0) {
         const { data: fetchedData, error: fetchError } = await supabase
           .from('orders')
-          .select('*')
+          .select(`
+            *,
+            table:tables(id, label, is_configured)
+          `)
           .eq('venue_id', venueId)
           .order('created_at', { ascending: false });
           
@@ -232,61 +244,32 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
     return <div className="text-center py-8 text-gray-600">Loading orders...</div>;
   }
 
+  // Function to refresh orders - can be called from OrderCard
+  const refreshOrders = () => {
+    // Trigger a re-render by updating a state
+    setOrders(prev => [...prev]);
+  };
+
   const renderOrderCard = (order: Order) => {
-    const calculateTotal = () => {
-      let amount = order.total_amount;
-      if (!amount || amount <= 0) {
-        amount = order.items.reduce((sum, item) => {
-          const quantity = Number(item.quantity) || 0;
-          const price = Number(item.price) || 0;
-          return sum + (quantity * price);
-        }, 0);
-      }
-      return amount.toFixed(2);
+    // Transform legacy order to OrderForCard format
+    const legacyOrder = {
+      ...order,
+      table_number: order.table_number || 0, // Convert null to 0 for compatibility
+      customer_name: order.customer_name || '', // Convert null to empty string for compatibility
+      customer_phone: order.customer_phone || undefined, // Convert null to undefined for compatibility
+      customer_email: order.customer_email || undefined, // Convert null to undefined for compatibility
     };
-
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case 'PLACED': return 'bg-blue-100 text-blue-800';
-        case 'ACCEPTED': return 'bg-yellow-100 text-yellow-800';
-        case 'IN_PREP': return 'bg-orange-100 text-orange-800';
-        case 'READY': return 'bg-green-100 text-green-800';
-        case 'OUT_FOR_DELIVERY': return 'bg-purple-100 text-purple-800';
-        case 'SERVING': return 'bg-indigo-100 text-indigo-800';
-        case 'COMPLETED': return 'bg-gray-100 text-gray-800';
-        case 'CANCELLED': return 'bg-red-100 text-red-800';
-        default: return 'bg-gray-100 text-gray-800';
-      }
-    };
-
+    const orderForCard = mapOrderToCardData(legacyOrder, 'GBP');
+    
     return (
-      <div key={order.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <p className="font-medium">{order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number || 'Takeaway'}`}</p>
-              <Badge className={`text-xs ${getStatusColor(order.order_status)}`}>
-                {order.order_status.replace('_', ' ')}
-              </Badge>
-            </div>
-            <p className="text-sm text-gray-600 mb-1">{order.customer_name || 'Anonymous'}</p>
-            <p className="text-xs text-gray-500">
-              {new Date(order.created_at).toLocaleString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="font-bold text-lg">£{calculateTotal()}</p>
-            <p className="text-xs text-gray-500">
-              {order.payment_status === 'PAID' ? 'Paid' : 'Unpaid'}
-            </p>
-          </div>
-        </div>
-      </div>
+      <OrderCard
+        key={order.id}
+        order={orderForCard}
+        variant="auto"
+        venueId={venueId}
+        showActions={false} // OrdersClient doesn't show actions
+        onActionComplete={refreshOrders}
+      />
     );
   };
 

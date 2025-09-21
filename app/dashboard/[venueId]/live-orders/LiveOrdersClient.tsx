@@ -25,12 +25,16 @@ import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
 import { useTabCounts } from "@/hooks/use-tab-counts";
 import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-utils";
+import { OrderCard } from '@/components/orders/OrderCard';
+import { mapOrderToCardData } from '@/lib/orders/mapOrderToCardData';
 
 
 interface Order {
   id: string;
   venue_id: string;
   table_number: number | null;
+  table_id?: string | null;
+  session_id?: string | null;
   customer_name: string | null;
   customer_phone?: string | null;
   customer_email?: string | null;
@@ -43,12 +47,17 @@ interface Order {
   }>;
   total_amount: number;
   created_at: string;
+  updated_at?: string;
   order_status: 'PLACED' | 'ACCEPTED' | 'IN_PREP' | 'READY' | 'OUT_FOR_DELIVERY' | 'SERVING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED';
   payment_status?: string;
+  payment_method?: string;
   notes?: string;
   scheduled_for?: string;
   prep_lead_minutes?: number;
   source?: 'qr' | 'counter'; // Order source - qr for table orders, counter for counter orders
+  table_label?: string;
+  counter_label?: string;
+  table?: { is_configured: boolean } | null;
 }
 
 interface LiveOrdersClientProps {
@@ -303,7 +312,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       const { data: liveData, error: liveError } = await createClient()
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          table:tables(id, label, is_configured)
+        `)
         .eq('venue_id', venueId)
         .in('order_status', LIVE_WINDOW_STATUSES)
         .gte('created_at', window.startUtcISO)
@@ -314,7 +326,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Load earlier today orders (today but older than live window)
       const { data: allData, error: allError } = await createClient()
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          table:tables(id, label, is_configured)
+        `)
         .eq('venue_id', venueId)
         .gte('created_at', window.startUtcISO)
         .lt('created_at', liveOrdersCutoff)  // Before the live orders cutoff
@@ -323,7 +338,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Load history orders (all orders before today, not just terminal statuses)
       const { data: historyData, error: historyError } = await createClient()
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          table:tables(id, label, is_configured)
+        `)
         .eq('venue_id', venueId)
         .lt('created_at', window.startUtcISO)
         .order('created_at', { ascending: false })
@@ -844,146 +862,32 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     }
   };
 
-  const renderOrderCard = (order: Order, showActions: boolean = true) => {
-    const isCompleted = order.order_status === 'COMPLETED';
-    
-    // Calculate total amount using standardized function
-    const totalAmount = calculateOrderTotal({ total_amount: order.total_amount, items: order.items });
+  // Function to refresh orders - can be called from OrderCard
+  const refreshOrders = () => {
+    // Trigger a re-render by updating a state
+    setOrders(prev => [...prev]);
+  };
 
-    // Generate order ID for display (last 6 characters)
-    const orderId = order.id.slice(-6).toUpperCase();
-    
-    // Create items summary for POS-style display
-    const itemsSummary = order.items.map(item => 
-      `${item.quantity}x ${item.item_name}`
-    ).join(', ');
+  const renderOrderCard = (order: Order, showActions: boolean = true) => {
+    // Transform legacy order to OrderForCard format
+    const legacyOrder = {
+      ...order,
+      table_number: order.table_number || 0, // Convert null to 0 for compatibility
+      customer_name: order.customer_name || '', // Convert null to empty string for compatibility
+      customer_phone: order.customer_phone || undefined, // Convert null to undefined for compatibility
+      customer_email: order.customer_email || undefined, // Convert null to undefined for compatibility
+    };
+    const orderForCard = mapOrderToCardData(legacyOrder, 'GBP');
     
     return (
-      <article key={order.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-        {/* POS-Style Header */}
-        <div className={`px-4 py-3 border-b border-gray-200 rounded-t-lg ${
-          isCounterOrder(order) ? 'bg-orange-50' : 'bg-gray-50'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`px-3 py-1 rounded-md font-bold text-sm ${
-                isCounterOrder(order) 
-                  ? 'bg-orange-600 text-white' 
-                  : 'bg-blue-600 text-white'
-              }`}>
-                #{orderId}
-              </div>
-              <div className="text-sm text-gray-600">
-                {formatTime(order.created_at)}
-              </div>
-              {order.table_number && (
-                <div className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  isCounterOrder(order) 
-                    ? 'bg-orange-100 text-orange-700' 
-                    : 'bg-blue-100 text-blue-700'
-                }`}>
-                  {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number}`}
-                </div>
-              )}
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900">
-                £{totalAmount.toFixed(2)}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="p-4">
-          {/* Customer Info */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <User className="h-4 w-4 text-gray-500" />
-              <span className="font-semibold text-gray-900 text-base">
-                {order.customer_name || 'Guest Customer'}
-              </span>
-            </div>
-            {order.customer_phone && (
-              <div className="text-sm text-gray-600 ml-6">
-                {order.customer_phone}
-              </div>
-            )}
-          </div>
-
-          {/* Items Summary - Enhanced POS Style */}
-          <div className="mb-4">
-            <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-gray-400"></span>
-              Order Items ({order.items.length})
-            </div>
-            <div className={`rounded-md p-3 ${
-              isCounterOrder(order) ? 'bg-orange-50' : 'bg-gray-50'
-            }`}>
-              <div className="text-sm text-gray-800 leading-relaxed">
-                {itemsSummary}
-              </div>
-            </div>
-          </div>
-
-          {/* Status and Actions Row */}
-          <div className="flex items-center justify-between">
-            {/* Status Badges */}
-            <div className="flex items-center gap-2">
-              <Badge className={`${getStatusColor(order.order_status)} text-xs font-semibold px-3 py-1 rounded-full`}>
-                {order.order_status.replace('_', ' ').toLowerCase()}
-              </Badge>
-              {order.payment_status && (
-                <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs font-semibold px-3 py-1 rounded-full`}>
-                  {order.payment_status.toLowerCase()}
-                </Badge>
-              )}
-            </div>
-
-            {/* Action Buttons - Show for orders that aren't completed */}
-            {showActions && order.order_status !== 'COMPLETED' && (
-              <div className="flex items-center gap-2">
-                {order.order_status === 'PLACED' && (
-                  <Button 
-                    size="sm"
-                    onClick={() => updateOrderStatus(order.id, 'IN_PREP')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
-                  >
-                    Start Preparing
-                  </Button>
-                )}
-                {order.order_status === 'IN_PREP' && (
-                  <Button 
-                    size="sm"
-                    onClick={() => updateOrderStatus(order.id, 'READY')}
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
-                  >
-                    Mark Ready
-                  </Button>
-                )}
-                {order.order_status === 'READY' && (
-                  <Button 
-                    size="sm"
-                    onClick={() => updateOrderStatus(order.id, 'SERVING')}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
-                  >
-                    Mark Served
-                  </Button>
-                )}
-                {order.order_status === 'SERVING' && (
-                  <Button 
-                    size="sm"
-                    onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md text-sm"
-                  >
-                    Mark Complete
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </article>
+      <OrderCard
+        key={order.id}
+        order={orderForCard}
+        variant="auto"
+        venueId={venueId}
+        showActions={showActions}
+        onActionComplete={refreshOrders}
+      />
     );
   };
 

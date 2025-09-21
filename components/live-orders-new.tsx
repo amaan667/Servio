@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Clock, CheckCircle, XCircle, AlertTriangle, History, Calendar } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { OrderCard, type Order } from "@/components/order-card";
+import { OrderCard } from "@/components/orders/OrderCard";
+import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
 import { logger } from "@/lib/logger";
 import { useTabCounts } from '@/hooks/use-tab-counts';
 import { useCountsRealtime } from '@/hooks/use-counts-realtime';
@@ -607,14 +608,19 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
                   
                   {/* Orders Grid for this date */}
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {ordersByDate[dateKey].map((order) => (
-                      <OrderCard
-                        key={order.id}
-                        order={order}
-                        onUpdate={handleOrderUpdate}
-                        venueCurrency="GBP"
-                      />
-                    ))}
+                    {ordersByDate[dateKey].map((order) => {
+                      const orderForCard = mapOrderToCardData(order, 'GBP');
+                      return (
+                        <OrderCard
+                          key={order.id}
+                          order={orderForCard}
+                          variant="auto"
+                          venueId={venueId}
+                          showActions={true}
+                          onActionComplete={handleOrderUpdate}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               ));
