@@ -619,7 +619,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       console.log('[AUTH DEBUG] Category', cat, 'using alphabetical fallback');
       return {
         name: cat,
-        position: 999 + cat.toLowerCase().localeCompare(''); // Put unknown categories at the end, sorted alphabetically
+        // Put unknown categories at the end, sorted alphabetically
+        position: 999 + cat.toLowerCase().localeCompare('')
       };
     })
     .sort((a, b) => a.position - b.position);
