@@ -1,0 +1,488 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { getTableState, getMergeScenario } from '@/lib/table-states';
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { 
+      source_table_id, 
+      target_table_id, 
+      venue_id,
+      requires_confirmation = false,
+      confirmed = false
+    } = body;
+
+    console.log('[ENHANCED MERGE] Request received:', {
+      source_table_id,
+      target_table_id,
+      venue_id,
+      requires_confirmation,
+      confirmed,
+      timestamp: new Date().toISOString()
+    });
+
+    if (!source_table_id || !target_table_id || !venue_id) {
+      return NextResponse.json({ 
+        error: 'source_table_id, target_table_id, and venue_id are required' 
+      }, { status: 400 });
+    }
+
+    // Check authentication
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Use admin client for table operations
+    const supabase = createAdminClient();
+
+    // Verify venue ownership
+    const { data: venue, error: venueError } = await supabase
+      .from('venues')
+      .select('venue_id, owner_id')
+      .eq('venue_id', venue_id)
+      .eq('owner_id', user.id)
+      .single();
+
+    if (venueError || !venue) {
+      return NextResponse.json({ error: 'Access denied to venue' }, { status: 403 });
+    }
+
+    // Get both tables with their current state
+    const { data: tables, error: tablesError } = await supabase
+      .from('tables')
+      .select(`
+        *,
+        table_sessions!left (
+          id,
+          status,
+          order_id,
+          opened_at,
+          closed_at,
+          customer_name,
+          total_amount,
+          reservation_time
+        )
+      `)
+      .in('id', [source_table_id, target_table_id])
+      .eq('venue_id', venue_id);
+
+    if (tablesError || !tables || tables.length !== 2) {
+      return NextResponse.json({ error: 'Tables not found' }, { status: 404 });
+    }
+
+    const sourceTable = tables.find(t => t.id === source_table_id);
+    const targetTable = tables.find(t => t.id === target_table_id);
+
+    if (!sourceTable || !targetTable) {
+      return NextResponse.json({ error: 'One or both tables not found' }, { status: 404 });
+    }
+
+    // Get table states and merge scenario
+    const sourceState = getTableState(sourceTable);
+    const targetState = getTableState(targetTable);
+    const mergeScenario = getMergeScenario(sourceTable, targetTable);
+
+    console.log('[ENHANCED MERGE] Table states:', {
+      sourceState: sourceState.state,
+      targetState: targetState.state,
+      mergeScenario: mergeScenario.type,
+      allowed: mergeScenario.allowed
+    });
+
+    // Validate merge scenario
+    if (!mergeScenario.allowed) {
+      return NextResponse.json({ 
+        error: mergeScenario.description,
+        scenario: mergeScenario.type
+      }, { status: 400 });
+    }
+
+    // Check if confirmation is required but not provided
+    if (mergeScenario.requiresConfirmation && !confirmed) {
+      return NextResponse.json({ 
+        error: 'Confirmation required for this merge operation',
+        requires_confirmation: true,
+        warning: mergeScenario.warning,
+        scenario: mergeScenario.type
+      }, { status: 400 });
+    }
+
+    // Perform the merge based on scenario type
+    let result;
+    switch (mergeScenario.type) {
+      case 'FREE_FREE':
+        result = await mergeFreeTables(supabase, sourceTable, targetTable);
+        break;
+      case 'FREE_OCCUPIED':
+        result = await expandOccupiedTable(supabase, sourceTable, targetTable, sourceState.state === 'FREE');
+        break;
+      case 'FREE_RESERVED':
+        result = await expandReservedTable(supabase, sourceTable, targetTable, sourceState.state === 'FREE');
+        break;
+      case 'OCCUPIED_OCCUPIED':
+        result = await mergeOccupiedTables(supabase, sourceTable, targetTable);
+        break;
+      case 'RESERVED_RESERVED':
+        result = await mergeReservedTables(supabase, sourceTable, targetTable);
+        break;
+      default:
+        return NextResponse.json({ error: 'Unsupported merge scenario' }, { status: 400 });
+    }
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
+    console.log('[ENHANCED MERGE] Merge completed successfully:', result.data);
+    return NextResponse.json({ 
+      success: true, 
+      data: result.data,
+      scenario: mergeScenario.type,
+      description: mergeScenario.description
+    });
+
+  } catch (error) {
+    console.error('[ENHANCED MERGE] Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
+ * Merge two free tables
+ */
+async function mergeFreeTables(supabase: any, sourceTable: any, targetTable: any) {
+  try {
+    console.log('[ENHANCED MERGE] Merging free tables:', sourceTable.id, targetTable.id);
+    
+    // Create a new combined session for both tables
+    const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
+    
+    // Update source table to be the primary
+    const { error: sourceError } = await supabase
+      .from('tables')
+      .update({
+        label: combinedLabel,
+        seat_count: sourceTable.seat_count + targetTable.seat_count,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sourceTable.id);
+
+    if (sourceError) {
+      return { error: 'Failed to update source table' };
+    }
+
+    // Mark target table as merged with source
+    const { error: targetError } = await supabase
+      .from('tables')
+      .update({
+        merged_with_table_id: sourceTable.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', targetTable.id);
+
+    if (targetError) {
+      return { error: 'Failed to update target table' };
+    }
+
+    // Create a new FREE session for the combined table
+    const { error: sessionError } = await supabase
+      .from('table_sessions')
+      .insert({
+        table_id: sourceTable.id,
+        venue_id: sourceTable.venue_id,
+        status: 'FREE',
+        opened_at: new Date().toISOString()
+      });
+
+    if (sessionError) {
+      return { error: 'Failed to create combined session' };
+    }
+
+    return {
+      data: {
+        merged_tables: [sourceTable.id, targetTable.id],
+        combined_label: combinedLabel,
+        total_seats: sourceTable.seat_count + targetTable.seat_count
+      }
+    };
+  } catch (error) {
+    console.error('[ENHANCED MERGE] Error merging free tables:', error);
+    return { error: 'Failed to merge free tables' };
+  }
+}
+
+/**
+ * Expand occupied table with free table
+ */
+async function expandOccupiedTable(supabase: any, sourceTable: any, targetTable: any, sourceIsFree: boolean) {
+  try {
+    const freeTable = sourceIsFree ? sourceTable : targetTable;
+    const occupiedTable = sourceIsFree ? targetTable : sourceTable;
+    
+    console.log('[ENHANCED MERGE] Expanding occupied table:', {
+      occupiedTable: occupiedTable.id,
+      freeTable: freeTable.id
+    });
+
+    // Get the occupied table's session
+    const { data: occupiedSession, error: sessionError } = await supabase
+      .from('table_sessions')
+      .select('*')
+      .eq('table_id', occupiedTable.id)
+      .is('closed_at', null)
+      .single();
+
+    if (sessionError || !occupiedSession) {
+      return { error: 'No active session found for occupied table' };
+    }
+
+    // Update occupied table label to include the free table
+    const newLabel = `${occupiedTable.label} + ${freeTable.label}`;
+    const { error: labelError } = await supabase
+      .from('tables')
+      .update({
+        label: newLabel,
+        seat_count: occupiedTable.seat_count + freeTable.seat_count,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', occupiedTable.id);
+
+    if (labelError) {
+      return { error: 'Failed to update occupied table label' };
+    }
+
+    // Mark free table as merged with occupied table
+    const { error: mergeError } = await supabase
+      .from('tables')
+      .update({
+        merged_with_table_id: occupiedTable.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', freeTable.id);
+
+    if (mergeError) {
+      return { error: 'Failed to merge free table' };
+    }
+
+    return {
+      data: {
+        expanded_table: occupiedTable.id,
+        merged_table: freeTable.id,
+        combined_label: newLabel,
+        total_seats: occupiedTable.seat_count + freeTable.seat_count,
+        session_id: occupiedSession.id
+      }
+    };
+  } catch (error) {
+    console.error('[ENHANCED MERGE] Error expanding occupied table:', error);
+    return { error: 'Failed to expand occupied table' };
+  }
+}
+
+/**
+ * Expand reserved table with free table
+ */
+async function expandReservedTable(supabase: any, sourceTable: any, targetTable: any, sourceIsFree: boolean) {
+  try {
+    const freeTable = sourceIsFree ? sourceTable : targetTable;
+    const reservedTable = sourceIsFree ? targetTable : sourceTable;
+    
+    console.log('[ENHANCED MERGE] Expanding reserved table:', {
+      reservedTable: reservedTable.id,
+      freeTable: freeTable.id
+    });
+
+    // Update reserved table label to include the free table
+    const newLabel = `${reservedTable.label} + ${freeTable.label}`;
+    const { error: labelError } = await supabase
+      .from('tables')
+      .update({
+        label: newLabel,
+        seat_count: reservedTable.seat_count + freeTable.seat_count,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reservedTable.id);
+
+    if (labelError) {
+      return { error: 'Failed to update reserved table label' };
+    }
+
+    // Mark free table as merged with reserved table
+    const { error: mergeError } = await supabase
+      .from('tables')
+      .update({
+        merged_with_table_id: reservedTable.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', freeTable.id);
+
+    if (mergeError) {
+      return { error: 'Failed to merge free table' };
+    }
+
+    return {
+      data: {
+        expanded_table: reservedTable.id,
+        merged_table: freeTable.id,
+        combined_label: newLabel,
+        total_seats: reservedTable.seat_count + freeTable.seat_count
+      }
+    };
+  } catch (error) {
+    console.error('[ENHANCED MERGE] Error expanding reserved table:', error);
+    return { error: 'Failed to expand reserved table' };
+  }
+}
+
+/**
+ * Merge two occupied tables (risky operation)
+ */
+async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable: any) {
+  try {
+    console.log('[ENHANCED MERGE] Merging occupied tables:', sourceTable.id, targetTable.id);
+    
+    // Get both sessions
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('table_sessions')
+      .select('*')
+      .in('table_id', [sourceTable.id, targetTable.id])
+      .is('closed_at', null);
+
+    if (sessionsError || !sessions || sessions.length !== 2) {
+      return { error: 'Could not find both active sessions' };
+    }
+
+    const sourceSession = sessions.find(s => s.table_id === sourceTable.id);
+    const targetSession = sessions.find(s => s.table_id === targetTable.id);
+
+    if (!sourceSession || !targetSession) {
+      return { error: 'Could not find both active sessions' };
+    }
+
+    // Choose primary session (use source as primary)
+    const primarySession = sourceSession;
+    const secondarySession = targetSession;
+
+    // Combine outstanding amounts
+    const combinedTotal = (primarySession.total_amount || 0) + (secondarySession.total_amount || 0);
+
+    // Update primary session with combined data
+    const { error: primaryError } = await supabase
+      .from('table_sessions')
+      .update({
+        total_amount: combinedTotal,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', primarySession.id);
+
+    if (primaryError) {
+      return { error: 'Failed to update primary session' };
+    }
+
+    // Close secondary session
+    const { error: closeError } = await supabase
+      .from('table_sessions')
+      .update({
+        closed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', secondarySession.id);
+
+    if (closeError) {
+      return { error: 'Failed to close secondary session' };
+    }
+
+    // Update table labels
+    const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
+    
+    const { error: sourceLabelError } = await supabase
+      .from('tables')
+      .update({
+        label: combinedLabel,
+        seat_count: sourceTable.seat_count + targetTable.seat_count,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sourceTable.id);
+
+    if (sourceLabelError) {
+      return { error: 'Failed to update source table label' };
+    }
+
+    const { error: targetMergeError } = await supabase
+      .from('tables')
+      .update({
+        merged_with_table_id: sourceTable.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', targetTable.id);
+
+    if (targetMergeError) {
+      return { error: 'Failed to merge target table' };
+    }
+
+    return {
+      data: {
+        primary_table: sourceTable.id,
+        secondary_table: targetTable.id,
+        primary_session: primarySession.id,
+        combined_total: combinedTotal,
+        combined_label: combinedLabel,
+        total_seats: sourceTable.seat_count + targetTable.seat_count
+      }
+    };
+  } catch (error) {
+    console.error('[ENHANCED MERGE] Error merging occupied tables:', error);
+    return { error: 'Failed to merge occupied tables' };
+  }
+}
+
+/**
+ * Merge two reserved tables (same reservation only)
+ */
+async function mergeReservedTables(supabase: any, sourceTable: any, targetTable: any) {
+  try {
+    console.log('[ENHANCED MERGE] Merging reserved tables:', sourceTable.id, targetTable.id);
+    
+    // Update table labels
+    const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
+    
+    const { error: sourceLabelError } = await supabase
+      .from('tables')
+      .update({
+        label: combinedLabel,
+        seat_count: sourceTable.seat_count + targetTable.seat_count,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sourceTable.id);
+
+    if (sourceLabelError) {
+      return { error: 'Failed to update source table label' };
+    }
+
+    const { error: targetMergeError } = await supabase
+      .from('tables')
+      .update({
+        merged_with_table_id: sourceTable.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', targetTable.id);
+
+    if (targetMergeError) {
+      return { error: 'Failed to merge target table' };
+    }
+
+    return {
+      data: {
+        primary_table: sourceTable.id,
+        secondary_table: targetTable.id,
+        combined_label: combinedLabel,
+        total_seats: sourceTable.seat_count + targetTable.seat_count
+      }
+    };
+  } catch (error) {
+    console.error('[ENHANCED MERGE] Error merging reserved tables:', error);
+    return { error: 'Failed to merge reserved tables' };
+  }
+}

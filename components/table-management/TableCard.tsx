@@ -47,8 +47,11 @@ import { StatusPill } from './StatusPill';
 import { useTableActions } from '@/hooks/useTableActions';
 import { TableWithSession } from '@/hooks/useTablesData';
 import { TableSelectionDialog } from './TableSelectionDialog';
+import { EnhancedTableMergeDialog } from './EnhancedTableMergeDialog';
+import { MergeConfirmationDialog } from './MergeConfirmationDialog';
 import { ReservationDialog } from './ReservationDialog';
 import { AssignQRCodeModal } from './AssignQRCodeModal';
+import { useEnhancedTableMerge } from '@/hooks/useEnhancedTableMerge';
 
 interface TableCardProps {
   table: TableWithSession;
@@ -61,13 +64,21 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const [isLoading, setIsLoading] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [showEnhancedMergeDialog, setShowEnhancedMergeDialog] = useState(false);
+  const [showMergeConfirmation, setShowMergeConfirmation] = useState(false);
   const [showReservationDialog, setShowReservationDialog] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [showSeatPartyQR, setShowSeatPartyQR] = useState(false);
   const [qrData, setQrData] = useState<any>(null);
   const [occupiedTime, setOccupiedTime] = useState<string>('');
   const [noShowMessage, setNoShowMessage] = useState<string | null>(null);
+  const [pendingMergeData, setPendingMergeData] = useState<{
+    sourceTableId: string;
+    targetTableId: string;
+    mergeType: 'OCCUPIED_OCCUPIED' | 'RESERVED_RESERVED';
+  } | null>(null);
   const { executeAction, occupyTable } = useTableActions();
+  const { performMerge, validateMerge } = useEnhancedTableMerge();
 
   const handleAction = async (action: string, orderId?: string, destinationTableId?: string) => {
     try {
@@ -215,6 +226,86 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
     } catch (error) {
       console.error('[TABLE CARD] Unmerge error:', error);
       alert(`Error unmerging table: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEnhancedMerge = async (sourceTableId: string, targetTableId: string, requiresConfirmation: boolean) => {
+    try {
+      setIsLoading(true);
+      console.log('[TABLE CARD] Enhanced merge request:', {
+        sourceTableId,
+        targetTableId,
+        requiresConfirmation
+      });
+
+      if (requiresConfirmation) {
+        // Find the target table for confirmation dialog
+        const targetTable = availableTables.find(t => t.id === targetTableId);
+        if (!targetTable) {
+          throw new Error('Target table not found');
+        }
+
+        // Determine merge type based on table states
+        const sourceState = validateMerge(table, targetTable);
+        const mergeType = sourceState.scenario === 'OCCUPIED_OCCUPIED' ? 'OCCUPIED_OCCUPIED' : 'RESERVED_RESERVED';
+        
+        // Store pending merge data and show confirmation dialog
+        setPendingMergeData({
+          sourceTableId,
+          targetTableId,
+          mergeType
+        });
+        setShowMergeConfirmation(true);
+        setShowEnhancedMergeDialog(false);
+        return;
+      }
+
+      // Perform merge directly if no confirmation required
+      const result = await performMerge(sourceTableId, targetTableId, venueId, false);
+      
+      if (result.success) {
+        console.log('[TABLE CARD] Enhanced merge successful:', result.data);
+        onActionComplete?.();
+      } else {
+        console.error('[TABLE CARD] Enhanced merge failed:', result.error);
+        alert(`Merge failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('[TABLE CARD] Enhanced merge error:', error);
+      alert(`Error merging tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMergeConfirmation = async () => {
+    if (!pendingMergeData) return;
+
+    try {
+      setIsLoading(true);
+      console.log('[TABLE CARD] Confirming risky merge:', pendingMergeData);
+
+      const result = await performMerge(
+        pendingMergeData.sourceTableId,
+        pendingMergeData.targetTableId,
+        venueId,
+        true // confirmed = true
+      );
+      
+      if (result.success) {
+        console.log('[TABLE CARD] Confirmed merge successful:', result.data);
+        onActionComplete?.();
+        setShowMergeConfirmation(false);
+        setPendingMergeData(null);
+      } else {
+        console.error('[TABLE CARD] Confirmed merge failed:', result.error);
+        alert(`Merge failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('[TABLE CARD] Confirmed merge error:', error);
+      alert(`Error merging tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -464,7 +555,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
                 </DropdownMenuItem>
               ) : (
                 <>
-                  <DropdownMenuItem onClick={() => setShowMergeDialog(true)}>
+                  <DropdownMenuItem onClick={() => setShowEnhancedMergeDialog(true)}>
                     <Merge className="h-4 w-4 mr-2" />
                     Merge Table
                   </DropdownMenuItem>
@@ -642,6 +733,31 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         availableTables={availableTables as any}
         onActionComplete={onActionComplete}
       />
+
+      <EnhancedTableMergeDialog
+        isOpen={showEnhancedMergeDialog}
+        onClose={() => setShowEnhancedMergeDialog(false)}
+        sourceTable={table as any}
+        venueId={venueId}
+        availableTables={availableTables as any}
+        onActionComplete={onActionComplete}
+        onMergeConfirm={handleEnhancedMerge}
+      />
+
+      {pendingMergeData && (
+        <MergeConfirmationDialog
+          isOpen={showMergeConfirmation}
+          onClose={() => {
+            setShowMergeConfirmation(false);
+            setPendingMergeData(null);
+          }}
+          onConfirm={handleMergeConfirmation}
+          sourceTable={table as any}
+          targetTable={availableTables.find(t => t.id === pendingMergeData.targetTableId) as any}
+          mergeType={pendingMergeData.mergeType}
+          isLoading={isLoading}
+        />
+      )}
       
       <ReservationDialog
         isOpen={showReservationDialog}
