@@ -863,7 +863,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     // Transform legacy order to OrderForCard format
     const legacyOrder = {
       ...order,
-      table_number: order.table_number || 0, // Convert null to 0 for compatibility
+      table_number: order.table_number, // Keep original table_number (including null)
       customer_name: order.customer_name || '', // Convert null to empty string for compatibility
       customer_phone: order.customer_phone || undefined, // Convert null to undefined for compatibility
       customer_email: order.customer_email || undefined, // Convert null to undefined for compatibility
