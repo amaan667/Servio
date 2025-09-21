@@ -21,7 +21,7 @@ interface Table {
   status: string;
   order_id?: string;
   total_amount?: number;
-  order_status?: string;
+  order_status?: string | null;
   opened_at?: string;
 }
 
