@@ -45,7 +45,7 @@ export async function GET(req: Request) {
     let q = supabase
       .from('orders')
       .select(
-        'id, venue_id, table_number, customer_name, items, total_amount, created_at, order_status, payment_status'
+        'id, venue_id, table_number, customer_name, items, total_amount, created_at, order_status, payment_status, source'
       )
       .eq('venue_id', venueId)
       .eq('payment_status', 'PAID') // Only show paid orders

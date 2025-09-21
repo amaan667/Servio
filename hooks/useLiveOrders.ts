@@ -62,7 +62,7 @@ export function useLiveOrders(venueId: string) {
       const queryPromise = supabase
         .from('orders')
         .select(
-          'id, venue_id, table_number, customer_name, customer_phone, customer_email, order_status, payment_status, payment_method, total_amount, items, created_at, updated_at',
+          'id, venue_id, table_number, customer_name, customer_phone, customer_email, order_status, payment_status, payment_method, total_amount, items, created_at, updated_at, source',
           { count: 'exact' }
         )
         .eq('venue_id', venueId)

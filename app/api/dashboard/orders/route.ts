@@ -38,7 +38,7 @@ export async function GET(req: Request) {
     .from('orders')
     .select(`
       id, venue_id, table_number, customer_name, customer_phone, 
-      total_amount, order_status, payment_status, notes, created_at, items
+      total_amount, order_status, payment_status, notes, created_at, items, source
     `)
     .eq('venue_id', venueId)
     .eq('payment_status', 'PAID') // Only show paid orders

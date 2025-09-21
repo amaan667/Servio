@@ -861,15 +861,30 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return (
       <article key={order.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
         {/* POS-Style Header */}
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 rounded-t-lg">
+        <div className={`px-4 py-3 border-b border-gray-200 rounded-t-lg ${
+          isCounterOrder(order) ? 'bg-orange-50' : 'bg-gray-50'
+        }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-600 text-white px-3 py-1 rounded-md font-bold text-sm">
+              <div className={`px-3 py-1 rounded-md font-bold text-sm ${
+                isCounterOrder(order) 
+                  ? 'bg-orange-600 text-white' 
+                  : 'bg-blue-600 text-white'
+              }`}>
                 #{orderId}
               </div>
               <div className="text-sm text-gray-600">
                 {formatTime(order.created_at)}
               </div>
+              {order.table_number && (
+                <div className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  isCounterOrder(order) 
+                    ? 'bg-orange-100 text-orange-700' 
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {isCounterOrder(order) ? `Counter ${order.table_number}` : `Table ${order.table_number}`}
+                </div>
+              )}
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-gray-900">
@@ -885,7 +900,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-1">
               <User className="h-4 w-4 text-gray-500" />
-              <span className="font-semibold text-gray-900">
+              <span className="font-semibold text-gray-900 text-base">
                 {order.customer_name || 'Guest Customer'}
               </span>
             </div>
@@ -896,10 +911,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             )}
           </div>
 
-          {/* Items Summary - POS Style */}
+          {/* Items Summary - Enhanced POS Style */}
           <div className="mb-4">
-            <div className="text-sm font-medium text-gray-700 mb-2">Order Items:</div>
-            <div className="bg-gray-50 rounded-md p-3">
+            <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-gray-400"></span>
+              Order Items ({order.items.length})
+            </div>
+            <div className={`rounded-md p-3 ${
+              isCounterOrder(order) ? 'bg-orange-50' : 'bg-gray-50'
+            }`}>
               <div className="text-sm text-gray-800 leading-relaxed">
                 {itemsSummary}
               </div>
@@ -975,15 +995,29 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     const latestOrder = orders[orders.length - 1];
 
     return (
-      <div key={tableNumber} className="rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg">
-        {/* Table Header - POS System Style */}
-        <div className="p-6 border-b border-gray-100">
+      <div key={tableNumber} className={`rounded-xl border shadow-sm transition-all duration-200 hover:shadow-lg ${
+        isCounterOrder(earliestOrder) 
+          ? 'border-orange-200 bg-white' 
+          : 'border-gray-200 bg-white'
+      }`}>
+        {/* Table Header - Enhanced POS System Style */}
+        <div className={`p-6 border-b ${
+          isCounterOrder(earliestOrder) ? 'border-orange-100' : 'border-gray-100'
+        }`}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Time and Table Info */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-blue-600" />
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                  isCounterOrder(earliestOrder) 
+                    ? 'bg-orange-100' 
+                    : 'bg-blue-100'
+                }`}>
+                  <Clock className={`h-6 w-6 ${
+                    isCounterOrder(earliestOrder) 
+                      ? 'text-orange-600' 
+                      : 'text-blue-600'
+                  }`} />
                 </div>
                 <div>
                   <div className="text-sm font-medium text-gray-500">Order Time</div>
@@ -999,16 +1033,32 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               </div>
               
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-lg font-bold text-green-600">T</span>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                  isCounterOrder(earliestOrder) 
+                    ? 'bg-orange-100' 
+                    : 'bg-green-100'
+                }`}>
+                  <span className={`text-lg font-bold ${
+                    isCounterOrder(earliestOrder) 
+                      ? 'text-orange-600' 
+                      : 'text-green-600'
+                  }`}>
+                    {isCounterOrder(earliestOrder) ? 'C' : 'T'}
+                  </span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Table Number</div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    Table {tableNumber}
+                  <div className="text-sm font-medium text-gray-500">
+                    {isCounterOrder(earliestOrder) ? 'Counter Number' : 'Table Number'}
                   </div>
-                  <div className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium w-fit">
-                    QR Table
+                  <div className="text-2xl font-bold text-gray-900">
+                    {isCounterOrder(earliestOrder) ? `Counter ${tableNumber}` : `Table ${tableNumber}`}
+                  </div>
+                  <div className={`text-xs px-2 py-1 rounded-full font-medium w-fit ${
+                    isCounterOrder(earliestOrder) 
+                      ? 'bg-orange-50 text-orange-700' 
+                      : 'bg-blue-50 text-blue-700'
+                  }`}>
+                    {isCounterOrder(earliestOrder) ? 'Counter Order' : 'QR Table'}
                   </div>
                 </div>
               </div>
