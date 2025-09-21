@@ -30,11 +30,11 @@ export interface OrderForCard extends OrderForEntityKind {
 export interface LegacyOrder {
   id: string;
   venue_id: string;
-  table_number: number;
+  table_number: number | null;
   table_id?: string | null;
   session_id?: string | null;
   source?: "qr" | "counter";
-  customer_name: string;
+  customer_name: string | null;
   customer_phone?: string | null;
   customer_email?: string | null;
   order_status: string;
