@@ -94,8 +94,9 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [batchEditValue, setBatchEditValue] = useState<any>(null);
   const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
 
-  // Handle venue ID format - remove 'venue-' prefix if present
+  // Handle venue ID format - try both with and without 'venue-' prefix
   const venueUuid = venueId.startsWith('venue-') ? venueId.substring(6) : venueId;
+  const originalVenueId = venueId; // Keep original for fallback
   const supabase = createClient();
 
   const fetchMenu = async () => {
@@ -128,22 +129,57 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       console.log('[AUTH DEBUG] All venues in database:', allVenues);
       console.log('[AUTH DEBUG] Venues error:', venuesError);
 
-      // Now query for this specific venue
-      const { data, error } = await supabase
+      // Now query for this specific venue - try both venue ID formats
+      let { data, error } = await supabase
         .from("menu_items")
         .select("*")
         .eq("venue_id", venueUuid)
         .order("category", { ascending: true })
         .order("name", { ascending: true });
 
-      // Fetch the most recent menu upload to get category order
-      const { data: uploadData, error: uploadError } = await supabase
+      // If no items found with transformed ID, try with original ID
+      if (!data || data.length === 0) {
+        console.log('[AUTH DEBUG] No items found with transformed ID, trying original ID:', originalVenueId);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from("menu_items")
+          .select("*")
+          .eq("venue_id", originalVenueId)
+          .order("category", { ascending: true })
+          .order("name", { ascending: true });
+        
+        if (fallbackData && fallbackData.length > 0) {
+          data = fallbackData;
+          error = fallbackError;
+          console.log('[AUTH DEBUG] Found', fallbackData.length, 'items with original venue ID');
+        }
+      }
+
+      // Fetch the most recent menu upload to get category order - try both venue ID formats
+      let { data: uploadData, error: uploadError } = await supabase
         .from("menu_uploads")
         .select("parsed_json")
         .eq("venue_id", venueUuid)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      // If no upload data found with transformed ID, try with original ID
+      if (!uploadData && !uploadError) {
+        console.log('[AUTH DEBUG] No upload data found with transformed ID, trying original ID');
+        const { data: fallbackUploadData, error: fallbackUploadError } = await supabase
+          .from("menu_uploads")
+          .select("parsed_json")
+          .eq("venue_id", originalVenueId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (fallbackUploadData) {
+          uploadData = fallbackUploadData;
+          uploadError = fallbackUploadError;
+          console.log('[AUTH DEBUG] Found upload data with original venue ID');
+        }
+      }
 
       console.log('[AUTH DEBUG] Upload data for category order:', uploadData);
       console.log('[AUTH DEBUG] Upload error:', uploadError);
