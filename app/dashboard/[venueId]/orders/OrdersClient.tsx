@@ -107,10 +107,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       if (!allOrdersData || allOrdersData.length === 0) {
         const { data: fetchedData, error: fetchError } = await supabase
           .from('orders')
-          .select(`
-            *,
-            table:tables(id, is_configured)
-          `)
+          .select('*')
           .eq('venue_id', venueId)
           .order('created_at', { ascending: false });
           

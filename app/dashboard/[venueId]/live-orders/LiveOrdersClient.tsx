@@ -312,10 +312,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       const { data: liveData, error: liveError } = await createClient()
         .from('orders')
-        .select(`
-          *,
-          table:tables(id, is_configured)
-        `)
+        .select('*')
         .eq('venue_id', venueId)
         .in('order_status', LIVE_WINDOW_STATUSES)
         .gte('created_at', window.startUtcISO)
@@ -326,10 +323,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Load earlier today orders (today but older than live window)
       const { data: allData, error: allError } = await createClient()
         .from('orders')
-        .select(`
-          *,
-          table:tables(id, is_configured)
-        `)
+        .select('*')
         .eq('venue_id', venueId)
         .gte('created_at', window.startUtcISO)
         .lt('created_at', liveOrdersCutoff)  // Before the live orders cutoff
@@ -338,10 +332,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       // Load history orders (all orders before today, not just terminal statuses)
       const { data: historyData, error: historyError } = await createClient()
         .from('orders')
-        .select(`
-          *,
-          table:tables(id, is_configured)
-        `)
+        .select('*')
         .eq('venue_id', venueId)
         .lt('created_at', window.startUtcISO)
         .order('created_at', { ascending: false })
