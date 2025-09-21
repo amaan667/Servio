@@ -37,8 +37,13 @@ export async function GET(req: Request) {
   let query = supabase
     .from('orders')
     .select(`
-      id, venue_id, table_number, customer_name, customer_phone, 
-      total_amount, order_status, payment_status, notes, created_at, items, source
+      id, venue_id, table_number, table_id, customer_name, customer_phone, 
+      total_amount, order_status, payment_status, notes, created_at, items, source,
+      tables!left (
+        id,
+        label,
+        area
+      )
     `)
     .eq('venue_id', venueId)
     .in('payment_status', ['PAID', 'UNPAID']) // Show both paid and unpaid orders
@@ -71,6 +76,12 @@ export async function GET(req: Request) {
     console.error('[DASHBOARD ORDERS] Error:', error);
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
+
+  // Transform orders to include table_label
+  const transformedOrders = orders?.map(order => ({
+    ...order,
+    table_label: order.tables?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
+  })) || [];
 
   // Detailed logging for Railway deployment monitoring
   console.log('[DASHBOARD_ORDERS] ===== DASHBOARD ORDERS DEBUG =====');
@@ -137,10 +148,10 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    orders: orders || [],
+    orders: transformedOrders,
     meta: {
       activeTablesToday,
-      total: orders?.length || 0
+      total: transformedOrders?.length || 0
     }
   });
 }

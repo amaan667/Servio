@@ -5,6 +5,8 @@ export type Order = {
   id: string
   venue_id: string
   table_number: number
+  table_id?: string | null
+  table_label?: string | null
   customer_name: string
   customer_phone?: string
   customer_email?: string
@@ -21,6 +23,7 @@ export type Order = {
   }>
   created_at: string
   updated_at: string
+  source?: string
 }
 
 const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'] as const
@@ -62,7 +65,7 @@ export function useLiveOrders(venueId: string) {
       const queryPromise = supabase
         .from('orders')
         .select(
-          'id, venue_id, table_number, table_id, customer_name, customer_phone, customer_email, order_status, payment_status, payment_method, total_amount, items, created_at, updated_at, source',
+          'id, venue_id, table_number, table_id, customer_name, customer_phone, customer_email, order_status, payment_status, payment_method, total_amount, items, created_at, updated_at, source, tables!left (id, label, area)',
           { count: 'exact' }
         )
         .eq('venue_id', venueId)
@@ -80,9 +83,13 @@ export function useLiveOrders(venueId: string) {
         throw error
       }
 
-      // Always return an array (even empty) so the spinner can resolve
-      const ordersArray = data ?? []
-      setData(ordersArray)
+      // Transform orders to include table_label
+      const transformedOrders = (data ?? []).map((order: any) => ({
+        ...order,
+        table_label: order.tables?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
+      }))
+      
+      setData(transformedOrders)
       
     } catch (err: any) {
       setIsError(true)

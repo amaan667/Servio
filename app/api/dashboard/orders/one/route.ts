@@ -44,9 +44,14 @@ export async function GET(req: Request) {
     // base query: always sort by created_at DESC  ✅ (Requirement #2)
     let q = supabase
       .from('orders')
-      .select(
-        'id, venue_id, table_number, customer_name, items, total_amount, created_at, order_status, payment_status, source'
-      )
+      .select(`
+        id, venue_id, table_number, table_id, customer_name, items, total_amount, created_at, order_status, payment_status, source,
+        tables!left (
+          id,
+          label,
+          area
+        )
+      `)
       .eq('venue_id', venueId)
       .in('payment_status', ['PAID', 'UNPAID']) // Show both paid and unpaid orders
       .order('created_at', { ascending: false });
@@ -72,6 +77,12 @@ export async function GET(req: Request) {
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
+
+    // Transform orders to include table_label
+    const transformedOrders = data?.map(order => ({
+      ...order,
+      table_label: order.tables?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
+    })) || [];
 
     // Detailed logging for Railway deployment monitoring
     console.log('[TAB_FILTERING] ===== TAB SELECTION DEBUG =====');
@@ -115,8 +126,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      meta: { scope, zone, count: data?.length ?? 0 },
-      orders: (data || []) as OrderRow[],
+      meta: { scope, zone, count: transformedOrders?.length ?? 0 },
+      orders: (transformedOrders || []) as OrderRow[],
     });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
