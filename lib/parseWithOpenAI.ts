@@ -15,12 +15,14 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
       "categories": ["string", "..."]
     }`,
     "Rules:",
-    "- Preserve category names and menu order as they appear.",
+    "- CRITICAL: Preserve the EXACT order of categories as they appear in the menu from top to bottom.",
+    "- The 'categories' array must list categories in the same order they appear in the PDF.",
     "- Include only items with prices; convert £/€ to numbers (no symbols).",
     "- No trailing commas; no extra fields; no prose.",
     "- Extract EVERY single menu item with a price - do not miss any.",
     "- Use exact category names from the menu: STARTERS, MAIN COURSES, DESSERTS, DRINKS, SALADS, etc.",
     "- Be extremely thorough - extract items from all sections.",
+    "- IMPORTANT: If the menu shows 'STARTERS' first, then 'MAINS', then 'DESSERTS', the categories array should be ['STARTERS', 'MAINS', 'DESSERTS'] in that exact order.",
   ].join("\n");
 
   const user = `OCR TEXT:\n${extractedText}`;

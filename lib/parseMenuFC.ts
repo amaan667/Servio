@@ -219,7 +219,8 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
       "categories": ["string", "..."]
     }`,
     "Rules:",
-    "- Preserve category names and menu order as they appear.",
+    "- CRITICAL: Preserve the EXACT order of categories as they appear in the menu from top to bottom.",
+    "- The 'categories' array must list categories in the same order they appear in the PDF.",
     "- CRITICAL: Only include items with clear prices. If no price is visible, DO NOT include the item.",
     "- Look for price patterns like £X.XX, €X.XX, $X.XX, or just numbers.",
     "- Extract EVERY single menu item with a price - do not miss any.",
@@ -227,6 +228,7 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
     "- Be thorough - extract ALL items with prices, even if they seem incomplete.",
     "- For items without clear categories, assign a default category based on context.",
     "- DO NOT include items without prices - skip them entirely.",
+    "- IMPORTANT: If the menu shows 'STARTERS' first, then 'MAINS', then 'DESSERTS', the categories array should be ['STARTERS', 'MAINS', 'DESSERTS'] in that exact order.",
   ].join("\n");
 
   const user = `OCR TEXT:\n${sanitizeText(ocrText)}`;
