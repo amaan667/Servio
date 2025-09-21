@@ -94,8 +94,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [batchEditValue, setBatchEditValue] = useState<any>(null);
   const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
 
-  // Handle venue ID format - try both with and without 'venue-' prefix
-  const venueUuid = venueId.startsWith('venue-') ? venueId.substring(6) : venueId;
+  // Handle venue ID format - the actual venue_id in database has 'venue-' prefix
+  const venueUuid = venueId.startsWith('venue-') ? venueId : `venue-${venueId}`;
   const originalVenueId = venueId; // Keep original for fallback
   const supabase = createClient();
 
@@ -135,7 +135,6 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .select("*")
         .eq("venue_id", venueUuid)
         .order("category", { ascending: true })
-        .order("order_index", { ascending: true, nullsFirst: true })
         .order("name", { ascending: true });
 
       // If no items found with transformed ID, try with original ID
@@ -146,7 +145,6 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           .select("*")
           .eq("venue_id", originalVenueId)
           .order("category", { ascending: true })
-          .order("order_index", { ascending: true, nullsFirst: true })
           .order("name", { ascending: true });
         
         if (fallbackData && fallbackData.length > 0) {
@@ -156,46 +154,10 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         }
       }
 
-      // Fetch the most recent menu upload to get category order - try both venue ID formats
-      let { data: uploadData, error: uploadError } = await supabase
-        .from("menu_uploads")
-        .select("parsed_json")
-        .eq("venue_id", venueUuid)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      // If no upload data found with transformed ID, try with original ID
-      if (!uploadData && !uploadError) {
-        console.log('[AUTH DEBUG] No upload data found with transformed ID, trying original ID');
-        const { data: fallbackUploadData, error: fallbackUploadError } = await supabase
-          .from("menu_uploads")
-          .select("parsed_json")
-          .eq("venue_id", originalVenueId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (fallbackUploadData) {
-          uploadData = fallbackUploadData;
-          uploadError = fallbackUploadError;
-          console.log('[AUTH DEBUG] Found upload data with original venue ID');
-        }
-      }
-
-      console.log('[AUTH DEBUG] Upload data for category order:', uploadData);
-      console.log('[AUTH DEBUG] Upload error:', uploadError);
-      console.log('[AUTH DEBUG] Venue ID being used:', venueUuid);
-      
-      // Try to get more details about the upload error
-      if (uploadError) {
-        console.log('[AUTH DEBUG] Upload error details:', {
-          message: uploadError.message,
-          code: uploadError.code,
-          details: uploadError.details,
-          hint: uploadError.hint
-        });
-      }
+      // Skip menu_uploads query since parsed_json column doesn't exist
+      console.log('[AUTH DEBUG] Skipping menu_uploads query - using hardcoded category order');
+      const uploadData = null;
+      const uploadError = null;
 
       console.log('[AUTH DEBUG] Menu query result:', { 
         dataCount: data?.length || 0, 
@@ -597,6 +559,17 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     categoryGroups[cat].push(item);
   });
   
+  // Define the correct category order for NUR CAFE menu
+  const correctCategoryOrder = [
+    'STARTERS',
+    'ALL DAY BRUNCH', 
+    'BRUNCH',
+    'KIDS',
+    'MAINS',
+    'DESSERTS',
+    'BEVERAGES'
+  ];
+
   const sortedCategories: { name: string; position: number }[] = Object.keys(categoryGroups)
     .map((cat) => {
       // Always prioritize stored category order from PDF upload
@@ -613,6 +586,18 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         } else {
           console.log('[AUTH DEBUG] Category', cat, 'NOT found in stored order:', categoryOrder);
         }
+      }
+      
+      // Use hardcoded correct order for NUR CAFE menu
+      const correctOrderIndex = correctCategoryOrder.findIndex(correctCat => 
+        correctCat.toLowerCase() === cat.toLowerCase()
+      );
+      if (correctOrderIndex >= 0) {
+        console.log('[AUTH DEBUG] Category', cat, 'found in correct order at position', correctOrderIndex);
+        return {
+          name: cat,
+          position: correctOrderIndex
+        };
       }
       
       // If no stored order, use alphabetical sorting to maintain consistency

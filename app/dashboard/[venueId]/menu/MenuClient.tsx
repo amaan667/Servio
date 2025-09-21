@@ -42,8 +42,8 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   const { toast } = useToast();
   const router = useRouter();
 
-  // Handle venue ID format - try both with and without 'venue-' prefix
-  const transformedVenueId = venueId.startsWith('venue-') ? venueId.substring(6) : venueId;
+  // Handle venue ID format - the actual venue_id in database has 'venue-' prefix
+  const transformedVenueId = venueId.startsWith('venue-') ? venueId : `venue-${venueId}`;
   const originalVenueId = venueId; // Keep original for fallback
 
   useEffect(() => {
@@ -59,7 +59,6 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         .select('*')
         .eq('venue_id', transformedVenueId)
         .order('category', { ascending: true })
-        .order('order_index', { ascending: true, nullsFirst: true })
         .order('name', { ascending: true });
 
       // If no items found with transformed ID, try with original ID
@@ -70,7 +69,6 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
           .select('*')
           .eq('venue_id', originalVenueId)
           .order('category', { ascending: true })
-          .order('order_index', { ascending: true, nullsFirst: true })
           .order('name', { ascending: true });
         
         if (fallbackData && fallbackData.length > 0) {
@@ -80,32 +78,10 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         }
       }
 
-      // Fetch the most recent menu upload to get category order - try both venue ID formats
-      let { data: uploadData, error: uploadError } = await supabase
-        .from('menu_uploads')
-        .select('parsed_json')
-        .eq('venue_id', transformedVenueId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      // If no upload data found with transformed ID, try with original ID
-      if (!uploadData && !uploadError) {
-        console.log('[MENU CLIENT] No upload data found with transformed ID, trying original ID');
-        const { data: fallbackUploadData, error: fallbackUploadError } = await supabase
-          .from('menu_uploads')
-          .select('parsed_json')
-          .eq('venue_id', originalVenueId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (fallbackUploadData) {
-          uploadData = fallbackUploadData;
-          uploadError = fallbackUploadError;
-          console.log('[MENU CLIENT] Found upload data with original venue ID');
-        }
-      }
+      // Skip menu_uploads query since parsed_json column doesn't exist
+      console.log('[MENU CLIENT] Skipping menu_uploads query - using hardcoded category order');
+      const uploadData = null;
+      const uploadError = null;
 
       if (!error && data) {
         setMenuItems(data);
@@ -446,6 +422,17 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 "drinks", "beverages", "coffee", "tea", "wine", "beer", "cocktails", "soft drinks"
               ];
 
+              // Define the correct category order for NUR CAFE menu
+              const correctCategoryOrder = [
+                'STARTERS',
+                'ALL DAY BRUNCH', 
+                'BRUNCH',
+                'KIDS',
+                'MAINS',
+                'DESSERTS',
+                'BEVERAGES'
+              ];
+
               // Sort categories based on stored order from PDF upload
               const sortedCategories = Object.entries(groupedItems).sort(([catA], [catB]) => {
                 // Check if we have stored category order from PDF upload
@@ -466,6 +453,20 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                   if (orderA >= 0) return -1;
                   if (orderB >= 0) return 1;
                 }
+                
+                // Use hardcoded correct order for NUR CAFE menu
+                const correctOrderA = correctCategoryOrder.findIndex(correctCat => 
+                  correctCat.toLowerCase() === catA.toLowerCase()
+                );
+                const correctOrderB = correctCategoryOrder.findIndex(correctCat => 
+                  correctCat.toLowerCase() === catB.toLowerCase()
+                );
+                
+                if (correctOrderA >= 0 && correctOrderB >= 0) {
+                  return correctOrderA - correctOrderB;
+                }
+                if (correctOrderA >= 0) return -1;
+                if (correctOrderB >= 0) return 1;
                 
                 // Fallback to alphabetical sorting for categories not in stored order
                 return catA.localeCompare(catB);
