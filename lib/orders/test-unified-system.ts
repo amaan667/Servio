@@ -69,7 +69,7 @@ const unassignedOrder: LegacyOrder = {
   ...tableOrder,
   table_id: null,
   table: null,
-  table_label: null
+  table_label: undefined
 };
 
 const unassignedCardData = mapOrderToCardData(unassignedOrder);

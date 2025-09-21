@@ -1,6 +1,8 @@
 // Unified order types for the new OrderCard component
 
-export interface OrderForCard {
+import { OrderForEntityKind } from '@/lib/orders/entity-types';
+
+export interface OrderForCard extends OrderForEntityKind {
   id: string;
   short_id: string;
   placed_at: string; // ISO string
@@ -11,9 +13,7 @@ export interface OrderForCard {
     mode: 'online' | 'pay_at_till' | 'pay_later';
     status: 'paid' | 'unpaid' | 'failed' | 'refunded';
   };
-  table_id: string | null;
   table_label?: string | null;     // "Table 10"
-  table?: { is_configured: boolean } | null;
   counter_label?: string | null;   // "Counter A"  
   customer?: { name?: string; phone?: string } | null;
   items_preview?: string;          // precomputed "2x Burger, 1x Fries"
@@ -24,7 +24,6 @@ export interface OrderForCard {
     item_name: string;
     specialInstructions?: string;
   }>;
-  source?: 'qr_table' | 'qr_counter' | 'pos' | 'manual' | 'unknown';
 }
 
 // Legacy order type mapping for backward compatibility
