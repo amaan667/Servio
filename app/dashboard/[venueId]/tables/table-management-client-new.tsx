@@ -20,8 +20,8 @@ import { useCounterOrders, useCounterOrderCounts } from '@/hooks/useCounterOrder
 import { useTableOrders, useTableOrderCounts } from '@/hooks/useTableOrders';
 import { useDailyReset } from '@/hooks/useDailyReset';
 import { TableCardNew } from '@/components/table-management/TableCardNew';
-import { CounterOrderCard } from '@/components/table-management/CounterOrderCard';
-import { TableOrderCard } from '@/components/table-management/TableOrderCard';
+import { OrderCard } from '@/components/orders/OrderCard';
+import { mapCounterOrderToCardData } from '@/lib/orders/mapCounterOrderToCardData';
 import { TableOrderGroupCard } from '@/components/table-management/TableOrderGroupCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { ReservationsPanel } from '@/components/table-management/ReservationsPanel';
@@ -371,8 +371,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                 .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) // Oldest first
                 .map((order) => (
                 <div key={order.id} className="flex-shrink-0 w-80">
-                  <CounterOrderCard
-                    order={order}
+                  <OrderCard
+                    order={mapCounterOrderToCardData(order)}
+                    variant="counter"
                     venueId={venueId}
                     onActionComplete={handleTableActionComplete}
                   />
