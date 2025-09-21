@@ -354,8 +354,8 @@ async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable:
       return { error: 'Could not find both active sessions' };
     }
 
-    const sourceSession = sessions.find(s => s.table_id === sourceTable.id);
-    const targetSession = sessions.find(s => s.table_id === targetTable.id);
+    const sourceSession = sessions.find((s: any) => s.table_id === sourceTable.id);
+    const targetSession = sessions.find((s: any) => s.table_id === targetTable.id);
 
     if (!sourceSession || !targetSession) {
       return { error: 'Could not find both active sessions' };
