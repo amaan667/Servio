@@ -10,11 +10,8 @@ export default async function LiveOrdersPage({ params }: { params: Promise<{ ven
         
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Live Orders
-          </h1>
-          <p className="text-base sm:text-lg text-muted-foreground mt-2">
             Monitor and manage real-time orders
-          </p>
+          </h1>
         </div>
         
         <LiveOrdersClient venueId={venueId} />
