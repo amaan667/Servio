@@ -314,7 +314,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select(`
           *,
-          table:tables(id, label, is_configured)
+          table:tables(id, is_configured)
         `)
         .eq('venue_id', venueId)
         .in('order_status', LIVE_WINDOW_STATUSES)
@@ -328,7 +328,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select(`
           *,
-          table:tables(id, label, is_configured)
+          table:tables(id, is_configured)
         `)
         .eq('venue_id', venueId)
         .gte('created_at', window.startUtcISO)
@@ -340,7 +340,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .from('orders')
         .select(`
           *,
-          table:tables(id, label, is_configured)
+          table:tables(id, is_configured)
         `)
         .eq('venue_id', venueId)
         .lt('created_at', window.startUtcISO)

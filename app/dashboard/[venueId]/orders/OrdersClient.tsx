@@ -109,7 +109,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           .from('orders')
           .select(`
             *,
-            table:tables(id, label, is_configured)
+            table:tables(id, is_configured)
           `)
           .eq('venue_id', venueId)
           .order('created_at', { ascending: false });
