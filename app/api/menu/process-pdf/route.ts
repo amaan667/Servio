@@ -299,13 +299,6 @@ export async function POST(req: Request) {
         file_size: file.size,
         extracted_text_length: extractedText.length,
         category_order: validated.categories, // Store category order in the new column
-        parsed_json: {
-          categories: validated.categories,
-          mode: loose ? 'loose' : 'strict',
-          inserted_count: inserted,
-          skipped_count: skipped,
-          total_count: total
-        },
         created_at: new Date().toISOString()
       });
       console.log('[PDF_PROCESS] Stored category order:', validated.categories);
