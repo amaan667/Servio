@@ -86,7 +86,7 @@ export function useLiveOrders(venueId: string) {
       // Transform orders to include table_label
       const transformedOrders = (data ?? []).map((order: any) => ({
         ...order,
-        table_label: order.tables?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
+        table_label: (order.tables as any)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
       }))
       
       setData(transformedOrders)

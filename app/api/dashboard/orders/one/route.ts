@@ -81,7 +81,7 @@ export async function GET(req: Request) {
     // Transform orders to include table_label
     const transformedOrders = data?.map(order => ({
       ...order,
-      table_label: order.tables?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
+      table_label: (order.tables as any)?.label || (order.source === 'counter' ? `Counter ${order.table_number}` : `Table ${order.table_number}`)
     })) || [];
 
     // Detailed logging for Railway deployment monitoring
