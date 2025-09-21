@@ -180,6 +180,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           itemCount: data?.length || 0,
           categories: [...new Set(data?.map((item: any) => item.category) || [])],
         });
+        console.log('[AUTH DEBUG] Setting menu items:', data?.length || 0, 'items');
         setMenuItems(data || []);
       }
 

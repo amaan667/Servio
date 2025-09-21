@@ -70,6 +70,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
       if (!error && data) {
         setMenuItems(data);
+        console.log('[MENU CLIENT] Successfully loaded', data.length, 'menu items');
         
         // Extract categories from the parsed_json
         if (uploadData?.parsed_json && uploadData.parsed_json.categories) {
@@ -90,8 +91,10 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               details: uploadError.details,
               hint: uploadError.hint
             });
+            console.log('[MENU CLIENT] Full upload error object:', uploadError);
           }
           
+          console.log('[MENU CLIENT] Will use categoryPriority array as fallback for ordering');
           setCategoryOrder(null);
         }
       } else if (error) {
