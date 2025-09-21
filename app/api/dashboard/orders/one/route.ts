@@ -48,7 +48,7 @@ export async function GET(req: Request) {
         'id, venue_id, table_number, customer_name, items, total_amount, created_at, order_status, payment_status, source'
       )
       .eq('venue_id', venueId)
-      .eq('payment_status', 'PAID') // Only show paid orders
+      .in('payment_status', ['PAID', 'UNPAID']) // Show both paid and unpaid orders
       .order('created_at', { ascending: false });
 
     if (scope === 'live') {
