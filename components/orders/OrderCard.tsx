@@ -35,7 +35,6 @@ interface OrderCardProps {
   showActions?: boolean;
   onActionComplete?: () => void;
   className?: string;
-  id?: string;
 }
 
 export function OrderCard({ 
@@ -44,8 +43,7 @@ export function OrderCard({
   venueId,
   showActions = true,
   onActionComplete,
-  className = '',
-  id
+  className = ''
 }: OrderCardProps) {
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -221,7 +219,6 @@ export function OrderCard({
 
   return (
     <Card 
-      id={id}
       className={`rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow ${className}`}
       onMouseEnter={() => setShowHoverRemove(true)}
       onMouseLeave={() => setShowHoverRemove(false)}

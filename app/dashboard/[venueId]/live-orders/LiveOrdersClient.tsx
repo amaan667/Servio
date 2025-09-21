@@ -76,7 +76,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const searchParams = useSearchParams();
   const tableFilter = searchParams?.get('table');
   const tabParam = searchParams?.get('tab');
-  const orderParam = searchParams?.get('order');
   
   // Parse table filter - handle both "8" and "Table 8" formats
   const parsedTableFilter = tableFilter ? 
@@ -101,27 +100,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     }
   }, [tabParam]);
 
-  // Handle scrolling to specific order when orderParam is present
-  useEffect(() => {
-    if (orderParam && orders.length > 0) {
-      // Find the order with the matching ID
-      const targetOrder = orders.find(order => order.id === orderParam);
-      if (targetOrder) {
-        // Scroll to the order after a short delay to ensure it's rendered
-        setTimeout(() => {
-          const orderElement = document.getElementById(`order-${orderParam}`);
-          if (orderElement) {
-            orderElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Add a temporary highlight effect
-            orderElement.classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50');
-            setTimeout(() => {
-              orderElement.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
-            }, 3000);
-          }
-        }, 500);
-      }
-    }
-  }, [orderParam, orders]);
   
   // Constants for order statuses
   const LIVE_STATUSES = ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'];
@@ -896,7 +874,6 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     return (
       <OrderCard
         key={order.id}
-        id={`order-${order.id}`}
         order={orderForCard}
         variant="auto"
         venueId={venueId}

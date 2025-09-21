@@ -274,8 +274,10 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           <DropdownMenuItem 
             key="view-order" 
             onClick={() => {
-              // Navigate to live orders page and highlight the specific order
-              router.push(`/dashboard/${venueId}/live-orders?order=${table.order_id}&tab=live`);
+              // Use the same logic as the black "View Orders" button
+              // Filter by table and navigate to appropriate tab
+              const tableLabel = table.label;
+              router.push(`/dashboard/${venueId}/live-orders?table=${tableLabel}&tab=live`);
             }}
           >
             <Receipt className="h-4 w-4 mr-2" />
