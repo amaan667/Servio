@@ -5,7 +5,7 @@ export type EntityKind = 'table' | 'counter' | 'unassigned';
 export interface OrderForEntityKind {
   table_id: string | null;
   table?: { is_configured: boolean } | null;
-  source?: 'qr_table' | 'qr_counter' | 'pos' | 'manual' | 'unknown';
+  source?: 'qr_table' | 'qr_counter' | 'qr' | 'counter' | 'pos' | 'manual' | 'unknown';
 }
 
 /**
