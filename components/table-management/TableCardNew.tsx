@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +55,7 @@ interface TableCardNewProps {
 }
 
 export function TableCardNew({ table, venueId, onActionComplete, availableTables = [] }: TableCardNewProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
@@ -269,7 +271,13 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
     if (table.session_status === 'OCCUPIED') {
       if (table.order_id) {
         actions.push(
-          <DropdownMenuItem key="view-order">
+          <DropdownMenuItem 
+            key="view-order" 
+            onClick={() => {
+              // Navigate to live orders page and highlight the specific order
+              router.push(`/dashboard/${venueId}/live-orders?order=${table.order_id}&tab=live`);
+            }}
+          >
             <Receipt className="h-4 w-4 mr-2" />
             View Order
           </DropdownMenuItem>
