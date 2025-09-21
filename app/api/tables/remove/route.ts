@@ -32,7 +32,8 @@ export async function POST(req: Request) {
     }
 
     // Get authenticated user
-    const { user } = await createClient().auth.getUser();
+    const supabase = await createClient();
+    const { user } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ 
         ok: false, 
@@ -41,7 +42,6 @@ export async function POST(req: Request) {
     }
 
     // Check venue ownership
-    const supabase = createClient();
     const { data: venue } = await supabase
       .from('venues')
       .select('venue_id')
