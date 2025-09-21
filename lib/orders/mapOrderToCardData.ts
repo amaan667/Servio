@@ -109,7 +109,15 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
       };
     } else {
       // For table orders, use table_label if available, otherwise generate from table_number  
-      const generatedTableLabel = order.table_label || `Table ${order.table_number || '—'}`;
+      let generatedTableLabel;
+      if (order.table_label) {
+        generatedTableLabel = order.table_label;
+      } else if (order.table_number) {
+        generatedTableLabel = `Table ${order.table_number}`;
+      } else {
+        // Fallback for orders without table numbers - use a generic label
+        generatedTableLabel = 'Table Order';
+      }
       console.log(`[mapOrderToCardData DEBUG] Generated table_label: ${generatedTableLabel}`);
       return {
         table_label: generatedTableLabel,

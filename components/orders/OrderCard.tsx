@@ -65,8 +65,8 @@ export function OrderCard({
         entityKind: deriveEntityKind(order)
       });
       
-      const label = order.table_label || `Table ${order.table_id || '—'}`;
-      if (!order.table_label && order.table_id) {
+      const label = order.table_label || 'Table Order';
+      if (!order.table_label) {
         console.warn(`[OrderCard] Missing table_label for table order ${order.id}`);
       }
       return {
