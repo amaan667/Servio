@@ -311,26 +311,57 @@ export async function POST(req: Request) {
     // Note: items are embedded in orders payload in this schema; if you also mirror rows in order_items elsewhere, log success after that insert
     console.log('[ORDERS POST] order_items insert success (embedded items)');
     
-    // Update table session status to OCCUPIED if we have a table
+    // Create or update table session to show table as occupied if we have a table
     if (tableId && inserted?.[0]?.id) {
-      console.log('[ORDERS POST] Updating table session status to OCCUPIED for table:', tableId);
+      console.log('[ORDERS POST] Creating/updating table session for table:', tableId);
       
-      // Update existing table session to OCCUPIED status
-      const { error: sessionUpdateError } = await supabase
+      // First, check if there's an existing open session
+      const { data: existingSession, error: checkError } = await supabase
         .from('table_sessions')
-        .update({ 
-          status: 'OCCUPIED',
-          order_id: inserted[0].id,
-          updated_at: new Date().toISOString()
-        })
+        .select('id, status')
         .eq('table_id', tableId)
-        .is('closed_at', null);
+        .is('closed_at', null)
+        .maybeSingle();
 
-      if (sessionUpdateError) {
-        console.log('[ORDERS POST] Warning: Failed to update table session status:', sessionUpdateError);
-        // Don't fail the order creation if session update fails
+      if (checkError) {
+        console.log('[ORDERS POST] Warning: Failed to check existing table session:', checkError);
+      }
+
+      if (existingSession) {
+        // Update existing session to ORDERING status
+        console.log('[ORDERS POST] Updating existing table session to ORDERING for table:', tableId);
+        const { error: sessionUpdateError } = await supabase
+          .from('table_sessions')
+          .update({ 
+            status: 'ORDERING',
+            order_id: inserted[0].id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSession.id);
+
+        if (sessionUpdateError) {
+          console.log('[ORDERS POST] Warning: Failed to update table session status:', sessionUpdateError);
+        } else {
+          console.log('[ORDERS POST] Successfully updated table session to ORDERING for table:', tableId);
+        }
       } else {
-        console.log('[ORDERS POST] Successfully updated table session to OCCUPIED for table:', tableId);
+        // Create new session with ORDERING status
+        console.log('[ORDERS POST] Creating new table session with ORDERING status for table:', tableId);
+        const { error: sessionCreateError } = await supabase
+          .from('table_sessions')
+          .insert({
+            table_id: tableId,
+            venue_id: body.venue_id,
+            status: 'ORDERING',
+            order_id: inserted[0].id,
+            opened_at: new Date().toISOString()
+          });
+
+        if (sessionCreateError) {
+          console.log('[ORDERS POST] Warning: Failed to create table session:', sessionCreateError);
+        } else {
+          console.log('[ORDERS POST] Successfully created table session with ORDERING status for table:', tableId);
+        }
       }
     }
     
