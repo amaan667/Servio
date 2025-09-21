@@ -1432,7 +1432,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({sortedTableOrders.length})
                         </h3>
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                           {(() => {
                             const tableGroups = groupOrdersByTable(sortedTableOrders);
                             const groupedOrderIds = new Set();
@@ -1505,7 +1505,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({earlierTableOrders.length})
                         </h3>
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                           {(() => {
                             const tableGroups = groupOrdersByTable(earlierTableOrders);
                             const groupedOrderIds = new Set();
@@ -1577,7 +1577,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                         </h4>
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                           {(() => {
                             const tableOrders = orders.filter(order => !isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter));
                             const tableGroups = groupOrdersByTable(tableOrders);
