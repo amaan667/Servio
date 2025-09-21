@@ -12,28 +12,33 @@ export interface OrderForEntityKind {
  * Pure function to determine entity type based on order data
  * 
  * Rules:
- * - TABLE: table_id != null and tables.is_configured = true
- * - COUNTER/UNASSIGNED: table_id IS NULL (or is_configured = false)
+ * - TABLE: table_id != null OR source is 'qr' (QR table orders)
+ * - COUNTER: source is 'counter' OR no table_id and not QR source
  * - Never infer from UI route; only from data
  */
 export function deriveEntityKind(order: OrderForEntityKind): EntityKind {
-  // Primary rule: configured table with table_id
-  if (order.table_id && order.table?.is_configured === true) {
+  // Primary rule: if source is explicitly 'qr', it's a table order
+  if (order.source === 'qr_table' || order.source === 'qr') {
     return 'table';
   }
 
-  // Counter: no table_id or unconfigured table
-  if (!order.table_id && order.table?.is_configured === false) {
+  // If source is explicitly 'counter', it's a counter order
+  if (order.source === 'qr_counter' || order.source === 'counter') {
     return 'counter';
   }
 
-  // Generic/free QR behaves like counter
-  if (!order.table_id && !order.table) {
-    return 'counter';
+  // If we have a table_id, it's likely a table order
+  if (order.table_id) {
+    return 'table';
   }
 
-  // Fallback for legacy data with table_id but missing join
-  return 'table';
+  // If table is configured, it's a table order
+  if (order.table?.is_configured === true) {
+    return 'table';
+  }
+
+  // Default to counter for unassigned orders
+  return 'counter';
 }
 
 /**

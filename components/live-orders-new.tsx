@@ -634,13 +634,35 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
                 
                 // Group orders by type (table vs counter)
                 const tableOrders = dateOrders.filter(order => {
-                  const orderForCard = mapOrderToCardData(order, 'GBP');
-                  return deriveEntityKind(orderForCard) === 'table';
+                  // Use the original order data to determine entity kind
+                  const entityData = {
+                    table_id: order.table_id || null,
+                    table: order.table || null,
+                    source: order.source as any
+                  };
+                  const entityKind = deriveEntityKind(entityData);
+                  
+                  // Debug logging
+                  console.log(`[ORDER GROUPING] Order ${order.id}:`, {
+                    table_number: order.table_number,
+                    table_id: order.table_id,
+                    source: order.source,
+                    table: order.table,
+                    entityKind
+                  });
+                  
+                  return entityKind === 'table';
                 });
                 
                 const counterOrders = dateOrders.filter(order => {
-                  const orderForCard = mapOrderToCardData(order, 'GBP');
-                  return deriveEntityKind(orderForCard) === 'counter';
+                  // Use the original order data to determine entity kind
+                  const entityData = {
+                    table_id: order.table_id || null,
+                    table: order.table || null,
+                    source: order.source as any
+                  };
+                  const entityKind = deriveEntityKind(entityData);
+                  return entityKind === 'counter';
                 });
 
                 return (
