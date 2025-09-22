@@ -52,15 +52,15 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           console.log('[CATEGORIES] Loaded original categories from PDF:', data.originalCategories);
         }
         
-        // If no stored order, use the original categories
-        if (!storedOrder && data.originalCategories) {
-          setCategories(data.originalCategories);
-          localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.originalCategories));
-        }
-        
-        // Store in localStorage for persistence
-        if (data.categories && !storedOrder) {
-          localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.categories));
+        // If no stored order, use the original categories or current categories
+        if (!storedOrder) {
+          if (data.originalCategories && data.originalCategories.length > 0) {
+            setCategories(data.originalCategories);
+            localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.originalCategories));
+          } else if (data.categories && data.categories.length > 0) {
+            setCategories(data.categories);
+            localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.categories));
+          }
         }
       } else {
         console.error('Error loading categories:', data.error);
@@ -322,60 +322,9 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
   };
 
   const handleResetCategories = async () => {
-    if (originalCategories.length === 0) {
-      // If no original categories, reset to a default set or clear all
-      if (!confirm(`No original categories found from PDF upload. This will clear all categories and menu items. Are you sure?`)) {
-        return;
-      }
-      
-      setSaving(true);
-      try {
-        // Clear all categories and call clear menu API
-        const response = await fetch('/api/menu/clear', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ venue_id: venueId })
-        });
-
-        if (response.ok) {
-          setCategories([]);
-          localStorage.removeItem(`category-order-${venueId}`);
-          toast({
-            title: "Success",
-            description: "All categories and menu items cleared successfully",
-          });
-          onCategoriesUpdate?.([]);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to clear categories",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error('Error clearing categories:', error);
-        toast({
-          title: "Error",
-          description: "Failed to clear categories",
-          variant: "destructive",
-        });
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to reset categories to the original order from the PDF? This will remove any manually added categories and restore the original order.`)) {
-      return;
-    }
-
     setSaving(true);
     try {
-      // Reset to original categories
-      setCategories(originalCategories);
-      localStorage.setItem(`category-order-${venueId}`, JSON.stringify(originalCategories));
-      
-      // Call API to reset categories
+      // Always call the reset API to get the original categories from PDF
       const response = await fetch('/api/menu/categories/reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -383,30 +332,54 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       });
 
       if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Categories reset to original PDF order successfully",
-        });
-        onCategoriesUpdate?.(originalCategories);
+        const data = await response.json();
+        
+        if (data.originalCategories && data.originalCategories.length > 0) {
+          // Reset to original categories from PDF
+          setCategories(data.originalCategories);
+          setOriginalCategories(data.originalCategories);
+          localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.originalCategories));
+          
+          toast({
+            title: "Success",
+            description: "Categories reset to original PDF order successfully",
+          });
+          onCategoriesUpdate?.(data.originalCategories);
+        } else {
+          // No original categories found
+          toast({
+            title: "No Original Categories",
+            description: "No original categories found from PDF upload to reset to.",
+            variant: "destructive",
+          });
+        }
       } else {
-        // Still show success since we updated locally
-        toast({
-          title: "Success",
-          description: "Categories reset to original PDF order (saved locally)",
-        });
-        onCategoriesUpdate?.(originalCategories);
+        const errorData = await response.json();
+        
+        if (response.status === 404) {
+          // No original categories found
+          toast({
+            title: "No Original Categories",
+            description: "No original categories found from PDF upload to reset to.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: errorData.error || "Failed to reset categories",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Error resetting categories:', error);
-      // Still show success since we updated locally
       toast({
-        title: "Success",
-        description: "Categories reset to original PDF order (saved locally)",
+        title: "Error",
+        description: "Failed to reset categories",
+        variant: "destructive",
       });
-      onCategoriesUpdate?.(originalCategories);
     } finally {
       setSaving(false);
-    }
   };
 
   if (loading) {
