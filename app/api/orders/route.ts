@@ -155,13 +155,36 @@ export async function POST(req: Request) {
       } else {
         console.log('[ORDERS POST] Table not found, auto-creating table for QR code...');
         
+        // Get group size from group session to determine seat count
+        let seatCount = 4; // Default fallback
+        try {
+          const { data: groupSession } = await supabase
+            .from('table_group_sessions')
+            .select('total_group_size')
+            .eq('venue_id', body.venue_id)
+            .eq('table_number', body.table_number)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (groupSession && groupSession.total_group_size) {
+            seatCount = groupSession.total_group_size;
+            console.log('[ORDERS POST] Using group size for seat count:', seatCount);
+          } else {
+            console.log('[ORDERS POST] No group session found, using default seat count:', seatCount);
+          }
+        } catch (groupError) {
+          console.log('[ORDERS POST] Error fetching group session, using default seat count:', groupError);
+        }
+        
         // Insert new table - check for existing first to avoid duplicates
         const { data: newTable, error: tableCreateErr } = await supabase
           .from('tables')
           .insert({
             venue_id: body.venue_id,
             label: body.table_number.toString(),
-            seat_count: 4, // Default seat count
+            seat_count: seatCount, // Use group size or default
             area: null,
             is_active: true
           })
@@ -178,7 +201,7 @@ export async function POST(req: Request) {
           table_id: newTable.id,
           table_label: newTable.label,
           venue_id: body.venue_id,
-          seat_count: 4
+          seat_count: seatCount
         });
         tableId = newTable.id;
 

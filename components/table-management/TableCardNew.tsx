@@ -73,7 +73,11 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
 
   // Get group size for this table
   const getTableGroupSize = () => {
-    const session = groupSessions.find(gs => gs.table_number === table.table_number);
+    // Extract table number from label (e.g., "Table 5" -> 5)
+    const tableNumber = parseInt(table.label.replace(/\D/g, '')) || null;
+    if (!tableNumber) return null;
+    
+    const session = groupSessions.find(gs => gs.table_number === tableNumber);
     return session ? session.total_group_size : null;
   };
 

@@ -151,6 +151,16 @@ export async function POST(request: NextRequest) {
 
       console.log('[GROUP SESSION] Updated existing group session:', updatedSession);
 
+      // Update table seat count to match new total group size
+      await supabase
+        .from('tables')
+        .update({ 
+          seat_count: newTotalGroupSize,
+          updated_at: new Date().toISOString()
+        })
+        .eq('venue_id', venueId)
+        .eq('label', tableNumber.toString());
+
       return NextResponse.json({ 
         ok: true, 
         groupSessionId: updatedSession.id,
@@ -183,6 +193,16 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('[GROUP SESSION] Created new group session:', newSession);
+
+      // Update table seat count to match group size (if table exists)
+      await supabase
+        .from('tables')
+        .update({ 
+          seat_count: groupSize,
+          updated_at: new Date().toISOString()
+        })
+        .eq('venue_id', venueId)
+        .eq('label', tableNumber.toString());
 
       return NextResponse.json({ 
         ok: true, 
