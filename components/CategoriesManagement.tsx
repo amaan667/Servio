@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { GripVertical, Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { GripVertical, Plus, Edit, Trash2, Save, X, RotateCcw } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 interface CategoriesManagementProps {
@@ -18,6 +18,7 @@ interface CategoriesManagementProps {
 
 export function CategoriesManagement({ venueId, onCategoriesUpdate }: CategoriesManagementProps) {
   const [categories, setCategories] = useState<string[]>([]);
+  const [originalCategories, setOriginalCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -38,18 +39,27 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         const parsedOrder = JSON.parse(storedOrder);
         console.log('[CATEGORIES] Loaded from localStorage:', parsedOrder);
         setCategories(parsedOrder);
-        setLoading(false);
-        return;
       }
 
-      // Fallback to API
+      // Load original categories from PDF upload
       const response = await fetch(`/api/menu/categories?venueId=${venueId}`);
       const data = await response.json();
       
       if (response.ok) {
-        setCategories(data.categories || []);
+        // Set original categories from PDF upload
+        if (data.originalCategories && data.originalCategories.length > 0) {
+          setOriginalCategories(data.originalCategories);
+          console.log('[CATEGORIES] Loaded original categories from PDF:', data.originalCategories);
+        }
+        
+        // If no stored order, use the original categories
+        if (!storedOrder && data.originalCategories) {
+          setCategories(data.originalCategories);
+          localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.originalCategories));
+        }
+        
         // Store in localStorage for persistence
-        if (data.categories) {
+        if (data.categories && !storedOrder) {
           localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.categories));
         }
       } else {
@@ -249,6 +259,60 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
     setEditingName("");
   };
 
+  const handleResetCategories = async () => {
+    if (originalCategories.length === 0) {
+      toast({
+        title: "No Original Categories",
+        description: "No original categories found from PDF upload to reset to.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to reset categories to the original order from the PDF? This will remove any manually added categories and restore the original order.`)) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Reset to original categories
+      setCategories(originalCategories);
+      localStorage.setItem(`category-order-${venueId}`, JSON.stringify(originalCategories));
+      
+      // Call API to reset categories
+      const response = await fetch('/api/menu/categories/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venueId })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Categories reset to original PDF order successfully",
+        });
+        onCategoriesUpdate?.(originalCategories);
+      } else {
+        // Still show success since we updated locally
+        toast({
+          title: "Success",
+          description: "Categories reset to original PDF order (saved locally)",
+        });
+        onCategoriesUpdate?.(originalCategories);
+      }
+    } catch (error) {
+      console.error('Error resetting categories:', error);
+      // Still show success since we updated locally
+      toast({
+        title: "Success",
+        description: "Categories reset to original PDF order (saved locally)",
+      });
+      onCategoriesUpdate?.(originalCategories);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -267,13 +331,23 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Categories</CardTitle>
-          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Category
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={handleResetCategories}
+              disabled={saving || originalCategories.length === 0}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset
+            </Button>
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add New Category</DialogTitle>
@@ -300,6 +374,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

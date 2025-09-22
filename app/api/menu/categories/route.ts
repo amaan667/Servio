@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       categories: orderedCategories,
+      originalCategories: uploadData?.category_order || [],
       hasStoredOrder: !!uploadData?.category_order
     });
 
