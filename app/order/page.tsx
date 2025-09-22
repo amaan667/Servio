@@ -204,6 +204,7 @@ export default function CustomerOrderPage() {
   const [session, setSession] = useState<any>(null);
   const [venueName, setVenueName] = useState<string>('Our Venue');
   const [showGroupSizeModal, setShowGroupSizeModal] = useState(false);
+  const [showGroupSizePopup, setShowGroupSizePopup] = useState(false);
   const [groupSize, setGroupSize] = useState<number>(1);
   const [groupSessionId, setGroupSessionId] = useState<string | null>(null);
 
@@ -228,10 +229,16 @@ export default function CustomerOrderPage() {
             setGroupSessionId(data.groupSessionId);
             setGroupSize(data.totalGroupSize || 1);
             console.log('[ORDER PAGE] Found existing group session:', data);
+          } else {
+            // No existing group session, show modal immediately
+            console.log('[ORDER PAGE] No existing group session, showing modal');
+            setShowGroupSizeModal(true);
           }
         }
       } catch (error) {
         console.error('[ORDER PAGE] Error checking group session:', error);
+        // On error, show modal to allow user to proceed
+        setShowGroupSizeModal(true);
       }
     };
 
@@ -443,12 +450,6 @@ export default function CustomerOrderPage() {
   }, [isDemo]);
 
   const addToCart = (item: MenuItem) => {
-    // Check if we need to show group size modal
-    if (!groupSessionId && cart.length === 0) {
-      setShowGroupSizeModal(true);
-      return;
-    }
-    
     setCart((prev) => {
       const existing = prev.find((cartItem) => cartItem.id === item.id);
       if (existing) {
@@ -510,6 +511,32 @@ export default function CustomerOrderPage() {
       }
     } catch (error) {
       console.error('[ORDER PAGE] Error creating group session:', error);
+    }
+  };
+
+  const handleGroupSizeUpdate = async (newGroupSize: number) => {
+    setGroupSize(newGroupSize);
+    setShowGroupSizePopup(false);
+    
+    try {
+      // Update existing group session
+      const response = await fetch('/api/table/group-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venueId: venueSlug,
+          tableNumber: tableNumber,
+          groupSize: newGroupSize
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGroupSessionId(data.groupSessionId);
+        console.log('[ORDER PAGE] Updated group session:', data);
+      }
+    } catch (error) {
+      console.error('[ORDER PAGE] Error updating group session:', error);
     }
   };
 
@@ -875,6 +902,14 @@ export default function CustomerOrderPage() {
                       <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs">
                         Table Order
                       </Badge>
+                      {groupSessionId && (
+                        <button
+                          onClick={() => setShowGroupSizePopup(true)}
+                          className="ml-2 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+                        >
+                          {groupSize} {groupSize === 1 ? 'person' : 'people'}
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -1379,6 +1414,50 @@ export default function CustomerOrderPage() {
                   className="flex-1 bg-purple-600 hover:bg-purple-700"
                 >
                   Continue
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Group Size Popup */}
+      {showGroupSizePopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-center">Update Group Size</CardTitle>
+              <CardDescription className="text-center">
+                Current: {groupSize} {groupSize === 1 ? 'person' : 'people'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((size) => (
+                  <Button
+                    key={size}
+                    variant={groupSize === size ? "default" : "outline"}
+                    onClick={() => setGroupSize(size)}
+                    className="h-12 text-lg"
+                  >
+                    {size} {size === 1 ? "Person" : "People"}
+                  </Button>
+                ))}
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowGroupSizePopup(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleGroupSizeUpdate(groupSize)}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                >
+                  Update
                 </Button>
               </div>
             </CardContent>
