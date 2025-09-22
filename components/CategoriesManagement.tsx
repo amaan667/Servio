@@ -259,13 +259,109 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
     setEditingName("");
   };
 
-  const handleResetCategories = async () => {
-    if (originalCategories.length === 0) {
+  const handleDeleteCategory = async (categoryToDelete: string) => {
+    // Check if category is in original categories (from PDF)
+    const isOriginalCategory = originalCategories.some(cat => 
+      cat.toLowerCase() === categoryToDelete.toLowerCase()
+    );
+
+    if (isOriginalCategory) {
       toast({
-        title: "No Original Categories",
-        description: "No original categories found from PDF upload to reset to.",
+        title: "Cannot Delete",
+        description: "Cannot delete original categories from PDF upload. Use the reset button to restore original order.",
         variant: "destructive",
       });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete the category "${categoryToDelete}"? This will also delete all menu items in this category.`)) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Call API to delete category and its items
+      const response = await fetch('/api/menu/delete-category', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          venueId, 
+          categoryName: categoryToDelete 
+        })
+      });
+
+      if (response.ok) {
+        // Remove from local state
+        const newCategories = categories.filter(cat => cat !== categoryToDelete);
+        setCategories(newCategories);
+        localStorage.setItem(`category-order-${venueId}`, JSON.stringify(newCategories));
+        
+        toast({
+          title: "Success",
+          description: `Category "${categoryToDelete}" and its items deleted successfully`,
+        });
+        onCategoriesUpdate?.(newCategories);
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.error || "Failed to delete category",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetCategories = async () => {
+    if (originalCategories.length === 0) {
+      // If no original categories, reset to a default set or clear all
+      if (!confirm(`No original categories found from PDF upload. This will clear all categories and menu items. Are you sure?`)) {
+        return;
+      }
+      
+      setSaving(true);
+      try {
+        // Clear all categories and call clear menu API
+        const response = await fetch('/api/menu/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ venue_id: venueId })
+        });
+
+        if (response.ok) {
+          setCategories([]);
+          localStorage.removeItem(`category-order-${venueId}`);
+          toast({
+            title: "Success",
+            description: "All categories and menu items cleared successfully",
+          });
+          onCategoriesUpdate?.([]);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to clear categories",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error clearing categories:', error);
+        toast({
+          title: "Error",
+          description: "Failed to clear categories",
+          variant: "destructive",
+        });
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
@@ -336,7 +432,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
               size="sm" 
               variant="outline"
               onClick={handleResetCategories}
-              disabled={saving || originalCategories.length === 0}
+              disabled={saving}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset
@@ -461,6 +557,15 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
                                     disabled={saving}
                                   >
                                     <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDeleteCategory(category)}
+                                    disabled={saving}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                   <span className="text-xs text-muted-foreground">
                                     {index + 1}
