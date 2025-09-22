@@ -61,6 +61,22 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
             setCategories(data.categories);
             localStorage.setItem(`category-order-${venueId}`, JSON.stringify(data.categories));
           }
+        } else if (data.categories && data.categories.length > 0) {
+          // If we have stored order but API returned different categories, update stored order
+          const storedCategories = JSON.parse(storedOrder);
+          const apiCategories = data.categories;
+          
+          // Check if stored categories match API categories
+          const storedSet = new Set(storedCategories);
+          const apiSet = new Set(apiCategories);
+          const isEqual = storedCategories.length === apiCategories.length && 
+                         storedCategories.every((cat: string) => apiSet.has(cat));
+          
+          if (!isEqual) {
+            // Update with API categories if they're different
+            setCategories(apiCategories);
+            localStorage.setItem(`category-order-${venueId}`, JSON.stringify(apiCategories));
+          }
         }
       } else {
         console.error('Error loading categories:', data.error);
