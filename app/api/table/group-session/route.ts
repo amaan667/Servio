@@ -1,0 +1,214 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/server';
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const venueId = searchParams.get('venueId');
+    const tableNumber = searchParams.get('tableNumber');
+
+    if (!venueId || !tableNumber) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'venueId and tableNumber are required' 
+      }, { status: 400 });
+    }
+
+    console.log('[GROUP SESSION] Checking for existing group session:', { venueId, tableNumber });
+
+    const supabase = await createAdminClient();
+
+    try {
+      // Check for existing group session for this table
+      const { data: existingSession, error } = await supabase
+        .from('table_group_sessions')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('table_number', parseInt(tableNumber))
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.log('[GROUP SESSION] Table does not exist yet, returning no session');
+          return NextResponse.json({ 
+            ok: true, 
+            groupSessionId: null,
+            message: 'Table not created yet - using fallback mode'
+          });
+        }
+        console.error('[GROUP SESSION] Error fetching group session:', error);
+        return NextResponse.json({ 
+          ok: false, 
+          error: `Failed to fetch group session: ${error.message}` 
+        }, { status: 500 });
+      }
+
+      if (existingSession) {
+        console.log('[GROUP SESSION] Found existing group session:', existingSession);
+        return NextResponse.json({ 
+          ok: true, 
+          groupSessionId: existingSession.id,
+          totalGroupSize: existingSession.total_group_size,
+          currentGroupSize: existingSession.current_group_size,
+          session: existingSession
+        });
+      }
+
+      return NextResponse.json({ 
+        ok: true, 
+        groupSessionId: null 
+      });
+
+    } catch (tableError) {
+      console.log('[GROUP SESSION] Table not available, using fallback mode');
+      return NextResponse.json({ 
+        ok: true, 
+        groupSessionId: null,
+        message: 'Table not available - using fallback mode'
+      });
+    }
+
+  } catch (error) {
+    console.error('[GROUP SESSION] Error in GET group session API:', error);
+    return NextResponse.json({ 
+      ok: false, 
+      error: 'Internal server error' 
+    }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { venueId, tableNumber, groupSize } = await request.json();
+
+    if (!venueId || !tableNumber || !groupSize) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'venueId, tableNumber, and groupSize are required' 
+      }, { status: 400 });
+    }
+
+    console.log('[GROUP SESSION] Creating/updating group session:', { venueId, tableNumber, groupSize });
+
+    const supabase = await createAdminClient();
+
+    try {
+      // Check for existing group session for this table
+      const { data: existingSession, error: fetchError } = await supabase
+        .from('table_group_sessions')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('table_number', parseInt(tableNumber))
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchError) {
+        if (fetchError.message.includes('does not exist')) {
+          console.log('[GROUP SESSION] Table does not exist yet, using fallback mode');
+          return NextResponse.json({ 
+            ok: true, 
+            groupSessionId: `fallback_${venueId}_${tableNumber}`,
+            totalGroupSize: groupSize,
+            currentGroupSize: groupSize,
+            message: 'Table not created yet - using fallback mode'
+          });
+        }
+        console.error('[GROUP SESSION] Error fetching existing session:', fetchError);
+        return NextResponse.json({ 
+          ok: false, 
+          error: `Failed to fetch existing session: ${fetchError.message}` 
+        }, { status: 500 });
+      }
+
+    if (existingSession) {
+      // Update existing session with new group size
+      const newTotalGroupSize = Math.max(existingSession.total_group_size, groupSize);
+      const newCurrentGroupSize = existingSession.current_group_size + groupSize;
+
+      const { data: updatedSession, error: updateError } = await supabase
+        .from('table_group_sessions')
+        .update({ 
+          total_group_size: newTotalGroupSize,
+          current_group_size: newCurrentGroupSize,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingSession.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('[GROUP SESSION] Error updating group session:', updateError);
+        return NextResponse.json({ 
+          ok: false, 
+          error: `Failed to update group session: ${updateError.message}` 
+        }, { status: 500 });
+      }
+
+      console.log('[GROUP SESSION] Updated existing group session:', updatedSession);
+
+      return NextResponse.json({ 
+        ok: true, 
+        groupSessionId: updatedSession.id,
+        totalGroupSize: updatedSession.total_group_size,
+        currentGroupSize: updatedSession.current_group_size,
+        message: 'Joined existing group session'
+      });
+    } else {
+      // Create new group session
+      const { data: newSession, error: createError } = await supabase
+        .from('table_group_sessions')
+        .insert({
+          venue_id: venueId,
+          table_number: parseInt(tableNumber),
+          total_group_size: groupSize,
+          current_group_size: groupSize,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('[GROUP SESSION] Error creating group session:', createError);
+        return NextResponse.json({ 
+          ok: false, 
+          error: `Failed to create group session: ${createError.message}` 
+        }, { status: 500 });
+      }
+
+      console.log('[GROUP SESSION] Created new group session:', newSession);
+
+      return NextResponse.json({ 
+        ok: true, 
+        groupSessionId: newSession.id,
+        totalGroupSize: newSession.total_group_size,
+        currentGroupSize: newSession.current_group_size,
+        message: 'Created new group session'
+      });
+    }
+
+    } catch (tableError) {
+      console.log('[GROUP SESSION] Table not available, using fallback mode');
+      return NextResponse.json({ 
+        ok: true, 
+        groupSessionId: `fallback_${venueId}_${tableNumber}`,
+        totalGroupSize: groupSize,
+        currentGroupSize: groupSize,
+        message: 'Table not available - using fallback mode'
+      });
+    }
+
+  } catch (error) {
+    console.error('[GROUP SESSION] Error in POST group session API:', error);
+    return NextResponse.json({ 
+      ok: false, 
+      error: 'Internal server error' 
+    }, { status: 500 });
+  }
+}
