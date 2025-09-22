@@ -23,6 +23,29 @@ import { StatusPill } from './StatusPill';
 import { CounterOrder } from '@/hooks/useCounterOrders';
 import { calculateOrderTotal, formatPrice, normalizePrice } from '@/lib/pricing-utils';
 
+// Helper functions for order status flow
+const getNextOrderStatus = (currentStatus: string) => {
+  switch (currentStatus) {
+    case 'PLACED': return 'ACCEPTED';
+    case 'ACCEPTED': return 'IN_PREP';
+    case 'IN_PREP': return 'READY';
+    case 'READY': return 'SERVING';
+    case 'SERVING': return 'COMPLETED';
+    default: return 'COMPLETED';
+  }
+};
+
+const getNextStatusLabel = (currentStatus: string) => {
+  switch (currentStatus) {
+    case 'PLACED': return 'Accept Order';
+    case 'ACCEPTED': return 'Start Preparing';
+    case 'IN_PREP': return 'Mark Ready';
+    case 'READY': return 'Start Serving';
+    case 'SERVING': return 'Mark Complete';
+    default: return 'Mark Complete';
+  }
+};
+
 interface CounterOrderCardProps {
   order: CounterOrder;
   venueId: string;
@@ -261,21 +284,21 @@ export function CounterOrderCard({ order, venueId, onActionComplete }: CounterOr
           </div>
         )}
 
-        {/* Order Complete Actions */}
+        {/* Order Status Actions */}
         {order.payment_status === 'PAID' && order.order_status !== 'COMPLETED' && (
           <div className="mt-6 pt-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-green-600">
-                <span className="font-medium">Payment Complete</span>
+              <div className="text-sm text-blue-600">
+                <span className="font-medium">Payment Complete - Ready for next step</span>
               </div>
               <Button
                 size="sm"
-                onClick={() => handlePayment('till')} // Reuse payment function to mark as completed
+                onClick={() => handleStatusUpdate(getNextOrderStatus(order.order_status))}
                 disabled={isProcessingPayment}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                Mark Complete
+                {getNextStatusLabel(order.order_status)}
               </Button>
             </div>
           </div>

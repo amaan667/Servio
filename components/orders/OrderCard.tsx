@@ -15,6 +15,7 @@ import {
   CheckCircle,
   X,
   Split,
+  Play,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -193,21 +194,54 @@ export function OrderCard({
     }
 
     if (isPaid && !isCompleted) {
-      // Show completion action
+      // Show next status action based on current status
+      const getNextStatus = () => {
+        switch (order.order_status) {
+          case 'PLACED': return 'ACCEPTED';
+          case 'ACCEPTED': return 'IN_PREP';
+          case 'IN_PREP': return 'READY';
+          case 'READY': return 'SERVING';
+          case 'SERVING': return 'COMPLETED';
+          default: return 'COMPLETED';
+        }
+      };
+
+      const getStatusLabel = () => {
+        switch (order.order_status) {
+          case 'PLACED': return 'Accept Order';
+          case 'ACCEPTED': return 'Start Preparing';
+          case 'IN_PREP': return 'Mark Ready';
+          case 'READY': return 'Start Serving';
+          case 'SERVING': return 'Mark Complete';
+          default: return 'Mark Complete';
+        }
+      };
+
+      const getStatusIcon = () => {
+        switch (order.order_status) {
+          case 'PLACED': return <CheckCircle className="h-4 w-4 mr-1" />;
+          case 'ACCEPTED': return <Play className="h-4 w-4 mr-1" />;
+          case 'IN_PREP': return <CheckCircle className="h-4 w-4 mr-1" />;
+          case 'READY': return <User className="h-4 w-4 mr-1" />;
+          case 'SERVING': return <CheckCircle className="h-4 w-4 mr-1" />;
+          default: return <CheckCircle className="h-4 w-4 mr-1" />;
+        }
+      };
+
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="text-sm text-green-600">
-              <span className="font-medium">Payment Complete</span>
+            <div className="text-sm text-blue-600">
+              <span className="font-medium">Payment Complete - Ready for next step</span>
             </div>
             <Button
               size="sm"
-              onClick={() => handlePayment('till')} // Reuse to mark complete
+              onClick={() => handleStatusUpdate(getNextStatus())}
               disabled={isProcessing}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-blue-600 hover:bg-blue-700"
             >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Mark Complete
+              {getStatusIcon()}
+              {getStatusLabel()}
             </Button>
           </div>
         </div>
