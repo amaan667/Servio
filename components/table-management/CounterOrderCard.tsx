@@ -25,23 +25,31 @@ import { calculateOrderTotal, formatPrice, normalizePrice } from '@/lib/pricing-
 
 // Helper functions for order status flow
 const getNextOrderStatus = (currentStatus: string) => {
-  switch (currentStatus) {
-    case 'PLACED': return 'ACCEPTED';
-    case 'ACCEPTED': return 'IN_PREP';
-    case 'IN_PREP': return 'READY';
-    case 'READY': return 'SERVING';
-    case 'SERVING': return 'COMPLETED';
-    default: return 'COMPLETED';
+  // Normalize to uppercase for comparison
+  const status = currentStatus.toUpperCase();
+  switch (status) {
+    case 'PLACED':
+    case 'ACCEPTED': return 'preparing';
+    case 'IN_PREP':
+    case 'PREPARING': return 'ready';
+    case 'READY': return 'served';
+    case 'SERVING':
+    case 'SERVED': return 'completed';
+    default: return 'completed';
   }
 };
 
 const getNextStatusLabel = (currentStatus: string) => {
-  switch (currentStatus) {
-    case 'PLACED': return 'Accept Order';
+  // Normalize to uppercase for comparison
+  const status = currentStatus.toUpperCase();
+  switch (status) {
+    case 'PLACED':
     case 'ACCEPTED': return 'Start Preparing';
-    case 'IN_PREP': return 'Mark Ready';
-    case 'READY': return 'Start Serving';
-    case 'SERVING': return 'Mark Complete';
+    case 'IN_PREP':
+    case 'PREPARING': return 'Mark Ready';
+    case 'READY': return 'Mark Served';
+    case 'SERVING':
+    case 'SERVED': return 'Mark Complete';
     default: return 'Mark Complete';
   }
 };

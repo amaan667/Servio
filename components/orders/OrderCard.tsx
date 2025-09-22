@@ -197,33 +197,30 @@ export function OrderCard({
       // Show next status action based on current status
       const getNextStatus = () => {
         switch (order.order_status) {
-          case 'PLACED': return 'ACCEPTED';
-          case 'ACCEPTED': return 'IN_PREP';
-          case 'IN_PREP': return 'READY';
-          case 'READY': return 'SERVING';
-          case 'SERVING': return 'COMPLETED';
-          default: return 'COMPLETED';
+          case 'placed': return 'preparing';
+          case 'preparing': return 'ready';
+          case 'ready': return 'served';
+          case 'served': return 'completed';
+          default: return 'completed';
         }
       };
 
       const getStatusLabel = () => {
         switch (order.order_status) {
-          case 'PLACED': return 'Accept Order';
-          case 'ACCEPTED': return 'Start Preparing';
-          case 'IN_PREP': return 'Mark Ready';
-          case 'READY': return 'Start Serving';
-          case 'SERVING': return 'Mark Complete';
+          case 'placed': return 'Start Preparing';
+          case 'preparing': return 'Mark Ready';
+          case 'ready': return 'Mark Served';
+          case 'served': return 'Mark Complete';
           default: return 'Mark Complete';
         }
       };
 
       const getStatusIcon = () => {
         switch (order.order_status) {
-          case 'PLACED': return <CheckCircle className="h-4 w-4 mr-1" />;
-          case 'ACCEPTED': return <Play className="h-4 w-4 mr-1" />;
-          case 'IN_PREP': return <CheckCircle className="h-4 w-4 mr-1" />;
-          case 'READY': return <User className="h-4 w-4 mr-1" />;
-          case 'SERVING': return <CheckCircle className="h-4 w-4 mr-1" />;
+          case 'placed': return <Play className="h-4 w-4 mr-1" />;
+          case 'preparing': return <CheckCircle className="h-4 w-4 mr-1" />;
+          case 'ready': return <User className="h-4 w-4 mr-1" />;
+          case 'served': return <CheckCircle className="h-4 w-4 mr-1" />;
           default: return <CheckCircle className="h-4 w-4 mr-1" />;
         }
       };
