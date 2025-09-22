@@ -18,11 +18,14 @@ export async function GET(request: NextRequest) {
     // Get the most recent menu upload to get category order
     const { data: uploadData, error: uploadError } = await supabase
       .from('menu_uploads')
-      .select('category_order')
+      .select('category_order, created_at, id')
       .eq('venue_id', venueId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    console.log('[CATEGORIES API] Upload data for venue', venueId, ':', uploadData);
+    console.log('[CATEGORIES API] Upload error:', uploadError);
 
     if (uploadError) {
       console.error('[CATEGORIES API] Error fetching category order:', uploadError);
@@ -59,6 +62,13 @@ export async function GET(request: NextRequest) {
       const newCategories = uniqueCategories.filter(cat => !storedOrder.includes(cat));
       orderedCategories = [...storedOrder, ...newCategories];
     }
+
+    console.log('[CATEGORIES API] Returning data:', {
+      categories: orderedCategories,
+      originalCategories: uploadData?.category_order || [],
+      hasStoredOrder: !!uploadData?.category_order,
+      menuItemsCount: menuItems?.length || 0
+    });
 
     return NextResponse.json({
       categories: orderedCategories,

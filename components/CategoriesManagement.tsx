@@ -338,8 +338,15 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
   };
 
   const handleResetCategories = async () => {
+    if (!confirm('Are you sure you want to reset categories to the original order from the PDF? This will remove any manually added categories and restore the original order.')) {
+      return;
+    }
+
     setSaving(true);
     try {
+      console.log('[CATEGORIES RESET] Starting reset for venue:', venueId);
+      console.log('[CATEGORIES RESET] Current categories before reset:', categories);
+      
       // Always call the reset API to get the original categories from PDF
       const response = await fetch('/api/menu/categories/reset', {
         method: 'POST',
@@ -347,10 +354,15 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         body: JSON.stringify({ venueId })
       });
 
+      console.log('[CATEGORIES RESET] API response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('[CATEGORIES RESET] API response data:', data);
         
         if (data.originalCategories && data.originalCategories.length > 0) {
+          console.log('[CATEGORIES RESET] Setting categories to:', data.originalCategories);
+          
           // Reset to original categories from PDF
           setCategories(data.originalCategories);
           setOriginalCategories(data.originalCategories);
@@ -363,6 +375,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           onCategoriesUpdate?.(data.originalCategories);
         } else {
           // No original categories found
+          console.log('[CATEGORIES RESET] No original categories in response');
           toast({
             title: "No Original Categories",
             description: "No original categories found from PDF upload to reset to.",
@@ -371,6 +384,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         }
       } else {
         const errorData = await response.json();
+        console.log('[CATEGORIES RESET] API error response:', errorData);
         
         if (response.status === 404) {
           // No original categories found
