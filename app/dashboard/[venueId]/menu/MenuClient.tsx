@@ -85,7 +85,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         console.log('[MENU CLIENT] Successfully loaded', data.length, 'menu items');
         
         // Auto-show categories if there are menu items with categories
-        const hasCategories = data.some(item => item.category && item.category.trim());
+        const hasCategories = data.some((item: MenuItem) => item.category && item.category.trim());
         if (hasCategories) {
           setShowCategories(true);
         }
