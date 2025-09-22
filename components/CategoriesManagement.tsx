@@ -380,6 +380,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       });
     } finally {
       setSaving(false);
+    }
   };
 
   if (loading) {
