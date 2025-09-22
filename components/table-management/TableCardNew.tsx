@@ -401,18 +401,10 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-lg">{table.label}</h3>
-            <div className="flex items-center gap-1">
-              <Badge variant="secondary" className="text-xs">
-                <Users className="h-3 w-3 mr-1" />
-                {table.seat_count} seats
-              </Badge>
-              {tableGroupSize && (
-                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                  <Users className="h-3 w-3 mr-1" />
-                  {tableGroupSize} people
-                </Badge>
-              )}
-            </div>
+            <Badge variant="secondary" className="text-xs">
+              <Users className="h-3 w-3 mr-1" />
+              {table.seat_count} seats
+            </Badge>
           </div>
           
           <div className="flex items-center gap-1">
@@ -463,7 +455,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" side="bottom" className="w-48">
                 {getContextualActions()}
                 <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
                   <ArrowRight className="h-4 w-4 mr-2" />
