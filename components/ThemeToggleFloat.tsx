@@ -31,12 +31,22 @@ export default function ThemeToggleFloat() {
 
   const currentTheme = theme || 'light';
 
+  // Adjust positioning based on the page to avoid conflicts
+  const getPositionClasses = () => {
+    if (pathname?.startsWith('/order')) {
+      // On order page, position it in the top-right to avoid cart button conflict
+      return "fixed top-4 right-4";
+    }
+    // Default positioning for other pages
+    return "fixed bottom-6 right-6";
+  };
+
   return (
     <button
       type="button"
       onClick={toggle}
       aria-label="Toggle theme"
-      className="fixed bottom-6 right-6 z-50 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 dark:shadow-gray-900/50"
+      className={`${getPositionClasses()} z-50 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 dark:shadow-gray-900/50`}
     >
       <div className="flex items-center justify-center">
         {currentTheme === 'dark' ? (
