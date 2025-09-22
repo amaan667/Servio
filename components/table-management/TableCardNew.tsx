@@ -35,6 +35,7 @@ import {
 import { StatusPill } from './StatusPill';
 import { useCloseTable, TableGridItem } from '@/hooks/useTableReservations';
 import { useTableActions } from '@/hooks/useTableActions';
+import { useGroupSessions } from '@/hooks/useGroupSessions';
 import { createClient } from '@/lib/supabase/client';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
@@ -68,6 +69,15 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [mergedTableId, setMergedTableId] = useState<string | null>(null);
   const closeTable = useCloseTable();
   const { occupyTable, unmergeTable } = useTableActions();
+  const { groupSessions } = useGroupSessions(venueId);
+
+  // Get group size for this table
+  const getTableGroupSize = () => {
+    const session = groupSessions.find(gs => gs.table_number === table.table_number);
+    return session ? session.total_group_size : null;
+  };
+
+  const tableGroupSize = getTableGroupSize();
 
   // Check if this table is merged (either has other tables merged into it OR is itself a merged result)
   useEffect(() => {
@@ -387,10 +397,18 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-lg">{table.label}</h3>
-            <Badge variant="secondary" className="text-xs">
-              <Users className="h-3 w-3 mr-1" />
-              {table.seat_count} seats
-            </Badge>
+            <div className="flex items-center gap-1">
+              <Badge variant="secondary" className="text-xs">
+                <Users className="h-3 w-3 mr-1" />
+                {table.seat_count} seats
+              </Badge>
+              {tableGroupSize && (
+                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                  <Users className="h-3 w-3 mr-1" />
+                  {tableGroupSize} people
+                </Badge>
+              )}
+            </div>
           </div>
           
           <div className="flex items-center gap-1">
