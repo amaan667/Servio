@@ -269,9 +269,19 @@ export function OrderCard({
 
       const getStatusMessage = () => {
         if (isPaid) {
-          return "Payment Complete - Ready for next step";
+          return "Paid - Ready for next step";
         } else {
-          return "Order Management - Update Status";
+          // Show payment status based on payment mode
+          switch (order.payment.mode) {
+            case 'online':
+              return "Paid - Ready for next step";
+            case 'pay_later':
+              return "Paying Later - Ready for next step";
+            case 'pay_at_till':
+              return "Paying at Till - Ready for next step";
+            default:
+              return "Order Management - Update Status";
+          }
         }
       };
 
