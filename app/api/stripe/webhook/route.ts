@@ -9,9 +9,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(req: NextRequest) {
+  console.log('[STRIPE WEBHOOK] ===== WEBHOOK CALLED =====');
+  console.log('[STRIPE WEBHOOK] Request received at:', new Date().toISOString());
+  console.log('[STRIPE WEBHOOK] Request URL:', req.url);
+  console.log('[STRIPE WEBHOOK] Request method:', req.method);
+  
   try {
     const body = await req.text();
+    console.log('[STRIPE WEBHOOK] Request body length:', body.length);
+    
     const signature = req.headers.get('stripe-signature');
+    console.log('[STRIPE WEBHOOK] Signature present:', !!signature);
 
     if (!signature) {
       console.error('[STRIPE WEBHOOK] No signature provided');
@@ -57,9 +65,14 @@ export async function POST(req: NextRequest) {
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, supabase: any) {
   try {
-    console.log('[STRIPE WEBHOOK] Processing checkout.session.completed:', session.id);
+    console.log('[STRIPE WEBHOOK] ===== PROCESSING CHECKOUT SESSION COMPLETED =====');
+    console.log('[STRIPE WEBHOOK] Session ID:', session.id);
+    console.log('[STRIPE WEBHOOK] Session metadata:', JSON.stringify(session.metadata, null, 2));
+    console.log('[STRIPE WEBHOOK] Session amount total:', session.amount_total);
+    console.log('[STRIPE WEBHOOK] Session payment status:', session.payment_status);
 
     // Find the order by session ID (it should already exist from the payment flow)
+    console.log('[STRIPE WEBHOOK] Looking for existing order with session ID:', session.id);
     const { data: existingOrder, error: findError } = await supabase
       .from('orders')
       .select('id, venue_id, table_number, customer_name, customer_phone, items, total_amount, source')
@@ -75,6 +88,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
       try {
         // Parse items from metadata
         const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
+        console.log('[STRIPE WEBHOOK] Parsed items from metadata:', items);
         
         const newOrder = {
           venue_id: session.metadata?.venueId || 'default-venue',
@@ -93,6 +107,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
+
+        console.log('[STRIPE WEBHOOK] Creating new order with data:', JSON.stringify(newOrder, null, 2));
 
         const { data: createdOrder, error: createError } = await supabase
           .from('orders')
