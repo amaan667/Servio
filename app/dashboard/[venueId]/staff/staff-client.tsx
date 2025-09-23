@@ -229,6 +229,8 @@ export default function StaffClient({
   const [error, setError] = useState<string | null>(null);
   const [allShifts, setAllShifts] = useState<Shift[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [calendarView, setCalendarView] = useState<'today' | 'week' | 'month'>('month');
   const [activeTab, setActiveTab] = useState('staff');
   const [staffLoaded, setStaffLoaded] = useState(!!initialStaff && initialStaff.length > 0);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
@@ -537,19 +539,84 @@ export default function StaffClient({
   };
 
   const CalendarView = () => {
-    const days = getDaysInMonth(currentMonth);
-    const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-    const goToPreviousMonth = () => {
-      setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    // Helpers for view ranges
+    const startOfWeek = (date: Date) => {
+      const d = new Date(date);
+      const day = d.getDay();
+      d.setDate(d.getDate() - day);
+      d.setHours(0, 0, 0, 0);
+      return d;
     };
 
-    const goToNextMonth = () => {
-      setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    const endOfWeek = (date: Date) => {
+      const s = startOfWeek(date);
+      const e = new Date(s);
+      e.setDate(s.getDate() + 6);
+      e.setHours(23, 59, 59, 999);
+      return e;
+    };
+
+    const getDaysForView = () => {
+      if (calendarView === 'today') {
+        const d = new Date(currentDate);
+        d.setHours(0, 0, 0, 0);
+        const today = new Date();
+        const isToday = d.toDateString() === today.toDateString();
+        return [{ date: d, isCurrentMonth: true, isToday }];
+      }
+
+      if (calendarView === 'week') {
+        const s = startOfWeek(currentDate);
+        const days = [] as { date: Date; isCurrentMonth: boolean; isToday: boolean }[];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(s);
+          d.setDate(s.getDate() + i);
+          const today = new Date();
+          days.push({
+            date: d,
+            isCurrentMonth: d.getMonth() === currentMonth.getMonth(),
+            isToday: d.toDateString() === today.toDateString(),
+          });
+        }
+        return days;
+      }
+
+      // Month view (default)
+      return getDaysInMonth(currentMonth);
+    };
+
+    const days = getDaysForView();
+    const monthName =
+      calendarView === 'today'
+        ? currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        : calendarView === 'week'
+        ? `${startOfWeek(currentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${endOfWeek(currentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+        : currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const goBack = () => {
+      if (calendarView === 'today') {
+        setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
+      } else if (calendarView === 'week') {
+        setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7));
+      } else {
+        setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+      }
+    };
+
+    const goForward = () => {
+      if (calendarView === 'today') {
+        setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
+      } else if (calendarView === 'week') {
+        setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7));
+      } else {
+        setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+      }
     };
 
     const goToToday = () => {
-      setCurrentMonth(new Date());
+      const now = new Date();
+      setCurrentDate(now);
+      setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
     };
 
     // Helper function to split shifts into week-sized spans for proper rendering
@@ -558,6 +625,30 @@ export default function StaffClient({
       const end = new Date(shift.end_time);
       const isOvernight = start.toDateString() !== end.toDateString();
       
+      // Day view: only render shifts that overlap the selected day
+      if (calendarView === 'today') {
+        const dayStart = new Date(currentDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        // Check overlap
+        if (end < dayStart || start > dayEnd) return [] as any[];
+
+        return [{
+          id: shift.id,
+          shift,
+          weekIndex: 0,
+          colStart: 1,
+          spanCols: 1,
+          isOvernight: start.toDateString() !== end.toDateString(),
+          isFirstInSpan: true,
+          isLastInSpan: true,
+          start,
+          end
+        }];
+      }
+
       if (!isOvernight) {
         // Single day shift - render once
         const { row, colStart, spanCols } = computeGridPlacement(start, end);
@@ -577,13 +668,13 @@ export default function StaffClient({
 
       // Multi-day shift - split into week spans
       const spans = [];
-      let currentDate = new Date(start);
+      let iterDate = new Date(start);
       let weekIndex = 0;
       let isFirst = true;
 
-      while (currentDate <= end) {
-        const weekStart = new Date(currentDate);
-        const weekEnd = new Date(currentDate);
+      while (iterDate <= end) {
+        const weekStart = new Date(iterDate);
+        const weekEnd = new Date(iterDate);
         
         // Find the end of this week (Saturday)
         while (weekEnd.getDay() !== 6 && weekEnd < end) {
@@ -616,8 +707,8 @@ export default function StaffClient({
         });
 
         // Move to next week
-        currentDate = new Date(weekEnd);
-        currentDate.setDate(currentDate.getDate() + 1);
+        iterDate = new Date(weekEnd);
+        iterDate.setDate(iterDate.getDate() + 1);
         weekIndex++;
         isFirst = false;
       }
@@ -627,6 +718,23 @@ export default function StaffClient({
 
     // Helper function to compute grid placement for shifts
     const computeGridPlacement = (start: Date, end: Date) => {
+      if (calendarView === 'today') {
+        return { row: 1, colStart: 1, spanCols: 1 };
+      }
+
+      if (calendarView === 'week') {
+        const s = startOfWeek(currentDate);
+        // Column is day of week within the visible week
+        const startDate = new Date(start);
+        const colStart = startDate.getDay() + 1; // 1..7
+        // Span only within week
+        const endDate = new Date(end);
+        const endCol = Math.min(7, endDate.getDay() + 1);
+        const spanCols = Math.max(1, endCol - colStart + 1);
+        return { row: 1, colStart, spanCols };
+      }
+
+      // Month view
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const startDayOfWeek = startOfMonth.getDay();
       
@@ -638,53 +746,75 @@ export default function StaffClient({
       // Calculate column start (1-7, where 1 = Sunday)
       const colStart = startDate.getDay() + 1;
       
-      // Calculate how many columns to span - limit to actual days spanned
-      const endDate = new Date(end);
-      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-      // Ensure we don't span more than the actual days difference + 1
+      // Calculate columns using date-only difference so single-day spans 1 column
+      const startDayOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      const daysDiff = Math.floor((endDate.getTime() - startDayOnly.getTime()) / (1000 * 60 * 60 * 24));
       const spanCols = Math.min(7 - colStart + 1, Math.max(1, daysDiff + 1));
       
       return { row: weekRow + 1, colStart, spanCols };
     };
 
-    // Get all shifts for the current month view - be more inclusive
-    const getShiftsForMonth = () => {
+    // Get shifts for the active view range
+    const getShiftsForView = () => {
+      if (calendarView === 'today') {
+        const s = new Date(currentDate);
+        s.setHours(0, 0, 0, 0);
+        const e = new Date(s);
+        e.setHours(23, 59, 59, 999);
+        return allShifts.filter((shift) => new Date(shift.end_time) >= s && new Date(shift.start_time) <= e);
+      }
+
+      if (calendarView === 'week') {
+        const s = startOfWeek(currentDate);
+        const e = endOfWeek(currentDate);
+        return allShifts.filter((shift) => new Date(shift.end_time) >= s && new Date(shift.start_time) <= e);
+      }
+
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-      
-      const filteredShifts = allShifts.filter(shift => {
-        const shiftStart = new Date(shift.start_time);
-        const shiftEnd = new Date(shift.end_time);
-        
-        // Include shift if it starts, ends, or overlaps with the month view
-        const startsInMonth = shiftStart >= startOfMonth && shiftStart <= endOfMonth;
-        const endsInMonth = shiftEnd >= startOfMonth && shiftEnd <= endOfMonth;
-        const spansMonth = shiftStart < startOfMonth && shiftEnd > endOfMonth;
-        
-        return startsInMonth || endsInMonth || spansMonth;
-      });
-      
-      return filteredShifts;
+      endOfMonth.setHours(23, 59, 59, 999);
+      return allShifts.filter((shift) => new Date(shift.end_time) >= startOfMonth && new Date(shift.start_time) <= endOfMonth);
     };
 
-    const monthShifts = getShiftsForMonth();
-    const shiftSpans = monthShifts.flatMap(splitShiftIntoWeekSpans);
+    const visibleShifts = getShiftsForView();
+    const shiftSpans = visibleShifts.flatMap(splitShiftIntoWeekSpans);
 
     return (
       <Card>
-        <CardHeader>
+            <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Staff Calendar</CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={goToToday}>
-                Today
-              </Button>
-              <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={goToNextMonth}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                  <div className="hidden sm:flex rounded-md border overflow-hidden">
+                    <button
+                      className={`px-3 py-1 text-sm ${calendarView === 'today' ? 'bg-purple-600 text-white' : 'bg-background'}`}
+                      onClick={() => setCalendarView('today')}
+                    >
+                      Today
+                    </button>
+                    <button
+                      className={`px-3 py-1 text-sm border-l ${calendarView === 'week' ? 'bg-purple-600 text-white' : 'bg-background'}`}
+                      onClick={() => setCalendarView('week')}
+                    >
+                      Week
+                    </button>
+                    <button
+                      className={`px-3 py-1 text-sm border-l ${calendarView === 'month' ? 'bg-purple-600 text-white' : 'bg-background'}`}
+                      onClick={() => setCalendarView('month')}
+                    >
+                      Month
+                    </button>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={goToToday}>
+                    Today
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={goBack}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={goForward}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
             </div>
           </div>
           <div className="text-2xl font-bold text-center">{monthName}</div>
@@ -692,9 +822,9 @@ export default function StaffClient({
         <CardContent>
           <div className="relative calendar">
             {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-2">
+            <div className={`grid ${calendarView === 'today' ? 'grid-cols-1' : 'grid-cols-7'} gap-2`}>
               {/* Day headers */}
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              {calendarView !== 'today' && ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                 <div key={day} className="p-2 text-center text-sm font-semibold text-gray-600">
                   {day}
                 </div>
@@ -722,10 +852,13 @@ export default function StaffClient({
             {/* Event Overlay for Shifts */}
             <div className="event-overlay">
               {shiftSpans.map(span => {
-                const cellWidth = 100 / 7; // Each day cell width as percentage
-                const left = (span.colStart - 1) * cellWidth;
-                const width = Math.min(span.spanCols * cellWidth, 100 - left); // Don't exceed right edge
-                const top = span.weekIndex * 120 + 40; // 120px day height + 40px header offset
+                const gridCols = calendarView === 'today' ? 1 : 7;
+                const cellWidth = 100 / gridCols; // Each day cell width as percentage
+                const colStart = calendarView === 'today' ? 1 : span.colStart;
+                const left = (colStart - 1) * cellWidth;
+                const width = Math.min((calendarView === 'today' ? 1 : span.spanCols) * cellWidth, 100 - left);
+                const headerOffset = calendarView === 'today' ? 0 : 40;
+                const top = span.weekIndex * 120 + headerOffset; // align with row
                 
                 return (
                   <div
