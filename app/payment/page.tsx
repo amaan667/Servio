@@ -232,7 +232,7 @@ export default function PaymentPage() {
       }
       
       // Only redirect to success page for non-Stripe payments (Stripe redirects to checkout)
-      if (action !== 'stripe') {
+      if (action !== 'stripe' as PaymentAction) {
         setOrderNumber(orderData.order.id || "ORD-001");
         
         // Redirect to payment success page with order ID and additional data
