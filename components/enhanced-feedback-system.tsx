@@ -21,7 +21,8 @@ import {
   Clock,
   BarChart3,
   RefreshCw,
-  Plus
+  Plus,
+  MessageSquare
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { logger } from "@/lib/logger";
