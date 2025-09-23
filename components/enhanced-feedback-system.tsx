@@ -5,13 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Star, 
-  MessageSquare, 
   TrendingUp, 
   TrendingDown, 
   Filter,
@@ -20,12 +18,9 @@ import {
   ThumbsDown,
   Heart,
   AlertTriangle,
-  CheckCircle,
   Clock,
   BarChart3,
-  Send,
   RefreshCw,
-  Edit3,
   Plus
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -43,8 +38,6 @@ interface Feedback {
   sentiment_score?: number;
   sentiment_label?: 'positive' | 'negative' | 'neutral';
   category?: string;
-  response?: string;
-  responded_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -55,7 +48,6 @@ interface FeedbackStats {
   positiveSentiment: number;
   negativeSentiment: number;
   neutralSentiment: number;
-  responseRate: number;
   topCategories: Array<{ category: string; count: number; avgRating: number }>;
   ratingDistribution: Array<{ rating: number; count: number; percentage: number }>;
 }
@@ -78,8 +70,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     dateRange: '30d'
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [showResponseForm, setShowResponseForm] = useState<string | null>(null);
-  const [responseText, setResponseText] = useState('');
   const [newQuestion, setNewQuestion] = useState({
     prompt: '',
     type: 'stars' as 'stars' | 'multiple_choice' | 'paragraph',
@@ -190,8 +180,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     const negativeSentiment = sentimentCounts.negative || 0;
     const neutralSentiment = sentimentCounts.neutral || 0;
 
-    const respondedCount = feedbackData.filter(f => f.response).length;
-    const responseRate = (respondedCount / totalFeedback) * 100;
 
     // Category analysis
     const categoryStats: Record<string, { count: number; totalRating: number }> = {};
@@ -234,41 +222,11 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       positiveSentiment,
       negativeSentiment,
       neutralSentiment,
-      responseRate,
       topCategories,
       ratingDistribution
     });
   }, []);
 
-  const addResponse = async (feedbackId: string) => {
-    if (!responseText.trim()) return;
-
-    try {
-      const supabase = createClient();
-      if (!supabase) throw new Error('Supabase client not available');
-
-      const { error } = await supabase
-        .from('feedback')
-        .update({
-          response: responseText.trim(),
-          responded_at: new Date().toISOString()
-        })
-        .eq('id', feedbackId);
-
-      if (error) throw new Error(error.message);
-
-      logger.log('Feedback response added', { feedbackId, venueId });
-      
-      // Refresh feedback data
-      fetchFeedback();
-      setShowResponseForm(null);
-      setResponseText('');
-
-    } catch (err: any) {
-      logger.error('Failed to add response', { error: err.message, feedbackId });
-      setError(err.message);
-    }
-  };
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
@@ -363,17 +321,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                       </CardContent>
                     </Card>
 
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-gray-600">Response Rate</p>
-                            <p className="text-2xl font-bold">{stats.responseRate.toFixed(1)}%</p>
-                          </div>
-                          <CheckCircle className="h-8 w-8 text-purple-500" />
-                        </div>
-                      </CardContent>
-                    </Card>
 
                     <Card>
                       <CardContent className="p-4">
@@ -582,78 +529,11 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                           
                           <div className="flex items-center justify-between text-sm text-gray-500">
                             <span>{new Date(item.created_at).toLocaleDateString()}</span>
-                            {item.response && (
-                              <span className="text-green-600">✓ Responded</span>
-                            )}
                           </div>
-
-                          {/* Response Section */}
-                          {item.response && (
-                            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                              <p className="text-sm font-medium text-blue-900 mb-1">Your Response:</p>
-                              <p className="text-sm text-blue-800">{item.response}</p>
-                              <p className="text-xs text-blue-600 mt-1">
-                                {new Date(item.responded_at!).toLocaleDateString()}
-                              </p>
-                            </div>
-                          )}
                         </div>
 
-                        <div className="ml-4">
-                          {!item.response ? (
-                            <Button
-                              size="sm"
-                              onClick={() => setShowResponseForm(item.id)}
-                              variant="outline"
-                            >
-                              <MessageSquare className="h-4 w-4 mr-1" />
-                              Respond
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => setShowResponseForm(item.id)}
-                              variant="outline"
-                            >
-                              <Edit3 className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                          )}
-                        </div>
                       </div>
 
-                      {/* Response Form */}
-                      {showResponseForm === item.id && (
-                        <div className="mt-4 p-4 border rounded-lg bg-gray-50">
-                          <Textarea
-                            placeholder="Write your response..."
-                            value={responseText}
-                            onChange={(e) => setResponseText(e.target.value)}
-                            className="mb-3"
-                            rows={3}
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => addResponse(item.id)}
-                              disabled={!responseText.trim()}
-                            >
-                              <Send className="h-4 w-4 mr-1" />
-                              Send Response
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setShowResponseForm(null);
-                                setResponseText('');
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 ))}
