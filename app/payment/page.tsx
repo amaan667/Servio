@@ -182,21 +182,11 @@ export default function PaymentPage() {
 
       console.log('[PAYMENT DEBUG] Order created successfully with ID:', orderData.order.id);
 
-      // For demo and stripe payments, we need to update the payment status
-      if (action === 'demo' || action === 'stripe') {
-        console.log('[PAYMENT DEBUG] Processing payment for order:', orderData.order.id);
+      // Handle different payment types
+      if (action === 'demo') {
+        console.log('[PAYMENT DEBUG] Processing demo payment for order:', orderData.order.id);
         
-        let endpoint = '';
-        switch (action) {
-          case 'demo':
-            endpoint = '/api/pay/demo';
-            break;
-          case 'stripe':
-            endpoint = '/api/pay/stripe';
-            break;
-        }
-
-        const paymentResponse = await fetch(endpoint, {
+        const paymentResponse = await fetch('/api/pay/demo', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -212,17 +202,46 @@ export default function PaymentPage() {
           throw new Error(paymentResult.error || 'Payment failed');
         }
 
-        console.log('[PAYMENT DEBUG] Payment successful:', paymentResult);
+        console.log('[PAYMENT DEBUG] Demo payment successful:', paymentResult);
+      } else if (action === 'stripe') {
+        console.log('[PAYMENT DEBUG] Redirecting to Stripe checkout for order:', orderData.order.id);
+        
+        // Create Stripe checkout session
+        const checkoutResponse = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            orderId: orderData.order.id, 
+            total: checkoutData.total, 
+            currency: 'GBP' 
+          }),
+        });
+        
+        const { url, sessionId, error: checkoutErr } = await checkoutResponse.json();
+        if (!checkoutResponse.ok || !(url || sessionId)) {
+          throw new Error(checkoutErr || 'Checkout failed');
+        }
+
+        // Redirect to Stripe checkout
+        if (url) {
+          window.location.assign(url);
+          return; // Don't continue to success page
+        } else {
+          throw new Error('No checkout URL received');
+        }
       }
       
-      setOrderNumber(orderData.order.id || "ORD-001");
-      
-      // Redirect to payment success page with order ID and additional data
-      const successUrl = `/payment/success?orderId=${orderData.order.id}&tableNumber=${checkoutData.tableNumber}&total=${checkoutData.total}&venueId=${checkoutData.venueId}&customerName=${encodeURIComponent(checkoutData.customerName || 'Customer')}&paymentMethod=${action}&orderType=${checkoutData.orderType || 'table'}`;
-      console.log('[PAYMENT DEBUG] Redirecting to success page:', successUrl);
-      router.push(successUrl);
-      
-      localStorage.removeItem("servio-checkout-data");
+      // Only redirect to success page for non-Stripe payments (Stripe redirects to checkout)
+      if (action !== 'stripe') {
+        setOrderNumber(orderData.order.id || "ORD-001");
+        
+        // Redirect to payment success page with order ID and additional data
+        const successUrl = `/payment/success?orderId=${orderData.order.id}&tableNumber=${checkoutData.tableNumber}&total=${checkoutData.total}&venueId=${checkoutData.venueId}&customerName=${encodeURIComponent(checkoutData.customerName || 'Customer')}&paymentMethod=${action}&orderType=${checkoutData.orderType || 'table'}`;
+        console.log('[PAYMENT DEBUG] Redirecting to success page:', successUrl);
+        router.push(successUrl);
+        
+        localStorage.removeItem("servio-checkout-data");
+      }
 
     } catch (error) {
       console.error('[PAYMENT DEBUG] Payment error:', error);
