@@ -73,8 +73,8 @@ export default async function StaffPage({
     // Calculate staff counts server-side
     const staffData = initialStaff || [];
     const totalStaff = staffData.length;
-    const activeStaff = staffData.filter(s => s.active === true).length;
-    const uniqueRoles = new Set(staffData.map(s => s.role)).size;
+    const activeStaff = staffData.filter((s: any) => s.active === true).length;
+    const uniqueRoles = new Set(staffData.map((s: any) => s.role)).size;
     
     // Get active shifts count
     const now = new Date();
