@@ -114,6 +114,7 @@ export default function CustomerOrderPage() {
               orderId: orderData.orderId,
               orderNumber: orderData.orderNumber,
               sessionId: sessionParam,
+              isDemo: isDemo, // Include demo flag
             };
             
             localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
@@ -159,6 +160,7 @@ export default function CustomerOrderPage() {
               orderId: orderData.orderId,
               orderNumber: orderData.orderNumber,
               sessionId: storedSession,
+              isDemo: isDemo, // Include demo flag
             };
             
             localStorage.setItem('servio-checkout-data', JSON.stringify(checkoutData));
@@ -750,6 +752,7 @@ export default function CustomerOrderPage() {
         orderNumber: orderResult.data?.order_number || orderResult.order_number,
         sessionId: sessionId, // Include session ID for resume functionality
         orderType: orderType, // Include order type for source determination
+        isDemo: isDemo, // Include demo flag
       };
 
       // Store checkout data for payment page

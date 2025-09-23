@@ -1704,32 +1704,47 @@ export default function CheckoutPage() {
                 {paymentStatus === 'pending' && !paymentMethod && (
                   <div className="space-y-3">
                     <div className="text-center mb-4">
-                      <p className="text-sm text-gray-600">Choose your payment method</p>
+                      <p className="text-sm text-gray-600">
+                        {isDemo ? 'Choose your payment method' : 'Secure payment processing'}
+                      </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={() => handlePaymentMethodSelect('stripe')}
-                        className="h-20 flex-col gap-2"
-                      >
-                        <CreditCard className="h-6 w-6" />
-                        <span className="text-sm">Real Payment</span>
-                        <span className="text-xs text-gray-500">Stripe</span>
-                      </Button>
-                      
-                      <Button
-                        variant="outline"
-                        onClick={() => handlePaymentMethodSelect('simulation')}
-                        className="h-20 flex-col gap-2"
-                      >
-                        <div className="flex gap-1">
-                          <div className="w-6 h-6 bg-black rounded"></div>
-                          <div className="w-6 h-6 bg-blue-600 rounded"></div>
-                        </div>
-                        <span className="text-sm">Demo Mode</span>
-                        <span className="text-xs text-gray-500">Simulation</span>
-                      </Button>
-                    </div>
+                    {isDemo ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePaymentMethodSelect('stripe')}
+                          className="h-20 flex-col gap-2"
+                        >
+                          <CreditCard className="h-6 w-6" />
+                          <span className="text-sm">Real Payment</span>
+                          <span className="text-xs text-gray-500">Stripe</span>
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePaymentMethodSelect('simulation')}
+                          className="h-20 flex-col gap-2"
+                        >
+                          <div className="flex gap-1">
+                            <div className="w-6 h-6 bg-black rounded"></div>
+                            <div className="w-6 h-6 bg-blue-600 rounded"></div>
+                          </div>
+                          <span className="text-sm">Demo Mode</span>
+                          <span className="text-xs text-gray-500">Simulation</span>
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <Button
+                          onClick={() => handlePaymentMethodSelect('stripe')}
+                          className="h-20 w-full flex-col gap-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          <CreditCard className="h-6 w-6" />
+                          <span className="text-sm">Pay with Stripe</span>
+                          <span className="text-xs text-purple-100">Secure payment processing</span>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -53,6 +53,7 @@ export default function PaymentPage() {
   const [error, setError] = useState<string | null>(null);
   const [paymentAction, setPaymentAction] = useState<PaymentAction | null>(null);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     // Get checkout data from localStorage
@@ -64,6 +65,7 @@ export default function PaymentPage() {
         const data = JSON.parse(storedData);
         console.log('[PAYMENT DEBUG] Parsed checkout data:', data);
         setCheckoutData(data);
+        setIsDemo(data.isDemo || false); // Set demo flag from checkout data
       } catch (error) {
         console.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
         router.push("/order");
@@ -509,26 +511,28 @@ export default function PaymentPage() {
                 <CardTitle>Choose Payment Method</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button
-                  onClick={() => {
-                    setShowPaymentOptions(false);
-                    handlePayment('demo');
-                  }}
-                  disabled={isProcessing}
-                  className="w-full"
-                >
-                  Demo Payment
-                </Button>
+                {isDemo && (
+                  <Button
+                    onClick={() => {
+                      setShowPaymentOptions(false);
+                      handlePayment('demo');
+                    }}
+                    disabled={isProcessing}
+                    className="w-full"
+                  >
+                    Demo Payment
+                  </Button>
+                )}
                 <Button
                   onClick={() => {
                     setShowPaymentOptions(false);
                     handlePayment('stripe');
                   }}
                   disabled={isProcessing}
-                  variant="outline"
+                  variant={isDemo ? "outline" : "default"}
                   className="w-full"
                 >
-                  Card / Wallet (Stripe)
+                  {isDemo ? 'Card / Wallet (Stripe)' : 'Pay with Stripe'}
                 </Button>
                 <Button
                   onClick={() => setShowPaymentOptions(false)}
@@ -544,7 +548,10 @@ export default function PaymentPage() {
 
         {/* Payment Note */}
         <p className="text-xs text-gray-500 text-center">
-          Choose your preferred payment method. Pay at Till sends the bill to staff for payment at the counter.
+          {isDemo 
+            ? 'Choose your preferred payment method. Demo mode allows testing without real charges.'
+            : 'Secure payment processing powered by Stripe. Pay at Till sends the bill to staff for payment at the counter.'
+          }
         </p>
       </main>
     </div>

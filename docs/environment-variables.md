@@ -51,13 +51,21 @@ OPENAI_API_KEY=sk-your-openai-api-key-here
 
 ## Optional Environment Variables
 
-### Payment Processing (Future Enhancement)
+### Payment Processing (Stripe Sandbox)
 
 ```bash
-# Stripe Configuration (Currently Removed)
-# STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-# STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+# Stripe Configuration (Sandbox/Test Mode)
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 ```
+
+**How to get these:**
+1. Sign up at https://stripe.com
+2. Navigate to Developers → API Keys
+3. Copy the Publishable key (starts with `pk_test_`)
+4. Copy the Secret key (starts with `sk_test_`)
+5. For webhooks, go to Developers → Webhooks and create an endpoint
 
 ### Additional Google Services (Future Enhancement)
 
@@ -86,6 +94,11 @@ GCS_BUCKET_NAME=your-gcs-bucket-name
 
 # OpenAI
 OPENAI_API_KEY=sk-your-openai-api-key
+
+# Stripe (Sandbox)
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 ```
 
 ### Railway-Specific Notes
@@ -112,9 +125,10 @@ GCS_BUCKET_NAME=your-gcs-bucket-name
 # OpenAI
 OPENAI_API_KEY=sk-your-openai-api-key
 
-# Optional: Stripe (currently removed - for future payment features)
-# STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-# STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+# Stripe (Sandbox)
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 ```
 
 ### Local Development Notes
