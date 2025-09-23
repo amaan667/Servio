@@ -33,15 +33,28 @@ export async function GET(req: Request) {
       );
       
       // Find the order by session ID first
+      console.log("[VERIFY] Looking for order with session ID:", sessionId);
       let { data: order, error: orderError } = await supabase
         .from("orders")
-        .select("id")
+        .select("id, stripe_session_id, payment_status")
         .eq("stripe_session_id", sessionId)
         .single();
 
       // If not found by session ID, the order might not be created yet (webhook might be delayed)
       if (orderError) {
         console.log("Order not found by session ID, waiting for webhook to create order...");
+        console.log("OrderError details:", orderError);
+        
+        // Debug: Check what orders exist in the database
+        const { data: allOrders, error: allOrdersError } = await supabase
+          .from("orders")
+          .select("id, stripe_session_id, payment_status, created_at")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        
+        if (!allOrdersError && allOrders) {
+          console.log("Recent orders in database:", allOrders);
+        }
         
         // Wait a bit for the webhook to create the order, then try again
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -49,7 +62,7 @@ export async function GET(req: Request) {
         // Try to find by session ID again
         const { data: retryOrder, error: retryError } = await supabase
           .from("orders")
-          .select("id")
+          .select("id, stripe_session_id, payment_status")
           .eq("stripe_session_id", sessionId)
           .single();
 
@@ -93,16 +106,20 @@ export async function GET(req: Request) {
             const { data: createdOrder, error: createError } = await supabase
               .from('orders')
               .insert(newOrder)
-              .select('id')
-              .single();
+              .select('id');
 
             if (createError) {
               console.error("[VERIFY] Error creating fallback order:", createError);
               return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed" }, { status: 404 });
             }
 
-            console.log("[VERIFY] Fallback order created successfully:", createdOrder.id);
-            return NextResponse.json({ paid: true, orderId: createdOrder.id }, { status: 200 });
+            if (!createdOrder || createdOrder.length === 0) {
+              console.error("[VERIFY] Fallback order creation returned no data");
+              return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed" }, { status: 404 });
+            }
+
+            console.log("[VERIFY] Fallback order created successfully:", createdOrder[0].id);
+            return NextResponse.json({ paid: true, orderId: createdOrder[0].id }, { status: 200 });
             
           } catch (fallbackError) {
             console.error("[VERIFY] Fallback order creation failed:", fallbackError);
