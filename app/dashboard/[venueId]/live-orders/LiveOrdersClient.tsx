@@ -92,6 +92,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   const [activeTab, setActiveTab] = useState(tabParam || "live");
   // State to hold the venue name for display in the UI
   const [venueName, setVenueName] = useState<string>(venueNameProp || '');
+  const [isBulkCompleting, setIsBulkCompleting] = useState(false);
   
   // Update active tab when URL parameter changes
   useEffect(() => {
@@ -706,6 +707,84 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       }
     } catch (error) {
       console.error('[LIVE ORDERS DEBUG] Exception updating order to COMPLETED and PAID:', error);
+    }
+  };
+
+  // Bulk complete all active orders
+  const bulkCompleteAllOrders = async () => {
+    if (isBulkCompleting) return;
+    
+    try {
+      setIsBulkCompleting(true);
+      
+      // Get all active orders (not completed)
+      const activeOrders = orders.filter(order => 
+        ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)
+      );
+      
+      if (activeOrders.length === 0) {
+        alert('No active orders to complete!');
+        return;
+      }
+      
+      const confirmed = confirm(`Are you sure you want to complete all ${activeOrders.length} active orders? This will also remove any automatically created tables.`);
+      if (!confirmed) return;
+      
+      console.log('[BULK COMPLETE] Starting bulk completion for', activeOrders.length, 'orders');
+      
+      const response = await fetch('/api/orders/bulk-complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          venueId: venueId,
+          orderIds: activeOrders.map(order => order.id)
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        console.log('[BULK COMPLETE] Successfully completed orders:', result.completedCount);
+        alert(`Successfully completed ${result.completedCount} orders and cleaned up tables!`);
+        
+        // Refresh all data
+        const loadVenueAndOrders = async () => {
+          try {
+            setLoading(true);
+            
+            // Reload orders data
+            const liveResponse = await fetch(`/api/dashboard/orders/live?venue=${venueId}`);
+            const liveData = await liveResponse.json();
+            setOrders(liveData || []);
+            
+            const allResponse = await fetch(`/api/dashboard/orders/all?venue=${venueId}`);
+            const allData = await allResponse.json();
+            setAllTodayOrders(allData || []);
+            
+            // Refresh counts
+            refetchCounts();
+            
+          } catch (error) {
+            console.error('[BULK COMPLETE] Error refreshing data:', error);
+          } finally {
+            setLoading(false);
+          }
+        };
+        
+        await loadVenueAndOrders();
+        
+      } else {
+        console.error('[BULK COMPLETE] Error:', result.error);
+        alert(`Error completing orders: ${result.error || 'Unknown error'}`);
+      }
+      
+    } catch (error) {
+      console.error('[BULK COMPLETE] Exception:', error);
+      alert('Error completing orders. Please try again.');
+    } finally {
+      setIsBulkCompleting(false);
     }
   };
 
@@ -1379,6 +1458,29 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 </div>
               ) : (
                 <>
+                  {/* Bulk Complete All Button */}
+                  {orders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length > 0 && (
+                    <div className="flex justify-center mb-6">
+                      <Button
+                        onClick={bulkCompleteAllOrders}
+                        disabled={isBulkCompleting}
+                        className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg text-sm shadow-md hover:shadow-lg transition-all duration-200"
+                      >
+                        {isBulkCompleting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Completing All Orders...
+                          </>
+                        ) : (
+                          <>
+                            Complete All Orders ({orders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length})
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Orders sections */}
                   {/* Counter Orders */}
                   {orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                     <div>
