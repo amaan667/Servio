@@ -87,7 +87,7 @@ export default async function StaffPage({
       console.error('[STAFF] Error fetching shifts for counts:', shiftsError);
     }
     
-    const activeShiftsCount = (allShifts || []).filter(shift => {
+    const activeShiftsCount = (allShifts || []).filter((shift: any) => {
       const start = new Date(shift.start_time);
       const end = new Date(shift.end_time);
       return now >= start && now <= end;
