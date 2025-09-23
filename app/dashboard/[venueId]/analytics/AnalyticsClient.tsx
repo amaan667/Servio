@@ -137,10 +137,32 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         dateFormat = 'month';
       }
       
+      // Generate all periods in the range
+      const periods = [];
       for (let i = 0; i < daysDiff; i += interval) {
         const date = new Date(startDate);
         date.setDate(date.getDate() + i);
         const dateStr = date.toISOString().split('T')[0];
+        periods.push({ date: dateStr, dateObj: date });
+      }
+      
+      // For 7-day and 30-day periods, ensure we have every single day
+      if (timePeriod === '7d' || timePeriod === '30d') {
+        const allDays = [];
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+          allDays.push({
+            date: currentDate.toISOString().split('T')[0],
+            dateObj: new Date(currentDate)
+          });
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        periods.length = 0; // Clear the array
+        periods.push(...allDays); // Add all days
+      }
+      
+      for (const period of periods) {
+        const dateStr = period.date;
         
         // Calculate revenue for this period
         let periodRevenue = 0;
@@ -222,19 +244,6 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 10);
 
-      // Add some test data if no revenue data exists (for debugging)
-      if (revenueOverTime.length === 0 || revenueOverTime.every(period => period.revenue === 0)) {
-        console.log('🔍 [ANALYTICS] No revenue data found, adding test data for debugging');
-        revenueOverTime.push(
-          { date: '2024-09-16', revenue: 100 },
-          { date: '2024-09-17', revenue: 150 },
-          { date: '2024-09-18', revenue: 75 },
-          { date: '2024-09-19', revenue: 200 },
-          { date: '2024-09-20', revenue: 125 },
-          { date: '2024-09-21', revenue: 180 },
-          { date: '2024-09-22', revenue: 90 }
-        );
-      }
 
       console.log('🔍 [ANALYTICS] Generated charts data:', {
         revenueOverTimeDays: revenueOverTime.length,
@@ -434,40 +443,18 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         <Card>
           <CardHeader>
             <CardTitle>Revenue Over Time - {getTimePeriodLabel(timePeriod)}</CardTitle>
-            <div className="text-xs text-gray-500 mt-2">
-              Debug: {analyticsData.revenueOverTime.length} periods, 
-              Max revenue: £{Math.max(...analyticsData.revenueOverTime.map(d => d.revenue), 0).toFixed(2)}
-            </div>
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-64">
-              {(() => {
-                console.log('🔍 [ANALYTICS CHART] Rendering chart with data:', {
-                  revenueOverTimeLength: analyticsData.revenueOverTime.length,
-                  revenueOverTimeSample: analyticsData.revenueOverTime.slice(0, 3),
-                  timePeriod
-                });
-                return null;
-              })()}
               {analyticsData.revenueOverTime.length > 0 ? (
                 <div className="h-full">
-                  <div className="h-48 flex items-end justify-between space-x-1 border border-gray-200 bg-gray-50">
+                  <div className="h-48 flex items-end justify-between space-x-1">
                     {analyticsData.revenueOverTime.map((period, index) => {
                       const maxRevenue = Math.max(...analyticsData.revenueOverTime.map(d => d.revenue));
                       const height = maxRevenue > 0 ? (period.revenue / maxRevenue) * 100 : 0;
                       
                       // Ensure bars are visible - minimum 8% height for any revenue > 0
                       const visibleHeight = period.revenue > 0 ? Math.max(height, 8) : 2;
-                      
-                      console.log('🔍 [ANALYTICS CHART] Bar data:', {
-                        index,
-                        date: period.date,
-                        revenue: period.revenue,
-                        maxRevenue,
-                        height,
-                        visibleHeight,
-                        hasRevenue: period.revenue > 0
-                      });
                       
                       return (
                         <div key={index} className="flex flex-col items-center flex-1">
@@ -487,7 +474,10 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
                     {analyticsData.revenueOverTime.map((period, index) => {
                       // Show labels based on time period
                       const showLabel = (() => {
-                        if (timePeriod === '7d' || timePeriod === '30d') {
+                        if (timePeriod === '7d') {
+                          // Show every day for 7-day period
+                          return true;
+                        } else if (timePeriod === '30d') {
                           return index % 5 === 0 || index === analyticsData.revenueOverTime.length - 1;
                         } else if (timePeriod === '3m') {
                           return index % 4 === 0 || index === analyticsData.revenueOverTime.length - 1;
