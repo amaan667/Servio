@@ -134,6 +134,25 @@ export default function PaymentPage() {
 
         // Store session ID for webhook
         localStorage.setItem('servio-stripe-session-id', sessionId);
+        
+        // Update the existing order with the session ID so webhook can find it
+        try {
+          const updateResponse = await fetch('/api/orders/update-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: tempOrderId,
+              sessionId: sessionId,
+              venueId: checkoutData.venueId
+            })
+          });
+          
+          if (!updateResponse.ok) {
+            console.warn('[PAYMENT DEBUG] Failed to update order with session ID, but continuing...');
+          }
+        } catch (error) {
+          console.warn('[PAYMENT DEBUG] Error updating order with session ID:', error);
+        }
 
         // Redirect to Stripe checkout
         if (url) {
