@@ -91,7 +91,7 @@ const ORDER_STATUSES = {
     label: 'Ready for Pickup',
     icon: CheckCircle,
     color: 'bg-green-100 text-green-800',
-    nextStatuses: ['SERVING', 'CANCELLED'],
+    nextStatuses: ['COMPLETED', 'CANCELLED'], // Updated to go directly to COMPLETED
     autoTransition: false,
     estimatedTime: 0,
     description: 'Order is ready to be served'
@@ -140,6 +140,18 @@ const ORDER_STATUSES = {
     autoTransition: false,
     estimatedTime: 0,
     description: 'Order has expired'
+  }
+};
+
+// Helper function to get button label based on order source
+const getButtonLabel = (status: string, orderSource?: string) => {
+  switch (status) {
+    case 'READY':
+      return orderSource === 'counter' ? 'Mark as Ready for Pickup' : 'Mark as Served';
+    case 'COMPLETED':
+      return 'Complete Order';
+    default:
+      return ORDER_STATUSES[status as keyof typeof ORDER_STATUSES]?.label || status;
   }
 };
 
@@ -400,7 +412,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
                 className="flex items-center gap-2"
               >
                 {nextStatusConfig?.icon && <nextStatusConfig.icon className="h-4 w-4" />}
-                {nextStatusConfig?.label || nextStatus}
+                {getButtonLabel(nextStatus, order.source)}
               </Button>
             );
           })}

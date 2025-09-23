@@ -346,27 +346,17 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
                 className="flex-1"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                Mark Ready
+                {order.source === 'counter' ? 'Mark as Ready for Pickup' : 'Mark as Served'}
               </Button>
             )}
             {order.order_status === 'READY' && (
-              <Button 
-                size="sm" 
-                onClick={() => updateOrderStatus(order.id, 'SERVING')}
-                className="flex-1"
-              >
-                <User className="h-4 w-4 mr-1" />
-                Start Serving
-              </Button>
-            )}
-            {order.order_status === 'SERVING' && (
               <Button 
                 size="sm" 
                 onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
                 className="flex-1"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                Complete
+                Complete Order
               </Button>
             )}
           </div>

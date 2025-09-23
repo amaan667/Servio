@@ -1424,24 +1424,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                           {updating === order.id ? (
                             <RefreshCw className="h-4 w-4 animate-spin" />
                           ) : (
-                            "Mark Ready"
+                            order.source === 'counter' ? 'Mark as Ready for Pickup' : 'Mark as Served'
                           )}
                         </Button>
                       )}
                       {order.order_status === "READY" && (
-                        <Button
-                          size="sm"
-                          onClick={() => updateOrderStatus(order.id, "SERVING")}
-                          disabled={updating === order.id}
-                        >
-                          {updating === order.id ? (
-                            <RefreshCw className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Mark as Served"
-                          )}
-                        </Button>
-                      )}
-                      {order.order_status === "SERVING" && (
                         <Button
                           size="sm"
                           onClick={() => updateOrderStatus(order.id, "COMPLETED")}

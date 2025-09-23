@@ -1159,25 +1159,16 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           onClick={() => updateOrderStatus(order.id, 'READY')}
                           className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
                         >
-                          Mark Ready
+                          {order.source === 'counter' ? 'Mark as Ready for Pickup' : 'Mark as Served'}
                         </Button>
                       )}
                       {order.order_status === 'READY' && (
                         <Button 
                           size="sm"
-                          onClick={() => updateOrderStatus(order.id, 'SERVING')}
+                          onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
                           className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
                         >
-                          Mark Served
-                        </Button>
-                      )}
-                      {order.order_status === 'SERVING' && (
-                        <Button 
-                          size="sm"
-                          onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
-                          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-lg text-sm"
-                        >
-                          Mark Complete
+                          Complete Order
                         </Button>
                       )}
                     </div>

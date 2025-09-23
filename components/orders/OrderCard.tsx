@@ -233,10 +233,10 @@ export function OrderCard({
       const getStatusLabel = () => {
         switch (order.order_status) {
           case 'placed': return 'Start Preparing';
-          case 'preparing': return 'Mark Ready';
-          case 'ready': return 'Mark Served';
-          case 'served': return 'Mark Complete';
-          default: return 'Mark Complete';
+          case 'preparing': return order.source === 'counter' ? 'Mark as Ready for Pickup' : 'Mark as Served';
+          case 'ready': return 'Complete Order';
+          case 'served': return 'Complete Order';
+          default: return 'Complete Order';
         }
       };
 

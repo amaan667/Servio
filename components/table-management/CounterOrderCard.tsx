@@ -46,11 +46,11 @@ const getNextStatusLabel = (currentStatus: string) => {
     case 'PLACED':
     case 'ACCEPTED': return 'Start Preparing';
     case 'IN_PREP':
-    case 'PREPARING': return 'Mark Ready';
-    case 'READY': return 'Mark Served';
+    case 'PREPARING': return 'Mark as Ready for Pickup';
+    case 'READY': return 'Complete Order';
     case 'SERVING':
-    case 'SERVED': return 'Mark Complete';
-    default: return 'Mark Complete';
+    case 'SERVED': return 'Complete Order';
+    default: return 'Complete Order';
   }
 };
 
