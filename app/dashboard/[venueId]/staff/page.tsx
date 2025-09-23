@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
@@ -59,7 +60,8 @@ export default async function StaffPage({
     }
 
     // Get initial staff data and counts server-side to prevent flickering
-    const { data: initialStaff, error: staffError } = await supabase
+    const admin = createAdminClient();
+    const { data: initialStaff, error: staffError } = await admin
       .from('staff')
       .select('*')
       .eq('venue_id', venueId)
@@ -85,7 +87,7 @@ export default async function StaffPage({
     
     // Get active shifts count
     const now = new Date();
-    const { data: allShifts, error: shiftsError } = await supabase
+    const { data: allShifts, error: shiftsError } = await admin
       .from('staff_shifts')
       .select('start_time, end_time')
       .eq('venue_id', venueId);
