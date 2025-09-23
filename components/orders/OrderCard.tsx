@@ -173,7 +173,7 @@ export function OrderCard({
       }
       
       console.log('[OrderCard DEBUG] Status update successful, calling onActionComplete');
-      onActionComplete?.();
+      await onActionComplete?.();
     } catch (error) {
       console.error('[OrderCard DEBUG] Error updating order status:', error);
     } finally {

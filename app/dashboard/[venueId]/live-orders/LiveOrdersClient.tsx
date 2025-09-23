@@ -856,10 +856,55 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   };
 
   // Function to refresh orders - can be called from OrderCard
-  const refreshOrders = () => {
-    console.log('[LiveOrdersClient DEBUG] refreshOrders called - triggering re-render');
-    // Trigger a re-render by updating a state
-    setOrders(prev => [...prev]);
+  const refreshOrders = async () => {
+    console.log('[LiveOrdersClient DEBUG] refreshOrders called - fetching fresh data from database');
+    
+    // Add a small delay to ensure database has been updated
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    try {
+      // Fetch fresh data from database instead of just re-rendering
+      const liveOrdersCutoff = new Date(Date.now() - LIVE_ORDER_WINDOW_MS).toISOString();
+      
+      const { data: liveData, error: liveError } = await createClient()
+        .from('orders')
+        .select('*')
+        .eq('venue_id', venueId)
+        .in('order_status', LIVE_WINDOW_STATUSES)
+        .gte('created_at', todayWindow?.startUtcISO || '')
+        .lt('created_at', todayWindow?.endUtcISO || '')
+        .gte('created_at', liveOrdersCutoff)
+        .order('created_at', { ascending: false });
+
+      if (liveError) {
+        console.error('[LiveOrdersClient DEBUG] Error fetching fresh live orders:', liveError);
+        return;
+      }
+
+      console.log('[LiveOrdersClient DEBUG] Fresh live orders fetched:', liveData?.length || 0);
+      setOrders(liveData || []);
+      
+      // Also refresh all today orders
+      const { data: allData, error: allError } = await createClient()
+        .from('orders')
+        .select('*')
+        .eq('venue_id', venueId)
+        .gte('created_at', todayWindow?.startUtcISO || '')
+        .lt('created_at', todayWindow?.endUtcISO || '')
+        .lt('created_at', liveOrdersCutoff)
+        .order('created_at', { ascending: false });
+
+      if (allError) {
+        console.error('[LiveOrdersClient DEBUG] Error fetching fresh all today orders:', allError);
+        return;
+      }
+
+      console.log('[LiveOrdersClient DEBUG] Fresh all today orders fetched:', allData?.length || 0);
+      setAllTodayOrders(allData || []);
+      
+    } catch (error) {
+      console.error('[LiveOrdersClient DEBUG] Error in refreshOrders:', error);
+    }
   };
 
   const renderOrderCard = (order: Order, showActions: boolean = true) => {
