@@ -63,6 +63,11 @@ export async function GET(req: Request) {
         }
       }
 
+      if (!order) {
+        console.error("Order is null after all attempts to find it");
+        return NextResponse.json({ paid: false, error: "Order not found" }, { status: 404 });
+      }
+
       return NextResponse.json({ paid: true, orderId: order.id }, { status: 200 });
     }
 
