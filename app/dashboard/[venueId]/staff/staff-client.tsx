@@ -250,7 +250,14 @@ export default function StaffClient({
     const totalStaff = currentStaff.length;
     const activeStaff = currentStaff.filter(s => s.active === true).length;
     const uniqueRoles = roles.length;
-    const activeShiftsCount = 0; // Simplified - no longer tracking active shifts
+    
+    // Calculate active shifts count
+    const now = new Date();
+    const activeShiftsCount = allShifts.filter(shift => {
+      const start = new Date(shift.start_time);
+      const end = new Date(shift.end_time);
+      return now >= start && now <= end;
+    }).length;
     
     return {
       totalStaff,
@@ -258,7 +265,7 @@ export default function StaffClient({
       uniqueRoles,
       activeShiftsCount
     };
-  }, [initialCounts, staff.length, staff, roles.length, loading, initialStaff]);
+  }, [initialCounts, staff.length, staff, roles.length, loading, initialStaff, allShifts]);
 
 
 
