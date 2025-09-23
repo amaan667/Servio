@@ -107,14 +107,22 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
       return dates;
     }
     
-    // Month view - show all days in the month
+    // Month view - show all days in the month in a proper grid
     const dates = [];
     const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
     
+    // Add empty cells for days before the first day of the month
+    const firstDayOfWeek = startOfMonth.getDay();
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      dates.push(null); // null represents empty cells
+    }
+    
+    // Add all days in the month
     for (let d = new Date(startOfMonth); d <= endOfMonth; d.setDate(d.getDate() + 1)) {
       dates.push(new Date(d));
     }
+    
     return dates;
   }, [calendarView, currentDate, currentMonth]);
 
@@ -218,9 +226,6 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
             </div>
             
             {/* Navigation */}
-            <Button variant="outline" size="sm" onClick={goToToday}>
-              Today
-            </Button>
             <Button variant="outline" size="sm" onClick={goBack}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -235,63 +240,64 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
         <div className="overflow-x-auto">
           <div className="min-w-full">
             {/* Grid Header */}
-            <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }}>
-              {displayDates.map((date, index) => (
-                <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
-                  <div className="text-sm font-medium text-gray-600">
-                    {date.toLocaleDateString('en-US', { weekday: 'short' })}
+            <div className={`grid gap-2 mb-4 ${calendarView === 'month' ? 'grid-cols-7' : ''}`} style={calendarView !== 'month' ? { gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` } : {}}>
+              {calendarView === 'month' ? (
+                // Month view header with day names
+                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayName, index) => (
+                  <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
+                    <div className="text-sm font-medium text-gray-600">
+                      {dayName}
+                    </div>
                   </div>
-                  <div className="text-lg font-bold">
-                    {date.getDate()}
+                ))
+              ) : (
+                // Today/Week view header
+                displayDates.map((date, index) => (
+                  <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
+                    <div className="text-sm font-medium text-gray-600">
+                      {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                    </div>
+                    <div className="text-lg font-bold">
+                      {date.getDate()}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             
             {/* Grid Content */}
-            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }}>
+            <div className={`grid gap-2 ${calendarView === 'month' ? 'grid-cols-7' : ''}`} style={calendarView !== 'month' ? { gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` } : {}}>
               {displayDates.map((date, index) => {
+                if (!date) {
+                  // Empty cell for month view
+                  return (
+                    <div key={index} className="min-h-[120px] p-2 border rounded-lg bg-gray-50">
+                    </div>
+                  );
+                }
+                
                 const dateString = date.toDateString();
                 const dayShifts = shiftsByDate[dateString] || [];
                 
                 return (
-                  <div key={index} className="min-h-[200px] p-2 border rounded-lg bg-white">
-                    <div className="space-y-2">
+                  <div key={index} className="min-h-[120px] p-2 border rounded-lg bg-white">
+                    <div className="text-center mb-2">
+                      <div className="text-lg font-bold">{date.getDate()}</div>
+                    </div>
+                    <div className="space-y-1">
                       {dayShifts.length === 0 ? (
-                        <div className="text-center text-gray-400 text-sm py-8">
+                        <div className="text-center text-gray-400 text-xs py-4">
                           No shifts
                         </div>
                       ) : (
                         dayShifts.map((shift) => (
                           <div
                             key={shift.id}
-                            className="group relative p-2 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors cursor-pointer"
+                            className="group relative p-1 bg-purple-50 border border-purple-200 rounded hover:bg-purple-100 transition-colors cursor-pointer"
                             title={`${shift.staff_name} - ${shift.staff_role}\n${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? `\n${shift.area}` : ''}${isOvernightShift(shift) ? '\n🌙 Overnight Shift' : ''}${isShiftActive(shift) ? '\n🟢 Active Now' : ''}`}
                           >
-                            <div className="text-sm font-medium text-purple-800">
+                            <div className="text-xs font-medium text-purple-800 text-center">
                               {shift.staff_name}
-                            </div>
-                            <div className="text-xs text-purple-600">
-                              {formatTime(shift.start_time)} - {formatTime(shift.end_time)}
-                            </div>
-                            {shift.area && (
-                              <div className="text-xs text-gray-500">
-                                {shift.area}
-                              </div>
-                            )}
-                            
-                            {/* Status badges */}
-                            <div className="flex gap-1 mt-1">
-                              {isShiftActive(shift) && (
-                                <Badge className="bg-green-500 text-white text-xs">
-                                  Active
-                                </Badge>
-                              )}
-                              {isOvernightShift(shift) && (
-                                <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-100 text-xs">
-                                  🌙
-                                </Badge>
-                              )}
                             </div>
                             
                             {/* Hover tooltip */}
