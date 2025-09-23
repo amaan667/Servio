@@ -411,10 +411,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         }, {});
         setGroupedHistoryOrders(grouped);
         
-        // Update the database for these orders to reflect the status change
-        processedHistory.forEach((order: Order) => {
-          updateOrderToCompletedAndPaid(order.id);
-        });
+        // Note: Removed automatic status updates to allow normal order flow
+        // Orders should only be marked as COMPLETED when staff explicitly complete them
       }
       // Compute local counts as a robust fallback for badges
       try {
@@ -501,8 +499,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 [date]: [processedOrder, ...(prev[date] || [])]
               }));
               
-              // Update the order in database to reflect the status change
-              updateOrderToCompletedAndPaid(newOrder.id);
+              // Note: Removed automatic status updates to allow normal order flow
+              // Orders should only be marked as COMPLETED when staff explicitly complete them
             }
           
           // Refresh the authoritative counts

@@ -159,15 +159,13 @@ export function TableOrderCard({ order, venueId, onActionComplete }: TableOrderC
     try {
       setIsProcessingPayment(true);
       
-      const response = await fetch('/api/orders/update-status', {
+      const response = await fetch('/api/orders/set-status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({
           orderId: order.id,
-          venue_id: venueId,
           status: newStatus
         }),
       });
