@@ -133,36 +133,17 @@ export default function PaymentPage() {
 
         // Store session ID for webhook
         localStorage.setItem('servio-stripe-session-id', sessionId);
-        
-        // Update the existing order with the session ID so webhook can find it
-        try {
-          const updateResponse = await fetch('/api/orders/update-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId: tempOrderId,
-              sessionId: sessionId,
-              venueId: checkoutData.venueId
-            })
-          });
-          
-          if (!updateResponse.ok) {
-            console.warn('[PAYMENT DEBUG] Failed to update order with session ID, but continuing...');
-          }
-        } catch (error) {
-          console.warn('[PAYMENT DEBUG] Error updating order with session ID:', error);
-        }
 
-        // Redirect to Stripe checkout
+        // Redirect to Stripe checkout - order will be created by webhook after successful payment
         if (url) {
           window.location.assign(url);
-          return; // Don't continue to success page
+          return; // Don't continue to order creation
         } else {
           throw new Error('No checkout URL received');
         }
       }
 
-      // For non-Stripe payments, create the order immediately
+      // For non-Stripe payments (Pay Later, Pay at Till), create the order immediately with UNPAID status
       console.log('[PAYMENT DEBUG] Creating order for non-Stripe payment...');
       
       const orderPayload = {

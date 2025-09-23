@@ -69,50 +69,48 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
     if (findError) {
       console.error('[STRIPE WEBHOOK] Order not found for session:', session.id, findError);
       
-      // If order doesn't exist, try to find it by the temporary order ID in metadata
-      const tempOrderId = session.metadata?.orderId;
-      if (tempOrderId) {
-        console.log('[STRIPE WEBHOOK] Trying to find order by temp ID:', tempOrderId);
+      // If order doesn't exist, create it now with PAID status
+      console.log('[STRIPE WEBHOOK] Creating new order with PAID status from session metadata');
+      
+      try {
+        // Parse items from metadata
+        const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
         
-        // Look for an order with UNPAID status that matches the session data
-        const { data: tempOrder, error: tempError } = await supabase
+        const newOrder = {
+          venue_id: session.metadata?.venueId || 'default-venue',
+          table_number: parseInt(session.metadata?.tableNumber || '1'),
+          customer_name: session.metadata?.customerName || 'Customer',
+          customer_phone: session.metadata?.customerPhone || '+1234567890',
+          items: items,
+          total_amount: session.amount_total ? session.amount_total / 100 : 0, // Convert from cents
+          order_status: 'PLACED',
+          payment_status: 'PAID', // Mark as PAID immediately
+          payment_method: 'stripe',
+          payment_mode: 'online',
+          source: session.metadata?.source || 'qr',
+          stripe_session_id: session.id,
+          stripe_payment_intent_id: session.payment_intent as string,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        const { data: createdOrder, error: createError } = await supabase
           .from('orders')
-          .select('id, venue_id, table_number, customer_name, customer_phone, items, total_amount, source')
-          .eq('payment_status', 'UNPAID')
-          .eq('payment_method', 'stripe')
-          .eq('venue_id', session.metadata?.venueId || 'default-venue')
-          .eq('table_number', parseInt(session.metadata?.tableNumber || '1'))
-          .order('created_at', { ascending: false })
-          .limit(1)
+          .insert(newOrder)
+          .select('id')
           .single();
 
-        if (tempOrder && !tempError) {
-          console.log('[STRIPE WEBHOOK] Found order by temp ID:', tempOrder.id);
-          
-          // Update the existing order with payment details
-          const { error: updateError } = await supabase
-            .from('orders')
-            .update({
-              payment_status: 'PAID',
-              payment_method: 'stripe',
-              stripe_session_id: session.id,
-              stripe_payment_intent_id: session.payment_intent as string,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', tempOrder.id);
-
-          if (updateError) {
-            console.error('[STRIPE WEBHOOK] Error updating order:', updateError);
-            return;
-          }
-
-          console.log('[STRIPE WEBHOOK] Order updated successfully:', tempOrder.id);
+        if (createError) {
+          console.error('[STRIPE WEBHOOK] Error creating order:', createError);
           return;
         }
+
+        console.log('[STRIPE WEBHOOK] Order created successfully with PAID status:', createdOrder.id);
+        return;
+      } catch (error) {
+        console.error('[STRIPE WEBHOOK] Error creating order from session:', error);
+        return;
       }
-      
-      console.error('[STRIPE WEBHOOK] Could not find order for session:', session.id);
-      return;
     }
 
     console.log('[STRIPE WEBHOOK] Found existing order:', existingOrder.id);
