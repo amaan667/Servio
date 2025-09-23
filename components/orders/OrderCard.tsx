@@ -139,6 +139,31 @@ export function OrderCard({
     }
   };
 
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!venueId) return;
+    
+    try {
+      setIsProcessing(true);
+      const response = await fetch('/api/orders/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          orderId: order.id,
+          venue_id: venueId,
+          status: newStatus
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update order status');
+      onActionComplete?.();
+    } catch (error) {
+      console.error('Error updating order status:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Order action buttons
   const renderActions = () => {
     if (!showActions || !venueId) return null;
