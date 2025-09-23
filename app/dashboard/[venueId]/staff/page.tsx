@@ -70,16 +70,35 @@ export default async function StaffPage({
       console.error('[STAFF] Error fetching initial staff:', staffError);
     }
 
-    // Get authoritative staff counts from the new RPC function
-    const { data: initialCounts, error: countsError } = await supabase
-      .rpc('staff_counts', { 
-        p_venue_id: venueId
-      })
-      .single();
-
-    if (countsError) {
-      console.error('[STAFF] Error fetching staff counts:', countsError);
+    // Calculate staff counts server-side
+    const staffData = initialStaff || [];
+    const totalStaff = staffData.length;
+    const activeStaff = staffData.filter(s => s.active === true).length;
+    const uniqueRoles = new Set(staffData.map(s => s.role)).size;
+    
+    // Get active shifts count
+    const now = new Date();
+    const { data: allShifts, error: shiftsError } = await supabase
+      .from('staff_shifts')
+      .select('start_time, end_time')
+      .eq('venue_id', venueId);
+    
+    if (shiftsError) {
+      console.error('[STAFF] Error fetching shifts for counts:', shiftsError);
     }
+    
+    const activeShiftsCount = (allShifts || []).filter(shift => {
+      const start = new Date(shift.start_time);
+      const end = new Date(shift.end_time);
+      return now >= start && now <= end;
+    }).length;
+    
+    const initialCounts = {
+      total_staff: totalStaff,
+      active_staff: activeStaff,
+      unique_roles: uniqueRoles,
+      active_shifts_count: activeShiftsCount
+    };
 
     return (
       <div className="min-h-screen bg-background">
