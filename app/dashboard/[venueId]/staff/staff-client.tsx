@@ -221,14 +221,40 @@ export default function StaffClient({
 
 
 
-  // Memoize counts to prevent flickering - use initial counts when available
+  // Memoize counts to prevent flickering - use real-time data when available
   const staffCounts = useMemo(() => {
     console.log('[STAFF DEBUG] initialCounts:', initialCounts);
     console.log('[STAFF DEBUG] initialStaff:', initialStaff);
     console.log('[STAFF DEBUG] staff:', staff);
     console.log('[STAFF DEBUG] allShifts:', allShifts);
     
-    // If we have initial counts from server, use them to prevent flickering
+    // Use real-time staff data if available, otherwise fall back to initial counts
+    const currentStaff = staff.length > 0 ? staff : (initialStaff || []);
+    const hasRealTimeData = staff.length > 0;
+    
+    if (hasRealTimeData) {
+      console.log('[STAFF DEBUG] Using real-time staff data');
+      const totalStaff = currentStaff.length;
+      const activeStaff = currentStaff.filter(s => s.active === true).length;
+      const uniqueRoles = roles.length;
+      
+      // Calculate active shifts count
+      const now = new Date();
+      const activeShiftsCount = allShifts.filter(shift => {
+        const start = new Date(shift.start_time);
+        const end = new Date(shift.end_time);
+        return now >= start && now <= end;
+      }).length;
+      
+      return {
+        totalStaff,
+        activeStaff,
+        uniqueRoles,
+        activeShiftsCount
+      };
+    }
+    
+    // Fallback to initial counts from server if no real-time data
     if (initialCounts) {
       console.log('[STAFF DEBUG] Using initialCounts from server');
       return {
@@ -239,38 +265,13 @@ export default function StaffClient({
       };
     }
     
-    // Fallback to client-side calculation if no initial counts
-    const hasStaffData = staff.length > 0 || (initialStaff && initialStaff.length > 0);
-    
-    // Return stable values during loading to prevent flickering
-    if (loading && !hasStaffData) {
-      return {
-        totalStaff: 0,
-        activeStaff: 0,
-        uniqueRoles: 0,
-        activeShiftsCount: 0
-      };
-    }
-    
-    // Calculate actual counts - use current staff data or initial staff data
-    const currentStaff = staff.length > 0 ? staff : (initialStaff || []);
-    const totalStaff = currentStaff.length;
-    const activeStaff = currentStaff.filter(s => s.active === true).length;
-    const uniqueRoles = roles.length;
-    
-    // Calculate active shifts count
-    const now = new Date();
-    const activeShiftsCount = allShifts.filter(shift => {
-      const start = new Date(shift.start_time);
-      const end = new Date(shift.end_time);
-      return now >= start && now <= end;
-    }).length;
-    
+    // Final fallback - return zeros if no data available
+    console.log('[STAFF DEBUG] No data available, returning zeros');
     return {
-      totalStaff,
-      activeStaff,
-      uniqueRoles,
-      activeShiftsCount
+      totalStaff: 0,
+      activeStaff: 0,
+      uniqueRoles: 0,
+      activeShiftsCount: 0
     };
   }, [initialCounts, staff.length, staff, roles.length, loading, initialStaff, allShifts]);
 
