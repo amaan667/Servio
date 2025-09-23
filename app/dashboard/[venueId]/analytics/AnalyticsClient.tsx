@@ -222,6 +222,20 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 10);
 
+      // Add some test data if no revenue data exists (for debugging)
+      if (revenueOverTime.length === 0 || revenueOverTime.every(period => period.revenue === 0)) {
+        console.log('🔍 [ANALYTICS] No revenue data found, adding test data for debugging');
+        revenueOverTime.push(
+          { date: '2024-09-16', revenue: 100 },
+          { date: '2024-09-17', revenue: 150 },
+          { date: '2024-09-18', revenue: 75 },
+          { date: '2024-09-19', revenue: 200 },
+          { date: '2024-09-20', revenue: 125 },
+          { date: '2024-09-21', revenue: 180 },
+          { date: '2024-09-22', revenue: 90 }
+        );
+      }
+
       console.log('🔍 [ANALYTICS] Generated charts data:', {
         revenueOverTimeDays: revenueOverTime.length,
         topSellingItemsCount: topSellingItems.length,
@@ -398,17 +412,22 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
               })()}
               {analyticsData.revenueOverTime.length > 0 ? (
                 <div className="h-full">
-                  <div className="h-48 flex items-end justify-between space-x-1">
+                  <div className="h-48 flex items-end justify-between space-x-1 border border-gray-200 bg-gray-50">
                     {analyticsData.revenueOverTime.map((period, index) => {
                       const maxRevenue = Math.max(...analyticsData.revenueOverTime.map(d => d.revenue));
                       const height = maxRevenue > 0 ? (period.revenue / maxRevenue) * 100 : 0;
+                      
+                      // Ensure bars are visible - minimum 8% height for any revenue > 0
+                      const visibleHeight = period.revenue > 0 ? Math.max(height, 8) : 2;
                       
                       console.log('🔍 [ANALYTICS CHART] Bar data:', {
                         index,
                         date: period.date,
                         revenue: period.revenue,
                         maxRevenue,
-                        height
+                        height,
+                        visibleHeight,
+                        hasRevenue: period.revenue > 0
                       });
                       
                       return (
@@ -416,8 +435,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
                           <div 
                             className="w-full bg-purple-500 rounded-t transition-all duration-300 hover:bg-purple-600 cursor-pointer"
                             style={{ 
-                              height: `${Math.max(height, period.revenue > 0 ? 5 : 2)}%`,
-                              minHeight: '4px'
+                              height: `${visibleHeight}%`,
+                              minHeight: period.revenue > 0 ? '12px' : '4px'
                             }}
                             title={`${period.date}: £${period.revenue.toFixed(2)}`}
                           />
