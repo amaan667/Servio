@@ -441,6 +441,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           console.log('[LIVE ORDERS DEBUG] Real-time change detected:', {
             eventType: payload.eventType,
             orderId: payload.new?.id || payload.old?.id,
+            oldStatus: payload.old?.order_status,
+            newStatus: payload.new?.order_status,
             payload: payload
           });
           
@@ -510,7 +512,8 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             console.log('[LIVE ORDERS DEBUG] Order updated:', {
               orderId: newOrder.id,
               oldStatus: oldOrder?.order_status,
-              newStatus: newOrder.order_status
+              newStatus: newOrder.order_status,
+              orderData: newOrder
             });
             
             // Check if order should be in live orders
@@ -854,6 +857,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   // Function to refresh orders - can be called from OrderCard
   const refreshOrders = () => {
+    console.log('[LiveOrdersClient DEBUG] refreshOrders called - triggering re-render');
     // Trigger a re-render by updating a state
     setOrders(prev => [...prev]);
   };

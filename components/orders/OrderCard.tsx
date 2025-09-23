@@ -142,6 +142,13 @@ export function OrderCard({
   const handleStatusUpdate = async (newStatus: string) => {
     if (!venueId) return;
     
+    console.log('[OrderCard DEBUG] Starting status update:', {
+      orderId: order.id,
+      currentStatus: order.order_status,
+      newStatus: newStatus,
+      venueId: venueId
+    });
+    
     try {
       setIsProcessing(true);
       const response = await fetch('/api/orders/set-status', {
@@ -153,10 +160,22 @@ export function OrderCard({
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to update order status');
+      console.log('[OrderCard DEBUG] API response:', {
+        status: response.status,
+        ok: response.ok,
+        orderId: order.id
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[OrderCard DEBUG] API error response:', errorText);
+        throw new Error('Failed to update order status');
+      }
+      
+      console.log('[OrderCard DEBUG] Status update successful, calling onActionComplete');
       onActionComplete?.();
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error('[OrderCard DEBUG] Error updating order status:', error);
     } finally {
       setIsProcessing(false);
     }
