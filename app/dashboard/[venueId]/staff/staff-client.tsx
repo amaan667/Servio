@@ -36,12 +36,13 @@ const shiftPillStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 8px;
-    font-size: 11px;
+    padding: 2px 6px;
+    font-size: 10px;
     line-height: 1.2;
     white-space: nowrap;
     height: 100%;
-    min-height: 24px;
+    min-height: 20px;
+    position: relative;
   }
 
   .shift-title {
@@ -57,42 +58,48 @@ const shiftPillStyles = `
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     font-weight: 500;
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .shift-role {
     display: none;
     opacity: 0.7;
-    font-size: 10px;
+    font-size: 9px;
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: 500;
   }
 
   /* Show full details on hover */
-  .shift-pill:hover .shift-pill-inner {
-    display: grid;
-    grid-template-rows: auto auto;
-    gap: 2px;
-    padding: 6px 8px;
-    font-size: 10px;
-    min-height: 40px;
+  .shift-pill:hover {
+    z-index: 10;
+    min-height: 50px;
   }
 
-  .shift-pill:hover .shift-line {
+  .shift-pill:hover .shift-pill-inner {
     display: flex;
-    justify-content: space-between;
-    gap: 6px;
-    min-height: 14px;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 4px 6px;
+    font-size: 9px;
+    min-height: 46px;
+    gap: 2px;
+  }
+
+  .shift-pill:hover .shift-title {
+    font-size: 10px;
+    font-weight: 700;
   }
 
   .shift-pill:hover .shift-time {
     display: block;
+    font-size: 8px;
   }
 
   .shift-pill:hover .shift-role {
     display: block;
+    font-size: 8px;
   }
 
   /* Rounded ends only where visible */
@@ -816,7 +823,7 @@ export default function StaffClient({
       const index = dayShifts.findIndex((s: any) => s.id === span.id);
       return {
         ...span,
-        verticalOffset: index * 32 // 28px height + 4px gap
+        verticalOffset: index * 24 // 20px height + 4px gap
       };
     });
 
@@ -895,7 +902,7 @@ export default function StaffClient({
                 const left = (colStart - 1) * cellWidth;
                 const width = Math.min((calendarView === 'today' ? 1 : span.spanCols) * cellWidth, 100 - left);
                 const headerOffset = calendarView === 'today' ? 0 : 40;
-                const top = span.weekIndex * 120 + headerOffset + 25 + (span.verticalOffset || 0); // align with row, offset from date number
+                const top = span.weekIndex * 120 + headerOffset + 20 + (span.verticalOffset || 0); // align with row, offset from date number
                 
                 return (
                   <div
@@ -907,7 +914,7 @@ export default function StaffClient({
                       left: `${left}%`,
                       width: `${width}%`,
                       top: `${top}px`,
-                      height: '28px'
+                      height: '20px'
                     }}
                     title={`${span.shift.staff_name} (${span.shift.staff_role}) - ${formatTime(span.shift.start_time)} - ${formatTime(span.shift.end_time)}${span.shift.area ? ` - ${span.shift.area}` : ''}${span.isOvernight ? ' - Overnight Shift' : ''}`}
                     data-role={span.shift.area || span.shift.staff_role}
@@ -928,17 +935,12 @@ export default function StaffClient({
                       <span className="shift-title">
                         {span.isOvernight ? '🌙 ' : ''}{span.shift.staff_name}
                       </span>
-                      <div className="shift-line" style={{ display: 'none' }}>
-                        <span className="shift-title">
-                          {span.isOvernight ? '🌙 ' : ''}{span.shift.staff_name}
-                        </span>
-                        <span className="shift-time">
-                          {formatTime(span.shift.start_time)} – {formatTime(span.shift.end_time)}
-                        </span>
-                      </div>
-                      <div className="shift-role">
+                      <span className="shift-time">
+                        {formatTime(span.shift.start_time)} – {formatTime(span.shift.end_time)}
+                      </span>
+                      <span className="shift-role">
                         {span.shift.area || span.shift.staff_role}
-                      </div>
+                      </span>
                     </div>
                   </div>
                 );
