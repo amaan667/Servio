@@ -60,10 +60,11 @@ export default function PaymentSuccessPage() {
           console.log('[PAYMENT SUCCESS] Verifying Stripe payment...');
           
           // Try verification with retry logic since webhook might be delayed
-          let verifyResponse;
-          let verifyData;
+          let verifyResponse: Response | undefined;
+          let verifyData: any;
           let retryCount = 0;
           const maxRetries = 3;
+          let verificationSuccessful = false;
           
           while (retryCount < maxRetries) {
             verifyResponse = await fetch(`/api/checkout/verify?orderId=${orderIdParam}&sessionId=${sessionIdParam}`);
@@ -71,6 +72,7 @@ export default function PaymentSuccessPage() {
             
             if (verifyResponse.ok && verifyData.paid) {
               console.log('[PAYMENT SUCCESS] Payment verified successfully');
+              verificationSuccessful = true;
               break;
             }
             
@@ -81,7 +83,7 @@ export default function PaymentSuccessPage() {
             }
           }
           
-          if (!verifyResponse.ok || !verifyData.paid) {
+          if (!verificationSuccessful || !verifyResponse?.ok || !verifyData?.paid) {
             console.error('[PAYMENT SUCCESS] Payment verification failed after retries:', verifyData);
             setError('Payment verification failed. Please contact support.');
             setIsProcessing(false);
