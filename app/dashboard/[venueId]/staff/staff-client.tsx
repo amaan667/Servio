@@ -33,45 +33,66 @@ const shiftPillStyles = `
 
   /* Inner layout */
   .shift-pill-inner {
-    display: grid;
-    grid-template-rows: auto auto;
-    gap: 2px;
-    padding: 8px 10px;
-    font-size: 12px;
-    line-height: 1.1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.2;
     white-space: nowrap;
     height: 100%;
-  }
-
-  .shift-line {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    min-height: 16px;
-    align-items: center;
+    min-height: 24px;
   }
 
   .shift-title {
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
-    flex: 1;
     text-shadow: 0 1px 2px rgba(255,255,255,0.8);
   }
 
   .shift-time {
+    display: none;
     opacity: 0.85;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     font-weight: 500;
+    font-size: 10px;
   }
 
   .shift-role {
+    display: none;
     opacity: 0.7;
-    font-size: 11px;
+    font-size: 10px;
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: 500;
+  }
+
+  /* Show full details on hover */
+  .shift-pill:hover .shift-pill-inner {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 2px;
+    padding: 6px 8px;
+    font-size: 10px;
+    min-height: 40px;
+  }
+
+  .shift-pill:hover .shift-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    min-height: 14px;
+    align-items: center;
+  }
+
+  .shift-pill:hover .shift-time {
+    display: block;
+  }
+
+  .shift-pill:hover .shift-role {
+    display: block;
   }
 
   /* Rounded ends only where visible */
@@ -779,6 +800,25 @@ export default function StaffClient({
 
     const visibleShifts = getShiftsForView();
     const shiftSpans = visibleShifts.flatMap(splitShiftIntoWeekSpans);
+    
+    // Group shifts by day and position to avoid overlap
+    const groupedSpans = shiftSpans.reduce((acc, span) => {
+      const dayKey = `${span.weekIndex}-${span.colStart}`;
+      if (!acc[dayKey]) acc[dayKey] = [];
+      acc[dayKey].push(span);
+      return acc;
+    }, {} as Record<string, typeof shiftSpans>);
+    
+    // Add vertical offset for multiple shifts in same day
+    const positionedSpans = shiftSpans.map(span => {
+      const dayKey = `${span.weekIndex}-${span.colStart}`;
+      const dayShifts = groupedSpans[dayKey] || [];
+      const index = dayShifts.findIndex((s: any) => s.id === span.id);
+      return {
+        ...span,
+        verticalOffset: index * 32 // 28px height + 4px gap
+      };
+    });
 
     return (
       <Card>
@@ -806,9 +846,6 @@ export default function StaffClient({
                       Month
                     </button>
                   </div>
-                  <Button variant="outline" size="sm" onClick={goToToday}>
-                    Today
-                  </Button>
                   <Button variant="outline" size="sm" onClick={goBack}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -851,14 +888,14 @@ export default function StaffClient({
 
             {/* Event Overlay for Shifts */}
             <div className="event-overlay">
-              {shiftSpans.map(span => {
+              {positionedSpans.map(span => {
                 const gridCols = calendarView === 'today' ? 1 : 7;
                 const cellWidth = 100 / gridCols; // Each day cell width as percentage
                 const colStart = calendarView === 'today' ? 1 : span.colStart;
                 const left = (colStart - 1) * cellWidth;
                 const width = Math.min((calendarView === 'today' ? 1 : span.spanCols) * cellWidth, 100 - left);
                 const headerOffset = calendarView === 'today' ? 0 : 40;
-                const top = span.weekIndex * 120 + headerOffset; // align with row
+                const top = span.weekIndex * 120 + headerOffset + 25 + (span.verticalOffset || 0); // align with row, offset from date number
                 
                 return (
                   <div
@@ -870,7 +907,7 @@ export default function StaffClient({
                       left: `${left}%`,
                       width: `${width}%`,
                       top: `${top}px`,
-                      height: '80px'
+                      height: '28px'
                     }}
                     title={`${span.shift.staff_name} (${span.shift.staff_role}) - ${formatTime(span.shift.start_time)} - ${formatTime(span.shift.end_time)}${span.shift.area ? ` - ${span.shift.area}` : ''}${span.isOvernight ? ' - Overnight Shift' : ''}`}
                     data-role={span.shift.area || span.shift.staff_role}
@@ -888,7 +925,10 @@ export default function StaffClient({
                     }}
                   >
                     <div className="shift-pill-inner">
-                      <div className="shift-line">
+                      <span className="shift-title">
+                        {span.isOvernight ? '🌙 ' : ''}{span.shift.staff_name}
+                      </span>
+                      <div className="shift-line" style={{ display: 'none' }}>
                         <span className="shift-title">
                           {span.isOvernight ? '🌙 ' : ''}{span.shift.staff_name}
                         </span>
