@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import { Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -640,19 +641,40 @@ export default function StaffClient({
                       <div className="grid gap-3">
                         {grouped[role].map((row) => (
                           <div key={row.id}>
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            <div className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                              row.active 
+                                ? 'bg-gray-50 hover:bg-gray-100' 
+                                : 'bg-gray-100 hover:bg-gray-200 opacity-60'
+                            }`}>
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                  <span className="text-sm font-medium text-gray-600">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
+                                  row.active ? 'bg-white' : 'bg-gray-200'
+                                }`}>
+                                  <span className={`text-sm font-medium ${
+                                    row.active ? 'text-gray-600' : 'text-gray-400'
+                                  }`}>
                                     {row.name.charAt(0).toUpperCase()}
                                   </span>
                                 </div>
                                 <div>
-                                  <p className="font-medium text-foreground">{row.name}</p>
+                                  <p className={`font-medium ${
+                                    row.active ? 'text-foreground' : 'text-muted-foreground'
+                                  }`}>
+                                    {row.name}
+                                    {!row.active && <span className="ml-2 text-xs text-gray-400">(Inactive)</span>}
+                                  </p>
                                   <p className="text-sm text-muted-foreground">{role}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">Active:</span>
+                                  <Switch
+                                    checked={row.active}
+                                    onCheckedChange={() => onToggleActive(row)}
+                                    className="data-[state=checked]:bg-green-500"
+                                  />
+                                </div>
                                 <Button
                                   size="sm"
                                   variant="outline"
