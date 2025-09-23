@@ -255,10 +255,10 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
                 displayDates.map((date, index) => (
                   <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
                     <div className="text-sm font-medium text-gray-600">
-                      {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                      {date?.toLocaleDateString('en-US', { weekday: 'short' })}
                     </div>
                     <div className="text-lg font-bold">
-                      {date.getDate()}
+                      {date?.getDate()}
                     </div>
                   </div>
                 ))
