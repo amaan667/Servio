@@ -47,8 +47,8 @@ export async function POST(req: Request) {
         items: JSON.stringify(items),
         source: source || 'qr'
       },
-      success_url: `${base}/checkout/success?orderId=${orderId}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/checkout/cancel?orderId=${orderId}`,
+      success_url: `${base}/checkout/success?orderId=${orderId}&session_id={CHECKOUT_SESSION_ID}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
+      cancel_url: `${base}/checkout/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
     });
 
     return NextResponse.json({ url: session.url, sessionId: session.id }, { status: 200 });

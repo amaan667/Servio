@@ -114,11 +114,17 @@ export default function SuccessPage() {
                 </p>
                 <div className="pt-4">
                   <Button 
-                    onClick={() => window.location.href = '/'}
+                    onClick={() => {
+                      // Get venue and table info from URL params to redirect back to customer flow
+                      const urlParams = new URLSearchParams(window.location.search);
+                      const venueId = urlParams.get('venueId') || 'venue-1e02af4d';
+                      const tableNumber = urlParams.get('tableNumber') || '1';
+                      window.location.href = `/order?venue=${venueId}&table=${tableNumber}`;
+                    }}
                     variant="outline"
                     className="w-full"
                   >
-                    Return to Home
+                    Back to Ordering
                   </Button>
                 </div>
               </>
@@ -135,11 +141,17 @@ export default function SuccessPage() {
                 </p>
                 <div className="pt-4">
                   <Button 
-                    onClick={() => window.location.href = '/'}
+                    onClick={() => {
+                      // Get venue and table info from URL params to redirect back to customer flow
+                      const urlParams = new URLSearchParams(window.location.search);
+                      const venueId = urlParams.get('venueId') || 'venue-1e02af4d';
+                      const tableNumber = urlParams.get('tableNumber') || '1';
+                      window.location.href = `/order?venue=${venueId}&table=${tableNumber}`;
+                    }}
                     variant="outline"
                     className="w-full"
                   >
-                    Return to Home
+                    Back to Ordering
                   </Button>
                 </div>
               </>

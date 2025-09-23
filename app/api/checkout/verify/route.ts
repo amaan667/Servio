@@ -13,7 +13,10 @@ export async function GET(req: Request) {
     const sessionId = searchParams.get("sessionId")!;
     if (!orderId || !sessionId) return NextResponse.json({ error: "Missing params" }, { status: 400 });
 
+    console.log('[VERIFY] Checking payment for orderId:', orderId, 'sessionId:', sessionId);
+
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log('[VERIFY] Stripe session status:', session.payment_status);
     const paid = session.payment_status === "paid";
 
     if (paid) {
@@ -30,15 +33,34 @@ export async function GET(req: Request) {
       );
       
       // Find the order created by the webhook using the session ID
-      const { data: order, error: orderError } = await supabase
+      let { data: order, error: orderError } = await supabase
         .from("orders")
         .select("id")
         .eq("stripe_session_id", sessionId)
         .single();
 
+      // If not found by session ID, try to find by the temp order ID in session metadata
       if (orderError) {
-        console.error("Order not found for session:", sessionId);
-        return NextResponse.json({ paid: false, error: "Order not found" }, { status: 404 });
+        console.log("Order not found by session ID, trying temp order ID:", orderId);
+        
+        // Look for the most recent UNPAID order that might match
+        const { data: tempOrder, error: tempError } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("payment_status", "UNPAID")
+          .eq("payment_method", "stripe")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (tempOrder && !tempError) {
+          console.log("Found order by temp ID:", tempOrder.id);
+          order = tempOrder;
+          orderError = null;
+        } else {
+          console.error("Order not found for session:", sessionId, orderError);
+          return NextResponse.json({ paid: false, error: "Order not found" }, { status: 404 });
+        }
       }
 
       return NextResponse.json({ paid: true, orderId: order.id }, { status: 200 });

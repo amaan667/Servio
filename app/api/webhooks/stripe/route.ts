@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
-    console.log('[STRIPE WEBHOOK] Received event:', event.type);
+    console.log('[STRIPE WEBHOOK] Received event:', event.type, 'at', new Date().toISOString());
 
     const supabase = await createClient();
 
