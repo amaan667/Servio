@@ -146,7 +146,10 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         let periodRevenue = 0;
         if (dateFormat === 'day') {
           periodRevenue = validOrders
-            .filter((order: any) => order.created_at.startsWith(dateStr))
+            .filter((order: any) => {
+              const orderDate = order.created_at.split('T')[0];
+              return orderDate === dateStr;
+            })
             .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
         } else if (dateFormat === 'week') {
           const endOfWeek = new Date(date);
@@ -170,6 +173,21 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
               return orderDate >= dateStr && orderDate <= monthEndStr;
             })
             .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+        }
+        
+        // Debug logging for revenue calculation
+        if (i < 5) { // Only log first few iterations to avoid spam
+          console.log('🔍 [ANALYTICS REVENUE] Period calculation:', {
+            dateStr,
+            periodRevenue,
+            ordersInPeriod: validOrders.filter((order: any) => {
+              const orderDate = order.created_at.split('T')[0];
+              if (dateFormat === 'day') {
+                return orderDate === dateStr;
+              }
+              return true; // For other formats, we'll log separately
+            }).length
+          });
         }
         
         revenueOverTime.push({
@@ -363,6 +381,10 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         <Card>
           <CardHeader>
             <CardTitle>Revenue Over Time</CardTitle>
+            <div className="text-xs text-gray-500 mt-2">
+              Debug: {analyticsData.revenueOverTime.length} periods, 
+              Max revenue: £{Math.max(...analyticsData.revenueOverTime.map(d => d.revenue), 0).toFixed(2)}
+            </div>
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-64">
@@ -393,7 +415,10 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
                         <div key={index} className="flex flex-col items-center flex-1">
                           <div 
                             className="w-full bg-purple-500 rounded-t transition-all duration-300 hover:bg-purple-600 cursor-pointer"
-                            style={{ height: `${Math.max(height, 2)}%` }}
+                            style={{ 
+                              height: `${Math.max(height, period.revenue > 0 ? 5 : 2)}%`,
+                              minHeight: '4px'
+                            }}
                             title={`${period.date}: £${period.revenue.toFixed(2)}`}
                           />
                         </div>
