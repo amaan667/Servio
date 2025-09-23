@@ -77,11 +77,24 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
     const grouped: Record<string, LegacyShift[]> = {};
     
     visibleShifts.forEach(shift => {
-      const date = new Date(shift.start_time).toDateString();
-      if (!grouped[date]) {
-        grouped[date] = [];
+      const startDate = new Date(shift.start_time);
+      const endDate = new Date(shift.end_time);
+      
+      // Add shift to start date
+      const startDateString = startDate.toDateString();
+      if (!grouped[startDateString]) {
+        grouped[startDateString] = [];
       }
-      grouped[date].push(shift);
+      grouped[startDateString].push(shift);
+      
+      // If it's an overnight shift, also add it to the end date
+      if (startDate.toDateString() !== endDate.toDateString()) {
+        const endDateString = endDate.toDateString();
+        if (!grouped[endDateString]) {
+          grouped[endDateString] = [];
+        }
+        grouped[endDateString].push(shift);
+      }
     });
     
     return grouped;
@@ -290,28 +303,57 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ shifts, venueId }) =>
                           No shifts
                         </div>
                       ) : (
-                        dayShifts.map((shift) => (
-                          <div
-                            key={shift.id}
-                            className="group relative p-1 bg-purple-50 border border-purple-200 rounded hover:bg-purple-100 transition-colors cursor-pointer"
-                            title={`${shift.staff_name} - ${shift.staff_role}\n${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? `\n${shift.area}` : ''}${isOvernightShift(shift) ? '\n🌙 Overnight Shift' : ''}${isShiftActive(shift) ? '\n🟢 Active Now' : ''}`}
-                          >
-                            <div className="text-xs font-medium text-purple-800 text-center">
-                              {shift.staff_name}
+                        dayShifts.map((shift) => {
+                          const shiftStartDate = new Date(shift.start_time).toDateString();
+                          const shiftEndDate = new Date(shift.end_time).toDateString();
+                          const isOvernight = shiftStartDate !== shiftEndDate;
+                          const isStartDay = dateString === shiftStartDate;
+                          const isEndDay = dateString === shiftEndDate;
+                          
+                          // Determine display styling based on shift type and day
+                          let bgColor = 'bg-purple-50';
+                          let borderColor = 'border-purple-200';
+                          let textColor = 'text-purple-800';
+                          
+                          if (isOvernight) {
+                            if (isStartDay) {
+                              bgColor = 'bg-orange-50';
+                              borderColor = 'border-orange-200';
+                              textColor = 'text-orange-800';
+                            } else if (isEndDay) {
+                              bgColor = 'bg-blue-50';
+                              borderColor = 'border-blue-200';
+                              textColor = 'text-blue-800';
+                            }
+                          }
+                          
+                          return (
+                            <div
+                              key={`${shift.id}-${dateString}`}
+                              className={`group relative p-1 ${bgColor} border ${borderColor} rounded hover:opacity-80 transition-colors cursor-pointer`}
+                              title={`${shift.staff_name} - ${shift.staff_role}\n${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? `\n${shift.area}` : ''}${isOvernight ? '\n🌙 Overnight Shift' : ''}${isShiftActive(shift) ? '\n🟢 Active Now' : ''}${isOvernight && isStartDay ? '\n📅 Start Day' : ''}${isOvernight && isEndDay ? '\n📅 End Day' : ''}`}
+                            >
+                              <div className={`text-xs font-medium ${textColor} text-center`}>
+                                {shift.staff_name}
+                                {isOvernight && isStartDay && <span className="ml-1">🌙</span>}
+                                {isOvernight && isEndDay && <span className="ml-1">🌅</span>}
+                              </div>
+                              
+                              {/* Hover tooltip */}
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                <div className="font-medium">{shift.staff_name}</div>
+                                <div>{shift.staff_role}</div>
+                                <div>{formatTime(shift.start_time)} - {formatTime(shift.end_time)}</div>
+                                {shift.area && <div>{shift.area}</div>}
+                                {isOvernight && <div>🌙 Overnight Shift</div>}
+                                {isOvernight && isStartDay && <div>📅 Start Day</div>}
+                                {isOvernight && isEndDay && <div>📅 End Day</div>}
+                                {isShiftActive(shift) && <div>🟢 Active Now</div>}
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                              </div>
                             </div>
-                            
-                            {/* Hover tooltip */}
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                              <div className="font-medium">{shift.staff_name}</div>
-                              <div>{shift.staff_role}</div>
-                              <div>{formatTime(shift.start_time)} - {formatTime(shift.end_time)}</div>
-                              {shift.area && <div>{shift.area}</div>}
-                              {isOvernightShift(shift) && <div>🌙 Overnight Shift</div>}
-                              {isShiftActive(shift) && <div>🟢 Active Now</div>}
-                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-                            </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>
