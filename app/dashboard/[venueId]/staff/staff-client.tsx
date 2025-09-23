@@ -777,8 +777,8 @@ export default function StaffClient({
     );
   };
 
-  const StaffRowItem = memo(function StaffRowItem({ row, onDeleteRow, onShiftsChanged }: { row: StaffRow; onDeleteRow: (r: StaffRow) => void; onShiftsChanged: () => void }) {
-    const [showEditor, setShowEditor] = useState(false);
+  const StaffRowItem = memo(function StaffRowItem({ row, onDeleteRow, onShiftsChanged, embedded = false, onClose }: { row: StaffRow; onDeleteRow: (r: StaffRow) => void; onShiftsChanged: () => void; embedded?: boolean; onClose?: () => void }) {
+    const [showEditor, setShowEditor] = useState(embedded);
     const [date, setDate] = useState('');
     const [start, setStart] = useState<TimeValue>({ hour: null, minute: null, ampm: 'AM' });
     const [end, setEnd] = useState<TimeValue>({ hour: null, minute: null, ampm: 'PM' });
@@ -819,20 +819,25 @@ export default function StaffClient({
       setEnd({ hour: null, minute: null, ampm: 'PM' });
       await load();
       onShiftsChanged();
-    }, [area, date, end.ampm, end.hour, end.minute, load, onShiftsChanged, row.id, start.ampm, start.hour, start.minute, venueId]);
+      if (embedded && onClose) {
+        onClose();
+      }
+    }, [area, date, end.ampm, end.hour, end.minute, load, onShiftsChanged, row.id, start.ampm, start.hour, start.minute, venueId, embedded, onClose]);
 
     return (
       <div className="rounded border p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="font-medium">{row.name}</div>
-            {!row.active && <Badge variant="destructive">Inactive</Badge>}
+        {!embedded && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="font-medium">{row.name}</div>
+              {!row.active && <Badge variant="destructive">Inactive</Badge>}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setShowEditor((v) => !v)}>{showEditor ? 'Close' : 'Add Shift'}</Button>
+              <Button variant="destructive" onClick={() => onDeleteRow(row)}>Delete</Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowEditor((v) => !v)}>{showEditor ? 'Close' : 'Add Shift'}</Button>
-            <Button variant="destructive" onClick={() => onDeleteRow(row)}>Delete</Button>
-          </div>
-        </div>
+        )}
         {showEditor && (
           <div className="mt-3 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
@@ -1158,7 +1163,9 @@ export default function StaffClient({
                               <StaffRowItem 
                                 row={row} 
                                 onDeleteRow={() => {}} 
-                                onShiftsChanged={reloadAllShifts} 
+                                onShiftsChanged={reloadAllShifts}
+                                embedded={true}
+                                onClose={() => setEditingShiftFor(null)}
                               />
                             )}
                           </div>
