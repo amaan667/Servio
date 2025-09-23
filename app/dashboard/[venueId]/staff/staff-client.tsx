@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import TimeField, { TimeValue } from '@/components/inputs/TimeField';
-import { to24h, buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
+import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
+import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import { Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Shift pill styles
@@ -780,8 +780,8 @@ export default function StaffClient({
   const StaffRowItem = memo(function StaffRowItem({ row, onDeleteRow, onShiftsChanged, embedded = false, onClose }: { row: StaffRow; onDeleteRow: (r: StaffRow) => void; onShiftsChanged: () => void; embedded?: boolean; onClose?: () => void }) {
     const [showEditor, setShowEditor] = useState(embedded);
     const [date, setDate] = useState('');
-    const [start, setStart] = useState<TimeValue>({ hour: null, minute: null, ampm: 'AM' });
-    const [end, setEnd] = useState<TimeValue>({ hour: null, minute: null, ampm: 'PM' });
+    const [start, setStart] = useState<TimeValue24>({ hour: null, minute: null });
+    const [end, setEnd] = useState<TimeValue24>({ hour: null, minute: null });
     const [area, setArea] = useState('');
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
@@ -804,25 +804,23 @@ export default function StaffClient({
         return;
       }
       setSaving(true);
-      const s24 = to24h(start.hour, start.minute, start.ampm);
-      const e24 = to24h(end.hour, end.minute, end.ampm);
-      const overnight = isOvernight(s24.hour, s24.minute, e24.hour, e24.minute);
-      const startIso = buildIsoFromLocal(date, s24.hour, s24.minute);
+      const overnight = isOvernight(start.hour, start.minute, end.hour, end.minute);
+      const startIso = buildIsoFromLocal(date, start.hour, start.minute);
       const endDate = overnight ? addDaysISO(date, 1) : date;
-      const endIso = buildIsoFromLocal(endDate, e24.hour, e24.minute);
+      const endIso = buildIsoFromLocal(endDate, end.hour, end.minute);
       const res = await fetch('/api/staff/shifts/add', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ staff_id: row.id, venue_id: venueId, start_time: startIso, end_time: endIso, area: area || null }) });
       const j = await res.json().catch(()=>({}));
       if (!res.ok || j?.error) { setErr(j?.error || 'Failed to save shift'); setSaving(false); return; }
       setSaving(false);
       setArea('');
-      setStart({ hour: null, minute: null, ampm: 'AM' });
-      setEnd({ hour: null, minute: null, ampm: 'PM' });
+      setStart({ hour: null, minute: null });
+      setEnd({ hour: null, minute: null });
       await load();
       onShiftsChanged();
       if (embedded && onClose) {
         onClose();
       }
-    }, [area, date, end.ampm, end.hour, end.minute, load, onShiftsChanged, row.id, start.ampm, start.hour, start.minute, venueId, embedded, onClose]);
+    }, [area, date, end.hour, end.minute, load, onShiftsChanged, row.id, start.hour, start.minute, venueId, embedded, onClose]);
 
     return (
       <div className="rounded border p-3">
@@ -839,34 +837,58 @@ export default function StaffClient({
           </div>
         )}
         {showEditor && (
-          <div className="mt-3 space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input type="date" className="w-full rounded-md border px-3 py-2" value={date} onChange={(e)=>setDate(e.target.value)} />
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                <input 
+                  type="date" 
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                  value={date} 
+                  onChange={(e)=>setDate(e.target.value)} 
+                />
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
-                <TimeField value={start} onChange={setStart} />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                <TimeField24 value={start} onChange={setStart} />
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
-                <TimeField value={end} onChange={setEnd} />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                <TimeField24 value={end} onChange={setEnd} />
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
-                <select className="w-full rounded-md border px-3 py-2" value={area} onChange={(e)=>setArea(e.target.value)}>
-                  <option value="">Select…</option>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
+                <select 
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                  value={area} 
+                  onChange={(e)=>setArea(e.target.value)}
+                >
+                  <option value="">Select area…</option>
                   <option>Front of House</option>
                   <option>Kitchen</option>
                   <option>Bar</option>
                 </select>
               </div>
-              <div>
-                <Button onClick={save} disabled={saving} className="w-full md:w-auto h-10 px-4 rounded-md bg-purple-600 text-white font-medium disabled:opacity-60">{saving ? 'Saving…' : 'Save'}</Button>
-              </div>
             </div>
-            {err && <div className="text-sm text-red-600">{err}</div>}
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={save} 
+                disabled={saving} 
+                className="px-6 py-2 rounded-md bg-purple-600 text-white font-medium disabled:opacity-60 hover:bg-purple-700"
+              >
+                {saving ? 'Saving…' : 'Save Shift'}
+              </Button>
+              {embedded && (
+                <Button 
+                  variant="outline" 
+                  onClick={onClose}
+                  className="px-6 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+            {err && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{err}</div>}
           </div>
         )}
       </div>
