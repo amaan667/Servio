@@ -92,7 +92,7 @@ export default function PaymentPage() {
     try {
       // Handle different payment types
       if (action === 'stripe') {
-        console.log('[PAYMENT DEBUG] Processing Stripe payment - storing checkout data for webhook');
+        console.log('[PAYMENT DEBUG] Processing Stripe payment - order will be created after payment succeeds');
         
         // Store checkout data for webhook to create order after successful payment
         const stripeCheckoutData = {

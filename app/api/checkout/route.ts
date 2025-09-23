@@ -53,8 +53,8 @@ export async function POST(req: Request) {
           price: item.price
         }))).substring(0, 200) // Limit to 200 chars to leave room for other metadata
       },
-      success_url: `${base}/checkout/success?orderId=${orderId}&session_id={CHECKOUT_SESSION_ID}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
-      cancel_url: `${base}/checkout/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
+      success_url: `${base}/payment/success?orderId=${orderId}&session_id={CHECKOUT_SESSION_ID}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}&customerName=${customerName || 'Customer'}&paymentMethod=stripe&orderType=${source || 'qr'}`,
+      cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
     });
 
     // Update the order with the Stripe session ID so webhook can find it

@@ -69,7 +69,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
     if (findError) {
       console.error('[STRIPE WEBHOOK] Order not found for session:', session.id, findError);
       
-      // If order doesn't exist, create it now with PAID status
+      // For Stripe payments, create the order now with PAID status (order only created after payment succeeds)
       console.log('[STRIPE WEBHOOK] Creating new order with PAID status from session metadata');
       
       try {

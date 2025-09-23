@@ -32,34 +32,34 @@ export async function GET(req: Request) {
         }
       );
       
-      // Find the order created by the webhook using the session ID
+      // Find the order by session ID first
       let { data: order, error: orderError } = await supabase
         .from("orders")
         .select("id")
         .eq("stripe_session_id", sessionId)
         .single();
 
-      // If not found by session ID, try to find by the temp order ID in session metadata
+      // If not found by session ID, the order might not be created yet (webhook might be delayed)
       if (orderError) {
-        console.log("Order not found by session ID, trying temp order ID:", orderId);
+        console.log("Order not found by session ID, waiting for webhook to create order...");
         
-        // Look for the most recent UNPAID order that might match
-        const { data: tempOrder, error: tempError } = await supabase
+        // Wait a bit for the webhook to create the order, then try again
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Try to find by session ID again
+        const { data: retryOrder, error: retryError } = await supabase
           .from("orders")
           .select("id")
-          .eq("payment_status", "UNPAID")
-          .eq("payment_method", "stripe")
-          .order("created_at", { ascending: false })
-          .limit(1)
+          .eq("stripe_session_id", sessionId)
           .single();
 
-        if (tempOrder && !tempError) {
-          console.log("Found order by temp ID:", tempOrder.id);
-          order = tempOrder;
+        if (retryOrder && !retryError) {
+          console.log("Found order on retry:", retryOrder.id);
+          order = retryOrder;
           orderError = null;
         } else {
-          console.error("Order not found for session:", sessionId, orderError);
-          return NextResponse.json({ paid: false, error: "Order not found" }, { status: 404 });
+          console.error("Order still not found after retry for session:", sessionId);
+          return NextResponse.json({ paid: false, error: "Order not found - webhook may be delayed" }, { status: 404 });
         }
       }
 

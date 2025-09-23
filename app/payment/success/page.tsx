@@ -30,6 +30,7 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     const orderIdParam = searchParams?.get('orderId');
+    const sessionIdParam = searchParams?.get('session_id');
     const tableNumberParam = searchParams?.get('tableNumber');
     const totalParam = searchParams?.get('total');
     const venueIdParam = searchParams?.get('venueId');
@@ -51,20 +52,59 @@ export default function PaymentSuccessPage() {
     setPaymentMethod(paymentMethodParam || null);
     setOrderType(orderTypeParam || null);
 
-    // Simulate order confirmation
-    const createOrderAfterPayment = async () => {
+    // Verify payment and get order details
+    const verifyPaymentAndGetOrder = async () => {
       try {
-        // Order is already confirmed, just show success
+        // For Stripe payments, verify the payment first
+        if (paymentMethodParam === 'stripe' && sessionIdParam) {
+          console.log('[PAYMENT SUCCESS] Verifying Stripe payment...');
+          
+          // Try verification with retry logic since webhook might be delayed
+          let verifyResponse;
+          let verifyData;
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries) {
+            verifyResponse = await fetch(`/api/checkout/verify?orderId=${orderIdParam}&sessionId=${sessionIdParam}`);
+            verifyData = await verifyResponse.json();
+            
+            if (verifyResponse.ok && verifyData.paid) {
+              console.log('[PAYMENT SUCCESS] Payment verified successfully');
+              break;
+            }
+            
+            retryCount++;
+            if (retryCount < maxRetries) {
+              console.log(`[PAYMENT SUCCESS] Verification failed, retrying... (${retryCount}/${maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          }
+          
+          if (!verifyResponse.ok || !verifyData.paid) {
+            console.error('[PAYMENT SUCCESS] Payment verification failed after retries:', verifyData);
+            setError('Payment verification failed. Please contact support.');
+            setIsProcessing(false);
+            return;
+          }
+          
+          // Update order ID if verification returned a different one
+          if (verifyData.orderId && verifyData.orderId !== orderIdParam) {
+            setOrderId(verifyData.orderId);
+          }
+        }
+        
+        // Order is confirmed, show success
         setOrderConfirmed(true);
       } catch (err) {
-        console.error('Error confirming order:', err);
-        setError('Failed to confirm order. Please contact support.');
+        console.error('[PAYMENT SUCCESS] Error verifying payment:', err);
+        setError('Failed to verify payment. Please contact support.');
       } finally {
         setIsProcessing(false);
       }
     };
 
-    createOrderAfterPayment();
+    verifyPaymentAndGetOrder();
   }, [searchParams]);
 
   const handleReturn = () => {
