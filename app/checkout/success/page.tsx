@@ -11,6 +11,7 @@ export default function SuccessPage() {
   const orderId = searchParams?.get("orderId") as string | undefined;
   const sessionId = searchParams?.get("session_id") as string | undefined;
   const [state, setState] = useState<"verifying"|"paid"|"unpaid"|"error">("verifying");
+  const [realOrderId, setRealOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     let stop = false;
@@ -20,7 +21,15 @@ export default function SuccessPage() {
         const res = await fetch(`/api/checkout/verify?orderId=${orderId}&sessionId=${sessionId}`, { cache: "no-store" });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "verify failed");
-        setState(json.paid ? "paid" : "unpaid");
+        
+        if (json.paid) {
+          setState("paid");
+          if (json.orderId) {
+            setRealOrderId(json.orderId);
+          }
+        } else {
+          setState("unpaid");
+        }
       } catch {
         setState("error");
       }
@@ -74,11 +83,11 @@ export default function SuccessPage() {
                 </div>
                 <h2 className="text-xl font-semibold text-green-900">Payment Successful!</h2>
                 <p className="text-gray-600">
-                  ✅ Payment received. Thanks! Your order #{orderId?.slice(-6)} is being prepared.
+                  ✅ Payment received. Thanks! Your order #{realOrderId?.slice(-6) || orderId?.slice(-6)} is being prepared.
                 </p>
                 <div className="pt-4 space-y-3">
                   <Button 
-                    onClick={() => window.location.href = `/order-summary/${orderId}`}
+                    onClick={() => window.location.href = `/order-summary/${realOrderId || orderId}`}
                     className="w-full bg-servio-purple hover:bg-servio-purple-dark"
                   >
                     View Order Summary

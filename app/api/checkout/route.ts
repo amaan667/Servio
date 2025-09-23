@@ -7,7 +7,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-08
 
 export async function POST(req: Request) {
   try {
-    const { orderId, total, currency = "GBP", items = [] } = await req.json();
+    const { 
+      orderId, 
+      total, 
+      currency = "GBP", 
+      items = [],
+      venueId,
+      tableNumber,
+      customerName,
+      customerPhone,
+      source
+    } = await req.json();
+    
     if (!orderId || typeof total !== "number") {
       return NextResponse.json({ error: "orderId and total are required" }, { status: 400 });
     }
@@ -27,7 +38,15 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      metadata: { orderId },
+      metadata: { 
+        orderId,
+        venueId: venueId || 'default-venue',
+        tableNumber: tableNumber?.toString() || '1',
+        customerName: customerName || 'Customer',
+        customerPhone: customerPhone || '+1234567890',
+        items: JSON.stringify(items),
+        source: source || 'qr'
+      },
       success_url: `${base}/checkout/success?orderId=${orderId}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/checkout/cancel?orderId=${orderId}`,
     });

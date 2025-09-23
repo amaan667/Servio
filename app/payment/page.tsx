@@ -91,8 +91,61 @@ export default function PaymentPage() {
     setPaymentAction(action);
 
     try {
-      // First, create the order in the database
-      console.log('[PAYMENT DEBUG] Creating order first...');
+      // Handle different payment types
+      if (action === 'stripe') {
+        console.log('[PAYMENT DEBUG] Processing Stripe payment - storing checkout data for webhook');
+        
+        // Store checkout data for webhook to create order after successful payment
+        const stripeCheckoutData = {
+          ...checkoutData,
+          paymentMethod: 'stripe',
+          timestamp: Date.now()
+        };
+        localStorage.setItem('servio-stripe-checkout-data', JSON.stringify(stripeCheckoutData));
+        
+        // Create Stripe checkout session with temporary order ID
+        const tempOrderId = `temp-${Date.now()}`;
+        const checkoutResponse = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            orderId: tempOrderId, 
+            total: checkoutData.total, 
+            currency: 'GBP',
+            venueId: checkoutData.venueId,
+            tableNumber: checkoutData.tableNumber,
+            customerName: checkoutData.customerName || 'Customer',
+            customerPhone: checkoutData.customerPhone || '+1234567890',
+            items: checkoutData.cart.map(item => ({
+              menu_item_id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+              item_name: item.name,
+              specialInstructions: item.specialInstructions || null
+            })),
+            source: checkoutData.orderType === 'counter' ? 'counter' : 'qr'
+          }),
+        });
+        
+        const { url, sessionId, error: checkoutErr } = await checkoutResponse.json();
+        if (!checkoutResponse.ok || !(url || sessionId)) {
+          throw new Error(checkoutErr || 'Checkout failed');
+        }
+
+        // Store session ID for webhook
+        localStorage.setItem('servio-stripe-session-id', sessionId);
+
+        // Redirect to Stripe checkout
+        if (url) {
+          window.location.assign(url);
+          return; // Don't continue to success page
+        } else {
+          throw new Error('No checkout URL received');
+        }
+      }
+
+      // For non-Stripe payments, create the order immediately
+      console.log('[PAYMENT DEBUG] Creating order for non-Stripe payment...');
       
       const orderPayload = {
         venue_id: checkoutData.venueId,
@@ -109,7 +162,7 @@ export default function PaymentPage() {
         total_amount: Math.round(checkoutData.total * 100), // Convert to pence
         order_status: 'PLACED',
         payment_status: action === 'till' ? 'TILL' : action === 'later' ? 'PAY_LATER' : 'UNPAID',
-        payment_method: action === 'demo' ? 'demo' : action === 'stripe' ? 'stripe' : action === 'till' ? 'till' : 'later',
+        payment_method: action === 'demo' ? 'demo' : action === 'till' ? 'till' : 'later',
         source: checkoutData.orderType === 'counter' ? 'counter' : 'qr', // Set source based on order type
         notes: `${action} payment order`
       };
@@ -182,7 +235,7 @@ export default function PaymentPage() {
 
       console.log('[PAYMENT DEBUG] Order created successfully with ID:', orderData.order.id);
 
-      // Handle different payment types
+      // Handle demo payment
       if (action === 'demo') {
         console.log('[PAYMENT DEBUG] Processing demo payment for order:', orderData.order.id);
         
@@ -203,32 +256,6 @@ export default function PaymentPage() {
         }
 
         console.log('[PAYMENT DEBUG] Demo payment successful:', paymentResult);
-      } else if (action === 'stripe') {
-        console.log('[PAYMENT DEBUG] Redirecting to Stripe checkout for order:', orderData.order.id);
-        
-        // Create Stripe checkout session
-        const checkoutResponse = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            orderId: orderData.order.id, 
-            total: checkoutData.total, 
-            currency: 'GBP' 
-          }),
-        });
-        
-        const { url, sessionId, error: checkoutErr } = await checkoutResponse.json();
-        if (!checkoutResponse.ok || !(url || sessionId)) {
-          throw new Error(checkoutErr || 'Checkout failed');
-        }
-
-        // Redirect to Stripe checkout
-        if (url) {
-          window.location.assign(url);
-          return; // Don't continue to success page
-        } else {
-          throw new Error('No checkout URL received');
-        }
       }
       
       // Only redirect to success page for non-Stripe payments (Stripe redirects to checkout)

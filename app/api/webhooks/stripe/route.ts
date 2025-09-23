@@ -59,34 +59,47 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
   try {
     console.log('[STRIPE WEBHOOK] Processing checkout.session.completed:', session.id);
 
-    // Find order by stripe_session_id
-    const { data: order, error: orderError } = await supabase
+    // Create the order after successful payment
+    const orderId = session.metadata?.orderId;
+    if (!orderId) {
+      console.error('[STRIPE WEBHOOK] No orderId in session metadata:', session.id);
+      return;
+    }
+
+    // For now, we'll create a basic order structure
+    // In a real implementation, you'd want to store the full order data in the session metadata
+    // or retrieve it from a temporary storage
+    const orderData = {
+      venue_id: session.metadata?.venueId || 'default-venue',
+      table_number: parseInt(session.metadata?.tableNumber || '1'),
+      customer_name: session.metadata?.customerName || 'Customer',
+      customer_phone: session.metadata?.customerPhone || '+1234567890',
+      items: JSON.parse(session.metadata?.items || '[]'),
+      total_amount: session.amount_total || 0,
+      order_status: 'PLACED',
+      payment_status: 'PAID',
+      payment_method: 'stripe',
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: session.payment_intent as string,
+      source: session.metadata?.source || 'qr',
+      notes: 'Stripe payment order'
+    };
+
+    console.log('[STRIPE WEBHOOK] Creating order with data:', orderData);
+
+    // Create the order
+    const { data: newOrder, error: createError } = await supabase
       .from('orders')
-      .select('id, venue_id, payment_mode')
-      .eq('stripe_session_id', session.id)
+      .insert(orderData)
+      .select('id')
       .single();
 
-    if (orderError) {
-      console.error('[STRIPE WEBHOOK] Order not found for session:', session.id);
+    if (createError) {
+      console.error('[STRIPE WEBHOOK] Error creating order:', createError);
       return;
     }
 
-    // Update order payment status
-    const { error: updateError } = await supabase
-      .from('orders')
-      .update({
-        payment_status: 'PAID',
-        payment_method: 'stripe',
-        stripe_payment_intent_id: session.payment_intent as string
-      })
-      .eq('id', order.id);
-
-    if (updateError) {
-      console.error('[STRIPE WEBHOOK] Error updating order:', updateError);
-      return;
-    }
-
-    console.log('[STRIPE WEBHOOK] Order payment updated successfully:', order.id);
+    console.log('[STRIPE WEBHOOK] Order created successfully:', newOrder.id);
   } catch (error) {
     console.error('[STRIPE WEBHOOK] Error handling checkout session completed:', error);
   }

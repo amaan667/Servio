@@ -29,16 +29,22 @@ export async function GET(req: Request) {
         }
       );
       
-      await supabase.from("orders")
-        .update({ 
-          status: "paid", 
-          payment_status: "paid", 
-          paid_at: new Date().toISOString() 
-        })
-        .eq("id", orderId);
+      // Find the order created by the webhook using the session ID
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("stripe_session_id", sessionId)
+        .single();
+
+      if (orderError) {
+        console.error("Order not found for session:", sessionId);
+        return NextResponse.json({ paid: false, error: "Order not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({ paid: true, orderId: order.id }, { status: 200 });
     }
 
-    return NextResponse.json({ paid }, { status: 200 });
+    return NextResponse.json({ paid: false }, { status: 200 });
   } catch (e: any) {
     console.error("verify error:", e);
     return NextResponse.json({ error: e.message ?? "verify failed" }, { status: 500 });
