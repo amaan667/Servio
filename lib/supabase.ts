@@ -50,6 +50,9 @@ export interface Order {
   notes?: string;
   payment_method?: "demo" | "stripe" | "till" | null;
   payment_status?: "UNPAID" | "PAID" | "TILL" | "REFUNDED";
+  payment_mode?: "online" | "pay_later" | "pay_at_till";
+  stripe_session_id?: string | null;
+  stripe_payment_intent_id?: string | null;
   scheduled_for?: string;
   prep_lead_minutes?: number;
   items: Array<{

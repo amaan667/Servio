@@ -26,6 +26,8 @@ type OrderPayload = {
   payment_mode?: "online" | "pay_later" | "pay_at_till";
   payment_method?: "demo" | "stripe" | "till" | null;
   source?: "qr" | "counter"; // Order source - qr for table orders, counter for counter orders
+  stripe_session_id?: string | null;
+  stripe_payment_intent_id?: string | null;
   scheduled_for?: string | null;
   prep_lead_minutes?: number;
 };

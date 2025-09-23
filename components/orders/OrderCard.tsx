@@ -190,7 +190,7 @@ export function OrderCard({
     const showUnpaid = shouldShowUnpaidChip(order);
 
     if (showUnpaid && !isPaid) {
-      // Show payment actions
+      // Show payment actions for till/later orders
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -235,8 +235,8 @@ export function OrderCard({
       );
     }
 
-    if (isPaid && !isCompleted) {
-      // Show next status action based on current status
+    // Show status update actions for all non-completed orders (regardless of payment status)
+    if (!isCompleted) {
       const getNextStatus = () => {
         switch (order.order_status) {
           case 'placed': return 'IN_PREP';
@@ -267,11 +267,19 @@ export function OrderCard({
         }
       };
 
+      const getStatusMessage = () => {
+        if (isPaid) {
+          return "Payment Complete - Ready for next step";
+        } else {
+          return "Order Management - Update Status";
+        }
+      };
+
       return (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="text-sm text-blue-600">
-              <span className="font-medium">Payment Complete - Ready for next step</span>
+            <div className={`text-sm ${isPaid ? 'text-blue-600' : 'text-orange-600'}`}>
+              <span className="font-medium">{getStatusMessage()}</span>
             </div>
             <Button
               size="sm"
