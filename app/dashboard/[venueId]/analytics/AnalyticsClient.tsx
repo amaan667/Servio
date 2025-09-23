@@ -174,8 +174,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
             })
             .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
         } else if (dateFormat === 'week') {
-          const endOfWeek = new Date(date);
-          endOfWeek.setDate(date.getDate() + 6);
+          const endOfWeek = new Date(period.dateObj);
+          endOfWeek.setDate(period.dateObj.getDate() + 6);
           const weekEndStr = endOfWeek.toISOString().split('T')[0];
           
           periodRevenue = validOrders
@@ -185,8 +185,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
             })
             .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
         } else if (dateFormat === 'month') {
-          const endOfMonth = new Date(date);
-          endOfMonth.setMonth(date.getMonth() + 1, 0);
+          const endOfMonth = new Date(period.dateObj);
+          endOfMonth.setMonth(period.dateObj.getMonth() + 1, 0);
           const monthEndStr = endOfMonth.toISOString().split('T')[0];
           
           periodRevenue = validOrders
