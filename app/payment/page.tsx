@@ -52,7 +52,6 @@ export default function PaymentPage() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentAction, setPaymentAction] = useState<PaymentAction | null>(null);
-  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
@@ -529,9 +528,9 @@ export default function PaymentPage() {
 
         {/* Payment Options */}
         <div className="space-y-3">
-          {/* Pay Now Button */}
+          {/* Pay Now Button - Goes directly to Stripe */}
           <Button
-            onClick={() => setShowPaymentOptions(true)}
+            onClick={() => handlePayment('stripe')}
             disabled={isProcessing}
             className="w-full bg-servio-purple hover:bg-servio-purple-dark disabled:bg-gray-300"
           >
@@ -568,55 +567,10 @@ export default function PaymentPage() {
           </Button>
         </div>
 
-        {/* Payment Options Modal */}
-        {showPaymentOptions && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <Card className="max-w-sm w-full">
-              <CardHeader>
-                <CardTitle>Choose Payment Method</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {isDemo && (
-                  <Button
-                    onClick={() => {
-                      setShowPaymentOptions(false);
-                      handlePayment('demo');
-                    }}
-                    disabled={isProcessing}
-                    className="w-full"
-                  >
-                    Demo Payment
-                  </Button>
-                )}
-                <Button
-                  onClick={() => {
-                    setShowPaymentOptions(false);
-                    handlePayment('stripe');
-                  }}
-                  disabled={isProcessing}
-                  variant={isDemo ? "outline" : "default"}
-                  className="w-full"
-                >
-                  {isDemo ? 'Card / Wallet (Stripe)' : 'Pay with Stripe'}
-                </Button>
-                <Button
-                  onClick={() => setShowPaymentOptions(false)}
-                  variant="ghost"
-                  className="w-full"
-                >
-                  Cancel
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Payment Note */}
         <p className="text-xs text-gray-500 text-center">
-          {isDemo 
-            ? 'Choose your preferred payment method. Demo mode allows testing without real charges.'
-            : 'Secure payment processing powered by Stripe. Pay at Till sends the bill to staff for payment at the counter.'
-          }
+          Secure payment processing powered by Stripe. Pay at Till sends the bill to staff for payment at the counter.
         </p>
       </main>
     </div>

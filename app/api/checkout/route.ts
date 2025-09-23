@@ -44,8 +44,14 @@ export async function POST(req: Request) {
         tableNumber: tableNumber?.toString() || '1',
         customerName: customerName || 'Customer',
         customerPhone: customerPhone || '+1234567890',
-        items: JSON.stringify(items),
-        source: source || 'qr'
+        source: source || 'qr',
+        // Truncate items to stay within 500 char limit, keeping only essential info
+        items: JSON.stringify(items.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        }))).substring(0, 200) // Limit to 200 chars to leave room for other metadata
       },
       success_url: `${base}/checkout/success?orderId=${orderId}&session_id={CHECKOUT_SESSION_ID}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
       cancel_url: `${base}/checkout/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
