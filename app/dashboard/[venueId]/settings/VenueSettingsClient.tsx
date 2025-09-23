@@ -157,16 +157,22 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
 
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
+      console.log('[AUTH DEBUG] Starting password update for user:', user.id);
+      
       // Update password
       const { error } = await createClient().auth.updateUser({
         password: newPassword
       });
 
       if (error) {
+        console.error('[AUTH DEBUG] Password update error:', error);
         throw new Error(error.message);
       }
+
+      console.log('[AUTH DEBUG] Password updated successfully');
 
       // If this is an OAuth user setting their first password, mark it in metadata
       if (shouldShowSetPassword) {
@@ -175,11 +181,9 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         });
         
         if (metadataError) {
-          console.error('Error updating password metadata:', metadataError);
+          console.error('[AUTH DEBUG] Error updating password metadata:', metadataError);
         } else {
           console.log('[AUTH DEBUG] Successfully marked password as set in metadata');
-          // Force a page refresh to update the UI
-          window.location.reload();
         }
       }
 
@@ -187,17 +191,34 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         ? 'Password set successfully! You can now sign in with email and password.' 
         : 'Password updated successfully!';
       
+      // Show success message first
       setSuccess(successMessage);
-      setShowPasswordDialog(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
       
       toast({
         title: "Success",
         description: successMessage,
       });
+
+      // Clear form fields
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+
+      // Close dialog after a short delay to show success message
+      setTimeout(() => {
+        setShowPasswordDialog(false);
+        setSuccess(null); // Clear success message when dialog closes
+      }, 2000);
+
+      // If this was setting a password for the first time, refresh the page
+      if (shouldShowSetPassword) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 2500);
+      }
+      
     } catch (err: any) {
+      console.error('[AUTH DEBUG] Password change failed:', err);
       setError(err.message || 'Failed to update password');
       toast({
         title: "Error",
@@ -423,6 +444,19 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
+                {/* Success/Error Messages */}
+                {success && (
+                  <Alert>
+                    <AlertDescription>{success}</AlertDescription>
+                  </Alert>
+                )}
+                
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
                 <div>
                   <Label htmlFor="newPassword">{shouldShowSetPassword ? 'Password' : 'New Password'}</Label>
                   <Input
@@ -431,6 +465,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder={shouldShowSetPassword ? 'Create a password' : 'Enter new password'}
+                    disabled={loading}
                   />
                 </div>
                 
@@ -442,20 +477,28 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder={shouldShowSetPassword ? 'Confirm your password' : 'Confirm new password'}
+                    disabled={loading}
                   />
                 </div>
                 
                 <div className="flex gap-2">
                   <Button 
                     onClick={changePassword} 
-                    disabled={loading}
+                    disabled={loading || !newPassword || !confirmPassword}
                     className="flex-1"
                   >
                     {loading ? (shouldShowSetPassword ? 'Setting...' : 'Updating...') : (shouldShowSetPassword ? 'Set Password' : 'Update Password')}
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => setShowPasswordDialog(false)}
+                    onClick={() => {
+                      setShowPasswordDialog(false);
+                      setError(null);
+                      setSuccess(null);
+                      setNewPassword('');
+                      setConfirmPassword('');
+                    }}
+                    disabled={loading}
                     className="flex-1"
                   >
                     Cancel
