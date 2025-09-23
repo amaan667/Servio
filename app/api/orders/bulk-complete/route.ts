@@ -78,64 +78,74 @@ export async function POST(req: Request) {
 
     console.log('[BULK COMPLETE] Successfully updated orders:', updatedOrders?.length || 0);
 
-    // Handle table cleanup - completely remove tables that were auto-created
+    // Handle table cleanup - completely remove ALL tables that were associated with completed orders
     if (updatedOrders && updatedOrders.length > 0) {
-      const tableOrders = updatedOrders.filter(order => order.source === 'qr' && order.table_id);
+      // Get all unique table IDs from completed orders (regardless of source)
+      const tableIds = [...new Set(updatedOrders
+        .filter(order => order.table_id)
+        .map(order => order.table_id)
+      )];
       
-      for (const order of tableOrders) {
+      console.log('[BULK COMPLETE] Tables to be completely removed:', tableIds);
+      
+      for (const tableId of tableIds) {
         try {
-          console.log('[BULK COMPLETE] Cleaning up table for order:', order.id);
+          console.log('[BULK COMPLETE] Completely removing table:', tableId);
           
-          // Check if this was the last active order for this table
-          const { data: activeOrders, error: activeOrdersError } = await supabase
-            .from('orders')
-            .select('id')
-            .eq('venue_id', venueId)
-            .eq('table_id', order.table_id)
-            .in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING'])
-            .neq('id', order.id);
+          // Delete the table completely (not just set to free)
+          const { error: deleteTableError } = await supabase
+            .from('tables')
+            .delete()
+            .eq('id', tableId)
+            .eq('venue_id', venueId);
 
-          if (!activeOrdersError && (!activeOrders || activeOrders.length === 0)) {
-            // No more active orders for this table, completely remove the table
-            console.log('[BULK COMPLETE] Removing table completely:', order.table_id);
-            
-            // Delete the table completely (not just set to free)
-            const { error: deleteTableError } = await supabase
-              .from('tables')
-              .delete()
-              .eq('id', order.table_id)
-              .eq('venue_id', venueId);
-
-            if (deleteTableError) {
-              console.error('[BULK COMPLETE] Error deleting table:', deleteTableError);
-            } else {
-              console.log('[BULK COMPLETE] Successfully deleted table:', order.table_id);
-            }
-            
-            // Also clean up any table sessions
-            const { error: deleteSessionError } = await supabase
-              .from('table_sessions')
-              .delete()
-              .eq('table_id', order.table_id)
-              .eq('venue_id', venueId);
-
-            if (deleteSessionError) {
-              console.error('[BULK COMPLETE] Error deleting table sessions:', deleteSessionError);
-            }
-            
-            // Clean up table runtime state
-            const { error: deleteRuntimeError } = await supabase
-              .from('table_runtime_state')
-              .delete()
-              .eq('table_id', order.table_id)
-              .eq('venue_id', venueId);
-
-            if (deleteRuntimeError) {
-              console.error('[BULK COMPLETE] Error deleting table runtime state:', deleteRuntimeError);
-            }
+          if (deleteTableError) {
+            console.error('[BULK COMPLETE] Error deleting table:', deleteTableError);
+          } else {
+            console.log('[BULK COMPLETE] Successfully deleted table:', tableId);
           }
+          
+          // Also clean up any table sessions
+          const { error: deleteSessionError } = await supabase
+            .from('table_sessions')
+            .delete()
+            .eq('table_id', tableId)
+            .eq('venue_id', venueId);
+
+          if (deleteSessionError) {
+            console.error('[BULK COMPLETE] Error deleting table sessions:', deleteSessionError);
+          } else {
+            console.log('[BULK COMPLETE] Successfully deleted table sessions for table:', tableId);
+          }
+          
+          // Clean up table runtime state
+          const { error: deleteRuntimeError } = await supabase
+            .from('table_runtime_state')
+            .delete()
+            .eq('table_id', tableId)
+            .eq('venue_id', venueId);
+
+          if (deleteRuntimeError) {
+            console.error('[BULK COMPLETE] Error deleting table runtime state:', deleteRuntimeError);
+          } else {
+            console.log('[BULK COMPLETE] Successfully deleted table runtime state for table:', tableId);
+          }
+          
+          // Clean up group sessions for this table
+          const { error: deleteGroupSessionError } = await supabase
+            .from('table_group_sessions')
+            .delete()
+            .eq('table_number', updatedOrders.find(o => o.table_id === tableId)?.table_number)
+            .eq('venue_id', venueId);
+
+          if (deleteGroupSessionError) {
+            console.error('[BULK COMPLETE] Error deleting group sessions:', deleteGroupSessionError);
+          } else {
+            console.log('[BULK COMPLETE] Successfully deleted group sessions for table:', tableId);
+          }
+          
         } catch (tableError) {
-          console.error('[BULK COMPLETE] Error handling table cleanup for order:', order.id, tableError);
+          console.error('[BULK COMPLETE] Error handling table cleanup for table:', tableId, tableError);
         }
       }
     }
