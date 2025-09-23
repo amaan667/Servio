@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         customerPhone: customerPhone || '+1234567890',
         source: source || 'qr',
         // Truncate items to stay within 500 char limit, keeping only essential info
-        items: JSON.stringify(items.map(item => ({
+        items: JSON.stringify(items.map((item: any) => ({
           id: item.id,
           name: item.name,
           quantity: item.quantity,
