@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase/client";
-import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign } from "lucide-react";
+import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar } from "lucide-react";
 
 interface AnalyticsData {
   totalOrders: number;
@@ -17,8 +18,11 @@ interface AnalyticsData {
   topSellingItems: Array<{ name: string; quantity: number; revenue: number }>;
 }
 
+type TimePeriod = '7d' | '30d' | '3m' | '1y';
+
 export default function AnalyticsClient({ venueId, venueName }: { venueId: string; venueName: string }) {
   const [loading, setLoading] = useState(true);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('30d');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     totalOrders: 0,
     totalRevenue: 0,
@@ -30,23 +34,44 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  const getDateRange = (period: TimePeriod) => {
+    const endDate = new Date();
+    const startDate = new Date();
+    
+    switch (period) {
+      case '7d':
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(startDate.getDate() - 30);
+        break;
+      case '3m':
+        startDate.setMonth(startDate.getMonth() - 3);
+        break;
+      case '1y':
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+    }
+    
+    return { startDate, endDate };
+  };
+
   const fetchAnalyticsData = useCallback(async () => {
     try {
-      console.log('🔍 [ANALYTICS] Fetching analytics data for venue:', venueId);
+      console.log('🔍 [ANALYTICS] Fetching analytics data for venue:', venueId, 'period:', timePeriod);
       setLoading(true);
       setError(null);
 
-      // Calculate date range for last 30 days
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 30);
+      // Calculate date range based on selected period
+      const { startDate, endDate } = getDateRange(timePeriod);
 
       console.log('🔍 [ANALYTICS] Date range:', {
+        period: timePeriod,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString()
       });
 
-      // Fetch orders from last 30 days
+      // Fetch orders from selected period
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select(`
@@ -96,20 +121,60 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         menuItemsCount
       });
 
-      // Generate revenue over time data (last 30 days)
+      // Generate revenue over time data based on selected period
       const revenueOverTime = [];
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
+      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Determine grouping interval based on period
+      let interval = 1; // days
+      let dateFormat: 'day' | 'week' | 'month' = 'day';
+      
+      if (timePeriod === '3m') {
+        interval = 7; // weeks
+        dateFormat = 'week';
+      } else if (timePeriod === '1y') {
+        interval = 30; // months
+        dateFormat = 'month';
+      }
+      
+      for (let i = 0; i < daysDiff; i += interval) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + i);
         const dateStr = date.toISOString().split('T')[0];
         
-        const dayRevenue = validOrders
-          .filter((order: any) => order.created_at.startsWith(dateStr))
-          .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+        // Calculate revenue for this period
+        let periodRevenue = 0;
+        if (dateFormat === 'day') {
+          periodRevenue = validOrders
+            .filter((order: any) => order.created_at.startsWith(dateStr))
+            .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+        } else if (dateFormat === 'week') {
+          const endOfWeek = new Date(date);
+          endOfWeek.setDate(date.getDate() + 6);
+          const weekEndStr = endOfWeek.toISOString().split('T')[0];
+          
+          periodRevenue = validOrders
+            .filter((order: any) => {
+              const orderDate = order.created_at.split('T')[0];
+              return orderDate >= dateStr && orderDate <= weekEndStr;
+            })
+            .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+        } else if (dateFormat === 'month') {
+          const endOfMonth = new Date(date);
+          endOfMonth.setMonth(date.getMonth() + 1, 0);
+          const monthEndStr = endOfMonth.toISOString().split('T')[0];
+          
+          periodRevenue = validOrders
+            .filter((order: any) => {
+              const orderDate = order.created_at.split('T')[0];
+              return orderDate >= dateStr && orderDate <= monthEndStr;
+            })
+            .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+        }
         
         revenueOverTime.push({
           date: dateStr,
-          revenue: dayRevenue
+          revenue: periodRevenue
         });
       }
 
@@ -159,11 +224,21 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     } finally {
       setLoading(false);
     }
-  }, [venueId]);
+  }, [venueId, timePeriod]);
 
   useEffect(() => {
     fetchAnalyticsData();
   }, [fetchAnalyticsData]);
+
+  const getTimePeriodLabel = (period: TimePeriod) => {
+    switch (period) {
+      case '7d': return 'Last 7 days';
+      case '30d': return 'Last 30 days';
+      case '3m': return 'Last 3 months';
+      case '1y': return 'Last year';
+      default: return 'Last 30 days';
+    }
+  };
 
   if (loading) {
     return (
@@ -197,8 +272,19 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       {/* Time Period Selector */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Time period:</span>
-          <span className="text-sm font-medium">Last 30 days</span>
+          <Select value={timePeriod} onValueChange={(value: TimePeriod) => setTimePeriod(value)}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="3m">Last 3 months</SelectItem>
+              <SelectItem value="1y">Last year</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-muted-foreground">Last updated:</span>
@@ -275,32 +361,58 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           <CardContent className="p-6">
             <div className="h-64">
               {analyticsData.revenueOverTime.length > 0 ? (
-                <div className="h-full flex items-end justify-between space-x-1">
-                  {analyticsData.revenueOverTime.map((day, index) => {
-                    const maxRevenue = Math.max(...analyticsData.revenueOverTime.map(d => d.revenue));
-                    const height = maxRevenue > 0 ? (day.revenue / maxRevenue) * 100 : 0;
-                    
-                    return (
-                      <div key={index} className="flex flex-col items-center flex-1">
-                        <div 
-                          className="w-full bg-purple-500 rounded-t transition-all duration-300 hover:bg-purple-600"
-                          style={{ height: `${Math.max(height, 2)}%` }}
-                          title={`${day.date}: £${day.revenue.toFixed(2)}`}
-                        />
-                        {index % 5 === 0 && (
-                          <span className="text-xs text-muted-foreground mt-1 transform -rotate-45 origin-left">
-                            {new Date(day.date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
+                <div className="h-full">
+                  <div className="h-48 flex items-end justify-between space-x-1">
+                    {analyticsData.revenueOverTime.map((period, index) => {
+                      const maxRevenue = Math.max(...analyticsData.revenueOverTime.map(d => d.revenue));
+                      const height = maxRevenue > 0 ? (period.revenue / maxRevenue) * 100 : 0;
+                      
+                      return (
+                        <div key={index} className="flex flex-col items-center flex-1">
+                          <div 
+                            className="w-full bg-purple-500 rounded-t transition-all duration-300 hover:bg-purple-600 cursor-pointer"
+                            style={{ height: `${Math.max(height, 2)}%` }}
+                            title={`${period.date}: £${period.revenue.toFixed(2)}`}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="h-16 flex items-start justify-between space-x-1 mt-2">
+                    {analyticsData.revenueOverTime.map((period, index) => {
+                      // Show labels based on time period
+                      const showLabel = (() => {
+                        if (timePeriod === '7d' || timePeriod === '30d') {
+                          return index % 5 === 0 || index === analyticsData.revenueOverTime.length - 1;
+                        } else if (timePeriod === '3m') {
+                          return index % 4 === 0 || index === analyticsData.revenueOverTime.length - 1;
+                        } else if (timePeriod === '1y') {
+                          return index % 2 === 0 || index === analyticsData.revenueOverTime.length - 1;
+                        }
+                        return false;
+                      })();
+                      
+                      if (!showLabel) return <div key={index} className="flex-1" />;
+                      
+                      return (
+                        <div key={index} className="flex-1 text-center">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(period.date).toLocaleDateString('en-GB', { 
+                              month: 'short', 
+                              day: timePeriod === '1y' ? undefined : 'numeric'
+                            })}
                           </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center">
                     <BarChart className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                     <p className="text-gray-500">No revenue data available</p>
+                    <p className="text-sm text-gray-400 mt-1">Try selecting a different time period</p>
                   </div>
                 </div>
               )}
