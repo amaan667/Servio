@@ -28,8 +28,12 @@ export function useTableOrders(venueId: string) {
 	return useQuery({
 		queryKey: ['table-orders', venueId],
 		queryFn: async () => {
-			// Show all active orders regardless of date for table management
-			// This ensures yesterday's active orders are visible immediately
+			// Only show today's active orders for table management (respects daily reset)
+			const todayStart = new Date();
+			todayStart.setHours(0, 0, 0, 0);
+			const todayEnd = new Date();
+			todayEnd.setHours(23, 59, 59, 999);
+			
 			const { data, error } = await supabase
 				.from('orders')
 				.select(`
@@ -47,8 +51,10 @@ export function useTableOrders(venueId: string) {
 				`)
 				.eq('venue_id', venueId)
 				.eq('source', 'qr')
-				// Show all active orders regardless of date
+				// Only show today's active orders (respects daily reset)
 				.in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING', 'SERVED'])
+				.gte('created_at', todayStart.toISOString())
+				.lte('created_at', todayEnd.toISOString())
 				.order('created_at', { ascending: false });
 
 			if (error) throw error;
