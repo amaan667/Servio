@@ -220,18 +220,18 @@ export function OrderCard({
       // Show next status action based on current status
       const getNextStatus = () => {
         switch (order.order_status) {
-          case 'placed': return 'preparing';
-          case 'preparing': return 'ready';
-          case 'ready': return 'served';
-          case 'served': return 'completed';
-          default: return 'completed';
+          case 'placed': return 'IN_PREP';
+          case 'preparing': return 'READY';
+          case 'ready': return 'COMPLETED';
+          case 'served': return 'COMPLETED';
+          default: return 'COMPLETED';
         }
       };
 
       const getStatusLabel = () => {
         switch (order.order_status) {
           case 'placed': return 'Start Preparing';
-          case 'preparing': return order.source === 'counter' ? 'Mark as Ready for Pickup' : 'Mark as Served';
+          case 'preparing': return 'Mark as Ready';
           case 'ready': return 'Complete Order';
           case 'served': return 'Complete Order';
           default: return 'Complete Order';
@@ -242,7 +242,7 @@ export function OrderCard({
         switch (order.order_status) {
           case 'placed': return <Play className="h-4 w-4 mr-1" />;
           case 'preparing': return <CheckCircle className="h-4 w-4 mr-1" />;
-          case 'ready': return <User className="h-4 w-4 mr-1" />;
+          case 'ready': return <CheckCircle className="h-4 w-4 mr-1" />;
           case 'served': return <CheckCircle className="h-4 w-4 mr-1" />;
           default: return <CheckCircle className="h-4 w-4 mr-1" />;
         }

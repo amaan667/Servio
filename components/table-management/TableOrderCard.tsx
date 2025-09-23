@@ -29,13 +29,13 @@ const getNextOrderStatus = (currentStatus: string) => {
   const status = currentStatus.toUpperCase();
   switch (status) {
     case 'PLACED':
-    case 'ACCEPTED': return 'preparing';
+    case 'ACCEPTED': return 'IN_PREP';
     case 'IN_PREP':
-    case 'PREPARING': return 'ready';
-    case 'READY': return 'served';
+    case 'PREPARING': return 'READY';
+    case 'READY': return 'COMPLETED';
     case 'SERVING':
-    case 'SERVED': return 'completed';
-    default: return 'completed';
+    case 'SERVED': return 'COMPLETED';
+    default: return 'COMPLETED';
   }
 };
 
