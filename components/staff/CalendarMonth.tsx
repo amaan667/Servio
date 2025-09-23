@@ -86,7 +86,7 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
     
     days.forEach((day, dayIndex) => {
       const daySegments = shifts.flatMap(shift => 
-        getShiftSegments(shift, day).map(segment => ({
+        getShiftSegments(shift, day.date).map(segment => ({
           ...segment,
           dayIndex
         }))
