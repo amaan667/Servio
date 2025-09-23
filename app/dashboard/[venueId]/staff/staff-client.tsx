@@ -233,6 +233,7 @@ export default function StaffClient({
   const [staffLoaded, setStaffLoaded] = useState(!!initialStaff && initialStaff.length > 0);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
   const [loading, setLoading] = useState(!initialStaff || initialStaff.length === 0);
+  const [editingShiftFor, setEditingShiftFor] = useState<string | null>(null);
 
   // Load staff data on component mount
   useEffect(() => {
@@ -279,6 +280,7 @@ export default function StaffClient({
     };
     loadShifts();
   }, [venueId]);
+
 
   // Manage overall loading state
   useEffect(() => {
@@ -1115,39 +1117,50 @@ export default function StaffClient({
                     <CardContent>
                       <div className="grid gap-3">
                         {grouped[role].map((row) => (
-                          <div key={row.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                <span className="text-sm font-medium text-gray-600">
-                                  {row.name.charAt(0).toUpperCase()}
-                                </span>
+                          <div key={row.id}>
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                  <span className="text-sm font-medium text-gray-600">
+                                    {row.name.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                                <div>
+                                  <p className="font-medium text-foreground">{row.name}</p>
+                                  <p className="text-sm text-muted-foreground">{role}</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium text-foreground">{row.name}</p>
-                                <p className="text-sm text-muted-foreground">{role}</p>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingShiftFor(editingShiftFor === row.id ? null : row.id);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-700"
+                                >
+                                  <Clock className="w-4 h-4 mr-1" />
+                                  {editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => onDelete(row)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  Delete
+                                </Button>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  // Add shift functionality
-                                }}
-                                className="text-blue-600 hover:text-blue-700"
-                              >
-                                <Clock className="w-4 h-4 mr-1" />
-                                Add Shift
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => onDelete(row)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                Delete
-                              </Button>
-                            </div>
+                            
+                            {/* Shift Editor */}
+                            {editingShiftFor === row.id && (
+                              <StaffRowItem 
+                                row={row} 
+                                onDeleteRow={() => {}} 
+                                onShiftsChanged={reloadAllShifts} 
+                              />
+                            )}
                           </div>
                         ))}
                       </div>
