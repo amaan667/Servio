@@ -241,8 +241,8 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
     switch (sentiment) {
       case 'positive': return <ThumbsUp className="h-3 w-3" />;
       case 'negative': return <ThumbsDown className="h-3 w-3" />;
-      case 'neutral': return <MessageSquare className="h-3 w-3" />;
-      default: return <MessageSquare className="h-3 w-3" />;
+      case 'neutral': return <Heart className="h-3 w-3" />;
+      default: return <Heart className="h-3 w-3" />;
     }
   };
 
