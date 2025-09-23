@@ -197,20 +197,8 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
             .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
         }
         
-        // Debug logging for revenue calculation
-        if (i < 5) { // Only log first few iterations to avoid spam
-          console.log('🔍 [ANALYTICS REVENUE] Period calculation:', {
-            dateStr,
-            periodRevenue,
-            ordersInPeriod: validOrders.filter((order: any) => {
-              const orderDate = order.created_at.split('T')[0];
-              if (dateFormat === 'day') {
-                return orderDate === dateStr;
-              }
-              return true; // For other formats, we'll log separately
-            }).length
-          });
-        }
+        // Debug logging for revenue calculation (kept minimal to avoid noise)
+        // console.log('🔍 [ANALYTICS REVENUE] Period calculation:', { dateStr, periodRevenue });
         
         revenueOverTime.push({
           date: dateStr,
