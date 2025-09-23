@@ -169,7 +169,8 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
     },
     refetchInterval: 15000,
     enabled: !!venueId,
-    staleTime: 5000, // Consider data fresh for 5 seconds
+    staleTime: 0, // Always consider data stale to ensure fresh data on navigation
+    refetchOnMount: true, // Always refetch when component mounts
     gcTime: 30000, // Keep in cache for 30 seconds
     retry: 3, // Retry failed requests 3 times
     retryDelay: 1000 // Wait 1 second between retries
@@ -262,7 +263,8 @@ export function useTableCounters(venueId: string) {
     },
     refetchInterval: 15000,
     enabled: !!venueId,
-    staleTime: 5000,
+    staleTime: 0, // Always consider data stale to ensure fresh data on navigation
+    refetchOnMount: true, // Always refetch when component mounts
     gcTime: 30000,
     retry: 3,
     retryDelay: 1000
@@ -287,7 +289,8 @@ export function useReservations(venueId: string) {
     },
     refetchInterval: 5000, // Reduced from 30 seconds to 5 seconds for faster updates
     enabled: !!venueId,
-    staleTime: 2000, // Consider data fresh for 2 seconds (reservations change frequently)
+    staleTime: 0, // Always consider data stale to ensure fresh data on navigation
+    refetchOnMount: true, // Always refetch when component mounts
     gcTime: 30000,
     retry: 3,
     retryDelay: 1000

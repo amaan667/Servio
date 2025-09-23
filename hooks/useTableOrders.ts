@@ -86,7 +86,8 @@ export function useTableOrders(venueId: string) {
 			return ordersWithTableLabels;
 		},
 		refetchInterval: 15000,
-		staleTime: 5000,
+		staleTime: 0, // Always consider data stale to ensure fresh data on navigation
+		refetchOnMount: true, // Always refetch when component mounts
 		gcTime: 30000,
 		retry: 3,
 		retryDelay: 1000
@@ -124,7 +125,8 @@ export function useTableOrderCounts(venueId: string) {
 			};
 		},
 		refetchInterval: 15000,
-		staleTime: 5000,
+		staleTime: 0, // Always consider data stale to ensure fresh data on navigation
+		refetchOnMount: true, // Always refetch when component mounts
 		gcTime: 30000,
 		retry: 3,
 		retryDelay: 1000

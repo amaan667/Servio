@@ -48,6 +48,17 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     refetch: refetchTables 
   } = useTableGrid(venueId, 30); // 30 minutes lead time - configurable
   
+  // Add focus-based refresh to ensure data is fresh when navigating back to this page
+  useEffect(() => {
+    const handleFocus = () => {
+      // Refetch all data when window gains focus (e.g., switching back from live orders)
+      refetchTables();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [refetchTables]);
+  
   const { 
     data: counters = { total_tables: 0, available: 0, occupied: 0, reserved_overlapping_now: 0 }, 
     isLoading: countersLoading 
