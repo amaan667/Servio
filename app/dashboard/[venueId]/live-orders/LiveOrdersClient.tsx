@@ -747,21 +747,61 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       
       if (response.ok && result.success) {
         console.log('[BULK COMPLETE] Successfully completed orders:', result.completedCount);
+        
+        // Immediately update local state to remove completed orders
+        const activeOrderIds = activeOrders.map(order => order.id);
+        setOrders(prev => prev.filter(order => !activeOrderIds.includes(order.id)));
+        setAllTodayOrders(prev => prev.filter(order => !activeOrderIds.includes(order.id)));
+        
         alert(`Successfully completed ${result.completedCount} orders and cleaned up tables!`);
         
-        // Refresh all data
-        const loadVenueAndOrders = async () => {
+        // Refresh all data using the same queries as initial load
+        const refreshData = async () => {
           try {
             setLoading(true);
             
-            // Reload orders data
-            const liveResponse = await fetch(`/api/dashboard/orders/live?venue=${venueId}`);
-            const liveData = await liveResponse.json();
-            setOrders(liveData || []);
+            const venueTimezone = 'Europe/London';
+            const window = todayWindowForTZ(venueTimezone);
+            const liveOrdersCutoff = new Date(Date.now() - LIVE_ORDER_WINDOW_MS).toISOString();
             
-            const allResponse = await fetch(`/api/dashboard/orders/all?venue=${venueId}`);
-            const allData = await allResponse.json();
-            setAllTodayOrders(allData || []);
+            // Reload live orders using the same query as initial load
+            const { data: liveData, error: liveError } = await createClient()
+              .from('orders')
+              .select('*')
+              .eq('venue_id', venueId)
+              .in('order_status', LIVE_WINDOW_STATUSES)
+              .gte('created_at', window.startUtcISO)
+              .lt('created_at', window.endUtcISO)
+              .gte('created_at', liveOrdersCutoff)
+              .order('created_at', { ascending: false });
+
+            // Reload earlier today orders
+            const { data: allData, error: allError } = await createClient()
+              .from('orders')
+              .select('*')
+              .eq('venue_id', venueId)
+              .gte('created_at', window.startUtcISO)
+              .lt('created_at', liveOrdersCutoff)
+              .order('created_at', { ascending: false });
+
+            // Reload history orders
+            const { data: historyData, error: historyError } = await createClient()
+              .from('orders')
+              .select('*')
+              .eq('venue_id', venueId)
+              .lt('created_at', window.startUtcISO)
+              .order('created_at', { ascending: false })
+              .limit(100);
+
+            if (!liveError) {
+              setOrders(liveData || []);
+            }
+            if (!allError) {
+              setAllTodayOrders(allData || []);
+            }
+            if (!historyError) {
+              setHistoryOrders(historyData || []);
+            }
             
             // Refresh counts
             refetchCounts();
@@ -773,7 +813,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           }
         };
         
-        await loadVenueAndOrders();
+        await refreshData();
         
       } else {
         console.error('[BULK COMPLETE] Error:', result.error);
