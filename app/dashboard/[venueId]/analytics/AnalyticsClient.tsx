@@ -6,16 +6,29 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/lib/supabase/client";
-import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar } from "lucide-react";
+import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar, CalendarIcon, Target, Award, TrendingDown } from "lucide-react";
 
 interface AnalyticsData {
   totalOrders: number;
   totalRevenue: number;
   averageOrderValue: number;
   menuItemsCount: number;
-  revenueOverTime: Array<{ date: string; revenue: number }>;
+  revenueOverTime: Array<{ 
+    date: string; 
+    revenue: number; 
+    orders: number;
+    isCurrentPeriod?: boolean;
+    isPeak?: boolean;
+    isLowest?: boolean;
+  }>;
   topSellingItems: Array<{ name: string; quantity: number; revenue: number }>;
+  trendline: number;
+  peakDay: { date: string; revenue: number };
+  lowestDay: { date: string; revenue: number };
 }
 
 type TimePeriod = '7d' | '30d' | '3m' | '1y';
@@ -23,13 +36,18 @@ type TimePeriod = '7d' | '30d' | '3m' | '1y';
 export default function AnalyticsClient({ venueId, venueName }: { venueId: string; venueName: string }) {
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30d');
+  const [customDateRange, setCustomDateRange] = useState<{ start: string; end: string } | null>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     totalOrders: 0,
     totalRevenue: 0,
     averageOrderValue: 0,
     menuItemsCount: 0,
     revenueOverTime: [],
-    topSellingItems: []
+    topSellingItems: [],
+    trendline: 0,
+    peakDay: { date: '', revenue: 0 },
+    lowestDay: { date: '', revenue: 0 }
   });
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -62,8 +80,11 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       setLoading(true);
       setError(null);
 
-      // Calculate date range based on selected period
-      const { startDate, endDate } = getDateRange(timePeriod);
+      // Calculate date range based on selected period or custom range
+      const { startDate, endDate } = customDateRange ? {
+        startDate: new Date(customDateRange.start),
+        endDate: new Date(customDateRange.end)
+      } : getDateRange(timePeriod);
 
       console.log('🔍 [ANALYTICS] Date range:', {
         period: timePeriod,
@@ -164,45 +185,46 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       for (const period of periods) {
         const dateStr = period.date;
         
-        // Calculate revenue for this period
+        // Calculate revenue and order count for this period
         let periodRevenue = 0;
+        let periodOrders = 0;
+        let periodOrdersList: any[] = [];
+        
         if (dateFormat === 'day') {
-          periodRevenue = validOrders
-            .filter((order: any) => {
-              const orderDate = order.created_at.split('T')[0];
-              return orderDate === dateStr;
-            })
-            .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+          periodOrdersList = validOrders.filter((order: any) => {
+            const orderDate = order.created_at.split('T')[0];
+            return orderDate === dateStr;
+          });
         } else if (dateFormat === 'week') {
           const endOfWeek = new Date(period.dateObj);
           endOfWeek.setDate(period.dateObj.getDate() + 6);
           const weekEndStr = endOfWeek.toISOString().split('T')[0];
           
-          periodRevenue = validOrders
-            .filter((order: any) => {
-              const orderDate = order.created_at.split('T')[0];
-              return orderDate >= dateStr && orderDate <= weekEndStr;
-            })
-            .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+          periodOrdersList = validOrders.filter((order: any) => {
+            const orderDate = order.created_at.split('T')[0];
+            return orderDate >= dateStr && orderDate <= weekEndStr;
+          });
         } else if (dateFormat === 'month') {
           const endOfMonth = new Date(period.dateObj);
           endOfMonth.setMonth(period.dateObj.getMonth() + 1, 0);
           const monthEndStr = endOfMonth.toISOString().split('T')[0];
           
-          periodRevenue = validOrders
-            .filter((order: any) => {
-              const orderDate = order.created_at.split('T')[0];
-              return orderDate >= dateStr && orderDate <= monthEndStr;
-            })
-            .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+          periodOrdersList = validOrders.filter((order: any) => {
+            const orderDate = order.created_at.split('T')[0];
+            return orderDate >= dateStr && orderDate <= monthEndStr;
+          });
         }
+        
+        periodRevenue = periodOrdersList.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+        periodOrders = periodOrdersList.length;
         
         // Debug logging for revenue calculation (kept minimal to avoid noise)
         // console.log('🔍 [ANALYTICS REVENUE] Period calculation:', { dateStr, periodRevenue });
         
         revenueOverTime.push({
           date: dateStr,
-          revenue: periodRevenue
+          revenue: periodRevenue,
+          orders: periodOrders
         });
       }
 
@@ -232,6 +254,52 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 10);
 
+      // Calculate trendline (average revenue)
+      const trendline = revenueOverTime.length > 0 
+        ? revenueOverTime.reduce((sum, period) => sum + period.revenue, 0) / revenueOverTime.length 
+        : 0;
+
+      // Find peak and lowest days
+      let peakDay = { date: '', revenue: 0 };
+      let lowestDay = { date: '', revenue: 0 };
+      
+      if (revenueOverTime.length > 0) {
+        const sortedByRevenue = [...revenueOverTime].sort((a, b) => b.revenue - a.revenue);
+        peakDay = { date: sortedByRevenue[0].date, revenue: sortedByRevenue[0].revenue };
+        lowestDay = { date: sortedByRevenue[sortedByRevenue.length - 1].date, revenue: sortedByRevenue[sortedByRevenue.length - 1].revenue };
+        
+        // Mark peak and lowest days
+        revenueOverTime.forEach(period => {
+          if (period.date === peakDay.date) period.isPeak = true;
+          if (period.date === lowestDay.date) period.isLowest = true;
+        });
+      }
+
+      // Mark current period (today, this week, or this month)
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      
+      revenueOverTime.forEach(period => {
+        if (dateFormat === 'day' && period.date === todayStr) {
+          period.isCurrentPeriod = true;
+        } else if (dateFormat === 'week') {
+          const periodDate = new Date(period.date);
+          const weekStart = new Date(periodDate);
+          weekStart.setDate(periodDate.getDate() - periodDate.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          if (now >= weekStart && now <= weekEnd) {
+            period.isCurrentPeriod = true;
+          }
+        } else if (dateFormat === 'month') {
+          const periodDate = new Date(period.date);
+          if (now.getMonth() === periodDate.getMonth() && now.getFullYear() === periodDate.getFullYear()) {
+            period.isCurrentPeriod = true;
+          }
+        }
+      });
+
 
       console.log('🔍 [ANALYTICS] Generated charts data:', {
         revenueOverTimeDays: revenueOverTime.length,
@@ -250,7 +318,10 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         averageOrderValue,
         menuItemsCount,
         revenueOverTime,
-        topSellingItems
+        topSellingItems,
+        trendline,
+        peakDay,
+        lowestDay
       });
 
     } catch (err: any) {
@@ -259,7 +330,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     } finally {
       setLoading(false);
     }
-  }, [venueId, timePeriod]);
+  }, [venueId, timePeriod, customDateRange]);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -289,6 +360,11 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     const date = new Date(dateStr);
     switch (period) {
       case '7d':
+        return date.toLocaleDateString('en-GB', { 
+          weekday: 'short', 
+          day: 'numeric', 
+          month: 'short' 
+        });
       case '30d':
         return date.toLocaleDateString('en-GB', { 
           weekday: 'short', 
@@ -311,6 +387,37 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           day: 'numeric', 
           month: 'short' 
         });
+    }
+  };
+
+  const formatXAxisLabel = (dateStr: string, period: TimePeriod, index: number, total: number) => {
+    const date = new Date(dateStr);
+    switch (period) {
+      case '7d':
+        return date.toLocaleDateString('en-GB', { weekday: 'short' });
+      case '30d':
+        // Show every 5th day or last day
+        if (index % 5 === 0 || index === total - 1) {
+          return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        }
+        return '';
+      case '3m':
+        // Show every 4th week or last week
+        if (index % 4 === 0 || index === total - 1) {
+          const weekStart = new Date(date);
+          const weekEnd = new Date(date);
+          weekEnd.setDate(date.getDate() + 6);
+          return `${weekStart.getDate()}-${weekEnd.getDate()} ${weekStart.toLocaleDateString('en-GB', { month: 'short' })}`;
+        }
+        return '';
+      case '1y':
+        // Show every 2nd month or last month
+        if (index % 2 === 0 || index === total - 1) {
+          return date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+        }
+        return '';
+      default:
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
     }
   };
 
@@ -345,20 +452,78 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     <div className="space-y-6">
       {/* Time Period Selector */}
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Time period:</span>
-          <Select value={timePeriod} onValueChange={(value: TimePeriod) => setTimePeriod(value)}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="3m">Last 3 months</SelectItem>
-              <SelectItem value="1y">Last year</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Time period:</span>
+            <Select value={timePeriod} onValueChange={(value: TimePeriod) => {
+              setTimePeriod(value);
+              setCustomDateRange(null);
+            }}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="3m">Last 3 months</SelectItem>
+                <SelectItem value="1y">Last year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">or</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-40 justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {customDateRange ? 
+                    `${new Date(customDateRange.start).toLocaleDateString()} - ${new Date(customDateRange.end).toLocaleDateString()}` : 
+                    "Custom range"
+                  }
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start-date">Start Date</Label>
+                    <Input
+                      id="start-date"
+                      type="date"
+                      value={customDateRange?.start || ''}
+                      onChange={(e) => setCustomDateRange(prev => ({ 
+                        start: e.target.value, 
+                        end: prev?.end || new Date().toISOString().split('T')[0] 
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="end-date">End Date</Label>
+                    <Input
+                      id="end-date"
+                      type="date"
+                      value={customDateRange?.end || ''}
+                      onChange={(e) => setCustomDateRange(prev => ({ 
+                        start: prev?.start || new Date().toISOString().split('T')[0], 
+                        end: e.target.value 
+                      }))}
+                    />
+                  </div>
+                  <Button 
+                    onClick={() => {
+                      if (customDateRange?.start && customDateRange?.end) {
+                        setTimePeriod('7d'); // Reset to trigger refresh
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    Apply Custom Range
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-muted-foreground">Last updated:</span>
@@ -425,67 +590,131 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue Over Time Chart */}
-        <Card>
+      {/* Enhanced Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Revenue Over Time Chart - Wider */}
+        <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle>Revenue Over Time - {getTimePeriodLabel(timePeriod)}</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Revenue & Orders Over Time - {getTimePeriodLabel(timePeriod)}</CardTitle>
+              <div className="flex items-center space-x-4 text-sm">
+                {analyticsData.peakDay.revenue > 0 && (
+                  <div className="flex items-center space-x-1 text-green-600">
+                    <Award className="h-4 w-4" />
+                    <span>Peak: £{analyticsData.peakDay.revenue.toFixed(2)}</span>
+                  </div>
+                )}
+                {analyticsData.lowestDay.revenue > 0 && analyticsData.lowestDay.revenue !== analyticsData.peakDay.revenue && (
+                  <div className="flex items-center space-x-1 text-orange-600">
+                    <TrendingDown className="h-4 w-4" />
+                    <span>Low: £{analyticsData.lowestDay.revenue.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="h-64">
+            <div className="h-80">
               {analyticsData.revenueOverTime.length > 0 ? (
-                <div className="h-full">
-                  <div className="h-48 flex items-end justify-between space-x-1">
-                    {analyticsData.revenueOverTime.map((period, index) => {
-                      const maxRevenue = Math.max(...analyticsData.revenueOverTime.map(d => d.revenue));
-                      const height = maxRevenue > 0 ? (period.revenue / maxRevenue) * 100 : 0;
-                      
-                      // Ensure bars are visible - minimum 8% height for any revenue > 0
-                      const visibleHeight = period.revenue > 0 ? Math.max(height, 8) : 2;
-                      
-                      return (
-                        <div key={index} className="flex flex-col items-center flex-1">
+                <div className="h-full relative">
+                  {/* Chart Area */}
+                  <div className="h-64 relative">
+                    {/* Trendline */}
+                    {analyticsData.trendline > 0 && (
+                      <div 
+                        className="absolute w-full border-t-2 border-dashed border-gray-300 opacity-50"
+                        style={{ 
+                          bottom: `${(analyticsData.trendline / Math.max(...analyticsData.revenueOverTime.map(d => d.revenue))) * 100}%` 
+                        }}
+                      />
+                    )}
+                    
+                    {/* Chart Bars and Lines */}
+                    <div className="h-full flex items-end justify-between space-x-1 relative">
+                      {analyticsData.revenueOverTime.map((period, index) => {
+                        const maxRevenue = Math.max(...analyticsData.revenueOverTime.map(d => d.revenue));
+                        const maxOrders = Math.max(...analyticsData.revenueOverTime.map(d => d.orders));
+                        
+                        const revenueHeight = maxRevenue > 0 ? (period.revenue / maxRevenue) * 100 : 0;
+                        const ordersHeight = maxOrders > 0 ? (period.orders / maxOrders) * 100 : 0;
+                        
+                        const isHovered = hoveredPoint === index;
+                        const barColor = period.isPeak ? 'bg-green-500' : 
+                                        period.isLowest ? 'bg-orange-500' : 
+                                        period.isCurrentPeriod ? 'bg-purple-600' : 'bg-purple-500';
+                        
+                        return (
                           <div 
-                            className="w-full bg-purple-500 rounded-t transition-all duration-300 hover:bg-purple-600 cursor-pointer"
-                            style={{ 
-                              height: `${visibleHeight}%`,
-                              minHeight: period.revenue > 0 ? '12px' : '4px'
-                            }}
-                            title={`${formatTooltipDate(period.date, timePeriod)} • £${period.revenue.toFixed(2)} • ${getTimePeriodLabel(timePeriod)}`}
-                          />
-                        </div>
-                      );
-                    })}
+                            key={index} 
+                            className="flex flex-col items-center flex-1 group cursor-pointer"
+                            onMouseEnter={() => setHoveredPoint(index)}
+                            onMouseLeave={() => setHoveredPoint(null)}
+                          >
+                            {/* Order Count Bars (background) */}
+                            <div 
+                              className="w-full bg-blue-200 rounded-t transition-all duration-300"
+                              style={{ 
+                                height: `${Math.max(ordersHeight * 0.6, 2)}%`,
+                                minHeight: period.orders > 0 ? '8px' : '2px'
+                              }}
+                            />
+                            
+                            {/* Revenue Bars (foreground) */}
+                            <div 
+                              className={`w-full ${barColor} rounded-t transition-all duration-300 ${isHovered ? 'ring-2 ring-purple-300' : ''}`}
+                              style={{ 
+                                height: `${Math.max(revenueHeight, 2)}%`,
+                                minHeight: period.revenue > 0 ? '12px' : '4px'
+                              }}
+                            />
+                            
+                            {/* Peak/Lowest Badges */}
+                            {period.isPeak && (
+                              <div className="absolute -top-6 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                                Peak £{period.revenue.toFixed(2)}
+                              </div>
+                            )}
+                            {period.isLowest && period.revenue !== analyticsData.peakDay.revenue && (
+                              <div className="absolute -top-6 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium">
+                                Low £{period.revenue.toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
+                  
+                  {/* X-axis Labels */}
                   <div className="h-16 flex items-start justify-between space-x-1 mt-2">
                     {analyticsData.revenueOverTime.map((period, index) => {
-                      // Show labels based on time period
-                      const showLabel = (() => {
-                        if (timePeriod === '7d') {
-                          // Show every day for 7-day period
-                          return true;
-                        } else if (timePeriod === '30d') {
-                          return index % 5 === 0 || index === analyticsData.revenueOverTime.length - 1;
-                        } else if (timePeriod === '3m') {
-                          return index % 4 === 0 || index === analyticsData.revenueOverTime.length - 1;
-                        } else if (timePeriod === '1y') {
-                          return index % 2 === 0 || index === analyticsData.revenueOverTime.length - 1;
-                        }
-                        return false;
-                      })();
-                      
-                      if (!showLabel) return <div key={index} className="flex-1" />;
+                      const label = formatXAxisLabel(period.date, timePeriod, index, analyticsData.revenueOverTime.length);
+                      if (!label) return <div key={index} className="flex-1" />;
                       
                       return (
                         <div key={index} className="flex-1 text-center">
                           <span className="text-xs text-muted-foreground">
-                            {formatTooltipDate(period.date, timePeriod)}
+                            {label}
                           </span>
                         </div>
                       );
                     })}
                   </div>
+                  
+                  {/* Hover Tooltip */}
+                  {hoveredPoint !== null && (
+                    <div className="absolute top-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatTooltipDate(analyticsData.revenueOverTime[hoveredPoint].date, timePeriod)}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Revenue: £{analyticsData.revenueOverTime[hoveredPoint].revenue.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Orders: {analyticsData.revenueOverTime[hoveredPoint].orders}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="h-full flex items-center justify-center">
@@ -497,16 +726,32 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
                 </div>
               )}
             </div>
+            
+            {/* Chart Legend */}
+            <div className="flex items-center justify-center space-x-6 mt-4 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-purple-500 rounded"></div>
+                <span className="text-muted-foreground">Revenue</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-200 rounded"></div>
+                <span className="text-muted-foreground">Orders</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-1 bg-gray-300 border-dashed border-t-2"></div>
+                <span className="text-muted-foreground">Average</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Top Selling Items Chart */}
+        {/* Top Selling Items Chart - Side by side */}
         <Card>
           <CardHeader>
             <CardTitle>Top Selling Items</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="h-64">
+            <div className="h-80">
               {analyticsData.topSellingItems.length > 0 ? (
                 <div className="space-y-3">
                   {analyticsData.topSellingItems.slice(0, 8).map((item, index) => {
