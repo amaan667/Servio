@@ -59,7 +59,55 @@ export async function GET(req: Request) {
           orderError = null;
         } else {
           console.error("Order still not found after retry for session:", sessionId);
-          return NextResponse.json({ paid: false, error: "Order not found - webhook may be delayed" }, { status: 404 });
+          
+          // Fallback: Create order from session metadata if webhook failed
+          console.log("[VERIFY] Webhook failed to create order, creating order as fallback...");
+          
+          try {
+            const session = await stripe.checkout.sessions.retrieve(sessionId);
+            console.log("[VERIFY] Retrieved session for fallback order creation:", session.id);
+            
+            // Parse items from metadata
+            const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
+            
+            const newOrder = {
+              venue_id: session.metadata?.venueId || 'default-venue',
+              table_number: parseInt(session.metadata?.tableNumber || '1'),
+              customer_name: session.metadata?.customerName || 'Customer',
+              customer_phone: session.metadata?.customerPhone || '+1234567890',
+              items: items,
+              total_amount: session.amount_total ? session.amount_total / 100 : 0,
+              order_status: 'PLACED',
+              payment_status: 'PAID',
+              payment_method: 'stripe',
+              payment_mode: 'online',
+              source: session.metadata?.source || 'qr',
+              stripe_session_id: session.id,
+              stripe_payment_intent_id: session.payment_intent as string,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+
+            console.log("[VERIFY] Creating fallback order with data:", JSON.stringify(newOrder, null, 2));
+
+            const { data: createdOrder, error: createError } = await supabase
+              .from('orders')
+              .insert(newOrder)
+              .select('id')
+              .single();
+
+            if (createError) {
+              console.error("[VERIFY] Error creating fallback order:", createError);
+              return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed" }, { status: 404 });
+            }
+
+            console.log("[VERIFY] Fallback order created successfully:", createdOrder.id);
+            return NextResponse.json({ paid: true, orderId: createdOrder.id }, { status: 200 });
+            
+          } catch (fallbackError) {
+            console.error("[VERIFY] Fallback order creation failed:", fallbackError);
+            return NextResponse.json({ paid: false, error: "Order not found - webhook may be delayed" }, { status: 404 });
+          }
         }
       }
 
