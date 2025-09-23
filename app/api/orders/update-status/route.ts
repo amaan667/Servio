@@ -48,11 +48,11 @@ export async function POST(req: Request) {
           .neq('id', orderId);
 
         // Filter by table_id or table_number
-        let filteredActiveOrders = activeOrders;
+        let filteredActiveOrders = activeOrders || [];
         if (order.table_id) {
-          filteredActiveOrders = activeOrders?.filter(o => o.table_id === order.table_id);
+          filteredActiveOrders = (activeOrders || []).filter(o => o.table_id === order.table_id);
         } else if (order.table_number) {
-          filteredActiveOrders = activeOrders?.filter(o => o.table_number === order.table_number);
+          filteredActiveOrders = (activeOrders || []).filter(o => o.table_number === order.table_number);
         }
 
         if (activeOrdersError) {
