@@ -222,8 +222,14 @@ export default function StaffClient({
 
   // Memoize counts to prevent flickering - use initial counts when available
   const staffCounts = useMemo(() => {
+    console.log('[STAFF DEBUG] initialCounts:', initialCounts);
+    console.log('[STAFF DEBUG] initialStaff:', initialStaff);
+    console.log('[STAFF DEBUG] staff:', staff);
+    console.log('[STAFF DEBUG] allShifts:', allShifts);
+    
     // If we have initial counts from server, use them to prevent flickering
     if (initialCounts) {
+      console.log('[STAFF DEBUG] Using initialCounts from server');
       return {
         totalStaff: initialCounts.total_staff,
         activeStaff: initialCounts.active_staff,

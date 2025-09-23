@@ -72,9 +72,16 @@ export default async function StaffPage({
 
     // Calculate staff counts server-side
     const staffData = initialStaff || [];
+    console.log('[STAFF SERVER DEBUG] initialStaff:', initialStaff);
+    console.log('[STAFF SERVER DEBUG] staffData:', staffData);
+    
     const totalStaff = staffData.length;
     const activeStaff = staffData.filter((s: any) => s.active === true).length;
     const uniqueRoles = new Set(staffData.map((s: any) => s.role)).size;
+    
+    console.log('[STAFF SERVER DEBUG] totalStaff:', totalStaff);
+    console.log('[STAFF SERVER DEBUG] activeStaff:', activeStaff);
+    console.log('[STAFF SERVER DEBUG] uniqueRoles:', uniqueRoles);
     
     // Get active shifts count
     const now = new Date();
@@ -87,11 +94,15 @@ export default async function StaffPage({
       console.error('[STAFF] Error fetching shifts for counts:', shiftsError);
     }
     
+    console.log('[STAFF SERVER DEBUG] allShifts:', allShifts);
+    
     const activeShiftsCount = (allShifts || []).filter((shift: any) => {
       const start = new Date(shift.start_time);
       const end = new Date(shift.end_time);
       return now >= start && now <= end;
     }).length;
+    
+    console.log('[STAFF SERVER DEBUG] activeShiftsCount:', activeShiftsCount);
     
     const initialCounts = {
       total_staff: totalStaff,
@@ -99,6 +110,8 @@ export default async function StaffPage({
       unique_roles: uniqueRoles,
       active_shifts_count: activeShiftsCount
     };
+    
+    console.log('[STAFF SERVER DEBUG] final initialCounts:', initialCounts);
 
     return (
       <div className="min-h-screen bg-background">
