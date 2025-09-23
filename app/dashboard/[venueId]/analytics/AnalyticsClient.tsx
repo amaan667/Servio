@@ -224,7 +224,10 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         revenueOverTime.push({
           date: dateStr,
           revenue: periodRevenue,
-          orders: periodOrders
+          orders: periodOrders,
+          isCurrentPeriod: false,
+          isPeak: false,
+          isLowest: false
         });
       }
 
