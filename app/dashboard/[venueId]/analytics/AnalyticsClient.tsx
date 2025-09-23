@@ -206,7 +206,13 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
 
       console.log('🔍 [ANALYTICS] Generated charts data:', {
         revenueOverTimeDays: revenueOverTime.length,
-        topSellingItemsCount: topSellingItems.length
+        topSellingItemsCount: topSellingItems.length,
+        revenueOverTimeSample: revenueOverTime.slice(0, 5),
+        validOrdersSample: validOrders.slice(0, 3).map((o: any) => ({
+          created_at: o.created_at,
+          total_amount: o.total_amount,
+          order_status: o.order_status
+        }))
       });
 
       setAnalyticsData({
@@ -360,12 +366,28 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-64">
+              {(() => {
+                console.log('🔍 [ANALYTICS CHART] Rendering chart with data:', {
+                  revenueOverTimeLength: analyticsData.revenueOverTime.length,
+                  revenueOverTimeSample: analyticsData.revenueOverTime.slice(0, 3),
+                  timePeriod
+                });
+                return null;
+              })()}
               {analyticsData.revenueOverTime.length > 0 ? (
                 <div className="h-full">
                   <div className="h-48 flex items-end justify-between space-x-1">
                     {analyticsData.revenueOverTime.map((period, index) => {
                       const maxRevenue = Math.max(...analyticsData.revenueOverTime.map(d => d.revenue));
                       const height = maxRevenue > 0 ? (period.revenue / maxRevenue) * 100 : 0;
+                      
+                      console.log('🔍 [ANALYTICS CHART] Bar data:', {
+                        index,
+                        date: period.date,
+                        revenue: period.revenue,
+                        maxRevenue,
+                        height
+                      });
                       
                       return (
                         <div key={index} className="flex flex-col items-center flex-1">
