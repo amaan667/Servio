@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         // Check if there are any other active orders for this table
         const { data: activeOrders, error: activeOrdersError } = await supabase
           .from('orders')
-          .select('id, order_status')
+          .select('id, order_status, table_id, table_number')
           .eq('venue_id', order.venue_id)
           .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
           .neq('id', orderId);
