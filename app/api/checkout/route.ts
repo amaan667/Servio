@@ -57,26 +57,8 @@ export async function POST(req: Request) {
       cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
     });
 
-    // Update the order with the Stripe session ID so webhook can find it
-    try {
-      const { createClient } = await import('@/lib/supabase/server');
-      const supabase = await createClient();
-      
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ stripe_session_id: session.id })
-        .eq('id', orderId);
-      
-      if (updateError) {
-        console.error('[CHECKOUT] Error updating order with session ID:', updateError);
-        // Don't fail the request, just log the error
-      } else {
-        console.log('[CHECKOUT] Successfully updated order with session ID:', session.id);
-      }
-    } catch (error) {
-      console.error('[CHECKOUT] Error updating order with session ID:', error);
-      // Don't fail the request, just log the error
-    }
+    // Note: Order will be created by webhook after successful payment
+    // No need to update order here since we're using temp order ID
 
     return NextResponse.json({ url: session.url, sessionId: session.id }, { status: 200 });
   } catch (e: any) {

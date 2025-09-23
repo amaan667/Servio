@@ -17,12 +17,13 @@ export const metadata: Metadata = {
   title: "Servio - QR Code Ordering Made Simple",
   description:
     "Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay - all from their phones.",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 // Force dynamic rendering to prevent static generation errors with cookies
