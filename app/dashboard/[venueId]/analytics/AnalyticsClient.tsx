@@ -278,6 +278,45 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     }
   };
 
+  const getPeriodDisplayName = (period: TimePeriod) => {
+    switch (period) {
+      case '7d': return 'day';
+      case '30d': return 'day';
+      case '3m': return 'week';
+      case '1y': return 'month';
+      default: return 'day';
+    }
+  };
+
+  const formatTooltipDate = (dateStr: string, period: TimePeriod) => {
+    const date = new Date(dateStr);
+    switch (period) {
+      case '7d':
+      case '30d':
+        return date.toLocaleDateString('en-GB', { 
+          weekday: 'short', 
+          day: 'numeric', 
+          month: 'short' 
+        });
+      case '3m':
+        // For weekly data, show the week range
+        const weekStart = new Date(date);
+        const weekEnd = new Date(date);
+        weekEnd.setDate(date.getDate() + 6);
+        return `${weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${weekEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+      case '1y':
+        return date.toLocaleDateString('en-GB', { 
+          month: 'long', 
+          year: 'numeric' 
+        });
+      default:
+        return date.toLocaleDateString('en-GB', { 
+          day: 'numeric', 
+          month: 'short' 
+        });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -394,7 +433,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         {/* Revenue Over Time Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Revenue Over Time</CardTitle>
+            <CardTitle>Revenue Over Time - {getTimePeriodLabel(timePeriod)}</CardTitle>
             <div className="text-xs text-gray-500 mt-2">
               Debug: {analyticsData.revenueOverTime.length} periods, 
               Max revenue: £{Math.max(...analyticsData.revenueOverTime.map(d => d.revenue), 0).toFixed(2)}
@@ -438,7 +477,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
                               height: `${visibleHeight}%`,
                               minHeight: period.revenue > 0 ? '12px' : '4px'
                             }}
-                            title={`${period.date}: £${period.revenue.toFixed(2)}`}
+                            title={`${formatTooltipDate(period.date, timePeriod)} • £${period.revenue.toFixed(2)} • ${getTimePeriodLabel(timePeriod)}`}
                           />
                         </div>
                       );
@@ -463,10 +502,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
                       return (
                         <div key={index} className="flex-1 text-center">
                           <span className="text-xs text-muted-foreground">
-                            {new Date(period.date).toLocaleDateString('en-GB', { 
-                              month: 'short', 
-                              day: timePeriod === '1y' ? undefined : 'numeric'
-                            })}
+                            {formatTooltipDate(period.date, timePeriod)}
                           </span>
                         </div>
                       );
