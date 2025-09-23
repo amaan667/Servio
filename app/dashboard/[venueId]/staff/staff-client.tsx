@@ -10,9 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import { Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import StaffCalendar from '@/components/staff/StaffCalendar';
-import { Shift } from '@/lib/calendar-utils';
-import '@/styles/calendar.css';
+import SimpleStaffGrid from '@/components/staff/SimpleStaffGrid';
 
 
 type StaffRow = {
@@ -220,31 +218,7 @@ export default function StaffClient({
 
   const roles = Object.keys(grouped).sort();
 
-  // Convert legacy shifts to new format
-  const convertToNewShifts = useCallback((legacyShifts: LegacyShift[]): Shift[] => {
-    return legacyShifts.map(legacy => ({
-      id: legacy.id,
-      staffName: legacy.staff_name,
-      role: legacy.area || legacy.staff_role,
-      startsAt: legacy.start_time,
-      endsAt: legacy.end_time,
-      color: undefined, // Will be derived from role
-      isOvernight: undefined // Will be calculated
-    }));
-  }, []);
 
-  const newShifts = useMemo(() => convertToNewShifts(allShifts), [allShifts, convertToNewShifts]);
-
-  const isShiftActive = useCallback((shift: LegacyShift) => {
-    const now = new Date();
-    const startTime = new Date(shift.start_time);
-    const endTime = new Date(shift.end_time);
-    return now >= startTime && now <= endTime;
-  }, []);
-
-  const activeShifts = useMemo(() => {
-    return allShifts.filter(isShiftActive);
-  }, [allShifts, isShiftActive]);
 
   // Memoize counts to prevent flickering - use initial counts when available
   const staffCounts = useMemo(() => {
@@ -276,7 +250,7 @@ export default function StaffClient({
     const totalStaff = currentStaff.length;
     const activeStaff = currentStaff.filter(s => s.active === true).length;
     const uniqueRoles = roles.length;
-    const activeShiftsCount = activeShifts.length;
+    const activeShiftsCount = 0; // Simplified - no longer tracking active shifts
     
     return {
       totalStaff,
@@ -284,28 +258,8 @@ export default function StaffClient({
       uniqueRoles,
       activeShiftsCount
     };
-  }, [initialCounts, staff.length, staff, roles.length, activeShifts.length, loading, initialStaff]);
+  }, [initialCounts, staff.length, staff, roles.length, loading, initialStaff]);
 
-  // Legacy functions for shift list display
-  const isOvernightShift = (shift: LegacyShift) => {
-    // Parse the dates properly, handling timezone issues
-    const startDate = new Date(shift.start_time);
-    const endDate = new Date(shift.end_time);
-    
-    // Get local date strings to avoid timezone issues
-    const startDateStr = startDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format
-    const endDateStr = endDate.toLocaleDateString('en-CA');
-    
-    return startDateStr !== endDateStr;
-  };
-
-  const formatTime = (timeString: string) => {
-    return new Date(timeString).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: true 
-    });
-  };
 
 
   const StaffRowItem = memo(function StaffRowItem({ row, onDeleteRow, onShiftsChanged, embedded = false, onClose }: { row: StaffRow; onDeleteRow: (r: StaffRow) => void; onShiftsChanged: () => void; embedded?: boolean; onClose?: () => void }) {
@@ -316,7 +270,7 @@ export default function StaffClient({
     const [area, setArea] = useState('');
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-    const [shifts, setShifts] = useState<Shift[]>([]);
+    const [shifts, setShifts] = useState<LegacyShift[]>([]);
 
     const load = useCallback(async () => {
       if (!showEditor) return;
@@ -739,149 +693,8 @@ export default function StaffClient({
                 <p className="text-muted-foreground mt-1">Manage shifts and schedules for your team</p>
               </div>
             </div>
-
-            {/* Overnight Shift Legend */}
-            <Card className="border-0 shadow-sm bg-gradient-to-r from-orange-50 to-orange-100/50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-lg">🌙</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-orange-800">Overnight Shifts</span>
-                    <p className="text-orange-700">Shifts spanning multiple days are highlighted with special styling and indicators</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
             
-            <StaffCalendar shifts={newShifts} venueId={venueId} />
-            
-            {/* Modern Shifts List */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">All Scheduled Shifts</h3>
-                    <p className="text-sm text-muted-foreground">Complete overview of all team schedules</p>
-                  </div>
-                  <Badge variant="secondary" className="px-3 py-1">
-                    {allShifts.length} shifts
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {allShifts.length > 0 ? (
-                  <div className="space-y-3">
-                    {allShifts
-                      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-                      .map((shift) => {
-                        const overnight = isOvernightShift(shift);
-                        return (
-                          <div key={shift.id} className={`group flex items-center justify-between p-4 rounded-lg border transition-all hover:shadow-sm ${
-                            overnight 
-                              ? 'bg-gradient-to-r from-orange-50 to-orange-100/50 border-orange-200' 
-                              : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                          }`}>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                  overnight ? 'bg-orange-500' : 'bg-purple-500'
-                                }`}>
-                                  <span className="text-white text-sm font-medium">
-                                    {shift.staff_name.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className={`font-semibold ${overnight ? 'text-orange-800' : 'text-purple-700'}`}>
-                                    {shift.staff_name}
-                                    {overnight && <span className="ml-2" title="Overnight Shift">🌙</span>}
-                                  </span>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Badge variant="outline" className="text-xs">
-                                      {shift.staff_role}
-                                    </Badge>
-                                    {overnight && (
-                                      <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-100 text-xs">
-                                        Overnight
-                                      </Badge>
-                                    )}
-                                    {isShiftActive(shift) && (
-                                      <Badge className="bg-green-500 text-white text-xs">
-                                        Active Now
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className={`text-sm ${overnight ? 'text-orange-600' : 'text-gray-600'}`}>
-                                <div className="flex items-center gap-4">
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" />
-                                    {new Date(shift.start_time).toLocaleDateString()}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {formatTime(shift.start_time)} – {formatTime(shift.end_time)}
-                                  </span>
-                                  {shift.area && (
-                                    <span className="text-muted-foreground">
-                                      • {shift.area}
-                                    </span>
-                                  )}
-                                </div>
-                                {overnight && (
-                                  <div className="mt-1 text-orange-500 text-xs">
-                                    Spans {new Date(shift.start_time).toLocaleDateString()} to {new Date(shift.end_time).toLocaleDateString()}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-600 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={async () => {
-                                if (!confirm('Delete this shift?')) return;
-                                const res = await fetch('/api/staff/shifts/delete', {
-                                  method: 'POST',
-                                  headers: { 'content-type': 'application/json' },
-                                  body: JSON.stringify({ id: shift.id })
-                                });
-                                const j = await res.json().catch(() => ({}));
-                                if (!res.ok || j?.error) {
-                                  alert(j?.error || 'Failed to delete shift');
-                                  return;
-                                }
-                                reloadAllShifts();
-                              }}
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        );
-                      })}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Calendar className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No shifts scheduled</h3>
-                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                      Start creating shifts for your team members. You can schedule shifts and manage your team's availability.
-                    </p>
-                    {staff.length === 0 && (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-700">
-                          💡 <strong>Tip:</strong> Add team members first to create shifts with proper names.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <SimpleStaffGrid shifts={allShifts} venueId={venueId} />
           </div>
         )}
       </div>
