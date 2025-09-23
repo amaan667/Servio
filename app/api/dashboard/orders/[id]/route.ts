@@ -37,12 +37,17 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   if (order_status === 'COMPLETED' || order_status === 'CANCELLED') {
     const order = data;
     if (order && order.table_number && order.source === 'qr') {
-      console.log('[DASHBOARD UPDATE] Order completed/cancelled, checking if table should be set to FREE');
+      console.log('[TABLE CLEAR] Order completed/cancelled, checking if table should be cleared:', {
+        orderId: id,
+        tableNumber: order.table_number,
+        venueId: order.venue_id,
+        orderStatus: order_status
+      });
       
       // Check if there are any other active orders for this table
       const { data: activeOrders, error: activeOrdersError } = await supa
         .from('orders')
-        .select('id')
+        .select('id, order_status')
         .eq('venue_id', order.venue_id)
         .eq('table_number', order.table_number)
         .eq('source', 'qr')
@@ -50,41 +55,53 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
         .neq('id', id);
 
       if (activeOrdersError) {
-        console.error('[DASHBOARD UPDATE] Error checking active orders:', activeOrdersError);
+        console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
       } else if (!activeOrders || activeOrders.length === 0) {
-        // No other active orders for this table, set it back to FREE
-        console.log('[DASHBOARD UPDATE] No other active orders for table, setting to FREE');
+        // No other active orders for this table, clear the table setup
+        console.log('[TABLE CLEAR] No other active orders for table, clearing table setup');
         
-        // Find the table by venue_id and table_number
-        const { data: tableData, error: tableFindError } = await supa
-          .from('table_runtime_state')
-          .select('id')
+        // Clear table sessions (active sessions)
+        const { error: sessionClearError } = await supa
+          .from('table_sessions')
+          .update({ 
+            status: 'FREE',
+            order_id: null,
+            closed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
           .eq('venue_id', order.venue_id)
-          .eq('label', `Table ${order.table_number}`)
-          .single();
+          .eq('table_number', order.table_number)
+          .is('closed_at', null);
 
-        if (tableFindError) {
-          console.error('[DASHBOARD UPDATE] Error finding table:', tableFindError);
-        } else if (tableData) {
-          const { error: tableUpdateError } = await supa
-            .from('table_sessions')
-            .update({ 
-              status: 'FREE',
-              order_id: null,
-              closed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('table_id', tableData.id)
-            .is('closed_at', null);
-
-          if (tableUpdateError) {
-            console.error('[DASHBOARD UPDATE] Error updating table to FREE:', tableUpdateError);
-          } else {
-            console.log('[DASHBOARD UPDATE] Successfully set table to FREE');
-          }
+        if (sessionClearError) {
+          console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
+        } else {
+          console.log('[TABLE CLEAR] Successfully cleared table sessions');
         }
+
+        // Also clear table runtime state if it exists
+        const { error: runtimeClearError } = await supa
+          .from('table_runtime_state')
+          .update({ 
+            primary_status: 'FREE',
+            order_id: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('venue_id', order.venue_id)
+          .eq('label', `Table ${order.table_number}`);
+
+        if (runtimeClearError) {
+          console.error('[TABLE CLEAR] Error clearing table runtime state:', runtimeClearError);
+        } else {
+          console.log('[TABLE CLEAR] Successfully cleared table runtime state');
+        }
+
+        console.log('[TABLE CLEAR] Table setup cleared successfully for table', order.table_number);
       } else {
-        console.log('[DASHBOARD UPDATE] Other active orders exist for table, keeping OCCUPIED');
+        console.log('[TABLE CLEAR] Other active orders exist for table, keeping table occupied:', {
+          activeOrdersCount: activeOrders.length,
+          activeOrderIds: activeOrders.map(o => o.id)
+        });
       }
     }
   }

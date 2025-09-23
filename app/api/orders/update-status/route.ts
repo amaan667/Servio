@@ -30,61 +30,112 @@ export async function POST(req: Request) {
     // Handle table state transitions when order is completed or cancelled
     if (status === 'COMPLETED' || status === 'CANCELLED') {
       const order = data?.[0];
-      if (order && order.table_id && order.source === 'qr') {
-        console.log('[UPDATE STATUS] Order completed/cancelled, checking if table should be set to FREE');
+      if (order && (order.table_id || order.table_number) && order.source === 'qr') {
+        console.log('[TABLE CLEAR] Order completed/cancelled, checking if table should be cleared:', {
+          orderId: orderId,
+          tableId: order.table_id,
+          tableNumber: order.table_number,
+          venueId: order.venue_id,
+          orderStatus: status
+        });
         
         // Check if there are any other active orders for this table
         const { data: activeOrders, error: activeOrdersError } = await supabase
           .from('orders')
-          .select('id')
+          .select('id, order_status')
           .eq('venue_id', order.venue_id)
-          .eq('table_id', order.table_id)
-          .in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING'])
-          .limit(1);
+          .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING'])
+          .neq('id', orderId);
+
+        // Filter by table_id or table_number
+        let filteredActiveOrders = activeOrders;
+        if (order.table_id) {
+          filteredActiveOrders = activeOrders?.filter(o => o.table_id === order.table_id);
+        } else if (order.table_number) {
+          filteredActiveOrders = activeOrders?.filter(o => o.table_number === order.table_number);
+        }
 
         if (activeOrdersError) {
-          console.error('[UPDATE STATUS] Error checking active orders:', activeOrdersError);
-        } else if (!activeOrders || activeOrders.length === 0) {
-          console.log('[UPDATE STATUS] No active orders found, setting table to FREE');
+          console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
+        } else if (!filteredActiveOrders || filteredActiveOrders.length === 0) {
+          console.log('[TABLE CLEAR] No other active orders for table, clearing table setup');
           
-          // Set table session to FREE
-          const { error: tableError } = await supabase
-            .from('table_sessions')
-            .upsert({
-              table_id: order.table_id,
-              status: 'FREE',
-              closed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'table_id'
-            });
+          // Clear table sessions (active sessions)
+          const sessionUpdateData = {
+            status: 'FREE',
+            order_id: null,
+            closed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
 
-          if (tableError) {
-            console.error('[UPDATE STATUS] Error updating table session:', tableError);
+          let sessionQuery = supabase
+            .from('table_sessions')
+            .update(sessionUpdateData)
+            .eq('venue_id', order.venue_id)
+            .is('closed_at', null);
+
+          if (order.table_id) {
+            sessionQuery = sessionQuery.eq('table_id', order.table_id);
+          } else if (order.table_number) {
+            sessionQuery = sessionQuery.eq('table_number', order.table_number);
           }
 
-          // If order is completed and paid, check if reservations should be auto-completed
-          if (status === 'COMPLETED' && order.payment_status === 'PAID') {
-            try {
-              const completionResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/reservations/check-completion`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  venueId: order.venue_id,
-                  tableId: order.table_id
-                }),
-              });
+          const { error: sessionClearError } = await sessionQuery;
 
-              if (completionResponse.ok) {
-                const completionResult = await completionResponse.json();
-                console.log('[UPDATE STATUS] Auto-completion check result:', completionResult);
-              }
-            } catch (completionError) {
-              console.error('[UPDATE STATUS] Error checking reservation completion:', completionError);
-              // Don't fail the main request if completion check fails
+          if (sessionClearError) {
+            console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
+          } else {
+            console.log('[TABLE CLEAR] Successfully cleared table sessions');
+          }
+
+          // Also clear table runtime state if it exists
+          if (order.table_number) {
+            const { error: runtimeClearError } = await supabase
+              .from('table_runtime_state')
+              .update({ 
+                primary_status: 'FREE',
+                order_id: null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('venue_id', order.venue_id)
+              .eq('label', `Table ${order.table_number}`);
+
+            if (runtimeClearError) {
+              console.error('[TABLE CLEAR] Error clearing table runtime state:', runtimeClearError);
+            } else {
+              console.log('[TABLE CLEAR] Successfully cleared table runtime state');
             }
+          }
+
+          console.log('[TABLE CLEAR] Table setup cleared successfully');
+        } else {
+          console.log('[TABLE CLEAR] Other active orders exist for table, keeping table occupied:', {
+            activeOrdersCount: filteredActiveOrders.length,
+            activeOrderIds: filteredActiveOrders.map(o => o.id)
+          });
+        }
+
+        // If order is completed and paid, check if reservations should be auto-completed
+        if (status === 'COMPLETED' && order.payment_status === 'PAID') {
+          try {
+            const completionResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/reservations/check-completion`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                venueId: order.venue_id,
+                tableId: order.table_id
+              }),
+            });
+
+            if (completionResponse.ok) {
+              const completionResult = await completionResponse.json();
+              console.log('[UPDATE STATUS] Auto-completion check result:', completionResult);
+            }
+          } catch (completionError) {
+            console.error('[UPDATE STATUS] Error checking reservation completion:', completionError);
+            // Don't fail the main request if completion check fails
           }
         }
       }
