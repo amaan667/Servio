@@ -19,6 +19,8 @@ import { useTableGrid, useTableCounters, useReservations } from '@/hooks/useTabl
 import { useCounterOrders, useCounterOrderCounts } from '@/hooks/useCounterOrders';
 import { useTableOrders, useTableOrderCounts } from '@/hooks/useTableOrders';
 import { useDailyReset } from '@/hooks/useDailyReset';
+import { useGroupSessions } from '@/hooks/useGroupSessions';
+import type { GroupSession } from '@/hooks/useGroupSessions';
 import { TableCardNew } from '@/components/table-management/TableCardNew';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { mapCounterOrderToCardData } from '@/lib/orders/mapCounterOrderToCardData';
@@ -55,6 +57,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     data: reservations = [], 
     isLoading: reservationsLoading 
   } = useReservations(venueId);
+
+  // Manage group sessions at the parent level to prevent multiple API calls
+  const { groupSessions } = useGroupSessions(venueId);
 
   // const autoCompleteReservations = useAutoCompleteReservations();
   // const autoCompleteRef = useRef(autoCompleteReservations);
@@ -678,6 +683,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
                   venueId={venueId}
                   onActionComplete={handleTableActionComplete}
                   availableTables={tables}
+                  groupSessions={groupSessions}
                 />
               </div>
             ))}

@@ -35,7 +35,7 @@ import {
 import { StatusPill } from './StatusPill';
 import { useCloseTable, TableGridItem } from '@/hooks/useTableReservations';
 import { useTableActions } from '@/hooks/useTableActions';
-import { useGroupSessions } from '@/hooks/useGroupSessions';
+import { GroupSession } from '@/hooks/useGroupSessions';
 import { createClient } from '@/lib/supabase/client';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
@@ -48,14 +48,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+
 interface TableCardNewProps {
   table: TableGridItem;
   venueId: string;
   onActionComplete?: () => void;
   availableTables?: TableGridItem[];
+  groupSessions?: GroupSession[];
 }
 
-export function TableCardNew({ table, venueId, onActionComplete, availableTables = [] }: TableCardNewProps) {
+export function TableCardNew({ table, venueId, onActionComplete, availableTables = [], groupSessions = [] }: TableCardNewProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
@@ -69,9 +71,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
   const [mergedTableId, setMergedTableId] = useState<string | null>(null);
   const closeTable = useCloseTable();
   const { occupyTable, unmergeTable } = useTableActions();
-  const { groupSessions } = useGroupSessions(venueId);
-
-  // Get group size for this table
+  // Get group size for this table using passed groupSessions prop
   const getTableGroupSize = () => {
     // Extract table number from label (e.g., "Table 5" -> 5)
     const tableNumber = parseInt(table.label.replace(/\D/g, '')) || null;

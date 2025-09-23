@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-interface GroupSession {
+export interface GroupSession {
   id: string;
   venue_id: string;
   table_number: number;
@@ -33,6 +33,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
       setLoading(true);
       setError(null);
 
+      console.log('[GROUP SESSIONS] Fetching group sessions for venue:', venueId);
       const response = await fetch(`/api/table/group-sessions?venueId=${venueId}`);
       
       if (!response.ok) {
@@ -42,6 +43,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
       const data = await response.json();
       
       if (data.ok) {
+        console.log('[GROUP SESSIONS] Found group sessions:', data.groupSessions?.length || 0);
         setGroupSessions(data.groupSessions || []);
       } else {
         throw new Error(data.error || 'Failed to fetch group sessions');
@@ -59,11 +61,15 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
     fetchGroupSessions();
   }, [venueId]);
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds - but only if there are active group sessions
   useEffect(() => {
+    if (groupSessions.length === 0) {
+      return; // Don't set up interval if no group sessions
+    }
+    
     const interval = setInterval(fetchGroupSessions, 30000);
     return () => clearInterval(interval);
-  }, [venueId]);
+  }, [venueId, groupSessions.length]);
 
   return {
     groupSessions,

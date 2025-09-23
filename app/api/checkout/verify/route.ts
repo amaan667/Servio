@@ -83,6 +83,12 @@ export async function GET(req: Request) {
             // Parse items from metadata
             const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
             
+            // Ensure we have valid items array
+            if (!Array.isArray(items) || items.length === 0) {
+              console.error("[VERIFY] No valid items found in session metadata");
+              return NextResponse.json({ paid: false, error: "No items found in session" }, { status: 400 });
+            }
+            
             const newOrder = {
               venue_id: session.metadata?.venueId || 'default-venue',
               table_number: parseInt(session.metadata?.tableNumber || '1'),
@@ -110,12 +116,19 @@ export async function GET(req: Request) {
 
             if (createError) {
               console.error("[VERIFY] Error creating fallback order:", createError);
-              return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed" }, { status: 404 });
+              console.error("[VERIFY] Error details:", {
+                message: createError.message,
+                details: createError.details,
+                hint: createError.hint,
+                code: createError.code
+              });
+              return NextResponse.json({ paid: false, error: `Order not found and fallback creation failed: ${createError.message}` }, { status: 404 });
             }
 
             if (!createdOrder || createdOrder.length === 0) {
               console.error("[VERIFY] Fallback order creation returned no data");
-              return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed" }, { status: 404 });
+              console.error("[VERIFY] Created order data:", createdOrder);
+              return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed - no data returned" }, { status: 404 });
             }
 
             console.log("[VERIFY] Fallback order created successfully:", createdOrder[0].id);
