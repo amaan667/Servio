@@ -78,6 +78,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   // Check for daily reset when component loads
   const { isChecking: isResetting, resetResult, checkAndReset } = useDailyReset(venueId);
 
+
   const handleManualReset = () => {
     // Check if there's anything to reset
     const hasActiveOrders = counterOrders.length > 0 || tableOrders.length > 0;
