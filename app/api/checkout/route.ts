@@ -53,7 +53,7 @@ export async function POST(req: Request) {
           price: item.price
         }))).substring(0, 200) // Limit to 200 chars to leave room for other metadata
       },
-      success_url: `${base}/payment/success?orderId=${orderId}&session_id={CHECKOUT_SESSION_ID}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}&customerName=${customerName || 'Customer'}&paymentMethod=stripe&orderType=${source || 'qr'}`,
+      success_url: `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId || 'default-venue'}&tableNumber=${tableNumber || '1'}`,
     });
 

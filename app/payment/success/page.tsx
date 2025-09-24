@@ -13,14 +13,9 @@ export default function PaymentSuccessPage() {
   const [isProcessing, setIsProcessing] = useState(true);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [tableNumber, setTableNumber] = useState<string | null>(null);
-  const [total, setTotal] = useState<string | null>(null);
-  const [venueId, setVenueId] = useState<string | null>(null);
-  const [customerName, setCustomerName] = useState<string | null>(null);
+  const [order, setOrder] = useState<any>(null);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
-  const [orderType, setOrderType] = useState<string | null>(null);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   // Generate short order number for display
   const getShortOrderNumber = (orderId: string) => {
@@ -29,142 +24,53 @@ export default function PaymentSuccessPage() {
   };
 
   useEffect(() => {
-    const orderIdParam = searchParams?.get('orderId');
-    const sessionIdParam = searchParams?.get('session_id');
-    const tableNumberParam = searchParams?.get('tableNumber');
-    const totalParam = searchParams?.get('total');
-    const venueIdParam = searchParams?.get('venueId');
-    const customerNameParam = searchParams?.get('customerName');
-    const paymentMethodParam = searchParams?.get('paymentMethod');
-    const orderTypeParam = searchParams?.get('orderType');
-
-    if (!orderIdParam) {
-      setError('Invalid payment session - no order ID provided');
+    const sessionId = searchParams?.get('session_id');
+    
+    if (!sessionId) {
+      setError('Invalid payment session - no session ID provided');
       setIsProcessing(false);
       return;
     }
 
-    setOrderId(orderIdParam);
-    setTableNumber(tableNumberParam || null);
-    setTotal(totalParam || null);
-    setVenueId(venueIdParam || null);
-    setCustomerName(customerNameParam || null);
-    setPaymentMethod(paymentMethodParam || null);
-    setOrderType(orderTypeParam || null);
-
-    // Verify payment and get order details
-    const verifyPaymentAndGetOrder = async () => {
+    // Use our new verify endpoint to get the order
+    const verifyOrder = async () => {
       try {
-        // For Stripe payments, verify the payment first
-        if (paymentMethodParam === 'stripe' && sessionIdParam) {
-          console.log('[PAYMENT SUCCESS] Verifying Stripe payment...');
-          
-          // Try verification with retry logic since webhook might be delayed
-          let verifyResponse: Response | undefined;
-          let verifyData: any;
-          let retryCount = 0;
-          const maxRetries = 3;
-          let verificationSuccessful = false;
-          
-          while (retryCount < maxRetries) {
-            verifyResponse = await fetch(`/api/checkout/verify?orderId=${orderIdParam}&sessionId=${sessionIdParam}`);
-            verifyData = await verifyResponse.json();
-            
-            if (verifyResponse.ok && verifyData.paid) {
-              console.log('[PAYMENT SUCCESS] Payment verified successfully');
-              verificationSuccessful = true;
-              break;
-            }
-            
-            retryCount++;
-            if (retryCount < maxRetries) {
-              console.log(`[PAYMENT SUCCESS] Verification failed, retrying... (${retryCount}/${maxRetries})`);
-              await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-          }
-          
-          if (!verificationSuccessful || !verifyResponse?.ok || !verifyData?.paid) {
-            console.error('[PAYMENT SUCCESS] Payment verification failed after retries:', verifyData);
-            setError('Payment verification failed. Please contact support.');
-            setIsProcessing(false);
-            return;
-          }
-          
-          // Update order ID if verification returned a different one
-          if (verifyData.orderId && verifyData.orderId !== orderIdParam) {
-            setOrderId(verifyData.orderId);
-          }
-        }
+        console.log('[PAYMENT SUCCESS] Verifying order for session:', sessionId);
+        const res = await fetch(`/api/orders/verify?sessionId=${sessionId}`);
         
-        // Order is confirmed, show success
-        setOrderConfirmed(true);
-      } catch (err) {
-        console.error('[PAYMENT SUCCESS] Error verifying payment:', err);
-        setError('Failed to verify payment. Please contact support.');
+        if (res.ok) {
+          const data = await res.json();
+          console.log('[PAYMENT SUCCESS] Order verified:', data);
+          setOrder(data.order);
+          setOrderConfirmed(true);
+        } else {
+          const errorData = await res.json();
+          console.error('[PAYMENT SUCCESS] Verification failed:', errorData);
+          setError(errorData.error || 'Failed to verify order');
+        }
+      } catch (error) {
+        console.error('[PAYMENT SUCCESS] Error verifying order:', error);
+        setError('Failed to verify order. Please contact support.');
       } finally {
         setIsProcessing(false);
       }
     };
 
-    verifyPaymentAndGetOrder();
+    verifyOrder();
   }, [searchParams]);
-
-  const handleReturn = () => {
-    const returnUrl = searchParams?.get('returnUrl');
-    if (returnUrl) {
-      window.location.href = returnUrl;
-    } else {
-      // Construct the correct return URL to the table's menu page
-      if (venueId && tableNumber && orderType) {
-        const menuUrl = orderType === 'counter' 
-          ? `/order?venue=${venueId}&counter=${tableNumber}`
-          : `/order?venue=${venueId}&table=${tableNumber}`;
-        router.push(menuUrl);
-      } else {
-        // Fallback to home page if we don't have the necessary parameters
-        router.push('/');
-      }
-    }
-  };
-
-  const getSuccessMessage = () => {
-    switch (paymentMethod) {
-      case 'demo':
-      case 'stripe':
-        return {
-          title: "Payment Successful!",
-          description: "Your order has been confirmed and is being prepared.",
-          icon: "✅"
-        };
-      case 'till':
-        return {
-          title: "Bill Sent to Till!",
-          description: "Please pay with staff when ready. Your order is being prepared.",
-          icon: "📨"
-        };
-      case 'later':
-        return {
-          title: "Order Created!",
-          description: "You can pay later by scanning this table's QR again or at the till.",
-          icon: "⏳"
-        };
-      default:
-        return {
-          title: "Order Confirmed!",
-          description: "Your order has been processed and is being prepared.",
-          icon: "✅"
-        };
-    }
-  };
 
   if (isProcessing) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md text-center">
-          <CardContent className="p-8">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-green-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Processing Payment</h2>
-            <p className="text-gray-600">Please wait while we confirm your order...</p>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Finalising your order...
+            </h2>
+            <p className="text-gray-600">
+              Please wait while we confirm your payment and create your order.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -173,15 +79,20 @@ export default function PaymentSuccessPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md text-center">
-          <CardContent className="p-8">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
             <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-red-600 text-xl">!</span>
+              <span className="text-red-600 text-xl">⚠️</span>
             </div>
-            <h2 className="text-xl font-semibold mb-2 text-red-600">Payment Error</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Payment Verification Failed
+            </h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={handleReturn} className="w-full">
+            <Button 
+              onClick={() => router.push('/order')}
+              className="w-full"
+            >
               Return to Order
             </Button>
           </CardContent>
@@ -190,101 +101,179 @@ export default function PaymentSuccessPage() {
     );
   }
 
-  const successMessage = getSuccessMessage();
+  if (!orderConfirmed || !order) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-yellow-600 text-xl">⏳</span>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Order Not Found
+            </h2>
+            <p className="text-gray-600 mb-4">
+              We couldn't find your order. This might be a temporary issue.
+            </p>
+            <Button 
+              onClick={() => router.push('/order')}
+              className="w-full"
+            >
+              Return to Order
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center p-4">
-      <Card className="w-full max-w-md text-center">
-        <CardContent className="p-8">
-          <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check className="h-8 w-8 text-green-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{successMessage.title}</h2>
-          <p className="text-gray-600 mb-6">
-            {successMessage.description}
-          </p>
-          
-          {/* Order Details */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <p className="text-sm text-gray-600">Order Number</p>
-            <p className="font-bold text-lg text-servio-purple mb-2">
-              #{orderId ? getShortOrderNumber(orderId) : 'N/A'}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Success Header */}
+        <Card className="mb-6 border-green-200 bg-green-50">
+          <CardContent className="p-6 text-center">
+            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="h-8 w-8 text-green-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-green-800 mb-2">
+              Payment Successful!
+            </h1>
+            <p className="text-green-700">
+              Your order has been confirmed and is being prepared.
             </p>
-            {tableNumber && (
-              <>
-                <p className="text-sm text-gray-600">
-                  {orderType === 'counter' ? 'Counter' : 'Table'}
-                </p>
-                <p className="font-medium text-gray-900 mb-2">
-                  {orderType === 'counter' ? `Counter ${tableNumber}` : `Table ${tableNumber}`}
-                </p>
-              </>
-            )}
-            {total && (
-              <>
-                <p className="text-sm text-gray-600">Total</p>
-                <p className="font-bold text-lg text-green-600">£{parseFloat(total).toFixed(2)}</p>
-              </>
-            )}
-          </div>
-          
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-green-800">
-              You will receive a confirmation shortly. Thank you for your order!
-            </p>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-3">
-            <Button 
-              onClick={() => setShowFeedback(true)}
-              className="w-full bg-purple-600 hover:bg-purple-700"
-            >
-              <Star className="h-4 w-4 mr-2" />
-              Leave Feedback
-            </Button>
-            <Button 
-              onClick={() => router.push(`/order-summary/${orderId}`)}
-              className="w-full bg-servio-purple hover:bg-servio-purple-dark"
-            >
-              <Receipt className="h-4 w-4 mr-2" />
-              View Order Summary
-            </Button>
-            <Button onClick={handleReturn} variant="outline" className="w-full">
-              Return to Menu
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Feedback Form Modal */}
-      {showFeedback && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Feedback</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowFeedback(false)}
-                >
-                  ✕
-                </Button>
+        {/* Order Details */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              Order Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Order Number</p>
+                <p className="font-semibold">#{getShortOrderNumber(order.id)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Amount</p>
+                <p className="font-semibold">£{order.total_amount?.toFixed(2) || '0.00'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Table</p>
+                <p className="font-semibold">{order.table_number || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Status</p>
+                <p className="font-semibold text-green-600 capitalize">{order.payment_status}</p>
               </div>
             </div>
-            <div className="p-4">
-              {venueId && (
-                <UnifiedFeedbackForm
-                  venueId={venueId}
-                  orderId={orderId || undefined}
-                  customerName={customerName || undefined}
-                  onSubmit={() => setShowFeedback(false)}
-                />
-              )}
-            </div>
-          </div>
+            
+            {order.customer_name && (
+              <div>
+                <p className="text-sm text-gray-600">Customer</p>
+                <p className="font-semibold">{order.customer_name}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Order Items */}
+        {order.items && order.items.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Order Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {order.items.map((item: any, index: number) => (
+                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div>
+                      <p className="font-medium">{item.item_name || `Item ${index + 1}`}</p>
+                      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                    </div>
+                    <p className="font-semibold">£{(item.price * item.quantity).toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Feedback Section */}
+        {!showFeedback && !feedbackSubmitted && (
+          <Card className="mb-6">
+            <CardContent className="p-6 text-center">
+              <Star className="h-8 w-8 text-yellow-500 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold mb-2">How was your experience?</h3>
+              <p className="text-gray-600 mb-4">
+                We'd love to hear your feedback to help us improve our service.
+              </p>
+              <Button 
+                onClick={() => setShowFeedback(true)}
+                variant="outline"
+                className="w-full"
+              >
+                Leave Feedback
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Feedback Form */}
+        {showFeedback && !feedbackSubmitted && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Share Your Feedback</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UnifiedFeedbackForm
+                orderId={order.id}
+                onSubmitted={() => {
+                  setFeedbackSubmitted(true);
+                  setShowFeedback(false);
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Thank You Message */}
+        {feedbackSubmitted && (
+          <Card className="mb-6 border-green-200 bg-green-50">
+            <CardContent className="p-6 text-center">
+              <Check className="h-8 w-8 text-green-600 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-green-800 mb-2">
+                Thank you for your feedback!
+              </h3>
+              <p className="text-green-700">
+                Your input helps us provide better service.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-4">
+          <Button 
+            onClick={() => router.push('/order')}
+            variant="outline"
+            className="flex-1"
+          >
+            Place Another Order
+          </Button>
+          <Button 
+            onClick={() => window.close()}
+            className="flex-1"
+          >
+            Close
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
