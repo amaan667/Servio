@@ -76,12 +76,21 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
         // Parse items from metadata
         const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
         
+        // Ensure items have required fields for database schema
+        const formattedItems = items.map((item: any, index: number) => ({
+          menu_item_id: item.id || `temp-item-${index}`,
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          item_name: item.name || `Item ${index + 1}`,
+          specialInstructions: null
+        }));
+        
         const newOrder = {
           venue_id: session.metadata?.venueId || 'default-venue',
           table_number: parseInt(session.metadata?.tableNumber || '1'),
           customer_name: session.metadata?.customerName || 'Customer',
           customer_phone: session.metadata?.customerPhone || '+1234567890',
-          items: items,
+          items: formattedItems,
           total_amount: session.amount_total ? session.amount_total / 100 : 0, // Convert from cents
           order_status: 'PLACED',
           payment_status: 'PAID', // Mark as PAID immediately
