@@ -73,9 +73,11 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     if (!items || items.length === 0) return '';
     
     // Show first 3 items max
-    const preview = items.slice(0, 3).map(item => 
-      `${item.quantity}x ${item.item_name}`
-    ).join(', ');
+    const preview = items.slice(0, 3).map(item => {
+      // Handle cases where item_name is missing
+      const itemName = item.item_name || 'Unknown Item';
+      return `${item.quantity}x ${itemName}`;
+    }).join(', ');
     
     if (items.length > 3) {
       return `${preview}, +${items.length - 3} more`;
