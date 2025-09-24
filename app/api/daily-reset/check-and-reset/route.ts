@@ -102,6 +102,30 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Check if there are any recent orders (within last 2 hours) - if so, don't reset
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const { data: recentOrders, error: recentOrdersError } = await supabase
+      .from('orders')
+      .select('id, created_at')
+      .eq('venue_id', venueId)
+      .gte('created_at', twoHoursAgo)
+      .limit(1);
+
+    if (recentOrdersError) {
+      console.error('🔄 [DAILY RESET CHECK] Error checking recent orders:', recentOrdersError);
+      // Continue with reset if we can't check
+    } else if (recentOrders && recentOrders.length > 0) {
+      console.log('🔄 [DAILY RESET CHECK] Found recent orders, skipping reset to avoid disrupting active orders');
+      return NextResponse.json({
+        success: true,
+        message: 'Skipping reset due to recent orders',
+        resetDate: todayString,
+        alreadyReset: false,
+        skipped: true,
+        reason: 'Recent orders found'
+      });
+    }
+
     console.log('🔄 [DAILY RESET CHECK] Daily reset needed for venue:', venue.name);
 
     // Perform the reset

@@ -54,6 +54,22 @@ export async function POST(request: NextRequest) {
 
     console.log('🔄 [MANUAL DAILY RESET] Starting manual reset for venue:', venue.name);
 
+    // Check if there are any recent orders (within last 2 hours) - if so, warn user
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const { data: recentOrders, error: recentOrdersError } = await supabase
+      .from('orders')
+      .select('id, created_at')
+      .eq('venue_id', venueId)
+      .gte('created_at', twoHoursAgo)
+      .limit(1);
+
+    if (recentOrdersError) {
+      console.error('🔄 [MANUAL DAILY RESET] Error checking recent orders:', recentOrdersError);
+      // Continue with reset if we can't check
+    } else if (recentOrders && recentOrders.length > 0) {
+      console.log('🔄 [MANUAL DAILY RESET] Found recent orders, but proceeding with manual reset as requested');
+    }
+
     // Step 1: Complete all active orders (mark as COMPLETED)
     console.log('🔄 [MANUAL DAILY RESET] Step 1: Completing all active orders...');
     const { data: activeOrders, error: activeOrdersError } = await supabase
