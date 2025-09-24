@@ -92,20 +92,36 @@ export async function POST(req: Request) {
         try {
           console.log('[BULK COMPLETE] Completely removing table:', tableId);
           
-          // Delete the table completely (not just set to free)
-          const { error: deleteTableError } = await supabase
+          // Get table details first
+          const { data: tableDetails, error: tableDetailsError } = await supabase
             .from('tables')
-            .delete()
+            .select('id, label, venue_id')
             .eq('id', tableId)
+            .eq('venue_id', venueId)
+            .single();
+
+          if (tableDetailsError) {
+            console.error('[BULK COMPLETE] Error fetching table details:', tableDetailsError);
+            continue; // Skip this table if we can't get details
+          }
+
+          // Clear table_id references in orders to avoid foreign key constraint issues
+          console.log('[BULK COMPLETE] Clearing table_id references in orders...');
+          const { error: clearTableRefsError } = await supabase
+            .from('orders')
+            .update({ table_id: null })
+            .eq('table_id', tableId)
             .eq('venue_id', venueId);
 
-          if (deleteTableError) {
-            console.error('[BULK COMPLETE] Error deleting table:', deleteTableError);
+          if (clearTableRefsError) {
+            console.error('[BULK COMPLETE] Error clearing table references in orders:', clearTableRefsError);
+            console.warn('[BULK COMPLETE] Proceeding with table deletion despite table reference clear failure');
           } else {
-            console.log('[BULK COMPLETE] Successfully deleted table:', tableId);
+            console.log('[BULK COMPLETE] Successfully cleared table references in orders');
           }
-          
-          // Also clean up any table sessions
+
+          // Delete table sessions first
+          console.log('[BULK COMPLETE] Deleting table sessions...');
           const { error: deleteSessionError } = await supabase
             .from('table_sessions')
             .delete()
@@ -114,11 +130,13 @@ export async function POST(req: Request) {
 
           if (deleteSessionError) {
             console.error('[BULK COMPLETE] Error deleting table sessions:', deleteSessionError);
+            console.warn('[BULK COMPLETE] Proceeding with table deletion despite session deletion failure');
           } else {
             console.log('[BULK COMPLETE] Successfully deleted table sessions for table:', tableId);
           }
           
           // Clean up table runtime state
+          console.log('[BULK COMPLETE] Deleting table runtime state...');
           const { error: deleteRuntimeError } = await supabase
             .from('table_runtime_state')
             .delete()
@@ -127,21 +145,44 @@ export async function POST(req: Request) {
 
           if (deleteRuntimeError) {
             console.error('[BULK COMPLETE] Error deleting table runtime state:', deleteRuntimeError);
+            console.warn('[BULK COMPLETE] Proceeding with table deletion despite runtime state deletion failure');
           } else {
             console.log('[BULK COMPLETE] Successfully deleted table runtime state for table:', tableId);
           }
           
           // Clean up group sessions for this table
+          console.log('[BULK COMPLETE] Deleting group sessions...');
           const { error: deleteGroupSessionError } = await supabase
             .from('table_group_sessions')
             .delete()
-            .eq('table_number', updatedOrders.find(o => o.table_id === tableId)?.table_number)
+            .eq('table_number', tableDetails.label) // Use table label to match group sessions
             .eq('venue_id', venueId);
 
           if (deleteGroupSessionError) {
             console.error('[BULK COMPLETE] Error deleting group sessions:', deleteGroupSessionError);
+            console.warn('[BULK COMPLETE] Proceeding with table deletion despite group session deletion failure');
           } else {
             console.log('[BULK COMPLETE] Successfully deleted group sessions for table:', tableId);
+          }
+
+          // Finally, delete the table itself
+          console.log('[BULK COMPLETE] Deleting table...');
+          const { error: deleteTableError } = await supabase
+            .from('tables')
+            .delete()
+            .eq('id', tableId)
+            .eq('venue_id', venueId);
+
+          if (deleteTableError) {
+            console.error('[BULK COMPLETE] Error deleting table:', deleteTableError);
+            console.error('[BULK COMPLETE] Error details:', {
+              message: deleteTableError.message,
+              details: deleteTableError.details,
+              hint: deleteTableError.hint,
+              code: deleteTableError.code
+            });
+          } else {
+            console.log('[BULK COMPLETE] Successfully deleted table:', tableId);
           }
           
         } catch (tableError) {
