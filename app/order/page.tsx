@@ -208,6 +208,8 @@ export default function CustomerOrderPage() {
   const [showGroupSizeModal, setShowGroupSizeModal] = useState(false);
   const [showGroupSizePopup, setShowGroupSizePopup] = useState(false);
   const [groupSize, setGroupSize] = useState<number>(1);
+  const [showCustomGroupSize, setShowCustomGroupSize] = useState(false);
+  const [customGroupSize, setCustomGroupSize] = useState<string>('');
   const [groupSessionId, setGroupSessionId] = useState<string | null>(null);
 
   const router = useRouter();
@@ -885,35 +887,37 @@ export default function CustomerOrderPage() {
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
                   {isDemo ? "Servio Café" : venueName}
                 </h1>
-                <div className="flex items-center gap-2 mt-1">
-                  {isCounterOrder ? (
-                    <>
-                      <Receipt className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                      <span className="text-sm sm:text-base text-orange-600 dark:text-orange-400 font-medium">
-                        Counter {counterNumber}
-                      </span>
-                      <Badge variant="secondary" className="bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 text-xs">
-                        Counter Order
-                      </Badge>
-                    </>
-                  ) : (
-                    <>
-                      <Table className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm sm:text-base text-blue-600 dark:text-blue-400 font-medium">
-                        Table {tableNumber}
-                      </span>
-                      <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs">
-                        Table Order
-                      </Badge>
-                      {groupSessionId && (
-                        <button
-                          onClick={() => setShowGroupSizePopup(true)}
-                          className="ml-2 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
-                        >
-                          {groupSize} {groupSize === 1 ? 'person' : 'people'}
-                        </button>
-                      )}
-                    </>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2">
+                    {isCounterOrder ? (
+                      <>
+                        <Receipt className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+                        <span className="text-sm sm:text-base text-orange-600 dark:text-orange-400 font-medium">
+                          Counter {counterNumber}
+                        </span>
+                        <Badge variant="secondary" className="bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 text-xs">
+                          Counter Order
+                        </Badge>
+                      </>
+                    ) : (
+                      <>
+                        <Table className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <span className="text-sm sm:text-base text-blue-600 dark:text-blue-400 font-medium">
+                          Table {tableNumber}
+                        </span>
+                        <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs">
+                          Table Order
+                        </Badge>
+                      </>
+                    )}
+                  </div>
+                  {!isCounterOrder && groupSessionId && (
+                    <button
+                      onClick={() => setShowGroupSizePopup(true)}
+                      className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors self-start sm:self-auto"
+                    >
+                      {groupSize} {groupSize === 1 ? 'person' : 'people'}
+                    </button>
                   )}
                 </div>
               </div>
@@ -925,8 +929,8 @@ export default function CustomerOrderPage() {
               className="md:hidden ml-2 flex-shrink-0 min-h-[44px] min-w-[44px] bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white"
               size="sm"
             >
-              <ShoppingCart className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="text-sm">{getTotalItems()}</span>
+              <ShoppingCart className="h-4 w-4" />
+              <span className="ml-1 text-sm font-medium">{getTotalItems()}</span>
             </Button>
           </div>
         </div>
@@ -1311,34 +1315,36 @@ export default function CustomerOrderPage() {
               </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto space-y-4 sm:space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Name *
-                </label>
-                <Input
-                  value={customerInfo.name}
-                  onChange={(e) =>
-                    updateCustomerInfo('name', e.target.value)
-                  }
-                  placeholder="Enter your name"
-                  required
-                  className="min-h-[48px] text-base"
-                />
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Name *
+                  </label>
+                  <Input
+                    value={customerInfo.name}
+                    onChange={(e) =>
+                      updateCustomerInfo('name', e.target.value)
+                    }
+                    placeholder="Enter your name"
+                    required
+                    className="min-h-[48px] text-base"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number *
-                </label>
-                <Input
-                  value={customerInfo.phone}
-                  onChange={(e) =>
-                    updateCustomerInfo('phone', e.target.value)
-                  }
-                  placeholder="Enter your phone number"
-                  type="tel"
-                  className="min-h-[48px] text-base"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Number *
+                  </label>
+                  <Input
+                    value={customerInfo.phone}
+                    onChange={(e) =>
+                      updateCustomerInfo('phone', e.target.value)
+                    }
+                    placeholder="Enter your phone number"
+                    type="tel"
+                    className="min-h-[48px] text-base"
+                  />
+                </div>
               </div>
 
               <div className="border-t pt-4">
@@ -1383,38 +1389,95 @@ export default function CustomerOrderPage() {
       {/* Group Size Modal */}
       {showGroupSizeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-center">How many people are you ordering for?</CardTitle>
-              <CardDescription className="text-center">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-center text-lg sm:text-xl">How many people are you ordering for?</CardTitle>
+              <CardDescription className="text-center text-sm sm:text-base">
                 This helps us track your table and manage orders efficiently.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((size) => (
+            <CardContent className="space-y-6">
+              {!showCustomGroupSize ? (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((size) => (
+                      <Button
+                        key={size}
+                        variant={groupSize === size ? "default" : "outline"}
+                        onClick={() => {
+                          setGroupSize(size);
+                          setShowCustomGroupSize(false);
+                          setCustomGroupSize('');
+                        }}
+                        className="h-10 sm:h-12 text-sm sm:text-base"
+                      >
+                        {size} {size === 1 ? "Person" : "People"}
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowCustomGroupSize(true)}
+                      className="w-full h-10 sm:h-12 text-sm sm:text-base border-dashed"
+                    >
+                      Other (More than 8)
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Number of people:
+                    </label>
+                    <Input
+                      type="number"
+                      min="9"
+                      max="50"
+                      value={customGroupSize}
+                      onChange={(e) => setCustomGroupSize(e.target.value)}
+                      placeholder="Enter number of people"
+                      className="h-10 sm:h-12 text-center text-lg"
+                    />
+                  </div>
                   <Button
-                    key={size}
-                    variant={groupSize === size ? "default" : "outline"}
-                    onClick={() => setGroupSize(size)}
-                    className="h-12 text-lg"
+                    variant="outline"
+                    onClick={() => {
+                      setShowCustomGroupSize(false);
+                      setCustomGroupSize('');
+                    }}
+                    className="w-full h-10 sm:h-12"
                   >
-                    {size} {size === 1 ? "Person" : "People"}
+                    Back to Options
                   </Button>
-                ))}
-              </div>
+                </div>
+              )}
               
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
-                  onClick={() => setShowGroupSizeModal(false)}
-                  className="flex-1"
+                  onClick={() => {
+                    setShowGroupSizeModal(false);
+                    setShowCustomGroupSize(false);
+                    setCustomGroupSize('');
+                  }}
+                  className="flex-1 h-10 sm:h-12"
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => handleGroupSizeSubmit(groupSize)}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  onClick={() => {
+                    const finalSize = showCustomGroupSize && customGroupSize ? parseInt(customGroupSize) : groupSize;
+                    if (finalSize && finalSize > 0) {
+                      handleGroupSizeSubmit(finalSize);
+                      setShowCustomGroupSize(false);
+                      setCustomGroupSize('');
+                    }
+                  }}
+                  className="flex-1 h-10 sm:h-12 bg-purple-600 hover:bg-purple-700"
+                  disabled={showCustomGroupSize && (!customGroupSize || parseInt(customGroupSize) < 9)}
                 >
                   Continue
                 </Button>
@@ -1427,38 +1490,48 @@ export default function CustomerOrderPage() {
       {/* Group Size Popup */}
       {showGroupSizePopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-center">Update Group Size</CardTitle>
-              <CardDescription className="text-center">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-center text-lg sm:text-xl">Update Group Size</CardTitle>
+              <CardDescription className="text-center text-sm sm:text-base">
                 Current: {groupSize} {groupSize === 1 ? 'person' : 'people'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((size) => (
                   <Button
                     key={size}
                     variant={groupSize === size ? "default" : "outline"}
                     onClick={() => setGroupSize(size)}
-                    className="h-12 text-lg"
+                    className="h-10 sm:h-12 text-sm sm:text-base"
                   >
                     {size} {size === 1 ? "Person" : "People"}
                   </Button>
                 ))}
               </div>
               
-              <div className="flex gap-3 pt-4">
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCustomGroupSize(true)}
+                  className="w-full h-10 sm:h-12 text-sm sm:text-base border-dashed"
+                >
+                  Other (More than 8)
+                </Button>
+              </div>
+              
+              <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
                   onClick={() => setShowGroupSizePopup(false)}
-                  className="flex-1"
+                  className="flex-1 h-10 sm:h-12"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={() => handleGroupSizeUpdate(groupSize)}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  className="flex-1 h-10 sm:h-12 bg-purple-600 hover:bg-purple-700"
                 >
                   Update
                 </Button>

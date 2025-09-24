@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: Request,
@@ -10,55 +10,61 @@ export async function GET(
 ) {
   try {
     const { orderId } = await params;
-
+    
     if (!orderId) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Order ID is required' 
-      }, { status: 400 });
+      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          get(name: string) { return cookieStore.get(name)?.value; },
-          set(name: string, value: string, options: any) { },
-          remove(name: string, options: any) { },
-        },
-      }
-    );
+    console.log('[ORDER FETCH] Fetching order:', orderId);
 
-    console.log('[ORDERS GET] Fetching order:', orderId);
-
-    // Get the order with all details
-    const { data: order, error: fetchError } = await supabase
+    // Fetch order with items
+    const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select('*')
+      .select(`
+        *,
+        order_items (
+          id,
+          menu_item_id,
+          item_name,
+          quantity,
+          price,
+          special_instructions
+        )
+      `)
       .eq('id', orderId)
       .single();
 
-    if (fetchError) {
-      console.error('[ORDERS GET] Error fetching order:', fetchError);
+    if (orderError) {
+      console.error('[ORDER FETCH] Error fetching order:', orderError);
       return NextResponse.json({ 
-        success: false, 
         error: 'Order not found' 
       }, { status: 404 });
     }
 
-    console.log('[ORDERS GET] Found order:', order.id);
+    if (!order) {
+      return NextResponse.json({ 
+        error: 'Order not found' 
+      }, { status: 404 });
+    }
 
-    return NextResponse.json({
-      success: true,
-      data: order
+    // Transform the order to include items array
+    const transformedOrder = {
+      ...order,
+      items: order.order_items || []
+    };
+
+    // Remove the order_items property since we have items now
+    delete transformedOrder.order_items;
+
+    console.log('[ORDER FETCH] Order fetched successfully:', orderId);
+
+    return NextResponse.json({ 
+      order: transformedOrder 
     });
 
   } catch (error) {
-    console.error('[ORDERS GET] Error:', error);
+    console.error('[ORDER FETCH] Error:', error);
     return NextResponse.json({ 
-      success: false, 
       error: 'Internal server error' 
     }, { status: 500 });
   }
