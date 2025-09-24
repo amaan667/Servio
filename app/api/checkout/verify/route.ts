@@ -56,33 +56,40 @@ export async function GET(req: Request) {
           console.log("Recent orders in database:", allOrders);
         }
         
-        // Wait a bit for the webhook to create the order, then try again with retry logic
+        // Wait longer for the webhook to create the order, then try again with multiple retries
         let retryCount = 0;
         const maxRetries = 5;
-        let orderFound = false;
+        let retryOrder = null;
+        let retryError = null;
         
-        while (retryCount < maxRetries && !orderFound) {
-          console.log(`[VERIFY] Retry attempt ${retryCount + 1}/${maxRetries} for session:`, sessionId);
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        while (retryCount < maxRetries && !retryOrder) {
+          retryCount++;
+          console.log(`[VERIFY] Retry attempt ${retryCount}/${maxRetries} for session:`, sessionId);
           
-          const { data: retryOrder, error: retryError } = await supabase
+          // Wait progressively longer between retries
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          
+          // Try to find by session ID again
+          const retryResult = await supabase
             .from("orders")
             .select("id, stripe_session_id, payment_status")
             .eq("stripe_session_id", sessionId)
             .single();
 
+          retryOrder = retryResult.data;
+          retryError = retryResult.error;
+          
           if (retryOrder && !retryError) {
             console.log("Found order on retry:", retryOrder.id);
             order = retryOrder;
             orderError = null;
-            orderFound = true;
+            break;
           } else {
-            console.log(`[VERIFY] Retry ${retryCount + 1} failed:`, retryError?.message || 'No order found');
-            retryCount++;
+            console.log(`[VERIFY] Retry ${retryCount} failed:`, retryError?.message || 'No order found');
           }
         }
 
-        if (!orderFound) {
+        if (!retryOrder) {
           console.error("Order still not found after retry for session:", sessionId);
           
           // Fallback: Create order from session metadata if webhook failed
@@ -130,10 +137,12 @@ export async function GET(req: Request) {
 
             console.log("[VERIFY] Creating fallback order with data:", JSON.stringify(newOrder, null, 2));
 
-            // First, try to insert without select to avoid RLS issues
-            const { error: insertError } = await supabase
+            // Try to insert with select to get the created order immediately
+            const { data: createdOrder, error: insertError } = await supabase
               .from('orders')
-              .insert(newOrder);
+              .insert(newOrder)
+              .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status')
+              .single();
 
             if (insertError) {
               console.error("[VERIFY] Error creating fallback order:", insertError);
@@ -146,37 +155,41 @@ export async function GET(req: Request) {
               return NextResponse.json({ paid: false, error: `Order not found and fallback creation failed: ${insertError.message}` }, { status: 404 });
             }
 
-            console.log("[VERIFY] Order insert successful, now trying to find the created order...");
-
-            // Wait a moment for the insert to complete
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Try to find the order that was just created
-            const { data: foundOrder, error: findError } = await supabase
-              .from('orders')
-              .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status')
-              .eq('stripe_session_id', sessionId)
-              .single();
-            
-            if (foundOrder && !findError) {
-              console.log("[VERIFY] Found order after insert:", foundOrder.id);
-              return NextResponse.json({ paid: true, orderId: foundOrder.id }, { status: 200 });
+            if (createdOrder) {
+              console.log("[VERIFY] Order created successfully:", createdOrder.id);
+              return NextResponse.json({ paid: true, orderId: createdOrder.id }, { status: 200 });
             } else {
-              console.error("[VERIFY] Could not find order after insert attempt:", findError);
+              console.error("[VERIFY] Order insert succeeded but no data returned");
               
-              // Try alternative approach - find by payment intent ID
-              const { data: foundByPaymentIntent, error: findByPaymentIntentError } = await supabase
+              // Fallback: try to find the order that was just created
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              const { data: foundOrder, error: findError } = await supabase
                 .from('orders')
                 .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status')
-                .eq('stripe_payment_intent_id', newOrder.stripe_payment_intent_id)
+                .eq('stripe_session_id', sessionId)
                 .single();
               
-              if (foundByPaymentIntent && !findByPaymentIntentError) {
-                console.log("[VERIFY] Found order by payment intent ID:", foundByPaymentIntent.id);
-                return NextResponse.json({ paid: true, orderId: foundByPaymentIntent.id }, { status: 200 });
+              if (foundOrder && !findError) {
+                console.log("[VERIFY] Found order after insert:", foundOrder.id);
+                return NextResponse.json({ paid: true, orderId: foundOrder.id }, { status: 200 });
               } else {
-                console.error("[VERIFY] Could not find order by payment intent ID either:", findByPaymentIntentError);
-                return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed - no data returned" }, { status: 404 });
+                console.error("[VERIFY] Could not find order after insert attempt:", findError);
+                
+                // Try alternative approach - find by payment intent ID
+                const { data: foundByPaymentIntent, error: findByPaymentIntentError } = await supabase
+                  .from('orders')
+                  .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status')
+                  .eq('stripe_payment_intent_id', newOrder.stripe_payment_intent_id)
+                  .single();
+                
+                if (foundByPaymentIntent && !findByPaymentIntentError) {
+                  console.log("[VERIFY] Found order by payment intent ID:", foundByPaymentIntent.id);
+                  return NextResponse.json({ paid: true, orderId: foundByPaymentIntent.id }, { status: 200 });
+                } else {
+                  console.error("[VERIFY] Could not find order by payment intent ID either:", findByPaymentIntentError);
+                  return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed - no data returned" }, { status: 404 });
+                }
               }
             }
 
