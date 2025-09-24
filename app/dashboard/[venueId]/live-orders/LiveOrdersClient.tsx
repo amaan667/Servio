@@ -717,8 +717,9 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
     try {
       setIsBulkCompleting(true);
       
-      // Get all active orders (not completed)
-      const activeOrders = orders.filter(order => 
+      // Get all active orders (not completed) from the current tab
+      const currentOrders = activeTab === 'live' ? orders : allTodayOrders;
+      const activeOrders = currentOrders.filter(order => 
         ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)
       );
       
@@ -1578,6 +1579,28 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 </div>
               ) : (
                 <>
+                  {/* Bulk Complete All Button for Earlier Today */}
+                  {allTodayOrders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length > 0 && (
+                    <div className="flex justify-center mb-6">
+                      <Button
+                        onClick={bulkCompleteAllOrders}
+                        disabled={isBulkCompleting}
+                        className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg text-sm shadow-md hover:shadow-lg transition-all duration-200"
+                      >
+                        {isBulkCompleting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Completing All Orders...
+                          </>
+                        ) : (
+                          <>
+                            Complete All Orders ({allTodayOrders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length})
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                  
                   {/* Counter Orders - FIXED: Added table filtering */}
                   {allTodayOrders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length > 0 && (
                     <div>
