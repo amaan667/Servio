@@ -172,15 +172,86 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       console.warn('[TABLES API] Both orders and reservations checks failed - proceeding with table removal but logging the issue');
     }
 
-    // Delete table (this will cascade to table_sessions)
+    // Clear table_id references in orders to avoid foreign key constraint issues
+    console.log('[TABLES API] Clearing table_id references in orders...');
+    const { error: clearTableRefsError } = await supabase
+      .from('orders')
+      .update({ table_id: null })
+      .eq('table_id', tableId)
+      .eq('venue_id', existingTable.venue_id);
+
+    if (clearTableRefsError) {
+      console.error('[TABLES API] Error clearing table references in orders:', clearTableRefsError);
+      // Continue with deletion anyway - this might be due to RLS or other issues
+      console.warn('[TABLES API] Proceeding with table deletion despite table reference clear failure');
+    } else {
+      console.log('[TABLES API] Successfully cleared table references in orders');
+    }
+
+    // Delete table sessions first (if they exist)
+    console.log('[TABLES API] Deleting table sessions...');
+    const { error: deleteSessionsError } = await supabase
+      .from('table_sessions')
+      .delete()
+      .eq('table_id', tableId)
+      .eq('venue_id', existingTable.venue_id);
+
+    if (deleteSessionsError) {
+      console.error('[TABLES API] Error deleting table sessions:', deleteSessionsError);
+      // Continue with table deletion anyway
+      console.warn('[TABLES API] Proceeding with table deletion despite session deletion failure');
+    } else {
+      console.log('[TABLES API] Successfully deleted table sessions');
+    }
+
+    // Delete table runtime state
+    console.log('[TABLES API] Deleting table runtime state...');
+    const { error: deleteRuntimeError } = await supabase
+      .from('table_runtime_state')
+      .delete()
+      .eq('table_id', tableId)
+      .eq('venue_id', existingTable.venue_id);
+
+    if (deleteRuntimeError) {
+      console.error('[TABLES API] Error deleting table runtime state:', deleteRuntimeError);
+      // Continue with table deletion anyway
+      console.warn('[TABLES API] Proceeding with table deletion despite runtime state deletion failure');
+    } else {
+      console.log('[TABLES API] Successfully deleted table runtime state');
+    }
+
+    // Delete group sessions for this table
+    console.log('[TABLES API] Deleting group sessions...');
+    const { error: deleteGroupSessionError } = await supabase
+      .from('table_group_sessions')
+      .delete()
+      .eq('table_number', existingTable.label) // Use table label/number to match group sessions
+      .eq('venue_id', existingTable.venue_id);
+
+    if (deleteGroupSessionError) {
+      console.error('[TABLES API] Error deleting group sessions:', deleteGroupSessionError);
+      // Continue with table deletion anyway
+      console.warn('[TABLES API] Proceeding with table deletion despite group session deletion failure');
+    } else {
+      console.log('[TABLES API] Successfully deleted group sessions');
+    }
+
+    // Finally, delete the table itself
     console.log('[TABLES API] Attempting to delete table...');
     const { error } = await supabase
       .from('tables')
       .delete()
-      .eq('id', tableId);
+      .eq('id', tableId)
+      .eq('venue_id', existingTable.venue_id);
 
     if (error) {
       console.error('[TABLES API] Error deleting table:', error);
+      console.error('[TABLES API] Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return NextResponse.json({ error: 'Failed to delete table' }, { status: 500 });
     }
 
