@@ -95,10 +95,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
       .from('orders')
       .select('id, venue_id, table_number, customer_name, customer_phone, items, total_amount, source')
       .eq('stripe_session_id', session.id)
-      .single();
+      .maybeSingle();
 
     if (findError) {
-      console.error('[STRIPE WEBHOOK] Order not found for session:', session.id, findError);
+      console.error('[STRIPE WEBHOOK] Error finding order for session:', session.id, findError);
+      return;
+    }
+
+    if (!existingOrder) {
+      console.log('[STRIPE WEBHOOK] Order not found for session:', session.id);
       
       // For Stripe payments, create the order now with PAID status (order only created after payment succeeds)
       console.log('[STRIPE WEBHOOK] Creating new order with PAID status from session metadata');
@@ -196,10 +201,15 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent,
       .from('orders')
       .select('id, venue_id')
       .eq('stripe_payment_intent_id', paymentIntent.id)
-      .single();
+      .maybeSingle();
 
     if (orderError) {
-      console.error('[STRIPE WEBHOOK] Order not found for payment intent:', paymentIntent.id);
+      console.error('[STRIPE WEBHOOK] Error finding order for payment intent:', paymentIntent.id, orderError);
+      return;
+    }
+
+    if (!order) {
+      console.log('[STRIPE WEBHOOK] Order not found for payment intent:', paymentIntent.id);
       return;
     }
 
@@ -232,10 +242,15 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent, su
       .from('orders')
       .select('id, venue_id')
       .eq('stripe_payment_intent_id', paymentIntent.id)
-      .single();
+      .maybeSingle();
 
     if (orderError) {
-      console.error('[STRIPE WEBHOOK] Order not found for payment intent:', paymentIntent.id);
+      console.error('[STRIPE WEBHOOK] Error finding order for payment intent:', paymentIntent.id, orderError);
+      return;
+    }
+
+    if (!order) {
+      console.log('[STRIPE WEBHOOK] Order not found for payment intent:', paymentIntent.id);
       return;
     }
 
