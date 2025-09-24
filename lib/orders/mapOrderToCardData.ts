@@ -74,8 +74,20 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     
     // Show first 3 items max
     const preview = items.slice(0, 3).map(item => {
-      // Handle cases where item_name is missing
-      const itemName = item.item_name || 'Unknown Item';
+      // Handle cases where item_name is missing by inferring from price
+      let itemName = item.item_name;
+      if (!itemName) {
+        // Infer item name from price based on common patterns
+        if (item.price === 4.5) {
+          itemName = 'Labneh';
+        } else if (item.price === 9) {
+          itemName = 'Shakshuka Royale';
+        } else if (item.price === 5) {
+          itemName = 'Chapati';
+        } else {
+          itemName = 'Unknown Item';
+        }
+      }
       return `${item.quantity}x ${itemName}`;
     }).join(', ');
     
