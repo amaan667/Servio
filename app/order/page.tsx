@@ -347,16 +347,16 @@ export default function CustomerOrderPage() {
 
     // Explicit demo only
     if (isDemo) {
-              const mappedItems = demoMenuItems.map((item, idx) => ({
-          ...item,
-          id: `demo-${idx}`,
-          available: true,
-          price:
-            typeof item.price === "number"
-              ? item.price
-              : Number(item.price) || 0,
-        }));
-        setMenuItems(mappedItems);
+      const mappedItems = demoMenuItems.map((item, idx) => ({
+        ...item,
+        id: `demo-${idx}`,
+        available: true,
+        price: typeof item.price === "number" ? item.price : Number(item.price) || 0,
+        // Ensure image property is properly set
+        image: item.image || undefined,
+      }));
+      console.log('[DEMO MENU] Mapped demo items with images:', mappedItems.map(item => ({ name: item.name, image: item.image })));
+      setMenuItems(mappedItems);
       setLoadingMenu(false);
       return;
     }
@@ -1006,9 +1006,29 @@ export default function CustomerOrderPage() {
                           .map((item) => (
                             <Card key={item.id} className="hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500 bg-white dark:bg-gray-800">
                               <CardContent className="p-4">
-                                <div className="flex flex-col space-y-3">
+                                <div className="flex gap-4">
+                                  {/* Item Image */}
+                                  {item.image && (
+                                    <div className="flex-shrink-0">
+                                      <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-600">
+                                        <Image
+                                          src={item.image}
+                                          alt={item.name}
+                                          width={48}
+                                          height={48}
+                                          className="object-contain"
+                                          onError={(e) => {
+                                            // Hide image if it fails to load
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  
                                   {/* Item Details */}
-                                  <div className="flex-1">
+                                  <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
                                       {item.name}
                                     </h3>
