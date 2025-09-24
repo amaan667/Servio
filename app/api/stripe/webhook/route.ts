@@ -13,6 +13,8 @@ export async function POST(req: NextRequest) {
   console.log('[STRIPE WEBHOOK] Request received at:', new Date().toISOString());
   console.log('[STRIPE WEBHOOK] Request URL:', req.url);
   console.log('[STRIPE WEBHOOK] Request method:', req.method);
+  console.log('[STRIPE WEBHOOK] Webhook secret configured:', !!webhookSecret);
+  console.log('[STRIPE WEBHOOK] Webhook secret starts with:', webhookSecret?.substring(0, 10));
   
   try {
     const body = await req.text();
@@ -20,6 +22,7 @@ export async function POST(req: NextRequest) {
     
     const signature = req.headers.get('stripe-signature');
     console.log('[STRIPE WEBHOOK] Signature present:', !!signature);
+    console.log('[STRIPE WEBHOOK] Signature value:', signature?.substring(0, 50) + '...');
 
     if (!signature) {
       console.error('[STRIPE WEBHOOK] No signature provided');
@@ -32,6 +35,11 @@ export async function POST(req: NextRequest) {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err) {
       console.error('[STRIPE WEBHOOK] Webhook signature verification failed:', err);
+      console.error('[STRIPE WEBHOOK] Error details:', {
+        message: err.message,
+        type: err.type,
+        code: err.code
+      });
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
