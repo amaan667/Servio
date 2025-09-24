@@ -145,7 +145,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
               orderId: payload.new?.id
             });
             
-            setOrder(prevOrder => {
+            setOrder((prevOrder: any) => {
               if (!prevOrder) return null;
               return { ...prevOrder, ...payload.new };
             });
