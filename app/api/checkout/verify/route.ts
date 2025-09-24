@@ -38,12 +38,16 @@ export async function GET(req: Request) {
         .from("orders")
         .select("id, stripe_session_id, payment_status")
         .eq("stripe_session_id", sessionId)
-        .single();
+        .maybeSingle();
 
       // If not found by session ID, wait for webhook to create order
       if (orderError) {
+        console.log("Error finding order by session ID:", orderError);
+        return NextResponse.json({ paid: false, error: "Database error" }, { status: 500 });
+      }
+
+      if (!order) {
         console.log("Order not found by session ID, waiting for webhook to create order...");
-        console.log("OrderError details:", orderError);
         
         // Wait a bit for the webhook to create the order, then try again with retry logic
         let retryCount = 0;
@@ -58,15 +62,17 @@ export async function GET(req: Request) {
             .from("orders")
             .select("id, stripe_session_id, payment_status")
             .eq("stripe_session_id", sessionId)
-            .single();
+            .maybeSingle();
 
-          if (retryOrder && !retryError) {
+          if (retryError) {
+            console.log(`[VERIFY] Retry ${retryCount + 1} failed with error:`, retryError.message);
+            retryCount++;
+          } else if (retryOrder) {
             console.log("Found order on retry:", retryOrder.id);
             order = retryOrder;
-            orderError = null;
             orderFound = true;
           } else {
-            console.log(`[VERIFY] Retry ${retryCount + 1} failed:`, retryError?.message || 'No order found');
+            console.log(`[VERIFY] Retry ${retryCount + 1} failed: No order found`);
             retryCount++;
           }
         }
