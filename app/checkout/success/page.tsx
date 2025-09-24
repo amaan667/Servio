@@ -15,32 +15,70 @@ export default function SuccessPage() {
 
   useEffect(() => {
     let stop = false;
+    let attemptCount = 0;
+    const maxAttempts = 10; // Increased from 5 to 10 attempts
+    
     async function verify() {
+      if (stop || attemptCount >= maxAttempts) return;
+      attemptCount++;
+      
       try {
+        console.log(`[SUCCESS PAGE] Verification attempt ${attemptCount}/${maxAttempts} for session:`, sessionId);
+        
         // hits a server route that calls Stripe with secret key (never client)
         const res = await fetch(`/api/checkout/verify?orderId=${orderId}&sessionId=${sessionId}`, { cache: "no-store" });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "verify failed");
+        
+        console.log(`[SUCCESS PAGE] Verification response:`, { status: res.status, paid: json.paid, orderId: json.orderId, error: json.error });
+        
+        if (!res.ok) {
+          console.error(`[SUCCESS PAGE] Verification failed:`, json.error);
+          if (attemptCount >= maxAttempts) {
+            setState("error");
+            return;
+          }
+          throw new Error(json.error || "verify failed");
+        }
         
         if (json.paid) {
+          console.log(`[SUCCESS PAGE] Payment verified successfully:`, json.orderId);
           setState("paid");
           if (json.orderId) {
             setRealOrderId(json.orderId);
           }
+          stop = true; // Stop polling once payment is verified
         } else {
-          setState("unpaid");
+          console.log(`[SUCCESS PAGE] Payment not yet verified, attempt ${attemptCount}/${maxAttempts}`);
+          if (attemptCount >= maxAttempts) {
+            setState("unpaid");
+          }
         }
-      } catch {
-        setState("error");
+      } catch (error) {
+        console.error(`[SUCCESS PAGE] Verification error on attempt ${attemptCount}:`, error);
+        if (attemptCount >= maxAttempts) {
+          setState("error");
+        }
       }
     }
+    
+    // Start verification immediately
     verify();
 
-    // optional: poll for a few seconds if webhook is slightly delayed
-    const t = setInterval(() => { if (!stop) verify(); }, 3000);
-    setTimeout(() => { stop = true; clearInterval(t); }, 15000);
+    // Poll every 2 seconds (reduced from 3 seconds for faster response)
+    const t = setInterval(() => { if (!stop && attemptCount < maxAttempts) verify(); }, 2000);
+    
+    // Stop after 20 seconds (increased from 15 seconds)
+    setTimeout(() => { 
+      stop = true; 
+      clearInterval(t); 
+      if (state === "verifying") {
+        console.log(`[SUCCESS PAGE] Verification timeout after ${maxAttempts} attempts`);
+        setState("error");
+      }
+    }, 20000);
+    
     return () => { stop = true; clearInterval(t); };
-  }, [orderId, sessionId]);
+  }, [orderId, sessionId, state]);
 
   return (
     <div className="min-h-screen bg-gray-50">

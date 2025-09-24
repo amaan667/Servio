@@ -133,15 +133,13 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
             hint: insertError.hint,
             code: insertError.code
           });
-          return;
+          // Don't return here - let the webhook continue to try to find the order
+          // The order might have been created by another process
         }
 
-        console.log('[STRIPE WEBHOOK] Order insert successful, now trying to find the created order...');
+        console.log('[STRIPE WEBHOOK] Checking if order was created successfully...');
 
-        // Wait a moment for the insert to complete
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Try to find the order that was just created
+        // Try to find the order that was just created immediately
         const { data: foundOrder, error: findError } = await supabase
           .from('orders')
           .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status')
@@ -153,6 +151,20 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
           return;
         } else {
           console.error('[STRIPE WEBHOOK] Could not find order after insert attempt:', findError);
+          
+          // Wait a moment and try again
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const { data: retryOrder, error: retryError } = await supabase
+            .from('orders')
+            .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status')
+            .eq('stripe_session_id', session.id)
+            .single();
+          
+          if (retryOrder && !retryError) {
+            console.log('[STRIPE WEBHOOK] Found order on retry:', retryOrder.id);
+            return;
+          }
           
           // Try alternative approach - find by payment intent ID
           const { data: foundByPaymentIntent, error: findByPaymentIntentError } = await supabase

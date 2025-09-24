@@ -204,21 +204,9 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       console.log('[TABLES API] Successfully deleted table sessions');
     }
 
-    // Delete table runtime state
-    console.log('[TABLES API] Deleting table runtime state...');
-    const { error: deleteRuntimeError } = await supabase
-      .from('table_runtime_state')
-      .delete()
-      .eq('table_id', tableId)
-      .eq('venue_id', existingTable.venue_id);
-
-    if (deleteRuntimeError) {
-      console.error('[TABLES API] Error deleting table runtime state:', deleteRuntimeError);
-      // Continue with table deletion anyway
-      console.warn('[TABLES API] Proceeding with table deletion despite runtime state deletion failure');
-    } else {
-      console.log('[TABLES API] Successfully deleted table runtime state');
-    }
+    // Note: table_runtime_state is a view that aggregates data from table_sessions and tables
+    // Since we already deleted table_sessions above, the runtime state will be automatically updated
+    console.log('[TABLES API] Table runtime state will be automatically updated after table_sessions deletion');
 
     // Delete group sessions for this table
     console.log('[TABLES API] Deleting group sessions...');
