@@ -47,6 +47,39 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
     return orderId.slice(-6).toUpperCase();
   };
 
+  // Map item names to their corresponding image filenames
+  const getItemImagePath = (itemName: string) => {
+    const imageMap: { [key: string]: string } = {
+      'Cappuccino': 'cappuccino.svg',
+      'Latte': 'latte.svg',
+      'Americano': 'americano.svg',
+      'Mocha': 'mocha.svg',
+      'Flat White': 'flat-white.svg',
+      'Iced Coffee': 'iced-coffee.svg',
+      'Fresh Orange Juice': 'orange-juice.svg',
+      'Sparkling Water': 'sparkling-water.svg',
+      'Green Tea': 'green-tea.svg',
+      'Smoothie Bowl': 'smoothie-bowl.svg',
+      'Croissant': 'croissant.svg',
+      'Pain au Chocolat': 'pain-au-chocolat.svg',
+      'Blueberry Muffin': 'blueberry-muffin.svg',
+      'Cinnamon Roll': 'cinnamon-roll.svg',
+      'Avocado Toast': 'avocado-toast.svg',
+      'Club Sandwich': 'club-sandwich.svg',
+      'Caesar Salad': 'caesar-salad.svg',
+      'Quiche Lorraine': 'quiche-lorraine.svg',
+      'Chicken Panini': 'chicken-panini.svg',
+      'Soup of the Day': 'soup-of-day.svg',
+      'Chocolate Cake': 'chocolate-cake.svg',
+      'Tiramisu': 'tiramisu.svg',
+      'Cheesecake': 'cheesecake.svg',
+      'Apple Pie': 'apple-pie.svg',
+      'Ice Cream Sundae': 'ice-cream-sundae.svg',
+    };
+    
+    return imageMap[itemName] || null;
+  };
+
   // Get payment success message based on payment method
   const getPaymentSuccessMessage = (paymentMethod: string, paymentStatus: string) => {
     if (paymentStatus === 'PAID') {
@@ -291,10 +324,31 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         {isDemo && (
-                          <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center overflow-hidden">
-                            <span className="text-xs font-bold text-orange-700">
+                          <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
+                            {item.item_name && getItemImagePath(item.item_name) ? (
+                              <img
+                                src={`/images/menu/${getItemImagePath(item.item_name)}`}
+                                alt={item.item_name}
+                                className="w-8 h-8 object-contain"
+                                onError={(e) => {
+                                  // Fallback to first letter if image fails to load
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const fallback = target.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gradient-to-br from-orange-100 to-orange-200 rounded flex items-center justify-center text-xs font-bold text-orange-700">
+                                {item.item_name?.charAt(0) || '🍽️'}
+                              </div>
+                            )}
+                            <div 
+                              className="w-8 h-8 bg-gradient-to-br from-orange-100 to-orange-200 rounded flex items-center justify-center text-xs font-bold text-orange-700"
+                              style={{ display: 'none' }}
+                            >
                               {item.item_name?.charAt(0) || '🍽️'}
-                            </span>
+                            </div>
                           </div>
                         )}
                         <div>

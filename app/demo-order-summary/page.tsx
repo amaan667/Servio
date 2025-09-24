@@ -23,25 +23,25 @@ export default function DemoOrderSummaryPage() {
       {
         id: '1',
         menu_item_id: 'item-1',
-        item_name: 'Beef Burger',
+        item_name: 'Cappuccino',
         quantity: 1,
-        price: 12.50,
-        special_instructions: 'No pickles, extra cheese'
+        price: 3.50,
+        special_instructions: 'Extra shot'
       },
       {
         id: '2',
         menu_item_id: 'item-2',
-        item_name: 'French Fries',
-        quantity: 2,
-        price: 4.50,
-        special_instructions: 'Extra crispy'
+        item_name: 'Club Sandwich',
+        quantity: 1,
+        price: 8.50,
+        special_instructions: 'No tomato'
       },
       {
         id: '3',
         menu_item_id: 'item-3',
-        item_name: 'Soft Drink',
+        item_name: 'Chocolate Cake',
         quantity: 1,
-        price: 3.00,
+        price: 4.75,
         special_instructions: null
       }
     ]
