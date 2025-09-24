@@ -1,11 +1,36 @@
-
 <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="200" fill="#f3f4f6"/>
-  <rect x="10" y="10" width="180" height="180" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2" rx="8"/>
-  <text x="100" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
-    Green Tea
-  </text>
-  <text x="100" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#9ca3af">
-    Image
-  </text>
+  <defs>
+    <linearGradient id="teaCupGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A0522D;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="greenTeaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#228B22;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#32CD32;stop-opacity:0.6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Tea cup -->
+  <path d="M60 60 L140 60 L150 180 L50 180 Z" fill="url(#teaCupGradient)" stroke="#654321" stroke-width="2"/>
+  
+  <!-- Cup handle -->
+  <path d="M140 80 Q180 80 180 120 Q180 160 140 160" fill="none" stroke="#654321" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Green tea liquid -->
+  <rect x="65" y="70" width="70" height="40" fill="url(#greenTeaGradient)" rx="2"/>
+  
+  <!-- Tea leaves floating -->
+  <ellipse cx="80" cy="85" rx="4" ry="2" fill="#006400" opacity="0.7" transform="rotate(45 80 85)"/>
+  <ellipse cx="100" cy="90" rx="3" ry="2" fill="#006400" opacity="0.7" transform="rotate(-30 100 90)"/>
+  <ellipse cx="120" cy="85" rx="4" ry="2" fill="#006400" opacity="0.7" transform="rotate(60 120 85)"/>
+  <ellipse cx="90" cy="100" rx="3" ry="2" fill="#006400" opacity="0.7" transform="rotate(-45 90 100)"/>
+  <ellipse cx="110" cy="95" rx="3" ry="2" fill="#006400" opacity="0.7" transform="rotate(30 110 95)"/>
+  
+  <!-- Steam -->
+  <path d="M85 50 Q90 40 85 35" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
+  <path d="M100 45 Q105 35 100 30" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
+  <path d="M115 50 Q120 40 115 35" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Saucer -->
+  <ellipse cx="100" cy="185" rx="60" ry="15" fill="#F0F8FF" stroke="#D3D3D3" stroke-width="2"/>
 </svg>

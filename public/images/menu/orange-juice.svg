@@ -1,11 +1,43 @@
-
 <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="200" fill="#f3f4f6"/>
-  <rect x="10" y="10" width="180" height="180" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2" rx="8"/>
-  <text x="100" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
-    Orange Juice
-  </text>
-  <text x="100" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#9ca3af">
-    Image
-  </text>
+  <defs>
+    <linearGradient id="juiceGlassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8F4FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B8E6FF;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="orangeJuiceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF8C00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Glass cup -->
+  <path d="M70 50 L130 50 L135 170 L65 170 Z" fill="url(#juiceGlassGradient)" stroke="#87CEEB" stroke-width="2"/>
+  
+  <!-- Glass rim -->
+  <path d="M70 50 L130 50" stroke="#4682B4" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Orange juice -->
+  <rect x="72" y="60" width="56" height="100" fill="url(#orangeJuiceGradient)" rx="2"/>
+  
+  <!-- Orange pulp pieces -->
+  <circle cx="85" cy="80" r="3" fill="#FF7F00" opacity="0.7"/>
+  <circle cx="100" cy="90" r="2" fill="#FF7F00" opacity="0.7"/>
+  <circle cx="115" cy="85" r="2.5" fill="#FF7F00" opacity="0.7"/>
+  <circle cx="90" cy="105" r="2" fill="#FF7F00" opacity="0.7"/>
+  <circle cx="110" cy="110" r="3" fill="#FF7F00" opacity="0.7"/>
+  <circle cx="85" cy="125" r="2" fill="#FF7F00" opacity="0.7"/>
+  <circle cx="105" cy="130" r="2.5" fill="#FF7F00" opacity="0.7"/>
+  
+  <!-- Orange slice garnish -->
+  <circle cx="150" cy="60" r="15" fill="#FFA500" stroke="#FF8C00" stroke-width="2"/>
+  <path d="M150 50 L150 70 M140 60 L160 60" stroke="#FF7F00" stroke-width="2"/>
+  
+  <!-- Straw -->
+  <rect x="140" y="40" width="3" height="80" fill="#FF1493" rx="1" transform="rotate(15 140 40)"/>
+  
+  <!-- Condensation drops -->
+  <circle cx="75" cy="90" r="2" fill="#87CEEB" opacity="0.6"/>
+  <circle cx="125" cy="100" r="1.5" fill="#87CEEB" opacity="0.6"/>
+  <circle cx="75" cy="120" r="1" fill="#87CEEB" opacity="0.6"/>
+  <circle cx="125" cy="130" r="2" fill="#87CEEB" opacity="0.6"/>
 </svg>

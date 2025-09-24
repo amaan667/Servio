@@ -1,11 +1,31 @@
-
 <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="200" fill="#f3f4f6"/>
-  <rect x="10" y="10" width="180" height="180" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2" rx="8"/>
-  <text x="100" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
-    Latte
-  </text>
-  <text x="100" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#9ca3af">
-    Image
-  </text>
+  <defs>
+    <linearGradient id="latteCupGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A0522D;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="latteFoamGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F5F5DC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFF8DC;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Cup body -->
+  <path d="M60 60 L140 60 L150 180 L50 180 Z" fill="url(#latteCupGradient)" stroke="#654321" stroke-width="2"/>
+  
+  <!-- Cup handle -->
+  <path d="M140 80 Q180 80 180 120 Q180 160 140 160" fill="none" stroke="#654321" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Coffee liquid -->
+  <rect x="65" y="70" width="70" height="40" fill="#4A2C17" rx="2"/>
+  
+  <!-- Latte art - heart pattern -->
+  <path d="M100 75 Q95 70 90 75 Q95 80 100 75 Q105 80 110 75 Q105 70 100 75" fill="url(#latteFoamGradient)" opacity="0.8"/>
+  <path d="M85 75 Q80 70 75 75 Q80 80 85 75" fill="url(#latteFoamGradient)" opacity="0.6"/>
+  <path d="M115 75 Q120 70 125 75 Q120 80 115 75" fill="url(#latteFoamGradient)" opacity="0.6"/>
+  
+  <!-- Steam -->
+  <path d="M85 50 Q90 40 85 35" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
+  <path d="M100 45 Q105 35 100 30" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
+  <path d="M115 50 Q120 40 115 35" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
 </svg>

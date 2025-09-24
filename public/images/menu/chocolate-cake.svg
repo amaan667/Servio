@@ -1,11 +1,47 @@
-
 <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="200" fill="#f3f4f6"/>
-  <rect x="10" y="10" width="180" height="180" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2" rx="8"/>
-  <text x="100" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
-    Chocolate Cake
-  </text>
-  <text x="100" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#9ca3af">
-    Image
-  </text>
+  <defs>
+    <linearGradient id="cakeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#654321;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="frostingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D2691E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CD853F;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Cake base -->
+  <rect x="60" y="120" width="80" height="60" fill="url(#cakeGradient)" rx="5"/>
+  
+  <!-- Cake middle layer -->
+  <rect x="65" y="100" width="70" height="20" fill="url(#cakeGradient)" rx="3"/>
+  
+  <!-- Cake top layer -->
+  <rect x="70" y="80" width="60" height="20" fill="url(#cakeGradient)" rx="3"/>
+  
+  <!-- Chocolate frosting -->
+  <rect x="60" y="75" width="80" height="10" fill="url(#frostingGradient)" rx="5"/>
+  
+  <!-- Frosting swirls -->
+  <path d="M70 75 Q80 70 90 75 Q100 70 110 75 Q120 70 130 75" fill="#8B4513" opacity="0.6"/>
+  <path d="M75 78 Q85 73 95 78 Q105 73 115 78 Q125 73 125 78" fill="#8B4513" opacity="0.4"/>
+  
+  <!-- Chocolate chips -->
+  <rect x="75" y="72" width="3" height="3" fill="#654321" rx="1"/>
+  <rect x="85" y="70" width="3" height="3" fill="#654321" rx="1"/>
+  <rect x="95" y="72" width="3" height="3" fill="#654321" rx="1"/>
+  <rect x="105" y="70" width="3" height="3" fill="#654321" rx="1"/>
+  <rect x="115" y="72" width="3" height="3" fill="#654321" rx="1"/>
+  <rect x="125" y="70" width="3" height="3" fill="#654321" rx="1"/>
+  
+  <!-- Plate -->
+  <ellipse cx="100" cy="185" rx="60" ry="15" fill="#F0F8FF" stroke="#D3D3D3" stroke-width="2"/>
+  
+  <!-- Fork -->
+  <rect x="140" y="160" width="2" height="20" fill="#C0C0C0"/>
+  <rect x="135" y="160" width="12" height="2" fill="#C0C0C0"/>
+  <rect x="135" y="162" width="2" height="6" fill="#C0C0C0"/>
+  <rect x="138" y="162" width="2" height="6" fill="#C0C0C0"/>
+  <rect x="141" y="162" width="2" height="6" fill="#C0C0C0"/>
+  <rect x="144" y="162" width="2" height="6" fill="#C0C0C0"/>
 </svg>
