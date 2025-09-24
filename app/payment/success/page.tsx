@@ -232,8 +232,9 @@ export default function PaymentSuccessPage() {
             </CardHeader>
             <CardContent>
               <UnifiedFeedbackForm
+                venueId={order.venue_id}
                 orderId={order.id}
-                onSubmitted={() => {
+                onSubmit={() => {
                   setFeedbackSubmitted(true);
                   setShowFeedback(false);
                 }}
