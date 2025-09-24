@@ -1,44 +1,8 @@
 <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="breadGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#DEB887;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#F5DEB3;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="lettuceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#90EE90;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#98FB98;stop-opacity:1" />
-    </linearGradient>
+    <pattern id="clubSandwichPattern" patternUnits="userSpaceOnUse" width="200" height="200">
+      <image href="https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=400&fit=crop&crop=center" width="200" height="200" preserveAspectRatio="xMidYMid slice"/>
+    </pattern>
   </defs>
-  
-  <!-- Bottom bread slice -->
-  <ellipse cx="100" cy="140" rx="45" ry="15" fill="url(#breadGradient)" stroke="#D2691E" stroke-width="2"/>
-  
-  <!-- Turkey -->
-  <ellipse cx="100" cy="125" rx="40" ry="12" fill="#CD853F"/>
-  
-  <!-- Bacon strips -->
-  <rect x="65" y="115" width="25" height="4" fill="#8B4513" rx="2"/>
-  <rect x="95" y="115" width="25" height="4" fill="#8B4513" rx="2"/>
-  <rect x="75" y="110" width="30" height="4" fill="#8B4513" rx="2"/>
-  <rect x="85" y="105" width="35" height="4" fill="#8B4513" rx="2"/>
-  
-  <!-- Middle bread slice -->
-  <ellipse cx="100" cy="110" rx="45" ry="15" fill="url(#breadGradient)" stroke="#D2691E" stroke-width="2"/>
-  
-  <!-- Lettuce -->
-  <path d="M60 95 Q80 90 100 95 Q120 90 140 95 Q120 100 100 95 Q80 100 60 95" fill="url(#lettuceGradient)" stroke="#228B22" stroke-width="1"/>
-  
-  <!-- Tomato slices -->
-  <ellipse cx="85" cy="90" rx="12" ry="8" fill="#FF6347" stroke="#DC143C" stroke-width="1"/>
-  <ellipse cx="115" cy="90" rx="12" ry="8" fill="#FF6347" stroke="#DC143C" stroke-width="1"/>
-  
-  <!-- Top bread slice -->
-  <ellipse cx="100" cy="80" rx="45" ry="15" fill="url(#breadGradient)" stroke="#D2691E" stroke-width="2"/>
-  
-  <!-- Toothpick -->
-  <rect x="145" y="75" width="2" height="50" fill="#8B4513" rx="1" transform="rotate(15 145 75)"/>
-  <circle cx="147" cy="75" r="3" fill="#FFD700"/>
-  
-  <!-- Plate -->
-  <ellipse cx="100" cy="155" rx="60" ry="20" fill="#F0F8FF" stroke="#D3D3D3" stroke-width="2"/>
+  <rect width="200" height="200" fill="url(#clubSandwichPattern)" rx="8"/>
 </svg>

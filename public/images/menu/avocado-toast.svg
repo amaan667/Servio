@@ -1,11 +1,8 @@
-
 <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="200" fill="#f3f4f6"/>
-  <rect x="10" y="10" width="180" height="180" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2" rx="8"/>
-  <text x="100" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
-    Avocado Toast
-  </text>
-  <text x="100" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#9ca3af">
-    Image
-  </text>
+  <defs>
+    <pattern id="avocadoToastPattern" patternUnits="userSpaceOnUse" width="200" height="200">
+      <image href="https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&h=400&fit=crop&crop=center" width="200" height="200" preserveAspectRatio="xMidYMid slice"/>
+    </pattern>
+  </defs>
+  <rect width="200" height="200" fill="url(#avocadoToastPattern)" rx="8"/>
 </svg>

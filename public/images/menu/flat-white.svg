@@ -1,38 +1,8 @@
 <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="flatWhiteCupGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#A0522D;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="flatWhiteFoamGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F5F5DC;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#FFF8DC;stop-opacity:1" />
-    </linearGradient>
+    <pattern id="flatWhitePattern" patternUnits="userSpaceOnUse" width="200" height="200">
+      <image href="https://images.unsplash.com/photo-1522992319-0365e5f11656?w=400&h=400&fit=crop&crop=center" width="200" height="200" preserveAspectRatio="xMidYMid slice"/>
+    </pattern>
   </defs>
-  
-  <!-- Cup body -->
-  <path d="M60 60 L140 60 L150 180 L50 180 Z" fill="url(#flatWhiteCupGradient)" stroke="#654321" stroke-width="2"/>
-  
-  <!-- Cup handle -->
-  <path d="M140 80 Q180 80 180 120 Q180 160 140 160" fill="none" stroke="#654321" stroke-width="6" stroke-linecap="round"/>
-  
-  <!-- Coffee liquid -->
-  <rect x="65" y="70" width="70" height="40" fill="#4A2C17" rx="2"/>
-  
-  <!-- Flat white microfoam - smooth layer -->
-  <rect x="65" y="70" width="70" height="15" fill="url(#flatWhiteFoamGradient)" rx="2"/>
-  
-  <!-- Microfoam texture lines -->
-  <path d="M70 75 Q80 78 90 75 Q100 78 110 75 Q120 78 130 75" fill="none" stroke="#E8E8E8" stroke-width="1" opacity="0.6"/>
-  <path d="M70 80 Q80 83 90 80 Q100 83 110 80 Q120 83 130 80" fill="none" stroke="#E8E8E8" stroke-width="1" opacity="0.4"/>
-  
-  <!-- Small foam bubbles -->
-  <circle cx="75" cy="78" r="1" fill="#F0F0F0" opacity="0.8"/>
-  <circle cx="95" cy="76" r="1.5" fill="#F0F0F0" opacity="0.8"/>
-  <circle cx="115" cy="78" r="1" fill="#F0F0F0" opacity="0.8"/>
-  
-  <!-- Steam -->
-  <path d="M85 50 Q90 40 85 35" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
-  <path d="M100 45 Q105 35 100 30" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
-  <path d="M115 50 Q120 40 115 35" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
+  <rect width="200" height="200" fill="url(#flatWhitePattern)" rx="8"/>
 </svg>
