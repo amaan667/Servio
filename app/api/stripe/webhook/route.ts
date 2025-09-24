@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -37,7 +37,17 @@ export async function POST(req: NextRequest) {
 
     console.log('[STRIPE WEBHOOK] Received event:', event.type, 'at', new Date().toISOString());
 
-    const supabase = await createClient();
+    // Use service role key for admin operations
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
 
     switch (event.type) {
       case 'checkout.session.completed':
@@ -113,15 +123,40 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
         const { data: createdOrder, error: createError } = await supabase
           .from('orders')
           .insert(newOrder)
-          .select('id')
-          .single();
+          .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status');
 
         if (createError) {
           console.error('[STRIPE WEBHOOK] Error creating order:', createError);
+          console.error('[STRIPE WEBHOOK] Error details:', {
+            message: createError.message,
+            details: createError.details,
+            hint: createError.hint,
+            code: createError.code
+          });
           return;
         }
 
-        console.log('[STRIPE WEBHOOK] Order created successfully with PAID status:', createdOrder.id);
+        if (!createdOrder || createdOrder.length === 0) {
+          console.error('[STRIPE WEBHOOK] Order creation returned no data');
+          console.error('[STRIPE WEBHOOK] This might be due to RLS or database constraints');
+          
+          // Try to find the order that was just created (in case insert succeeded but select failed)
+          const { data: foundOrder, error: findError } = await supabase
+            .from('orders')
+            .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status')
+            .eq('stripe_session_id', session.id)
+            .single();
+          
+          if (foundOrder && !findError) {
+            console.log('[STRIPE WEBHOOK] Found order after insert (RLS issue):', foundOrder.id);
+            return;
+          } else {
+            console.error('[STRIPE WEBHOOK] Could not find order after insert attempt:', findError);
+            return;
+          }
+        }
+
+        console.log('[STRIPE WEBHOOK] Order created successfully with PAID status:', createdOrder[0].id);
         return;
       } catch (error) {
         console.error('[STRIPE WEBHOOK] Error creating order from session:', error);

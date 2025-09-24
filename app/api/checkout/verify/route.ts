@@ -112,7 +112,7 @@ export async function GET(req: Request) {
             const { data: createdOrder, error: createError } = await supabase
               .from('orders')
               .insert(newOrder)
-              .select('id');
+              .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status');
 
             if (createError) {
               console.error("[VERIFY] Error creating fallback order:", createError);
@@ -128,7 +128,22 @@ export async function GET(req: Request) {
             if (!createdOrder || createdOrder.length === 0) {
               console.error("[VERIFY] Fallback order creation returned no data");
               console.error("[VERIFY] Created order data:", createdOrder);
-              return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed - no data returned" }, { status: 404 });
+              console.error("[VERIFY] This might be due to RLS or database constraints");
+              
+              // Try to find the order that was just created (in case insert succeeded but select failed)
+              const { data: foundOrder, error: findError } = await supabase
+                .from('orders')
+                .select('id, venue_id, table_number, customer_name, total_amount, order_status, payment_status')
+                .eq('stripe_session_id', sessionId)
+                .single();
+              
+              if (foundOrder && !findError) {
+                console.log("[VERIFY] Found order after insert (RLS issue):", foundOrder.id);
+                return NextResponse.json({ paid: true, orderId: foundOrder.id }, { status: 200 });
+              } else {
+                console.error("[VERIFY] Could not find order after insert attempt:", findError);
+                return NextResponse.json({ paid: false, error: "Order not found and fallback creation failed - no data returned" }, { status: 404 });
+              }
             }
 
             console.log("[VERIFY] Fallback order created successfully:", createdOrder[0].id);
