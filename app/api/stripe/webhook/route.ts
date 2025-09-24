@@ -146,8 +146,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
         const { data: insertedOrder, error: insertError } = await supabase
           .from('orders')
           .insert(newOrder)
-          .select('id')
-          .single();
+          .select('id');
 
         if (insertError) {
           console.error('[STRIPE WEBHOOK] Error creating order:', insertError);
@@ -160,7 +159,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
           return;
         }
 
-        console.log('[STRIPE WEBHOOK] Order created successfully:', insertedOrder.id);
+        console.log('[STRIPE WEBHOOK] Order created successfully:', insertedOrder?.[0]?.id);
         return;
       } catch (error) {
         console.error('[STRIPE WEBHOOK] Error creating order from session:', error);
