@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight } from "lucide-react";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { useToast } from "@/hooks/use-toast";
@@ -32,7 +32,8 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [showCategories, setShowCategories] = useState(false);
+  const [showCategories, setShowCategories] = useState(true);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -270,6 +271,18 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     console.log('[MENU CLIENT] Category order updated and stored:', updatedCategories);
   };
 
+  const toggleCategoryExpansion = (categoryName: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryName)) {
+        newSet.delete(categoryName);
+      } else {
+        newSet.add(categoryName);
+      }
+      return newSet;
+    });
+  };
+
   const openEditModal = (item: MenuItem) => {
     setEditingItem(item);
     setFormData({
@@ -326,7 +339,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               onClick={() => setShowCategories(!showCategories)}
             >
               <Edit className="h-4 w-4 mr-2" />
-              Categories
+              {showCategories ? 'Hide Categories' : 'Manage Categories'}
             </Button>
           </div>
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
@@ -500,14 +513,29 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                 return 0;
               });
 
-              return sortedCategories.map(([category, items]) => (
-                <div key={category} className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">{category}</h2>
-                    <span className="text-sm text-gray-500">{items.length} item{items.length !== 1 ? 's' : ''}</span>
-                  </div>
-                  <div className="grid gap-4">
-                    {items.map((item) => (
+              return sortedCategories.map(([category, items]) => {
+                const isExpanded = expandedCategories.has(category);
+                
+                return (
+                  <div key={category} className="space-y-4">
+                    <div 
+                      className="flex items-center justify-between cursor-pointer bg-gray-50 hover:bg-gray-100 px-4 py-3 rounded-lg border transition-colors"
+                      onClick={() => toggleCategoryExpansion(category)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-gray-600" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-gray-600" />
+                        )}
+                        <h2 className="text-xl font-semibold text-gray-900">{category}</h2>
+                        <span className="text-sm text-gray-500">({items.length} items)</span>
+                      </div>
+                    </div>
+                    
+                    {isExpanded && (
+                      <div className="grid gap-4">
+                        {items.map((item) => (
                       <Card key={item.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between">
@@ -552,10 +580,12 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ));
+                );
+              });
             })()
           )}
         </div>
