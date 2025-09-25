@@ -96,6 +96,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [batchEditValue, setBatchEditValue] = useState<any>(null);
   const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [showCategoriesManagement, setShowCategoriesManagement] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   // Handle venue ID format - the actual venue_id in database has 'venue-' prefix
   const venueUuid = venueId.startsWith('venue-') ? venueId : `venue-${venueId}`;
@@ -544,6 +546,41 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       return newSet;
     });
   };
+
+  const addNewCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    
+    setSaving("add-category");
+    try {
+      // Add a placeholder item to create the category
+      const { error } = await supabase
+        .from("menu_items")
+        .insert({
+          venue_id: venueUuid,
+          name: `New Item in ${newCategoryName}`,
+          description: "Please edit this item",
+          price: 0.01,
+          category: newCategoryName.trim(),
+          available: false
+        });
+
+      if (error) throw error;
+      
+      setNewCategoryName("");
+      fetchMenu();
+    } catch (error: any) {
+      setError(`Failed to add category: ${error.message}`);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const resetToPdfOrder = () => {
+    if (categoryOrder && Array.isArray(categoryOrder)) {
+      setExpandedCategories(new Set(categoryOrder));
+      setShowCategoriesManagement(true);
+    }
+  };
   const toggleSelectItem = (id: string) => {
     setSelectedItems(selectedItems.includes(id)
       ? selectedItems.filter(i => i !== id)
@@ -677,6 +714,106 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      {/* Categories Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Categories Management</span>
+            <Button
+              variant="outline"
+              onClick={() => setShowCategoriesManagement(!showCategoriesManagement)}
+            >
+              {showCategoriesManagement ? (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-2" />
+                  Hide Categories
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="h-4 w-4 mr-2" />
+                  Manage Categories
+                </>
+              )}
+            </Button>
+          </CardTitle>
+          <CardDescription>
+            Reorder categories, add new ones, or reset to PDF order. Changes affect both menu management and customer ordering.
+          </CardDescription>
+        </CardHeader>
+        
+        {showCategoriesManagement && (
+          <CardContent className="space-y-4">
+            {/* Add New Category */}
+            <div className="flex items-center space-x-2">
+              <Input
+                placeholder="New category name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addNewCategory()}
+                className="flex-1"
+              />
+              <Button
+                onClick={addNewCategory}
+                disabled={!newCategoryName.trim() || saving === "add-category"}
+              >
+                {saving === "add-category" ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PlusCircle className="h-4 w-4" />
+                )}
+                Add Category
+              </Button>
+            </div>
+
+            {/* Category Actions */}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                onClick={resetToPdfOrder}
+                disabled={!categoryOrder || !Array.isArray(categoryOrder)}
+              >
+                Reset to PDF Order
+              </Button>
+              <span className="text-sm text-gray-500">
+                {categoryOrder ? `PDF order: ${categoryOrder.join(', ')}` : 'No PDF order available'}
+              </span>
+            </div>
+
+            {/* Categories List */}
+            <div className="space-y-2">
+              <h4 className="font-medium">Current Categories ({sortedCategories.length})</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {sortedCategories.map(({ name }) => {
+                  const itemCount = categoryGroups[name]?.length || 0;
+                  return (
+                    <div
+                      key={name}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-sm">{name}</span>
+                        <span className="text-xs text-gray-500">({itemCount})</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleCategoryExpansion(name)}
+                      >
+                        {expandedCategories.has(name) ? (
+                          <ChevronDown className="h-3 w-3" />
+                        ) : (
+                          <ChevronRight className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        )}
+      </Card>
 
       {/* Existing Menu Items */}
       <Card>
