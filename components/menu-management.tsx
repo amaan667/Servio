@@ -24,6 +24,8 @@ import {
   Upload,
   Link,
   FileText,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { logger } from "@/lib/logger";
@@ -93,6 +95,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [batchAction, setBatchAction] = useState<null | "edit" | "unavailable" | "category" | "price" | "delete">(null);
   const [batchEditValue, setBatchEditValue] = useState<any>(null);
   const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Handle venue ID format - the actual venue_id in database has 'venue-' prefix
   const venueUuid = venueId.startsWith('venue-') ? venueId : `venue-${venueId}`;
@@ -529,6 +532,18 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const toggleSelectAll = () => {
     setSelectedItems(allSelected ? [] : allVisibleIds);
   };
+
+  const toggleCategoryExpansion = (categoryName: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryName)) {
+        newSet.delete(categoryName);
+      } else {
+        newSet.add(categoryName);
+      }
+      return newSet;
+    });
+  };
   const toggleSelectItem = (id: string) => {
     setSelectedItems(selectedItems.includes(id)
       ? selectedItems.filter(i => i !== id)
@@ -693,14 +708,33 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
               </p>
             </div>
           ) : (
-            <div className="space-y-8 max-h-96 overflow-y-auto">
-              {sortedCategories.map(({ name }) => (
-                <div key={name} className="space-y-3">
-                  <h3 className="font-semibold text-xl text-servio-purple border-b pb-2 mb-2 bg-gray-50 px-2 rounded-t-lg">
-                    {name}
-                  </h3>
-                  <div className="space-y-3">
-                    {categoryGroups[name].map((item: MenuItem) => (
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {sortedCategories.map(({ name }) => {
+                const isExpanded = expandedCategories.has(name);
+                const itemCount = categoryGroups[name].length;
+                
+                return (
+                  <div key={name} className="space-y-2">
+                    <div 
+                      className="flex items-center justify-between cursor-pointer bg-gray-50 hover:bg-gray-100 px-4 py-3 rounded-lg border transition-colors"
+                      onClick={() => toggleCategoryExpansion(name)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-gray-600" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-gray-600" />
+                        )}
+                        <h3 className="font-semibold text-lg text-servio-purple">
+                          {name}
+                        </h3>
+                        <span className="text-sm text-gray-500">({itemCount} items)</span>
+                      </div>
+                    </div>
+                    
+                    {isExpanded && (
+                      <div className="space-y-3 ml-6">
+                        {categoryGroups[name].map((item: MenuItem) => (
                       <div
                         key={item.id}
                         className="bg-white border border-gray-200 p-5 rounded-lg flex items-center justify-between shadow-sm hover:shadow-md group transition-all"
@@ -809,11 +843,13 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
                             Edit
                           </Button>
                         </div>
+                        </div>
+                      ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
