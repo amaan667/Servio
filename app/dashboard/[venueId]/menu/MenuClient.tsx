@@ -32,7 +32,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [showCategories, setShowCategories] = useState(true);
+  const [showCategories, setShowCategories] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: '',
