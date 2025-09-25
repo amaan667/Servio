@@ -84,12 +84,6 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       if (!error && data) {
         setMenuItems(data);
         console.log('[MENU CLIENT] Successfully loaded', data.length, 'menu items');
-        
-        // Auto-show categories if there are menu items with categories
-        const hasCategories = data.some((item: MenuItem) => item.category && item.category.trim());
-        if (hasCategories) {
-          setShowCategories(true);
-        }
       } else if (error) {
         console.error('[MENU CLIENT] Error loading menu items:', error);
         toast({
