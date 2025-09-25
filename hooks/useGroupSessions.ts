@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logInfo, logError } from "@/lib/logger";
 
 export interface GroupSession {
   id: string;
@@ -33,7 +34,7 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
       setLoading(true);
       setError(null);
 
-      console.log('[GROUP SESSIONS] Fetching group sessions for venue:', venueId);
+      logInfo('[GROUP SESSIONS] Fetching group sessions for venue:', venueId);
       const response = await fetch(`/api/table/group-sessions?venueId=${venueId}`);
       
       if (!response.ok) {
@@ -43,13 +44,13 @@ export function useGroupSessions(venueId: string): UseGroupSessionsReturn {
       const data = await response.json();
       
       if (data.ok) {
-        console.log('[GROUP SESSIONS] Found group sessions:', data.groupSessions?.length || 0);
+        logInfo('[GROUP SESSIONS] Found group sessions:', data.groupSessions?.length || 0);
         setGroupSessions(data.groupSessions || []);
       } else {
         throw new Error(data.error || 'Failed to fetch group sessions');
       }
     } catch (err) {
-      console.error('[USE GROUP SESSIONS] Error fetching group sessions:', err);
+      logError('[USE GROUP SESSIONS] Error fetching group sessions:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
       setGroupSessions([]);
     } finally {

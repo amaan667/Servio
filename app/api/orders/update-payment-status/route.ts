@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,18 +33,18 @@ export async function POST(req: NextRequest) {
       .single();
     
     if (error) {
-      console.error('[UPDATE PAYMENT STATUS] Failed to update payment status:', error);
+      logError('[UPDATE PAYMENT STATUS] Failed to update payment status:', error);
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
       );
     }
     
-    console.log('[UPDATE PAYMENT STATUS] Payment status updated successfully:', data);
+    logInfo('[UPDATE PAYMENT STATUS] Payment status updated successfully:', data);
     return NextResponse.json({ success: true, data });
     
   } catch (error: any) {
-    console.error('[UPDATE PAYMENT STATUS] Error:', error);
+    logError('[UPDATE PAYMENT STATUS] Error:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

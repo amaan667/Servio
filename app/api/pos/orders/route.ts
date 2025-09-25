@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
     const { data: orders, error } = await query;
 
     if (error) {
-      console.error('[POS ORDERS] Error:', error);
+      logError('[POS ORDERS] Error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ orders: transformedOrders });
   } catch (error) {
-    console.error('[POS ORDERS] Unexpected error:', error);
+    logError('[POS ORDERS] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

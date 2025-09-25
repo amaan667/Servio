@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -31,7 +32,7 @@ export async function GET(
       }
     );
 
-    console.log('[ORDERS SESSION] Looking for open order with session:', sessionId);
+    logInfo('[ORDERS SESSION] Looking for open order with session:', sessionId);
 
     // Since session_id column doesn't exist in database yet, we'll use localStorage approach
     // For now, return null to indicate no session-based order found
@@ -39,7 +40,7 @@ export async function GET(
     const order = null;
 
     if (!order) {
-      console.log('[ORDERS SESSION] No open order found for session:', sessionId);
+      logInfo('[ORDERS SESSION] No open order found for session:', sessionId);
       return NextResponse.json({
         success: true,
         data: null
@@ -47,7 +48,7 @@ export async function GET(
     }
 
   } catch (error) {
-    console.error('[ORDERS SESSION] Error:', error);
+    logError('[ORDERS SESSION] Error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error' 

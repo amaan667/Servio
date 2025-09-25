@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log('[AUTO CREATE TABLE] Creating table for QR scan:', { venue_id, table_number, table_label });
+    logInfo('[AUTO CREATE TABLE] Creating table for QR scan:', { venue_id, table_number, table_label });
 
     // Check if table already exists first
     const { data: existingTable } = await supabase
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
         .single();
 
       if (tableError) {
-        console.error('[AUTO CREATE TABLE] Table creation error:', tableError);
+        logError('[AUTO CREATE TABLE] Table creation error:', tableError);
         return NextResponse.json({ 
           success: false, 
           error: 'Failed to create table' 
@@ -67,7 +68,7 @@ export async function POST(req: Request) {
       table = newTable;
     }
 
-    console.log('[AUTO CREATE TABLE] Table created/updated successfully:', table.id);
+    logInfo('[AUTO CREATE TABLE] Table created/updated successfully:', table.id);
 
     // Check if session already exists for this table
     const { data: existingSession } = await supabase
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
         });
 
       if (sessionError) {
-        console.error('[AUTO CREATE TABLE] Session creation error:', sessionError);
+        logError('[AUTO CREATE TABLE] Session creation error:', sessionError);
         // Don't fail the request if session creation fails, table is still created
       }
     }
@@ -105,7 +106,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[AUTO CREATE TABLE] Error:', error);
+    logError('[AUTO CREATE TABLE] Error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error' 

@@ -4,6 +4,7 @@
 // Detects PDF type and extracts text with bounding boxes
 
 import { PDFSourceInfo, TextBlock, BoundingBox } from './types';
+import { logInfo, logError } from "@/lib/logger";
 
 /**
  * Detects the type of PDF and determines the best extraction method
@@ -36,7 +37,7 @@ export async function detectPDFSource(pdfBuffer: Buffer): Promise<PDFSourceInfo>
     };
     
   } catch (error) {
-    console.error('[PDF_DETECT] Detection failed:', error);
+    logError('[PDF_DETECT] Detection failed:', error);
     // Default to OCR
     return {
       type: 'vision_ocr',
@@ -66,7 +67,7 @@ async function extractNativeText(pdfBuffer: Buffer): Promise<string | null> {
     
     return null;
   } catch (error) {
-    console.error('[PDF_DETECT] Native extraction failed:', error);
+    logError('[PDF_DETECT] Native extraction failed:', error);
     return null;
   }
 }
@@ -96,11 +97,11 @@ async function checkSelectableText(text: string): Promise<boolean> {
  */
 export async function extractTextWithBoxes(pdfBuffer: Buffer): Promise<TextBlock[]> {
   try {
-    console.log('[PDF_EXTRACT] Starting Google Vision OCR with bounding boxes...');
+    logInfo('[PDF_EXTRACT] Starting Google Vision OCR with bounding boxes...');
     
     // Check if Google Vision credentials are available
     if (!process.env.GOOGLE_CREDENTIALS_B64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      console.log('[PDF_EXTRACT] No Google Vision credentials, using mock data');
+      logInfo('[PDF_EXTRACT] No Google Vision credentials, using mock data');
       return generateMockTextBlocks();
     }
     
@@ -108,11 +109,11 @@ export async function extractTextWithBoxes(pdfBuffer: Buffer): Promise<TextBlock
     const { extractTextBlocksFromPdf } = await import('./googleVisionOCR');
     const blocks = await extractTextBlocksFromPdf(pdfBuffer, 'uploaded-menu.pdf');
     
-    console.log('[PDF_EXTRACT] Extracted', blocks.length, 'text blocks');
+    logInfo('[PDF_EXTRACT] Extracted', blocks.length, 'text blocks');
     return blocks;
     
   } catch (error: any) {
-    console.error('[PDF_EXTRACT] Text extraction failed:', error);
+    logError('[PDF_EXTRACT] Text extraction failed:', error);
     throw new Error(`Text extraction failed: ${error.message}`);
   }
 }

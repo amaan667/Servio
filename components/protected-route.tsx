@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from './auth-provider';
+import { logInfo } from "@/lib/logger";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -20,7 +21,7 @@ export function ProtectedRoute({
 
   useEffect(() => {
     if (!loading && !user) {
-      console.log('[PROTECTED ROUTE] User not authenticated, redirecting to:', redirectTo);
+      logInfo('[PROTECTED ROUTE] User not authenticated, redirecting to:', redirectTo);
       router.push(redirectTo);
     }
   }, [user, loading, router, redirectTo]);

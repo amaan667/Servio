@@ -4,9 +4,10 @@ export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
-import { log } from '@/lib/debug';
+// import { log } from '@/lib/debug'; // Removed debug import
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import AnalyticsClient from './AnalyticsClient';
+import { logInfo, logError } from "@/lib/logger";
 
 export default async function AnalyticsPage({
   params,
@@ -14,13 +15,13 @@ export default async function AnalyticsPage({
   params: Promise<{ venueId: string }>;
 }) {
   const { venueId } = await params;
-  console.log('[ANALYTICS] Page mounted for venue', venueId);
+  logInfo('[ANALYTICS] Page mounted for venue', venueId);
   
   try {
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
     if (!hasAuthCookie) {
-      console.log('[ANALYTICS] No auth cookie found, redirecting to sign-in');
+      logInfo('[ANALYTICS] No auth cookie found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -30,12 +31,12 @@ export default async function AnalyticsPage({
     log('ANALYTICS SSR user', { hasUser: !!user, error: userError?.message });
     
     if (userError) {
-      console.error('[ANALYTICS] Auth error:', userError);
+      logError('[ANALYTICS] Auth error:', userError);
       redirect('/sign-in');
     }
     
     if (!user) {
-      console.log('[ANALYTICS] No user found, redirecting to sign-in');
+      logInfo('[ANALYTICS] No user found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -48,12 +49,12 @@ export default async function AnalyticsPage({
       .maybeSingle();
 
     if (venueError) {
-      console.error('[ANALYTICS] Venue query error:', venueError);
+      logError('[ANALYTICS] Venue query error:', venueError);
       redirect('/dashboard');
     }
 
     if (!venue) {
-      console.log('[ANALYTICS] Venue not found or user does not own it');
+      logInfo('[ANALYTICS] Venue not found or user does not own it');
       redirect('/dashboard');
     }
 
@@ -76,7 +77,7 @@ export default async function AnalyticsPage({
       </div>
     );
   } catch (error) {
-    console.error('[ANALYTICS] Unexpected error:', error);
+    logError('[ANALYTICS] Unexpected error:', error);
     redirect('/sign-in');
   }
 }

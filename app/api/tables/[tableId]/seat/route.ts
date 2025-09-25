@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -57,7 +58,7 @@ export async function POST(
     });
 
     if (error) {
-      console.error('[TABLES SEAT] Error:', error);
+      logError('[TABLES SEAT] Error:', error);
       return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
     }
 
@@ -67,7 +68,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('[TABLES SEAT] Unexpected error:', error);
+    logError('[TABLES SEAT] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

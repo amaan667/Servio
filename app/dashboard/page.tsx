@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
 import { redirect } from 'next/navigation';
+import { logError } from "@/lib/logger";
 
 export default async function DashboardPage() {
   // Check for auth cookies before making auth calls
@@ -63,7 +64,7 @@ export default async function DashboardPage() {
           });
 
         if (createError) {
-          console.error('Error creating venue for email user:', createError);
+          logError('Error creating venue for email user:', createError);
           redirect('/complete-profile');
         } else {
           redirect(`/dashboard/${venueId}`);

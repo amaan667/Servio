@@ -9,6 +9,7 @@ import { RefreshCw, Clock, CheckCircle, XCircle, AlertTriangle, History, Calenda
 import { OrderCard } from "@/components/orders/OrderCard";
 import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
 import { useLiveOrders, useTodayOrders, useHistoryOrders } from '@/hooks/usePartitionedOrders';
+import { logInfo } from "@/lib/logger";
 
 interface Order {
   id: string;
@@ -58,7 +59,7 @@ export function LiveOrdersPartitioned({ venueId, venueTimezone = 'Europe/London'
   // Auto-refresh all queries on the same interval
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('[AUTH DEBUG] Auto-refreshing all order queries');
+      logInfo('[AUTH DEBUG] Auto-refreshing all order queries');
       refetchLive();
       refetchToday();
       refetchHistory();

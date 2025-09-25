@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 import { createClient } from '@/lib/supabase/client';
+import { logInfo, logError } from "@/lib/logger";
 
 interface OrderSummaryProps {
   orderId?: string;
@@ -139,7 +140,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           }
         }
       } catch (error) {
-        console.error('Error fetching order:', error);
+        logError('Error fetching order:', error);
         setError('Failed to load order details');
       } finally {
         setLoading(false);
@@ -156,7 +157,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
     const supabase = createClient();
     if (!supabase) return;
 
-    console.log('Setting up real-time subscription for order:', order.id);
+    logInfo('Setting up real-time subscription for order:', order.id);
     
     const channel = supabase
       .channel(`order-summary-${order.id}`)
@@ -169,10 +170,10 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           filter: `id=eq.${order.id}`,
         },
         (payload: any) => {
-          console.log('Order update detected in summary:', payload);
+          logInfo('Order update detected in summary:', payload);
           
           if (payload.eventType === 'UPDATE') {
-            console.log('Order status updated in summary:', {
+            logInfo('Order status updated in summary:', {
               oldStatus: payload.old?.order_status,
               newStatus: payload.new?.order_status,
               orderId: payload.new?.id
@@ -190,7 +191,7 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
       .subscribe();
 
     return () => {
-      console.log('Cleaning up order summary subscription');
+      logInfo('Cleaning up order summary subscription');
       supabase.removeChannel(channel);
     };
   }, [order?.id]);

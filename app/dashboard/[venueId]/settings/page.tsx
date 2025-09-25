@@ -5,19 +5,20 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
-import { log } from '@/lib/debug';
+// import { log } from '@/lib/debug'; // Removed debug import
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import VenueSettingsClient from './VenueSettingsClient';
+import { logInfo, logError } from "@/lib/logger";
 
 export default async function VenueSettings({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  console.log('[SETTINGS] Page mounted for venue', venueId);
+  logInfo('[SETTINGS] Page mounted for venue', venueId);
   
   try {
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
     if (!hasAuthCookie) {
-      console.log('[SETTINGS] No auth cookie found, redirecting to sign-in');
+      logInfo('[SETTINGS] No auth cookie found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -41,7 +42,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
           });
         }
       } catch (error) {
-        console.error('[SETTINGS] Error getting admin user data:', error);
+        logError('[SETTINGS] Error getting admin user data:', error);
       }
     }
     
@@ -56,12 +57,12 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     });
     
     if (userError) {
-      console.error('[SETTINGS] Auth error:', userError);
+      logError('[SETTINGS] Auth error:', userError);
       redirect('/sign-in');
     }
     
     if (!user) {
-      console.log('[SETTINGS] No user found, redirecting to sign-in');
+      logInfo('[SETTINGS] No user found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -74,12 +75,12 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
       .maybeSingle();
 
     if (venueError) {
-      console.error('[SETTINGS] Venue query error:', venueError);
+      logError('[SETTINGS] Venue query error:', venueError);
       redirect('/dashboard');
     }
 
     if (!venue) {
-      console.log('[SETTINGS] Venue not found or user does not own it');
+      logInfo('[SETTINGS] Venue not found or user does not own it');
       redirect('/dashboard');
     }
 
@@ -112,7 +113,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
       </div>
     );
   } catch (error) {
-    console.error('[SETTINGS] Unexpected error:', error);
+    logError('[SETTINGS] Unexpected error:', error);
     redirect('/sign-in');
   }
 }

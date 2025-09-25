@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    console.log('[BULK COMPLETE] ===== BULK COMPLETE ORDERS API CALLED =====');
+    logInfo('[BULK COMPLETE] ===== BULK COMPLETE ORDERS API CALLED =====');
     
     const { venueId, orderIds } = await req.json();
-    console.log('[BULK COMPLETE] Venue ID:', venueId);
-    console.log('[BULK COMPLETE] Order IDs:', orderIds);
+    logInfo('[BULK COMPLETE] Venue ID:', venueId);
+    logInfo('[BULK COMPLETE] Order IDs:', orderIds);
     
     if (!venueId) {
       return NextResponse.json({ error: 'Venue ID is required' }, { status: 400 });
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
     // If no specific order IDs provided, get all active orders for the venue
     let targetOrderIds = orderIds;
     if (!targetOrderIds || targetOrderIds.length === 0) {
-      console.log('[BULK COMPLETE] No specific order IDs provided, fetching all active orders');
+      logInfo('[BULK COMPLETE] No specific order IDs provided, fetching all active orders');
       const { data: activeOrders, error: fetchError } = await supabase
         .from('orders')
         .select('id')
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
         .in('order_status', ['PLACED', 'IN_PREP', 'READY', 'SERVING']);
       
       if (fetchError) {
-        console.error('[BULK COMPLETE] Error fetching active orders:', fetchError);
+        logError('[BULK COMPLETE] Error fetching active orders:', fetchError);
         return NextResponse.json({ error: 'Failed to fetch active orders' }, { status: 500 });
       }
       
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
       });
     }
     
-    console.log('[BULK COMPLETE] Completing orders:', targetOrderIds);
+    logInfo('[BULK COMPLETE] Completing orders:', targetOrderIds);
     
     // Get order details before updating to handle table cleanup
     const { data: ordersToComplete, error: fetchOrdersError } = await supabase
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
       .eq('venue_id', venueId);
     
     if (fetchOrdersError) {
-      console.error('[BULK COMPLETE] Error fetching order details:', fetchOrdersError);
+      logError('[BULK COMPLETE] Error fetching order details:', fetchOrdersError);
       return NextResponse.json({ error: 'Failed to fetch order details' }, { status: 500 });
     }
     
@@ -72,11 +73,11 @@ export async function POST(req: Request) {
       .select('id, table_id, table_number, source');
 
     if (updateError) {
-      console.error('[BULK COMPLETE] Error updating orders:', updateError);
+      logError('[BULK COMPLETE] Error updating orders:', updateError);
       return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
     }
 
-    console.log('[BULK COMPLETE] Successfully updated orders:', updatedOrders?.length || 0);
+    logInfo('[BULK COMPLETE] Successfully updated orders:', updatedOrders?.length || 0);
 
     // Handle table cleanup - completely remove ALL tables that were associated with completed orders
     if (updatedOrders && updatedOrders.length > 0) {
@@ -86,11 +87,11 @@ export async function POST(req: Request) {
         .map(order => order.table_id)
       )];
       
-      console.log('[BULK COMPLETE] Tables to be completely removed:', tableIds);
+      logInfo('[BULK COMPLETE] Tables to be completely removed:', tableIds);
       
       for (const tableId of tableIds) {
         try {
-          console.log('[BULK COMPLETE] Completely removing table:', tableId);
+          logInfo('[BULK COMPLETE] Completely removing table:', tableId);
           
           // Get table details first
           const { data: tableDetails, error: tableDetailsError } = await supabase
@@ -101,12 +102,12 @@ export async function POST(req: Request) {
             .single();
 
           if (tableDetailsError) {
-            console.error('[BULK COMPLETE] Error fetching table details:', tableDetailsError);
+            logError('[BULK COMPLETE] Error fetching table details:', tableDetailsError);
             continue; // Skip this table if we can't get details
           }
 
           // Clear table_id references in orders to avoid foreign key constraint issues
-          console.log('[BULK COMPLETE] Clearing table_id references in orders...');
+          logInfo('[BULK COMPLETE] Clearing table_id references in orders...');
           const { error: clearTableRefsError } = await supabase
             .from('orders')
             .update({ table_id: null })
@@ -114,14 +115,14 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (clearTableRefsError) {
-            console.error('[BULK COMPLETE] Error clearing table references in orders:', clearTableRefsError);
-            console.warn('[BULK COMPLETE] Proceeding with table deletion despite table reference clear failure');
+            logError('[BULK COMPLETE] Error clearing table references in orders:', clearTableRefsError);
+            logWarn('[BULK COMPLETE] Proceeding with table deletion despite table reference clear failure');
           } else {
-            console.log('[BULK COMPLETE] Successfully cleared table references in orders');
+            logInfo('[BULK COMPLETE] Successfully cleared table references in orders');
           }
 
           // Delete table sessions first
-          console.log('[BULK COMPLETE] Deleting table sessions...');
+          logInfo('[BULK COMPLETE] Deleting table sessions...');
           const { error: deleteSessionError } = await supabase
             .from('table_sessions')
             .delete()
@@ -129,14 +130,14 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteSessionError) {
-            console.error('[BULK COMPLETE] Error deleting table sessions:', deleteSessionError);
-            console.warn('[BULK COMPLETE] Proceeding with table deletion despite session deletion failure');
+            logError('[BULK COMPLETE] Error deleting table sessions:', deleteSessionError);
+            logWarn('[BULK COMPLETE] Proceeding with table deletion despite session deletion failure');
           } else {
-            console.log('[BULK COMPLETE] Successfully deleted table sessions for table:', tableId);
+            logInfo('[BULK COMPLETE] Successfully deleted table sessions for table:', tableId);
           }
           
           // Clean up table runtime state
-          console.log('[BULK COMPLETE] Deleting table runtime state...');
+          logInfo('[BULK COMPLETE] Deleting table runtime state...');
           const { error: deleteRuntimeError } = await supabase
             .from('table_runtime_state')
             .delete()
@@ -144,14 +145,14 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteRuntimeError) {
-            console.error('[BULK COMPLETE] Error deleting table runtime state:', deleteRuntimeError);
-            console.warn('[BULK COMPLETE] Proceeding with table deletion despite runtime state deletion failure');
+            logError('[BULK COMPLETE] Error deleting table runtime state:', deleteRuntimeError);
+            logWarn('[BULK COMPLETE] Proceeding with table deletion despite runtime state deletion failure');
           } else {
-            console.log('[BULK COMPLETE] Successfully deleted table runtime state for table:', tableId);
+            logInfo('[BULK COMPLETE] Successfully deleted table runtime state for table:', tableId);
           }
           
           // Clean up group sessions for this table
-          console.log('[BULK COMPLETE] Deleting group sessions...');
+          logInfo('[BULK COMPLETE] Deleting group sessions...');
           const { error: deleteGroupSessionError } = await supabase
             .from('table_group_sessions')
             .delete()
@@ -159,14 +160,14 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteGroupSessionError) {
-            console.error('[BULK COMPLETE] Error deleting group sessions:', deleteGroupSessionError);
-            console.warn('[BULK COMPLETE] Proceeding with table deletion despite group session deletion failure');
+            logError('[BULK COMPLETE] Error deleting group sessions:', deleteGroupSessionError);
+            logWarn('[BULK COMPLETE] Proceeding with table deletion despite group session deletion failure');
           } else {
-            console.log('[BULK COMPLETE] Successfully deleted group sessions for table:', tableId);
+            logInfo('[BULK COMPLETE] Successfully deleted group sessions for table:', tableId);
           }
 
           // Finally, delete the table itself
-          console.log('[BULK COMPLETE] Deleting table...');
+          logInfo('[BULK COMPLETE] Deleting table...');
           const { error: deleteTableError } = await supabase
             .from('tables')
             .delete()
@@ -174,19 +175,19 @@ export async function POST(req: Request) {
             .eq('venue_id', venueId);
 
           if (deleteTableError) {
-            console.error('[BULK COMPLETE] Error deleting table:', deleteTableError);
-            console.error('[BULK COMPLETE] Error details:', {
+            logError('[BULK COMPLETE] Error deleting table:', deleteTableError);
+            logError('[BULK COMPLETE] Error details:', {
               message: deleteTableError.message,
               details: deleteTableError.details,
               hint: deleteTableError.hint,
               code: deleteTableError.code
             });
           } else {
-            console.log('[BULK COMPLETE] Successfully deleted table:', tableId);
+            logInfo('[BULK COMPLETE] Successfully deleted table:', tableId);
           }
           
         } catch (tableError) {
-          console.error('[BULK COMPLETE] Error handling table cleanup for table:', tableId, tableError);
+          logError('[BULK COMPLETE] Error handling table cleanup for table:', tableId, tableError);
         }
       }
     }
@@ -198,7 +199,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[BULK COMPLETE] Unexpected error:', error);
+    logError('[BULK COMPLETE] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

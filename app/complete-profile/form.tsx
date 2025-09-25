@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createClient } from '@/lib/supabase/client';
-import { logger } from "@/lib/logger";
+import { logInfo, logError } from "@/lib/logger";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 
 interface CompleteProfileFormProps {
@@ -35,7 +35,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
   );
 
   // Debug logging for user data
-  console.log("[COMPLETE-PROFILE] User data:", {
+  logInfo("[COMPLETE-PROFILE] User data:", {
     userId: user?.id,
     email: user?.email,
     userMetadata: user?.user_metadata,
@@ -56,7 +56,7 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         }));
       }
       
-      console.log("[COMPLETE-PROFILE] Pre-populated form data:", {
+      logInfo("[COMPLETE-PROFILE] Pre-populated form data:", {
         googleName,
         googleEmail,
         venueName: formData.venueName
@@ -117,19 +117,19 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
 
       // Set password for OAuth users (now required)
       if (isOAuthUser) {
-        console.log("[COMPLETE-PROFILE] Setting password for OAuth user");
+        logInfo("[COMPLETE-PROFILE] Setting password for OAuth user");
         const { error: passwordError } = await createClient().auth.updateUser({
           password: formData.password
         });
         if (passwordError) {
-          console.error('[COMPLETE-PROFILE] Password update error', passwordError);
+          logError('[COMPLETE-PROFILE] Password update error', passwordError);
           setError(`Failed to set password: ${passwordError.message}`);
           setLoading(false);
           return;
         }
       }
 
-      console.log("[COMPLETE-PROFILE] Upserting venue via server route (service role)", user.id);
+      logInfo("[COMPLETE-PROFILE] Upserting venue via server route (service role)", user.id);
       
       // Ensure we have a valid venue name
       const venueName = formData.venueName.trim() || `${user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'My'}'s Business`;
@@ -150,10 +150,10 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       });
       
       const j = await res.json().catch(()=>({}));
-      console.log("[COMPLETE-PROFILE] Venue upsert response:", j);
+      logInfo("[COMPLETE-PROFILE] Venue upsert response:", j);
       
       if (!res.ok || !j?.ok) {
-        console.error("[COMPLETE-PROFILE] Venue upsert failed:", j);
+        logError("[COMPLETE-PROFILE] Venue upsert failed:", j);
         throw new Error(j?.error || 'Failed to save venue');
       }
 
@@ -169,12 +169,12 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
           phone: formData.phone || null
         }
       });
-      if (metadataError) console.error('[COMPLETE-PROFILE] metadata update error', metadataError);
+      if (metadataError) logError('[COMPLETE-PROFILE] metadata update error', metadataError);
 
       router.replace(`/dashboard/${returnedVenueId}`);
     } catch (error: any) {
-      console.error("[COMPLETE-PROFILE] Failed to complete profile:", error);
-      logger.error("Failed to complete profile", { error });
+      logError("[COMPLETE-PROFILE] Failed to complete profile:", error);
+      logError("profile.complete.failed", { error });
       setError(error.message || "Failed to complete profile setup");
     } finally {
       setLoading(false);

@@ -4,6 +4,7 @@ import { getOpenAI } from '@/lib/openai';
 import { isMenuLike } from '@/lib/menuLike';
 import { tryParseMenuWithGPT } from '@/lib/safeParse';
 import { PDFDocument } from 'pdf-lib';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
       const supa = await createClient();
     const { uploadId } = await req.json();
     
-    console.log('[AUTH DEBUG] Processing menu upload:', uploadId);
+    logInfo('[AUTH DEBUG] Processing menu upload:', uploadId);
 
     // Get upload record
     const { data: row, error: fetchErr } = await supa
@@ -21,30 +22,30 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (fetchErr || !row) {
-      console.error('[AUTH DEBUG] Failed to fetch upload:', fetchErr);
+      logError('[AUTH DEBUG] Failed to fetch upload:', fetchErr);
       return NextResponse.json({ ok: false, error: 'Upload not found' }, { status: 404 });
     }
 
-    console.log('[AUTH DEBUG] Found upload:', { id: row.id, filename: row.filename, status: row.status });
+    logInfo('[AUTH DEBUG] Found upload:', { id: row.id, filename: row.filename, status: row.status });
 
     // Download PDF from Supabase Storage
     const storagePath = row.filename || `${row.venue_id}/${row.sha256}.pdf`;
-    console.log('[AUTH DEBUG] Downloading from storage path:', storagePath);
+    logInfo('[AUTH DEBUG] Downloading from storage path:', storagePath);
     
     const { data: file, error: dlErr } = await supa.storage.from('menus').download(storagePath);
     if (dlErr) {
-      console.error('[AUTH DEBUG] Failed to download file:', dlErr);
+      logError('[AUTH DEBUG] Failed to download file:', dlErr);
       return NextResponse.json({ ok: false, error: 'Failed to download file' }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Downloaded file, size:', file.size, 'bytes');
+    logInfo('[AUTH DEBUG] Downloaded file, size:', file.size, 'bytes');
 
     // Extract PDF pages using pdf-lib
     const pdfBytes = await file.arrayBuffer();
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const pageCount = pdfDoc.getPageCount();
     
-    console.log('[AUTH DEBUG] PDF has', pageCount, 'pages');
+    logInfo('[AUTH DEBUG] PDF has', pageCount, 'pages');
 
     const pdfPages: string[] = [];
     const maxPages = Math.min(pageCount, 6); // Limit to first 6 pages
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
       const base64 = Buffer.from(singlePageBytes).toString('base64');
       pdfPages.push(`data:application/pdf;base64,${base64}`);
       
-      console.log('[AUTH DEBUG] Extracted page', i + 1, 'size:', singlePageBytes.length, 'bytes');
+      logInfo('[AUTH DEBUG] Extracted page', i + 1, 'size:', singlePageBytes.length, 'bytes');
     }
 
     // Try to extract text from first page for menu-likeness check
@@ -81,18 +82,18 @@ export async function POST(req: NextRequest) {
       });
       
       rawText = visionResponse.choices[0]?.message?.content || '';
-      console.log('[AUTH DEBUG] Extracted text length:', rawText.length);
+      logInfo('[AUTH DEBUG] Extracted text length:', rawText.length);
     } catch (textErr) {
-      console.error('[AUTH DEBUG] Failed to extract text:', textErr);
+      logError('[AUTH DEBUG] Failed to extract text:', textErr);
       rawText = 'Failed to extract text';
     }
 
     // Check if text is menu-like
     const isMenuLikeResult = isMenuLike(rawText);
-    console.log('[AUTH DEBUG] Menu-likeness result:', isMenuLikeResult);
+    logInfo('[AUTH DEBUG] Menu-likeness result:', isMenuLikeResult);
 
     if (!isMenuLikeResult) {
-      console.log('[AUTH DEBUG] Text not menu-like');
+      logInfo('[AUTH DEBUG] Text not menu-like');
       
       // Update status to needs_review
       await supa
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Process all PDF pages with OpenAI Vision
-    console.log('[AUTH DEBUG] Processing', pdfPages.length, 'PDF pages with OpenAI Vision');
+    logInfo('[AUTH DEBUG] Processing', pdfPages.length, 'PDF pages with OpenAI Vision');
     
     const allMenuItems: any[] = [];
     let totalTokens = 0;
@@ -148,14 +149,14 @@ export async function POST(req: NextRequest) {
               return { items, tokens: response.usage?.total_tokens || 0, page: i + 1 };
             }
           } catch (parseErr) {
-            console.error('[AUTH DEBUG] Failed to parse JSON from page', i + 1, ':', parseErr);
+            logError('[AUTH DEBUG] Failed to parse JSON from page', i + 1, ':', parseErr);
           }
         }
 
         return { items: [], tokens: response.usage?.total_tokens || 0, page: i + 1 };
         
       } catch (visionErr) {
-        console.error('[AUTH DEBUG] Vision API error on page', i + 1, ':', visionErr);
+        logError('[AUTH DEBUG] Vision API error on page', i + 1, ':', visionErr);
         return { items: [], tokens: 0, page: i + 1 };
       }
     });
@@ -167,11 +168,11 @@ export async function POST(req: NextRequest) {
     results.forEach(result => {
       allMenuItems.push(...result.items);
       totalTokens += result.tokens;
-      console.log('[AUTH DEBUG] Processed page', result.page, 'tokens:', result.tokens);
+      logInfo('[AUTH DEBUG] Processed page', result.page, 'tokens:', result.tokens);
     });
 
-    console.log('[AUTH DEBUG] Total items extracted:', allMenuItems.length);
-    console.log('[AUTH DEBUG] Total tokens used:', totalTokens);
+    logInfo('[AUTH DEBUG] Total items extracted:', allMenuItems.length);
+    logInfo('[AUTH DEBUG] Total tokens used:', totalTokens);
 
     // Save results
     const { error: updateErr } = await supa
@@ -185,7 +186,7 @@ export async function POST(req: NextRequest) {
       .eq('id', uploadId);
 
     if (updateErr) {
-      console.error('[AUTH DEBUG] Failed to update upload:', updateErr);
+      logError('[AUTH DEBUG] Failed to update upload:', updateErr);
       return NextResponse.json({ ok: false, error: 'Failed to save results' }, { status: 500 });
     }
 
@@ -198,7 +199,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Process error:', error);
+    logError('[AUTH DEBUG] Process error:', error);
     return NextResponse.json({ ok: false, error: 'Processing failed' }, { status: 500 });
   }
 }

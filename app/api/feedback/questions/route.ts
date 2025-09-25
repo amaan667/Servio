@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser, createAdminClient } from '@/lib/supabase/server';
 import type { FeedbackQuestion } from '@/types/feedback';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -47,7 +48,7 @@ export async function GET(req: Request) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('[FEEDBACK:Q] list error:', error.message);
+      logError('[FEEDBACK:Q] list error:', error.message);
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
     const totalCount = questions?.length || 0;
     const activeCount = questions?.filter(q => q.is_active).length || 0;
 
-    console.log(`[FEEDBACK:Q] list venue=${venueId} count=${questions?.length || 0} total=${totalCount} active=${activeCount}`);
+    logInfo(`[FEEDBACK:Q] list venue=${venueId} count=${questions?.length || 0} total=${totalCount} active=${activeCount}`);
     return NextResponse.json({ 
       questions: questions || [],
       totalCount: totalCount,
@@ -63,7 +64,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:Q] list exception:', error.message);
+    logError('[FEEDBACK:Q] list exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
       .single();
 
     if (maxSortError && maxSortError.message.includes('sort_index')) {
-      console.error('[FEEDBACK:Q] Database schema error - sort_index column missing');
+      logError('[FEEDBACK:Q] Database schema error - sort_index column missing');
       return NextResponse.json({ 
         error: 'Database schema not set up. Please contact support to apply the feedback questions schema.' 
       }, { status: 500 });
@@ -153,15 +154,15 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      console.error('[FEEDBACK:Q] add error:', error.message);
+      logError('[FEEDBACK:Q] add error:', error.message);
       return NextResponse.json({ error: 'Failed to create question' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:Q] add venue=${venue_id} type=${type} id=${question.id}`);
+    logInfo(`[FEEDBACK:Q] add venue=${venue_id} type=${type} id=${question.id}`);
     return NextResponse.json({ question });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:Q] add exception:', error.message);
+    logError('[FEEDBACK:Q] add exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -241,15 +242,15 @@ export async function PATCH(req: Request) {
       .single();
 
     if (error) {
-      console.error('[FEEDBACK:Q] update error:', error.message);
+      logError('[FEEDBACK:Q] update error:', error.message);
       return NextResponse.json({ error: 'Failed to update question' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:Q] update id=${id}`);
+    logInfo(`[FEEDBACK:Q] update id=${id}`);
     return NextResponse.json({ question });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:Q] update exception:', error.message);
+    logError('[FEEDBACK:Q] update exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -291,15 +292,15 @@ export async function DELETE(req: Request) {
       .eq('id', id);
 
     if (error) {
-      console.error('[FEEDBACK:Q] delete error:', error.message);
+      logError('[FEEDBACK:Q] delete error:', error.message);
       return NextResponse.json({ error: 'Failed to delete question' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:Q] delete id=${id}`);
+    logInfo(`[FEEDBACK:Q] delete id=${id}`);
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:Q] delete exception:', error.message);
+    logError('[FEEDBACK:Q] delete exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUserForAPI } from '@/lib/auth/server';
+import { logError } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -35,7 +36,7 @@ export async function GET() {
     return NextResponse.json({ profile });
     
   } catch (error) {
-    console.error('[USER PROFILE API] Error:', error);
+    logError('[USER PROFILE API] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -69,7 +70,7 @@ export async function PUT(request: Request) {
     });
     
   } catch (error) {
-    console.error('[USER PROFILE API] Error:', error);
+    logError('[USER PROFILE API] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

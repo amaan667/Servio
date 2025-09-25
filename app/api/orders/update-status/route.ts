@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
       .select();
 
     if (error) {
-      console.error('[UPDATE STATUS] Error:', error);
+      logError('[UPDATE STATUS] Error:', error);
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     if (status === 'COMPLETED' || status === 'CANCELLED') {
       const order = data?.[0];
       if (order && (order.table_id || order.table_number) && order.source === 'qr') {
-        console.log('[TABLE CLEAR] Order completed/cancelled, checking if table should be cleared:', {
+        logInfo('[TABLE CLEAR] Order completed/cancelled, checking if table should be cleared:', {
           orderId: orderId,
           tableId: order.table_id,
           tableNumber: order.table_number,
@@ -56,9 +57,9 @@ export async function POST(req: Request) {
         }
 
         if (activeOrdersError) {
-          console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
+          logError('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
         } else if (!filteredActiveOrders || filteredActiveOrders.length === 0) {
-          console.log('[TABLE CLEAR] No other active orders for table, clearing table setup');
+          logInfo('[TABLE CLEAR] No other active orders for table, clearing table setup');
           
           // Clear table sessions (active sessions)
           const sessionUpdateData = {
@@ -83,9 +84,9 @@ export async function POST(req: Request) {
           const { error: sessionClearError } = await sessionQuery;
 
           if (sessionClearError) {
-            console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
+            logError('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
           } else {
-            console.log('[TABLE CLEAR] Successfully cleared table sessions');
+            logInfo('[TABLE CLEAR] Successfully cleared table sessions');
           }
 
           // Also clear table runtime state if it exists
@@ -101,15 +102,15 @@ export async function POST(req: Request) {
               .eq('label', `Table ${order.table_number}`);
 
             if (runtimeClearError) {
-              console.error('[TABLE CLEAR] Error clearing table runtime state:', runtimeClearError);
+              logError('[TABLE CLEAR] Error clearing table runtime state:', runtimeClearError);
             } else {
-              console.log('[TABLE CLEAR] Successfully cleared table runtime state');
+              logInfo('[TABLE CLEAR] Successfully cleared table runtime state');
             }
           }
 
-          console.log('[TABLE CLEAR] Table setup cleared successfully');
+          logInfo('[TABLE CLEAR] Table setup cleared successfully');
         } else {
-          console.log('[TABLE CLEAR] Other active orders exist for table, keeping table occupied:', {
+          logInfo('[TABLE CLEAR] Other active orders exist for table, keeping table occupied:', {
             activeOrdersCount: filteredActiveOrders.length,
             activeOrderIds: filteredActiveOrders.map(o => o.id)
           });
@@ -131,10 +132,10 @@ export async function POST(req: Request) {
 
             if (completionResponse.ok) {
               const completionResult = await completionResponse.json();
-              console.log('[UPDATE STATUS] Auto-completion check result:', completionResult);
+              logInfo('[UPDATE STATUS] Auto-completion check result:', completionResult);
             }
           } catch (completionError) {
-            console.error('[UPDATE STATUS] Error checking reservation completion:', completionError);
+            logError('[UPDATE STATUS] Error checking reservation completion:', completionError);
             // Don't fail the main request if completion check fails
           }
         }
@@ -143,7 +144,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, order: data?.[0] });
   } catch (error) {
-    console.error('[UPDATE STATUS] Unexpected error:', error);
+    logError('[UPDATE STATUS] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

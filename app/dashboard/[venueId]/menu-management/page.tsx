@@ -6,25 +6,26 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { MenuManagementWrapper } from '@/components/MenuManagementWrapper';
+import { logInfo, logError } from "@/lib/logger";
 
 export default async function MenuManagementPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  console.log('[MENU MANAGEMENT] Page mounted for venue', venueId);
+  logInfo('[MENU MANAGEMENT] Page mounted for venue', venueId);
   
   // SECURE: Use the secure authentication utility
   const { user, error } = await getAuthenticatedUser();
   
   if (error) {
-    console.error('[MENU MANAGEMENT] Auth error:', error);
+    logError('[MENU MANAGEMENT] Auth error:', error);
     redirect('/sign-in');
   }
   
   if (!user) {
-    console.log('[MENU MANAGEMENT] No user found, redirecting to sign-in');
+    logInfo('[MENU MANAGEMENT] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
 
-  console.log('[MENU MANAGEMENT] User authenticated:', user.id);
+  logInfo('[MENU MANAGEMENT] User authenticated:', user.id);
 
   const supabase = await createServerSupabase();
 
@@ -37,17 +38,17 @@ export default async function MenuManagementPage({ params }: { params: Promise<{
     .maybeSingle();
 
   if (venueError) {
-    console.error('[MENU MANAGEMENT] Failed to load venue:', venueError);
+    logError('[MENU MANAGEMENT] Failed to load venue:', venueError);
     redirect('/dashboard');
   }
 
   if (!venue) {
-    console.log('[MENU MANAGEMENT] Venue not found or user not owner, redirecting to dashboard');
+    logInfo('[MENU MANAGEMENT] Venue not found or user not owner, redirecting to dashboard');
     redirect('/dashboard');
   }
 
-  console.log('[MENU MANAGEMENT] Venue loaded:', venue.name);
-  console.log('[MENU MANAGEMENT] Venue details:', {
+  logInfo('[MENU MANAGEMENT] Venue loaded:', venue.name);
+  logInfo('[MENU MANAGEMENT] Venue details:', {
     venue_id: venue.venue_id,
     slug: venue.slug,
     params_venueId: venueId,

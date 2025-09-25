@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -18,7 +19,7 @@ export async function POST() {
     );
 
     // Step 1: Update existing orders that have payment_method = 'later' to use PAY_LATER status
-    console.log('Updating existing orders with payment_method = "later" to PAY_LATER status...');
+    logInfo('Updating existing orders with payment_method = "later" to PAY_LATER status...');
     const { data: updateResult, error: updateError } = await supabase
       .from('orders')
       .update({ payment_status: 'PAY_LATER' })
@@ -27,17 +28,17 @@ export async function POST() {
       .select('id, payment_status, payment_method');
 
     if (updateError) {
-      console.error('Error updating existing orders:', updateError);
+      logError('Error updating existing orders:', updateError);
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to update existing orders: ' + updateError.message 
       }, { status: 500 });
     }
 
-    console.log('Updated orders:', updateResult);
+    logInfo('Updated orders:', updateResult);
 
     // Step 2: Update the dashboard_counts function to include PAY_LATER status
-    console.log('Updating dashboard_counts function to include PAY_LATER status...');
+    logInfo('Updating dashboard_counts function to include PAY_LATER status...');
     
     const createFunctionSQL = `
       DROP FUNCTION IF EXISTS dashboard_counts(text, text, integer);
@@ -147,7 +148,7 @@ export async function POST() {
     });
 
     if (createError) {
-      console.error('Error creating function:', createError);
+      logError('Error creating function:', createError);
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to create function: ' + createError.message 
@@ -164,7 +165,7 @@ export async function POST() {
       .single();
 
     if (testError) {
-      console.error('Error testing function:', testError);
+      logError('Error testing function:', testError);
       return NextResponse.json({ 
         success: false, 
         error: 'Function created but test failed: ' + testError.message 
@@ -179,7 +180,7 @@ export async function POST() {
     });
 
   } catch (error) {
-    console.error('Error:', error);
+    logError('Error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error' 

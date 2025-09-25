@@ -6,6 +6,7 @@ import { createServerClient } from '@supabase/ssr';
 import { todayWindowForTZ } from '@/lib/time';
 import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
 import { cookieAdapter } from '@/lib/server/supabase';
+import { logInfo } from "@/lib/logger";
 
 type OrderRow = {
   id: string;
@@ -85,18 +86,18 @@ export async function GET(req: Request) {
     })) || [];
 
     // Detailed logging for Railway deployment monitoring
-    console.log('[TAB_FILTERING] ===== TAB SELECTION DEBUG =====');
-    console.log('[TAB_FILTERING] Tab:', scope.toUpperCase());
-    console.log('[TAB_FILTERING] Venue ID:', venueId);
-    console.log('[TAB_FILTERING] Venue Timezone:', zone);
-    console.log('[TAB_FILTERING] Order Count:', data?.length || 0);
+    logInfo('[TAB_FILTERING] ===== TAB SELECTION DEBUG =====');
+    logInfo('[TAB_FILTERING] Tab:', scope.toUpperCase());
+    logInfo('[TAB_FILTERING] Venue ID:', venueId);
+    logInfo('[TAB_FILTERING] Venue Timezone:', zone);
+    logInfo('[TAB_FILTERING] Order Count:', data?.length || 0);
     
     if (data && data.length > 0) {
-      console.log('[TAB_FILTERING] Sample Orders (first 3):');
+      logInfo('[TAB_FILTERING] Sample Orders (first 3):');
       data.slice(0, 3).forEach((order, index) => {
         const orderDate = new Date(order.created_at);
         const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-        console.log(`[TAB_FILTERING]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.order_status}`);
+        logInfo(`[TAB_FILTERING]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.order_status}`);
       });
       
       // Age distribution analysis
@@ -110,7 +111,7 @@ export async function GET(req: Request) {
         return acc;
       }, {} as Record<string, number>);
       
-      console.log('[TAB_FILTERING] Age Distribution:', ageDistribution);
+      logInfo('[TAB_FILTERING] Age Distribution:', ageDistribution);
       
       // Status distribution
       const statusDistribution = data.reduce((acc, order) => {
@@ -118,11 +119,11 @@ export async function GET(req: Request) {
         return acc;
       }, {} as Record<string, number>);
       
-      console.log('[TAB_FILTERING] Status Distribution:', statusDistribution);
+      logInfo('[TAB_FILTERING] Status Distribution:', statusDistribution);
     } else {
-      console.log('[TAB_FILTERING] No orders found for this tab');
+      logInfo('[TAB_FILTERING] No orders found for this tab');
     }
-    console.log('[TAB_FILTERING] ===== END TAB DEBUG =====');
+    logInfo('[TAB_FILTERING] ===== END TAB DEBUG =====');
 
     return NextResponse.json({
       ok: true,

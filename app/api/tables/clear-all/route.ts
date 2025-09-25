@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
-    console.log('[AUTH DEBUG] Clearing ALL tables and sessions for venue:', venue_id);
+    logInfo('[AUTH DEBUG] Clearing ALL tables and sessions for venue:', venue_id);
 
     const supabase = await createAdminClient();
 
@@ -20,14 +21,14 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venue_id);
 
     if (sessionsError) {
-      console.error('[AUTH DEBUG] Error deleting table sessions:', sessionsError);
+      logError('[AUTH DEBUG] Error deleting table sessions:', sessionsError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to delete table sessions: ${sessionsError.message}` 
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Table sessions deleted successfully');
+    logInfo('[AUTH DEBUG] Table sessions deleted successfully');
 
     // Step 2: Delete all tables for this venue
     const { error: tablesError } = await supabase
@@ -36,20 +37,20 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venue_id);
 
     if (tablesError) {
-      console.error('[AUTH DEBUG] Error deleting tables:', tablesError);
+      logError('[AUTH DEBUG] Error deleting tables:', tablesError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to delete tables: ${tablesError.message}` 
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] All tables deleted successfully');
+    logInfo('[AUTH DEBUG] All tables deleted successfully');
 
     // Step 3: Table runtime state is a view and will update automatically
     // when we delete the base tables and sessions above
-    console.log('[AUTH DEBUG] Table runtime state will update automatically (it\'s a view)');
+    logInfo('[AUTH DEBUG] Table runtime state will update automatically (it\'s a view)');
 
-    console.log('[AUTH DEBUG] All tables and sessions cleared successfully for venue:', venue_id);
+    logInfo('[AUTH DEBUG] All tables and sessions cleared successfully for venue:', venue_id);
 
     return NextResponse.json({ 
       ok: true, 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Error in clear all tables API:', error);
+    logError('[AUTH DEBUG] Error in clear all tables API:', error);
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

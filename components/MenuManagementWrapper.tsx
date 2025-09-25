@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MenuManagement } from "@/components/menu-management";
 import { MenuUploadCard } from "@/components/MenuUploadCard";
+import { logInfo } from "@/lib/logger";
 
 interface MenuManagementWrapperProps {
   venueId: string;
@@ -13,7 +14,7 @@ export function MenuManagementWrapper({ venueId, session }: MenuManagementWrappe
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleUploadSuccess = () => {
-    console.log('[MENU MANAGEMENT WRAPPER] Upload successful, triggering refresh');
+    logInfo('[MENU MANAGEMENT WRAPPER] Upload successful, triggering refresh');
     setRefreshTrigger(prev => prev + 1);
   };
 

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logInfo } from "@/lib/logger";
 
 const supabase = createClient();
 
@@ -76,8 +77,8 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       const now = new Date();
       // Use the configurable lead time - reservations become active X minutes before start
       
-      // console.log('🔍 [TABLE GRID] All reservations:', reservations);
-      // console.log('🔍 [TABLE GRID] Current time:', now.toISOString());
+      // logInfo('🔍 [TABLE GRID] All reservations:', reservations);
+      // logInfo('🔍 [TABLE GRID] Current time:', now.toISOString());
       
       // Transform the data to match the expected TableGridItem interface
       return tableData.map((item: any) => {
@@ -180,7 +181,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
   useEffect(() => {
     if (!venueId) return;
 
-    console.log('[TABLE GRID] Setting up real-time subscriptions for venue:', venueId);
+    logInfo('[TABLE GRID] Setting up real-time subscriptions for venue:', venueId);
 
     // Subscribe to table_sessions changes (for session status updates)
     const tableSessionsChannel = supabase
@@ -194,7 +195,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('[TABLE GRID] Real-time table_sessions update received:', payload);
+          logInfo('[TABLE GRID] Real-time table_sessions update received:', payload);
           // Invalidate and refetch the table grid data
           queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
         }
@@ -213,7 +214,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('[TABLE GRID] Real-time reservations update received:', payload);
+          logInfo('[TABLE GRID] Real-time reservations update received:', payload);
           // Invalidate and refetch the table grid data
           queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
         }
@@ -232,7 +233,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('[TABLE GRID] Real-time tables update received:', payload);
+          logInfo('[TABLE GRID] Real-time tables update received:', payload);
           // Invalidate and refetch the table grid data
           queryClient.invalidateQueries({ queryKey: ['tables', 'grid', venueId, leadTimeMinutes] });
         }
@@ -240,7 +241,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       .subscribe();
 
     return () => {
-      console.log('[TABLE GRID] Cleaning up real-time subscriptions');
+      logInfo('[TABLE GRID] Cleaning up real-time subscriptions');
       supabase.removeChannel(tableSessionsChannel);
       supabase.removeChannel(reservationsChannel);
       supabase.removeChannel(tablesChannel);

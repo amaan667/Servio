@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 let supabaseBrowserInstance: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -13,12 +14,12 @@ export const supabaseBrowser = () => {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('[SUPABASE] Missing environment variables:', {
+      logError('[SUPABASE] Missing environment variables:', {
         hasUrl: !!supabaseUrl,
         hasKey: !!supabaseAnonKey
       });
       // Instead of throwing error, return a mock client that doesn't crash
-      console.warn('[SUPABASE] Using fallback client due to missing environment variables');
+      logWarn('[SUPABASE] Using fallback client due to missing environment variables');
       return {
         auth: {
           getSession: async () => ({ data: { session: null }, error: null }),
@@ -36,7 +37,7 @@ export const supabaseBrowser = () => {
       } as any;
     }
     
-    // console.log('[SUPABASE] Creating browser client with URL:', supabaseUrl);
+    // logInfo('[SUPABASE] Creating browser client with URL:', supabaseUrl);
     
     supabaseBrowserInstance = createBrowserClient(
       supabaseUrl,
@@ -53,7 +54,7 @@ export const supabaseBrowser = () => {
                 // Allow all auth-related keys to be read for proper session management
                 return localStorage.getItem(key);
               } catch (error) {
-                console.error('[SUPABASE] Error reading from storage:', error);
+                logError('[SUPABASE] Error reading from storage:', error);
                 return null;
               }
             },
@@ -61,14 +62,14 @@ export const supabaseBrowser = () => {
               try {
                 localStorage.setItem(key, value);
               } catch (error) {
-                console.error('[SUPABASE] Error writing to storage:', error);
+                logError('[SUPABASE] Error writing to storage:', error);
               }
             },
             removeItem: (key: string) => {
               try {
                 localStorage.removeItem(key);
               } catch (error) {
-                console.error('[SUPABASE] Error removing from storage:', error);
+                logError('[SUPABASE] Error removing from storage:', error);
               }
             },
           },
@@ -95,7 +96,7 @@ export const supabaseBrowser = () => {
 // Function to clear Supabase auth state
 export const clearSupabaseAuth = async () => {
   try {
-    console.log('[SUPABASE] Clearing auth state...');
+    logInfo('[SUPABASE] Clearing auth state...');
     
     // Use server-side signout API to properly clear cookies
     try {
@@ -107,12 +108,12 @@ export const clearSupabaseAuth = async () => {
       });
       
       if (response.ok) {
-        console.log('[SUPABASE] Server signout successful');
+        logInfo('[SUPABASE] Server signout successful');
       } else {
-        console.log('[SUPABASE] Server signout failed:', response.status);
+        logInfo('[SUPABASE] Server signout failed:', response.status);
       }
     } catch (error) {
-      console.log('[SUPABASE] Server signout failed, continuing with local cleanup:', error);
+      logInfo('[SUPABASE] Server signout failed, continuing with local cleanup:', error);
     }
     
     // Clear any remaining auth-related storage
@@ -121,7 +122,7 @@ export const clearSupabaseAuth = async () => {
     );
     
     authKeys.forEach(key => {
-      console.log('[SUPABASE] Clearing auth key:', key);
+      logInfo('[SUPABASE] Clearing auth key:', key);
       localStorage.removeItem(key);
     });
     
@@ -131,13 +132,13 @@ export const clearSupabaseAuth = async () => {
     );
     
     sessionAuthKeys.forEach(key => {
-      console.log('[SUPABASE] Clearing session auth key:', key);
+      logInfo('[SUPABASE] Clearing session auth key:', key);
       sessionStorage.removeItem(key);
     });
     
-    console.log('[SUPABASE] Auth state cleared successfully');
+    logInfo('[SUPABASE] Auth state cleared successfully');
   } catch (error) {
-    console.error('[SUPABASE] Error clearing auth state:', error);
+    logError('[SUPABASE] Error clearing auth state:', error);
   }
 };
 
@@ -148,7 +149,7 @@ export const checkAuthStatus = async () => {
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
-      console.error('[SUPABASE] Error checking auth status:', error);
+      logError('[SUPABASE] Error checking auth status:', error);
       return { isAuthenticated: false, error };
     }
     
@@ -158,7 +159,7 @@ export const checkAuthStatus = async () => {
       session: null // We don't need session data for authentication check
     };
   } catch (error) {
-    console.error('[SUPABASE] Error checking auth status:', error);
+    logError('[SUPABASE] Error checking auth status:', error);
     return { isAuthenticated: false, error };
   }
 };
@@ -170,13 +171,13 @@ export const refreshSession = async () => {
     const { data: { session }, error } = await supabase.auth.refreshSession();
     
     if (error) {
-      console.error('[SUPABASE] Error refreshing session:', error);
+      logError('[SUPABASE] Error refreshing session:', error);
       return { session: null, error };
     }
     
     return { session, error: null };
   } catch (error) {
-    console.error('[SUPABASE] Error refreshing session:', error);
+    logError('[SUPABASE] Error refreshing session:', error);
     return { session: null, error };
   }
 };

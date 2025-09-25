@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
-    console.log('[MARK PAID] ===== MARK ORDER AS PAID API CALLED =====');
-    console.log('[MARK PAID] Request received at:', new Date().toISOString());
+    logInfo('[MARK PAID] ===== MARK ORDER AS PAID API CALLED =====');
+    logInfo('[MARK PAID] Request received at:', new Date().toISOString());
     
     const { orderId } = await req.json();
-    console.log('[MARK PAID] Order ID:', orderId);
+    logInfo('[MARK PAID] Order ID:', orderId);
     
     if (!orderId) {
-      console.log('[MARK PAID] ERROR: Order ID is required');
+      logInfo('[MARK PAID] ERROR: Order ID is required');
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
       .single();
 
     if (fetchError) {
-      console.error('Failed to fetch order:', fetchError);
+      logError('Failed to fetch order:', fetchError);
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
       .eq('id', orderId);
 
     if (error) {
-      console.error('Failed to mark order as paid:', error);
+      logError('Failed to mark order as paid:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -58,16 +59,16 @@ export async function POST(req: Request) {
 
         if (completionResponse.ok) {
           const completionResult = await completionResponse.json();
-          console.log('[MARK PAID] Auto-completion check result:', completionResult);
+          logInfo('[MARK PAID] Auto-completion check result:', completionResult);
         }
       } catch (completionError) {
-        console.error('[MARK PAID] Error checking reservation completion:', completionError);
+        logError('[MARK PAID] Error checking reservation completion:', completionError);
         // Don't fail the main request if completion check fails
       }
     }
 
-    console.log('[MARK PAID] Successfully marked order as paid:', orderId);
-    console.log('[MARK PAID] ===== MARK ORDER AS PAID COMPLETED SUCCESSFULLY =====');
+    logInfo('[MARK PAID] Successfully marked order as paid:', orderId);
+    logInfo('[MARK PAID] ===== MARK ORDER AS PAID COMPLETED SUCCESSFULLY =====');
     
     return NextResponse.json({ 
       success: true,
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('[MARK PAID] Error marking order as paid:', error);
+    logError('[MARK PAID] Error marking order as paid:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

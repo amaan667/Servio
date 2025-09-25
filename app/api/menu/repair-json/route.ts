@@ -5,12 +5,13 @@
 
 import { NextResponse } from "next/server";
 import { repairAndValidateMenuJSON, validateMenuJSON } from '@/lib/pdfImporter/jsonRepair';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    console.log('[JSON_REPAIR_API] Starting JSON repair...');
+    logInfo('[JSON_REPAIR_API] Starting JSON repair...');
     
     const { json } = await req.json();
     
@@ -21,11 +22,11 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    console.log('[JSON_REPAIR_API] Input JSON length:', json.length);
+    logInfo('[JSON_REPAIR_API] Input JSON length:', json.length);
 
     // First, validate the original JSON
     const originalValidation = validateMenuJSON(json);
-    console.log('[JSON_REPAIR_API] Original validation:', {
+    logInfo('[JSON_REPAIR_API] Original validation:', {
       valid: originalValidation.valid,
       errors: originalValidation.errors.length,
       items: originalValidation.items.length
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
     const repairResult = repairAndValidateMenuJSON(json);
     
     if (repairResult.success) {
-      console.log('[JSON_REPAIR_API] Repair successful:', {
+      logInfo('[JSON_REPAIR_API] Repair successful:', {
         items: repairResult.items?.length || 0
       });
       
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
         itemsExtracted: repairResult.items?.length || 0
       });
     } else {
-      console.error('[JSON_REPAIR_API] Repair failed:', repairResult.errors);
+      logError('[JSON_REPAIR_API] Repair failed:', repairResult.errors);
       
       return NextResponse.json({
         success: false,
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
     }
 
   } catch (error: any) {
-    console.error('[JSON_REPAIR_API] Fatal error:', error);
+    logError('[JSON_REPAIR_API] Fatal error:', error);
     return NextResponse.json({ 
       success: false, 
       error: `JSON repair failed: ${error.message}` 

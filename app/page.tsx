@@ -18,6 +18,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthProvider";
+import { logInfo } from "@/lib/logger";
 
 function PricingQuickCompare() {
   return (
@@ -73,7 +74,7 @@ export default function HomePage() {
 
   // Debug authentication state
   useEffect(() => {
-    console.log('[LANDING PAGE] Auth state:', { user: !!user, loading: authLoading, userId: user?.id });
+    logInfo('[LANDING PAGE] Auth state:', { user: !!user, loading: authLoading, userId: user?.id });
   }, [user, authLoading]);
 
   const handleGetStarted = () => {

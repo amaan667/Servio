@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import { ParsedCatalog, ParsedItem, ParsedCategory, ValidationResult } from './types';
+import { logInfo, logError } from "@/lib/logger";
 
 /**
  * Extended schema for the new catalog system with options and variants
@@ -211,10 +212,10 @@ export async function replaceCatalogAtomically(
   supabaseClient: any
 ): Promise<{ success: boolean; result?: any; error?: string }> {
   try {
-    console.log('[CATALOG_REPLACE] Starting atomic catalog replacement...');
-    console.log('[CATALOG_REPLACE] Venue ID:', venueId);
-    console.log('[CATALOG_REPLACE] Categories:', catalog.categories.length);
-    console.log('[CATALOG_REPLACE] Total items:', catalog.metadata.totalItems);
+    logInfo('[CATALOG_REPLACE] Starting atomic catalog replacement...');
+    logInfo('[CATALOG_REPLACE] Venue ID:', venueId);
+    logInfo('[CATALOG_REPLACE] Categories:', catalog.categories.length);
+    logInfo('[CATALOG_REPLACE] Total items:', catalog.metadata.totalItems);
     
     // Validate before replacement
     const validation = validateParsedCatalog(catalog);
@@ -232,11 +233,11 @@ export async function replaceCatalogAtomically(
     });
     
     if (error) {
-      console.error('[CATALOG_REPLACE] RPC call failed:', error);
+      logError('[CATALOG_REPLACE] RPC call failed:', error);
       throw new Error(`Database replacement failed: ${error.message}`);
     }
     
-    console.log('[CATALOG_REPLACE] Atomic replacement successful:', data);
+    logInfo('[CATALOG_REPLACE] Atomic replacement successful:', data);
     
     return {
       success: true,
@@ -244,7 +245,7 @@ export async function replaceCatalogAtomically(
     };
     
   } catch (error: any) {
-    console.error('[CATALOG_REPLACE] Atomic replacement failed:', error);
+    logError('[CATALOG_REPLACE] Atomic replacement failed:', error);
     return {
       success: false,
       error: error.message
@@ -260,7 +261,7 @@ export async function validateCatalogPayload(
   supabaseClient: any
 ): Promise<ValidationResult> {
   try {
-    console.log('[CATALOG_VALIDATE] Validating catalog payload...');
+    logInfo('[CATALOG_VALIDATE] Validating catalog payload...');
     
     // Call the validation RPC
     const { data, error } = await supabaseClient.rpc('validate_catalog_payload', {
@@ -268,7 +269,7 @@ export async function validateCatalogPayload(
     });
     
     if (error) {
-      console.error('[CATALOG_VALIDATE] Validation RPC failed:', error);
+      logError('[CATALOG_VALIDATE] Validation RPC failed:', error);
       return {
         valid: false,
         errors: [`Validation RPC failed: ${error.message}`],
@@ -279,7 +280,7 @@ export async function validateCatalogPayload(
       };
     }
     
-    console.log('[CATALOG_VALIDATE] Validation result:', data);
+    logInfo('[CATALOG_VALIDATE] Validation result:', data);
     
     return {
       valid: data.valid,
@@ -291,7 +292,7 @@ export async function validateCatalogPayload(
     };
     
   } catch (error: any) {
-    console.error('[CATALOG_VALIDATE] Validation failed:', error);
+    logError('[CATALOG_VALIDATE] Validation failed:', error);
     return {
       valid: false,
       errors: [`Validation failed: ${error.message}`],
@@ -347,7 +348,7 @@ export function deduplicateItems(categories: ParsedCategory[]): ParsedCategory[]
         seen.add(key);
         uniqueItems.push(item);
       } else {
-        console.log('[CATALOG_DEDUP] Skipping duplicate item:', item.title);
+        logInfo('[CATALOG_DEDUP] Skipping duplicate item:', item.title);
       }
     }
     
@@ -383,7 +384,7 @@ export function enforceCategoryGuards(categories: ParsedCategory[]): ParsedCateg
       const isAllowed = allowedItems.some(allowed => itemTitle.includes(allowed));
       
       if (!isAllowed) {
-        console.log('[CATALOG_GUARDS] Item may not belong in category:', item.title, '->', category.name);
+        logInfo('[CATALOG_GUARDS] Item may not belong in category:', item.title, '->', category.name);
         // For now, keep the item but log a warning
         // In production, you might want to reassign or flag for review
       }

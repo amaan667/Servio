@@ -1,6 +1,7 @@
 'use client';
 import { createBrowserClient } from '@supabase/ssr';
 import type { AuthChangeEvent, Session, AuthError } from '@supabase/supabase-js';
+import { logInfo, logError } from "@/lib/logger";
 
 let _client: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -32,7 +33,7 @@ export function createClient() {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('[AUTH DEBUG] Missing required environment variables:', {
+      logError('[AUTH DEBUG] Missing required environment variables:', {
         hasSupabaseUrl: !!supabaseUrl,
         hasSupabaseAnonKey: !!supabaseAnonKey,
         supabaseUrl: supabaseUrl ? 'SET' : 'MISSING',
@@ -72,7 +73,7 @@ export function createClient() {
       }
     );
     
-    console.log('[AUTH DEBUG] Supabase client created with NO automatic session restoration and NO cookie operations:', browserInfo);
+    logInfo('[AUTH DEBUG] Supabase client created with NO automatic session restoration and NO cookie operations:', browserInfo);
   }
   return _client;
 }
@@ -81,16 +82,16 @@ export function createClient() {
 export function clearAuthStorage() {
   try {
     const browserInfo = getBrowserInfo();
-    console.log('[AUTH DEBUG] Clearing all authentication storage', { browserInfo });
+    logInfo('[AUTH DEBUG] Clearing all authentication storage', { browserInfo });
     
     // Clear localStorage
     const localStorageKeys = Object.keys(localStorage).filter(k => 
       (k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth") || k.includes("code_verifier")
     );
-    console.log('[AUTH DEBUG] Found localStorage keys to clear:', localStorageKeys);
+    logInfo('[AUTH DEBUG] Found localStorage keys to clear:', localStorageKeys);
     localStorageKeys.forEach(k => {
       const value = localStorage.getItem(k);
-      console.log('[AUTH DEBUG] Removing localStorage key:', k, 'with value length:', value?.length);
+      logInfo('[AUTH DEBUG] Removing localStorage key:', k, 'with value length:', value?.length);
       localStorage.removeItem(k);
     });
     
@@ -98,17 +99,17 @@ export function clearAuthStorage() {
     const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
       (k.startsWith("sb-") && !k.includes("token-code-verifier")) || k.includes("auth") || k.includes("code_verifier")
     );
-    console.log('[AUTH DEBUG] Found sessionStorage keys to clear:', sessionStorageKeys);
+    logInfo('[AUTH DEBUG] Found sessionStorage keys to clear:', sessionStorageKeys);
     sessionStorageKeys.forEach(k => {
       const value = sessionStorage.getItem(k);
-      console.log('[AUTH DEBUG] Removing sessionStorage key:', k, 'with value length:', value?.length);
+      logInfo('[AUTH DEBUG] Removing sessionStorage key:', k, 'with value length:', value?.length);
       sessionStorage.removeItem(k);
     });
     
-    console.log('[AUTH DEBUG] ✅ Authentication storage cleared successfully');
+    logInfo('[AUTH DEBUG] ✅ Authentication storage cleared successfully');
     return true;
   } catch (error) {
-    console.log('[AUTH DEBUG] ❌ Failed to clear authentication storage:', error);
+    logInfo('[AUTH DEBUG] ❌ Failed to clear authentication storage:', error);
     return false;
   }
 }
@@ -117,23 +118,23 @@ export function clearAuthStorage() {
 export function checkPKCEState() {
   try {
     const browserInfo = getBrowserInfo();
-    console.log('[AUTH DEBUG] Checking PKCE state...', { browserInfo });
+    logInfo('[AUTH DEBUG] Checking PKCE state...', { browserInfo });
     
     // Check localStorage for PKCE-related keys
     const localStorageKeys = Object.keys(localStorage).filter(k => 
       k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
     );
-    console.log('[AUTH DEBUG] PKCE localStorage keys:', localStorageKeys);
+    logInfo('[AUTH DEBUG] PKCE localStorage keys:', localStorageKeys);
     
     // Check sessionStorage for PKCE-related keys
     const sessionStorageKeys = Object.keys(sessionStorage).filter(k => 
       k.includes("pkce") || k.includes("verifier") || k.includes("code_verifier") || k.startsWith("sb-")
     );
-    console.log('[AUTH DEBUG] PKCE sessionStorage keys:', sessionStorageKeys);
+    logInfo('[AUTH DEBUG] PKCE sessionStorage keys:', sessionStorageKeys);
     
     // Check for Supabase auth tokens
     const supabaseKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-"));
-    console.log('[AUTH DEBUG] Supabase localStorage keys:', supabaseKeys);
+    logInfo('[AUTH DEBUG] Supabase localStorage keys:', supabaseKeys);
     
     // Check for OAuth progress flags
     const oauthProgress = sessionStorage.getItem("sb_oauth_in_progress");
@@ -150,7 +151,7 @@ export function checkPKCEState() {
       browserInfo
     };
   } catch (error: any) {
-    console.log('[AUTH DEBUG] ❌ Error checking PKCE state:', error);
+    logInfo('[AUTH DEBUG] ❌ Error checking PKCE state:', error);
     return { error: error.message };
   }
 }

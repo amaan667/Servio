@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[GROUP SESSION] Checking for existing group session:', { venueId, tableNumber });
+    logInfo('[GROUP SESSION] Checking for existing group session:', { venueId, tableNumber });
 
     const supabase = await createAdminClient();
 
@@ -32,14 +33,14 @@ export async function GET(request: NextRequest) {
 
       if (error) {
         if (error.message.includes('does not exist')) {
-          console.log('[GROUP SESSION] Table does not exist yet, returning no session');
+          logInfo('[GROUP SESSION] Table does not exist yet, returning no session');
           return NextResponse.json({ 
             ok: true, 
             groupSessionId: null,
             message: 'Table not created yet - using fallback mode'
           });
         }
-        console.error('[GROUP SESSION] Error fetching group session:', error);
+        logError('[GROUP SESSION] Error fetching group session:', error);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to fetch group session: ${error.message}` 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (existingSession) {
-        console.log('[GROUP SESSION] Found existing group session:', existingSession);
+        logInfo('[GROUP SESSION] Found existing group session:', existingSession);
         return NextResponse.json({ 
           ok: true, 
           groupSessionId: existingSession.id,
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
       });
 
     } catch (tableError) {
-      console.log('[GROUP SESSION] Table not available, using fallback mode');
+      logInfo('[GROUP SESSION] Table not available, using fallback mode');
       return NextResponse.json({ 
         ok: true, 
         groupSessionId: null,
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[GROUP SESSION] Error in GET group session API:', error);
+    logError('[GROUP SESSION] Error in GET group session API:', error);
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[GROUP SESSION] Creating/updating group session:', { venueId, tableNumber, groupSize });
+    logInfo('[GROUP SESSION] Creating/updating group session:', { venueId, tableNumber, groupSize });
 
     const supabase = await createAdminClient();
 
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
 
       if (fetchError) {
         if (fetchError.message.includes('does not exist')) {
-          console.log('[GROUP SESSION] Table does not exist yet, using fallback mode');
+          logInfo('[GROUP SESSION] Table does not exist yet, using fallback mode');
           return NextResponse.json({ 
             ok: true, 
             groupSessionId: `fallback_${venueId}_${tableNumber}`,
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
             message: 'Table not created yet - using fallback mode'
           });
         }
-        console.error('[GROUP SESSION] Error fetching existing session:', fetchError);
+        logError('[GROUP SESSION] Error fetching existing session:', fetchError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to fetch existing session: ${fetchError.message}` 
@@ -142,14 +143,14 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (updateError) {
-        console.error('[GROUP SESSION] Error updating group session:', updateError);
+        logError('[GROUP SESSION] Error updating group session:', updateError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to update group session: ${updateError.message}` 
         }, { status: 500 });
       }
 
-      console.log('[GROUP SESSION] Updated existing group session:', updatedSession);
+      logInfo('[GROUP SESSION] Updated existing group session:', updatedSession);
 
       // Update table seat count to match new total group size
       await supabase
@@ -185,14 +186,14 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (createError) {
-        console.error('[GROUP SESSION] Error creating group session:', createError);
+        logError('[GROUP SESSION] Error creating group session:', createError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to create group session: ${createError.message}` 
         }, { status: 500 });
       }
 
-      console.log('[GROUP SESSION] Created new group session:', newSession);
+      logInfo('[GROUP SESSION] Created new group session:', newSession);
 
       // Update table seat count to match group size (if table exists)
       await supabase
@@ -214,7 +215,7 @@ export async function POST(request: NextRequest) {
     }
 
     } catch (tableError) {
-      console.log('[GROUP SESSION] Table not available, using fallback mode');
+      logInfo('[GROUP SESSION] Table not available, using fallback mode');
       return NextResponse.json({ 
         ok: true, 
         groupSessionId: `fallback_${venueId}_${tableNumber}`,
@@ -225,7 +226,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[GROUP SESSION] Error in POST group session API:', error);
+    logError('[GROUP SESSION] Error in POST group session API:', error);
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

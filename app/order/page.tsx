@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
 import React from "react";
 import { demoMenuItems } from "@/data/demoMenuItems";
+import { logInfo, logError } from "@/lib/logger";
 
 import { useRouter } from "next/navigation";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
@@ -40,13 +41,13 @@ export default function CustomerOrderPage() {
   const isDemo = searchParams?.get("demo") === "1";
   
   // Debug table number extraction
-  console.log('[ORDER PAGE] ===== URL PARAMETER DEBUG =====');
-  console.log('[ORDER PAGE] Full URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
-  console.log('[ORDER PAGE] searchParams:', searchParams?.toString());
-  console.log('[ORDER PAGE] Raw tableNumber from URL:', tableNumber);
-  console.log('[ORDER PAGE] Raw counterNumber from URL:', counterNumber);
-  console.log('[ORDER PAGE] venueSlug:', venueSlug);
-  console.log('[ORDER PAGE] ===== END URL PARAMETER DEBUG =====');
+  logInfo('order.page.url.params', {
+    fullUrl: typeof window !== 'undefined' ? window.location.href : 'SSR',
+    searchParams: searchParams?.toString(),
+    tableNumber,
+    counterNumber,
+    venueSlug
+  });
   
   // Determine if this is a counter order or table order
   const isCounterOrder = !!counterNumber;
@@ -81,13 +82,13 @@ export default function CustomerOrderPage() {
       const sessionParam = searchParams?.get('session');
       
       if (sessionParam) {
-        console.log('[ORDER PAGE] Checking for existing order with session:', sessionParam);
+        logInfo('order.page.check.existing.session', { sessionParam });
         
         // Check localStorage for existing order data with this session
         const storedOrderData = localStorage.getItem(`servio-order-${sessionParam}`);
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
-          console.log('[ORDER PAGE] Found existing order in localStorage:', orderData);
+          logInfo('order.page Found existing order in localStorage:', orderData);
           
           // Check if the order exists in the database and is still active
           const { data: orderInDb, error } = await supabase
@@ -100,7 +101,7 @@ export default function CustomerOrderPage() {
             .single();
 
           if (orderInDb) {
-            console.log('[ORDER PAGE] Found active order in database:', orderInDb);
+            logInfo('order.page Found active order in database:', orderInDb);
             
             // Redirect to payment page with existing order data
             const checkoutData = {
@@ -122,7 +123,7 @@ export default function CustomerOrderPage() {
             return;
           } else {
             // Order not active in database, clear localStorage
-            console.log('[ORDER PAGE] Order not active in database, clearing localStorage');
+            logInfo('order.page Order not active in database, clearing localStorage');
             localStorage.removeItem(`servio-order-${sessionParam}`);
           }
         }
@@ -131,12 +132,12 @@ export default function CustomerOrderPage() {
       // Also check localStorage for any existing session data
       const storedSession = localStorage.getItem('servio-current-session');
       if (storedSession && !sessionParam) {
-        console.log('[ORDER PAGE] Checking localStorage session:', storedSession);
+        logInfo('order.page Checking localStorage session:', storedSession);
         
         const storedOrderData = localStorage.getItem(`servio-order-${storedSession}`);
         if (storedOrderData) {
           const orderData = JSON.parse(storedOrderData);
-          console.log('[ORDER PAGE] Found existing order in localStorage session:', orderData);
+          logInfo('order.page Found existing order in localStorage session:', orderData);
           
           // Check if the session order exists and is active in database
           const { data: sessionOrderInDb, error } = await supabase
@@ -168,7 +169,7 @@ export default function CustomerOrderPage() {
             return;
           } else {
             // Session order not active in database, clear localStorage
-            console.log('[ORDER PAGE] Session order not active in database, clearing localStorage');
+            logInfo('order.page Session order not active in database, clearing localStorage');
             localStorage.removeItem(`servio-order-${storedSession}`);
             localStorage.removeItem('servio-current-session');
           }
@@ -176,7 +177,7 @@ export default function CustomerOrderPage() {
       }
       
     } catch (error) {
-      console.error('[ORDER PAGE] Error checking for existing order:', error);
+      logError('order.page Error checking for existing order:', error);
       // Continue with normal flow if check fails
     }
   };
@@ -232,15 +233,15 @@ export default function CustomerOrderPage() {
           if (data.groupSessionId) {
             setGroupSessionId(data.groupSessionId);
             setGroupSize(data.totalGroupSize || 1);
-            console.log('[ORDER PAGE] Found existing group session:', data);
+            logInfo('order.page Found existing group session:', data);
           } else {
             // No existing group session, show modal immediately
-            console.log('[ORDER PAGE] No existing group session, showing modal');
+            logInfo('order.page No existing group session, showing modal');
             setShowGroupSizeModal(true);
           }
         }
       } catch (error) {
-        console.error('[ORDER PAGE] Error checking group session:', error);
+        logError('order.page Error checking group session:', error);
         // On error, show modal to allow user to proceed
         setShowGroupSizeModal(true);
       }
@@ -261,10 +262,10 @@ export default function CustomerOrderPage() {
           .in('payment_status', ['UNPAID', 'PAY_LATER', 'IN_PROGRESS']);
 
         if (error) {
-          console.error('[ORDER PAGE] Error checking for active orders:', error);
+          logError('order.page Error checking for active orders:', error);
         }
 
-        console.log('[ORDER PAGE] Active orders in database:', activeOrders);
+        logInfo('order.page Active orders in database:', activeOrders);
 
         // If there are active orders in the database, check localStorage for session data
         if (activeOrders && activeOrders.length > 0) {
@@ -282,11 +283,11 @@ export default function CustomerOrderPage() {
           if (sessionData) {
             try {
               const session = JSON.parse(sessionData);
-              console.log('[ORDER PAGE] Found existing session with active orders:', session);
+              logInfo('order.page Found existing session with active orders:', session);
               
               // If there's an unpaid order, redirect to order summary
               if (session.paymentStatus === 'unpaid' || session.paymentStatus === 'till') {
-                console.log('[ORDER PAGE] Unpaid order detected with active orders in DB, redirecting to summary...');
+                logInfo('order.page Unpaid order detected with active orders in DB, redirecting to summary...');
                 
                 // Store the session data for the summary page
                 localStorage.setItem('servio-unpaid-order', JSON.stringify(session));
@@ -304,15 +305,15 @@ export default function CustomerOrderPage() {
               });
               
             } catch (error) {
-              console.error('[ORDER PAGE] Error parsing session data:', error);
+              logError('order.page Error parsing session data:', error);
             }
           } else {
             // No session data but active orders exist - this shouldn't happen normally
-            console.log('[ORDER PAGE] Active orders exist but no session data found');
+            logInfo('order.page Active orders exist but no session data found');
           }
         } else {
           // No active orders in database - clear any stale localStorage data
-          console.log('[ORDER PAGE] No active orders in database, clearing stale session data');
+          logInfo('order.page No active orders in database, clearing stale session data');
           const tableSessionKey = `servio-session-${tableNumber}`;
           localStorage.removeItem(tableSessionKey);
           
@@ -324,7 +325,7 @@ export default function CustomerOrderPage() {
           }
         }
       } catch (error) {
-        console.error('[ORDER PAGE] Error in checkUnpaidOrders:', error);
+        logError('order.page Error in checkUnpaidOrders:', error);
       }
     };
 
@@ -355,7 +356,7 @@ export default function CustomerOrderPage() {
         // Ensure image property is properly set
         image: item.image || undefined,
       }));
-      console.log('[DEMO MENU] Mapped demo items with images:', mappedItems.map(item => ({ name: item.name, image: item.image })));
+      logInfo('demo.menu Mapped demo items with images:', mappedItems.map(item => ({ name: item.name, image: item.image })));
       setMenuItems(mappedItems);
       setLoadingMenu(false);
       return;
@@ -400,14 +401,14 @@ export default function CustomerOrderPage() {
         if (categoryOrderResponse.ok) {
           const categoryOrderData = await categoryOrderResponse.json();
           if (categoryOrderData.categories && Array.isArray(categoryOrderData.categories)) {
-            console.log('[ORDER PAGE] Retrieved category order:', categoryOrderData.categories);
+            logInfo('order.page Retrieved category order:', categoryOrderData.categories);
             setCategoryOrder(categoryOrderData.categories);
           } else {
-            console.log('[ORDER PAGE] No categories found in response:', categoryOrderData);
+            logInfo('order.page No categories found in response:', categoryOrderData);
           }
         }
       } catch (error) {
-        console.log('[ORDER PAGE] Could not fetch category order:', error);
+        logInfo('order.page Could not fetch category order:', error);
         setCategoryOrder(null);
       }
       
@@ -511,10 +512,10 @@ export default function CustomerOrderPage() {
       if (response.ok) {
         const data = await response.json();
         setGroupSessionId(data.groupSessionId);
-        console.log('[ORDER PAGE] Created/joined group session:', data);
+        logInfo('order.page Created/joined group session:', data);
       }
     } catch (error) {
-      console.error('[ORDER PAGE] Error creating group session:', error);
+      logError('order.page Error creating group session:', error);
     }
   };
 
@@ -537,10 +538,10 @@ export default function CustomerOrderPage() {
       if (response.ok) {
         const data = await response.json();
         setGroupSessionId(data.groupSessionId);
-        console.log('[ORDER PAGE] Updated group session:', data);
+        logInfo('order.page Updated group session:', data);
       }
     } catch (error) {
-      console.error('[ORDER PAGE] Error updating group session:', error);
+      logError('order.page Error updating group session:', error);
     }
   };
 
@@ -590,22 +591,22 @@ export default function CustomerOrderPage() {
 
     setIsSubmitting(true);
       try {
-        console.log('[ORDER SUBMIT] ===== TABLE NUMBER DEBUG =====');
-        console.log('[ORDER SUBMIT] Raw tableNumber from URL:', tableNumber);
-        console.log('[ORDER SUBMIT] Type of tableNumber:', typeof tableNumber);
-        console.log('[ORDER SUBMIT] parseInt(tableNumber):', parseInt(tableNumber));
-        console.log('[ORDER SUBMIT] isNaN(parseInt(tableNumber)):', isNaN(parseInt(tableNumber)));
+        logInfo('order.submit ===== TABLE NUMBER DEBUG =====');
+        logInfo('order.submit Raw tableNumber from URL:', tableNumber);
+        logInfo('order.submit Type of tableNumber:', typeof tableNumber);
+        logInfo('order.submit parseInt(tableNumber):', parseInt(tableNumber));
+        logInfo('order.submit isNaN(parseInt(tableNumber)):', isNaN(parseInt(tableNumber)));
         
         // For counter orders, use counter number; for table orders, use table number
         const safeTable = isCounterOrder ? (parseInt(counterNumber) || 1) : (parseInt(tableNumber) || 1);
         
         // Determine payment mode based on source
         const paymentMode = isCounterOrder ? 'pay_at_till' : 'online';
-        console.log('[ORDER SUBMIT] Final safeTable value:', safeTable);
-        console.log('[ORDER SUBMIT] Order type:', orderType);
-        console.log('[ORDER SUBMIT] Is counter order:', isCounterOrder);
-        console.log('[ORDER SUBMIT] Counter number:', counterNumber);
-        console.log('[ORDER SUBMIT] ===== END TABLE NUMBER DEBUG =====');
+        logInfo('order.submit Final safeTable value:', safeTable);
+        logInfo('order.submit Order type:', orderType);
+        logInfo('order.submit Is counter order:', isCounterOrder);
+        logInfo('order.submit Counter number:', counterNumber);
+        logInfo('order.submit ===== END TABLE NUMBER DEBUG =====');
 
       // For demo orders, redirect to checkout with demo mode
       if (isDemo || isDemoFallback || venueSlug === 'demo-cafe') {
@@ -637,12 +638,12 @@ export default function CustomerOrderPage() {
 
         
         // Store order data in localStorage for order summary page
-        console.log('[ORDER PAGE DEBUG] Storing order data for summary:', orderData);
+        logInfo('[ORDER PAGE DEBUG] Storing order data for summary:', orderData);
         localStorage.setItem('servio-pending-order', JSON.stringify(orderData));
         
         // Verify storage
         const storedPending = localStorage.getItem('servio-pending-order');
-        console.log('[ORDER PAGE DEBUG] Verified stored data:', storedPending);
+        logInfo('[ORDER PAGE DEBUG] Verified stored data:', storedPending);
         
         // Redirect to order summary page
         
@@ -659,7 +660,7 @@ export default function CustomerOrderPage() {
       }
 
       // For real orders, create the order immediately in the database
-      console.log('[ORDER SUBMIT] Creating order immediately...');
+      logInfo('order.submit Creating order immediately...');
       
       // Generate session ID for this order
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -697,13 +698,13 @@ export default function CustomerOrderPage() {
       };
 
       // Create the order immediately via API
-      console.log('[ORDER SUBMIT] Calling orders API...');
-      console.log('[ORDER SUBMIT] Order data being sent:', JSON.stringify(orderData, null, 2));
-      console.log('[ORDER SUBMIT] Validation check - venueSlug:', venueSlug);
-      console.log('[ORDER SUBMIT] Validation check - customerName:', customerInfo.name.trim());
-      console.log('[ORDER SUBMIT] Validation check - customerPhone:', customerInfo.phone.trim());
-      console.log('[ORDER SUBMIT] Validation check - cart length:', cart.length);
-      console.log('[ORDER SUBMIT] Validation check - total amount:', getTotalPrice());
+      logInfo('order.submit Calling orders API...');
+      logInfo('order.submit Order data being sent:', JSON.stringify(orderData, null, 2));
+      logInfo('order.submit Validation check - venueSlug:', venueSlug);
+      logInfo('order.submit Validation check - customerName:', customerInfo.name.trim());
+      logInfo('order.submit Validation check - customerPhone:', customerInfo.phone.trim());
+      logInfo('order.submit Validation check - cart length:', cart.length);
+      logInfo('order.submit Validation check - total amount:', getTotalPrice());
       
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -713,21 +714,21 @@ export default function CustomerOrderPage() {
         body: JSON.stringify(orderData),
       });
 
-      console.log('[ORDER SUBMIT] API response status:', response.status);
-      console.log('[ORDER SUBMIT] API response ok:', response.ok);
+      logInfo('order.submit API response status:', response.status);
+      logInfo('order.submit API response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('[ORDER SUBMIT] API error response:', errorData);
+        logError('order.submit API error response:', errorData);
         throw new Error(errorData.error || `Failed to create order (${response.status})`);
       }
 
       const orderResult = await response.json();
-      console.log('[ORDER SUBMIT] Order created successfully:', orderResult);
+      logInfo('order.submit Order created successfully:', orderResult);
       
       // Check if a table was auto-created
       if (orderResult.table_auto_created) {
-        console.log('[ORDER SUBMIT] Table was auto-created for QR code:', orderResult.table_id);
+        logInfo('order.submit Table was auto-created for QR code:', orderResult.table_id);
       }
 
       // Store order data with order ID for payment page
@@ -791,8 +792,8 @@ export default function CustomerOrderPage() {
         window.location.href = '/payment';
       }
     } catch (error) {
-      console.error('[ORDER SUBMIT] ERROR: Error preparing order:', error);
-      console.error('[ORDER SUBMIT] ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      logError('order.submit ERROR: Error preparing order:', error);
+      logError('order.submit ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       
       // Provide more specific error messages
       let errorMessage = "Failed to place order. Please try again.";
@@ -969,7 +970,7 @@ export default function CustomerOrderPage() {
                       
                       // If both categories are in stored order, sort by that order
                       if (orderA >= 0 && orderB >= 0) {
-                        console.log(`[ORDER PAGE] Sorting ${a} (index ${orderA}) vs ${b} (index ${orderB})`);
+                        logInfo(`[ORDER PAGE] Sorting ${a} (index ${orderA}) vs ${b} (index ${orderB})`);
                         return orderA - orderB;
                       }
                       
@@ -991,7 +992,7 @@ export default function CustomerOrderPage() {
                     // NO ALPHABETICAL FALLBACK - maintain database order
                     return 0;
                   });
-                  console.log('[ORDER PAGE] Final sorted categories:', sortedCats);
+                  logInfo('order.page Final sorted categories:', sortedCats);
                   return sortedCats.map((category) => (
                     <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                       <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-4 py-3 border-b border-gray-100 dark:border-gray-700">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function GET(
   req: NextRequest,
@@ -24,7 +25,7 @@ export async function GET(
       .maybeSingle();
 
     if (error) {
-      console.error('[CATEGORY ORDER API] Error fetching upload data:', error);
+      logError('[CATEGORY ORDER API] Error fetching upload data:', error);
       return NextResponse.json({ error: 'Failed to fetch category order' }, { status: 500 });
     }
 
@@ -33,9 +34,9 @@ export async function GET(
     if (uploadData?.parsed_json && uploadData.parsed_json.categories) {
       // Categories are stored as an array of strings in the correct PDF order
       categories = uploadData.parsed_json.categories;
-      console.log('[CATEGORY ORDER API] Retrieved categories:', categories);
+      logInfo('[CATEGORY ORDER API] Retrieved categories:', categories);
     } else {
-      console.log('[CATEGORY ORDER API] No categories found in parsed_json:', uploadData?.parsed_json);
+      logInfo('[CATEGORY ORDER API] No categories found in parsed_json:', uploadData?.parsed_json);
     }
 
     return NextResponse.json({
@@ -43,7 +44,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    console.error('[CATEGORY ORDER API] Unexpected error:', error);
+    logError('[CATEGORY ORDER API] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -31,13 +32,13 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       .single();
 
     if (error) {
-      console.error('[TABLE SESSIONS API] Error updating session:', error);
+      logError('[TABLE SESSIONS API] Error updating session:', error);
       return NextResponse.json({ error: 'Failed to update table session' }, { status: 500 });
     }
 
     return NextResponse.json({ session });
   } catch (error) {
-    console.error('[TABLE SESSIONS API] Unexpected error:', error);
+    logError('[TABLE SESSIONS API] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -55,13 +56,13 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
       .eq('id', id);
 
     if (error) {
-      console.error('[TABLE SESSIONS API] Error deleting session:', error);
+      logError('[TABLE SESSIONS API] Error deleting session:', error);
       return NextResponse.json({ error: 'Failed to delete table session' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[TABLE SESSIONS API] Unexpected error:', error);
+    logError('[TABLE SESSIONS API] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

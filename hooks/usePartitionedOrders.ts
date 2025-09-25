@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { timeWindows } from '@/lib/time-windows'
+import { logError } from "@/lib/logger";
 
 const baseCols = 'id, venue_id, status, total_amount, table_label, created_at, updated_at'
 
@@ -28,14 +29,14 @@ export function useLiveOrders(venueId: string, venueTz: string) {
         .throwOnError()
       
       if (queryError) {
-        console.error('[LIVE_ORDERS] Query error:', queryError)
+        logError('[LIVE_ORDERS] Query error:', queryError)
         setError(queryError.message)
         return
       }
       
       setData({ rows: result ?? [], count: count ?? 0 })
     } catch (err) {
-      console.error('[LIVE_ORDERS] Fetch error:', err)
+      logError('[LIVE_ORDERS] Fetch error:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsLoading(false)
@@ -74,14 +75,14 @@ export function useTodayOrders(venueId: string, venueTz: string) {
         .throwOnError()
       
       if (queryError) {
-        console.error('[TODAY_ORDERS] Query error:', queryError)
+        logError('[TODAY_ORDERS] Query error:', queryError)
         setError(queryError.message)
         return
       }
       
       setData({ rows: result ?? [], count: count ?? 0 })
     } catch (err) {
-      console.error('[TODAY_ORDERS] Fetch error:', err)
+      logError('[TODAY_ORDERS] Fetch error:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsLoading(false)
@@ -119,14 +120,14 @@ export function useHistoryOrders(venueId: string, venueTz: string) {
         .throwOnError()
       
       if (queryError) {
-        console.error('[HISTORY_ORDERS] Query error:', queryError)
+        logError('[HISTORY_ORDERS] Query error:', queryError)
         setError(queryError.message)
         return
       }
       
       setData({ rows: result ?? [], count: count ?? 0 })
     } catch (err) {
-      console.error('[HISTORY_ORDERS] Fetch error:', err)
+      logError('[HISTORY_ORDERS] Fetch error:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsLoading(false)

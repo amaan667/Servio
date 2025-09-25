@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { refreshSession } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST() {
   try {
-    console.log('[REFRESH API] Starting session refresh');
+    logInfo('[REFRESH API] Starting session refresh');
     
     const { session, error } = await refreshSession();
     
     if (error) {
-      console.error('[REFRESH API] Error refreshing session:', error);
+      logError('[REFRESH API] Error refreshing session:', error);
       return NextResponse.json({ 
         ok: false, 
         error: error 
@@ -16,14 +17,14 @@ export async function POST() {
     }
     
     if (!session) {
-      console.log('[REFRESH API] No session returned from refresh');
+      logInfo('[REFRESH API] No session returned from refresh');
       return NextResponse.json({ 
         ok: false, 
         error: 'No session available' 
       }, { status: 401 });
     }
     
-    console.log('[REFRESH API] Session refreshed successfully for user:', session.user.id);
+    logInfo('[REFRESH API] Session refreshed successfully for user:', session.user.id);
     
     return NextResponse.json({ 
       ok: true, 
@@ -34,7 +35,7 @@ export async function POST() {
     });
     
   } catch (error: any) {
-    console.error('[REFRESH API] Unexpected error:', error.message);
+    logError('[REFRESH API] Unexpected error:', error.message);
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Internal server error'

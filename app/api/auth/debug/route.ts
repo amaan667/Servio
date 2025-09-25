@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[AUTH DEBUG] Debug endpoint called');
+    logInfo('[AUTH DEBUG] Debug endpoint called');
     
     const supabase = await createServerSupabase();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -34,11 +35,11 @@ export async function GET(request: NextRequest) {
       }
     };
     
-    console.log('[AUTH DEBUG] Debug info:', debugInfo);
+    logInfo('[AUTH DEBUG] Debug info:', debugInfo);
     
     return NextResponse.json(debugInfo);
   } catch (error: any) {
-    console.error('[AUTH DEBUG] Error in debug endpoint:', error);
+    logError('[AUTH DEBUG] Error in debug endpoint:', error);
     return NextResponse.json(
       { error: error.message, timestamp: new Date().toISOString() },
       { status: 500 }

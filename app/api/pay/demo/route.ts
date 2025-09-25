@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log('[PAY DEMO] Processing demo payment for order:', order_id);
+    logInfo('[PAY DEMO] Processing demo payment for order:', order_id);
 
     // Update order payment status to paid with demo method
     const { data: order, error: updateError } = await supabase
@@ -44,14 +45,14 @@ export async function POST(req: Request) {
       .single();
 
     if (updateError || !order) {
-      console.error('[PAY DEMO] Failed to update order:', updateError);
+      logError('[PAY DEMO] Failed to update order:', updateError);
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to process payment' 
       }, { status: 500 });
     }
 
-    console.log('[PAY DEMO] Demo payment successful for order:', order_id);
+    logInfo('[PAY DEMO] Demo payment successful for order:', order_id);
 
     return NextResponse.json({
       success: true,
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[PAY DEMO] Error:', error);
+    logError('[PAY DEMO] Error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error' 

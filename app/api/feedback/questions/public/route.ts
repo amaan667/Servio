@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 // GET - List active questions for venue (public endpoint for customers)
 export async function GET(req: Request) {
@@ -23,11 +24,11 @@ export async function GET(req: Request) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('[FEEDBACK:PUBLIC] Error fetching questions:', error.message);
+      logError('[FEEDBACK:PUBLIC] Error fetching questions:', error.message);
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:PUBLIC] Fetched ${questions?.length || 0} active questions for venue ${venueId}`);
+    logInfo(`[FEEDBACK:PUBLIC] Fetched ${questions?.length || 0} active questions for venue ${venueId}`);
     
     return NextResponse.json({ 
       questions: questions || [],
@@ -35,7 +36,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[FEEDBACK:PUBLIC] Exception:', error.message);
+    logError('[FEEDBACK:PUBLIC] Exception:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

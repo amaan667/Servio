@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { FeedbackQuestion, FeedbackAnswer } from '@/types/feedback';
+import { logInfo, logError } from "@/lib/logger";
 
 interface UnifiedFeedbackFormProps {
   venueId: string;
@@ -109,19 +110,19 @@ export default function UnifiedFeedbackForm({
         const ownerQuestions = data.questions || [];
         
         if (ownerQuestions.length > 0) {
-          console.log('[FEEDBACK] Using owner-created questions:', ownerQuestions.length);
+          logInfo('[FEEDBACK] Using owner-created questions:', ownerQuestions.length);
           setQuestions(ownerQuestions);
         } else {
-          console.log('[FEEDBACK] No owner questions found, using generic questions');
+          logInfo('[FEEDBACK] No owner questions found, using generic questions');
           setQuestions(genericQuestions);
         }
       } else {
-        console.log('[FEEDBACK] Failed to fetch owner questions, using generic questions');
+        logInfo('[FEEDBACK] Failed to fetch owner questions, using generic questions');
         setQuestions(genericQuestions);
       }
     } catch (error) {
-      console.error('[FEEDBACK] Error fetching questions:', error);
-      console.log('[FEEDBACK] Using generic questions as fallback');
+      logError('[FEEDBACK] Error fetching questions:', error);
+      logInfo('[FEEDBACK] Using generic questions as fallback');
       setQuestions(genericQuestions);
     } finally {
       setLoading(false);
@@ -227,7 +228,7 @@ export default function UnifiedFeedbackForm({
       }
 
     } catch (error) {
-      console.error('[FEEDBACK] Error submitting feedback:', error);
+      logError('[FEEDBACK] Error submitting feedback:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to submit feedback. Please try again.',

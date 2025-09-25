@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 [SETUP DAILY RESET] Setting up daily reset configuration');
+    logInfo('🔧 [SETUP DAILY RESET] Setting up daily reset configuration');
     
     const { venueId } = await request.json();
-    console.log('🔧 [SETUP DAILY RESET] Request data:', { venueId });
+    logInfo('🔧 [SETUP DAILY RESET] Request data:', { venueId });
 
     if (!venueId) {
-      console.log('🔧 [SETUP DAILY RESET] Missing venueId');
+      logInfo('🔧 [SETUP DAILY RESET] Missing venueId');
       return NextResponse.json(
         { error: 'Venue ID is required' },
         { status: 400 }
@@ -17,10 +18,10 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    console.log('🔧 [SETUP DAILY RESET] Admin Supabase client created');
+    logInfo('🔧 [SETUP DAILY RESET] Admin Supabase client created');
 
     // Step 1: Add the daily_reset_time column if it doesn't exist
-    console.log('🔧 [SETUP DAILY RESET] Step 1: Adding daily_reset_time column...');
+    logInfo('🔧 [SETUP DAILY RESET] Step 1: Adding daily_reset_time column...');
     
     const { error: alterError } = await supabase.rpc('exec_sql', {
       sql: `
@@ -46,15 +47,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (alterError) {
-      console.error('🔧 [SETUP DAILY RESET] Error adding column:', alterError);
+      logError('🔧 [SETUP DAILY RESET] Error adding column:', alterError);
       // Don't fail if column already exists
-      console.log('🔧 [SETUP DAILY RESET] Column might already exist, continuing...');
+      logInfo('🔧 [SETUP DAILY RESET] Column might already exist, continuing...');
     } else {
-      console.log('🔧 [SETUP DAILY RESET] Successfully added daily_reset_time column');
+      logInfo('🔧 [SETUP DAILY RESET] Successfully added daily_reset_time column');
     }
 
     // Step 2: Check if venue exists and update its reset time
-    console.log('🔧 [SETUP DAILY RESET] Step 2: Configuring venue reset time...');
+    logInfo('🔧 [SETUP DAILY RESET] Step 2: Configuring venue reset time...');
     
     const { data: venue, error: venueError } = await supabase
       .from('venues')
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (venueError) {
-      console.error('🔧 [SETUP DAILY RESET] Error fetching venue:', venueError);
+      logError('🔧 [SETUP DAILY RESET] Error fetching venue:', venueError);
       return NextResponse.json(
         { error: `Database error: ${venueError.message}` },
         { status: 500 }
@@ -71,14 +72,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!venue) {
-      console.log('🔧 [SETUP DAILY RESET] Venue not found for ID:', venueId);
+      logInfo('🔧 [SETUP DAILY RESET] Venue not found for ID:', venueId);
       return NextResponse.json(
         { error: 'Venue not found' },
         { status: 404 }
       );
     }
 
-    console.log('🔧 [SETUP DAILY RESET] Found venue:', venue.name);
+    logInfo('🔧 [SETUP DAILY RESET] Found venue:', venue.name);
 
     // Step 3: Set the venue's daily reset time to midnight (00:00:00)
     const { error: updateError } = await supabase
@@ -90,14 +91,14 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (updateError) {
-      console.error('🔧 [SETUP DAILY RESET] Error updating venue reset time:', updateError);
+      logError('🔧 [SETUP DAILY RESET] Error updating venue reset time:', updateError);
       return NextResponse.json(
         { error: 'Failed to update venue reset time' },
         { status: 500 }
       );
     }
 
-    console.log('🔧 [SETUP DAILY RESET] Successfully configured daily reset for venue:', venue.name);
+    logInfo('🔧 [SETUP DAILY RESET] Successfully configured daily reset for venue:', venue.name);
 
     // Step 4: Verify the configuration
     const { data: updatedVenue, error: verifyError } = await supabase
@@ -107,9 +108,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (verifyError) {
-      console.error('🔧 [SETUP DAILY RESET] Error verifying configuration:', verifyError);
+      logError('🔧 [SETUP DAILY RESET] Error verifying configuration:', verifyError);
     } else {
-      console.log('🔧 [SETUP DAILY RESET] Verified configuration:', updatedVenue);
+      logInfo('🔧 [SETUP DAILY RESET] Verified configuration:', updatedVenue);
     }
 
     return NextResponse.json({
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('🔧 [SETUP DAILY RESET] Error in setup:', error);
+    logError('🔧 [SETUP DAILY RESET] Error in setup:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (venueError) {
-      console.error('🔧 [SETUP DAILY RESET] Error fetching venue:', venueError);
+      logError('🔧 [SETUP DAILY RESET] Error fetching venue:', venueError);
       return NextResponse.json(
         { error: `Database error: ${venueError.message}` },
         { status: 500 }
@@ -180,7 +181,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('🔧 [SETUP DAILY RESET] Error checking configuration:', error);
+    logError('🔧 [SETUP DAILY RESET] Error checking configuration:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

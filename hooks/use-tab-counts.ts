@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useCallback } from 'react'
+import { logInfo, logError } from "@/lib/logger";
 
 export interface TabCounts {
   live_count: number
@@ -36,15 +37,15 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
         .single()
       
       if (rpcError) {
-        console.error('[TAB_COUNTS] RPC error:', rpcError)
+        logError('[TAB_COUNTS] RPC error:', rpcError)
         setError(rpcError.message)
         return
       }
       
-      console.log('[TAB_COUNTS] RPC result:', result)
+      logInfo('[TAB_COUNTS] RPC result:', result)
       setData(result)
     } catch (err) {
-      console.error('[TAB_COUNTS] Fetch error:', err)
+      logError('[TAB_COUNTS] Fetch error:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsLoading(false)

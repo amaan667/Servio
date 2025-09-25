@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logInfo, logError } from "@/lib/logger";
 
 export interface TableCounters {
   tables_set_up: number;
@@ -44,7 +45,7 @@ export function useTableCounters(venueId: string) {
         block_window_mins: data.counters.block_window_mins || 0
       });
     } catch (err) {
-      console.error('[TABLE COUNTERS] Error fetching counters:', err);
+      logError('[TABLE COUNTERS] Error fetching counters:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch counters');
     } finally {
       setLoading(false);
@@ -73,7 +74,7 @@ export function useTableCounters(venueId: string) {
           filter: `venue_id=eq.${venueId}`,
         },
         () => {
-          console.log('[TABLE COUNTERS] Table changed, refreshing counters');
+          logInfo('[TABLE COUNTERS] Table changed, refreshing counters');
           fetchCounters();
         }
       )
@@ -86,7 +87,7 @@ export function useTableCounters(venueId: string) {
           filter: `venue_id=eq.${venueId}`,
         },
         () => {
-          console.log('[TABLE COUNTERS] Table session changed, refreshing counters');
+          logInfo('[TABLE COUNTERS] Table session changed, refreshing counters');
           fetchCounters();
         }
       )

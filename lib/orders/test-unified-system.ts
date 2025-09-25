@@ -5,8 +5,9 @@ import { mapOrderToCardData } from './mapOrderToCardData';
 import { mapCounterOrderToCardData } from './mapCounterOrderToCardData';
 import type { LegacyOrder } from '@/types/orders';
 import type { CounterOrder } from '@/hooks/useCounterOrders';
+import { logInfo } from "@/lib/logger";
 
-console.log('🧪 Testing Unified OrderCard System');
+logInfo('🧪 Testing Unified OrderCard System');
 
 // Test 1: Table order (has table_id and is_configured: true)
 const tableOrder: LegacyOrder = {
@@ -30,8 +31,8 @@ const tableOrder: LegacyOrder = {
 };
 
 const tableCardData = mapOrderToCardData(tableOrder);
-console.log('✅ Table Order Entity Kind:', deriveEntityKind(tableCardData)); // Should be 'table'
-console.log('✅ Table Order Card Data:', {
+logInfo('✅ Table Order Entity Kind:', deriveEntityKind(tableCardData)); // Should be 'table'
+logInfo('✅ Table Order Card Data:', {
   id: tableCardData.short_id,
   table_label: tableCardData.table_label,
   counter_label: tableCardData.counter_label,
@@ -56,8 +57,8 @@ const counterOrder: CounterOrder = {
 };
 
 const counterCardData = mapCounterOrderToCardData(counterOrder);
-console.log('✅ Counter Order Entity Kind:', deriveEntityKind(counterCardData)); // Should be 'counter'
-console.log('✅ Counter Order Card Data:', {
+logInfo('✅ Counter Order Entity Kind:', deriveEntityKind(counterCardData)); // Should be 'counter'
+logInfo('✅ Counter Order Card Data:', {
   id: counterCardData.short_id,
   table_label: counterCardData.table_label,
   counter_label: counterCardData.counter_label,
@@ -73,11 +74,11 @@ const unassignedOrder: LegacyOrder = {
 };
 
 const unassignedCardData = mapOrderToCardData(unassignedOrder);
-console.log('✅ Unassigned Order Entity Kind:', deriveEntityKind(unassignedCardData)); // Should be 'counter'
-console.log('✅ Unassigned Order Card Data:', {
+logInfo('✅ Unassigned Order Entity Kind:', deriveEntityKind(unassignedCardData)); // Should be 'counter'
+logInfo('✅ Unassigned Order Card Data:', {
   id: unassignedCardData.short_id,
   table_label: unassignedCardData.table_label,
   counter_label: unassignedCardData.counter_label
 });
 
-console.log('🎉 All tests completed! The unified OrderCard system is working correctly.');
+logInfo('🎉 All tests completed! The unified OrderCard system is working correctly.');

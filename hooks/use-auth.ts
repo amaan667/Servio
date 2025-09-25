@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
+import { logInfo, logError } from "@/lib/logger";
 
 interface AuthState {
   user: User | null;
@@ -25,14 +26,14 @@ export function useAuth() {
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error) {
-        console.error('[AUTH HOOK] Error getting user:', error);
+        logError('[AUTH HOOK] Error getting user:', error);
         setAuthState({ user: null, loading: false, error: error.message });
         return;
       }
       
       setAuthState({ user, loading: false, error: null });
     } catch (error) {
-      console.error('[AUTH HOOK] Unexpected error:', error);
+      logError('[AUTH HOOK] Unexpected error:', error);
       setAuthState({ 
         user: null, 
         loading: false, 
@@ -44,7 +45,7 @@ export function useAuth() {
   // Sign out function that works on both desktop and mobile
   const signOut = useCallback(async () => {
     try {
-      console.log('[AUTH HOOK] Starting sign out process');
+      logInfo('[AUTH HOOK] Starting sign out process');
       
       // First, call the server-side signout API to clear cookies
       const response = await fetch('/api/auth/signout', {
@@ -55,25 +56,25 @@ export function useAuth() {
       });
 
       if (!response.ok) {
-        console.error('[AUTH HOOK] Server signout failed:', response.status);
+        logError('[AUTH HOOK] Server signout failed:', response.status);
       } else {
-        console.log('[AUTH HOOK] Server signout successful');
+        logInfo('[AUTH HOOK] Server signout successful');
       }
 
       // Then, call the client-side signout to clear local state
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('[AUTH HOOK] Client signout error:', error);
+        logError('[AUTH HOOK] Client signout error:', error);
         throw error;
       }
 
       // Clear local state
       setAuthState({ user: null, loading: false, error: null });
       
-      console.log('[AUTH HOOK] Sign out completed successfully');
+      logInfo('[AUTH HOOK] Sign out completed successfully');
     } catch (error) {
-      console.error('[AUTH HOOK] Sign out error:', error);
+      logError('[AUTH HOOK] Sign out error:', error);
       setAuthState(prev => ({ 
         ...prev, 
         error: error instanceof Error ? error.message : 'Sign out failed' 
@@ -89,7 +90,7 @@ export function useAuth() {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: any, session: any) => {
-        console.log('[AUTH HOOK] Auth state change:', event, session?.user?.id);
+        logInfo('[AUTH HOOK] Auth state change:', event, session?.user?.id);
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           // SECURE: Use getUser() to get the latest user data

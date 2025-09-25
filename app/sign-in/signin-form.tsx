@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { logInfo } from "@/lib/logger";
 
 interface SignInFormProps {
   onGoogleSignIn: () => Promise<void>;
@@ -32,7 +33,7 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
     setError(null);
 
     try {
-      console.log('[AUTH DEBUG] Attempting email sign in for:', email);
+      logInfo('[AUTH DEBUG] Attempting email sign in for:', email);
       
       const { data, error } = await supabaseBrowser().auth.signInWithPassword({
         email,
@@ -40,19 +41,19 @@ export default function SignInForm({ onGoogleSignIn, isLoading = false, error: p
       });
 
       if (error) {
-        console.log('[AUTH DEBUG] Email sign in failed:', error.message);
+        logInfo('[AUTH DEBUG] Email sign in failed:', error.message);
         setError(error.message);
         setLoading(false);
         return;
       }
 
       if (data.user) {
-        console.log('[AUTH DEBUG] Email sign in successful, redirecting to home');
+        logInfo('[AUTH DEBUG] Email sign in successful, redirecting to home');
         // Redirect to home page
         router.push('/');
       }
     } catch (err: any) {
-      console.log('[AUTH DEBUG] Email sign in error:', err);
+      logInfo('[AUTH DEBUG] Email sign in error:', err);
       setError(err.message || 'Sign-in failed. Please try again.');
       setLoading(false);
     }

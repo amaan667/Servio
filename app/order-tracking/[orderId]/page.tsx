@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, CheckCircle, XCircle, RefreshCw, Truck, User, Hash } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { logInfo, logError } from "@/lib/logger";
 
 interface OrderItem {
   menu_item_id: string;
@@ -74,7 +75,7 @@ export default function OrderTrackingPage() {
         .single();
 
       if (error) {
-        console.error('Failed to fetch order:', error);
+        logError('Failed to fetch order:', error);
         setError('Order not found or access denied');
         return;
       }
@@ -82,7 +83,7 @@ export default function OrderTrackingPage() {
       setOrder(data);
       setLastUpdate(new Date());
     } catch (err) {
-      console.error('Error fetching order:', err);
+      logError('Error fetching order:', err);
       setError('Failed to load order details');
     } finally {
       setLoading(false);
@@ -94,7 +95,7 @@ export default function OrderTrackingPage() {
 
     // Set up real-time subscription for order updates
     if (supabase && orderId) {
-      console.log('Setting up real-time subscription for order:', orderId);
+      logInfo('Setting up real-time subscription for order:', orderId);
       
       const channel = supabase
         .channel(`order-tracking-${orderId}`)
@@ -107,10 +108,10 @@ export default function OrderTrackingPage() {
             filter: `id=eq.${orderId}`,
           },
           (payload: any) => {
-            console.log('Order update detected:', payload);
+            logInfo('Order update detected:', payload);
             
             if (payload.eventType === 'UPDATE') {
-              console.log('Order status updated:', {
+              logInfo('Order status updated:', {
                 oldStatus: payload.old?.order_status,
                 newStatus: payload.new?.order_status,
                 orderId: payload.new?.id
@@ -121,29 +122,29 @@ export default function OrderTrackingPage() {
                 if (!prevOrder) return null;
                 
                 const updatedOrder = { ...prevOrder, ...payload.new };
-                console.log('Updated order:', updatedOrder);
+                logInfo('Updated order:', updatedOrder);
                 return updatedOrder;
               });
               
               setLastUpdate(new Date());
             } else if (payload.eventType === 'DELETE') {
-              console.log('Order deleted:', payload.old);
+              logInfo('Order deleted:', payload.old);
               setError('This order has been cancelled or deleted');
             }
           }
         )
         .subscribe((status: any) => {
-          console.log('Real-time subscription status:', status);
+          logInfo('Real-time subscription status:', status);
           
           if (status === 'SUBSCRIBED') {
-            console.log('Successfully subscribed to order updates');
+            logInfo('Successfully subscribed to order updates');
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('Real-time subscription error');
+            logError('Real-time subscription error');
           }
         });
 
       return () => {
-        console.log('Cleaning up real-time subscription');
+        logInfo('Cleaning up real-time subscription');
         supabase.removeChannel(channel);
       };
     }

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 [SETUP] Setting up daily reset log table');
+    logInfo('🔧 [SETUP] Setting up daily reset log table');
     
     const supabase = await createServerSupabase();
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (createTableError) {
-      console.error('🔧 [SETUP] Error creating table:', createTableError);
+      logError('🔧 [SETUP] Error creating table:', createTableError);
       return NextResponse.json(
         { error: 'Failed to create daily_reset_log table' },
         { status: 500 }
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (createIndexError) {
-      console.error('🔧 [SETUP] Error creating index:', createIndexError);
+      logError('🔧 [SETUP] Error creating index:', createIndexError);
       // Don't fail for index creation
     }
 
@@ -55,11 +56,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (enableRLSError) {
-      console.error('🔧 [SETUP] Error enabling RLS:', enableRLSError);
+      logError('🔧 [SETUP] Error enabling RLS:', enableRLSError);
       // Don't fail for RLS
     }
 
-    console.log('🔧 [SETUP] Daily reset log table setup completed');
+    logInfo('🔧 [SETUP] Daily reset log table setup completed');
 
     return NextResponse.json({
       success: true,
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('🔧 [SETUP] Error setting up daily reset log:', error);
+    logError('🔧 [SETUP] Error setting up daily reset log:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -28,6 +28,7 @@ import { OrderForCard } from '@/types/orders';
 import { deriveEntityKind, shouldShowUnpaidChip } from '@/lib/orders/entity-types';
 import { OrderStatusChip, PaymentStatusChip } from '@/components/ui/chips';
 import { formatCurrency, formatOrderTime } from '@/lib/orders/mapOrderToCardData';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 interface OrderCardProps {
   order: OrderForCard;
@@ -60,7 +61,7 @@ export function OrderCard({
   const getEntityDisplay = () => {
     if (isTableVariant) {
       // Debug logging to see what data we have
-      console.log(`[OrderCard DEBUG] Table order ${order.id}:`, {
+      logInfo(`[OrderCard DEBUG] Table order ${order.id}:`, {
         table_label: order.table_label,
         table_id: order.table_id,
         entityKind: deriveEntityKind(order)
@@ -68,7 +69,7 @@ export function OrderCard({
       
       const label = order.table_label || 'Table Order';
       if (!order.table_label) {
-        console.warn(`[OrderCard] Missing table_label for table order ${order.id}`);
+        logWarn(`[OrderCard] Missing table_label for table order ${order.id}`);
       }
       return {
         icon: <MapPin className="h-4 w-4" />,
@@ -107,7 +108,7 @@ export function OrderCard({
       if (!response.ok) throw new Error('Failed to delete order');
       onActionComplete?.();
     } catch (error) {
-      console.error('Error removing order:', error);
+      logError('Error removing order:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -133,7 +134,7 @@ export function OrderCard({
       if (!response.ok) throw new Error('Failed to process payment');
       onActionComplete?.();
     } catch (error) {
-      console.error('Error processing payment:', error);
+      logError('Error processing payment:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -142,7 +143,7 @@ export function OrderCard({
   const handleStatusUpdate = async (newStatus: string) => {
     if (!venueId) return;
     
-    console.log('[OrderCard DEBUG] Starting status update:', {
+    logInfo('[OrderCard DEBUG] Starting status update:', {
       orderId: order.id,
       currentStatus: order.order_status,
       newStatus: newStatus,
@@ -160,7 +161,7 @@ export function OrderCard({
         }),
       });
 
-      console.log('[OrderCard DEBUG] API response:', {
+      logInfo('[OrderCard DEBUG] API response:', {
         status: response.status,
         ok: response.ok,
         orderId: order.id
@@ -168,14 +169,14 @@ export function OrderCard({
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[OrderCard DEBUG] API error response:', errorText);
+        logError('[OrderCard DEBUG] API error response:', errorText);
         throw new Error('Failed to update order status');
       }
       
-      console.log('[OrderCard DEBUG] Status update successful, calling onActionComplete');
+      logInfo('[OrderCard DEBUG] Status update successful, calling onActionComplete');
       await onActionComplete?.();
     } catch (error) {
-      console.error('[OrderCard DEBUG] Error updating order status:', error);
+      logError('[OrderCard DEBUG] Error updating order status:', error);
     } finally {
       setIsProcessing(false);
     }

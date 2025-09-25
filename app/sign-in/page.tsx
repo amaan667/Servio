@@ -6,6 +6,7 @@ import { supabaseBrowser } from '@/lib/supabase/browser';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import { useAuth } from '@/app/auth/AuthProvider';
 import SignInForm from './signin-form';
+import { logError } from "@/lib/logger";
 
 function SignInPageContent() {
   const router = useRouter();
@@ -74,7 +75,7 @@ function SignInPageContent() {
       });
       
       if (error) {
-        console.error('OAuth sign in error:', error);
+        logError('OAuth sign in error:', error);
         alert(`Sign in failed: ${error.message}`);
         setIsSigningIn(false);
         return;
@@ -91,7 +92,7 @@ function SignInPageContent() {
         }
       }
     } catch (error) {
-      console.error('Sign in error:', error);
+      logError('Sign in error:', error);
       alert('Sign in failed. Please try again.');
       setIsSigningIn(false);
     }

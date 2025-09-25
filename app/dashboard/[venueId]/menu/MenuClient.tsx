@@ -14,6 +14,7 @@ import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash } from "lucide-react"
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { useToast } from "@/hooks/use-toast";
+import { logInfo, logError } from "@/lib/logger";
 
 interface MenuItem {
   id: string;
@@ -66,7 +67,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
       // If no items found with transformed ID, try with original ID
       if (!data || data.length === 0) {
-        console.log('[MENU CLIENT] No items found with transformed ID, trying original ID:', originalVenueId);
+        logInfo('[MENU CLIENT] No items found with transformed ID, trying original ID:', originalVenueId);
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('menu_items')
           .select('*')
@@ -76,13 +77,13 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         if (fallbackData && fallbackData.length > 0) {
           data = fallbackData;
           error = fallbackError;
-          console.log('[MENU CLIENT] Found', fallbackData.length, 'items with original venue ID');
+          logInfo('[MENU CLIENT] Found', fallbackData.length, 'items with original venue ID');
         }
       }
 
       if (!error && data) {
         setMenuItems(data);
-        console.log('[MENU CLIENT] Successfully loaded', data.length, 'menu items');
+        logInfo('[MENU CLIENT] Successfully loaded', data.length, 'menu items');
         
         // Auto-show categories if there are menu items with categories
         const hasCategories = data.some((item: MenuItem) => item.category && item.category.trim());
@@ -90,7 +91,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
           setShowCategories(true);
         }
       } else if (error) {
-        console.error('[MENU CLIENT] Error loading menu items:', error);
+        logError('[MENU CLIENT] Error loading menu items:', error);
         toast({
           title: "Error",
           description: "Failed to load menu items",
@@ -98,7 +99,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         });
       }
     } catch (err) {
-      console.error('[MENU CLIENT] Unexpected error:', err);
+      logError('[MENU CLIENT] Unexpected error:', err);
       toast({
         title: "Error",
         description: "Failed to load menu items",
@@ -115,7 +116,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       const storedOrder = localStorage.getItem(`category-order-${transformedVenueId}`);
       if (storedOrder) {
         const parsedOrder = JSON.parse(storedOrder);
-        console.log('[MENU CLIENT] Loaded category order from localStorage:', parsedOrder);
+        logInfo('[MENU CLIENT] Loaded category order from localStorage:', parsedOrder);
         setCategoryOrder(parsedOrder);
         return;
       }
@@ -125,16 +126,16 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       const data = await response.json();
       
       if (response.ok && data.categories && Array.isArray(data.categories)) {
-        console.log('[MENU CLIENT] Loaded category order from API:', data.categories);
+        logInfo('[MENU CLIENT] Loaded category order from API:', data.categories);
         setCategoryOrder(data.categories);
         // Store in localStorage for persistence
         localStorage.setItem(`category-order-${transformedVenueId}`, JSON.stringify(data.categories));
       } else {
-        console.log('[MENU CLIENT] No category order found, will use dynamic ordering');
+        logInfo('[MENU CLIENT] No category order found, will use dynamic ordering');
         setCategoryOrder(null);
       }
     } catch (error) {
-      console.error('[MENU CLIENT] Error loading category order:', error);
+      logError('[MENU CLIENT] Error loading category order:', error);
       setCategoryOrder(null);
     }
   };
@@ -241,7 +242,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         });
       }
     } catch (error) {
-      console.error('Clear menu error:', error);
+      logError('Clear menu error:', error);
       toast({
         title: 'Error',
         description: 'Failed to clear menu items',
@@ -267,7 +268,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
     setCategoryOrder(updatedCategories);
     // Store in localStorage for persistence
     localStorage.setItem(`category-order-${transformedVenueId}`, JSON.stringify(updatedCategories));
-    console.log('[MENU CLIENT] Category order updated and stored:', updatedCategories);
+    logInfo('[MENU CLIENT] Category order updated and stored:', updatedCategories);
   };
 
   const openEditModal = (item: MenuItem) => {
@@ -459,7 +460,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               };
 
               const dynamicCategoryOrder = deriveCategoryOrder(menuItems);
-              console.log('[MENU CLIENT] Derived category order from menu items:', dynamicCategoryOrder);
+              logInfo('[MENU CLIENT] Derived category order from menu items:', dynamicCategoryOrder);
 
               // Sort categories based ONLY on PDF order - no alphabetical fallback
               const sortedCategories = Object.entries(groupedItems).sort(([catA], [catB]) => {

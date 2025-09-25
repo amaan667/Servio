@@ -3,7 +3,8 @@
 // =====================================================
 // Generates comprehensive reports to prove nothing was missed
 
-import { 
+import { logInfo } from "@/lib/logger";
+import {
   PriceToken, 
   ParsedItem, 
   ParsedCategory, 
@@ -22,7 +23,7 @@ export function generateCoverageReport(
   blocks: TextBlock[],
   processingWarnings: string[] = []
 ): CoverageReport {
-  console.log('[COVERAGE_REPORT] Generating coverage report...');
+  logInfo('[COVERAGE_REPORT] Generating coverage report...');
   
   // Track which prices have been attached to items
   const attachedPriceLineIds = new Set<string>();
@@ -98,7 +99,7 @@ export function generateCoverageReport(
     processingWarnings
   };
   
-  console.log('[COVERAGE_REPORT] Report generated:', {
+  logInfo('[COVERAGE_REPORT] Report generated:', {
     pricesFound: report.pricesFound,
     pricesAttached: report.pricesAttached,
     unattachedCount: report.unattachedPrices.length,

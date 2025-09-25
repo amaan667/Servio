@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { logWarn } from "@/lib/logger";
 
 export async function createServerSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -7,7 +8,7 @@ export async function createServerSupabase() {
   
   // Handle missing environment variables gracefully
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('[SUPABASE SERVER] Missing environment variables:', {
+    logWarn('[SUPABASE SERVER] Missing environment variables:', {
       hasUrl: !!supabaseUrl,
       hasKey: !!supabaseAnonKey
     });
@@ -53,7 +54,7 @@ export async function createRouteSupabase() {
   
   // Handle missing environment variables gracefully
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('[SUPABASE ROUTE] Missing environment variables:', {
+    logWarn('[SUPABASE ROUTE] Missing environment variables:', {
       hasUrl: !!supabaseUrl,
       hasKey: !!supabaseAnonKey
     });

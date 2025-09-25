@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -48,7 +49,7 @@ export async function GET(req: Request) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('[LIVE ORDERS] Error:', error);
+    logError('[LIVE ORDERS] Error:', error);
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 

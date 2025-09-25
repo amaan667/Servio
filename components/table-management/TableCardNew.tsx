@@ -39,6 +39,7 @@ import { GroupSession } from '@/hooks/useGroupSessions';
 import { createClient } from '@/lib/supabase/client';
 import { TableSelectionDialog } from './TableSelectionDialog';
 import { ReservationDialog } from './ReservationDialog';
+import { logInfo, logError } from "@/lib/logger";
 import {
   Dialog,
   DialogContent,
@@ -133,7 +134,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
             setMergedTableId(null);
           }
         } else {
-          console.error('Error checking if table is merged:', error1 || error2);
+          logError('Error checking if table is merged:', error1 || error2);
           // Fallback to label-based detection
           if (isLabelMerged) {
             setIsMerged(true);
@@ -144,7 +145,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
           }
         }
       } catch (err) {
-        console.error('Error checking if table is merged:', err);
+        logError('Error checking if table is merged:', err);
         // Fallback to label-based detection
         const isLabelMerged = table.label && (table.label.includes('+') || table.label.includes('merged with'));
         if (isLabelMerged) {
@@ -166,7 +167,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       await occupyTable(table.id, venueId);
       onActionComplete?.();
     } catch (error) {
-      console.error('Failed to occupy table:', error);
+      logError('Failed to occupy table:', error);
     } finally {
       setIsLoading(false);
     }
@@ -178,7 +179,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       await closeTable.mutateAsync({ tableId: table.id, venueId: venueId });
       onActionComplete?.();
     } catch (error) {
-      console.error('Failed to close table:', error);
+      logError('Failed to close table:', error);
     } finally {
       setIsLoading(false);
     }
@@ -192,7 +193,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       await unmergeTable(mergedTableId, venueId);
       onActionComplete?.();
     } catch (error) {
-      console.error('Failed to unmerge table:', error);
+      logError('Failed to unmerge table:', error);
     } finally {
       setIsLoading(false);
     }
@@ -200,7 +201,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
 
   const handleRemoveTable = async () => {
     try {
-      console.log('🔍 [REMOVE TABLE] Starting removal process:', {
+      logInfo('🔍 [REMOVE TABLE] Starting removal process:', {
         tableId: table.id,
         tableLabel: table.label,
         venueId: venueId
@@ -209,7 +210,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
       setIsLoading(true);
       setRemoveError(null);
       
-      console.log('🔍 [REMOVE TABLE] Removing table:', {
+      logInfo('🔍 [REMOVE TABLE] Removing table:', {
         tableId: table.id,
         tableLabel: table.label,
         venueId: venueId
@@ -223,11 +224,11 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         credentials: 'include', // Include cookies for authentication
       });
 
-      console.log('🔍 [REMOVE TABLE] Response status:', response.status);
-      console.log('🔍 [REMOVE TABLE] Response ok:', response.ok);
+      logInfo('🔍 [REMOVE TABLE] Response status:', response.status);
+      logInfo('🔍 [REMOVE TABLE] Response ok:', response.ok);
 
       const responseData = await response.json();
-      console.log('🔍 [REMOVE TABLE] Response data:', responseData);
+      logInfo('🔍 [REMOVE TABLE] Response data:', responseData);
 
       if (!response.ok) {
         // Handle specific error cases with more user-friendly messages
@@ -242,12 +243,12 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         }
       }
 
-      console.log('🔍 [REMOVE TABLE] Table removed successfully');
+      logInfo('🔍 [REMOVE TABLE] Table removed successfully');
       onActionComplete?.();
       setShowRemoveDialog(false);
       setForceRemove(false);
     } catch (error) {
-      console.error('🔍 [REMOVE TABLE] Failed to remove table:', error);
+      logError('🔍 [REMOVE TABLE] Failed to remove table:', error);
       setRemoveError(error instanceof Error ? error.message : 'Failed to remove table');
     } finally {
       setIsLoading(false);
@@ -315,7 +316,7 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
                     return;
                   }
                 } catch (error) {
-                  console.error('Error fetching order data:', error);
+                  logError('Error fetching order data:', error);
                 }
               }
               

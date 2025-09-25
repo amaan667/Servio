@@ -20,6 +20,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { logError } from "@/lib/logger";
 
 interface AssignQRCodeModalProps {
   isOpen: boolean;
@@ -103,7 +104,7 @@ export function AssignQRCodeModal({
         merged_tables: mergedTables
       });
     } catch (err) {
-      console.error('[ASSIGN QR] Error fetching QR data:', err);
+      logError('[ASSIGN QR] Error fetching QR data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load QR data');
     } finally {
       setLoading(false);
@@ -117,7 +118,7 @@ export function AssignQRCodeModal({
       await navigator.clipboard.writeText(qrData.qr_url);
       // You could add a toast notification here
     } catch (err) {
-      console.error('Failed to copy link:', err);
+      logError('Failed to copy link:', err);
     }
   };
 
@@ -188,7 +189,7 @@ export function AssignQRCodeModal({
       // Refresh QR data
       await fetchQRData();
     } catch (err) {
-      console.error('[ASSIGN QR] Error regenerating QR:', err);
+      logError('[ASSIGN QR] Error regenerating QR:', err);
       setError(err instanceof Error ? err.message : 'Failed to regenerate QR code');
     } finally {
       setIsRegenerating(false);

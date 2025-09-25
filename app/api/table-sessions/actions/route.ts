@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { action, table_id, venue_id, order_id, destination_table_id, customer_name, reservation_time, reservation_duration, reservation_id } = body;
 
-    console.log('[TABLE ACTIONS API] Request received:', {
+    logInfo('[TABLE ACTIONS API] Request received:', {
       action,
       table_id,
       venue_id,
@@ -19,18 +20,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (!action || !table_id || !venue_id) {
-      console.log('[TABLE ACTIONS API] Missing required fields:', { action, table_id, venue_id });
+      logInfo('[TABLE ACTIONS API] Missing required fields:', { action, table_id, venue_id });
       return NextResponse.json({ error: 'action, table_id, and venue_id are required' }, { status: 400 });
     }
 
     // Check authentication
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError || !user) {
-      console.log('[TABLE ACTIONS API] Authentication failed:', authError);
+      logInfo('[TABLE ACTIONS API] Authentication failed:', authError);
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    console.log('[TABLE ACTIONS API] Authenticated user:', user.id);
+    logInfo('[TABLE ACTIONS API] Authenticated user:', user.id);
 
     // Use admin client for table operations to bypass RLS
     const supabase = createAdminClient();
@@ -44,11 +45,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (venueError || !venue) {
-      console.log('[TABLE ACTIONS API] Venue ownership verification failed:', venueError);
+      logInfo('[TABLE ACTIONS API] Venue ownership verification failed:', venueError);
       return NextResponse.json({ error: 'Access denied to venue' }, { status: 403 });
     }
 
-    console.log('[TABLE ACTIONS API] Venue ownership verified for:', venue_id);
+    logInfo('[TABLE ACTIONS API] Venue ownership verified for:', venue_id);
 
     switch (action) {
       case 'start_preparing':
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
-    console.error('[TABLE SESSIONS ACTIONS API] Unexpected error:', error);
+    logError('[TABLE SESSIONS ACTIONS API] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -116,7 +117,7 @@ async function handleStartPreparing(supabase: any, table_id: string, order_id: s
     .eq('id', order_id);
 
   if (orderError) {
-    console.error('[TABLE ACTIONS] Error updating order status:', orderError);
+    logError('[TABLE ACTIONS] Error updating order status:', orderError);
     return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
   }
 
@@ -131,7 +132,7 @@ async function handleStartPreparing(supabase: any, table_id: string, order_id: s
     .eq('order_id', order_id);
 
   if (sessionError) {
-    console.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+    logError('[TABLE ACTIONS] Error updating session status:', sessionError);
     return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
   }
 
@@ -149,7 +150,7 @@ async function handleMarkReady(supabase: any, table_id: string, order_id: string
     .eq('id', order_id);
 
   if (orderError) {
-    console.error('[TABLE ACTIONS] Error updating order status:', orderError);
+    logError('[TABLE ACTIONS] Error updating order status:', orderError);
     return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
   }
 
@@ -164,7 +165,7 @@ async function handleMarkReady(supabase: any, table_id: string, order_id: string
     .eq('order_id', order_id);
 
   if (sessionError) {
-    console.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+    logError('[TABLE ACTIONS] Error updating session status:', sessionError);
     return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
   }
 
@@ -182,7 +183,7 @@ async function handleMarkServed(supabase: any, table_id: string, order_id: strin
     .eq('id', order_id);
 
   if (orderError) {
-    console.error('[TABLE ACTIONS] Error updating order status:', orderError);
+    logError('[TABLE ACTIONS] Error updating order status:', orderError);
     return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
   }
 
@@ -197,7 +198,7 @@ async function handleMarkServed(supabase: any, table_id: string, order_id: strin
     .eq('order_id', order_id);
 
   if (sessionError) {
-    console.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+    logError('[TABLE ACTIONS] Error updating session status:', sessionError);
     return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
   }
 
@@ -216,7 +217,7 @@ async function handleMarkAwaitingBill(supabase: any, table_id: string) {
     .is('closed_at', null);
 
   if (sessionError) {
-    console.error('[TABLE ACTIONS] Error updating session status:', sessionError);
+    logError('[TABLE ACTIONS] Error updating session status:', sessionError);
     return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
   }
 
@@ -225,7 +226,7 @@ async function handleMarkAwaitingBill(supabase: any, table_id: string) {
 
 async function handleCloseTable(supabase: any, table_id: string) {
   try {
-    console.log('[TABLE ACTIONS] Starting close table for table_id:', table_id);
+    logInfo('[TABLE ACTIONS] Starting close table for table_id:', table_id);
     
     // Get the venue_id for the table
     const { data: table, error: tableError } = await supabase
@@ -235,7 +236,7 @@ async function handleCloseTable(supabase: any, table_id: string) {
       .single();
 
     if (tableError || !table) {
-      console.error('[TABLE ACTIONS] Error fetching table for close:', tableError);
+      logError('[TABLE ACTIONS] Error fetching table for close:', tableError);
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
 
@@ -252,11 +253,11 @@ async function handleCloseTable(supabase: any, table_id: string) {
       .select();
 
     if (sessionError) {
-      console.error('[TABLE ACTIONS] Error closing session:', sessionError);
+      logError('[TABLE ACTIONS] Error closing session:', sessionError);
       return NextResponse.json({ error: 'Failed to close session' }, { status: 500 });
     }
 
-    console.log('[TABLE ACTIONS] Closed session:', sessionData);
+    logInfo('[TABLE ACTIONS] Closed session:', sessionData);
 
     // Create a new FREE session for the table
     const { data: newSessionData, error: newSessionError } = await supabase
@@ -270,11 +271,11 @@ async function handleCloseTable(supabase: any, table_id: string) {
       .select();
 
     if (newSessionError) {
-      console.error('[TABLE ACTIONS] Error creating new FREE session:', newSessionError);
+      logError('[TABLE ACTIONS] Error creating new FREE session:', newSessionError);
       return NextResponse.json({ error: 'Failed to create new session' }, { status: 500 });
     }
 
-    console.log('[TABLE ACTIONS] Created new FREE session:', newSessionData);
+    logInfo('[TABLE ACTIONS] Created new FREE session:', newSessionData);
 
     return NextResponse.json({ 
       success: true, 
@@ -284,13 +285,13 @@ async function handleCloseTable(supabase: any, table_id: string) {
       }
     });
   } catch (error) {
-    console.error('[TABLE ACTIONS] Unexpected error closing table:', error);
+    logError('[TABLE ACTIONS] Unexpected error closing table:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 async function handleReserveTable(supabase: any, table_id: string, customer_name: string, reservation_time: string, reservation_duration: number = 60) {
-  console.log('[TABLE ACTIONS] Starting reserve table for:', { table_id, customer_name, reservation_time });
+  logInfo('[TABLE ACTIONS] Starting reserve table for:', { table_id, customer_name, reservation_time });
   
   try {
     // Get venue_id from table
@@ -301,7 +302,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
       .single();
 
   if (tableError || !table) {
-    console.error('[TABLE ACTIONS] Error fetching table for reservation:', tableError);
+    logError('[TABLE ACTIONS] Error fetching table for reservation:', tableError);
     
     if (tableError.code === 'PGRST116') {
       // Let's see what tables actually exist
@@ -310,7 +311,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
         .select('id, label, venue_id')
         .limit(10);
       
-      console.log('[TABLE ACTIONS] Available tables for reservation:', allTables);
+      logInfo('[TABLE ACTIONS] Available tables for reservation:', allTables);
       
       return NextResponse.json({ 
         error: 'Table not found',
@@ -333,7 +334,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     .single();
 
   if (sessionCheckError && sessionCheckError.code !== 'PGRST116') {
-    console.error('[TABLE ACTIONS] Error checking existing session:', sessionCheckError);
+    logError('[TABLE ACTIONS] Error checking existing session:', sessionCheckError);
     return NextResponse.json({ error: 'Failed to check table availability' }, { status: 500 });
   }
 
@@ -350,7 +351,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
         const conflictWindow = 30 * 60 * 1000; // 30 minutes in milliseconds
         
         if (timeDiff < conflictWindow) {
-          console.log('[TABLE ACTIONS] Reservation conflict detected:', {
+          logInfo('[TABLE ACTIONS] Reservation conflict detected:', {
             existingTime: existingTime,
             requestedTime: reservation_time,
             timeDiff: timeDiff
@@ -365,14 +366,14 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
         }
       } else {
         // If there's a reserved session without a specific time, block the reservation
-        console.log('[TABLE ACTIONS] Table already has active reservation session');
+        logInfo('[TABLE ACTIONS] Table already has active reservation session');
         return NextResponse.json({ 
           error: 'Table is already reserved. Please choose a different table or time.'
         }, { status: 409 });
       }
     } else if (existingSession.status === 'ORDERING' || existingSession.status === 'IN_PREP' || existingSession.status === 'READY' || existingSession.status === 'SERVED' || existingSession.status === 'AWAITING_BILL') {
       // Table is currently in use
-      console.log('[TABLE ACTIONS] Table is currently in use:', existingSession.status);
+      logInfo('[TABLE ACTIONS] Table is currently in use:', existingSession.status);
       return NextResponse.json({ 
         error: 'Table is currently in use. Please choose a different table.'
       }, { status: 409 });
@@ -388,14 +389,14 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     .single();
 
   if (checkError && checkError.code !== 'PGRST116') {
-    console.error('[TABLE ACTIONS] Error checking existing reservation:', checkError);
+    logError('[TABLE ACTIONS] Error checking existing reservation:', checkError);
     return NextResponse.json({ error: 'Failed to check existing reservation' }, { status: 500 });
   }
 
   // Create or update reservation
   if (existingReservation) {
     // Update existing reservation
-    console.log('[TABLE ACTIONS] Updating existing reservation:', existingReservation.id);
+    logInfo('[TABLE ACTIONS] Updating existing reservation:', existingReservation.id);
     const { error: updateError } = await supabase
       .from('reservations')
       .update({
@@ -407,12 +408,12 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
       .eq('id', existingReservation.id);
 
     if (updateError) {
-      console.error('[TABLE ACTIONS] Error updating reservation:', updateError);
+      logError('[TABLE ACTIONS] Error updating reservation:', updateError);
       return NextResponse.json({ error: 'Failed to update reservation' }, { status: 500 });
     }
   } else {
     // Create new reservation
-    console.log('[TABLE ACTIONS] Creating new reservation');
+    logInfo('[TABLE ACTIONS] Creating new reservation');
     const { error: reservationError } = await supabase
       .from('reservations')
       .insert({
@@ -426,14 +427,14 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
       });
 
     if (reservationError) {
-      console.error('[TABLE ACTIONS] Error creating reservation:', reservationError);
+      logError('[TABLE ACTIONS] Error creating reservation:', reservationError);
       // Don't fail if reservations table doesn't exist, just log the error
-      console.log('[TABLE ACTIONS] Continuing without reservations table...');
+      logInfo('[TABLE ACTIONS] Continuing without reservations table...');
     }
   }
 
   // Update or create table session status to RESERVED and store reservation info
-  console.log('[TABLE ACTIONS] Checking for existing session for table:', table_id);
+  logInfo('[TABLE ACTIONS] Checking for existing session for table:', table_id);
   
   const { data: currentSession, error: currentSessionError } = await supabase
     .from('table_sessions')
@@ -443,15 +444,15 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     .maybeSingle();
 
   if (currentSessionError) {
-    console.error('[TABLE ACTIONS] Error checking existing session:', currentSessionError);
+    logError('[TABLE ACTIONS] Error checking existing session:', currentSessionError);
     return NextResponse.json({ error: 'Failed to check existing session' }, { status: 500 });
   }
 
-  console.log('[TABLE ACTIONS] Existing session found:', currentSession);
+  logInfo('[TABLE ACTIONS] Existing session found:', currentSession);
 
   if (currentSession) {
     // Update existing session
-    console.log('[TABLE ACTIONS] Updating existing session:', currentSession.id, 'from status:', currentSession.status);
+    logInfo('[TABLE ACTIONS] Updating existing session:', currentSession.id, 'from status:', currentSession.status);
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .update({ 
@@ -464,8 +465,8 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
       .eq('id', currentSession.id);
 
     if (sessionError) {
-      console.error('[TABLE ACTIONS] Error updating session status:', sessionError);
-      console.error('[TABLE ACTIONS] Session update details:', {
+      logError('[TABLE ACTIONS] Error updating session status:', sessionError);
+      logError('[TABLE ACTIONS] Session update details:', {
         sessionId: currentSession.id,
         tableId: table_id,
         currentStatus: currentSession.status,
@@ -473,10 +474,10 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
       });
       return NextResponse.json({ error: 'Failed to update session status' }, { status: 500 });
     }
-    console.log('[TABLE ACTIONS] Successfully updated session:', currentSession.id);
+    logInfo('[TABLE ACTIONS] Successfully updated session:', currentSession.id);
   } else {
     // Create new session
-    console.log('[TABLE ACTIONS] No existing session found, creating new session for table:', table_id);
+    logInfo('[TABLE ACTIONS] No existing session found, creating new session for table:', table_id);
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .insert({
@@ -492,28 +493,28 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
       });
 
     if (sessionError) {
-      console.error('[TABLE ACTIONS] Error creating session:', sessionError);
-      console.error('[TABLE ACTIONS] Session creation details:', {
+      logError('[TABLE ACTIONS] Error creating session:', sessionError);
+      logError('[TABLE ACTIONS] Session creation details:', {
         tableId: table_id,
         venueId: table.venue_id,
         error: sessionError
       });
       return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
     }
-    console.log('[TABLE ACTIONS] Successfully created new session for table:', table_id);
+    logInfo('[TABLE ACTIONS] Successfully created new session for table:', table_id);
   }
 
   return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[TABLE ACTIONS] Unexpected error in handleReserveTable:', error);
+    logError('[TABLE ACTIONS] Unexpected error in handleReserveTable:', error);
     return NextResponse.json({ error: 'Internal server error in reservation' }, { status: 500 });
   }
 }
 
 async function handleOccupyTable(supabase: any, table_id: string) {
-  console.log('[TABLE ACTIONS] Starting occupy table for table_id:', table_id);
-  console.log('[TABLE ACTIONS] Table ID type:', typeof table_id);
-  console.log('[TABLE ACTIONS] Table ID length:', table_id?.length);
+  logInfo('[TABLE ACTIONS] Starting occupy table for table_id:', table_id);
+  logInfo('[TABLE ACTIONS] Table ID type:', typeof table_id);
+  logInfo('[TABLE ACTIONS] Table ID length:', table_id?.length);
   
   // First, check if there's an existing open session
   const { data: existingSession, error: checkError } = await supabase
@@ -524,13 +525,13 @@ async function handleOccupyTable(supabase: any, table_id: string) {
     .single();
 
   if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
-    console.error('[TABLE ACTIONS] Error checking existing session:', checkError);
+    logError('[TABLE ACTIONS] Error checking existing session:', checkError);
     return NextResponse.json({ error: 'Failed to check table status' }, { status: 500 });
   }
 
   if (existingSession) {
     // Update existing session to ORDERING
-    console.log('[TABLE ACTIONS] Updating existing session:', existingSession.id, 'to ORDERING');
+    logInfo('[TABLE ACTIONS] Updating existing session:', existingSession.id, 'to ORDERING');
     const { error: updateError } = await supabase
       .from('table_sessions')
       .update({ 
@@ -540,15 +541,15 @@ async function handleOccupyTable(supabase: any, table_id: string) {
       .eq('id', existingSession.id);
 
     if (updateError) {
-      console.error('[TABLE ACTIONS] Error updating session to ORDERING:', updateError);
+      logError('[TABLE ACTIONS] Error updating session to ORDERING:', updateError);
       return NextResponse.json({ error: 'Failed to occupy table' }, { status: 500 });
     }
   } else {
     // Create new session with ORDERING status
-    console.log('[TABLE ACTIONS] No existing session found, creating new ORDERING session');
+    logInfo('[TABLE ACTIONS] No existing session found, creating new ORDERING session');
     
     // Get venue_id from table
-    console.log('[TABLE ACTIONS] Looking for table with ID:', table_id);
+    logInfo('[TABLE ACTIONS] Looking for table with ID:', table_id);
     const { data: table, error: tableError } = await supabase
       .from('tables')
       .select('venue_id')
@@ -556,7 +557,7 @@ async function handleOccupyTable(supabase: any, table_id: string) {
       .single();
 
     if (tableError) {
-      console.error('[TABLE ACTIONS] Error getting table info:', tableError);
+      logError('[TABLE ACTIONS] Error getting table info:', tableError);
       if (tableError.code === 'PGRST116') {
         // Let's see what tables actually exist
         const { data: allTables, error: allTablesError } = await supabase
@@ -564,8 +565,8 @@ async function handleOccupyTable(supabase: any, table_id: string) {
           .select('id, label, venue_id')
           .limit(10);
         
-        console.log('[TABLE ACTIONS] Available tables in database:', allTables);
-        console.log('[TABLE ACTIONS] Looking for table ID:', table_id);
+        logInfo('[TABLE ACTIONS] Available tables in database:', allTables);
+        logInfo('[TABLE ACTIONS] Looking for table ID:', table_id);
         
         // Also check what venues exist
         const { data: allVenues, error: venuesError } = await supabase
@@ -573,7 +574,7 @@ async function handleOccupyTable(supabase: any, table_id: string) {
           .select('venue_id, name')
           .limit(10);
         
-        console.log('[TABLE ACTIONS] Available venues in database:', allVenues);
+        logInfo('[TABLE ACTIONS] Available venues in database:', allVenues);
         
         return NextResponse.json({ 
           error: 'Table not found in database',
@@ -590,7 +591,7 @@ async function handleOccupyTable(supabase: any, table_id: string) {
     }
 
     if (!table) {
-      console.error('[TABLE ACTIONS] Table not found for ID:', table_id);
+      logError('[TABLE ACTIONS] Table not found for ID:', table_id);
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
 
@@ -604,12 +605,12 @@ async function handleOccupyTable(supabase: any, table_id: string) {
       });
 
     if (createError) {
-      console.error('[TABLE ACTIONS] Error creating new ORDERING session:', createError);
+      logError('[TABLE ACTIONS] Error creating new ORDERING session:', createError);
       return NextResponse.json({ error: 'Failed to occupy table' }, { status: 500 });
     }
   }
 
-  console.log('[TABLE ACTIONS] Table occupied successfully');
+  logInfo('[TABLE ACTIONS] Table occupied successfully');
   return NextResponse.json({ success: true });
 }
 
@@ -623,7 +624,7 @@ async function handleMoveTable(supabase: any, table_id: string, destination_tabl
     .single();
 
   if (sessionError || !currentSession) {
-    console.error('[TABLE ACTIONS] Error fetching current session:', sessionError);
+    logError('[TABLE ACTIONS] Error fetching current session:', sessionError);
     return NextResponse.json({ error: 'No active session found for table' }, { status: 400 });
   }
 
@@ -649,7 +650,7 @@ async function handleMoveTable(supabase: any, table_id: string, destination_tabl
     .eq('id', currentSession.id);
 
   if (closeError) {
-    console.error('[TABLE ACTIONS] Error closing current session:', closeError);
+    logError('[TABLE ACTIONS] Error closing current session:', closeError);
     return NextResponse.json({ error: 'Failed to close current session' }, { status: 500 });
   }
 
@@ -664,7 +665,7 @@ async function handleMoveTable(supabase: any, table_id: string, destination_tabl
     .eq('id', destSession.id);
 
   if (updateError) {
-    console.error('[TABLE ACTIONS] Error updating destination session:', updateError);
+    logError('[TABLE ACTIONS] Error updating destination session:', updateError);
     return NextResponse.json({ error: 'Failed to update destination session' }, { status: 500 });
   }
 
@@ -673,7 +674,7 @@ async function handleMoveTable(supabase: any, table_id: string, destination_tabl
 
 async function handleMergeTable(supabase: any, venue_id: string, table_id: string, destination_table_id: string) {
   try {
-    console.log('[TABLE ACTIONS] Starting merge table process:', {
+    logInfo('[TABLE ACTIONS] Starting merge table process:', {
       venue_id,
       table_id,
       destination_table_id,
@@ -687,27 +688,27 @@ async function handleMergeTable(supabase: any, venue_id: string, table_id: strin
       p_table_b: destination_table_id
     });
 
-    console.log('[TABLE ACTIONS] RPC call result:', { data, error });
+    logInfo('[TABLE ACTIONS] RPC call result:', { data, error });
 
     if (error) {
-      console.error('[TABLE ACTIONS] Error merging tables:', error);
+      logError('[TABLE ACTIONS] Error merging tables:', error);
       return NextResponse.json({ error: error.message || 'Failed to merge tables' }, { status: 400 });
     }
 
-    console.log('[TABLE ACTIONS] Merge completed successfully:', data);
+    logInfo('[TABLE ACTIONS] Merge completed successfully:', data);
     return NextResponse.json({ 
       success: true, 
       data: data 
     });
   } catch (error) {
-    console.error('[TABLE ACTIONS] Unexpected error merging tables:', error);
+    logError('[TABLE ACTIONS] Unexpected error merging tables:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 async function handleUnmergeTable(supabase: any, table_id: string) {
   try {
-    console.log('[TABLE ACTIONS] Starting unmerge for table_id:', table_id);
+    logInfo('[TABLE ACTIONS] Starting unmerge for table_id:', table_id);
     
     // Get the current table info to understand its state
     const { data: currentTable, error: currentTableError } = await supabase
@@ -717,15 +718,15 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
       .single();
 
     if (currentTableError || !currentTable) {
-      console.error('[TABLE ACTIONS] Error getting current table:', currentTableError);
+      logError('[TABLE ACTIONS] Error getting current table:', currentTableError);
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
 
-    console.log('[TABLE ACTIONS] Current table:', currentTable);
+    logInfo('[TABLE ACTIONS] Current table:', currentTable);
 
     // Check if this table has a merged_with_table_id (it's a secondary table)
     if (currentTable.merged_with_table_id) {
-      console.log('[TABLE ACTIONS] This is a secondary table, using RPC function');
+      logInfo('[TABLE ACTIONS] This is a secondary table, using RPC function');
       
       // Use the database RPC function for unmerge
       const { data, error } = await supabase.rpc('api_unmerge_table', {
@@ -733,11 +734,11 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
       });
 
       if (error) {
-        console.error('[TABLE ACTIONS] Error unmerging table:', error);
+        logError('[TABLE ACTIONS] Error unmerging table:', error);
         return NextResponse.json({ error: error.message || 'Failed to unmerge table' }, { status: 400 });
       }
 
-      console.log('[TABLE ACTIONS] Unmerge completed successfully:', data);
+      logInfo('[TABLE ACTIONS] Unmerge completed successfully:', data);
       return NextResponse.json({ 
         success: true, 
         data: data 
@@ -752,12 +753,12 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
       .single();
 
     if (findError && findError.code !== 'PGRST116') {
-      console.error('[TABLE ACTIONS] Error finding secondary table:', findError);
+      logError('[TABLE ACTIONS] Error finding secondary table:', findError);
       return NextResponse.json({ error: 'Failed to find merged table' }, { status: 500 });
     }
 
     if (secondaryTable) {
-      console.log('[TABLE ACTIONS] Found secondary table, using RPC function:', secondaryTable);
+      logInfo('[TABLE ACTIONS] Found secondary table, using RPC function:', secondaryTable);
       
       // Use the database RPC function for unmerge with the secondary table ID
       const { data, error } = await supabase.rpc('api_unmerge_table', {
@@ -765,11 +766,11 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
       });
 
       if (error) {
-        console.error('[TABLE ACTIONS] Error unmerging table:', error);
+        logError('[TABLE ACTIONS] Error unmerging table:', error);
         return NextResponse.json({ error: error.message || 'Failed to unmerge table' }, { status: 400 });
       }
 
-      console.log('[TABLE ACTIONS] Unmerge completed successfully:', data);
+      logInfo('[TABLE ACTIONS] Unmerge completed successfully:', data);
       return NextResponse.json({ 
         success: true, 
         data: data 
@@ -779,14 +780,14 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
     // If no secondary table found with merged_with_table_id, this might be an old-style merge
     // Try to handle it manually by parsing the label
     if (currentTable.label && currentTable.label.includes(' merged with ')) {
-      console.log('[TABLE ACTIONS] No secondary table found, but label suggests merge. Attempting manual unmerge...');
+      logInfo('[TABLE ACTIONS] No secondary table found, but label suggests merge. Attempting manual unmerge...');
       
       // Parse the merged label to extract the original table numbers
       const parts = currentTable.label.split(' merged with ');
       const firstTableNum = parts[0].replace(/\D/g, '');
       const secondTableNum = parts[1].replace(/\D/g, '');
       
-      console.log('[TABLE ACTIONS] Parsed table numbers:', { firstTableNum, secondTableNum });
+      logInfo('[TABLE ACTIONS] Parsed table numbers:', { firstTableNum, secondTableNum });
       
       // Look for tables with these numbers in the same venue
       const { data: allTables, error: allTablesError } = await supabase
@@ -796,7 +797,7 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
         .is('merged_with_table_id', null);
       
       if (allTablesError) {
-        console.error('[TABLE ACTIONS] Error fetching all tables:', allTablesError);
+        logError('[TABLE ACTIONS] Error fetching all tables:', allTablesError);
         return NextResponse.json({ error: 'Failed to fetch tables for manual unmerge' }, { status: 500 });
       }
       
@@ -805,7 +806,7 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
       const secondTable = allTables?.find((t: any) => t.label.includes(secondTableNum) && t.id !== table_id);
       
       if (firstTable && secondTable) {
-        console.log('[TABLE ACTIONS] Found potential original tables:', { firstTable, secondTable });
+        logInfo('[TABLE ACTIONS] Found potential original tables:', { firstTable, secondTable });
         
         // Restore the current table to the first table's original state
         const { error: updateError } = await supabase
@@ -818,7 +819,7 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
           .eq('id', table_id);
         
         if (updateError) {
-          console.error('[TABLE ACTIONS] Error updating primary table:', updateError);
+          logError('[TABLE ACTIONS] Error updating primary table:', updateError);
           return NextResponse.json({ error: 'Failed to restore primary table' }, { status: 500 });
         }
         
@@ -833,11 +834,11 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
           .eq('id', secondTable.id);
         
         if (updateSecondError) {
-          console.error('[TABLE ACTIONS] Error updating secondary table:', updateSecondError);
+          logError('[TABLE ACTIONS] Error updating secondary table:', updateSecondError);
           return NextResponse.json({ error: 'Failed to restore secondary table' }, { status: 500 });
         }
         
-        console.log('[TABLE ACTIONS] Manual unmerge completed successfully');
+        logInfo('[TABLE ACTIONS] Manual unmerge completed successfully');
         return NextResponse.json({ 
           success: true, 
           data: {
@@ -852,14 +853,14 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
 
     return NextResponse.json({ error: 'No merged table found for this table' }, { status: 404 });
   } catch (error) {
-    console.error('[TABLE ACTIONS] Unexpected error unmerging table:', error);
+    logError('[TABLE ACTIONS] Unexpected error unmerging table:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 async function handleCancelReservation(supabase: any, table_id: string, reservation_id: string) {
   try {
-    console.log('[TABLE ACTIONS] Starting cancel reservation for:', { table_id, reservation_id });
+    logInfo('[TABLE ACTIONS] Starting cancel reservation for:', { table_id, reservation_id });
     
     // First, cancel the reservation in the reservations table (if it exists)
     const { error: reservationError } = await supabase
@@ -871,7 +872,7 @@ async function handleCancelReservation(supabase: any, table_id: string, reservat
       .eq('id', reservation_id);
 
     if (reservationError) {
-      console.log('[TABLE ACTIONS] Reservation table update failed (table may not exist):', reservationError);
+      logInfo('[TABLE ACTIONS] Reservation table update failed (table may not exist):', reservationError);
       // Don't fail if reservations table doesn't exist, just log the error
     }
 
@@ -884,12 +885,12 @@ async function handleCancelReservation(supabase: any, table_id: string, reservat
       .single();
 
     if (sessionError) {
-      console.error('[TABLE ACTIONS] Error fetching current session:', sessionError);
+      logError('[TABLE ACTIONS] Error fetching current session:', sessionError);
       return NextResponse.json({ error: 'Failed to fetch table session' }, { status: 500 });
     }
 
     if (!currentSession) {
-      console.error('[TABLE ACTIONS] No active session found for table:', table_id);
+      logError('[TABLE ACTIONS] No active session found for table:', table_id);
       return NextResponse.json({ error: 'No active session found' }, { status: 404 });
     }
 
@@ -903,7 +904,7 @@ async function handleCancelReservation(supabase: any, table_id: string, reservat
       .eq('id', currentSession.id);
 
     if (closeError) {
-      console.error('[TABLE ACTIONS] Error closing session:', closeError);
+      logError('[TABLE ACTIONS] Error closing session:', closeError);
       return NextResponse.json({ error: 'Failed to close session' }, { status: 500 });
     }
 
@@ -919,11 +920,11 @@ async function handleCancelReservation(supabase: any, table_id: string, reservat
       .select();
 
     if (newSessionError) {
-      console.error('[TABLE ACTIONS] Error creating new FREE session:', newSessionError);
+      logError('[TABLE ACTIONS] Error creating new FREE session:', newSessionError);
       return NextResponse.json({ error: 'Failed to create new session' }, { status: 500 });
     }
 
-    console.log('[TABLE ACTIONS] Reservation cancelled and table set to FREE successfully');
+    logInfo('[TABLE ACTIONS] Reservation cancelled and table set to FREE successfully');
     return NextResponse.json({ 
       success: true, 
       data: {
@@ -932,7 +933,7 @@ async function handleCancelReservation(supabase: any, table_id: string, reservat
       }
     });
   } catch (error) {
-    console.error('[TABLE ACTIONS] Unexpected error cancelling reservation:', error);
+    logError('[TABLE ACTIONS] Unexpected error cancelling reservation:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

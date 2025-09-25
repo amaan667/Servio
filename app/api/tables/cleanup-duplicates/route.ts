@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
       .order('label');
 
     if (tablesError) {
-      console.error('[CLEANUP DUPLICATES] Tables error:', tablesError);
+      logError('[CLEANUP DUPLICATES] Tables error:', tablesError);
       return NextResponse.json({ ok: false, error: tablesError.message }, { status: 500 });
     }
 
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, message: 'No duplicates found', duplicates_removed: 0 });
     }
 
-    console.log(`[CLEANUP DUPLICATES] Found ${duplicatesToRemove.length} duplicate tables to remove`);
+    logInfo(`[CLEANUP DUPLICATES] Found ${duplicatesToRemove.length} duplicate tables to remove`);
 
     // Check for active orders and reservations before removing duplicates
     const { data: activeOrders, error: ordersError } = await supabase
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
       .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
     if (ordersError) {
-      console.error('[CLEANUP DUPLICATES] Error checking active orders:', ordersError);
+      logError('[CLEANUP DUPLICATES] Error checking active orders:', ordersError);
       return NextResponse.json({ ok: false, error: 'Failed to check for active orders' }, { status: 500 });
     }
 
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
       .eq('status', 'BOOKED');
 
     if (reservationsError) {
-      console.error('[CLEANUP DUPLICATES] Error checking active reservations:', reservationsError);
+      logError('[CLEANUP DUPLICATES] Error checking active reservations:', reservationsError);
       return NextResponse.json({ ok: false, error: 'Failed to check for active reservations' }, { status: 500 });
     }
 
@@ -122,7 +123,7 @@ export async function POST(req: Request) {
     }
 
     if (safeToRemove.length < duplicatesToRemove.length) {
-      console.log(`[CLEANUP DUPLICATES] Skipping ${duplicatesToRemove.length - safeToRemove.length} tables with active orders/reservations`);
+      logInfo(`[CLEANUP DUPLICATES] Skipping ${duplicatesToRemove.length - safeToRemove.length} tables with active orders/reservations`);
     }
 
     // Remove duplicate tables that are safe to remove
@@ -132,7 +133,7 @@ export async function POST(req: Request) {
       .in('id', safeToRemove);
 
     if (deleteError) {
-      console.error('[CLEANUP DUPLICATES] Delete error:', deleteError);
+      logError('[CLEANUP DUPLICATES] Delete error:', deleteError);
       return NextResponse.json({ ok: false, error: deleteError.message }, { status: 500 });
     }
 
@@ -143,7 +144,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[CLEANUP DUPLICATES] Unexpected error:', error);
+    logError('[CLEANUP DUPLICATES] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

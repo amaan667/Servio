@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
-    console.log('[AUTH DEBUG] Clearing table runtime state for venue:', venue_id);
+    logInfo('[AUTH DEBUG] Clearing table runtime state for venue:', venue_id);
 
     const supabase = await createAdminClient();
 
@@ -38,14 +39,14 @@ export async function POST(request: NextRequest) {
       .eq('venue_id', venue_id);
 
     if (runtimeStateError) {
-      console.error('[AUTH DEBUG] Error clearing table runtime state:', runtimeStateError);
+      logError('[AUTH DEBUG] Error clearing table runtime state:', runtimeStateError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to clear table runtime state: ${runtimeStateError.message}` 
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Table runtime state cleared successfully for venue:', venue_id);
+    logInfo('[AUTH DEBUG] Table runtime state cleared successfully for venue:', venue_id);
 
     return NextResponse.json({ 
       ok: true, 
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[AUTH DEBUG] Error in clear tables API:', error);
+    logError('[AUTH DEBUG] Error in clear tables API:', error);
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

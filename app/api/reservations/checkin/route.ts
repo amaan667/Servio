@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('[CHECKIN] Error updating reservation:', updateError);
+      logError('[CHECKIN] Error updating reservation:', updateError);
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to check in reservation' 
@@ -84,11 +85,11 @@ export async function POST(req: NextRequest) {
       });
 
     if (tableError) {
-      console.error('[CHECKIN] Error updating table session:', tableError);
+      logError('[CHECKIN] Error updating table session:', tableError);
       // Don't fail the request, just log the error
     }
 
-    console.log('[CHECKIN] Successfully checked in reservation:', reservationId);
+    logInfo('[CHECKIN] Successfully checked in reservation:', reservationId);
 
     return NextResponse.json({
       ok: true,
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[CHECKIN] Error:', error);
+    logError('[CHECKIN] Error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Internal server error' 

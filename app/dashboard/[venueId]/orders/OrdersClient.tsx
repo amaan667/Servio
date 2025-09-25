@@ -11,6 +11,7 @@ import { todayWindowForTZ } from "@/lib/time";
 import { useTabCounts } from "@/hooks/use-tab-counts";
 import { OrderCard } from '@/components/orders/OrderCard';
 import { mapOrderToCardData } from '@/lib/orders/mapOrderToCardData';
+import { logInfo, logError } from "@/lib/logger";
 
 type OrdersClientProps = {
   venueId: string;
@@ -112,7 +113,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           .order('created_at', { ascending: false });
           
         if (fetchError) {
-          console.error('Error fetching orders:', fetchError);
+          logError('Error fetching orders:', fetchError);
           setLoading(false);
           return;
         }
@@ -121,7 +122,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       }
       
       // Categorize orders
-      console.log('[ORDERS DEBUG] Processing orders:', {
+      logInfo('[ORDERS DEBUG] Processing orders:', {
         totalOrders: allOrdersData.length,
         thirtyMinutesAgo,
         todayWindow,
@@ -148,7 +149,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
         new Date(order.created_at) < new Date(todayWindow.startUtcISO)
       );
       
-      console.log('[ORDERS DEBUG] Categorized orders:', {
+      logInfo('[ORDERS DEBUG] Categorized orders:', {
         liveOrders: liveOrders.length,
         todayOrders: todayOrders.length,
         historyOrders: historyOrders.length
@@ -182,7 +183,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       
       setLoading(false);
     } catch (error) {
-      console.error('Error loading orders:', error);
+      logError('Error loading orders:', error);
       setLoading(false);
     }
   }, [venueId, initialOrders]);
@@ -226,7 +227,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('Orders real-time update:', payload);
+          logInfo('Orders real-time update:', payload);
           loadVenueAndOrders();
         }
       )

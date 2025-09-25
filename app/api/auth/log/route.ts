@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logInfo, logError } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export const revalidate = false;
@@ -9,11 +10,11 @@ export async function POST(req: Request) {
     const timestamp = new Date().toISOString();
 
     // Print a concise, structured line for Railway logs
-    console.log("[AUTH LOG]", JSON.stringify({ timestamp, ...body }));
+    logInfo("[AUTH LOG]", JSON.stringify({ timestamp, ...body }));
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    console.error("[AUTH LOG ERROR]", { message: err?.message });
+    logError("[AUTH LOG ERROR]", { message: err?.message });
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

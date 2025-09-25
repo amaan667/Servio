@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/lib/supabase/client";
 import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar, CalendarIcon, Target, Award, TrendingDown } from "lucide-react";
+import { logInfo, logError } from "@/lib/logger";
 
 interface AnalyticsData {
   totalOrders: number;
@@ -76,7 +77,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
-      console.log('🔍 [ANALYTICS] Fetching analytics data for venue:', venueId, 'period:', timePeriod);
+      logInfo('🔍 [ANALYTICS] Fetching analytics data for venue:', venueId, 'period:', timePeriod);
       setLoading(true);
       setError(null);
 
@@ -86,7 +87,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         endDate: new Date(customDateRange.end)
       } : getDateRange(timePeriod);
 
-      console.log('🔍 [ANALYTICS] Date range:', {
+      logInfo('🔍 [ANALYTICS] Date range:', {
         period: timePeriod,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString()
@@ -108,11 +109,11 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .order('created_at', { ascending: false });
 
       if (ordersError) {
-        console.error('🔍 [ANALYTICS] Orders error:', ordersError);
+        logError('🔍 [ANALYTICS] Orders error:', ordersError);
         throw new Error(`Failed to fetch orders: ${ordersError.message}`);
       }
 
-      console.log('🔍 [ANALYTICS] Orders fetched:', orders?.length || 0);
+      logInfo('🔍 [ANALYTICS] Orders fetched:', orders?.length || 0);
 
       // Fetch menu items count
       const { data: menuItems, error: menuError } = await supabase
@@ -122,7 +123,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         .eq('available', true);
 
       if (menuError) {
-        console.error('🔍 [ANALYTICS] Menu items error:', menuError);
+        logError('🔍 [ANALYTICS] Menu items error:', menuError);
       }
 
       // Process orders data
@@ -135,7 +136,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
       const menuItemsCount = menuItems?.length || 0;
 
-      console.log('🔍 [ANALYTICS] Calculated stats:', {
+      logInfo('🔍 [ANALYTICS] Calculated stats:', {
         totalOrders,
         totalRevenue,
         averageOrderValue,
@@ -219,7 +220,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         periodOrders = periodOrdersList.length;
         
         // Debug logging for revenue calculation (kept minimal to avoid noise)
-        // console.log('🔍 [ANALYTICS REVENUE] Period calculation:', { dateStr, periodRevenue });
+        // logInfo('🔍 [ANALYTICS REVENUE] Period calculation:', { dateStr, periodRevenue });
         
         revenueOverTime.push({
           date: dateStr,
@@ -304,7 +305,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       });
 
 
-      console.log('🔍 [ANALYTICS] Generated charts data:', {
+      logInfo('🔍 [ANALYTICS] Generated charts data:', {
         revenueOverTimeDays: revenueOverTime.length,
         topSellingItemsCount: topSellingItems.length,
         revenueOverTimeSample: revenueOverTime.slice(0, 5),
@@ -328,7 +329,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       });
 
     } catch (err: any) {
-      console.error('🔍 [ANALYTICS] Error fetching analytics:', err);
+      logError('🔍 [ANALYTICS] Error fetching analytics:', err);
       setError(err.message);
     } finally {
       setLoading(false);

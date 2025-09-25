@@ -30,6 +30,7 @@ import { ReservationsPanel } from '@/components/table-management/ReservationsPan
 import { DailyResetModal } from '@/components/daily-reset/DailyResetModal';
 import { toast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
+import { logInfo, logError } from "@/lib/logger";
 
 interface TableManagementClientNewProps {
   venueId: string;
@@ -110,7 +111,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   const handleConfirmReset = async () => {
     try {
       setIsManualResetting(true);
-      console.log('🔄 [MANUAL RESET] Starting manual reset...');
+      logInfo('🔄 [MANUAL RESET] Starting manual reset...');
       
       const response = await fetch('/api/daily-reset/manual', {
         method: 'POST',
@@ -124,7 +125,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
       const result = await response.json();
 
       if (response.ok) {
-        console.log('🔄 [MANUAL RESET] Reset completed successfully:', result);
+        logInfo('🔄 [MANUAL RESET] Reset completed successfully:', result);
         
         // Refresh all data after reset
         refetchTables();
@@ -135,11 +136,11 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         setShowResetModal(false);
         alert(`Reset completed successfully!\n\nSummary:\n- Completed orders: ${result.summary.completedOrders}\n- Canceled reservations: ${result.summary.canceledReservations}\n- Deleted tables: ${result.summary.deletedTables}`);
       } else {
-        console.error('🔄 [MANUAL RESET] Reset failed:', result);
+        logError('🔄 [MANUAL RESET] Reset failed:', result);
         alert(`Reset failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('🔄 [MANUAL RESET] Error during reset:', error);
+      logError('🔄 [MANUAL RESET] Error during reset:', error);
       alert('Reset failed: Network error');
     } finally {
       setIsManualResetting(false);
@@ -244,7 +245,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('[RESERVATIONS] Real-time update:', payload);
+          logInfo('[RESERVATIONS] Real-time update:', payload);
           // Invalidate and refetch reservations data
           refetchTables();
         }
@@ -269,9 +270,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     const autoCompleteInterval = setInterval(async () => {
       try {
         await autoCompleteRef.current.mutateAsync({ venueId });
-        console.log('[AUTO COMPLETE] Checked for expired reservations');
+        logInfo('[AUTO COMPLETE] Checked for expired reservations');
       } catch (error) {
-        console.error('[AUTO COMPLETE] Error:', error);
+        logError('[AUTO COMPLETE] Error:', error);
       }
     }, 5 * 60 * 1000); // 5 minutes
 
@@ -279,9 +280,9 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
     const runInitialCheck = async () => {
       try {
         await autoCompleteRef.current.mutateAsync({ venueId });
-        console.log('[AUTO COMPLETE] Initial check for expired reservations');
+        logInfo('[AUTO COMPLETE] Initial check for expired reservations');
       } catch (error) {
-        console.error('[AUTO COMPLETE] Initial check error:', error);
+        logError('[AUTO COMPLETE] Initial check error:', error);
       }
     };
 

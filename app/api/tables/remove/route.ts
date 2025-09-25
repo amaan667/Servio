@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
     // Use admin client for database operations
     const adminSupabase = createAdminClient();
 
-    console.log(`[TABLE REMOVAL] Starting removal of tables: ${tableNumbers.join(', ')} for venue: ${venueId}`);
+    logInfo(`[TABLE REMOVAL] Starting removal of tables: ${tableNumbers.join(', ')} for venue: ${venueId}`);
 
     // Step 1: Update active orders to COMPLETED status
     const { data: updatedOrders, error: updateError } = await adminSupabase
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
       .select('id, table_number, order_status');
 
     if (updateError) {
-      console.error('[TABLE REMOVAL] Error updating orders:', updateError);
+      logError('[TABLE REMOVAL] Error updating orders:', updateError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to update orders: ${updateError.message}` 
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
       .eq('venue_id', venueId);
 
     if (tablesError) {
-      console.error('[TABLE REMOVAL] Error fetching tables:', tablesError);
+      logError('[TABLE REMOVAL] Error fetching tables:', tablesError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to fetch tables: ${tablesError.message}` 
@@ -110,7 +111,7 @@ export async function POST(req: Request) {
       .select('id, table_id');
 
     if (clearError) {
-      console.error('[TABLE REMOVAL] Error clearing table_id references:', clearError);
+      logError('[TABLE REMOVAL] Error clearing table_id references:', clearError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to clear table references: ${clearError.message}` 
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
       .select('id, label');
 
     if (tableError) {
-      console.error('[TABLE REMOVAL] Error removing tables:', tableError);
+      logError('[TABLE REMOVAL] Error removing tables:', tableError);
       return NextResponse.json({ 
         ok: false, 
         error: `Failed to remove tables: ${tableError.message}` 
@@ -146,7 +147,7 @@ export async function POST(req: Request) {
         .select('id');
 
       if (sessionError) {
-        console.error('[TABLE REMOVAL] Error removing table sessions:', sessionError);
+        logError('[TABLE REMOVAL] Error removing table sessions:', sessionError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to remove table sessions: ${sessionError.message}` 
@@ -168,7 +169,7 @@ export async function POST(req: Request) {
         .select('id');
 
       if (reservationError) {
-        console.error('[TABLE REMOVAL] Error removing reservations:', reservationError);
+        logError('[TABLE REMOVAL] Error removing reservations:', reservationError);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to remove reservations: ${reservationError.message}` 
@@ -206,12 +207,12 @@ export async function POST(req: Request) {
       }
     };
 
-    console.log(`[TABLE REMOVAL] Completed successfully:`, result.data);
+    logInfo(`[TABLE REMOVAL] Completed successfully:`, result.data);
 
     return NextResponse.json(result);
 
   } catch (error: any) {
-    console.error('[TABLE REMOVAL] Unexpected error:', error);
+    logError('[TABLE REMOVAL] Unexpected error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'An unexpected error occurred' 

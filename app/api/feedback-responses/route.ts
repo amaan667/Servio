@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { FeedbackAnswer } from '@/types/feedback';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
         .eq('is_active', true);
 
       if (questionsError) {
-        console.error('[FEEDBACK][R] questions fetch error:', questionsError.message);
+        logError('[FEEDBACK][R] questions fetch error:', questionsError.message);
         return NextResponse.json({ error: 'Failed to validate questions' }, { status: 500 });
       }
       
@@ -160,7 +161,7 @@ export async function POST(req: Request) {
           customerName = orderData.customer_name;
         }
       } catch (error) {
-        console.log('[FEEDBACK] Could not fetch customer name from order:', error);
+        logInfo('[FEEDBACK] Could not fetch customer name from order:', error);
       }
     }
 
@@ -187,20 +188,20 @@ export async function POST(req: Request) {
       .select('id');
 
     if (error) {
-      console.error('[FEEDBACK][R] insert error:', error.message);
+      logError('[FEEDBACK][R] insert error:', error.message);
       return NextResponse.json({ 
         error: 'Failed to save responses' 
       }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK][R] insert venue=${venue_id} count=${data?.length || 0}`);
+    logInfo(`[FEEDBACK][R] insert venue=${venue_id} count=${data?.length || 0}`);
     return NextResponse.json({
       success: true,
       saved_count: data?.length || 0
     });
 
   } catch (error: any) {
-    console.error('[FEEDBACK][R] insert exception:', error.message);
+    logError('[FEEDBACK][R] insert exception:', error.message);
     return NextResponse.json({ 
       error: 'Failed to submit feedback' 
     }, { status: 500 });

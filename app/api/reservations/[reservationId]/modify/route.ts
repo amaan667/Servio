@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -76,14 +77,14 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ reserva
       .single();
 
     if (updateError) {
-      console.error('[MODIFY RESERVATION] Error updating reservation:', updateError);
+      logError('[MODIFY RESERVATION] Error updating reservation:', updateError);
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to modify reservation' 
       }, { status: 500 });
     }
 
-    console.log('[MODIFY RESERVATION] Successfully modified reservation:', reservationId);
+    logInfo('[MODIFY RESERVATION] Successfully modified reservation:', reservationId);
 
     return NextResponse.json({
       ok: true,
@@ -91,7 +92,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ reserva
     });
 
   } catch (error: any) {
-    console.error('[MODIFY RESERVATION] Error:', error);
+    logError('[MODIFY RESERVATION] Error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Internal server error' 

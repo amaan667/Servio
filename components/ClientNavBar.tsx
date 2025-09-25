@@ -11,6 +11,7 @@ import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
 
 import { signOutUser } from "@/lib/supabase";
+import { logInfo, logError } from "@/lib/logger";
 
 export default function ClientNavBar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -28,7 +29,7 @@ export default function ClientNavBar() {
   // Debug logging for authentication state (reduced)
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[NAV DEBUG] Authentication state changed:', {
+      logInfo('[NAV DEBUG] Authentication state changed:', {
         loading,
         hasSession: !!session,
         hasUser: !!session?.user,
@@ -64,7 +65,7 @@ export default function ClientNavBar() {
             setPrimaryVenueId(data[0].venue_id);
           }
         } catch (err) {
-          console.error('Error fetching primary venue:', err);
+          logError('Error fetching primary venue:', err);
         }
       } else {
         setPrimaryVenueId(null);
@@ -76,7 +77,7 @@ export default function ClientNavBar() {
 
   const handleSignOut = async () => {
     try {
-      console.log('[AUTH DEBUG] Starting sign out process');
+      logInfo('[AUTH DEBUG] Starting sign out process');
       
       // Call unified API signout to clear cookies server-side
       const response = await fetch('/api/auth/signout', { 
@@ -85,9 +86,9 @@ export default function ClientNavBar() {
       });
       
       if (!response.ok) {
-        console.log('[AUTH DEBUG] Server-side sign out failed');
+        logInfo('[AUTH DEBUG] Server-side sign out failed');
       } else {
-        console.log('[AUTH DEBUG] Server-side sign out successful');
+        logInfo('[AUTH DEBUG] Server-side sign out successful');
       }
       
       // Clear client storage to avoid auto sign-in or stale sessions
@@ -95,7 +96,7 @@ export default function ClientNavBar() {
         const { clearAuthStorage } = await import('@/lib/sb-client');
         clearAuthStorage();
       } catch (error) {
-        console.log('[AUTH DEBUG] Error clearing client storage:', error);
+        logInfo('[AUTH DEBUG] Error clearing client storage:', error);
       }
       
       // Use the auth provider's signOut method
@@ -104,9 +105,9 @@ export default function ClientNavBar() {
       // Force redirect to home page
       router.replace('/');
       
-      console.log('[AUTH DEBUG] Sign out completed, redirected to home');
+      logInfo('[AUTH DEBUG] Sign out completed, redirected to home');
     } catch (error) {
-      console.error('[AUTH DEBUG] Sign out error:', error);
+      logError('[AUTH DEBUG] Sign out error:', error);
       // Force redirect even if there's an error
       router.replace('/');
     }

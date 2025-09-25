@@ -4,9 +4,10 @@ export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
-import { log } from '@/lib/debug';
+// import { log } from '@/lib/debug'; // Removed debug import
 import { EnhancedFeedbackSystem } from '@/components/enhanced-feedback-system';
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
+import { logError } from "@/lib/logger";
 
 export default async function FeedbackPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
@@ -23,7 +24,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
     log('FEEDBACK PAGE SSR user', { hasUser: !!user, error: userError?.message });
     
     if (userError) {
-      console.error('Auth error:', userError);
+      logError('Auth error:', userError);
       redirect('/sign-in');
     }
     
@@ -39,7 +40,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
       .maybeSingle();
 
     if (venueError) {
-      console.error('Database error:', venueError);
+      logError('Database error:', venueError);
       redirect('/?auth_error=database_error');
     }
     
@@ -76,7 +77,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
       </div>
     );
   } catch (error) {
-    console.error('Feedback page error:', error);
+    logError('Feedback page error:', error);
     redirect('/?auth_error=server_error');
   }
 }

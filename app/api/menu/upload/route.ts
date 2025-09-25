@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -18,7 +19,7 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
 export async function POST(req: Request) {
   const supa = admin();
   try {
-    console.log('[MENU_UPLOAD] start', {
+    logInfo('[MENU_UPLOAD] start', {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     });
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
       // Expect this to fail harmlessly if a security defers creation; DDL should be applied via scripts as the primary path.
       await supa.from('menu_uploads' as any).select('id').limit(1);
     } catch (e) {
-      console.warn('[MENU_UPLOAD] menu_uploads not accessible yet');
+      logWarn('[MENU_UPLOAD] menu_uploads not accessible yet');
     }
     // Note: primary table creation should be done via scripts/menu-upload-schema.sql
     // Included here as documentation for desired RLS settings:
@@ -81,7 +82,7 @@ export async function POST(req: Request) {
       .eq('sha256', hash)
       .maybeSingle();
     if (selErr) {
-      console.error('[MENU_UPLOAD] select cache error', selErr);
+      logError('[MENU_UPLOAD] select cache error', selErr);
     }
     let uploadId: string | null = existing?.id ?? null;
     if (!existing) {
@@ -94,7 +95,7 @@ export async function POST(req: Request) {
         .select('id')
         .maybeSingle();
       if (insErr) {
-        console.error('[MENU_UPLOAD] insert error', insErr);
+        logError('[MENU_UPLOAD] insert error', insErr);
         return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 });
       }
       uploadId = ins?.id ?? null;
@@ -102,7 +103,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, upload_id: uploadId, sha256: hash, path });
   } catch (e: any) {
-    console.error('[MENU_UPLOAD] fatal', e);
+    logError('[MENU_UPLOAD] fatal', e);
     return NextResponse.json({ ok: false, error: e?.message || 'upload failed' }, { status: 500 });
   }
 }

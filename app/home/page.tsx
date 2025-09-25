@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, QrCode, BarChart3 } from "lucide-react";
+import { logInfo, logError } from "@/lib/logger";
 
 // This component will show home page content for both authenticated and non-authenticated users
 export default function HomePage() {
@@ -24,23 +25,23 @@ export default function HomePage() {
 
     async function checkAuth() {
       try {
-        console.log('[HOME PAGE] Checking authentication...');
+        logInfo('[HOME PAGE] Checking authentication...');
         const { data: { user }, error } = await supabase.auth.getUser();
         
-        console.log('[HOME PAGE] Auth check result:', { user: !!user, error });
+        logInfo('[HOME PAGE] Auth check result:', { user: !!user, error });
         
         if (error || !user) {
           // If no authenticated user, show public home page
-          console.log('[HOME PAGE] No authenticated user, showing public content');
+          logInfo('[HOME PAGE] No authenticated user, showing public content');
           setUser(null);
         } else {
           // User is authenticated, show authenticated home page
-          console.log('[HOME PAGE] User authenticated:', user.email);
+          logInfo('[HOME PAGE] User authenticated:', user.email);
           setUser(user);
         }
       } catch (error) {
         // On error, show public home page
-        console.error('[HOME PAGE] Auth check error:', error);
+        logError('[HOME PAGE] Auth check error:', error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -52,7 +53,7 @@ export default function HomePage() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-      console.log('[HOME PAGE] Auth state changed:', event, session?.user?.email);
+      logInfo('[HOME PAGE] Auth state changed:', event, session?.user?.email);
       if (session?.user) {
         setUser(session.user);
       } else {

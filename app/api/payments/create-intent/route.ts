@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ENV } from '@/lib/env';
+import { logInfo, logError } from "@/lib/logger";
 
 const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-08-27.basil',
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[PAYMENT INTENT] Creating payment intent:', {
+    logInfo('[PAYMENT INTENT] Creating payment intent:', {
       cartId,
       venueId,
       tableNumber,
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
       idempotencyKey: `pi_${cartId}`,
     });
 
-    console.log('[PAYMENT INTENT] Created successfully:', {
+    logInfo('[PAYMENT INTENT] Created successfully:', {
       id: paymentIntent.id,
       amount: paymentIntent.amount,
       status: paymentIntent.status,
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[PAYMENT INTENT] Error:', error);
+    logError('[PAYMENT INTENT] Error:', error);
     
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(

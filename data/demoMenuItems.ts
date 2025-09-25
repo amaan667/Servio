@@ -14,7 +14,7 @@ export const demoMenuItems = [
     description: "Smooth espresso with steamed milk",
     price: 4.00,
     category: "Coffee",
-    image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=200&fit=crop&crop=center",
+    image: "https://images.unsplash.com/photo-1561882468-91149174848b?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "3",

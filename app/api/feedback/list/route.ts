@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { cookieAdapter } from '@/lib/server/supabase';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (venueError || !venue) {
-      console.log('[AUTH DEBUG] Venue access denied:', venueError?.message);
+      logInfo('[AUTH DEBUG] Venue access denied:', venueError?.message);
       return NextResponse.json({ 
         ok: false, 
         error: 'Access denied to this venue' 
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[AUTH DEBUG] Error fetching feedback:', error);
+      logError('[AUTH DEBUG] Error fetching feedback:', error);
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to fetch feedback' 
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[AUTH DEBUG] Error in feedback list:', error);
+    logError('[AUTH DEBUG] Error in feedback list:', error);
     return NextResponse.json({ 
       ok: false, 
       error: `Failed to fetch feedback: ${error.message}` 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,11 +25,11 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    console.log('[CATEGORIES API] Upload data for venue', venueId, ':', uploadData);
-    console.log('[CATEGORIES API] Upload error:', uploadError);
+    logInfo('[CATEGORIES API] Upload data for venue', venueId, ':', uploadData);
+    logInfo('[CATEGORIES API] Upload error:', uploadError);
 
     if (uploadError) {
-      console.error('[CATEGORIES API] Error fetching category order:', uploadError);
+      logError('[CATEGORIES API] Error fetching category order:', uploadError);
       return NextResponse.json(
         { error: 'Failed to fetch category order' },
         { status: 500 }
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
       .eq('venue_id', venueId);
 
     if (menuError) {
-      console.error('[CATEGORIES API] Error fetching menu items:', menuError);
+      logError('[CATEGORIES API] Error fetching menu items:', menuError);
       return NextResponse.json(
         { error: 'Failed to fetch menu items' },
         { status: 500 }
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
       orderedCategories = [...storedOrder, ...newCategories];
     }
 
-    console.log('[CATEGORIES API] Returning data:', {
+    logInfo('[CATEGORIES API] Returning data:', {
       categories: orderedCategories,
       originalCategories: uploadData?.category_order || [],
       hasStoredOrder: !!uploadData?.category_order,
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[CATEGORIES API] Unexpected error:', error);
+    logError('[CATEGORIES API] Unexpected error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -108,7 +109,7 @@ export async function PUT(request: NextRequest) {
       .maybeSingle();
 
     if (fetchError) {
-      console.error('[CATEGORIES API] Error fetching existing upload:', fetchError);
+      logError('[CATEGORIES API] Error fetching existing upload:', fetchError);
       return NextResponse.json(
         { error: 'Failed to fetch existing upload' },
         { status: 500 }
@@ -118,7 +119,7 @@ export async function PUT(request: NextRequest) {
     // For now, just return success without persisting to database
     // The category order will be maintained in the frontend state
     // TODO: Implement proper database persistence when schema is confirmed
-    console.log('[CATEGORIES API] Category order updated (in memory only):', categories);
+    logInfo('[CATEGORIES API] Category order updated (in memory only):', categories);
 
     return NextResponse.json({ 
       success: true, 
@@ -127,7 +128,7 @@ export async function PUT(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[CATEGORIES API] Unexpected error:', error);
+    logError('[CATEGORIES API] Unexpected error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (fetchError) {
-      console.error('[CATEGORIES API] Error fetching category order:', fetchError);
+      logError('[CATEGORIES API] Error fetching category order:', fetchError);
       return NextResponse.json(
         { error: 'Failed to fetch category order' },
         { status: 500 }
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
         .eq('id', existingUpload.id);
 
       if (updateError) {
-        console.error('[CATEGORIES API] Error updating category order:', updateError);
+        logError('[CATEGORIES API] Error updating category order:', updateError);
         return NextResponse.json(
           { error: 'Failed to update category order' },
           { status: 500 }
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // For now, just return success without persisting to database
-      console.log('[CATEGORIES API] New category added (in memory only):', categoryName);
+      logInfo('[CATEGORIES API] New category added (in memory only):', categoryName);
     }
 
     return NextResponse.json({ 
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[CATEGORIES API] Unexpected error:', error);
+    logError('[CATEGORIES API] Unexpected error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -30,7 +30,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { 
+import { logError } from "@/lib/logger";
+import {
   getTableState, 
   getMergeScenario, 
   getMergeableTables,
@@ -108,7 +109,7 @@ export function EnhancedTableMergeDialog({
       onActionComplete?.();
       onClose();
     } catch (error) {
-      console.error('Merge failed:', error);
+      logError('Merge failed:', error);
     } finally {
       setIsLoading(false);
     }

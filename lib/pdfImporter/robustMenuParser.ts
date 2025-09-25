@@ -6,6 +6,7 @@
 import { getOpenAI } from '../openai';
 import { getPrompt } from './gptPrompts';
 import { repairAndValidateMenuJSON, validateMenuJSON } from './jsonRepair';
+import { logInfo, logError } from "@/lib/logger";
 
 export interface MenuParsingResult {
   success: boolean;
@@ -44,15 +45,15 @@ export async function parseMenuWithGPT(
   const startTime = Date.now();
   const finalOptions = { ...DEFAULT_OPTIONS, ...options };
   
-  console.log('[ROBUST_PARSER] Starting menu parsing...');
-  console.log('[ROBUST_PARSER] Options:', finalOptions);
+  logInfo('[ROBUST_PARSER] Starting menu parsing...');
+  logInfo('[ROBUST_PARSER] Options:', finalOptions);
   
   let lastError: string = '';
   let attempts = 0;
   
   for (attempts = 1; attempts <= finalOptions.maxRetries; attempts++) {
     try {
-      console.log(`[ROBUST_PARSER] Attempt ${attempts}/${finalOptions.maxRetries}`);
+      logInfo(`[ROBUST_PARSER] Attempt ${attempts}/${finalOptions.maxRetries}`);
       
       // Step 1: Extract menu with GPT
       const extractedJSON = await extractMenuWithGPT(menuText, finalOptions);
@@ -61,7 +62,7 @@ export async function parseMenuWithGPT(
       if (finalOptions.enableValidation) {
         const validation = validateMenuJSON(extractedJSON);
         if (validation.valid) {
-          console.log('[ROBUST_PARSER] JSON validation passed');
+          logInfo('[ROBUST_PARSER] JSON validation passed');
           return {
             success: true,
             items: validation.items,
@@ -70,7 +71,7 @@ export async function parseMenuWithGPT(
             processingTime: Date.now() - startTime
           };
         } else {
-          console.log('[ROBUST_PARSER] JSON validation failed:', validation.errors);
+          logInfo('[ROBUST_PARSER] JSON validation failed:', validation.errors);
           lastError = validation.errors.join(', ');
         }
       } else {
@@ -86,11 +87,11 @@ export async function parseMenuWithGPT(
       
       // Step 3: Try to repair JSON if validation failed
       if (finalOptions.enableRepair && attempts < finalOptions.maxRetries) {
-        console.log('[ROBUST_PARSER] Attempting JSON repair...');
+        logInfo('[ROBUST_PARSER] Attempting JSON repair...');
         const repairResult = repairAndValidateMenuJSON(extractedJSON);
         
         if (repairResult.success) {
-          console.log('[ROBUST_PARSER] JSON repair successful');
+          logInfo('[ROBUST_PARSER] JSON repair successful');
           return {
             success: true,
             items: repairResult.items!,
@@ -100,18 +101,18 @@ export async function parseMenuWithGPT(
             processingTime: Date.now() - startTime
           };
         } else {
-          console.log('[ROBUST_PARSER] JSON repair failed:', repairResult.errors);
+          logInfo('[ROBUST_PARSER] JSON repair failed:', repairResult.errors);
           lastError = repairResult.errors?.join(', ') || 'Repair failed';
         }
       }
       
       // Step 4: Try GPT repair if automatic repair failed
       if (attempts < finalOptions.maxRetries) {
-        console.log('[ROBUST_PARSER] Attempting GPT repair...');
+        logInfo('[ROBUST_PARSER] Attempting GPT repair...');
         const gptRepairResult = await repairJSONWithGPT(extractedJSON, lastError, finalOptions);
         
         if (gptRepairResult.success) {
-          console.log('[ROBUST_PARSER] GPT repair successful');
+          logInfo('[ROBUST_PARSER] GPT repair successful');
           return {
             success: true,
             items: gptRepairResult.items!,
@@ -121,13 +122,13 @@ export async function parseMenuWithGPT(
             processingTime: Date.now() - startTime
           };
         } else {
-          console.log('[ROBUST_PARSER] GPT repair failed:', gptRepairResult.errors);
+          logInfo('[ROBUST_PARSER] GPT repair failed:', gptRepairResult.errors);
           lastError = gptRepairResult.errors?.join(', ') || 'GPT repair failed';
         }
       }
       
     } catch (error: any) {
-      console.error(`[ROBUST_PARSER] Attempt ${attempts} failed:`, error);
+      logError(`[ROBUST_PARSER] Attempt ${attempts} failed:`, error);
       lastError = error.message;
       
       if (attempts === finalOptions.maxRetries) {
@@ -139,7 +140,7 @@ export async function parseMenuWithGPT(
     }
   }
   
-  console.error('[ROBUST_PARSER] All attempts failed');
+  logError('[ROBUST_PARSER] All attempts failed');
   return {
     success: false,
     items: [],
@@ -276,11 +277,11 @@ export async function parseMenuInBatches(
   const finalOptions = { ...DEFAULT_OPTIONS, ...options };
   const batchSize = finalOptions.batchSize || 2000; // characters per batch
   
-  console.log('[ROBUST_PARSER] Parsing menu in batches...');
+  logInfo('[ROBUST_PARSER] Parsing menu in batches...');
   
   // Split menu text into batches
   const batches = splitTextIntoBatches(menuText, batchSize);
-  console.log(`[ROBUST_PARSER] Split into ${batches.length} batches`);
+  logInfo(`[ROBUST_PARSER] Split into ${batches.length} batches`);
   
   const allItems: any[] = [];
   const allErrors: string[] = [];
@@ -288,7 +289,7 @@ export async function parseMenuInBatches(
   
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
-    console.log(`[ROBUST_PARSER] Processing batch ${i + 1}/${batches.length}`);
+    logInfo(`[ROBUST_PARSER] Processing batch ${i + 1}/${batches.length}`);
     
     const batchResult = await parseMenuWithGPT(batch, {
       ...finalOptions,

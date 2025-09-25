@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { logInfo, logError } from "@/lib/logger";
 
 interface OrderItem {
   menu_item_id: string;
@@ -175,7 +176,7 @@ export default function OrderSummaryPage() {
         .single();
 
       if (error) {
-        console.error('Failed to fetch order:', error);
+        logError('Failed to fetch order:', error);
         setError('Order not found or access denied');
         return;
       }
@@ -183,7 +184,7 @@ export default function OrderSummaryPage() {
       setOrder(data);
       setLastUpdate(new Date());
     } catch (err) {
-      console.error('Error fetching order:', err);
+      logError('Error fetching order:', err);
       setError('Failed to load order details');
     } finally {
       setLoading(false);
@@ -202,7 +203,7 @@ export default function OrderSummaryPage() {
         .order('sort_index', { ascending: true });
 
       if (error) {
-        console.error('Failed to fetch feedback questions:', error);
+        logError('Failed to fetch feedback questions:', error);
         // Use generic questions as fallback
         setFeedbackQuestions(GENERIC_QUESTIONS);
         return;
@@ -215,7 +216,7 @@ export default function OrderSummaryPage() {
         setFeedbackQuestions(GENERIC_QUESTIONS);
       }
     } catch (err) {
-      console.error('Error fetching feedback questions:', err);
+      logError('Error fetching feedback questions:', err);
       setFeedbackQuestions(GENERIC_QUESTIONS);
     }
   };
@@ -233,7 +234,7 @@ export default function OrderSummaryPage() {
   useEffect(() => {
     // Set up real-time subscription for order updates
     if (supabase && orderId) {
-      console.log('Setting up real-time subscription for order:', orderId);
+      logInfo('Setting up real-time subscription for order:', orderId);
       
       const channel = supabase
         .channel(`order-summary-${orderId}`)
@@ -246,10 +247,10 @@ export default function OrderSummaryPage() {
             filter: `id=eq.${orderId}`,
           },
           (payload: any) => {
-            console.log('Order update detected:', payload);
+            logInfo('Order update detected:', payload);
             
             if (payload.eventType === 'UPDATE') {
-              console.log('Order status updated:', {
+              logInfo('Order status updated:', {
                 oldStatus: payload.old?.order_status,
                 newStatus: payload.new?.order_status,
                 orderId: payload.new?.id
@@ -262,7 +263,7 @@ export default function OrderSummaryPage() {
               
               setLastUpdate(new Date());
             } else if (payload.eventType === 'DELETE') {
-              console.log('Order deleted:', payload.old);
+              logInfo('Order deleted:', payload.old);
               setError('This order has been cancelled or deleted');
             }
           }
@@ -270,7 +271,7 @@ export default function OrderSummaryPage() {
         .subscribe();
 
       return () => {
-        console.log('Cleaning up real-time subscription');
+        logInfo('Cleaning up real-time subscription');
         supabase.removeChannel(channel);
       };
     }
@@ -384,7 +385,7 @@ export default function OrderSummaryPage() {
         });
       }
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      logError('Error submitting feedback:', error);
       toast({
         title: "Error",
         description: "Failed to submit feedback. Please try again.",

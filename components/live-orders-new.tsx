@@ -10,9 +10,10 @@ import { createClient } from "@/lib/supabase/client";
 import { OrderCard } from "@/components/orders/OrderCard";
 import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
 import { deriveEntityKind } from "@/lib/orders/entity-types";
-import { logger } from "@/lib/logger";
+import { logInfo, logError } from "@/lib/logger";
 import { useTabCounts } from '@/hooks/use-tab-counts';
 import { useCountsRealtime } from '@/hooks/use-counts-realtime';
+import { logInfo, logError } from "@/lib/logger";
 
 interface Order {
   id: string;
@@ -95,35 +96,35 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     endOfDay.setDate(startOfDay.getDate() + 1);
     const endUtc = new Date(endOfDay.getTime() - (endOfDay.getTimezoneOffset() * 60000));
     
-    console.log(`[LIVE_ORDERS] Timezone calculation for ${tz}:`);
-    console.log(`  - now: ${now.toISOString()}`);
-    console.log(`  - now in venue timezone: ${now.toLocaleString('en-US', { timeZone: tz })}`);
-    console.log(`  - venueDate: ${startOfDay.toISOString()}`);
-    console.log(`  - startOfDay: ${startOfDay.toISOString()}`);
-    console.log(`  - startUtc: ${startUtc.toISOString()}`);
-    console.log(`  - endOfDay: ${endOfDay.toISOString()}`);
-    console.log(`  - endUtc: ${endUtc.toISOString()}`);
+    logInfo(`[LIVE_ORDERS] Timezone calculation for ${tz}:`);
+    logInfo(`  - now: ${now.toISOString()}`);
+    logInfo(`  - now in venue timezone: ${now.toLocaleString('en-US', { timeZone: tz })}`);
+    logInfo(`  - venueDate: ${startOfDay.toISOString()}`);
+    logInfo(`  - startOfDay: ${startOfDay.toISOString()}`);
+    logInfo(`  - startUtc: ${startUtc.toISOString()}`);
+    logInfo(`  - endOfDay: ${endOfDay.toISOString()}`);
+    logInfo(`  - endUtc: ${endUtc.toISOString()}`);
     
     return { startUtc: startUtc.toISOString(), endUtc: endUtc.toISOString() };
   }, []);
 
   const fetchOrders = useCallback(async (tab: 'live' | 'earlier' | 'history', background: boolean = false) => {
-    console.log('[FETCH_ORDERS] ===== FETCHING ORDERS =====');
-    console.log('[FETCH_ORDERS] Tab:', tab.toUpperCase());
-    console.log('[FETCH_ORDERS] Venue ID:', venueId);
-    console.log('[FETCH_ORDERS] Venue Timezone:', venueTimezone);
-    console.log('[FETCH_ORDERS] Background:', background);
-    console.log('[FETCH_ORDERS] Current Orders Count:', orders.length);
+    logInfo('[FETCH_ORDERS] ===== FETCHING ORDERS =====');
+    logInfo('[FETCH_ORDERS] Tab:', tab.toUpperCase());
+    logInfo('[FETCH_ORDERS] Venue ID:', venueId);
+    logInfo('[FETCH_ORDERS] Venue Timezone:', venueTimezone);
+    logInfo('[FETCH_ORDERS] Background:', background);
+    logInfo('[FETCH_ORDERS] Current Orders Count:', orders.length);
     if (!venueId) {
-      console.log('[LIVE_ORDERS] No venueId, returning early');
+      logInfo('[LIVE_ORDERS] No venueId, returning early');
       setLoading(false);
       return;
     }
 
-    console.log(`[LIVE_ORDERS] Starting fetchOrders for tab: ${tab}, venueId: ${venueId}`);
+    logInfo(`[LIVE_ORDERS] Starting fetchOrders for tab: ${tab}, venueId: ${venueId}`);
     if (isFetchingRef.current) {
       // avoid overlapping refreshes which cause flicker
-      console.log('[LIVE_ORDERS] A fetch is already in progress, skipping');
+      logInfo('[LIVE_ORDERS] A fetch is already in progress, skipping');
       return;
     }
     isFetchingRef.current = true;
@@ -142,14 +143,14 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         throw new Error('Supabase client not available');
       }
 
-      console.log(`[LIVE_ORDERS] Supabase client created successfully`);
+      logInfo(`[LIVE_ORDERS] Supabase client created successfully`);
 
       const { startUtc, endUtc } = todayBoundsCorrected(venueTimezone);
-      console.log(`[LIVE_ORDERS] Fetching ${tab} orders for venue:`, venueId);
-      console.log(`[LIVE_ORDERS] Time bounds:`, { startUtc, endUtc });
+      logInfo(`[LIVE_ORDERS] Fetching ${tab} orders for venue:`, venueId);
+      logInfo(`[LIVE_ORDERS] Time bounds:`, { startUtc, endUtc });
 
       // First, let's check what orders exist in the database for this venue
-      console.log(`[LIVE_ORDERS] Checking all orders for venue ${venueId}...`);
+      logInfo(`[LIVE_ORDERS] Checking all orders for venue ${venueId}...`);
       const { data: allOrders, error: allOrdersError } = await supabase
         .from('orders')
         .select('id, order_status, payment_status, created_at, total_amount')
@@ -157,9 +158,9 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         .limit(10);
 
       if (allOrdersError) {
-        console.error(`[LIVE_ORDERS] Error fetching all orders:`, allOrdersError);
+        logError(`[LIVE_ORDERS] Error fetching all orders:`, allOrdersError);
       } else {
-        console.log(`[LIVE_ORDERS] All orders found:`, allOrders);
+        logInfo(`[LIVE_ORDERS] All orders found:`, allOrders);
       }
 
       // Build query based on tab requirements
@@ -167,21 +168,21 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         .from('orders')
         .select('*')
         .eq('venue_id', venueId);
-      console.log(`[LIVE_ORDERS] Using orders table directly`);
+      logInfo(`[LIVE_ORDERS] Using orders table directly`);
 
       if (tab === 'live') {
         // Live orders: active statuses from today AND within 30 minutes
         const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-        console.log(`[LIVE_ORDERS] Live tab - Current time: ${new Date().toISOString()}`);
-        console.log(`[LIVE_ORDERS] Live tab - 30 minutes ago: ${thirtyMinutesAgo}`);
+        logInfo(`[LIVE_ORDERS] Live tab - Current time: ${new Date().toISOString()}`);
+        logInfo(`[LIVE_ORDERS] Live tab - 30 minutes ago: ${thirtyMinutesAgo}`);
         
         query = query
           .in('order_status', ACTIVE_STATUSES)
           .in('payment_status', ['PAID', 'UNPAID']) // Include both paid and unpaid orders
           .gte('created_at', thirtyMinutesAgo) // Only orders created within last 30 minutes
           .order('created_at', { ascending: false });
-        console.log(`[LIVE_ORDERS] Live query with statuses:`, ACTIVE_STATUSES);
-        console.log(`[LIVE_ORDERS] Live query time filter: >= ${thirtyMinutesAgo}`);
+        logInfo(`[LIVE_ORDERS] Live query with statuses:`, ACTIVE_STATUSES);
+        logInfo(`[LIVE_ORDERS] Live query time filter: >= ${thirtyMinutesAgo}`);
       } else if (tab === 'earlier') {
         // Earlier today: orders from today but more than 30 minutes ago
         const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
@@ -190,38 +191,38 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           .gte('created_at', startUtc)
           .lt('created_at', thirtyMinutesAgo) // Before 30 minutes ago
           .order('created_at', { ascending: false });
-        console.log(`[LIVE_ORDERS] Earlier query - orders from today before 30 minutes ago`);
+        logInfo(`[LIVE_ORDERS] Earlier query - orders from today before 30 minutes ago`);
       } else if (tab === 'history') {
         // History: All orders from previous days (regardless of status)
         query = query
           .in('payment_status', ['PAID', 'UNPAID']) // Include both paid and unpaid orders
           .lt('created_at', startUtc)
           .order('created_at', { ascending: false });
-        console.log(`[LIVE_ORDERS] History query for all orders before:`, startUtc);
+        logInfo(`[LIVE_ORDERS] History query for all orders before:`, startUtc);
       }
 
-      console.log(`[LIVE_ORDERS] Executing query for ${tab}...`);
-      console.log(`[LIVE_ORDERS] Query details:`, { tab, venueId, startUtc, endUtc });
+      logInfo(`[LIVE_ORDERS] Executing query for ${tab}...`);
+      logInfo(`[LIVE_ORDERS] Query details:`, { tab, venueId, startUtc, endUtc });
       
       const { data, error: queryError } = await query;
-      console.log(`[LIVE_ORDERS] Query completed, checking for errors...`);
+      logInfo(`[LIVE_ORDERS] Query completed, checking for errors...`);
 
       if (queryError) {
-        console.error(`[LIVE_ORDERS] Query error for ${tab}:`, queryError);
+        logError(`[LIVE_ORDERS] Query error for ${tab}:`, queryError);
         
         // Fallback: get all orders and filter in JavaScript
-        console.log(`[LIVE_ORDERS] Trying fallback approach...`);
+        logInfo(`[LIVE_ORDERS] Trying fallback approach...`);
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('orders')
           .select('*')
           .eq('venue_id', venueId);
         
         if (fallbackError) {
-          console.error(`[LIVE_ORDERS] Fallback also failed:`, fallbackError);
+          logError(`[LIVE_ORDERS] Fallback also failed:`, fallbackError);
           throw queryError; // Throw original error
         }
         
-        console.log(`[LIVE_ORDERS] Fallback data:`, fallbackData);
+        logInfo(`[LIVE_ORDERS] Fallback data:`, fallbackData);
         
         // Filter orders in JavaScript based on tab
         let filteredOrders = fallbackData || [];
@@ -231,7 +232,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         const today = new Date(startUtc);
         const tomorrow = new Date(endUtc);
         
-        console.log(`[LIVE_ORDERS] Date filtering:`, {
+        logInfo(`[LIVE_ORDERS] Date filtering:`, {
           now: now.toISOString(),
           today: today.toISOString(),
           tomorrow: tomorrow.toISOString(),
@@ -253,7 +254,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             const thirtyMinutes = 30 * 60 * 1000;
             const isNotExpired = orderAge < thirtyMinutes;
 
-            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isActive=${isActive}, isRecentTerminal=${isRecentTerminal}, isToday=${isToday}, isNotExpired=${isNotExpired}`);
+            logInfo(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isActive=${isActive}, isRecentTerminal=${isRecentTerminal}, isToday=${isToday}, isNotExpired=${isNotExpired}`);
             // CRITICAL: Only active orders should appear in live tab, never terminal orders
             return isActive && isToday && isNotExpired;
           });
@@ -270,7 +271,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
             const isExpiredLive = orderAge >= thirtyMinutes && ACTIVE_STATUSES.includes(status);
             const isRecentTerminal = RECENT_TERMINAL_IN_LIVE.includes(status) && orderAge < thirtyMinutes;
 
-            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isTerminal=${isTerminal}, isToday=${isToday}, isExpiredLive=${isExpiredLive}, isRecentTerminal=${isRecentTerminal}`);
+            logInfo(`[LIVE_ORDERS] Order ${order.id}: status=${status}, created=${created.toISOString()}, isTerminal=${isTerminal}, isToday=${isToday}, isExpiredLive=${isExpiredLive}, isRecentTerminal=${isRecentTerminal}`);
             // Earlier Today includes ALL today's orders that are not currently in live (terminal orders + expired active orders)
             return isToday && (isTerminal || isExpiredLive);
           });
@@ -278,7 +279,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           filteredOrders = filteredOrders.filter((order: any) => {
             const created = new Date(order.created_at);
             const isBeforeToday = created < today;
-            console.log(`[LIVE_ORDERS] Order ${order.id}: status=${order.order_status || order.status}, created=${created.toISOString()}, isBeforeToday=${isBeforeToday}`);
+            logInfo(`[LIVE_ORDERS] Order ${order.id}: status=${order.order_status || order.status}, created=${created.toISOString()}, isBeforeToday=${isBeforeToday}`);
             return isBeforeToday; // Show all orders from previous days regardless of status
           });
         }
@@ -362,14 +363,14 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
       setLocalCounts({ live_count, earlier_today_count, history_count });
     } catch (err) {
-      console.error('[LIVE_ORDERS] Failed to recalc local counts', err);
+      logError('[LIVE_ORDERS] Failed to recalc local counts', err);
     }
   }, [venueId, venueTimezone, todayBoundsCorrected, ACTIVE_STATUSES]);
 
   // Auto-refresh orders and counts every 15 seconds to handle aging orders
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('[LIVE_ORDERS] Auto-refreshing orders due to time passage...');
+      logInfo('[LIVE_ORDERS] Auto-refreshing orders due to time passage...');
       fetchOrders(activeTab, true);
       refetchCounts();
       recalcLocalCounts();
@@ -378,7 +379,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     return () => clearInterval(interval);
   }, [fetchOrders, activeTab, refetchCounts, recalcLocalCounts]);
 
-  console.log('[LIVE_ORDERS] Component mounted with venueId:', venueId);
+  logInfo('[LIVE_ORDERS] Component mounted with venueId:', venueId);
 
   // Fetch orders when tab changes
   useEffect(() => {
@@ -404,7 +405,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
           filter: `venue_id=eq.${venueId}`
         },
         (payload: any) => {
-          console.log('[LIVE_ORDERS] Real-time order update received:', payload);
+          logInfo('[LIVE_ORDERS] Real-time order update received:', payload);
           // Refresh orders when any order changes
           fetchOrders(activeTab, true);
           // Update counts (both RPC and local)
@@ -438,8 +439,8 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
 
   // Get tab count from RPC results
   const getTabCount = (tab: 'live' | 'earlier' | 'history') => {
-    console.log(`[TAB_COUNT_DEBUG] Getting count for tab: ${tab}`);
-    console.log(`[TAB_COUNT_DEBUG] tabCounts:`, tabCounts);
+    logInfo(`[TAB_COUNT_DEBUG] Getting count for tab: ${tab}`);
+    logInfo(`[TAB_COUNT_DEBUG] tabCounts:`, tabCounts);
     // Prefer local counts when available to ensure correctness
     if (localCounts) {
       switch (tab) {
@@ -455,7 +456,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
     }
 
     if (!tabCounts) {
-      console.log(`[TAB_COUNT_DEBUG] No tabCounts, returning 0`);
+      logInfo(`[TAB_COUNT_DEBUG] No tabCounts, returning 0`);
       return 0;
     }
     
@@ -474,7 +475,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
         count = 0;
     }
     
-    console.log(`[TAB_COUNT_DEBUG] Tab ${tab} count: ${count}`);
+    logInfo(`[TAB_COUNT_DEBUG] Tab ${tab} count: ${count}`);
     return count;
   };
 
@@ -537,18 +538,18 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
               variant={activeTab === tab ? 'default' : 'ghost'}
               size="sm"
               onClick={() => {
-                console.log('[TAB_SELECTION] ===== TAB SELECTED =====');
-                console.log('[TAB_SELECTION] Previous Tab:', activeTab);
-                console.log('[TAB_SELECTION] New Tab:', tab);
-                console.log('[TAB_SELECTION] Venue ID:', venueId);
-                console.log('[TAB_SELECTION] Venue Timezone:', venueTimezone);
-                console.log('[TAB_SELECTION] Current Order Count:', orders.length);
-                console.log('[TAB_SELECTION] Tab Counts:', {
+                logInfo('[TAB_SELECTION] ===== TAB SELECTED =====');
+                logInfo('[TAB_SELECTION] Previous Tab:', activeTab);
+                logInfo('[TAB_SELECTION] New Tab:', tab);
+                logInfo('[TAB_SELECTION] Venue ID:', venueId);
+                logInfo('[TAB_SELECTION] Venue Timezone:', venueTimezone);
+                logInfo('[TAB_SELECTION] Current Order Count:', orders.length);
+                logInfo('[TAB_SELECTION] Tab Counts:', {
                   live: getTabCount('live'),
                   earlier: getTabCount('earlier'),
                   history: getTabCount('history')
                 });
-                console.log('[TAB_SELECTION] ===== END TAB SELECTION =====');
+                logInfo('[TAB_SELECTION] ===== END TAB SELECTION =====');
                 setActiveTab(tab);
               }}
               className="flex items-center space-x-2 px-4 py-2 min-w-[120px] justify-center"
@@ -643,7 +644,7 @@ export function LiveOrdersNew({ venueId, venueTimezone = 'Europe/London' }: Live
                   const entityKind = deriveEntityKind(entityData);
                   
                   // Debug logging
-                  console.log(`[ORDER GROUPING] Order ${order.id}:`, {
+                  logInfo(`[ORDER GROUPING] Order ${order.id}:`, {
                     table_number: order.table_number,
                     table_id: order.table_id,
                     source: order.source,

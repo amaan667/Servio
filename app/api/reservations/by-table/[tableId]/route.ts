@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ tableId
       .maybeSingle();
 
     if (reservationError) {
-      console.error('[GET RESERVATION BY TABLE] Error fetching reservation:', reservationError);
+      logError('[GET RESERVATION BY TABLE] Error fetching reservation:', reservationError);
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to fetch reservation' 
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ tableId
     });
 
   } catch (error: any) {
-    console.error('[GET RESERVATION BY TABLE] Error:', error);
+    logError('[GET RESERVATION BY TABLE] Error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Internal server error' 

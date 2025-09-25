@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -41,7 +42,7 @@ export async function GET(req: Request) {
       .order('start_at', { ascending: true });
 
     if (error) {
-      console.error('[RESERVATIONS UNASSIGNED] Error:', error);
+      logError('[RESERVATIONS UNASSIGNED] Error:', error);
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[RESERVATIONS UNASSIGNED] Unexpected error:', error);
+    logError('[RESERVATIONS UNASSIGNED] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

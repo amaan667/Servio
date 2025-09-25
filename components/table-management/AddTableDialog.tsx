@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, AlertTriangle } from 'lucide-react';
 import { useTableManagement } from '@/hooks/useTableManagement';
+import { logInfo, logError } from "@/lib/logger";
 
 interface AddTableDialogProps {
   venueId: string;
@@ -42,21 +43,21 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
       seat_count: seatCount,
     };
 
-    console.log('[ADD TABLE DIALOG] Creating table with data:', tableData);
-    console.log('[ADD TABLE DIALOG] Original label input:', label);
-    console.log('[ADD TABLE DIALOG] Trimmed label:', label.trim());
+    logInfo('[ADD TABLE DIALOG] Creating table with data:', tableData);
+    logInfo('[ADD TABLE DIALOG] Original label input:', label);
+    logInfo('[ADD TABLE DIALOG] Trimmed label:', label.trim());
 
     try {
       const result = await createTable(tableData);
       
-      console.log('[ADD TABLE DIALOG] Table created successfully:', result);
+      logInfo('[ADD TABLE DIALOG] Table created successfully:', result);
       
       setLabel('');
       setSeatCount(2);
       setOpen(false);
       onTableAdded?.();
     } catch (error: any) {
-      console.error('[ADD TABLE DIALOG] Failed to create table:', error);
+      logError('[ADD TABLE DIALOG] Failed to create table:', error);
       
       // Handle specific constraint error
       if (error.message?.includes('CONSTRAINT_ERROR') || error.message?.includes('temporarily unavailable')) {

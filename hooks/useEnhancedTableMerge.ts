@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { getTableState, getMergeScenario, type TableState } from '@/lib/table-states';
+import { logInfo, logError } from "@/lib/logger";
 
 interface Table {
   id: string;
@@ -42,7 +43,7 @@ export function useEnhancedTableMerge() {
       setIsLoading(true);
       setError(null);
 
-      console.log('[ENHANCED MERGE HOOK] Starting merge:', {
+      logInfo('[ENHANCED MERGE HOOK] Starting merge:', {
         sourceTableId,
         targetTableId,
         venueId,
@@ -66,7 +67,7 @@ export function useEnhancedTableMerge() {
       const result = await response.json();
 
       if (!response.ok) {
-        console.error('[ENHANCED MERGE HOOK] Merge failed:', result);
+        logError('[ENHANCED MERGE HOOK] Merge failed:', result);
         return {
           success: false,
           error: result.error || 'Merge failed',
@@ -75,7 +76,7 @@ export function useEnhancedTableMerge() {
         };
       }
 
-      console.log('[ENHANCED MERGE HOOK] Merge successful:', result);
+      logInfo('[ENHANCED MERGE HOOK] Merge successful:', result);
       return {
         success: true,
         data: result.data,
@@ -84,7 +85,7 @@ export function useEnhancedTableMerge() {
       };
 
     } catch (error) {
-      console.error('[ENHANCED MERGE HOOK] Unexpected error:', error);
+      logError('[ENHANCED MERGE HOOK] Unexpected error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unexpected error occurred';
       setError(errorMessage);
       return {

@@ -1,6 +1,7 @@
 import { getOpenAI } from "./openai";
 import { z } from "zod";
 import { MenuPayload, MenuPayloadT } from "./menuSchema";
+import { logInfo, logError } from "@/lib/logger";
 
 
 export async function parseMenuStrict(extractedText: string): Promise<MenuPayloadT> {
@@ -27,7 +28,7 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
 
   const user = `OCR TEXT:\n${extractedText}`;
 
-  console.log('[MENU PARSE] Attempting strict JSON extraction...');
+  logInfo('[MENU PARSE] Attempting strict JSON extraction...');
 
   // 1) Try strict JSON from the model
   const resp = await openai.chat.completions.create({
@@ -42,30 +43,30 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
   });
 
   const raw = resp.choices[0]?.message?.content ?? "";
-  console.log('[MENU PARSE] Raw response length:', raw.length);
-  console.log('[MENU PARSE] Raw response preview:', raw.substring(0, 500));
+  logInfo('[MENU PARSE] Raw response length:', raw.length);
+  logInfo('[MENU PARSE] Raw response preview:', raw.substring(0, 500));
 
   try {
     // Should be valid JSON by contract
     const parsed = JSON.parse(raw);
     const validated = MenuPayload.parse(parsed);
-    console.log('[MENU PARSE] Successfully parsed and validated:', validated.items.length, 'items');
+    logInfo('[MENU PARSE] Successfully parsed and validated:', validated.items.length, 'items');
     return validated;
   } catch (e) {
-    console.error('[MENU PARSE] Initial parse failed, attempting repair:', e);
+    logError('[MENU PARSE] Initial parse failed, attempting repair:', e);
     // Fallback to repair flow if something still goes wrong
     return await repairMenuJson(raw);
   }
 }
 
 function coarseFix(jsonish: string): string {
-  console.log('[MENU PARSE] Attempting coarse fix...');
+  logInfo('[MENU PARSE] Attempting coarse fix...');
   
   // Trim junk around JSON and remove BOMs
   const start = jsonish.indexOf("{");
   const end = jsonish.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) {
-    console.log('[MENU PARSE] No valid JSON braces found');
+    logInfo('[MENU PARSE] No valid JSON braces found');
     return jsonish;
   }
   let s = jsonish.slice(start, end + 1);
@@ -77,22 +78,22 @@ function coarseFix(jsonish: string): string {
   // Remove dangling commas before closing brackets/braces
   s = s.replace(/,\s*([}\]])/g, "$1");
   
-  console.log('[MENU PARSE] Coarse fix result length:', s.length);
+  logInfo('[MENU PARSE] Coarse fix result length:', s.length);
   return s;
 }
 
 async function repairMenuJson(modelOutput: string) {
-  console.log('[MENU PARSE] Starting repair process...');
+  logInfo('[MENU PARSE] Starting repair process...');
   const openai = getOpenAI();
   
   const fixedAttempt = coarseFix(modelOutput);
   try {
     const parsed = JSON.parse(fixedAttempt);
     const validated = MenuPayload.parse(parsed);
-    console.log('[MENU PARSE] Repair successful with coarse fix:', validated.items.length, 'items');
+    logInfo('[MENU PARSE] Repair successful with coarse fix:', validated.items.length, 'items');
     return validated;
   } catch (e) {
-    console.log('[MENU PARSE] Coarse fix failed, asking model to repair...');
+    logInfo('[MENU PARSE] Coarse fix failed, asking model to repair...');
     
     // Ask the model to repair to valid JSON exactly matching schema
     const repair = await openai.chat.completions.create({
@@ -113,15 +114,15 @@ async function repairMenuJson(modelOutput: string) {
     });
     
     const content = repair.choices[0]?.message?.content ?? "{}";
-    console.log('[MENU PARSE] Model repair response length:', content.length);
+    logInfo('[MENU PARSE] Model repair response length:', content.length);
     
     try {
       const parsed = JSON.parse(content);
       const validated = MenuPayload.parse(parsed);
-      console.log('[MENU PARSE] Model repair successful:', validated.items.length, 'items');
+      logInfo('[MENU PARSE] Model repair successful:', validated.items.length, 'items');
       return validated;
     } catch (finalError) {
-      console.error('[MENU PARSE] All repair attempts failed:', finalError);
+      logError('[MENU PARSE] All repair attempts failed:', finalError);
       throw new Error(`Failed to parse menu after all repair attempts: ${finalError}`);
     }
   }

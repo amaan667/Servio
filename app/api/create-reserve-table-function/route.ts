@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[CREATE RESERVE TABLE FUNCTION] Error:', error);
+    logError('[CREATE RESERVE TABLE FUNCTION] Error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Internal server error' 

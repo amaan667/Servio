@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log('[PAY STRIPE] Processing Stripe payment for order:', order_id);
+    logInfo('[PAY STRIPE] Processing Stripe payment for order:', order_id);
 
     // In a real implementation, you would:
     // 1. Verify the payment intent with Stripe
@@ -59,14 +60,14 @@ export async function POST(req: Request) {
       .single();
 
     if (updateError || !order) {
-      console.error('[PAY STRIPE] Failed to update order:', updateError);
+      logError('[PAY STRIPE] Failed to update order:', updateError);
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to process payment' 
       }, { status: 500 });
     }
 
-    console.log('[PAY STRIPE] Stripe payment successful for order:', order_id);
+    logInfo('[PAY STRIPE] Stripe payment successful for order:', order_id);
 
     return NextResponse.json({
       success: true,
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[PAY STRIPE] Error:', error);
+    logError('[PAY STRIPE] Error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error' 

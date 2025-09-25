@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logInfo, logError } from "@/lib/logger";
 
 export interface TableActionParams {
   action: 'start_preparing' | 'mark_ready' | 'mark_served' | 'mark_awaiting_bill' | 'close_table' | 'reserve_table' | 'occupy_table' | 'move_table' | 'merge_table' | 'unmerge_table' | 'cancel_reservation';
@@ -17,7 +18,7 @@ export function useTableActions() {
 
   const executeAction = async (params: TableActionParams) => {
     try {
-      console.log('[TABLE ACTIONS HOOK] Executing action:', params);
+      logInfo('[TABLE ACTIONS HOOK] Executing action:', params);
       setLoading(true);
       setError(null);
 
@@ -30,9 +31,9 @@ export function useTableActions() {
         body: JSON.stringify(params),
       });
 
-      console.log('[TABLE ACTIONS HOOK] API response status:', response.status);
+      logInfo('[TABLE ACTIONS HOOK] API response status:', response.status);
       const data = await response.json();
-      console.log('[TABLE ACTIONS HOOK] API response data:', data);
+      logInfo('[TABLE ACTIONS HOOK] API response data:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to execute action');
@@ -40,7 +41,7 @@ export function useTableActions() {
 
       return data;
     } catch (err) {
-      console.error('[TABLE ACTIONS HOOK] Error executing action:', err);
+      logError('[TABLE ACTIONS HOOK] Error executing action:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to execute action';
       setError(errorMessage);
       throw err;

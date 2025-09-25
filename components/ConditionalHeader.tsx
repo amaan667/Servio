@@ -2,13 +2,14 @@
 
 import { usePathname } from 'next/navigation';
 import AppHeader from './AppHeader';
+import { logInfo } from "@/lib/logger";
 
 export default function ConditionalHeader() {
   const pathname = usePathname();
   
   // Debug logging (only in development)
   if (process.env.NODE_ENV === 'development') {
-    console.log('[CONDITIONAL HEADER] Rendering:', { pathname });
+    logInfo('[CONDITIONAL HEADER] Rendering:', { pathname });
   }
   
   // Don't show header on customer-facing pages

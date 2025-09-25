@@ -26,7 +26,7 @@ import {
   FileText,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { logger } from "@/lib/logger";
+import { logInfo } from "@/lib/logger";
 import {
   Dialog,
   DialogContent,
@@ -70,7 +70,7 @@ interface MenuManagementProps {
 type MenuItem = BaseMenuItem & { category_position?: number };
 
 export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagementProps) {
-  console.log('[MENU MANAGEMENT] Component rendered with:', { venueId, session: !!session, refreshTrigger });
+  logInfo('[MENU MANAGEMENT] Component rendered with:', { venueId, session: !!session, refreshTrigger });
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,14 +101,14 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
   const fetchMenu = async () => {
     if (!supabase) {
-      console.log('[AUTH DEBUG] No Supabase client available');
+      logInfo('[AUTH DEBUG] No Supabase client available');
       setError("Supabase client not available.");
       setLoading(false);
       return;
     }
 
-    console.log('[AUTH DEBUG] Fetching menu for venue:', venueId, 'venueUuid:', venueUuid);
-    console.log('[AUTH DEBUG] Venue ID transformation:', { original: venueId, transformed: venueUuid });
+    logInfo('[AUTH DEBUG] Fetching menu for venue:', venueId, 'venueUuid:', venueUuid);
+    logInfo('[AUTH DEBUG] Venue ID transformation:', { original: venueId, transformed: venueUuid });
 
     try {
       // First, let's check if there are ANY menu items in the database
@@ -117,8 +117,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .select("venue_id, name, id, created_at")
         .limit(10);
       
-      console.log('[AUTH DEBUG] All menu items in database:', allItems);
-      console.log('[AUTH DEBUG] All items error:', allItemsError);
+      logInfo('[AUTH DEBUG] All menu items in database:', allItems);
+      logInfo('[AUTH DEBUG] All items error:', allItemsError);
       
       // Also check what venue IDs exist in the database
       const { data: allVenues, error: venuesError } = await supabase
@@ -126,8 +126,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         .select("venue_id, name")
         .limit(10);
       
-      console.log('[AUTH DEBUG] All venues in database:', allVenues);
-      console.log('[AUTH DEBUG] Venues error:', venuesError);
+      logInfo('[AUTH DEBUG] All venues in database:', allVenues);
+      logInfo('[AUTH DEBUG] Venues error:', venuesError);
 
       // Now query for this specific venue - try both venue ID formats
       let { data, error } = await supabase
@@ -139,7 +139,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
       // If no items found with transformed ID, try with original ID
       if (!data || data.length === 0) {
-        console.log('[AUTH DEBUG] No items found with transformed ID, trying original ID:', originalVenueId);
+        logInfo('[AUTH DEBUG] No items found with transformed ID, trying original ID:', originalVenueId);
         const { data: fallbackData, error: fallbackError } = await supabase
           .from("menu_items")
           .select("*")
@@ -150,7 +150,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         if (fallbackData && fallbackData.length > 0) {
           data = fallbackData;
           error = fallbackError;
-          console.log('[AUTH DEBUG] Found', fallbackData.length, 'items with original venue ID');
+          logInfo('[AUTH DEBUG] Found', fallbackData.length, 'items with original venue ID');
         }
       }
 
@@ -165,7 +165,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
 
       // If no upload data found with transformed ID, try with original ID
       if (!uploadData && !uploadError) {
-        console.log('[AUTH DEBUG] No upload data found with transformed ID, trying original ID');
+        logInfo('[AUTH DEBUG] No upload data found with transformed ID, trying original ID');
         const { data: fallbackUploadData, error: fallbackUploadError } = await supabase
           .from("menu_uploads")
           .select("category_order")
@@ -177,14 +177,14 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         if (fallbackUploadData) {
           uploadData = fallbackUploadData;
           uploadError = fallbackUploadError;
-          console.log('[AUTH DEBUG] Found upload data with original venue ID');
+          logInfo('[AUTH DEBUG] Found upload data with original venue ID');
         }
       }
 
-      console.log('[AUTH DEBUG] Upload data for category order:', uploadData);
-      console.log('[AUTH DEBUG] Upload error:', uploadError);
+      logInfo('[AUTH DEBUG] Upload data for category order:', uploadData);
+      logInfo('[AUTH DEBUG] Upload error:', uploadError);
 
-      console.log('[AUTH DEBUG] Menu query result:', { 
+      logInfo('[AUTH DEBUG] Menu query result:', { 
         dataCount: data?.length || 0, 
         error: error?.message,
         venueId,
@@ -205,7 +205,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           itemCount: data?.length || 0,
           categories: [...new Set(data?.map((item: any) => item.category) || [])],
         });
-        console.log('[AUTH DEBUG] Setting menu items:', data?.length || 0, 'items');
+        logInfo('[AUTH DEBUG] Setting menu items:', data?.length || 0, 'items');
         setMenuItems(data || []);
       }
 
@@ -214,17 +214,17 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         // Categories are stored as an array of strings in the correct PDF order
         const categories = uploadData.category_order;
         setCategoryOrder(categories);
-        console.log('[AUTH DEBUG] Set category order from upload:', categories);
-        console.log('[AUTH DEBUG] Current menu categories:', [...new Set(data?.map((item: any) => item.category) || [])]);
+        logInfo('[AUTH DEBUG] Set category order from upload:', categories);
+        logInfo('[AUTH DEBUG] Current menu categories:', [...new Set(data?.map((item: any) => item.category) || [])]);
       } else {
         setCategoryOrder(null);
-        console.log('[AUTH DEBUG] No category order found in upload data:', uploadData?.category_order);
-        console.log('[AUTH DEBUG] Will use dynamic category order as fallback');
+        logInfo('[AUTH DEBUG] No category order found in upload data:', uploadData?.category_order);
+        logInfo('[AUTH DEBUG] Will use dynamic category order as fallback');
       }
         
       // Debug: Log the actual items found
       if (data && data.length > 0) {
-        console.log('[AUTH DEBUG] Found menu items:', data.map((item: any) => ({
+        logInfo('[AUTH DEBUG] Found menu items:', data.map((item: any) => ({
           id: item.id,
           name: item.name,
           category: item.category,
@@ -232,7 +232,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           created_at: item.created_at
         })));
       } else {
-        console.log('[AUTH DEBUG] No menu items found for venue:', venueUuid);
+        logInfo('[AUTH DEBUG] No menu items found for venue:', venueUuid);
         
         // Try to check if there are any menu items at all in the database
         const { data: allItems, error: allItemsError } = await supabase
@@ -241,9 +241,9 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           .group("venue_id");
         
         if (allItemsError) {
-          console.log('[AUTH DEBUG] Could not check total items:', allItemsError.message);
+          logInfo('[AUTH DEBUG] Could not check total items:', allItemsError.message);
         } else {
-          console.log('[AUTH DEBUG] Total menu items by venue:', allItems);
+          logInfo('[AUTH DEBUG] Total menu items by venue:', allItems);
         }
       }
     } catch (error: any) {
@@ -255,7 +255,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   };
 
   useEffect(() => {
-    console.log('[MENU MANAGEMENT] useEffect triggered - calling fetchMenu');
+    logInfo('[MENU MANAGEMENT] useEffect triggered - calling fetchMenu');
     fetchMenu();
 
     if (!supabase) return;
@@ -293,7 +293,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   // Refresh menu when refreshTrigger changes (e.g., after PDF upload)
   useEffect(() => {
     if (refreshTrigger) {
-      console.log('[MENU MANAGEMENT] Refresh trigger activated, refetching menu');
+      logInfo('[MENU MANAGEMENT] Refresh trigger activated, refetching menu');
       fetchMenu();
     }
   }, [refreshTrigger, fetchMenu]);
@@ -602,7 +602,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   };
 
   const dynamicCategoryOrder = deriveCategoryOrder(menuItems);
-  console.log('[AUTH DEBUG] Derived category order from menu items:', dynamicCategoryOrder);
+  logInfo('[AUTH DEBUG] Derived category order from menu items:', dynamicCategoryOrder);
 
   const sortedCategories: { name: string; position: number }[] = Object.keys(categoryGroups)
     .map((cat) => {
@@ -612,13 +612,13 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
           storedCat.toLowerCase() === cat.toLowerCase()
         );
         if (orderIndex >= 0) {
-          console.log('[AUTH DEBUG] Category', cat, 'found in stored order at position', orderIndex);
+          logInfo('[AUTH DEBUG] Category', cat, 'found in stored order at position', orderIndex);
           return {
             name: cat,
             position: orderIndex
           };
         } else {
-          console.log('[AUTH DEBUG] Category', cat, 'NOT found in stored order:', categoryOrder);
+          logInfo('[AUTH DEBUG] Category', cat, 'NOT found in stored order:', categoryOrder);
         }
       }
       
@@ -627,7 +627,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
         dynamicCat.toLowerCase() === cat.toLowerCase()
       );
       if (dynamicOrderIndex >= 0) {
-        console.log('[AUTH DEBUG] Category', cat, 'found in dynamic order at position', dynamicOrderIndex);
+        logInfo('[AUTH DEBUG] Category', cat, 'found in dynamic order at position', dynamicOrderIndex);
         return {
           name: cat,
           position: dynamicOrderIndex
@@ -635,7 +635,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
       }
       
       // If no stored order, use alphabetical sorting to maintain consistency
-      console.log('[AUTH DEBUG] Category', cat, 'using alphabetical fallback');
+      logInfo('[AUTH DEBUG] Category', cat, 'using alphabetical fallback');
       return {
         name: cat,
         // Put unknown categories at the end, sorted alphabetically
@@ -644,7 +644,7 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
     })
     .sort((a, b) => a.position - b.position);
 
-  console.log('[AUTH DEBUG] Final sorted categories:', sortedCategories.map(c => c.name));
+  logInfo('[AUTH DEBUG] Final sorted categories:', sortedCategories.map(c => c.name));
 
   return (
     <div className="space-y-6">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -9,13 +10,13 @@ export async function GET(
     const { venueId } = await context.params;
     
     // Enhanced logging for customer menu access
-    console.log('🍕 MENU API CALLED 🍕');
-    console.log('[MENU API] ===== MENU REQUEST RECEIVED =====');
-    console.log('[MENU API] Timestamp:', new Date().toISOString());
-    console.log('[MENU API] Venue ID:', venueId);
-    console.log('[MENU API] Request URL:', request.url);
-    console.log('[MENU API] User Agent:', request.headers.get('user-agent'));
-    console.log('[MENU API] Referer:', request.headers.get('referer'));
+    logInfo('🍕 MENU API CALLED 🍕');
+    logInfo('[MENU API] ===== MENU REQUEST RECEIVED =====');
+    logInfo('[MENU API] Timestamp:', new Date().toISOString());
+    logInfo('[MENU API] Venue ID:', venueId);
+    logInfo('[MENU API] Request URL:', request.url);
+    logInfo('[MENU API] User Agent:', request.headers.get('user-agent'));
+    logInfo('[MENU API] Referer:', request.headers.get('referer'));
     
     if (!venueId) {
       return NextResponse.json(
@@ -51,7 +52,7 @@ export async function GET(
       .order('created_at', { ascending: true });
 
     if (menuError) {
-      console.error('[MENU API] Error fetching menu items:', menuError);
+      logError('[MENU API] Error fetching menu items:', menuError);
       return NextResponse.json(
         { error: 'Failed to load menu items' },
         { status: 500 }
@@ -68,12 +69,12 @@ export async function GET(
       totalItems: menuItems?.length || 0
     };
 
-    console.log(`[MENU API] Successfully fetched ${response.totalItems} menu items for venue ${venueId}`);
+    logInfo(`[MENU API] Successfully fetched ${response.totalItems} menu items for venue ${venueId}`);
     
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('[MENU API] Unexpected error:', error);
+    logError('[MENU API] Unexpected error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

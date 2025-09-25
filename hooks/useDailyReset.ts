@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logInfo, logError } from "@/lib/logger";
 
 interface DailyResetResult {
   success: boolean;
@@ -25,7 +26,7 @@ export function useDailyReset(venueId: string) {
 
     try {
       setIsChecking(true);
-      console.log('🔄 [DAILY RESET HOOK] Checking for daily reset needed...');
+      logInfo('🔄 [DAILY RESET HOOK] Checking for daily reset needed...');
 
       const response = await fetch('/api/daily-reset/check-and-reset', {
         method: 'POST',
@@ -39,7 +40,7 @@ export function useDailyReset(venueId: string) {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('🔄 [DAILY RESET HOOK] Reset check result:', result);
+        logInfo('🔄 [DAILY RESET HOOK] Reset check result:', result);
         setResetResult(result);
         
         if (result.resetDate) {
@@ -51,7 +52,7 @@ export function useDailyReset(venueId: string) {
           const { completedOrders, canceledReservations, deletedTables } = result.summary;
           
           if (completedOrders > 0 || canceledReservations > 0 || deletedTables > 0) {
-            console.log('🔄 [DAILY RESET HOOK] Daily reset performed:', {
+            logInfo('🔄 [DAILY RESET HOOK] Daily reset performed:', {
               completedOrders,
               canceledReservations,
               deletedTables
@@ -62,10 +63,10 @@ export function useDailyReset(venueId: string) {
           }
         }
       } else {
-        console.error('🔄 [DAILY RESET HOOK] Reset check failed:', result);
+        logError('🔄 [DAILY RESET HOOK] Reset check failed:', result);
       }
     } catch (error) {
-      console.error('🔄 [DAILY RESET HOOK] Error checking daily reset:', error);
+      logError('🔄 [DAILY RESET HOOK] Error checking daily reset:', error);
     } finally {
       setIsChecking(false);
     }

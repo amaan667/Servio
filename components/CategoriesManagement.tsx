@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { GripVertical, Plus, Edit, Trash2, Save, X, RotateCcw } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { logInfo, logError } from "@/lib/logger";
 
 interface CategoriesManagementProps {
   venueId: string;
@@ -37,7 +38,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       const storedOrder = localStorage.getItem(`category-order-${venueId}`);
       if (storedOrder) {
         const parsedOrder = JSON.parse(storedOrder);
-        console.log('[CATEGORIES] Loaded from localStorage:', parsedOrder);
+        logInfo('[CATEGORIES] Loaded from localStorage:', parsedOrder);
         setCategories(parsedOrder);
       }
 
@@ -49,7 +50,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         // Set original categories from PDF upload
         if (data.originalCategories && data.originalCategories.length > 0) {
           setOriginalCategories(data.originalCategories);
-          console.log('[CATEGORIES] Loaded original categories from PDF:', data.originalCategories);
+          logInfo('[CATEGORIES] Loaded original categories from PDF:', data.originalCategories);
         }
         
         // If no stored order, use the original categories or current categories
@@ -79,7 +80,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           }
         }
       } else {
-        console.error('Error loading categories:', data.error);
+        logError('Error loading categories:', data.error);
         toast({
           title: "Error",
           description: data.error || "Failed to load categories",
@@ -87,7 +88,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         });
       }
     } catch (error) {
-      console.error('Error loading categories:', error);
+      logError('Error loading categories:', error);
       toast({
         title: "Error",
         description: "Failed to load categories",
@@ -131,7 +132,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         });
         onCategoriesUpdate?.(categoriesToSave);
       } else {
-        console.error('Error saving categories:', data.error);
+        logError('Error saving categories:', data.error);
         toast({
           title: "Success",
           description: "Category order updated (saved locally)",
@@ -140,7 +141,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         onCategoriesUpdate?.(categoriesToSave);
       }
     } catch (error) {
-      console.error('Error saving categories:', error);
+      logError('Error saving categories:', error);
       // Still show success since we saved to localStorage
       toast({
         title: "Success",
@@ -196,10 +197,10 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       });
 
       if (!response.ok) {
-        console.error('API call failed but category was added locally');
+        logError('API call failed but category was added locally');
       }
     } catch (error) {
-      console.error('Error adding category:', error);
+      logError('Error adding category:', error);
       // Category was already added locally, so show success
       toast({
         title: "Success",
@@ -261,7 +262,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         });
       }
     } catch (error) {
-      console.error('Error renaming category:', error);
+      logError('Error renaming category:', error);
       toast({
         title: "Error",
         description: "Failed to rename category",
@@ -326,7 +327,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         });
       }
     } catch (error) {
-      console.error('Error deleting category:', error);
+      logError('Error deleting category:', error);
       toast({
         title: "Error",
         description: "Failed to delete category",
@@ -344,8 +345,8 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
 
     setSaving(true);
     try {
-      console.log('[CATEGORIES RESET] Starting reset for venue:', venueId);
-      console.log('[CATEGORIES RESET] Current categories before reset:', categories);
+      logInfo('[CATEGORIES RESET] Starting reset for venue:', venueId);
+      logInfo('[CATEGORIES RESET] Current categories before reset:', categories);
       
       // Always call the reset API to get the original categories from PDF
       const response = await fetch('/api/menu/categories/reset', {
@@ -354,14 +355,14 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         body: JSON.stringify({ venueId })
       });
 
-      console.log('[CATEGORIES RESET] API response status:', response.status);
+      logInfo('[CATEGORIES RESET] API response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('[CATEGORIES RESET] API response data:', data);
+        logInfo('[CATEGORIES RESET] API response data:', data);
         
         if (data.originalCategories && data.originalCategories.length > 0) {
-          console.log('[CATEGORIES RESET] Setting categories to:', data.originalCategories);
+          logInfo('[CATEGORIES RESET] Setting categories to:', data.originalCategories);
           
           // Reset to original categories from PDF
           setCategories(data.originalCategories);
@@ -375,7 +376,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           onCategoriesUpdate?.(data.originalCategories);
         } else {
           // No original categories found
-          console.log('[CATEGORIES RESET] No original categories in response');
+          logInfo('[CATEGORIES RESET] No original categories in response');
           toast({
             title: "No Original Categories",
             description: "No original categories found from PDF upload to reset to.",
@@ -384,7 +385,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         }
       } else {
         const errorData = await response.json();
-        console.log('[CATEGORIES RESET] API error response:', errorData);
+        logInfo('[CATEGORIES RESET] API error response:', errorData);
         
         if (response.status === 404) {
           // No original categories found
@@ -402,7 +403,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         }
       }
     } catch (error) {
-      console.error('Error resetting categories:', error);
+      logError('Error resetting categories:', error);
       toast({
         title: "Error",
         description: "Failed to reset categories",

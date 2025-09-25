@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/AuthProvider";
+import { logInfo } from "@/lib/logger";
 
 export function SignOutButton() {
   const sb = createClient();
@@ -12,7 +13,7 @@ export function SignOutButton() {
     <button
       onClick={async () => {
         try {
-          console.log('[AUTH DEBUG] SignOutButton clicked');
+          logInfo('[AUTH DEBUG] SignOutButton clicked');
           
           // Use server-side sign out to avoid cookie modification errors
           const response = await fetch('/api/auth/signout', {
@@ -23,12 +24,12 @@ export function SignOutButton() {
           });
           
           if (!response.ok) {
-            console.log('[AUTH DEBUG] Server-side sign out failed');
+            logInfo('[AUTH DEBUG] Server-side sign out failed');
           } else {
-            console.log('[AUTH DEBUG] Server-side sign out successful');
+            logInfo('[AUTH DEBUG] Server-side sign out successful');
           }
         } catch (error) {
-          console.log('[AUTH DEBUG] Sign out error:', error);
+          logInfo('[AUTH DEBUG] Sign out error:', error);
         }
         
         // Clear client-side storage and redirect
@@ -36,7 +37,7 @@ export function SignOutButton() {
           const { clearAuthStorage } = await import('@/lib/sb-client');
           clearAuthStorage();
         } catch (error) {
-          console.log('[AUTH DEBUG] Error clearing client storage:', error);
+          logInfo('[AUTH DEBUG] Error clearing client storage:', error);
         }
         
         // Use the auth provider's signOut method
@@ -45,7 +46,7 @@ export function SignOutButton() {
         // Force redirect to home page
         router.replace("/");
         
-        console.log('[AUTH DEBUG] SignOutButton completed');
+        logInfo('[AUTH DEBUG] SignOutButton completed');
       }}
       className="rounded-md border px-3 py-2"
     >

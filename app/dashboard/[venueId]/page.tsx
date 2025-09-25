@@ -4,9 +4,10 @@ export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
-import { log } from '@/lib/debug';
+// import { log } from '@/lib/debug'; // Removed debug import
 import DashboardClient from './page.client';
 import { todayWindowForTZ } from '@/lib/time';
+import { logError } from "@/lib/logger";
 
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
@@ -23,7 +24,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     log('VENUE PAGE SSR user', { hasUser: !!user, error: userError?.message });
     
     if (userError) {
-      console.error('Auth error:', userError);
+      logError('Auth error:', userError);
       redirect('/sign-in');
     }
     
@@ -39,7 +40,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .maybeSingle();
 
     if (venueError) {
-      console.error('Database error:', venueError);
+      logError('Database error:', venueError);
       redirect('/?auth_error=database_error');
     }
     
@@ -71,7 +72,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       .single();
 
     if (countsError) {
-      console.error('Error fetching dashboard counts:', countsError);
+      logError('Error fetching dashboard counts:', countsError);
       // Continue with default counts rather than failing
     }
 
@@ -84,7 +85,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
       });
 
     if (tableCountersError) {
-      console.error('Error fetching table counters:', tableCountersError);
+      logError('Error fetching table counters:', tableCountersError);
     }
 
     // Use table counters data to override dashboard counts for consistency

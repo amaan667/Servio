@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 [DAILY RESET] Daily reset endpoint called');
+    logInfo('🔄 [DAILY RESET] Daily reset endpoint called');
     
     const { venueId, force = false } = await request.json();
-    console.log('🔄 [DAILY RESET] Request data:', { venueId, force });
+    logInfo('🔄 [DAILY RESET] Request data:', { venueId, force });
 
     if (!venueId) {
-      console.log('🔄 [DAILY RESET] Missing venueId');
+      logInfo('🔄 [DAILY RESET] Missing venueId');
       return NextResponse.json(
         { error: 'Venue ID is required' },
         { status: 400 }
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    console.log('🔄 [DAILY RESET] Admin Supabase client created');
+    logInfo('🔄 [DAILY RESET] Admin Supabase client created');
 
     // Check if venue exists
     const { data: venue, error: venueError } = await supabase
@@ -27,17 +28,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (venueError || !venue) {
-      console.log('🔄 [DAILY RESET] Venue not found:', venueError);
+      logInfo('🔄 [DAILY RESET] Venue not found:', venueError);
       return NextResponse.json(
         { error: 'Venue not found' },
         { status: 404 }
       );
     }
 
-    console.log('🔄 [DAILY RESET] Starting daily reset for venue:', venue.name);
+    logInfo('🔄 [DAILY RESET] Starting daily reset for venue:', venue.name);
 
     // Step 1: Complete all active orders (mark as COMPLETED)
-    console.log('🔄 [DAILY RESET] Step 1: Completing all active orders...');
+    logInfo('🔄 [DAILY RESET] Step 1: Completing all active orders...');
     const { data: activeOrders, error: activeOrdersError } = await supabase
       .from('orders')
       .select('id, order_status, table_number')
@@ -45,14 +46,14 @@ export async function POST(request: NextRequest) {
       .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
     if (activeOrdersError) {
-      console.error('🔄 [DAILY RESET] Error fetching active orders:', activeOrdersError);
+      logError('🔄 [DAILY RESET] Error fetching active orders:', activeOrdersError);
       return NextResponse.json(
         { error: 'Failed to fetch active orders' },
         { status: 500 }
       );
     }
 
-    console.log('🔄 [DAILY RESET] Found active orders:', activeOrders?.length || 0);
+    logInfo('🔄 [DAILY RESET] Found active orders:', activeOrders?.length || 0);
 
     if (activeOrders && activeOrders.length > 0) {
       const { error: completeOrdersError } = await supabase
@@ -65,18 +66,18 @@ export async function POST(request: NextRequest) {
         .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
       if (completeOrdersError) {
-        console.error('🔄 [DAILY RESET] Error completing orders:', completeOrdersError);
+        logError('🔄 [DAILY RESET] Error completing orders:', completeOrdersError);
         return NextResponse.json(
           { error: 'Failed to complete active orders' },
           { status: 500 }
         );
       }
 
-      console.log('🔄 [DAILY RESET] Completed', activeOrders.length, 'active orders');
+      logInfo('🔄 [DAILY RESET] Completed', activeOrders.length, 'active orders');
     }
 
     // Step 2: Cancel all active reservations
-    console.log('🔄 [DAILY RESET] Step 2: Canceling all active reservations...');
+    logInfo('🔄 [DAILY RESET] Step 2: Canceling all active reservations...');
     const { data: activeReservations, error: activeReservationsError } = await supabase
       .from('reservations')
       .select('id, status')
@@ -84,14 +85,14 @@ export async function POST(request: NextRequest) {
       .eq('status', 'BOOKED');
 
     if (activeReservationsError) {
-      console.error('🔄 [DAILY RESET] Error fetching active reservations:', activeReservationsError);
+      logError('🔄 [DAILY RESET] Error fetching active reservations:', activeReservationsError);
       return NextResponse.json(
         { error: 'Failed to fetch active reservations' },
         { status: 500 }
       );
     }
 
-    console.log('🔄 [DAILY RESET] Found active reservations:', activeReservations?.length || 0);
+    logInfo('🔄 [DAILY RESET] Found active reservations:', activeReservations?.length || 0);
 
     if (activeReservations && activeReservations.length > 0) {
       const { error: cancelReservationsError } = await supabase
@@ -104,32 +105,32 @@ export async function POST(request: NextRequest) {
         .eq('status', 'BOOKED');
 
       if (cancelReservationsError) {
-        console.error('🔄 [DAILY RESET] Error canceling reservations:', cancelReservationsError);
+        logError('🔄 [DAILY RESET] Error canceling reservations:', cancelReservationsError);
         return NextResponse.json(
           { error: 'Failed to cancel active reservations' },
           { status: 500 }
         );
       }
 
-      console.log('🔄 [DAILY RESET] Canceled', activeReservations.length, 'active reservations');
+      logInfo('🔄 [DAILY RESET] Canceled', activeReservations.length, 'active reservations');
     }
 
     // Step 3: Delete all tables for the venue (complete reset)
-    console.log('🔄 [DAILY RESET] Step 3: Deleting all tables for complete reset...');
+    logInfo('🔄 [DAILY RESET] Step 3: Deleting all tables for complete reset...');
     const { data: tables, error: tablesError } = await supabase
       .from('tables')
       .select('id, label')
       .eq('venue_id', venueId);
 
     if (tablesError) {
-      console.error('🔄 [DAILY RESET] Error fetching tables:', tablesError);
+      logError('🔄 [DAILY RESET] Error fetching tables:', tablesError);
       return NextResponse.json(
         { error: 'Failed to fetch tables' },
         { status: 500 }
       );
     }
 
-    console.log('🔄 [DAILY RESET] Found tables to delete:', tables?.length || 0);
+    logInfo('🔄 [DAILY RESET] Found tables to delete:', tables?.length || 0);
 
     if (tables && tables.length > 0) {
       // Delete all table sessions first (if they exist)
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteSessionsError) {
-        console.warn('🔄 [DAILY RESET] Warning clearing table sessions:', deleteSessionsError);
+        logWarn('🔄 [DAILY RESET] Warning clearing table sessions:', deleteSessionsError);
         // Don't fail for this, continue
       }
 
@@ -150,34 +151,34 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteTablesError) {
-        console.error('🔄 [DAILY RESET] Error deleting tables:', deleteTablesError);
+        logError('🔄 [DAILY RESET] Error deleting tables:', deleteTablesError);
         return NextResponse.json(
           { error: 'Failed to delete tables' },
           { status: 500 }
         );
       }
 
-      console.log('🔄 [DAILY RESET] Deleted', tables.length, 'tables completely');
+      logInfo('🔄 [DAILY RESET] Deleted', tables.length, 'tables completely');
     }
 
     // Step 4: Clear any table runtime state
-    console.log('🔄 [DAILY RESET] Step 4: Clearing table runtime state...');
+    logInfo('🔄 [DAILY RESET] Step 4: Clearing table runtime state...');
     const { error: clearRuntimeError } = await supabase
       .from('table_runtime_state')
       .delete()
       .eq('venue_id', venueId);
 
     if (clearRuntimeError) {
-      console.error('🔄 [DAILY RESET] Error clearing runtime state:', clearRuntimeError);
+      logError('🔄 [DAILY RESET] Error clearing runtime state:', clearRuntimeError);
       // Don't fail the entire operation for this
-      console.warn('🔄 [DAILY RESET] Continuing despite runtime state clear error');
+      logWarn('🔄 [DAILY RESET] Continuing despite runtime state clear error');
     } else {
-      console.log('🔄 [DAILY RESET] Cleared table runtime state');
+      logInfo('🔄 [DAILY RESET] Cleared table runtime state');
     }
 
     // Step 5: If force is true, also delete ALL orders for this venue
     if (force) {
-      console.log('🔄 [DAILY RESET] Step 5: Force mode - deleting ALL orders for venue...');
+      logInfo('🔄 [DAILY RESET] Step 5: Force mode - deleting ALL orders for venue...');
       
       const { error: deleteOrdersError } = await supabase
         .from('orders')
@@ -185,17 +186,17 @@ export async function POST(request: NextRequest) {
         .eq('venue_id', venueId);
 
       if (deleteOrdersError) {
-        console.error('🔄 [DAILY RESET] Error deleting all orders:', deleteOrdersError);
+        logError('🔄 [DAILY RESET] Error deleting all orders:', deleteOrdersError);
         return NextResponse.json(
           { error: 'Failed to delete all orders' },
           { status: 500 }
         );
       }
 
-      console.log('🔄 [DAILY RESET] Deleted ALL orders for venue');
+      logInfo('🔄 [DAILY RESET] Deleted ALL orders for venue');
     }
 
-    console.log('🔄 [DAILY RESET] Daily reset completed successfully for venue:', venue.name);
+    logInfo('🔄 [DAILY RESET] Daily reset completed successfully for venue:', venue.name);
 
     return NextResponse.json({
       success: true,
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('🔄 [DAILY RESET] Error in daily reset API:', error);
+    logError('🔄 [DAILY RESET] Error in daily reset API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -270,7 +271,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('🔄 [DAILY RESET] Error checking reset status:', error);
+    logError('🔄 [DAILY RESET] Error checking reset status:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

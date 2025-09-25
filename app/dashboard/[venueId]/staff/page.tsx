@@ -6,9 +6,10 @@ import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
-import { log } from '@/lib/debug';
+// import { log } from '@/lib/debug'; // Removed debug import
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import StaffClient from './staff-client';
+import { logInfo, logError } from "@/lib/logger";
 
 export default async function StaffPage({
   params,
@@ -16,13 +17,13 @@ export default async function StaffPage({
   params: Promise<{ venueId: string }>;
 }) {
   const { venueId } = await params;
-  console.log('[STAFF] Page mounted for venue', venueId);
+  logInfo('[STAFF] Page mounted for venue', venueId);
   
   try {
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
     if (!hasAuthCookie) {
-      console.log('[STAFF] No auth cookie found, redirecting to sign-in');
+      logInfo('[STAFF] No auth cookie found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -32,12 +33,12 @@ export default async function StaffPage({
     log('STAFF SSR user', { hasUser: !!user, error: userError?.message });
     
     if (userError) {
-      console.error('[STAFF] Auth error:', userError);
+      logError('[STAFF] Auth error:', userError);
       redirect('/sign-in');
     }
     
     if (!user) {
-      console.log('[STAFF] No user found, redirecting to sign-in');
+      logInfo('[STAFF] No user found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -50,12 +51,12 @@ export default async function StaffPage({
       .maybeSingle();
 
     if (venueError) {
-      console.error('[STAFF] Venue query error:', venueError);
+      logError('[STAFF] Venue query error:', venueError);
       redirect('/dashboard');
     }
 
     if (!venue) {
-      console.log('[STAFF] Venue not found or user does not own it');
+      logInfo('[STAFF] Venue not found or user does not own it');
       redirect('/dashboard');
     }
 
@@ -69,21 +70,21 @@ export default async function StaffPage({
       .order('created_at', { ascending: false });
 
     if (staffError) {
-      console.error('[STAFF] Error fetching initial staff:', staffError);
+      logError('[STAFF] Error fetching initial staff:', staffError);
     }
 
     // Calculate staff counts server-side
     const staffData = initialStaff || [];
-    console.log('[STAFF SERVER DEBUG] initialStaff:', initialStaff);
-    console.log('[STAFF SERVER DEBUG] staffData:', staffData);
+    logInfo('[STAFF SERVER DEBUG] initialStaff:', initialStaff);
+    logInfo('[STAFF SERVER DEBUG] staffData:', staffData);
     
     const totalStaff = staffData.length;
     const activeStaff = staffData.filter((s: any) => s.active === true).length;
     const uniqueRoles = new Set(staffData.map((s: any) => s.role)).size;
     
-    console.log('[STAFF SERVER DEBUG] totalStaff:', totalStaff);
-    console.log('[STAFF SERVER DEBUG] activeStaff:', activeStaff);
-    console.log('[STAFF SERVER DEBUG] uniqueRoles:', uniqueRoles);
+    logInfo('[STAFF SERVER DEBUG] totalStaff:', totalStaff);
+    logInfo('[STAFF SERVER DEBUG] activeStaff:', activeStaff);
+    logInfo('[STAFF SERVER DEBUG] uniqueRoles:', uniqueRoles);
     
     // Get active shifts count
     const now = new Date();
@@ -93,10 +94,10 @@ export default async function StaffPage({
       .eq('venue_id', venueId);
     
     if (shiftsError) {
-      console.error('[STAFF] Error fetching shifts for counts:', shiftsError);
+      logError('[STAFF] Error fetching shifts for counts:', shiftsError);
     }
     
-    console.log('[STAFF SERVER DEBUG] allShifts:', allShifts);
+    logInfo('[STAFF SERVER DEBUG] allShifts:', allShifts);
     
     const activeShiftsCount = (allShifts || []).filter((shift: any) => {
       const start = new Date(shift.start_time);
@@ -104,7 +105,7 @@ export default async function StaffPage({
       return now >= start && now <= end;
     }).length;
     
-    console.log('[STAFF SERVER DEBUG] activeShiftsCount:', activeShiftsCount);
+    logInfo('[STAFF SERVER DEBUG] activeShiftsCount:', activeShiftsCount);
     
     const initialCounts = {
       total_staff: totalStaff,
@@ -113,7 +114,7 @@ export default async function StaffPage({
       active_shifts_count: activeShiftsCount
     };
     
-    console.log('[STAFF SERVER DEBUG] final initialCounts:', initialCounts);
+    logInfo('[STAFF SERVER DEBUG] final initialCounts:', initialCounts);
 
     return (
       <div className="min-h-screen bg-background">
@@ -139,7 +140,7 @@ export default async function StaffPage({
       </div>
     );
   } catch (error) {
-    console.error('[STAFF] Unexpected error:', error);
+    logError('[STAFF] Unexpected error:', error);
     redirect('/sign-in');
   }
 }

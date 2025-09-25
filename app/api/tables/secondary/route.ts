@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -43,7 +44,7 @@ export async function GET(req: Request) {
       .single();
 
     if (secondaryTableError) {
-      console.error('[TABLES SECONDARY GET] Error finding secondary table:', secondaryTableError);
+      logError('[TABLES SECONDARY GET] Error finding secondary table:', secondaryTableError);
       if (secondaryTableError.code === 'PGRST116') {
         return NextResponse.json({ ok: false, error: 'No secondary table found for this primary table' }, { status: 404 });
       }
@@ -56,7 +57,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[TABLES SECONDARY GET] Unexpected error:', error);
+    logError('[TABLES SECONDARY GET] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

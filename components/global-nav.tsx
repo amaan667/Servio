@@ -11,6 +11,7 @@ import { useRouter, usePathname } from "next/navigation";
 import SignInButton from "@/app/components/SignInButton";
 
 import { signOutUser } from "@/lib/supabase";
+import { logInfo, logError } from "@/lib/logger";
 
 export default function GlobalNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -23,7 +24,7 @@ export default function GlobalNav() {
 
   // Debug logging (only in development)
   if (process.env.NODE_ENV === 'development') {
-    console.log('[GLOBAL NAV] Component rendering:', { 
+    logInfo('[GLOBAL NAV] Component rendering:', { 
       loading, 
       hasSession: !!session, 
       pathname
@@ -61,7 +62,7 @@ export default function GlobalNav() {
 
   // Debug logging for authentication state
   useEffect(() => {
-    console.log('[NAV DEBUG] Authentication state changed:', {
+    logInfo('[NAV DEBUG] Authentication state changed:', {
       loading,
       hasSession: !!session,
       hasUser: !!session?.user,
@@ -98,7 +99,7 @@ export default function GlobalNav() {
             setPrimaryVenueId(data[0].venue_id);
           }
         } catch (err) {
-          console.error('Error fetching primary venue:', err);
+          logError('Error fetching primary venue:', err);
         }
       } else {
         setPrimaryVenueId(null);
@@ -117,7 +118,7 @@ export default function GlobalNav() {
       });
       
       if (!response.ok) {
-        console.error('Server-side sign out failed');
+        logError('Server-side sign out failed');
       }
       
       // Use the auth provider's signOut method
@@ -126,7 +127,7 @@ export default function GlobalNav() {
       // Force redirect to home page
       router.replace('/');
     } catch (error) {
-      console.error('Sign out error:', error);
+      logError('Sign out error:', error);
       // Force redirect even if there's an error
       router.replace('/');
     }

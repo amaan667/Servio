@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { getTableState, getMergeScenario } from '@/lib/table-states';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
       confirmed = false
     } = body;
 
-    console.log('[ENHANCED MERGE] Request received:', {
+    logInfo('[ENHANCED MERGE] Request received:', {
       source_table_id,
       target_table_id,
       venue_id,
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
     const targetState = getTableState(targetTable);
     const mergeScenario = getMergeScenario(sourceTable, targetTable);
 
-    console.log('[ENHANCED MERGE] Table states:', {
+    logInfo('[ENHANCED MERGE] Table states:', {
       sourceState: sourceState.state,
       targetState: targetState.state,
       mergeScenario: mergeScenario.type,
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    console.log('[ENHANCED MERGE] Merge completed successfully:', result.data);
+    logInfo('[ENHANCED MERGE] Merge completed successfully:', result.data);
     return NextResponse.json({ 
       success: true, 
       data: result.data,
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[ENHANCED MERGE] Unexpected error:', error);
+    logError('[ENHANCED MERGE] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -154,7 +155,7 @@ export async function POST(req: NextRequest) {
  */
 async function mergeFreeTables(supabase: any, sourceTable: any, targetTable: any) {
   try {
-    console.log('[ENHANCED MERGE] Merging free tables:', sourceTable.id, targetTable.id);
+    logInfo('[ENHANCED MERGE] Merging free tables:', sourceTable.id, targetTable.id);
     
     // Create a new combined session for both tables
     const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
@@ -208,7 +209,7 @@ async function mergeFreeTables(supabase: any, sourceTable: any, targetTable: any
       }
     };
   } catch (error) {
-    console.error('[ENHANCED MERGE] Error merging free tables:', error);
+    logError('[ENHANCED MERGE] Error merging free tables:', error);
     return { error: 'Failed to merge free tables' };
   }
 }
@@ -221,7 +222,7 @@ async function expandOccupiedTable(supabase: any, sourceTable: any, targetTable:
     const freeTable = sourceIsFree ? sourceTable : targetTable;
     const occupiedTable = sourceIsFree ? targetTable : sourceTable;
     
-    console.log('[ENHANCED MERGE] Expanding occupied table:', {
+    logInfo('[ENHANCED MERGE] Expanding occupied table:', {
       occupiedTable: occupiedTable.id,
       freeTable: freeTable.id
     });
@@ -276,7 +277,7 @@ async function expandOccupiedTable(supabase: any, sourceTable: any, targetTable:
       }
     };
   } catch (error) {
-    console.error('[ENHANCED MERGE] Error expanding occupied table:', error);
+    logError('[ENHANCED MERGE] Error expanding occupied table:', error);
     return { error: 'Failed to expand occupied table' };
   }
 }
@@ -289,7 +290,7 @@ async function expandReservedTable(supabase: any, sourceTable: any, targetTable:
     const freeTable = sourceIsFree ? sourceTable : targetTable;
     const reservedTable = sourceIsFree ? targetTable : sourceTable;
     
-    console.log('[ENHANCED MERGE] Expanding reserved table:', {
+    logInfo('[ENHANCED MERGE] Expanding reserved table:', {
       reservedTable: reservedTable.id,
       freeTable: freeTable.id
     });
@@ -331,7 +332,7 @@ async function expandReservedTable(supabase: any, sourceTable: any, targetTable:
       }
     };
   } catch (error) {
-    console.error('[ENHANCED MERGE] Error expanding reserved table:', error);
+    logError('[ENHANCED MERGE] Error expanding reserved table:', error);
     return { error: 'Failed to expand reserved table' };
   }
 }
@@ -341,7 +342,7 @@ async function expandReservedTable(supabase: any, sourceTable: any, targetTable:
  */
 async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable: any) {
   try {
-    console.log('[ENHANCED MERGE] Merging occupied tables:', sourceTable.id, targetTable.id);
+    logInfo('[ENHANCED MERGE] Merging occupied tables:', sourceTable.id, targetTable.id);
     
     // Get both sessions
     const { data: sessions, error: sessionsError } = await supabase
@@ -433,7 +434,7 @@ async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable:
       }
     };
   } catch (error) {
-    console.error('[ENHANCED MERGE] Error merging occupied tables:', error);
+    logError('[ENHANCED MERGE] Error merging occupied tables:', error);
     return { error: 'Failed to merge occupied tables' };
   }
 }
@@ -443,7 +444,7 @@ async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable:
  */
 async function mergeReservedTables(supabase: any, sourceTable: any, targetTable: any) {
   try {
-    console.log('[ENHANCED MERGE] Merging reserved tables:', sourceTable.id, targetTable.id);
+    logInfo('[ENHANCED MERGE] Merging reserved tables:', sourceTable.id, targetTable.id);
     
     // Update table labels
     const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
@@ -482,7 +483,7 @@ async function mergeReservedTables(supabase: any, sourceTable: any, targetTable:
       }
     };
   } catch (error) {
-    console.error('[ENHANCED MERGE] Error merging reserved tables:', error);
+    logError('[ENHANCED MERGE] Error merging reserved tables:', error);
     return { error: 'Failed to merge reserved tables' };
   }
 }

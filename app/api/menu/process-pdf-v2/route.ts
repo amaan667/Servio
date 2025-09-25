@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from '@/lib/supabase/server';
 import { importPDFToMenu, generateImportReport, validateImportResult, exportImportResult } from '@/lib/pdfImporter/mainImporter';
 import { parseMenuWithGPT } from '@/lib/pdfImporter/robustMenuParser';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
   const supa = getSupabaseClient();
   
   try {
-    console.log('[PDF_PROCESS_V2] Starting enhanced PDF processing...');
+    logInfo('[PDF_PROCESS_V2] Starting enhanced PDF processing...');
     
     // Parse FormData
     const formData = await req.formData();
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    console.log('[PDF_PROCESS_V2] File received:', {
+    logInfo('[PDF_PROCESS_V2] File received:', {
       name: file.name,
       size: file.size,
       type: file.type,
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(arrayBuffer);
 
     // Store original PDF in Supabase Storage
-    console.log('[PDF_PROCESS_V2] Storing PDF in Supabase Storage...');
+    logInfo('[PDF_PROCESS_V2] Storing PDF in Supabase Storage...');
     const { error: storageError } = await supa.storage
       .from('menus')
       .upload(storagePath, buffer, {
@@ -87,17 +88,17 @@ export async function POST(req: Request) {
       });
 
     if (storageError) {
-      console.error('[PDF_PROCESS_V2] Storage upload failed:', storageError);
+      logError('[PDF_PROCESS_V2] Storage upload failed:', storageError);
       return NextResponse.json({ 
         success: false, 
         error: `Storage upload failed: ${storageError.message}` 
       }, { status: 500 });
     }
 
-    console.log('[PDF_PROCESS_V2] PDF stored successfully at:', storagePath);
+    logInfo('[PDF_PROCESS_V2] PDF stored successfully at:', storagePath);
 
     // Process PDF using the comprehensive importer
-    console.log('[PDF_PROCESS_V2] Processing PDF with comprehensive importer...');
+    logInfo('[PDF_PROCESS_V2] Processing PDF with comprehensive importer...');
     const importResult = await importPDFToMenu(buffer, venueId, supa, {
       mode: mode || 'auto',
       enableGPT,
@@ -105,22 +106,22 @@ export async function POST(req: Request) {
     });
 
     if (!importResult.success) {
-      console.error('[PDF_PROCESS_V2] Import failed:', importResult.error);
+      logError('[PDF_PROCESS_V2] Import failed:', importResult.error);
       return NextResponse.json({ 
         success: false, 
         error: `PDF import failed: ${importResult.error}` 
       }, { status: 500 });
     }
 
-    console.log('[PDF_PROCESS_V2] Import completed successfully');
+    logInfo('[PDF_PROCESS_V2] Import completed successfully');
 
     // Generate comprehensive report
     const report = generateImportReport(importResult);
-    console.log('[PDF_PROCESS_V2] Import report generated');
+    logInfo('[PDF_PROCESS_V2] Import report generated');
 
     // Validate import quality
     const qualityCheck = validateImportResult(importResult);
-    console.log('[PDF_PROCESS_V2] Quality check:', qualityCheck.isHighQuality ? 'PASSED' : 'FAILED');
+    logInfo('[PDF_PROCESS_V2] Quality check:', qualityCheck.isHighQuality ? 'PASSED' : 'FAILED');
 
     // Store audit trail
     try {
@@ -141,7 +142,7 @@ export async function POST(req: Request) {
         coverage_rate: importResult.metadata?.coverageRate || 0
       });
     } catch (auditError) {
-      console.warn('[PDF_PROCESS_V2] Audit trail insertion failed:', auditError);
+      logWarn('[PDF_PROCESS_V2] Audit trail insertion failed:', auditError);
       // Don't fail the whole request for audit trail issues
     }
 
@@ -183,7 +184,7 @@ export async function POST(req: Request) {
       report: report
     };
 
-    console.log('[PDF_PROCESS_V2] Response prepared:', {
+    logInfo('[PDF_PROCESS_V2] Response prepared:', {
       success: response.success,
       itemsProcessed: response.metadata.itemsProcessed,
       coverageRate: response.metadata.coverageRate,
@@ -193,7 +194,7 @@ export async function POST(req: Request) {
     return NextResponse.json(response);
 
   } catch (error: any) {
-    console.error('[PDF_PROCESS_V2] Fatal error:', error);
+    logError('[PDF_PROCESS_V2] Fatal error:', error);
     return NextResponse.json({ 
       success: false, 
       error: `PDF processing failed: ${error.message}` 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -21,11 +22,11 @@ function generateUploadKey(venueId: string, filename: string): string {
 // Extract text from PDF using Google Vision
 async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   try {
-    console.log('[OCR] Starting PDF text extraction...');
+    logInfo('[OCR] Starting PDF text extraction...');
     
     // Check if Google Vision credentials are available
     if (!process.env.GOOGLE_CREDENTIALS_B64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      console.log('[OCR] No Google Vision credentials found, using fallback text extraction');
+      logInfo('[OCR] No Google Vision credentials found, using fallback text extraction');
       
       // Fallback to basic text extraction for development
       const mockText = `
@@ -50,22 +51,22 @@ BEVERAGES
 3. Soft Drinks - £3.00
       `.trim();
 
-      console.log('[OCR] Text extraction completed (fallback), length:', mockText.length);
+      logInfo('[OCR] Text extraction completed (fallback), length:', mockText.length);
       return mockText;
     }
     
     // Use real Google Vision OCR
-    console.log('[OCR] Using Google Vision OCR...');
+    logInfo('[OCR] Using Google Vision OCR...');
     const { extractTextFromPdf } = await import('@/lib/googleVisionOCR');
     const extractedText = await extractTextFromPdf(pdfBuffer, 'uploaded-menu.pdf');
     
-    console.log('[OCR] Text extraction completed (Google Vision), length:', extractedText.length);
-    console.log('[OCR] Text preview:', extractedText.substring(0, 200));
+    logInfo('[OCR] Text extraction completed (Google Vision), length:', extractedText.length);
+    logInfo('[OCR] Text preview:', extractedText.substring(0, 200));
     
     return extractedText;
     
   } catch (error: any) {
-    console.error('[OCR] Text extraction failed:', error);
+    logError('[OCR] Text extraction failed:', error);
     throw new Error(`OCR failed: ${error.message}`);
   }
 }
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
   const supa = getSupabaseClient();
   
   try {
-    console.log('[PDF_PROCESS] Starting PDF processing...');
+    logInfo('[PDF_PROCESS] Starting PDF processing...');
     
     // Parse FormData
     const formData = await req.formData();
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    console.log('[PDF_PROCESS] File received:', {
+    logInfo('[PDF_PROCESS] File received:', {
       name: file.name,
       size: file.size,
       type: file.type,
@@ -121,7 +122,7 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(arrayBuffer);
 
     // Store original PDF in Supabase Storage
-    console.log('[PDF_PROCESS] Storing PDF in Supabase Storage...');
+    logInfo('[PDF_PROCESS] Storing PDF in Supabase Storage...');
     const { error: storageError } = await supa.storage
       .from('menus')
       .upload(storagePath, buffer, {
@@ -130,21 +131,21 @@ export async function POST(req: Request) {
       });
 
     if (storageError) {
-      console.error('[PDF_PROCESS] Storage upload failed:', storageError);
+      logError('[PDF_PROCESS] Storage upload failed:', storageError);
       return NextResponse.json({ 
         ok: false, 
         error: `Storage upload failed: ${storageError.message}` 
       }, { status: 500 });
     }
 
-    console.log('[PDF_PROCESS] PDF stored successfully at:', storagePath);
+    logInfo('[PDF_PROCESS] PDF stored successfully at:', storagePath);
 
     // Extract text using OCR (currently mock implementation)
     let extractedText: string;
     try {
       extractedText = await extractTextFromPDF(buffer);
     } catch (ocrError: any) {
-      console.error('[PDF_PROCESS] OCR failed:', ocrError);
+      logError('[PDF_PROCESS] OCR failed:', ocrError);
       return NextResponse.json({ 
         ok: false, 
         error: `OCR failed: ${ocrError.message}` 
@@ -161,20 +162,20 @@ export async function POST(req: Request) {
     // Parse menu using OpenAI
     let rawPayload;
     try {
-      console.log('[PDF_PROCESS] Parsing menu with OpenAI...');
+      logInfo('[PDF_PROCESS] Parsing menu with OpenAI...');
       
       // Import the parser dynamically to avoid import issues
       const { parseMenuInChunks } = await import('@/lib/parseMenuFC');
       rawPayload = await parseMenuInChunks(extractedText);
     } catch (parseError: any) {
-      console.error('[PDF_PROCESS] Menu parsing failed:', parseError);
+      logError('[PDF_PROCESS] Menu parsing failed:', parseError);
       return NextResponse.json({ 
         ok: false, 
         error: `Menu parsing failed: ${parseError.message}` 
       }, { status: 500 });
     }
 
-    console.log('[PDF_PROCESS] Menu parsing completed successfully');
+    logInfo('[PDF_PROCESS] Menu parsing completed successfully');
 
     // Normalize for database insertion
     let normalized;
@@ -182,14 +183,14 @@ export async function POST(req: Request) {
       const { normalizeForInsert } = await import('@/lib/normalizeMenu');
       normalized = normalizeForInsert(rawPayload);
     } catch (normalizeError: any) {
-      console.error('[PDF_PROCESS] Normalization failed:', normalizeError);
+      logError('[PDF_PROCESS] Normalization failed:', normalizeError);
       return NextResponse.json({ 
         ok: false, 
         error: `Normalization failed: ${normalizeError.message}` 
       }, { status: 500 });
     }
 
-    console.log('[PDF_PROCESS] Normalized items:', normalized.items.length);
+    logInfo('[PDF_PROCESS] Normalized items:', normalized.items.length);
 
     // Validate against schema (with loose mode support)
     let validated;
@@ -213,14 +214,14 @@ export async function POST(req: Request) {
         validated = MenuPayload.parse(normalized);
       }
     } catch (validationError: any) {
-      console.error('[PDF_PROCESS] Schema validation failed:', validationError);
+      logError('[PDF_PROCESS] Schema validation failed:', validationError);
       return NextResponse.json({ 
         ok: false, 
         error: `Schema validation failed: ${validationError.message}` 
       }, { status: 500 });
     }
 
-    console.log('[PDF_PROCESS] Schema validation successful');
+    logInfo('[PDF_PROCESS] Schema validation successful');
 
     // Prepare items for database insertion with de-duplication by (venue_id, normalized name)
     const cleanName = (s: string) => s.replace(/\s+/g, ' ').trim();
@@ -242,7 +243,7 @@ export async function POST(req: Request) {
         return true;
       });
 
-    console.log('[DB] about_to_insert', itemsToUpsert.length);
+    logInfo('[DB] about_to_insert', itemsToUpsert.length);
 
     // Fetch existing items to avoid duplicates without relying on DB constraint
     const { data: existing } = await supa
@@ -264,7 +265,7 @@ export async function POST(req: Request) {
       const normalizedNewName = normalizeName(it.name);
       const isDuplicate = existingNames.has(normalizedNewName);
       if (isDuplicate) {
-        console.log('[DUPLICATE] Skipping duplicate item:', it.name, '-> normalized:', normalizedNewName);
+        logInfo('[DUPLICATE] Skipping duplicate item:', it.name, '-> normalized:', normalizedNewName);
       }
       return !isDuplicate;
     });
@@ -276,7 +277,7 @@ export async function POST(req: Request) {
         .insert(toInsert)
         .select('id, name, price, category');
       if (insertErr) {
-        console.error('[PDF_PROCESS] Database insertion failed:', insertErr);
+        logError('[PDF_PROCESS] Database insertion failed:', insertErr);
         return NextResponse.json({ ok:false, error: `Database insertion failed: ${insertErr.message}` }, { status:500 });
       }
       upsertedItems = inserted || [];
@@ -287,9 +288,9 @@ export async function POST(req: Request) {
     const skipped = total - inserted;
 
     const duplicatesSkipped = itemsToUpsert.length - toInsert.length;
-    console.log('[PDF_PROCESS] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Duplicates:', duplicatesSkipped, 'Total:', total);
-    console.log('[PDF_PROCESS] Items that were inserted:', upsertedItems);
-    console.log('[PDF_PROCESS] Venue ID used for insertion:', venueId);
+    logInfo('[PDF_PROCESS] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Duplicates:', duplicatesSkipped, 'Total:', total);
+    logInfo('[PDF_PROCESS] Items that were inserted:', upsertedItems);
+    logInfo('[PDF_PROCESS] Venue ID used for insertion:', venueId);
 
     // Store audit trail with category order
     try {
@@ -302,9 +303,9 @@ export async function POST(req: Request) {
         category_order: validated.categories, // Store category order in the new column
         created_at: new Date().toISOString()
       });
-      console.log('[PDF_PROCESS] Stored category order:', validated.categories);
+      logInfo('[PDF_PROCESS] Stored category order:', validated.categories);
     } catch (auditError) {
-      console.warn('[PDF_PROCESS] Audit trail insertion failed:', auditError);
+      logWarn('[PDF_PROCESS] Audit trail insertion failed:', auditError);
       // Don't fail the whole request for audit trail issues
     }
 
@@ -317,7 +318,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('[PDF_PROCESS] Fatal error:', error);
+    logError('[PDF_PROCESS] Fatal error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: `PDF processing failed: ${error.message}` 

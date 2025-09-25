@@ -52,6 +52,7 @@ import { MergeConfirmationDialog } from './MergeConfirmationDialog';
 import { ReservationDialog } from './ReservationDialog';
 import { AssignQRCodeModal } from './AssignQRCodeModal';
 import { useEnhancedTableMerge } from '@/hooks/useEnhancedTableMerge';
+import { logInfo, logError } from "@/lib/logger";
 
 interface TableCardProps {
   table: TableWithSession;
@@ -83,9 +84,9 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const handleAction = async (action: string, orderId?: string, destinationTableId?: string) => {
     try {
       setIsLoading(true);
-      console.log('[TABLE CARD] Executing action:', action, 'for table:', table.id);
-      console.log('[TABLE CARD] Table details:', { id: table.id, label: table.label, status: table.status });
-      console.log('[TABLE CARD] Venue ID:', venueId);
+      logInfo('[TABLE CARD] Executing action:', action, 'for table:', table.id);
+      logInfo('[TABLE CARD] Table details:', { id: table.id, label: table.label, status: table.status });
+      logInfo('[TABLE CARD] Venue ID:', venueId);
       await executeAction({
         action: action as any,
         table_id: table.id,
@@ -93,10 +94,10 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         order_id: orderId,
         destination_table_id: destinationTableId,
       });
-      console.log('[TABLE CARD] Action completed successfully:', action);
+      logInfo('[TABLE CARD] Action completed successfully:', action);
       onActionComplete?.();
     } catch (error) {
-      console.error('[TABLE CARD] Action failed:', error);
+      logError('[TABLE CARD] Action failed:', error);
     } finally {
       setIsLoading(false);
     }
@@ -105,7 +106,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const handleSeatParty = async () => {
     try {
       setIsLoading(true);
-      console.log('[TABLE CARD] Seating party at table:', table.id);
+      logInfo('[TABLE CARD] Seating party at table:', table.id);
       
       // Call the table actions API with occupy_table action
       const response = await fetch('/api/table-sessions/actions', {
@@ -157,11 +158,11 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
         
         onActionComplete?.();
       } else {
-        console.error('[TABLE CARD] Seat party failed:', result.error);
+        logError('[TABLE CARD] Seat party failed:', result.error);
         alert(`Failed to seat party: ${result.error}`);
       }
     } catch (error) {
-      console.error('[TABLE CARD] Seat party error:', error);
+      logError('[TABLE CARD] Seat party error:', error);
       alert(`Error seating party: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
@@ -170,32 +171,32 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
 
   const handleSplitBill = async () => {
     try {
-      console.log('[TABLE CARD] Splitting bill for table:', table.id);
+      logInfo('[TABLE CARD] Splitting bill for table:', table.id);
       // TODO: Implement split bill functionality
       // This would open a dialog to select items to split
       alert('Split bill functionality coming soon!');
     } catch (error) {
-      console.error('[TABLE CARD] Split bill error:', error);
+      logError('[TABLE CARD] Split bill error:', error);
     }
   };
 
   const handleUnmergeTable = async () => {
     try {
       setIsLoading(true);
-      console.log('[TABLE CARD] Unmerging table:', table.id, 'with label:', table.label);
+      logInfo('[TABLE CARD] Unmerging table:', table.id, 'with label:', table.label);
       
       // First, find the secondary table that is merged with this primary table
       const findSecondaryTableResponse = await fetch(`/api/tables/secondary?primary_table_id=${table.id}&venue_id=${venueId}`);
       const secondaryTableData = await findSecondaryTableResponse.json();
       
-      console.log('[TABLE CARD] Secondary table response:', secondaryTableData);
+      logInfo('[TABLE CARD] Secondary table response:', secondaryTableData);
       
       if (!secondaryTableData.success || !secondaryTableData.table) {
         throw new Error('Could not find secondary table for unmerge');
       }
       
       const secondaryTableId = secondaryTableData.table.id;
-      console.log('[TABLE CARD] Found secondary table:', secondaryTableId);
+      logInfo('[TABLE CARD] Found secondary table:', secondaryTableId);
       
       // Now call unmerge with the secondary table ID
       const response = await fetch('/api/table-sessions/actions', {
@@ -210,21 +211,21 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       });
       
       const result = await response.json();
-      console.log('[TABLE CARD] Unmerge API response:', result);
+      logInfo('[TABLE CARD] Unmerge API response:', result);
       
       if (result.success) {
-        console.log('[TABLE CARD] Unmerge successful:', result.data);
+        logInfo('[TABLE CARD] Unmerge successful:', result.data);
         // Force refresh the table data
         if (onActionComplete) {
-          console.log('[TABLE CARD] Calling onActionComplete to refresh data');
+          logInfo('[TABLE CARD] Calling onActionComplete to refresh data');
           onActionComplete();
         }
       } else {
-        console.error('[TABLE CARD] Unmerge failed:', result.error);
+        logError('[TABLE CARD] Unmerge failed:', result.error);
         alert(`Failed to unmerge table: ${result.error}`);
       }
     } catch (error) {
-      console.error('[TABLE CARD] Unmerge error:', error);
+      logError('[TABLE CARD] Unmerge error:', error);
       alert(`Error unmerging table: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
@@ -234,7 +235,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
   const handleEnhancedMerge = async (sourceTableId: string, targetTableId: string, requiresConfirmation: boolean) => {
     try {
       setIsLoading(true);
-      console.log('[TABLE CARD] Enhanced merge request:', {
+      logInfo('[TABLE CARD] Enhanced merge request:', {
         sourceTableId,
         targetTableId,
         requiresConfirmation
@@ -266,14 +267,14 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       const result = await performMerge(sourceTableId, targetTableId, venueId, false);
       
       if (result.success) {
-        console.log('[TABLE CARD] Enhanced merge successful:', result.data);
+        logInfo('[TABLE CARD] Enhanced merge successful:', result.data);
         onActionComplete?.();
       } else {
-        console.error('[TABLE CARD] Enhanced merge failed:', result.error);
+        logError('[TABLE CARD] Enhanced merge failed:', result.error);
         alert(`Merge failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('[TABLE CARD] Enhanced merge error:', error);
+      logError('[TABLE CARD] Enhanced merge error:', error);
       alert(`Error merging tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
@@ -285,7 +286,7 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
 
     try {
       setIsLoading(true);
-      console.log('[TABLE CARD] Confirming risky merge:', pendingMergeData);
+      logInfo('[TABLE CARD] Confirming risky merge:', pendingMergeData);
 
       const result = await performMerge(
         pendingMergeData.sourceTableId,
@@ -295,16 +296,16 @@ export function TableCard({ table, venueId, onActionComplete, availableTables = 
       );
       
       if (result.success) {
-        console.log('[TABLE CARD] Confirmed merge successful:', result.data);
+        logInfo('[TABLE CARD] Confirmed merge successful:', result.data);
         onActionComplete?.();
         setShowMergeConfirmation(false);
         setPendingMergeData(null);
       } else {
-        console.error('[TABLE CARD] Confirmed merge failed:', result.error);
+        logError('[TABLE CARD] Confirmed merge failed:', result.error);
         alert(`Merge failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('[TABLE CARD] Confirmed merge error:', error);
+      logError('[TABLE CARD] Confirmed merge error:', error);
       alert(`Error merging tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);

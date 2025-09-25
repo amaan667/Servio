@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 // Import supabase browser directly to avoid lazy loading issues
 import { supabaseBrowser, clearSupabaseAuth } from '@/lib/supabase/browser';
+import { logInfo } from "@/lib/logger";
 
 function CallbackContent() {
   const router = useRouter();
@@ -17,7 +18,7 @@ function CallbackContent() {
   const addDebugLog = useCallback((message: string) => {
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}`;
-    console.log(logEntry);
+    logInfo(logEntry);
     setDebugLogs(prev => [...prev, logEntry]);
   }, []);
 

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { logError } from "@/lib/logger";
 
 export default function Error({
   error,
@@ -14,7 +15,7 @@ export default function Error({
 
   useEffect(() => {
     // Log the error to help with debugging
-    console.error('Application error:', error);
+    logError('Application error:', error);
     
     // Only redirect to home for certain types of errors, not order-related ones
     if (error.message.includes('Cannot access uninitialized variable') || 

@@ -17,6 +17,7 @@ import {
   Users
 } from 'lucide-react';
 import Image from 'next/image';
+import { logInfo, logError } from "@/lib/logger";
 
 interface PendingOrderData {
   venueId: string;
@@ -48,23 +49,23 @@ export default function OrderSummaryPage() {
   useEffect(() => {
     // Get order data from localStorage
     const storedData = localStorage.getItem('servio-pending-order');
-    console.log('[ORDER SUMMARY DEBUG] Loading order data from localStorage:', storedData);
+    logInfo('[ORDER SUMMARY DEBUG] Loading order data from localStorage:', storedData);
     
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        console.log('[ORDER SUMMARY DEBUG] Parsed order data:', data);
-        console.log('[ORDER SUMMARY DEBUG] Customer info:', {
+        logInfo('[ORDER SUMMARY DEBUG] Parsed order data:', data);
+        logInfo('[ORDER SUMMARY DEBUG] Customer info:', {
           name: data.customerName,
           phone: data.customerPhone
         });
         setOrderData(data);
       } catch (error) {
-        console.error('Error parsing stored order data:', error);
+        logError('Error parsing stored order data:', error);
         router.push('/order');
       }
     } else {
-      console.log('[ORDER SUMMARY DEBUG] No pending order data found, redirecting to order page');
+      logInfo('[ORDER SUMMARY DEBUG] No pending order data found, redirecting to order page');
       router.push('/order');
     }
     setLoading(false);
@@ -76,7 +77,7 @@ export default function OrderSummaryPage() {
     setLoading(true);
     try {
       // First, create the order in the database
-      console.log('[ORDER SUMMARY DEBUG] Creating order first...');
+      logInfo('[ORDER SUMMARY DEBUG] Creating order first...');
       
       const orderPayload = {
         venue_id: orderData.venueId,
@@ -110,11 +111,11 @@ export default function OrderSummaryPage() {
       }
 
       const orderResult = await orderResponse.json();
-      console.log('[ORDER SUMMARY DEBUG] Order created:', orderResult);
+      logInfo('[ORDER SUMMARY DEBUG] Order created:', orderResult);
       
       if (!orderResult.order?.id) {
-        console.error('[ORDER SUMMARY DEBUG] ERROR: No order ID in response:', orderResult);
-        console.error('[ORDER SUMMARY DEBUG] Full response structure:', JSON.stringify(orderResult, null, 2));
+        logError('[ORDER SUMMARY DEBUG] ERROR: No order ID in response:', orderResult);
+        logError('[ORDER SUMMARY DEBUG] Full response structure:', JSON.stringify(orderResult, null, 2));
         throw new Error('Order was created but no order ID was returned');
       }
 
@@ -141,7 +142,7 @@ export default function OrderSummaryPage() {
         throw new Error('No checkout URL received');
       }
     } catch (error) {
-      console.error('[ORDER SUMMARY DEBUG] Payment error:', error);
+      logError('[ORDER SUMMARY DEBUG] Payment error:', error);
       alert(error instanceof Error ? error.message : 'Payment failed. Please try again.');
     } finally {
       setLoading(false);
@@ -200,7 +201,7 @@ export default function OrderSummaryPage() {
       localStorage.removeItem('servio-checkout-data');
       
     } catch (error) {
-      console.error('Error creating order:', error);
+      logError('Error creating order:', error);
       alert('Failed to create order. Please try again.');
     } finally {
       setIsCreatingOrder(false);

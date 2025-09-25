@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabaseBrowser } from '@/lib/supabase/browser';
+import { logError } from "@/lib/logger";
 
 type AuthValue = {
   session: Session | null;
@@ -114,14 +115,14 @@ export default function AuthProvider({
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('[AUTH DEBUG] Supabase signOut error:', error);
+        logError('[AUTH DEBUG] Supabase signOut error:', error);
       }
       
       // Clear local state immediately
       setSession(null);
       setUser(null);
     } catch (error) {
-      console.error('[AUTH DEBUG] AuthProvider signOut error:', error);
+      logError('[AUTH DEBUG] AuthProvider signOut error:', error);
       // Clear local state even if there's an error
       setSession(null);
       setUser(null);

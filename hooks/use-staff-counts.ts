@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logInfo, logError } from "@/lib/logger";
 
 export interface StaffCounts {
   total_staff: number;
@@ -28,15 +29,15 @@ export function useStaffCounts(venueId: string) {
         .single();
       
       if (rpcError) {
-        console.error('[STAFF_COUNTS] RPC error:', rpcError);
+        logError('[STAFF_COUNTS] RPC error:', rpcError);
         setError(rpcError.message);
         return;
       }
       
-      console.log('[STAFF_COUNTS] RPC result:', result);
+      logInfo('[STAFF_COUNTS] RPC result:', result);
       setData(result);
     } catch (err) {
-      console.error('[STAFF_COUNTS] Fetch error:', err);
+      logError('[STAFF_COUNTS] Fetch error:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);

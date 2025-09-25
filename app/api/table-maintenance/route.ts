@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('[TABLE MAINTENANCE] Starting table maintenance...');
+    logInfo('[TABLE MAINTENANCE] Starting table maintenance...');
     
     // Check authentication
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError || !user) {
-      console.log('[TABLE MAINTENANCE] Authentication failed:', authError);
+      logInfo('[TABLE MAINTENANCE] Authentication failed:', authError);
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
@@ -19,11 +20,11 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase.rpc('run_table_maintenance');
 
     if (error) {
-      console.error('[TABLE MAINTENANCE] Error running maintenance:', error);
+      logError('[TABLE MAINTENANCE] Error running maintenance:', error);
       return NextResponse.json({ error: 'Failed to run table maintenance' }, { status: 500 });
     }
 
-    console.log('[TABLE MAINTENANCE] Table maintenance completed successfully');
+    logInfo('[TABLE MAINTENANCE] Table maintenance completed successfully');
     return NextResponse.json({ 
       success: true, 
       message: 'Table maintenance completed successfully',
@@ -31,19 +32,19 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[TABLE MAINTENANCE] Unexpected error:', error);
+    logError('[TABLE MAINTENANCE] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[TABLE MAINTENANCE] Checking table maintenance status...');
+    logInfo('[TABLE MAINTENANCE] Checking table maintenance status...');
     
     // Check authentication
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError || !user) {
-      console.log('[TABLE MAINTENANCE] Authentication failed:', authError);
+      logInfo('[TABLE MAINTENANCE] Authentication failed:', authError);
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
       .not('reservation_duration_minutes', 'is', null);
 
     if (expiredError) {
-      console.error('[TABLE MAINTENANCE] Error checking expired reservations:', expiredError);
+      logError('[TABLE MAINTENANCE] Error checking expired reservations:', expiredError);
       return NextResponse.json({ error: 'Failed to check expired reservations' }, { status: 500 });
     }
 
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[TABLE MAINTENANCE] Unexpected error:', error);
+    logError('[TABLE MAINTENANCE] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

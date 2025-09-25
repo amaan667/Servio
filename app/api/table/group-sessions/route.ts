@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[GROUP SESSIONS] Fetching group sessions for venue:', venueId);
+    logInfo('[GROUP SESSIONS] Fetching group sessions for venue:', venueId);
 
     const supabase = await createAdminClient();
 
@@ -28,21 +29,21 @@ export async function GET(request: NextRequest) {
 
       if (error) {
         if (error.message.includes('does not exist')) {
-          console.log('[GROUP SESSIONS] Table does not exist yet, returning empty array');
+          logInfo('[GROUP SESSIONS] Table does not exist yet, returning empty array');
           return NextResponse.json({ 
             ok: true, 
             groupSessions: [],
             message: 'Table not created yet - returning empty data'
           });
         }
-        console.error('[GROUP SESSIONS] Error fetching group sessions:', error);
+        logError('[GROUP SESSIONS] Error fetching group sessions:', error);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to fetch group sessions: ${error.message}` 
         }, { status: 500 });
       }
 
-      console.log('[GROUP SESSIONS] Found group sessions:', groupSessions?.length || 0);
+      logInfo('[GROUP SESSIONS] Found group sessions:', groupSessions?.length || 0);
 
       return NextResponse.json({ 
         ok: true, 
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
       });
 
     } catch (tableError) {
-      console.log('[GROUP SESSIONS] Table not available, returning empty array');
+      logInfo('[GROUP SESSIONS] Table not available, returning empty array');
       return NextResponse.json({ 
         ok: true, 
         groupSessions: [],
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[GROUP SESSIONS] Error in GET group sessions API:', error);
+    logError('[GROUP SESSIONS] Error in GET group sessions API:', error);
     return NextResponse.json({ 
       ok: false, 
       error: 'Internal server error' 

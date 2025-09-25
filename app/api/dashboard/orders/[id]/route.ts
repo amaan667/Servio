@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -37,7 +38,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   if (order_status === 'COMPLETED' || order_status === 'CANCELLED') {
     const order = data;
     if (order && order.table_number && order.source === 'qr') {
-      console.log('[TABLE CLEAR] Order completed/cancelled, checking if table should be cleared:', {
+      logInfo('[TABLE CLEAR] Order completed/cancelled, checking if table should be cleared:', {
         orderId: id,
         tableNumber: order.table_number,
         venueId: order.venue_id,
@@ -55,10 +56,10 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
         .neq('id', id);
 
       if (activeOrdersError) {
-        console.error('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
+        logError('[TABLE CLEAR] Error checking active orders:', activeOrdersError);
       } else if (!activeOrders || activeOrders.length === 0) {
         // No other active orders for this table, clear the table setup
-        console.log('[TABLE CLEAR] No other active orders for table, clearing table setup');
+        logInfo('[TABLE CLEAR] No other active orders for table, clearing table setup');
         
         // Clear table sessions (active sessions)
         const { error: sessionClearError } = await supa
@@ -74,9 +75,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
           .is('closed_at', null);
 
         if (sessionClearError) {
-          console.error('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
+          logError('[TABLE CLEAR] Error clearing table sessions:', sessionClearError);
         } else {
-          console.log('[TABLE CLEAR] Successfully cleared table sessions');
+          logInfo('[TABLE CLEAR] Successfully cleared table sessions');
         }
 
         // Also clear table runtime state if it exists
@@ -91,14 +92,14 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
           .eq('label', `Table ${order.table_number}`);
 
         if (runtimeClearError) {
-          console.error('[TABLE CLEAR] Error clearing table runtime state:', runtimeClearError);
+          logError('[TABLE CLEAR] Error clearing table runtime state:', runtimeClearError);
         } else {
-          console.log('[TABLE CLEAR] Successfully cleared table runtime state');
+          logInfo('[TABLE CLEAR] Successfully cleared table runtime state');
         }
 
-        console.log('[TABLE CLEAR] Table setup cleared successfully for table', order.table_number);
+        logInfo('[TABLE CLEAR] Table setup cleared successfully for table', order.table_number);
       } else {
-        console.log('[TABLE CLEAR] Other active orders exist for table, keeping table occupied:', {
+        logInfo('[TABLE CLEAR] Other active orders exist for table, keeping table occupied:', {
           activeOrdersCount: activeOrders.length,
           activeOrderIds: activeOrders.map(o => o.id)
         });

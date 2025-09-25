@@ -53,7 +53,7 @@ export function liveOrdersWindow() {
     endUtcISO: now.toISOString(),
   };
   
-  console.log('[DEBUG] liveOrdersWindow calculation:', {
+  logInfo('[DEBUG] liveOrdersWindow calculation:', {
     now: now.toISOString(),
     thirtyMinutesAgo: thirtyMinutesAgo.toISOString(),
     result
@@ -74,7 +74,7 @@ export function earlierTodayWindow(tz?: string) {
     endUtcISO: liveWindow.startUtcISO, // Start of live window (exclusive)
   };
   
-  console.log('[DEBUG] earlierTodayWindow calculation:', {
+  logInfo('[DEBUG] earlierTodayWindow calculation:', {
     tz,
     todayStart: startUtcISO,
     todayEnd: endUtcISO,

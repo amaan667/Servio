@@ -21,6 +21,7 @@ import { TableCard } from '@/components/table-management/TableCard';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFilters } from '@/components/table-management/TabFilters';
 import { createClient } from '@/lib/supabase/client';
+import { logInfo } from "@/lib/logger";
 
 type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLOSED';
 
@@ -36,7 +37,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
   const router = useRouter();
 
   // Debug logging
-  console.log('[TABLE MANAGEMENT] Component rendering:', { 
+  logInfo('[TABLE MANAGEMENT] Component rendering:', { 
     venueId, 
     loading, 
     error, 
@@ -46,7 +47,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
 
   // Additional detailed logging for navigation debugging
   useEffect(() => {
-    console.log('[TABLE MANAGEMENT] Navigation debug - Component mounted:', {
+    logInfo('[TABLE MANAGEMENT] Navigation debug - Component mounted:', {
       venueId,
       timestamp: new Date().toISOString(),
       userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
@@ -55,7 +56,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
   }, [venueId]);
 
   useEffect(() => {
-    console.log('[TABLE MANAGEMENT] Loading state changed:', {
+    logInfo('[TABLE MANAGEMENT] Loading state changed:', {
       loading,
       error,
       tablesCount: tables?.length || 0,
@@ -132,7 +133,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
           filter: `venue_id=eq.${venueId}`,
         },
         () => {
-          console.log('[TABLE MANAGEMENT] Table changed, refreshing counters');
+          logInfo('[TABLE MANAGEMENT] Table changed, refreshing counters');
           refetchCounters();
         }
       )
@@ -145,7 +146,7 @@ export function TableManagementClient({ venueId }: TableManagementClientProps) {
           filter: `venue_id=eq.${venueId}`,
         },
         () => {
-          console.log('[TABLE MANAGEMENT] Table session changed, refreshing counters');
+          logInfo('[TABLE MANAGEMENT] Table session changed, refreshing counters');
           refetchCounters();
         }
       )

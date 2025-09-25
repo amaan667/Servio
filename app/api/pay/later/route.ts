@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log('[PAY LATER] Processing pay later for order:', order_id);
+    logInfo('[PAY LATER] Processing pay later for order:', order_id);
 
     // Update order to keep unpaid status but mark as pay later
     const { data: order, error: updateError } = await supabase
@@ -44,14 +45,14 @@ export async function POST(req: Request) {
       .single();
 
     if (updateError || !order) {
-      console.error('[PAY LATER] Failed to update order:', updateError);
+      logError('[PAY LATER] Failed to update order:', updateError);
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to process order' 
       }, { status: 500 });
     }
 
-    console.log('[PAY LATER] Pay later order created for order:', order_id);
+    logInfo('[PAY LATER] Pay later order created for order:', order_id);
 
     return NextResponse.json({
       success: true,
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[PAY LATER] Error:', error);
+    logError('[PAY LATER] Error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error' 

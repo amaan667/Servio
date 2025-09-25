@@ -4,9 +4,10 @@ export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { safeGetUser } from '@/lib/server-utils';
-import { log } from '@/lib/debug';
+// import { log } from '@/lib/debug'; // Removed debug import
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import MenuClient from './MenuClient';
+import { logInfo, logError } from "@/lib/logger";
 
 export default async function MenuPage({
   params,
@@ -14,18 +15,18 @@ export default async function MenuPage({
   params: Promise<{ venueId: string }>;
 }) {
   const { venueId } = await params;
-  console.log('[MENU] Page mounted for venue', venueId);
+  logInfo('[MENU] Page mounted for venue', venueId);
   
   // Safe auth check that only calls getUser if auth cookies exist
   const { data: { user }, error } = await safeGetUser();
   
   if (error) {
-    console.error('[MENU] Auth error:', error);
+    logError('[MENU] Auth error:', error);
     redirect('/sign-in');
   }
   
   if (!user) {
-    console.log('[MENU] No user found, redirecting to sign-in');
+    logInfo('[MENU] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
 

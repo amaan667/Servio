@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft, LayoutDashboard } from "lucide-react";
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { logInfo } from "@/lib/logger";
 
 interface NavigationBreadcrumbProps {
   customBackPath?: string;
@@ -43,7 +44,7 @@ export default function NavigationBreadcrumb({
   // [NAV] Determine dashboard link - route to dashboard if we have a venueId
   const dashboardLink = venueId ? `/dashboard/${venueId}` : '/dashboard';
 
-  console.log('[NAV] NavigationBreadcrumb', { venueId, homeLink, pathname });
+  logInfo('[NAV] NavigationBreadcrumb', { venueId, homeLink, pathname });
 
   const getPageTitle = () => {
     if (pathname.includes("/dashboard")) {

@@ -5,6 +5,7 @@ import { findSections, sliceSection } from "./menuSections";
 import { sectionPrompt } from "./prompts";
 import { filterSectionItems } from "./sectionPost";
 import { reassignMoved } from "./reassign";
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 
 const menuFunction = {
@@ -52,8 +53,8 @@ function reassignCategory(it: any) {
 }
 
 async function callMenuTool(system: string, user: string) {
-  console.log('[MENU PARSE] Calling menu tool with system prompt length:', system.length);
-  console.log('[MENU PARSE] User prompt length:', user.length);
+  logInfo('[MENU PARSE] Calling menu tool with system prompt length:', system.length);
+  logInfo('[MENU PARSE] User prompt length:', user.length);
 
   const openai = getOpenAI();
   const resp = await openai.chat.completions.create({
@@ -70,39 +71,39 @@ async function callMenuTool(system: string, user: string) {
 
   const call = resp.choices[0]?.message?.tool_calls?.[0];
   if (!call) {
-    console.error('[MENU PARSE] Model did not return tool_calls');
+    logError('[MENU PARSE] Model did not return tool_calls');
     throw new Error("Model did not return tool_calls.");
   }
 
   let args = (call as any).function.arguments || "{}";
-  console.log('[MENU PARSE] Tool arguments length:', args.length);
-  console.log('[MENU PARSE] Tool arguments preview:', args.substring(0, 200));
+  logInfo('[MENU PARSE] Tool arguments length:', args.length);
+  logInfo('[MENU PARSE] Tool arguments preview:', args.substring(0, 200));
 
   // Enhanced error handling for JSON parsing
   try {
     return JSON.parse(args);
   } catch (parseError) {
-    console.log('[MENU PARSE] Initial parse failed, attempting jsonrepair...');
-    console.log('[MENU PARSE] Raw arguments:', args);
-    console.log('[MENU PARSE] Parse error:', (parseError as any).message);
+    logInfo('[MENU PARSE] Initial parse failed, attempting jsonrepair...');
+    logInfo('[MENU PARSE] Raw arguments:', args);
+    logInfo('[MENU PARSE] Parse error:', (parseError as any).message);
     
     try {
       const repaired = jsonrepair(args);
-      console.log('[MENU PARSE] jsonrepair successful, length:', repaired.length);
-      console.log('[MENU PARSE] Repaired JSON preview:', repaired.substring(0, 200));
+      logInfo('[MENU PARSE] jsonrepair successful, length:', repaired.length);
+      logInfo('[MENU PARSE] Repaired JSON preview:', repaired.substring(0, 200));
       return JSON.parse(repaired);
     } catch (repairError) {
-      console.error('[MENU PARSE] jsonrepair also failed:', repairError);
-      console.error('[MENU PARSE] Failed arguments:', args);
+      logError('[MENU PARSE] jsonrepair also failed:', repairError);
+      logError('[MENU PARSE] Failed arguments:', args);
       
       // Try to extract any valid JSON from the response
       const jsonMatch = args.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
-          console.log('[MENU PARSE] Attempting to extract JSON from response...');
+          logInfo('[MENU PARSE] Attempting to extract JSON from response...');
           return JSON.parse(jsonMatch[0]);
         } catch (extractError) {
-          console.error('[MENU PARSE] JSON extraction failed:', extractError);
+          logError('[MENU PARSE] JSON extraction failed:', extractError);
         }
       }
       
@@ -112,15 +113,15 @@ async function callMenuTool(system: string, user: string) {
 }
 
 export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> {
-  console.log('[MENU PARSE] Starting enhanced section-based menu parsing...');
-  console.log('[MENU PARSE] OCR text length:', ocrText.length);
+  logInfo('[MENU PARSE] Starting enhanced section-based menu parsing...');
+  logInfo('[MENU PARSE] OCR text length:', ocrText.length);
 
   // 1) Find sections in OCR text
   const sections = findSections(ocrText);
-  console.log('[MENU PARSE] Found sections:', sections.map(s => s.name));
+  logInfo('[MENU PARSE] Found sections:', sections.map(s => s.name));
 
   if (sections.length === 0) {
-    console.log('[MENU PARSE] No sections found, falling back to old method');
+    logInfo('[MENU PARSE] No sections found, falling back to old method');
     // Fallback to old method if no sections found
     return await parseMenuInChunksFallback(ocrText);
   }
@@ -132,27 +133,27 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
 
   for (const sec of sections) {
     const slice = sliceSection(ocrText, sec);
-    console.log(`[MENU PARSE] Processing section "${sec.name}" (${slice.length} chars)`);
+    logInfo(`[MENU PARSE] Processing section "${sec.name}" (${slice.length} chars)`);
 
     try {
       const prompt = sectionPrompt(sec.name);
       const raw = await callMenuTool(prompt, slice);
       
       // A) Instrument the funnel (counts + reasons)
-      console.log('[PARSE] found_raw', raw.items.length);
+      logInfo('[PARSE] found_raw', raw.items.length);
       rawTotal += raw.items.length;
 
       const tooLong = raw.items.filter((i: any) => (i.name||'').length > 80);
-      console.log('[PARSE] drop_name_too_long', tooLong.length, tooLong.map((i: any) => i.name.slice(0,50)));
+      logInfo('[PARSE] drop_name_too_long', tooLong.length, tooLong.map((i: any) => i.name.slice(0,50)));
 
       const noPrice = raw.items.filter((i: any) => typeof i.price !== 'number' || isNaN(i.price) || i.price === 0);
-      console.log('[PARSE] drop_no_price', noPrice.length, noPrice.map((i: any) => i.name));
+      logInfo('[PARSE] drop_no_price', noPrice.length, noPrice.map((i: any) => i.name));
 
       const afterBasic = raw.items.filter((i: any) => (i.name||'').length && typeof i.price === 'number' && !isNaN(i.price) && i.price > 0);
-      console.log('[PARSE] basic_ok', afterBasic.length);
+      logInfo('[PARSE] basic_ok', afterBasic.length);
 
       const { kept, moved } = filterSectionItems(sec.name, afterBasic);
-      console.log('[PARSE] kept_in_section', kept.length, 'moved_out', moved.length, moved.map((m: any) => ({ name: m.name, suggest: m.suggest||m.reason })));
+      logInfo('[PARSE] kept_in_section', kept.length, 'moved_out', moved.length, moved.map((m: any) => ({ name: m.name, suggest: m.suggest||m.reason })));
 
       // B) Soft-normalize instead of reject
       const normalizedKept = kept.map((item: any) => ({
@@ -170,16 +171,16 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
       itemsAll.push(...normalizedKept);
       movedAll.push(...reassigned);
       
-      console.log(`[MENU PARSE] ${sec.name}: kept=${normalizedKept.length} reassigned=${reassigned.length}`);
+      logInfo(`[MENU PARSE] ${sec.name}: kept=${normalizedKept.length} reassigned=${reassigned.length}`);
     } catch (e) {
-      console.warn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
+      logWarn(`[MENU PARSE] Section "${sec.name}" failed:`, e);
       // Continue with other sections instead of failing completely
     }
   }
 
   // C) Final processing and validation
   const finalItems = itemsAll.concat(movedAll);
-  console.log('[DB] about_to_insert', finalItems.length);
+  logInfo('[DB] about_to_insert', finalItems.length);
 
   // D) Soft validation with transformation
   const validatedItems = finalItems.map((item: any, index: number) => ({
@@ -191,7 +192,7 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
     order_index: Number.isFinite(item.order_index) ? item.order_index : index,
   })).filter((item: any) => !isNaN(item.price) && item.price > 0 && item.name.length > 0);
 
-  console.log('[VERIFY] source_total', rawTotal, 'final_validated', validatedItems.length);
+  logInfo('[VERIFY] source_total', rawTotal, 'final_validated', validatedItems.length);
 
   // 5) Validate final shape
   const payload = { 
@@ -200,13 +201,13 @@ export async function parseMenuInChunks(ocrText: string): Promise<MenuPayloadT> 
   };
   const validated = MenuPayload.parse(payload);
   
-  console.log('[MENU PARSE] Final validation successful:', validated.items.length, 'items,', validated.categories.length, 'categories');
+  logInfo('[MENU PARSE] Final validation successful:', validated.items.length, 'items,', validated.categories.length, 'categories');
   return validated;
 }
 
 // Fallback method for when no sections are found
 async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT> {
-  console.log('[MENU PARSE] Using fallback parsing method...');
+  logInfo('[MENU PARSE] Using fallback parsing method...');
   
   // Enhanced fallback method that tries to extract more items
   const system = [
@@ -250,10 +251,10 @@ async function parseMenuInChunksFallback(ocrText: string): Promise<MenuPayloadT>
   try {
     const parsed = JSON.parse(raw);
     const validated = MenuPayload.parse(parsed);
-    console.log('[MENU PARSE] Fallback parsing successful:', validated.items.length, 'items');
+    logInfo('[MENU PARSE] Fallback parsing successful:', validated.items.length, 'items');
     return validated;
   } catch (e) {
-    console.error('[MENU PARSE] Fallback parsing failed:', e);
+    logError('[MENU PARSE] Fallback parsing failed:', e);
     throw new Error("Failed to parse menu with fallback method.");
   }
 }

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { hasSupabaseAuthCookies } from '@/lib/auth/utils';
+import { logError } from '@/lib/logger';
 
 export async function createServerSupabase() {
   const cookieStore = await cookies();
@@ -17,7 +18,7 @@ export async function createServerSupabase() {
           try {
             return cookieStore.get(name)?.value; 
           } catch (error) {
-            console.error('[SUPABASE SERVER] Error getting cookie:', error);
+            logError('supabase.server.cookie.get', error);
             return undefined;
           }
         },
@@ -33,7 +34,7 @@ export async function createServerSupabase() {
           } catch (error) {
             // Only log errors that aren't about cookie context
             if (error instanceof Error && !error.message?.includes('Cookies can only be modified in a Server Action or Route Handler')) {
-              console.error('[SUPABASE SERVER] Error setting cookie:', error);
+              logError('supabase.server.cookie.set', error);
             }
           }
         },
@@ -50,7 +51,7 @@ export async function createServerSupabase() {
           } catch (error) {
             // Only log errors that aren't about cookie context
             if (error instanceof Error && !error.message?.includes('Cookies can only be modified in a Server Action or Route Handler')) {
-              console.error('[SUPABASE SERVER] Error removing cookie:', error);
+              logError('supabase.server.cookie.remove', error);
             }
           }
         },
@@ -88,13 +89,13 @@ export async function getAuthenticatedUser() {
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
-      console.error('[SUPABASE SERVER] Error getting user:', error);
+      logError('supabase.server.get.user', error);
       return { user: null, error: error.message };
     }
     
     return { user, error: null };
   } catch (error) {
-    console.error('[SUPABASE SERVER] Error in getAuthenticatedUser:', error);
+    logError('supabase.server.get.authenticated.user', error);
     return { user: null, error: 'Failed to get authenticated user' };
   }
 }
@@ -106,13 +107,13 @@ export async function getSession() {
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error) {
-      console.error('[SUPABASE SERVER] Error getting session:', error);
+      logError('supabase.server.get.session', error);
       return { session: null, error: error.message };
     }
     
     return { session, error: null };
   } catch (error) {
-    console.error('[SUPABASE SERVER] Error in getSession:', error);
+    logError('supabase.server.get.session.error', error);
     return { session: null, error: 'Failed to get session' };
   }
 }
@@ -124,13 +125,13 @@ export async function refreshSession() {
     const { data: { session }, error } = await supabase.auth.refreshSession();
     
     if (error) {
-      console.error('[SUPABASE SERVER] Error refreshing session:', error);
+      logError('supabase.server.refresh.session', error);
       return { session: null, error: error.message };
     }
     
     return { session, error: null };
   } catch (error) {
-    console.error('[SUPABASE SERVER] Error in refreshSession:', error);
+    logError('supabase.server.refresh.session.error', error);
     return { session: null, error: 'Failed to refresh session' };
   }
 }

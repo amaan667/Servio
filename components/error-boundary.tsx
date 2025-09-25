@@ -3,6 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { clearAuthStorage } from '@/lib/supabase/client';
+import { logInfo, logError } from "@/lib/logger";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -25,10 +26,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ERROR BOUNDARY] Caught error:', error, errorInfo);
+    logError('[ERROR BOUNDARY] Caught error:', error, errorInfo);
     
     // Log additional context for debugging
-    console.log('[ERROR BOUNDARY] Error context:', {
+    logInfo('[ERROR BOUNDARY] Error context:', {
       errorMessage: error.message,
       errorStack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -41,17 +42,17 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   handleRetry = () => {
-    console.log('[ERROR BOUNDARY] Retrying after error');
+    logInfo('[ERROR BOUNDARY] Retrying after error');
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
   handleClearAuth = async () => {
     try {
-      console.log('[ERROR BOUNDARY] Clearing auth state and reloading');
+      logInfo('[ERROR BOUNDARY] Clearing auth state and reloading');
       clearAuthStorage();
       window.location.reload();
     } catch (err) {
-      console.error('[ERROR BOUNDARY] Error clearing auth state:', err);
+      logError('[ERROR BOUNDARY] Error clearing auth state:', err);
       window.location.reload();
     }
   };

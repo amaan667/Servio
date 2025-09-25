@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
       .eq('status', 'CHECKED_IN');
 
     if (fetchError) {
-      console.error('[CHECK COMPLETION] Error fetching reservations:', fetchError);
+      logError('[CHECK COMPLETION] Error fetching reservations:', fetchError);
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to fetch reservations' 
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
       .select();
 
     if (updateError) {
-      console.error('[CHECK COMPLETION] Error updating reservations:', updateError);
+      logError('[CHECK COMPLETION] Error updating reservations:', updateError);
       return NextResponse.json({ 
         ok: false, 
         error: 'Failed to complete reservations' 
@@ -139,7 +140,7 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    console.log('[CHECK COMPLETION] Successfully completed', updatedReservations?.length || 0, 'reservations for table', tableId);
+    logInfo('[CHECK COMPLETION] Successfully completed', updatedReservations?.length || 0, 'reservations for table', tableId);
 
     return NextResponse.json({
       ok: true,
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[CHECK COMPLETION] Error:', error);
+    logError('[CHECK COMPLETION] Error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: error.message || 'Internal server error' 

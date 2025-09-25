@@ -21,6 +21,7 @@ import { useTableRealtime } from '@/hooks/useTableRealtime';
 import { TableCardRefactored } from '@/components/table-management/TableCardRefactored';
 import { AddTableDialog } from '@/components/table-management/AddTableDialog';
 import { TabFiltersRefactored } from '@/components/table-management/TabFiltersRefactored';
+import { logInfo } from "@/lib/logger";
 
 type FilterType = 'ALL' | 'FREE' | 'OCCUPIED' | 'RESERVED_NOW' | 'RESERVED_LATER';
 
@@ -60,7 +61,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
 
   // Set up real-time updates for table changes
   useTableRealtime(venueId, () => {
-    console.log('[TABLE_MANAGEMENT] Real-time update triggered, refetching data');
+    logInfo('[TABLE_MANAGEMENT] Real-time update triggered, refetching data');
     refetchTables();
     // Counters are now calculated from table data, so no need to refetch separately
   });
@@ -107,8 +108,8 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
       reserved_later: tables.filter(table => table.reservation_status === 'RESERVED_LATER').length,
     };
 
-    console.log('[TABLE_MANAGEMENT] Client-side counts:', clientSideCounts);
-    console.log('[TABLE_MANAGEMENT] Server-side counts:', {
+    logInfo('[TABLE_MANAGEMENT] Client-side counts:', clientSideCounts);
+    logInfo('[TABLE_MANAGEMENT] Server-side counts:', {
       all: counters.total_tables,
       free: counters.available,
       occupied: counters.occupied,
@@ -121,7 +122,7 @@ export function TableManagementRefactored({ venueId }: TableManagementRefactored
                          Math.abs(counters.total_tables - tables.length) > 0;
 
     if (useClientSide) {
-      console.log('[TABLE_MANAGEMENT] Using client-side counts due to server count issues');
+      logInfo('[TABLE_MANAGEMENT] Using client-side counts due to server count issues');
       return clientSideCounts;
     }
 

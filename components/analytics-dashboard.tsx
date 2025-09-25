@@ -12,6 +12,7 @@ import { TrendingUp, ShoppingBag, Users, RefreshCw, Clock, Star, TrendingDown, C
 import { createClient } from "@/lib/supabase/client";
 import { ChartContainer } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
+import { logInfo, logError } from "@/lib/logger";
 
 interface OrderWithItems {
   id: string;
@@ -90,7 +91,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       }
 
-      console.log('[ANALYTICS] Calculating stats for time range:', timeRange, 'from:', startDate.toISOString());
+      logInfo('[ANALYTICS] Calculating stats for time range:', timeRange, 'from:', startDate.toISOString());
 
       // Fetch orders from database
       const { data: ordersData, error: ordersError } = await supabase
@@ -100,7 +101,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
         .gte("created_at", startDate.toISOString());
 
       if (ordersError) {
-        console.error("Error fetching orders:", ordersError);
+        logError("Error fetching orders:", ordersError);
         setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
         return;
       }
@@ -242,7 +243,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       }
 
     } catch (error) {
-      console.error("Error calculating stats:", error);
+      logError("Error calculating stats:", error);
       setStats({ revenue: 0, orderCount: 0, activeTables: 0, unpaidOrders: 0, averageOrderValue: 0, completionRate: 0 });
     } finally {
       setLoading(false);
@@ -257,7 +258,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
   useEffect(() => {
     const supabase = createClient();
     
-    console.log('[ANALYTICS] Setting up real-time subscription for venue:', venueId);
+    logInfo('[ANALYTICS] Setting up real-time subscription for venue:', venueId);
     
     const channel = supabase
       .channel(`analytics-${venueId}`)
@@ -269,7 +270,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           filter: `venue_id=eq.${venueId}`
         }, 
         (payload: any) => {
-          console.log('[ANALYTICS] Real-time order change detected:', payload.event, payload.new?.id);
+          logInfo('[ANALYTICS] Real-time order change detected:', payload.event, payload.new?.id);
           
           // Check if the order is within the current time range
           const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
@@ -295,7 +296,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           const isInTimeRange = new Date(orderCreatedAt) >= startDate;
           
           if (isInTimeRange) {
-            console.log('[ANALYTICS] Order is within time range, refreshing analytics');
+            logInfo('[ANALYTICS] Order is within time range, refreshing analytics');
             // Reduce debounce time for faster updates
             setTimeout(() => {
               calculateStats();
@@ -306,7 +307,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
       .subscribe();
 
     return () => {
-      console.log('[ANALYTICS] Cleaning up real-time subscription');
+      logInfo('[ANALYTICS] Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [venueId, timeRange, calculateStats]);

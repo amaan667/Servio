@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
+import { logInfo } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -39,39 +40,39 @@ function bad(msg: string, status = 400) {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Partial<OrderPayload>;
-    console.log('[ORDERS POST] ===== ORDER SUBMISSION API CALLED =====');
-    console.log('[ORDERS POST] Request received at:', new Date().toISOString());
-    console.log('[ORDERS POST] Raw request body:', JSON.stringify(body, null, 2));
-    console.log('[ORDERS POST] Request headers:', {
+    logInfo('[ORDERS POST] ===== ORDER SUBMISSION API CALLED =====');
+    logInfo('[ORDERS POST] Request received at:', new Date().toISOString());
+    logInfo('[ORDERS POST] Raw request body:', JSON.stringify(body, null, 2));
+    logInfo('[ORDERS POST] Request headers:', {
       'user-agent': req.headers.get('user-agent'),
       'referer': req.headers.get('referer'),
       'origin': req.headers.get('origin'),
     });
 
-    console.log('[ORDERS POST] Starting validation...');
+    logInfo('[ORDERS POST] Starting validation...');
     
     if (!body.venue_id || typeof body.venue_id !== 'string') {
-      console.log('[ORDERS POST] VALIDATION FAILED: venue_id is required');
+      logInfo('[ORDERS POST] VALIDATION FAILED: venue_id is required');
       return bad('venue_id is required');
     }
     if (!body.customer_name || !body.customer_name.trim()) {
-      console.log('[ORDERS POST] VALIDATION FAILED: customer_name is required');
+      logInfo('[ORDERS POST] VALIDATION FAILED: customer_name is required');
       return bad('customer_name is required');
     }
     if (!body.customer_phone || !body.customer_phone.trim()) {
-      console.log('[ORDERS POST] VALIDATION FAILED: customer_phone is required');
+      logInfo('[ORDERS POST] VALIDATION FAILED: customer_phone is required');
       return bad('customer_phone is required');
     }
     if (!Array.isArray(body.items) || body.items.length === 0) {
-      console.log('[ORDERS POST] VALIDATION FAILED: items must be a non-empty array');
+      logInfo('[ORDERS POST] VALIDATION FAILED: items must be a non-empty array');
       return bad('items must be a non-empty array');
     }
     if (typeof body.total_amount !== 'number' || isNaN(body.total_amount)) {
-      console.log('[ORDERS POST] VALIDATION FAILED: total_amount must be a number');
+      logInfo('[ORDERS POST] VALIDATION FAILED: total_amount must be a number');
       return bad('total_amount must be a number');
     }
     
-    console.log('[ORDERS POST] Validation passed successfully');
+    logInfo('[ORDERS POST] Validation passed successfully');
 
     const tn = body.table_number;
     const table_number = tn === null || tn === undefined ? null : Number.isFinite(tn) ? tn : null;
@@ -81,7 +82,7 @@ export async function POST(req: Request) {
     if (!url || !serviceKey) {
       return bad('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY', 500);
     }
-    console.log('[ORDERS POST] Creating admin client to bypass RLS...');
+    logInfo('[ORDERS POST] Creating admin client to bypass RLS...');
     // Try using the direct Supabase client with service role key
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -93,9 +94,9 @@ export async function POST(req: Request) {
         }
       }
     );
-    console.log('[ORDERS POST] Admin client created successfully');
-    console.log('[ORDERS POST] Service role key available:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-    console.log('[ORDERS POST] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    logInfo('[ORDERS POST] Admin client created successfully');
+    logInfo('[ORDERS POST] Service role key available:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    logInfo('[ORDERS POST] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 
     // Verify venue exists, create if it doesn't (for demo purposes)
     const { data: venue, error: venueErr } = await supabase
@@ -105,12 +106,12 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (venueErr) {
-      console.log('[ORDERS POST] Venue verification error:', venueErr);
+      logInfo('[ORDERS POST] Venue verification error:', venueErr);
       return bad(`Failed to verify venue: ${venueErr.message}`, 500);
     }
     
     if (!venue) {
-      console.log('[ORDERS POST] Venue not found, creating default venue for demo...');
+      logInfo('[ORDERS POST] Venue not found, creating default venue for demo...');
       // Create a default venue for demo purposes
       const { data: newVenue, error: createErr } = await supabase
         .from('venues')
@@ -126,16 +127,16 @@ export async function POST(req: Request) {
         .single();
         
       if (createErr) {
-        console.log('[ORDERS POST] Failed to create demo venue:', createErr);
+        logInfo('[ORDERS POST] Failed to create demo venue:', createErr);
         return bad(`Failed to create demo venue: ${createErr.message}`, 500);
       }
-      console.log('[ORDERS POST] Demo venue created successfully:', newVenue);
+      logInfo('[ORDERS POST] Demo venue created successfully:', newVenue);
     }
 
     // Auto-create table if it doesn't exist (for QR code scenarios)
     let tableId = null;
     if (body.table_number) {
-      console.log('[ORDERS POST] Checking if table exists for table_number:', body.table_number);
+      logInfo('[ORDERS POST] Checking if table exists for table_number:', body.table_number);
       
       // Check if table exists - first try to find by table number directly
       const { data: existingTable, error: lookupError } = await supabase
@@ -147,15 +148,15 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       if (lookupError) {
-        console.log('[ORDERS POST] Table lookup error:', lookupError);
+        logInfo('[ORDERS POST] Table lookup error:', lookupError);
         return bad(`Failed to check existing tables: ${lookupError.message}`, 500);
       }
 
       if (existingTable) {
-        console.log('[ORDERS POST] Table found:', existingTable.id);
+        logInfo('[ORDERS POST] Table found:', existingTable.id);
         tableId = existingTable.id;
       } else {
-        console.log('[ORDERS POST] Table not found, auto-creating table for QR code...');
+        logInfo('[ORDERS POST] Table not found, auto-creating table for QR code...');
         
         // Get group size from group session to determine seat count
         let seatCount = 4; // Default fallback
@@ -172,12 +173,12 @@ export async function POST(req: Request) {
           
           if (groupSession && groupSession.total_group_size) {
             seatCount = groupSession.total_group_size;
-            console.log('[ORDERS POST] Using group size for seat count:', seatCount);
+            logInfo('[ORDERS POST] Using group size for seat count:', seatCount);
           } else {
-            console.log('[ORDERS POST] No group session found, using default seat count:', seatCount);
+            logInfo('[ORDERS POST] No group session found, using default seat count:', seatCount);
           }
         } catch (groupError) {
-          console.log('[ORDERS POST] Error fetching group session, using default seat count:', groupError);
+          logInfo('[ORDERS POST] Error fetching group session, using default seat count:', groupError);
         }
         
         // Insert new table - check for existing first to avoid duplicates
@@ -194,12 +195,12 @@ export async function POST(req: Request) {
           .single();
 
         if (tableCreateErr) {
-          console.log('[ORDERS POST] Failed to auto-create table:', tableCreateErr);
+          logInfo('[ORDERS POST] Failed to auto-create table:', tableCreateErr);
           return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
         }
 
-        console.log('[ORDERS POST] Table auto-created/updated successfully:', newTable.id);
-        console.log('[ORDERS POST] Auto-created table details:', {
+        logInfo('[ORDERS POST] Table auto-created/updated successfully:', newTable.id);
+        logInfo('[ORDERS POST] Auto-created table details:', {
           table_id: newTable.id,
           table_label: newTable.label,
           venue_id: body.venue_id,
@@ -219,7 +220,7 @@ export async function POST(req: Request) {
           });
 
         if (sessionErr) {
-          console.log('[ORDERS POST] Failed to create table session:', sessionErr);
+          logInfo('[ORDERS POST] Failed to create table session:', sessionErr);
           // Don't fail the request if session creation fails
         }
       }
@@ -240,13 +241,13 @@ export async function POST(req: Request) {
       item_name: it.item_name,
       specialInstructions: (it as any).special_instructions ?? it.specialInstructions ?? null,
     }));
-    console.log('[ORDERS POST] normalized safeItems', safeItems);
+    logInfo('[ORDERS POST] normalized safeItems', safeItems);
 
     // Use the source provided by the client (determined from URL parameters)
     // The client already determines this based on whether the QR code URL contains ?table=X or ?counter=X
     const orderSource = body.source || 'qr'; // Default to 'qr' if not provided
     
-    console.log('[ORDERS POST] Order source determination:', {
+    logInfo('[ORDERS POST] Order source determination:', {
       table_number,
       provided_source: body.source,
       final_source: orderSource,
@@ -270,15 +271,15 @@ export async function POST(req: Request) {
     };
 
     // Final validation before insertion
-    console.log('[ORDERS POST] Final payload validation:');
-    console.log('[ORDERS POST] - venue_id:', payload.venue_id, '(type:', typeof payload.venue_id, ')');
-    console.log('[ORDERS POST] - customer_name:', payload.customer_name, '(length:', payload.customer_name.length, ')');
-    console.log('[ORDERS POST] - customer_phone:', payload.customer_phone, '(length:', payload.customer_phone.length, ')');
-    console.log('[ORDERS POST] - total_amount:', payload.total_amount, '(type:', typeof payload.total_amount, ')');
-    console.log('[ORDERS POST] - items count:', payload.items.length);
-    console.log('[ORDERS POST] - order_status:', payload.order_status);
-    console.log('[ORDERS POST] - payment_status:', payload.payment_status);
-    console.log('[ORDERS POST] inserting order', {
+    logInfo('[ORDERS POST] Final payload validation:');
+    logInfo('[ORDERS POST] - venue_id:', payload.venue_id, '(type:', typeof payload.venue_id, ')');
+    logInfo('[ORDERS POST] - customer_name:', payload.customer_name, '(length:', payload.customer_name.length, ')');
+    logInfo('[ORDERS POST] - customer_phone:', payload.customer_phone, '(length:', payload.customer_phone.length, ')');
+    logInfo('[ORDERS POST] - total_amount:', payload.total_amount, '(type:', typeof payload.total_amount, ')');
+    logInfo('[ORDERS POST] - items count:', payload.items.length);
+    logInfo('[ORDERS POST] - order_status:', payload.order_status);
+    logInfo('[ORDERS POST] - payment_status:', payload.payment_status);
+    logInfo('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
       table_number: payload.table_number,
       table_id: payload.table_id,
@@ -288,16 +289,16 @@ export async function POST(req: Request) {
       itemsCount: payload.items.length,
     });
 
-    console.log('[ORDERS POST] Attempting database insertion...');
-    console.log('[ORDERS POST] Payload for insertion:', JSON.stringify(payload, null, 2));
-    console.log('[ORDERS POST] Using admin client with service role key to bypass RLS');
+    logInfo('[ORDERS POST] Attempting database insertion...');
+    logInfo('[ORDERS POST] Payload for insertion:', JSON.stringify(payload, null, 2));
+    logInfo('[ORDERS POST] Using admin client with service role key to bypass RLS');
     
     const { data: inserted, error: insertErr } = await supabase
       .from('orders')
       .insert(payload)
       .select('*');
     
-    console.log('[ORDERS POST] Database insertion result:', {
+    logInfo('[ORDERS POST] Database insertion result:', {
       hasData: !!inserted,
       dataLength: inserted?.length,
       hasError: !!insertErr,
@@ -309,12 +310,12 @@ export async function POST(req: Request) {
     });
 
     if (insertErr) {
-      console.log('[ORDERS POST] DATABASE INSERT FAILED:', insertErr);
-      console.log('[ORDERS POST] Error code:', insertErr.code);
-      console.log('[ORDERS POST] Error message:', insertErr.message);
-      console.log('[ORDERS POST] Error details:', insertErr.details);
-      console.log('[ORDERS POST] Error hint:', insertErr.hint);
-      console.log('[ORDERS POST] Full error object:', JSON.stringify(insertErr, null, 2));
+      logInfo('[ORDERS POST] DATABASE INSERT FAILED:', insertErr);
+      logInfo('[ORDERS POST] Error code:', insertErr.code);
+      logInfo('[ORDERS POST] Error message:', insertErr.message);
+      logInfo('[ORDERS POST] Error details:', insertErr.details);
+      logInfo('[ORDERS POST] Error hint:', insertErr.hint);
+      logInfo('[ORDERS POST] Full error object:', JSON.stringify(insertErr, null, 2));
       
       // Try to provide more specific error messages
       let errorMessage = insertErr.message;
@@ -329,16 +330,16 @@ export async function POST(req: Request) {
       return bad(`Insert failed: ${errorMessage}`, 400);
     }
     
-    console.log('[ORDERS POST] Database insertion successful');
-    console.log('[ORDERS POST] Inserted order:', inserted?.[0]);
+    logInfo('[ORDERS POST] Database insertion successful');
+    logInfo('[ORDERS POST] Inserted order:', inserted?.[0]);
 
-    console.log('[ORDERS POST] inserting order_items for order_id', inserted?.[0]?.id);
+    logInfo('[ORDERS POST] inserting order_items for order_id', inserted?.[0]?.id);
     // Note: items are embedded in orders payload in this schema; if you also mirror rows in order_items elsewhere, log success after that insert
-    console.log('[ORDERS POST] order_items insert success (embedded items)');
+    logInfo('[ORDERS POST] order_items insert success (embedded items)');
     
     // Create or update table session to show table as occupied if we have a table
     if (tableId && inserted?.[0]?.id) {
-      console.log('[ORDERS POST] Creating/updating table session for table:', tableId);
+      logInfo('[ORDERS POST] Creating/updating table session for table:', tableId);
       
       // First, check if there's an existing open session
       const { data: existingSession, error: checkError } = await supabase
@@ -349,12 +350,12 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       if (checkError) {
-        console.log('[ORDERS POST] Warning: Failed to check existing table session:', checkError);
+        logInfo('[ORDERS POST] Warning: Failed to check existing table session:', checkError);
       }
 
       if (existingSession) {
         // Update existing session to ORDERING status
-        console.log('[ORDERS POST] Updating existing table session to ORDERING for table:', tableId);
+        logInfo('[ORDERS POST] Updating existing table session to ORDERING for table:', tableId);
         const { error: sessionUpdateError } = await supabase
           .from('table_sessions')
           .update({ 
@@ -365,13 +366,13 @@ export async function POST(req: Request) {
           .eq('id', existingSession.id);
 
         if (sessionUpdateError) {
-          console.log('[ORDERS POST] Warning: Failed to update table session status:', sessionUpdateError);
+          logInfo('[ORDERS POST] Warning: Failed to update table session status:', sessionUpdateError);
         } else {
-          console.log('[ORDERS POST] Successfully updated table session to ORDERING for table:', tableId);
+          logInfo('[ORDERS POST] Successfully updated table session to ORDERING for table:', tableId);
         }
       } else {
         // Create new session with ORDERING status
-        console.log('[ORDERS POST] Creating new table session with ORDERING status for table:', tableId);
+        logInfo('[ORDERS POST] Creating new table session with ORDERING status for table:', tableId);
         const { error: sessionCreateError } = await supabase
           .from('table_sessions')
           .insert({
@@ -383,9 +384,9 @@ export async function POST(req: Request) {
           });
 
         if (sessionCreateError) {
-          console.log('[ORDERS POST] Warning: Failed to create table session:', sessionCreateError);
+          logInfo('[ORDERS POST] Warning: Failed to create table session:', sessionCreateError);
         } else {
-          console.log('[ORDERS POST] Successfully created table session with ORDERING status for table:', tableId);
+          logInfo('[ORDERS POST] Successfully created table session with ORDERING status for table:', tableId);
         }
       }
     }
@@ -393,12 +394,12 @@ export async function POST(req: Request) {
     // Ensure we have a valid order object
     let createdOrder;
     if (!inserted || inserted.length === 0 || !inserted[0]) {
-      console.log('[ORDERS POST] ERROR: Database insertion succeeded but no order data returned');
-      console.log('[ORDERS POST] Inserted data:', inserted);
-      console.log('[ORDERS POST] This might be due to RLS policies or database constraints');
+      logInfo('[ORDERS POST] ERROR: Database insertion succeeded but no order data returned');
+      logInfo('[ORDERS POST] Inserted data:', inserted);
+      logInfo('[ORDERS POST] This might be due to RLS policies or database constraints');
       
       // Try to fetch the order we just created by querying the database
-      console.log('[ORDERS POST] Attempting to fetch the order by querying the database...');
+      logInfo('[ORDERS POST] Attempting to fetch the order by querying the database...');
       
       const { data: fetchedOrder, error: fetchError } = await supabase
         .from('orders')
@@ -411,17 +412,17 @@ export async function POST(req: Request) {
         .single();
       
       if (fetchError || !fetchedOrder) {
-        console.log('[ORDERS POST] Failed to fetch order after insertion:', fetchError);
+        logInfo('[ORDERS POST] Failed to fetch order after insertion:', fetchError);
         return bad('Order creation failed: No order data returned from database', 500);
       }
       
-      console.log('[ORDERS POST] Successfully fetched order after insertion:', fetchedOrder.id);
+      logInfo('[ORDERS POST] Successfully fetched order after insertion:', fetchedOrder.id);
       createdOrder = fetchedOrder;
     } else {
       createdOrder = inserted[0];
     }
 
-    console.log('[ORDERS POST] Successfully created order with ID:', createdOrder.id);
+    logInfo('[ORDERS POST] Successfully created order with ID:', createdOrder.id);
 
     const response = { 
       ok: true, 
@@ -432,23 +433,23 @@ export async function POST(req: Request) {
       source: orderSource, // Include the correctly determined source
       display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}` // Include display name for UI
     };
-    console.log('[ORDERS POST] ===== ORDER SUBMISSION COMPLETED SUCCESSFULLY =====');
-    console.log('[ORDERS POST] Final response:', JSON.stringify(response, null, 2));
-    console.log('[ORDERS POST] Response sent at:', new Date().toISOString());
+    logInfo('[ORDERS POST] ===== ORDER SUBMISSION COMPLETED SUCCESSFULLY =====');
+    logInfo('[ORDERS POST] Final response:', JSON.stringify(response, null, 2));
+    logInfo('[ORDERS POST] Response sent at:', new Date().toISOString());
     
     // Log that real-time updates should be triggered
-    console.log('[ORDERS POST] Real-time updates will be triggered automatically via Supabase subscriptions');
-    console.log('[ORDERS POST] Dashboard, analytics, and live orders components will update instantly');
-    console.log('[ORDERS POST] Table management will show OCCUPIED status for the table');
+    logInfo('[ORDERS POST] Real-time updates will be triggered automatically via Supabase subscriptions');
+    logInfo('[ORDERS POST] Dashboard, analytics, and live orders components will update instantly');
+    logInfo('[ORDERS POST] Table management will show OCCUPIED status for the table');
     
     return NextResponse.json(response);
   } catch (e: any) {
     const msg = e?.message || (typeof e === 'string' ? e : 'Unknown server error');
-    console.log('[ORDERS POST] ===== ORDER SUBMISSION FAILED =====');
-    console.log('[ORDERS POST] Error occurred at:', new Date().toISOString());
-    console.log('[ORDERS POST] Error message:', msg);
-    console.log('[ORDERS POST] Error stack:', e?.stack);
-    console.log('[ORDERS POST] Error details:', e);
+    logInfo('[ORDERS POST] ===== ORDER SUBMISSION FAILED =====');
+    logInfo('[ORDERS POST] Error occurred at:', new Date().toISOString());
+    logInfo('[ORDERS POST] Error message:', msg);
+    logInfo('[ORDERS POST] Error stack:', e?.stack);
+    logInfo('[ORDERS POST] Error details:', e);
     return bad(`Server error: ${msg}`, 500);
   }
 }

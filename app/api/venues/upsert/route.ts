@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -67,7 +68,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, venue: data });
     }
   } catch (error: any) {
-    console.error('[VENUES UPSERT] Error:', error);
+    logError('[VENUES UPSERT] Error:', error);
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }

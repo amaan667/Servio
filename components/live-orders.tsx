@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { logInfo, logError } from "@/lib/logger";
 
 const hasSupabaseConfig = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
@@ -85,7 +86,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
 
   // Add comprehensive logging function
   const logTabState = useCallback(() => {
-    console.log("🔍 [TAB STATE DEBUG] Current tab state:", {
+    logInfo("🔍 [TAB STATE DEBUG] Current tab state:", {
       activeTab,
       liveOrdersCount: orders.length,
       allOrdersCount: allOrders.length,
@@ -164,13 +165,13 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const fetchLiveOrders = useCallback(async () => {
     const supabase = createClient();
     
-    console.log("LIVE_ORDERS: Fetching live orders", { venueId });
+    logInfo("LIVE_ORDERS: Fetching live orders", { venueId });
 
     setLoading(true);
     setError(null);
 
     if (!supabase) {
-      console.error("LIVE_ORDERS: Supabase not configured");
+      logError("LIVE_ORDERS: Supabase not configured");
       setError("Service is not configured.");
       setLoading(false);
       return;
@@ -184,15 +185,15 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .limit(1);
       
       if (testError) {
-        console.error("LIVE_ORDERS: Supabase connection test failed", { error: testError.message, code: testError.code });
+        logError("LIVE_ORDERS: Supabase connection test failed", { error: testError.message, code: testError.code });
         setError(`Database connection failed: ${testError.message}`);
         setLoading(false);
         return;
       }
       
-      console.log("LIVE_ORDERS: Supabase connection test successful");
+      logInfo("LIVE_ORDERS: Supabase connection test successful");
     } catch (testErr: any) {
-      console.error("LIVE_ORDERS: Supabase connection test exception", testErr);
+      logError("LIVE_ORDERS: Supabase connection test exception", testErr);
       setError(`Database connection failed: ${testErr.message}`);
       setLoading(false);
       return;
@@ -202,7 +203,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       // Get orders that are either active OR completed within the last 30 minutes
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
-      console.log("LIVE_ORDERS: Querying orders with filter", { 
+      logInfo("LIVE_ORDERS: Querying orders with filter", { 
         venueId, 
         thirtyMinutesAgo,
         activeStatuses: ACTIVE_STATUSES 
@@ -217,13 +218,13 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .throwOnError();
 
       if (allOrdersError) {
-        console.error("LIVE_ORDERS: Failed to fetch all venue orders", { error: allOrdersError.message });
+        logError("LIVE_ORDERS: Failed to fetch all venue orders", { error: allOrdersError.message });
         setError(`Failed to load orders: ${allOrdersError.message}`);
         setLoading(false);
         return;
       }
 
-      console.log("LIVE_ORDERS: All venue orders fetched", {
+      logInfo("LIVE_ORDERS: All venue orders fetched", {
         totalCount: allVenueOrders?.length || 0,
         statuses: allVenueOrders?.map((order: any) => ({ 
           id: order.id, 
@@ -239,7 +240,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         
         // CRITICAL: Completed/terminal orders should NEVER appear in live tab
         if (['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'].includes(order.order_status)) {
-          console.log("LIVE_ORDERS: Excluding terminal order from live tab", {
+          logInfo("LIVE_ORDERS: Excluding terminal order from live tab", {
             id: order.id,
             status: order.order_status,
             reason: 'terminal status - belongs in Today/History tabs only'
@@ -252,14 +253,14 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                         orderCreatedAt >= new Date(thirtyMinutesAgo);
         
         if (isActive) {
-          console.log("LIVE_ORDERS: Order included in live tab", {
+          logInfo("LIVE_ORDERS: Order included in live tab", {
             id: order.id,
             status: order.order_status,
             created: order.created_at,
             reason: 'active status within 30 minutes'
           });
         } else {
-          console.log("LIVE_ORDERS: Order excluded from live tab - keeping original status", {
+          logInfo("LIVE_ORDERS: Order excluded from live tab - keeping original status", {
             id: order.id,
             status: order.order_status,
             created: order.created_at,
@@ -274,7 +275,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       // Keep all orders in their original status - don't auto-complete them
       // Only mark orders as completed when they're actually completed
 
-      console.log("LIVE_ORDERS: Live orders filtering results", {
+      logInfo("LIVE_ORDERS: Live orders filtering results", {
         totalOrders: allVenueOrders?.length || 0,
         liveOrdersCount: liveOrders.length,
         activeOrdersCount: liveOrders.filter((o: any) => ACTIVE_STATUSES.includes(o.order_status)).length,
@@ -290,7 +291,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       setOrders(liveOrders as OrderWithItems[]);
       setLastUpdate(new Date());
       
-      console.log("🔍 [FETCH DEBUG] Live orders fetched and set:", {
+      logInfo("🔍 [FETCH DEBUG] Live orders fetched and set:", {
         liveOrdersCount: liveOrders.length,
         orders: liveOrders.map((o: any) => ({
           id: o.id,
@@ -301,7 +302,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       });
 
     } catch (error: any) {
-      console.error("LIVE_ORDERS: Unexpected error fetching live orders", error);
+      logError("LIVE_ORDERS: Unexpected error fetching live orders", error);
       setError(`An unexpected error occurred: ${error.message}`);
     } finally {
       setLoading(false);
@@ -311,13 +312,13 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const fetchTodayOrders = useCallback(async () => {
     const supabase = createClient();
     
-    console.log("LIVE_ORDERS: Fetching today's orders", { venueId });
+    logInfo("LIVE_ORDERS: Fetching today's orders", { venueId });
 
     setLoading(true);
     setError(null);
 
     if (!supabase) {
-      console.error("LIVE_ORDERS: Supabase not configured");
+      logError("LIVE_ORDERS: Supabase not configured");
       setError("Service is not configured.");
       setLoading(false);
       return;
@@ -330,7 +331,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      console.log("LIVE_ORDERS: Today's date range", {
+      logInfo("LIVE_ORDERS: Today's date range", {
         today: today.toISOString(),
         tomorrow: tomorrow.toISOString()
       });
@@ -345,10 +346,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .throwOnError();
 
       if (ordersError) {
-        console.error("LIVE_ORDERS: Failed to fetch today's orders", { error: ordersError.message });
+        logError("LIVE_ORDERS: Failed to fetch today's orders", { error: ordersError.message });
         setError("Failed to load orders.");
       } else {
-        console.log("🔍 [FETCH DEBUG] Today's orders fetched and set:", {
+        logInfo("🔍 [FETCH DEBUG] Today's orders fetched and set:", {
           orderCount: ordersData?.length || 0,
           orders: ordersData?.map((o: any) => ({
             id: o.id,
@@ -362,7 +363,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         setLastUpdate(new Date());
       }
     } catch (error: any) {
-      console.error("LIVE_ORDERS: Unexpected error fetching today's orders", error);
+      logError("LIVE_ORDERS: Unexpected error fetching today's orders", error);
       setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
@@ -372,13 +373,13 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   const fetchHistoryOrders = useCallback(async () => {
     const supabase = createClient();
     
-    console.log("LIVE_ORDERS: Fetching historical orders", { venueId });
+    logInfo("LIVE_ORDERS: Fetching historical orders", { venueId });
 
     setLoading(true);
     setError(null);
 
     if (!supabase) {
-      console.error("LIVE_ORDERS: Supabase not configured");
+      logError("LIVE_ORDERS: Supabase not configured");
       setError("Service is not configured.");
       setLoading(false);
       return;
@@ -389,7 +390,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      console.log("LIVE_ORDERS: History date threshold", {
+      logInfo("LIVE_ORDERS: History date threshold", {
         today: today.toISOString()
       });
 
@@ -402,10 +403,10 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .throwOnError();
 
       if (ordersError) {
-        console.error("LIVE_ORDERS: Failed to fetch historical orders", { error: ordersError.message });
+        logError("LIVE_ORDERS: Failed to fetch historical orders", { error: ordersError.message });
         setError("Failed to load orders.");
       } else {
-        console.log("LIVE_ORDERS: Historical orders fetched successfully", {
+        logInfo("LIVE_ORDERS: Historical orders fetched successfully", {
           orderCount: ordersData?.length || 0,
           orders: ordersData?.map((o: any) => ({
             id: o.id,
@@ -418,7 +419,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         setLastUpdate(new Date());
       }
     } catch (error: any) {
-      console.error("LIVE_ORDERS: Unexpected error fetching historical orders", error);
+      logError("LIVE_ORDERS: Unexpected error fetching historical orders", error);
       setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
@@ -432,7 +433,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     if (!supabase) return;
 
     try {
-      console.log("LIVE_ORDERS: Fetching all orders for counting");
+      logInfo("LIVE_ORDERS: Fetching all orders for counting");
       
       const { data: allOrdersData, error: allOrdersError } = await supabase
         .from("orders")
@@ -468,7 +469,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           return orderDate < today;
         }).length;
         
-        console.log("LIVE_ORDERS: All orders fetched for counting", { 
+        logInfo("LIVE_ORDERS: All orders fetched for counting", { 
           totalCount: allOrdersData.length,
           breakdown: {
             live: liveCount,
@@ -491,7 +492,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         });
       }
     } catch (error) {
-      console.error("LIVE_ORDERS: Failed to fetch all orders for counting", error);
+      logError("LIVE_ORDERS: Failed to fetch all orders for counting", error);
     }
   }, [venueId]);
 
@@ -547,11 +548,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     }
 
     autoRefreshRef.current = setInterval(() => {
-      console.log("LIVE_ORDERS: Auto-refreshing orders");
+      logInfo("LIVE_ORDERS: Auto-refreshing orders");
       
       // Skip auto-refresh if we're currently updating an order
       if (isUpdatingOrder) {
-        console.log("LIVE_ORDERS: Skipping auto-refresh - order update in progress");
+        logInfo("LIVE_ORDERS: Skipping auto-refresh - order update in progress");
         return;
       }
       
@@ -566,7 +567,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       });
       
       if (hasRecentCompletedOrders) {
-        console.log("LIVE_ORDERS: Skipping auto-refresh - recent completed orders detected (protecting status)");
+        logInfo("LIVE_ORDERS: Skipping auto-refresh - recent completed orders detected (protecting status)");
         return;
       }
       
@@ -579,14 +580,14 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
       // If we've updated orders in the last 2 minutes, skip the auto-refresh
       // This prevents the auto-refresh from overwriting recent status changes
       if (timeSinceLastUpdate < 120000) { // 2 minutes
-        console.log("LIVE_ORDERS: Skipping auto-refresh - recent updates detected", {
+        logInfo("LIVE_ORDERS: Skipping auto-refresh - recent updates detected", {
           timeSinceLastUpdate: Math.round(timeSinceLastUpdate / 1000) + 's ago',
           lastUpdate: lastUpdate.toISOString()
         });
         return;
       }
       
-      console.log("LIVE_ORDERS: Proceeding with auto-refresh - safe to refresh");
+      logInfo("LIVE_ORDERS: Proceeding with auto-refresh - safe to refresh");
       fetchOrdersRef.current();
     }, refreshInterval);
 
@@ -615,7 +616,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         const supabase = createClient();
         if (!supabase) return;
 
-        console.log("LIVE_ORDERS: Testing dashboard_counts function");
+        logInfo("LIVE_ORDERS: Testing dashboard_counts function");
         
         const { data: countsData, error: countsError } = await supabase
           .rpc('dashboard_counts', { 
@@ -626,15 +627,15 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           .single();
         
         if (countsError) {
-          console.error("LIVE_ORDERS: dashboard_counts function test failed", { 
+          logError("LIVE_ORDERS: dashboard_counts function test failed", { 
             error: countsError.message, 
             code: countsError.code 
           });
         } else {
-          console.log("LIVE_ORDERS: dashboard_counts function test successful", countsData);
+          logInfo("LIVE_ORDERS: dashboard_counts function test successful", countsData);
         }
       } catch (error) {
-        console.error("LIVE_ORDERS: dashboard_counts function test exception", error);
+        logError("LIVE_ORDERS: dashboard_counts function test exception", error);
       }
     };
 
@@ -648,7 +649,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         const supabase = createClient();
         if (!supabase) return;
 
-        console.log("LIVE_ORDERS: Testing basic database connectivity");
+        logInfo("LIVE_ORDERS: Testing basic database connectivity");
         
         // Test 1: Check if we can connect to orders table
         const { data: ordersTest, error: ordersError } = await supabase
@@ -657,9 +658,9 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           .limit(5);
         
         if (ordersError) {
-          console.error("LIVE_ORDERS: Orders table test failed", { error: ordersError.message, code: ordersError.code });
+          logError("LIVE_ORDERS: Orders table test failed", { error: ordersError.message, code: ordersError.code });
         } else {
-          console.log("LIVE_ORDERS: Orders table test successful", { 
+          logInfo("LIVE_ORDERS: Orders table test successful", { 
             count: ordersTest?.length || 0,
             sample: ordersTest?.slice(0, 2) || []
           });
@@ -672,16 +673,16 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           .limit(5);
         
         if (venuesError) {
-          console.error("LIVE_ORDERS: Venues table test failed", { error: venuesError.message, code: venuesError.code });
+          logError("LIVE_ORDERS: Venues table test failed", { error: venuesError.message, code: venuesError.code });
         } else {
-          console.log("LIVE_ORDERS: Venues table test successful", { 
+          logInfo("LIVE_ORDERS: Venues table test successful", { 
             count: venuesTest?.length || 0,
             sample: venuesTest?.slice(0, 2) || []
           });
         }
 
       } catch (error) {
-        console.error("LIVE_ORDERS: Database debug test exception", error);
+        logError("LIVE_ORDERS: Database debug test exception", error);
       }
     };
 
@@ -698,7 +699,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
     const supabase = createClient();
     if (!supabase) return;
 
-    console.log("LIVE_ORDERS: Setting up real-time subscription");
+    logInfo("LIVE_ORDERS: Setting up real-time subscription");
     const channel = supabase
       .channel(`live-orders-${venueId}`)
       .on(
@@ -710,7 +711,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log(
+          logInfo(
             "LIVE_ORDERS: Real-time change detected",
             {
               event: payload.eventType,
@@ -729,7 +730,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                 if (order.id === payload.new.id) {
                   // PROTECTION: If order was completed, never change it back
                   if (['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'].includes(order.order_status)) {
-                    console.log("LIVE_ORDERS: Protecting completed order from status change", {
+                    logInfo("LIVE_ORDERS: Protecting completed order from status change", {
                       orderId: order.id,
                       currentStatus: order.order_status,
                       attemptedStatus: payload.new.order_status,
@@ -740,7 +741,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                   
                   // For active orders, allow updates
                   const updatedOrder = { ...order, ...payload.new };
-                  console.log("LIVE_ORDERS: Updated active order", {
+                  logInfo("LIVE_ORDERS: Updated active order", {
                     orderId: order.id,
                     oldStatus: order.order_status,
                     newStatus: updatedOrder.order_status
@@ -767,7 +768,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           } else if (payload.eventType === 'INSERT') {
             // For new orders, add them to the appropriate lists
             const newOrder = payload.new;
-            console.log("LIVE_ORDERS: New order inserted", {
+            logInfo("LIVE_ORDERS: New order inserted", {
               orderId: newOrder.id,
               status: newOrder.order_status,
               total: newOrder.total_amount,
@@ -781,11 +782,11 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                            orderCreatedAt >= thirtyMinutesAgo;
             
             if (isActive) {
-              console.log("LIVE_ORDERS: Adding new order to live orders list");
+              logInfo("LIVE_ORDERS: Adding new order to live orders list");
               setOrders(prev => [newOrder, ...prev]);
               setAllOrders(prev => [newOrder, ...prev]);
             } else {
-              console.log("LIVE_ORDERS: Adding new order to non-live orders - keeping original status");
+              logInfo("LIVE_ORDERS: Adding new order to non-live orders - keeping original status");
               // Keep original status - don't auto-complete orders
               setAllOrders(prev => [newOrder, ...prev]);
             }
@@ -799,18 +800,18 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             }));
           } else if (payload.eventType === 'DELETE') {
             // For deletions, remove from both lists
-            console.log("LIVE_ORDERS: Order deleted", { orderId: payload.old.id });
+            logInfo("LIVE_ORDERS: Order deleted", { orderId: payload.old.id });
             setOrders(prev => prev.filter(order => order.id !== payload.old.id));
             setAllOrders(prev => prev.filter(order => order.id !== payload.old.id));
           }
         },
       )
       .subscribe((status: any) => {
-        console.log("LIVE_ORDERS: Real-time subscription status", { status });
+        logInfo("LIVE_ORDERS: Real-time subscription status", { status });
       });
 
     return () => {
-      console.log("LIVE_ORDERS: Cleaning up real-time subscription");
+      logInfo("LIVE_ORDERS: Cleaning up real-time subscription");
       if (supabase) {
         createClient().removeChannel(channel);
       }
@@ -872,7 +873,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   };
 
   const updateOrderStatus = async (orderId: string, newOrderStatus: string) => {
-    console.log("LIVE_ORDERS: Updating order status", { orderId, newOrderStatus });
+    logInfo("LIVE_ORDERS: Updating order status", { orderId, newOrderStatus });
 
     const supabase = createClient();
     if (!supabase) return;
@@ -886,26 +887,26 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         ? { ...order, order_status: newOrderStatus, updated_at: new Date().toISOString() }
         : order;
 
-    console.log("LIVE_ORDERS: Applying optimistic update to orders list");
+    logInfo("LIVE_ORDERS: Applying optimistic update to orders list");
     setOrders(prevOrders => {
       const updated = prevOrders.map(updateOrderInList);
-      console.log("LIVE_ORDERS: Updated orders list:", updated.map(o => ({ id: o.id, status: o.order_status })));
+      logInfo("LIVE_ORDERS: Updated orders list:", updated.map(o => ({ id: o.id, status: o.order_status })));
       return updated;
     });
     
-    console.log("LIVE_ORDERS: Applying optimistic update to allOrders list");
+    logInfo("LIVE_ORDERS: Applying optimistic update to allOrders list");
     setAllOrders(prevAllOrders => {
       const updated = prevAllOrders.map(updateOrderInList);
-      console.log("LIVE_ORDERS: Updated allOrders list:", updated.map(o => ({ id: o.id, status: o.order_status })));
+      logInfo("LIVE_ORDERS: Updated allOrders list:", updated.map(o => ({ id: o.id, status: o.order_status })));
       return updated;
     });
 
     // Update lastUpdate to prevent auto-refresh from overwriting our changes
     setLastUpdate(new Date());
-    console.log("LIVE_ORDERS: Updated lastUpdate timestamp to prevent auto-refresh override");
+    logInfo("LIVE_ORDERS: Updated lastUpdate timestamp to prevent auto-refresh override");
 
     try {
-      console.log("LIVE_ORDERS: Sending update to database");
+      logInfo("LIVE_ORDERS: Sending update to database");
       const { error } = await supabase
         .from("orders")
         .update({ 
@@ -915,7 +916,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .eq("id", orderId);
 
       if (error) {
-        console.error("LIVE_ORDERS: Failed to update order status", {
+        logError("LIVE_ORDERS: Failed to update order status", {
           orderId,
           newOrderStatus,
           error: error.message,
@@ -923,25 +924,25 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         });
         setError(`Failed to update order: ${error.message}`);
         // Revert optimistic update on error by refetching
-        console.log("LIVE_ORDERS: Reverting optimistic update due to error");
+        logInfo("LIVE_ORDERS: Reverting optimistic update due to error");
         fetchOrdersRef.current();
       } else {
-        console.log("LIVE_ORDERS: Order status updated successfully in database", {
+        logInfo("LIVE_ORDERS: Order status updated successfully in database", {
           orderId,
           newOrderStatus,
         });
         // Real-time subscription will handle the UI update
         // No need to refetch - the optimistic update is already applied
-        console.log("LIVE_ORDERS: Optimistic update confirmed, no refetch needed");
+        logInfo("LIVE_ORDERS: Optimistic update confirmed, no refetch needed");
       }
     } catch (error: any) {
-      console.error(
+      logError(
         "LIVE_ORDERS: Unexpected error updating order status",
         error,
       );
       setError("An unexpected error occurred.");
       // Revert optimistic update on error by refetching
-      console.log("LIVE_ORDERS: Reverting optimistic update due to exception");
+      logInfo("LIVE_ORDERS: Reverting optimistic update due to exception");
       fetchOrdersRef.current();
     } finally {
       setUpdating(null);
@@ -952,7 +953,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
   // Helper function to update orders to COMPLETED and PAID when they're not in live orders
   const updateOrderToCompletedAndPaid = async (orderId: string) => {
     try {
-      console.log("LIVE_ORDERS: Updating order to COMPLETED and PAID:", orderId);
+      logInfo("LIVE_ORDERS: Updating order to COMPLETED and PAID:", orderId);
       const supabase = createClient();
       if (!supabase) return;
 
@@ -966,12 +967,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
         .eq("id", orderId);
 
       if (error) {
-        console.error("LIVE_ORDERS: Failed to update order to COMPLETED and PAID:", error);
+        logError("LIVE_ORDERS: Failed to update order to COMPLETED and PAID:", error);
       } else {
-        console.log("LIVE_ORDERS: Successfully updated order to COMPLETED and PAID:", orderId);
+        logInfo("LIVE_ORDERS: Successfully updated order to COMPLETED and PAID:", orderId);
       }
     } catch (error) {
-      console.error("LIVE_ORDERS: Exception updating order to COMPLETED and PAID:", error);
+      logError("LIVE_ORDERS: Exception updating order to COMPLETED and PAID:", error);
     }
   };
 
@@ -1118,7 +1119,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
           <div className="flex space-x-1 border-b">
             <button
               onClick={() => {
-                console.log("🔍 [TAB CLICK] Switching to LIVE tab");
+                logInfo("🔍 [TAB CLICK] Switching to LIVE tab");
                 setActiveTab('live');
               }}
               className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
@@ -1136,7 +1137,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
             </button>
             <button
               onClick={() => {
-                console.log("🔍 [TAB CLICK] Switching to TODAY tab");
+                logInfo("🔍 [TAB CLICK] Switching to TODAY tab");
                 setActiveTab('today');
               }}
               className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
@@ -1250,7 +1251,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                 if (activeTab === 'live') {
                   // Live tab: Only show live orders (active orders within 30 minutes)
                   ordersToShow = orders;
-                  console.log("🔍 [TAB RENDER] LIVE tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
+                  logInfo("🔍 [TAB RENDER] LIVE tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
                     id: o.id,
                     status: o.order_status,
                     customer: o.customer_name,
@@ -1259,7 +1260,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                 } else if (activeTab === 'today') {
                   // Today tab: Show all today's orders (including completed ones)
                   ordersToShow = allOrders;
-                  console.log("🔍 [TAB RENDER] TODAY tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
+                  logInfo("🔍 [TAB RENDER] TODAY tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
                     id: o.id,
                     status: o.order_status,
                     customer: o.customer_name,
@@ -1272,7 +1273,7 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                   ordersToShow = allOrders.filter(order => 
                     new Date(order.created_at) < today
                   );
-                  console.log("🔍 [TAB RENDER] HISTORY tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
+                  logInfo("🔍 [TAB RENDER] HISTORY tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
                     id: o.id,
                     status: o.order_status,
                     customer: o.customer_name,

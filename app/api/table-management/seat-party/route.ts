@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,18 +24,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      console.error('[SEAT PARTY API] Error:', error);
+      logError('[SEAT PARTY API] Error:', error);
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
       );
     }
 
-    console.log('[SEAT PARTY API] Success:', data);
+    logInfo('[SEAT PARTY API] Success:', data);
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error('[SEAT PARTY API] Unexpected error:', error);
+    logError('[SEAT PARTY API] Unexpected error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

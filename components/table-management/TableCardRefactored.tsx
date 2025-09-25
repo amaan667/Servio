@@ -30,6 +30,7 @@ import { useTableActions } from '@/hooks/useTableActions';
 import { formatDistanceToNow } from 'date-fns';
 import { ReservationDialog } from './ReservationDialog';
 import { TableSelectionDialog } from './TableSelectionDialog';
+import { logInfo, logError } from "@/lib/logger";
 
 interface TableCardRefactoredProps {
   table: TableRuntimeState;
@@ -56,37 +57,37 @@ export function TableCardRefactored({
   const removeTable = useRemoveTable();
 
   const handleAction = async (action: string, reservationId?: string) => {
-    console.log('[TABLE CARD] Action triggered:', { action, tableId: table.table_id, reservationId });
+    logInfo('[TABLE CARD] Action triggered:', { action, tableId: table.table_id, reservationId });
     setIsLoading(true);
     
     try {
       switch (action) {
         case 'seat':
-          console.log('[TABLE CARD] Seating party at table:', table.table_id);
+          logInfo('[TABLE CARD] Seating party at table:', table.table_id);
           await occupyTable(table.table_id, venueId);
           break;
         case 'free':
-          console.log('[TABLE CARD] Freeing table:', table.table_id);
+          logInfo('[TABLE CARD] Freeing table:', table.table_id);
           await closeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
           break;
         case 'remove':
-          console.log('[TABLE CARD] Removing table:', table.table_id);
-          console.log('[TABLE CARD] Table data:', table);
+          logInfo('[TABLE CARD] Removing table:', table.table_id);
+          logInfo('[TABLE CARD] Table data:', table);
           if (confirm(`Are you sure you want to remove Table ${table.label}? This action cannot be undone.`)) {
-            console.log('[TABLE CARD] Confirmed removal, calling removeTable.mutateAsync');
+            logInfo('[TABLE CARD] Confirmed removal, calling removeTable.mutateAsync');
             try {
               await removeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
-              console.log('[TABLE CARD] Table removal completed successfully');
+              logInfo('[TABLE CARD] Table removal completed successfully');
             } catch (error) {
-              console.error('[TABLE CARD] Table removal failed:', error);
+              logError('[TABLE CARD] Table removal failed:', error);
             }
           } else {
-            console.log('[TABLE CARD] Table removal cancelled by user');
+            logInfo('[TABLE CARD] Table removal cancelled by user');
           }
           break;
         case 'assign':
           if (reservationId) {
-            console.log('[TABLE CARD] Assigning reservation:', reservationId, 'to table:', table.table_id);
+            logInfo('[TABLE CARD] Assigning reservation:', reservationId, 'to table:', table.table_id);
             await assignReservation.mutateAsync({ 
               reservationId, 
               tableId: table.table_id 
@@ -95,7 +96,7 @@ export function TableCardRefactored({
           break;
         case 'cancel':
           if (reservationId) {
-            console.log('[TABLE CARD] Cancelling reservation:', reservationId);
+            logInfo('[TABLE CARD] Cancelling reservation:', reservationId);
             await executeAction({
               action: 'cancel_reservation',
               table_id: table.table_id,
@@ -106,7 +107,7 @@ export function TableCardRefactored({
           break;
         case 'no-show':
           if (reservationId) {
-            console.log('[TABLE CARD] Marking no-show for reservation:', reservationId);
+            logInfo('[TABLE CARD] Marking no-show for reservation:', reservationId);
             await noShowReservation.mutateAsync({ reservationId });
             
             // Show no-show message
@@ -115,9 +116,9 @@ export function TableCardRefactored({
             // Close table immediately - no artificial delay
             try {
               await closeTable.mutateAsync({ tableId: table.table_id, venueId: venueId });
-              console.log('[TABLE CARD] Table set to free after no-show');
+              logInfo('[TABLE CARD] Table set to free after no-show');
             } catch (error) {
-              console.error('[TABLE CARD] Error setting table to free after no-show:', error);
+              logError('[TABLE CARD] Error setting table to free after no-show:', error);
             }
             
             // Clear the message after 5 seconds (reduced from 15)
@@ -127,11 +128,11 @@ export function TableCardRefactored({
           }
           break;
       }
-      console.log('[TABLE CARD] Action completed successfully:', action);
+      logInfo('[TABLE CARD] Action completed successfully:', action);
       // Only call onActionComplete after successful completion
       onActionComplete();
     } catch (error) {
-      console.error('[TABLE CARD] Action failed:', error);
+      logError('[TABLE CARD] Action failed:', error);
       // On error, we could show a toast or revert the optimistic update
       // For now, the UI will refresh and show the correct state
     } finally {
@@ -140,26 +141,26 @@ export function TableCardRefactored({
   };
 
   const handleQrCodeClick = () => {
-    console.log('[TABLE CARD] QR Code clicked for table:', table.table_id);
-    console.log('[TABLE CARD] Table data:', {
+    logInfo('[TABLE CARD] QR Code clicked for table:', table.table_id);
+    logInfo('[TABLE CARD] Table data:', {
       table_id: table.table_id,
       label: table.label,
       venue_id: venueId
     });
     // Navigate to QR generation page with this table pre-selected
     const qrUrl = `/generate-qr?venue=${venueId}&table=${encodeURIComponent(table.label)}`;
-    console.log('[TABLE CARD] Generated QR URL:', qrUrl);
+    logInfo('[TABLE CARD] Generated QR URL:', qrUrl);
     window.open(qrUrl, '_blank');
   };
 
   const handleReserveTable = () => {
-    console.log('[TABLE CARD] Reserve table clicked for table:', table.table_id);
+    logInfo('[TABLE CARD] Reserve table clicked for table:', table.table_id);
     setShowReservationDialog(true);
   };
 
 
   const handleMergeTables = () => {
-    console.log('[TABLE CARD] Merge tables clicked for table:', table.table_id);
+    logInfo('[TABLE CARD] Merge tables clicked for table:', table.table_id);
     setShowMergeDialog(true);
   };
 

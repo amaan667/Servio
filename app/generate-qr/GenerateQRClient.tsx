@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Printer, Copy, Check, Download, Settings, X, Plus, QrCode } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
+import { logInfo, logError } from "@/lib/logger";
 
 interface Props {
   venueId: string;
@@ -19,13 +20,13 @@ interface Props {
 type QRType = 'table' | 'counter';
 
 export default function GenerateQRClient({ venueId, venueName, activeTablesCount }: Props) {
-  console.log('🔍 [QR CLIENT] ===== GenerateQRClient Component Initialized =====');
-  console.log('🔍 [QR CLIENT] Props received:', {
+  logInfo('🔍 [QR CLIENT] ===== GenerateQRClient Component Initialized =====');
+  logInfo('🔍 [QR CLIENT] Props received:', {
     venueId,
     venueName,
     activeTablesCount: activeTablesCount
   });
-  console.log('🔍 [QR CLIENT] Initial state values:', {
+  logInfo('🔍 [QR CLIENT] Initial state values:', {
     loading: true, // Initial state
     selectedTables: [],
     selectedCounters: []
@@ -40,7 +41,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       const tablesParam = searchParams?.get('tables');
       const tableParam = searchParams?.get('table');
       
-      console.log('🔍 [QR CLIENT] URL params:', {
+      logInfo('🔍 [QR CLIENT] URL params:', {
         tablesParam,
         tableParam,
         fullUrl: window.location.href
@@ -49,16 +50,16 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       if (tablesParam) {
         // Multiple tables selected
         const tables = tablesParam.split(',').filter(Boolean);
-        console.log('🔍 [QR CLIENT] Parsed multiple tables from URL:', tables);
+        logInfo('🔍 [QR CLIENT] Parsed multiple tables from URL:', tables);
         return tables;
       } else if (tableParam) {
         // Single table selected
-        console.log('🔍 [QR CLIENT] Parsed single table from URL:', tableParam);
-        console.log('🔍 [QR CLIENT] Single table decoded:', decodeURIComponent(tableParam));
+        logInfo('🔍 [QR CLIENT] Parsed single table from URL:', tableParam);
+        logInfo('🔍 [QR CLIENT] Single table decoded:', decodeURIComponent(tableParam));
         return [decodeURIComponent(tableParam)];
       }
     }
-    console.log('🔍 [QR CLIENT] No tables found in URL - starting with empty state');
+    logInfo('🔍 [QR CLIENT] No tables found in URL - starting with empty state');
     return null; // Return null to indicate no specific tables were requested
   };
 
@@ -82,7 +83,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     if (typeof window !== 'undefined') {
       const storageKey = `qr-selected-tables-${venueId}`;
       localStorage.setItem(storageKey, JSON.stringify(tables));
-      console.log('🔍 [QR CLIENT] Persisted tables to localStorage:', tables);
+      logInfo('🔍 [QR CLIENT] Persisted tables to localStorage:', tables);
     }
   };
 
@@ -91,7 +92,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     if (typeof window !== 'undefined') {
       const storageKey = `qr-selected-counters-${venueId}`;
       localStorage.setItem(storageKey, JSON.stringify(counters));
-      console.log('🔍 [QR CLIENT] Persisted counters to localStorage:', counters);
+      logInfo('🔍 [QR CLIENT] Persisted counters to localStorage:', counters);
     }
   };
 
@@ -129,10 +130,10 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     ? `${siteOrigin()}/order?venue=${venueId}&${qrType}=${currentSelection[0]}&source=${qrType}`
     : `${siteOrigin()}/order?venue=${venueId}&table=1&source=table`;
 
-  console.log('🔍 [QR CLIENT] Order URL:', orderUrl);
-  console.log('🔍 [QR CLIENT] QR Type:', qrType);
-  console.log('🔍 [QR CLIENT] Selected tables:', selectedTables);
-  console.log('🔍 [QR CLIENT] Selected counters:', selectedCounters);
+  logInfo('🔍 [QR CLIENT] Order URL:', orderUrl);
+  logInfo('🔍 [QR CLIENT] QR Type:', qrType);
+  logInfo('🔍 [QR CLIENT] Selected tables:', selectedTables);
+  logInfo('🔍 [QR CLIENT] Selected counters:', selectedCounters);
 
   const handleCopy = async () => {
     try {
@@ -152,7 +153,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
+      logError("Failed to copy:", err);
     }
   };
 
@@ -207,25 +208,25 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   const clearAllTables = () => {
     // Clear all tables - start with empty state
     updateSelectedTables([]);
-    console.log('🔍 [QR CLIENT] Cleared all tables, starting with empty state');
+    logInfo('🔍 [QR CLIENT] Cleared all tables, starting with empty state');
   };
 
   const clearAllCounters = () => {
     // Clear all counters - start with empty state
     updateSelectedCounters([]);
-    console.log('🔍 [QR CLIENT] Cleared all counters, starting with empty state');
+    logInfo('🔍 [QR CLIENT] Cleared all counters, starting with empty state');
   };
 
   const removeTable = (tableNumber: string) => {
     const newTables = selectedTables.filter(t => t !== tableNumber);
     updateSelectedTables(newTables);
-    console.log('🔍 [QR CLIENT] Removed table', tableNumber, 'remaining tables:', newTables);
+    logInfo('🔍 [QR CLIENT] Removed table', tableNumber, 'remaining tables:', newTables);
   };
 
   const removeCounter = (counterNumber: string) => {
     const newCounters = selectedCounters.filter(c => c !== counterNumber);
     updateSelectedCounters(newCounters);
-    console.log('🔍 [QR CLIENT] Removed counter', counterNumber, 'remaining counters:', newCounters);
+    logInfo('🔍 [QR CLIENT] Removed counter', counterNumber, 'remaining counters:', newCounters);
   };
 
   const updateTableNumber = (oldTableNumber: string, newTableNumber: string) => {
@@ -424,9 +425,9 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     // Create a new window for printing multiple QR codes
     const printWindow = window.open('', '_blank', 'width=1000,height=800');
     
-    console.log('[QR PRINT] Starting print all with tables:', currentSelection);
-    console.log('[QR PRINT] Venue ID:', venueId);
-    console.log('[QR PRINT] QR Type:', qrType);
+    logInfo('[QR PRINT] Starting print all with tables:', currentSelection);
+    logInfo('[QR PRINT] Venue ID:', venueId);
+    logInfo('[QR PRINT] QR Type:', qrType);
     
     if (printWindow) {
       printWindow.document.write(`
@@ -664,8 +665,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   useEffect(() => {
     const loadStats = () => {
       try {
-        console.log('🔍 [QR CLIENT] ===== Starting loadStats =====');
-        console.log('🔍 [QR CLIENT] loadStats inputs:', {
+        logInfo('🔍 [QR CLIENT] ===== Starting loadStats =====');
+        logInfo('🔍 [QR CLIENT] loadStats inputs:', {
           venueId,
           activeTablesCount: activeTablesCount,
           activeTablesCountType: typeof activeTablesCount,
@@ -683,31 +684,31 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
         // Use the active tables count passed from server (from dashboard_counts function)
         const activeTables = activeTablesCount;
-        console.log('🔍 [QR CLIENT] Using active tables count from server:', activeTables);
+        logInfo('🔍 [QR CLIENT] Using active tables count from server:', activeTables);
 
         setStats({ activeTablesNow: activeTables });
         
         // Check if tables were specified in URL parameters or localStorage
         const currentSelectedTables = getInitialTables();
-        console.log('🔍 [QR CLIENT] getInitialTables() returned:', currentSelectedTables);
+        logInfo('🔍 [QR CLIENT] getInitialTables() returned:', currentSelectedTables);
         
         if (currentSelectedTables === null) {
           // No tables in URL or localStorage - start with empty state
           setSelectedTables([]);
           persistSelectedTables([]);
-          console.log('🔍 [QR CLIENT] No tables specified, starting with empty state');
+          logInfo('🔍 [QR CLIENT] No tables specified, starting with empty state');
         } else if (currentSelectedTables.length === 0) {
           // Empty array from localStorage - don't create any default tables
           setSelectedTables([]);
           persistSelectedTables([]);
-          console.log('🔍 [QR CLIENT] Empty tables from localStorage, not creating any default tables');
+          logInfo('🔍 [QR CLIENT] Empty tables from localStorage, not creating any default tables');
         } else {
           // Tables were specified in URL or localStorage, keep them
-          console.log('🔍 [QR CLIENT] Using tables from URL/localStorage:', currentSelectedTables.join(', '));
+          logInfo('🔍 [QR CLIENT] Using tables from URL/localStorage:', currentSelectedTables.join(', '));
           setSelectedTables(currentSelectedTables);
         }
         
-        console.log('🔍 [QR CLIENT] Final stats:', {
+        logInfo('🔍 [QR CLIENT] Final stats:', {
           activeTables,
           selectedTables: currentSelectedTables === null 
             ? (activeTables > 0 ? Array.from({length: activeTables}, (_, i) => (i + 1).toString()) : [])
@@ -715,8 +716,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         });
         
         setLoading(false);
-        console.log('🔍 [QR CLIENT] ===== loadStats completed successfully =====');
-        console.log('🔍 [QR CLIENT] Final state after loadStats:', {
+        logInfo('🔍 [QR CLIENT] ===== loadStats completed successfully =====');
+        logInfo('🔍 [QR CLIENT] Final state after loadStats:', {
           loading: false,
           selectedTables: currentSelectedTables === null 
             ? (activeTables > 0 ? Array.from({length: activeTables}, (_, i) => (i + 1).toString()) : [])
@@ -725,7 +726,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           currentSelectedTables
         });
       } catch (error: any) {
-        console.error('🔍 [QR CLIENT] Error in loadStats:', error);
+        logError('🔍 [QR CLIENT] Error in loadStats:', error);
         setError(`Failed to load stats: ${error.message}`);
         // Set default values on error
         setStats({ activeTablesNow: 0 });
@@ -737,7 +738,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     if (venueId) {
       loadStats();
     } else {
-      console.log('🔍 [QR CLIENT] No venue ID provided, setting error');
+      logInfo('🔍 [QR CLIENT] No venue ID provided, setting error');
       setError('No venue ID provided');
       setLoading(false);
     }
@@ -746,17 +747,17 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   // Effect to handle URL parameter changes
   useEffect(() => {
     const currentSelectedTables = getInitialTables();
-    console.log('🔍 [QR CLIENT] URL params effect - current selected tables:', currentSelectedTables);
+    logInfo('🔍 [QR CLIENT] URL params effect - current selected tables:', currentSelectedTables);
     
     if (currentSelectedTables !== null && currentSelectedTables.length > 0) {
       setSelectedTables(currentSelectedTables);
       // Don't persist URL-based table selections to localStorage to avoid conflicts
-      console.log('🔍 [QR CLIENT] Updated selected tables from URL params (not persisting):', currentSelectedTables);
+      logInfo('🔍 [QR CLIENT] Updated selected tables from URL params (not persisting):', currentSelectedTables);
     } else if (currentSelectedTables === null) {
       // No specific tables in URL, start with empty state
       setSelectedTables([]);
       persistSelectedTables([]);
-      console.log('🔍 [QR CLIENT] No tables in URL, starting with empty state from URL params effect');
+      logInfo('🔍 [QR CLIENT] No tables in URL, starting with empty state from URL params effect');
     }
   }, [searchParams, venueId, activeTablesCount]);
 
@@ -769,15 +770,15 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
         const counterStorageKey = `qr-selected-counters-${venueId}`;
         localStorage.removeItem(storageKey);
         localStorage.removeItem(counterStorageKey);
-        console.log('🔍 [QR CLIENT] Cleared localStorage on component unmount');
+        logInfo('🔍 [QR CLIENT] Cleared localStorage on component unmount');
       }
     };
   }, [venueId]);
 
   // Show loading state
   if (loading) {
-    console.log('🔍 [QR CLIENT] Rendering loading state - loading is true');
-    console.log('🔍 [QR CLIENT] Loading state details:', {
+    logInfo('🔍 [QR CLIENT] Rendering loading state - loading is true');
+    logInfo('🔍 [QR CLIENT] Loading state details:', {
       loading,
       selectedTables,
       selectedCounters,
@@ -798,7 +799,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
 
   // Show error state
   if (error) {
-    console.log('🔍 [QR CLIENT] Rendering error state:', error);
+    logInfo('🔍 [QR CLIENT] Rendering error state:', error);
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
@@ -820,8 +821,8 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
     );
   }
 
-  console.log('🔍 [QR CLIENT] ===== Rendering main QR interface =====');
-  console.log('🔍 [QR CLIENT] Current state:', {
+  logInfo('🔍 [QR CLIENT] ===== Rendering main QR interface =====');
+  logInfo('🔍 [QR CLIENT] Current state:', {
     loading,
     error,
     stats,

@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { ENV } from '@/lib/env';
 import { v4 as uuidv4 } from 'uuid';
+import { logInfo, logError } from "@/lib/logger";
 
 const stripe = new Stripe(ENV.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-08-27.basil',
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[ORDER CREATION] Processing payment intent:', {
+    logInfo('[ORDER CREATION] Processing payment intent:', {
       paymentIntentId,
       cartId,
     });
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    console.log('[ORDER CREATION] Payment intent status:', {
+    logInfo('[ORDER CREATION] Payment intent status:', {
       id: paymentIntent.id,
       status: paymentIntent.status,
       amount: paymentIntent.amount,
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (existingOrder) {
-      console.log('[ORDER CREATION] Order already exists:', existingOrder.id);
+      logInfo('[ORDER CREATION] Order already exists:', existingOrder.id);
       return NextResponse.json({
         ok: true,
         order: existingOrder,
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    console.log('[ORDER CREATION] Creating order:', {
+    logInfo('[ORDER CREATION] Creating order:', {
       id: orderData.id,
       venue_id: orderData.venue_id,
       table_number: orderData.table_number,
@@ -141,7 +142,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (orderError) {
-      console.error('[ORDER CREATION] Database error:', orderError);
+      logError('[ORDER CREATION] Database error:', orderError);
       return NextResponse.json(
         { 
           ok: false, 
@@ -151,7 +152,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[ORDER CREATION] Order created successfully:', {
+    logInfo('[ORDER CREATION] Order created successfully:', {
       id: order.id,
       order_number: order.id,
     });
@@ -171,9 +172,9 @@ export async function POST(req: NextRequest) {
             venue_id: venue_id,
           },
         });
-      console.log('[ORDER CREATION] Realtime event published');
+      logInfo('[ORDER CREATION] Realtime event published');
     } catch (realtimeError) {
-      console.error('[ORDER CREATION] Failed to publish realtime event:', realtimeError);
+      logError('[ORDER CREATION] Failed to publish realtime event:', realtimeError);
       // Don't fail the order creation if realtime fails
     }
 
@@ -186,7 +187,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[ORDER CREATION] Error:', error);
+    logError('[ORDER CREATION] Error:', error);
     
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
@@ -210,7 +211,7 @@ export async function POST(req: NextRequest) {
 
 async function createDemoOrder(cartId: string) {
   try {
-    console.log('[DEMO ORDER] Creating demo order for cart:', cartId);
+    logInfo('[DEMO ORDER] Creating demo order for cart:', cartId);
 
     // Create a demo order
     const demoOrderData = {
@@ -252,7 +253,7 @@ async function createDemoOrder(cartId: string) {
       .single();
 
     if (orderError) {
-      console.error('[DEMO ORDER] Database error:', orderError);
+      logError('[DEMO ORDER] Database error:', orderError);
       return NextResponse.json(
         { 
           ok: false, 
@@ -262,7 +263,7 @@ async function createDemoOrder(cartId: string) {
       );
     }
 
-    console.log('[DEMO ORDER] Demo order created successfully:', order.id);
+    logInfo('[DEMO ORDER] Demo order created successfully:', order.id);
 
     // Publish realtime event for live orders
     try {
@@ -279,9 +280,9 @@ async function createDemoOrder(cartId: string) {
             venue_id: 'demo-cafe',
           },
         });
-      console.log('[DEMO ORDER] Realtime event published');
+      logInfo('[DEMO ORDER] Realtime event published');
     } catch (realtimeError) {
-      console.error('[DEMO ORDER] Failed to publish realtime event:', realtimeError);
+      logError('[DEMO ORDER] Failed to publish realtime event:', realtimeError);
       // Don't fail the order creation if realtime fails
     }
 
@@ -294,7 +295,7 @@ async function createDemoOrder(cartId: string) {
     });
 
   } catch (error) {
-    console.error('[DEMO ORDER] Error:', error);
+    logError('[DEMO ORDER] Error:', error);
     return NextResponse.json(
       { 
         ok: false, 

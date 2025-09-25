@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';            // ensure Node runtime (not Edge)
 export const dynamic = 'force-dynamic';
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
   // Insert without .single() to avoid PGRST116 on 0 rows
   const { error: insertErr } = await supabaseAdmin.from('orders').insert(payload);
   if (insertErr) {
-    console.error('[WEBHOOK] order insert failed', insertErr);
+    logError('webhook.order.insert.failed', insertErr);
     return NextResponse.json({ ok: false, error: insertErr.message }, { status: 500 });
   }
 

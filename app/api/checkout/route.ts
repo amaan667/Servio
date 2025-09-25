@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: session.url, sessionId: session.id }, { status: 200 });
   } catch (e: any) {
-    console.error("Stripe session error:", e);
+    logError("Stripe session error:", e);
     return NextResponse.json({ error: e.message ?? "Stripe error" }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { logInfo } from "@/lib/logger";
 
 export function useCountsRealtime(venueId: string, tz: string, onOrderChange?: () => void) {
   const supabase = createClient()
@@ -20,7 +21,7 @@ export function useCountsRealtime(venueId: string, tz: string, onOrderChange?: (
         table: 'orders',
         filter: `venue_id=eq.${venueId}`,
       }, () => {
-        console.log('[COUNTS_REALTIME] Order changed, refreshing tab counts')
+        logInfo('[COUNTS_REALTIME] Order changed, refreshing tab counts')
         if (onOrderChangeRef.current) {
           onOrderChangeRef.current()
         }
@@ -28,7 +29,7 @@ export function useCountsRealtime(venueId: string, tz: string, onOrderChange?: (
       .subscribe()
 
     return () => { 
-      console.log('[COUNTS_REALTIME] Cleaning up channel')
+      logInfo('[COUNTS_REALTIME] Cleaning up channel')
       supabase.removeChannel(channel) 
     }
   }, [venueId, tz])

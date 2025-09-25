@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { FeedbackQuestion, FeedbackAnswer } from '@/types/feedback';
+import { logInfo, logError } from "@/lib/logger";
 
 interface OrderFeedbackFormProps {
   venueId: string;
@@ -88,7 +89,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   // useEffect moved after fetchQuestions definition
 
   useEffect(() => {
-    console.log('[FEEDBACK DEBUG] totalCount state changed to:', totalCount);
+    logInfo('[FEEDBACK DEBUG] totalCount state changed to:', totalCount);
   }, [totalCount]);
 
   // Real-time subscription moved after fetchQuestions definition
@@ -98,17 +99,17 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
       if (response.ok) {
         const data = await response.json();
-        console.log('[FEEDBACK DEBUG] API response:', data);
-        console.log('[FEEDBACK DEBUG] Total questions from API:', data.totalCount);
-        console.log('[FEEDBACK DEBUG] Active questions from API:', data.activeCount);
-        console.log('[FEEDBACK DEBUG] All questions:', data.questions?.length || 0);
+        logInfo('[FEEDBACK DEBUG] API response:', data);
+        logInfo('[FEEDBACK DEBUG] Total questions from API:', data.totalCount);
+        logInfo('[FEEDBACK DEBUG] Active questions from API:', data.activeCount);
+        logInfo('[FEEDBACK DEBUG] All questions:', data.questions?.length || 0);
         
         const activeQuestions = (data.questions || []).filter((q: FeedbackQuestion) => q.is_active);
-        console.log('[FEEDBACK DEBUG] Client-side active questions:', activeQuestions.length);
+        logInfo('[FEEDBACK DEBUG] Client-side active questions:', activeQuestions.length);
         
         // If no custom questions, use generic ones
         if (activeQuestions.length === 0) {
-          console.log('[FEEDBACK DEBUG] No custom questions found, using generic questions');
+          logInfo('[FEEDBACK DEBUG] No custom questions found, using generic questions');
           setQuestions(genericQuestions);
           setTotalCount(genericQuestions.length);
           setActiveCount(genericQuestions.length);
@@ -118,13 +119,13 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           setActiveCount(data.activeCount || 0);
         }
         
-        console.log('[FEEDBACK DEBUG] Set totalCount to:', data.totalCount || genericQuestions.length);
-        console.log('[FEEDBACK DEBUG] Set activeCount to:', data.activeCount || genericQuestions.length);
+        logInfo('[FEEDBACK DEBUG] Set totalCount to:', data.totalCount || genericQuestions.length);
+        logInfo('[FEEDBACK DEBUG] Set activeCount to:', data.activeCount || genericQuestions.length);
       }
     } catch (error) {
-      console.error('[FEEDBACK] Error fetching questions:', error);
+      logError('[FEEDBACK] Error fetching questions:', error);
       // If API fails, fall back to generic questions
-      console.log('[FEEDBACK DEBUG] API failed, using generic questions as fallback');
+      logInfo('[FEEDBACK DEBUG] API failed, using generic questions as fallback');
       setQuestions(genericQuestions);
       setTotalCount(genericQuestions.length);
       setActiveCount(genericQuestions.length);
@@ -141,7 +142,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   useEffect(() => {
     const supabase = createClient();
     
-    console.log('[FEEDBACK DEBUG] Setting up real-time subscription for venue:', venueId);
+    logInfo('[FEEDBACK DEBUG] Setting up real-time subscription for venue:', venueId);
     
     const channel = supabase
       .channel(`feedback-questions-${venueId}`)
@@ -154,16 +155,16 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('[FEEDBACK DEBUG] Real-time change detected:', payload);
+          logInfo('[FEEDBACK DEBUG] Real-time change detected:', payload);
           fetchQuestions();
         },
       )
       .subscribe((status: any) => {
-        console.log('[FEEDBACK DEBUG] Real-time subscription status:', status);
+        logInfo('[FEEDBACK DEBUG] Real-time subscription status:', status);
       });
 
     return () => {
-      console.log('[FEEDBACK DEBUG] Cleaning up real-time subscription');
+      logInfo('[FEEDBACK DEBUG] Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [venueId, fetchQuestions]);
@@ -240,7 +241,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
 
       // If main API fails and we have generic questions, try to submit to a fallback
       if (!response.ok && questions.some(q => q.id.startsWith('generic'))) {
-        console.log('[FEEDBACK] Main API failed, trying fallback for generic questions');
+        logInfo('[FEEDBACK] Main API failed, trying fallback for generic questions');
         
         // For generic questions, we can store them locally or send to a different endpoint
         // For now, we'll just show success since these are demo/generic questions
@@ -263,7 +264,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
         });
       }
     } catch (error) {
-      console.error('[FEEDBACK] Error submitting feedback:', error);
+      logError('[FEEDBACK] Error submitting feedback:', error);
       
       // If we have generic questions and the main API fails, still show success
       if (questions.some(q => q.id.startsWith('generic'))) {

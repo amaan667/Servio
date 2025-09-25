@@ -3,7 +3,8 @@
 // =====================================================
 // Implements two-pass processing for maximum accuracy
 
-import { 
+import { logInfo } from "@/lib/logger";
+import {
   ProcessingOptions, 
   ParsedCatalog, 
   CoverageReport,
@@ -43,26 +44,26 @@ export async function runHighRecallMode(
   blocks: TextBlock[],
   customOptions?: Partial<ProcessingOptions>
 ): Promise<{ catalog: ParsedCatalog; coverage: CoverageReport; warnings: string[] }> {
-  console.log('[HIGH_RECALL] Starting high-recall mode...');
+  logInfo('[HIGH_RECALL] Starting high-recall mode...');
   
   const options = { ...HIGH_RECALL_OPTIONS, ...customOptions };
   const warnings: string[] = [];
   
   // Step 1: Extract all possible price tokens with relaxed criteria
   const priceTokens = extractPriceTokensRelaxed(blocks, options);
-  console.log('[HIGH_RECALL] Found', priceTokens.length, 'price tokens (relaxed)');
+  logInfo('[HIGH_RECALL] Found', priceTokens.length, 'price tokens (relaxed)');
   
   // Step 2: Detect all possible title candidates with relaxed criteria
   const titleCandidates = detectTitleCandidatesRelaxed(blocks, options);
-  console.log('[HIGH_RECALL] Found', titleCandidates.length, 'title candidates (relaxed)');
+  logInfo('[HIGH_RECALL] Found', titleCandidates.length, 'title candidates (relaxed)');
   
   // Step 3: Pair titles with prices using wider search window
   const pairedItems = pairTitlesWithPricesRelaxed(titleCandidates, priceTokens, options);
-  console.log('[HIGH_RECALL] Paired', pairedItems.length, 'items (relaxed)');
+  logInfo('[HIGH_RECALL] Paired', pairedItems.length, 'items (relaxed)');
   
   // Step 4: Build categories with relaxed assignment
   const categories = buildCategoriesRelaxed(pairedItems, blocks);
-  console.log('[HIGH_RECALL] Built', categories.length, 'categories (relaxed)');
+  logInfo('[HIGH_RECALL] Built', categories.length, 'categories (relaxed)');
   
   // Step 5: Generate coverage report
   const coverage = generateHighRecallCoverage(priceTokens, pairedItems, categories, blocks);
@@ -88,7 +89,7 @@ export async function runHighRecallMode(
     }
   };
   
-  console.log('[HIGH_RECALL] High-recall mode completed');
+  logInfo('[HIGH_RECALL] High-recall mode completed');
   return { catalog, coverage, warnings };
 }
 
@@ -100,7 +101,7 @@ export async function runPrecisionMode(
   highRecallResults?: { catalog: ParsedCatalog; coverage: CoverageReport },
   customOptions?: Partial<ProcessingOptions>
 ): Promise<{ catalog: ParsedCatalog; coverage: CoverageReport; validation: any }> {
-  console.log('[PRECISION] Starting precision mode...');
+  logInfo('[PRECISION] Starting precision mode...');
   
   const options = { ...PRECISION_OPTIONS, ...customOptions };
   
@@ -109,7 +110,7 @@ export async function runPrecisionMode(
   
   // Step 1: Apply strict filtering
   const filteredItems = applyStrictFiltering(startingItems, options);
-  console.log('[PRECISION] Filtered to', filteredItems.length, 'items (strict)');
+  logInfo('[PRECISION] Filtered to', filteredItems.length, 'items (strict)');
   
   // Step 2: Re-pair with strict criteria
   const priceTokens = extractPriceTokensStrict(blocks, options);
@@ -118,15 +119,15 @@ export async function runPrecisionMode(
   
   // Step 3: Merge and deduplicate
   const mergedItems = mergeAndDeduplicateItems(filteredItems, strictPairedItems);
-  console.log('[PRECISION] Merged to', mergedItems.length, 'items (deduplicated)');
+  logInfo('[PRECISION] Merged to', mergedItems.length, 'items (deduplicated)');
   
   // Step 4: Apply category guards
   const guardedItems = applyCategoryGuards(mergedItems, options);
-  console.log('[PRECISION] Applied category guards,', guardedItems.length, 'items remaining');
+  logInfo('[PRECISION] Applied category guards,', guardedItems.length, 'items remaining');
   
   // Step 5: Build final categories
   const categories = buildCategoriesStrict(guardedItems, blocks);
-  console.log('[PRECISION] Built', categories.length, 'categories (strict)');
+  logInfo('[PRECISION] Built', categories.length, 'categories (strict)');
   
   // Step 6: Validate results
   const validation = validatePrecisionResults(categories, priceTokens);
@@ -146,7 +147,7 @@ export async function runPrecisionMode(
     }
   };
   
-  console.log('[PRECISION] Precision mode completed');
+  logInfo('[PRECISION] Precision mode completed');
   return { catalog, coverage, validation };
 }
 

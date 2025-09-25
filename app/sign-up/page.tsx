@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 import { getAuthRedirectUrl } from '@/lib/auth';
 import SignUpForm from './signup-form';
+import { logInfo, logError } from "@/lib/logger";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function SignUpPage() {
     
     try {
       setIsSigningUp(true);
-      console.log('[AUTH DEBUG] SignUpPage: Starting Google OAuth sign-up');
+      logInfo('[AUTH DEBUG] SignUpPage: Starting Google OAuth sign-up');
 
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
@@ -37,7 +38,7 @@ export default function SignUpPage() {
       });
       
       if (error) {
-        console.error('OAuth sign up error:', error);
+        logError('OAuth sign up error:', error);
         alert(`Sign up failed: ${error.message}`);
         setIsSigningUp(false);
         return;
@@ -45,11 +46,11 @@ export default function SignUpPage() {
       
       // The redirect should happen automatically, but if it doesn't, we'll handle it
       if (data.url) {
-        console.log('[AUTH DEBUG] SignUpPage: Redirecting to OAuth URL');
+        logInfo('[AUTH DEBUG] SignUpPage: Redirecting to OAuth URL');
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error('Sign up error:', error);
+      logError('Sign up error:', error);
       alert('Sign up failed. Please try again.');
       setIsSigningUp(false);
     }

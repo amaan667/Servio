@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { logInfo, logError } from "@/lib/logger";
 
 export default function SignInButton() {
   const [loading, setLoading] = useState(false);
@@ -13,10 +14,10 @@ export default function SignInButton() {
     
     setLoading(true);
     try {
-      console.log('[AUTH DEBUG] SignInButton: Redirecting to sign-in page');
+      logInfo('[AUTH DEBUG] SignInButton: Redirecting to sign-in page');
       router.push('/sign-in');
     } catch (error) {
-      console.error('[AUTH DEBUG] SignInButton error:', error);
+      logError('[AUTH DEBUG] SignInButton error:', error);
       setLoading(false);
     }
   };

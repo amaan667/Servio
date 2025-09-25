@@ -4,10 +4,11 @@ export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { safeGetUser } from '@/lib/server-utils';
-import { log } from '@/lib/debug';
+// import { log } from '@/lib/debug'; // Removed debug import
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import OrdersClient from './OrdersClient';
 import { liveOrdersWindow } from '@/lib/dates';
+import { logInfo, logError } from "@/lib/logger";
 
 export default async function OrdersPage({
   params,
@@ -15,18 +16,18 @@ export default async function OrdersPage({
   params: Promise<{ venueId: string }>;
 }) {
   const { venueId } = await params;
-  console.log('[ORDERS] Page mounted for venue', venueId);
+  logInfo('[ORDERS] Page mounted for venue', venueId);
   
   // Safe auth check that only calls getUser if auth cookies exist
   const { data: { user }, error } = await safeGetUser();
   
   if (error) {
-    console.error('[ORDERS] Auth error:', error);
+    logError('[ORDERS] Auth error:', error);
     redirect('/sign-in');
   }
   
   if (!user) {
-    console.log('[ORDERS] No user found, redirecting to sign-in');
+    logInfo('[ORDERS] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
 
@@ -51,7 +52,7 @@ export default async function OrdersPage({
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false });
 
-  console.log('[ORDERS SSR] Fetched orders:', {
+  logInfo('[ORDERS SSR] Fetched orders:', {
     venueId,
     ordersCount: ordersData?.length || 0,
     error: ordersError?.message,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logInfo } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,7 +8,7 @@ export async function POST(request: NextRequest) {
     const { action, data, error, timestamp } = body;
     
     // Log to Railway logs
-    console.log('[RAILWAY OAUTH DEBUG]', {
+    logInfo('[RAILWAY OAUTH DEBUG]', {
       action,
       data,
       error,
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, logged: true });
     
   } catch (error: any) {
-    console.log('[RAILWAY OAUTH DEBUG ERROR]', {
+    logInfo('[RAILWAY OAUTH DEBUG ERROR]', {
       error: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString()
@@ -68,12 +69,12 @@ export async function GET(request: NextRequest) {
       }
     };
     
-    console.log('[RAILWAY OAUTH DEBUG] GET request:', debugInfo);
+    logInfo('[RAILWAY OAUTH DEBUG] GET request:', debugInfo);
     
     return NextResponse.json(debugInfo);
     
   } catch (error: any) {
-    console.log('[RAILWAY OAUTH DEBUG] GET error:', {
+    logInfo('[RAILWAY OAUTH DEBUG] GET error:', {
       error: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString()

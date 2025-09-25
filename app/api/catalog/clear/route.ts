@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[CATALOG CLEAR] Clearing catalog for venue:', venueId);
+    logInfo('[CATALOG CLEAR] Clearing catalog for venue:', venueId);
 
     const supabase = await createAdminClient();
 
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
         .select('*');
 
       if (error) {
-        console.error(`[CATALOG CLEAR] Error clearing ${operation.description}:`, error);
+        logError(`[CATALOG CLEAR] Error clearing ${operation.description}:`, error);
         return NextResponse.json({ 
           ok: false, 
           error: `Failed to clear ${operation.description}: ${error.message}` 
@@ -62,10 +63,10 @@ export async function POST(req: NextRequest) {
       results[operation.table] = deletedCount;
       totalDeleted += deletedCount;
       
-      console.log(`[CATALOG CLEAR] Cleared ${deletedCount} ${operation.description}`);
+      logInfo(`[CATALOG CLEAR] Cleared ${deletedCount} ${operation.description}`);
     }
 
-    console.log('[CATALOG CLEAR] Successfully cleared catalog:', results);
+    logInfo('[CATALOG CLEAR] Successfully cleared catalog:', results);
 
     return NextResponse.json({
       ok: true,
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[CATALOG CLEAR] Unexpected error:', error);
+    logError('[CATALOG CLEAR] Unexpected error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: 'Unexpected error: ' + error.message 

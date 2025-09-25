@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logInfo, logError } from "@/lib/logger";
 
 export interface CreateTableParams {
   venue_id: string;
@@ -21,7 +22,7 @@ export function useTableManagement() {
 
   const createTable = async (params: CreateTableParams) => {
     try {
-      console.log('[TABLE MANAGEMENT HOOK] Starting table creation:', params);
+      logInfo('[TABLE MANAGEMENT HOOK] Starting table creation:', params);
       setLoading(true);
       setError(null);
 
@@ -33,9 +34,9 @@ export function useTableManagement() {
         body: JSON.stringify(params),
       });
 
-      console.log('[TABLE MANAGEMENT HOOK] API response status:', response.status);
+      logInfo('[TABLE MANAGEMENT HOOK] API response status:', response.status);
       const data = await response.json();
-      console.log('[TABLE MANAGEMENT HOOK] API response data:', data);
+      logInfo('[TABLE MANAGEMENT HOOK] API response data:', data);
 
       if (!response.ok) {
         const errorMessage = data.error || 'Failed to create table';
@@ -50,10 +51,10 @@ export function useTableManagement() {
         throw error;
       }
 
-      console.log('[TABLE MANAGEMENT HOOK] Table created successfully:', data.table);
+      logInfo('[TABLE MANAGEMENT HOOK] Table created successfully:', data.table);
       return data.table;
     } catch (err) {
-      console.error('[TABLE MANAGEMENT HOOK] Error creating table:', err);
+      logError('[TABLE MANAGEMENT HOOK] Error creating table:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create table';
       setError(errorMessage);
       throw err;
@@ -88,7 +89,7 @@ export function useTableManagement() {
 
       return data.table;
     } catch (err) {
-      console.error('[TABLE MANAGEMENT HOOK] Error updating table:', err);
+      logError('[TABLE MANAGEMENT HOOK] Error updating table:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to update table';
       setError(errorMessage);
       throw err;
@@ -114,7 +115,7 @@ export function useTableManagement() {
 
       return data;
     } catch (err) {
-      console.error('[TABLE MANAGEMENT HOOK] Error deleting table:', err);
+      logError('[TABLE MANAGEMENT HOOK] Error deleting table:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete table';
       setError(errorMessage);
       throw err;
@@ -140,7 +141,7 @@ export function useTableManagement() {
 
       return data.table;
     } catch (err) {
-      console.error('[TABLE MANAGEMENT HOOK] Error reissuing QR:', err);
+      logError('[TABLE MANAGEMENT HOOK] Error reissuing QR:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to reissue QR';
       setError(errorMessage);
       throw err;

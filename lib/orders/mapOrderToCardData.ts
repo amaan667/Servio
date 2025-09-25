@@ -1,6 +1,7 @@
 // Data transformation utilities for the unified OrderCard component
 
 import { OrderForCard, LegacyOrder } from '@/types/orders';
+import { logInfo } from "@/lib/logger";
 
 /**
  * Transforms legacy order data to the new OrderForCard format
@@ -107,7 +108,7 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     const isCounterOrder = order.source === 'counter';
     
     // Debug logging
-    console.log(`[mapOrderToCardData DEBUG] Order ${order.id}:`, {
+    logInfo(`[mapOrderToCardData DEBUG] Order ${order.id}:`, {
       source: order.source,
       table_number: order.table_number,
       table_id: order.table_id,
@@ -118,34 +119,34 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
     
     // Additional debug for table number processing
     if (order.table_number) {
-      console.log(`[mapOrderToCardData DEBUG] Order ${order.id} has table_number: ${order.table_number}`);
+      logInfo(`[mapOrderToCardData DEBUG] Order ${order.id} has table_number: ${order.table_number}`);
     } else {
-      console.log(`[mapOrderToCardData DEBUG] Order ${order.id} has NO table_number`);
+      logInfo(`[mapOrderToCardData DEBUG] Order ${order.id} has NO table_number`);
     }
     
     if (isCounterOrder) {
-      console.log(`[mapOrderToCardData DEBUG] Order ${order.id} classified as COUNTER order`);
+      logInfo(`[mapOrderToCardData DEBUG] Order ${order.id} classified as COUNTER order`);
       // For counter orders, use counter_label if available, otherwise generate from table_number
       return {
         table_label: null,
         counter_label: order.counter_label || `Counter ${order.table_number || 'A'}`,
       };
     } else {
-      console.log(`[mapOrderToCardData DEBUG] Order ${order.id} classified as TABLE order`);
+      logInfo(`[mapOrderToCardData DEBUG] Order ${order.id} classified as TABLE order`);
       // For table orders, use table_label if available, otherwise generate from table_number  
       let generatedTableLabel;
       if (order.table_label) {
         generatedTableLabel = order.table_label;
-        console.log(`[mapOrderToCardData DEBUG] Using existing table_label: ${generatedTableLabel}`);
+        logInfo(`[mapOrderToCardData DEBUG] Using existing table_label: ${generatedTableLabel}`);
       } else if (order.table_number) {
         generatedTableLabel = `Table ${order.table_number}`;
-        console.log(`[mapOrderToCardData DEBUG] Generated table_label from table_number: ${generatedTableLabel}`);
+        logInfo(`[mapOrderToCardData DEBUG] Generated table_label from table_number: ${generatedTableLabel}`);
       } else {
         // Fallback for orders without table numbers - use a generic label
         generatedTableLabel = 'Table Order';
-        console.log(`[mapOrderToCardData DEBUG] Using fallback table_label: ${generatedTableLabel}`);
+        logInfo(`[mapOrderToCardData DEBUG] Using fallback table_label: ${generatedTableLabel}`);
       }
-      console.log(`[mapOrderToCardData DEBUG] Final generated table_label: ${generatedTableLabel}`);
+      logInfo(`[mapOrderToCardData DEBUG] Final generated table_label: ${generatedTableLabel}`);
       return {
         table_label: generatedTableLabel,
         counter_label: null,
@@ -156,15 +157,15 @@ export function mapOrderToCardData(legacyOrder: LegacyOrder, currency: string = 
   const { table_label, counter_label } = generateLabels(legacyOrder);
 
   // Debug the final result
-  console.log(`[mapOrderToCardData DEBUG] Final result for order ${legacyOrder.id}:`, {
+  logInfo(`[mapOrderToCardData DEBUG] Final result for order ${legacyOrder.id}:`, {
     table_label,
     counter_label,
     original_table_number: legacyOrder.table_number
   });
   
   // Additional debug to see the actual values
-  console.log(`[mapOrderToCardData DEBUG] Final table_label value: "${table_label}"`);
-  console.log(`[mapOrderToCardData DEBUG] Final counter_label value: "${counter_label}"`);
+  logInfo(`[mapOrderToCardData DEBUG] Final table_label value: "${table_label}"`);
+  logInfo(`[mapOrderToCardData DEBUG] Final counter_label value: "${counter_label}"`);
 
   return {
     id: legacyOrder.id,

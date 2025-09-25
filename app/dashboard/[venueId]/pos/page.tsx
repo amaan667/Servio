@@ -4,6 +4,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import { POSDashboardClient } from './pos-dashboard-client';
+import { logInfo, logError } from "@/lib/logger";
 
 interface POSPageProps {
   params: Promise<{
@@ -18,16 +19,16 @@ export default async function POSPage({ params }: POSPageProps) {
   const { user, error } = await getAuthenticatedUser();
   
   if (error) {
-    console.error('[POS PAGE] Auth error:', error);
+    logError('[POS PAGE] Auth error:', error);
     redirect('/sign-in');
   }
   
   if (!user) {
-    console.log('[POS PAGE] No user found, redirecting to sign-in');
+    logInfo('[POS PAGE] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
 
-  console.log('[POS PAGE] User authenticated:', user.id);
+  logInfo('[POS PAGE] User authenticated:', user.id);
 
   const supabase = await createServerSupabase();
 
@@ -40,12 +41,12 @@ export default async function POSPage({ params }: POSPageProps) {
     .maybeSingle();
 
   if (venueError) {
-    console.error('[POS PAGE] Venue query error:', venueError);
+    logError('[POS PAGE] Venue query error:', venueError);
     redirect('/dashboard');
   }
 
   if (!venue) {
-    console.log('[POS PAGE] Venue not found or not owned by user, redirecting to dashboard');
+    logInfo('[POS PAGE] Venue not found or not owned by user, redirecting to dashboard');
     redirect('/dashboard');
   }
 

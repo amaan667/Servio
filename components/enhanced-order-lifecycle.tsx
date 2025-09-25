@@ -21,7 +21,6 @@ import {
   Zap
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { logger } from "@/lib/logger";
 
 interface OrderItem {
   menu_item_id: string;

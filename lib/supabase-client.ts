@@ -2,13 +2,14 @@
 
 import { createBrowserClient } from '@supabase/ssr';
 import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Handle missing environment variables gracefully
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('[SUPABASE CLIENT] Missing environment variables:', {
+  logWarn('[SUPABASE CLIENT] Missing environment variables:', {
     hasUrl: !!supabaseUrl,
     hasKey: !!supabaseAnonKey
   });
@@ -50,7 +51,7 @@ if (supabaseUrl && supabaseAnonKey) {
   supabase.auth.onAuthStateChange = (callback: (event: AuthChangeEvent, session: Session | null) => void) => {
     return originalOnAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       // Don't trigger any cookie operations during auth state changes
-      console.log('[AUTH DEBUG] Auth state change (no cookie ops):', event, !!session);
+      logInfo('[AUTH DEBUG] Auth state change (no cookie ops):', event, !!session);
       callback(event, session);
     });
   };
@@ -70,7 +71,7 @@ export async function signOut() {
       throw new Error(`Server signout failed: ${response.status}`);
     }
   } catch (error) {
-    console.error('Sign-out error:', error);
+    logError('Sign-out error:', error);
     throw error;
   }
 }
@@ -78,7 +79,7 @@ export async function signOut() {
 export async function getSession() {
   const { data: { session }, error } = await supabase.auth.getSession();
   if (error) {
-    console.error('Get session error:', error);
+    logError('Get session error:', error);
     throw error;
   }
   return session;
@@ -87,7 +88,7 @@ export async function getSession() {
 export async function getUser() {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) {
-    console.error('Get user error:', error);
+    logError('Get user error:', error);
     throw error;
   }
   return user;

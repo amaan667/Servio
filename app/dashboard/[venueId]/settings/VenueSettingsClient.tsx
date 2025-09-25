@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createClient } from "@/lib/supabase/client";
 import { User, Building, Mail, Phone, MapPin, Lock, Trash2, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { logInfo, logError } from "@/lib/logger";
 
 interface Venue {
   venue_id: string;
@@ -87,7 +88,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
   const isLikelyOAuthUser = isOAuthUser || (isGmailUser && !hasPasswordSet);
   
   // Debug logging
-  console.log('[AUTH DEBUG] User data:', {
+  logInfo('[AUTH DEBUG] User data:', {
     hasIdentities: !!user?.identities,
     identities: user?.identities,
     appMetadata: user?.app_metadata,
@@ -160,7 +161,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
     setSuccess(null);
 
     try {
-      console.log('[AUTH DEBUG] Starting password update for user:', user.id);
+      logInfo('[AUTH DEBUG] Starting password update for user:', user.id);
       
       // Update password
       const { error } = await createClient().auth.updateUser({
@@ -168,11 +169,11 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
       });
 
       if (error) {
-        console.error('[AUTH DEBUG] Password update error:', error);
+        logError('[AUTH DEBUG] Password update error:', error);
         throw new Error(error.message);
       }
 
-      console.log('[AUTH DEBUG] Password updated successfully');
+      logInfo('[AUTH DEBUG] Password updated successfully');
 
       // If this is an OAuth user setting their first password, mark it in metadata
       if (shouldShowSetPassword) {
@@ -181,9 +182,9 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         });
         
         if (metadataError) {
-          console.error('[AUTH DEBUG] Error updating password metadata:', metadataError);
+          logError('[AUTH DEBUG] Error updating password metadata:', metadataError);
         } else {
-          console.log('[AUTH DEBUG] Successfully marked password as set in metadata');
+          logInfo('[AUTH DEBUG] Successfully marked password as set in metadata');
         }
       }
 
@@ -218,7 +219,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
       }
       
     } catch (err: any) {
-      console.error('[AUTH DEBUG] Password change failed:', err);
+      logError('[AUTH DEBUG] Password change failed:', err);
       setError(err.message || 'Failed to update password');
       toast({
         title: "Error",
@@ -247,7 +248,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         .eq('owner_id', user.id);
 
       if (venueError) {
-        console.error('Error deleting venues:', venueError);
+        logError('Error deleting venues:', venueError);
       }
 
       // Then delete the user account
@@ -268,12 +269,12 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         });
         
         if (!response.ok) {
-          console.log('[AUTH DEBUG] Server-side sign out failed');
+          logInfo('[AUTH DEBUG] Server-side sign out failed');
         } else {
-          console.log('[AUTH DEBUG] Server-side sign out successful');
+          logInfo('[AUTH DEBUG] Server-side sign out successful');
         }
       } catch (error) {
-        console.log('[AUTH DEBUG] Sign out error:', error);
+        logInfo('[AUTH DEBUG] Sign out error:', error);
       }
       
       // Clear client-side storage
@@ -281,7 +282,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         const { clearAuthStorage } = await import('@/lib/sb-client');
         clearAuthStorage();
       } catch (error) {
-        console.log('[AUTH DEBUG] Error clearing client storage:', error);
+        logInfo('[AUTH DEBUG] Error clearing client storage:', error);
       }
       
       router.push('/');

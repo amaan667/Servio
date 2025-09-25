@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { logError } from "@/lib/logger";
 
 interface OrderItem {
   menu_item_id: string;
@@ -122,7 +123,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         setOrders(data.orders || []);
       }
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      logError('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
@@ -143,7 +144,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         fetchOrders();
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
+      logError('Error updating order status:', error);
     }
   };
 
@@ -163,7 +164,7 @@ export function LiveOrdersPOS({ venueId }: LiveOrdersPOSProps) {
         fetchOrders();
       }
     } catch (error) {
-      console.error('Error updating item status:', error);
+      logError('Error updating item status:', error);
     }
   };
 

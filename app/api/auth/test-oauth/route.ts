@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthRedirectUrl } from '@/lib/auth';
+import { logInfo } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,8 +14,6 @@ export async function GET(request: NextRequest) {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     // Test OAuth providers - removed listIdentities as it doesn't exist
-    const providers = null;
-    const providersError = null;
     
     const testResults = {
       timestamp: new Date().toISOString(),
@@ -47,12 +46,12 @@ export async function GET(request: NextRequest) {
       }
     };
     
-    console.log('[AUTH DEBUG] OAuth test results:', testResults);
+    logInfo('[AUTH DEBUG] OAuth test results:', testResults);
     
     return NextResponse.json(testResults);
     
   } catch (error: any) {
-    console.log('[AUTH DEBUG] OAuth test error:', error.message);
+    logInfo('[AUTH DEBUG] OAuth test error:', error.message);
     return NextResponse.json({ 
       error: error.message,
       timestamp: new Date().toISOString()

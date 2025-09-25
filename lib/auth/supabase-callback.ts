@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { logInfo, logError } from "@/lib/logger";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -15,11 +16,11 @@ export async function handleGoogleCallback(req: any, res: any) {
   const codeVerifier = Array.isArray(rawVerifier) ? rawVerifier[0] : rawVerifier;
 
   // Add the suggested debugging logs
-  console.log("authCode typeof/value:", typeof authCode, authCode?.slice(0, 12), "...");
-  console.log("codeVerifier typeof/len:", typeof codeVerifier, codeVerifier?.length);
+  logInfo("authCode typeof/value:", typeof authCode, authCode?.slice(0, 12), "...");
+  logInfo("codeVerifier typeof/len:", typeof codeVerifier, codeVerifier?.length);
 
   if (!authCode || typeof authCode !== "string") {
-    console.error('[OAuth Backend] Missing or invalid code', { 
+    logError('[OAuth Backend] Missing or invalid code', { 
       hasCode: !!authCode, 
       type: typeof authCode,
       value: authCode?.slice(0, 12) + "..." 
@@ -28,7 +29,7 @@ export async function handleGoogleCallback(req: any, res: any) {
   }
   
   if (!codeVerifier || typeof codeVerifier !== "string") {
-    console.error('[OAuth Backend] Missing PKCE verifier in session', { 
+    logError('[OAuth Backend] Missing PKCE verifier in session', { 
       hasVerifier: !!codeVerifier, 
       type: typeof codeVerifier,
       length: codeVerifier?.length 
@@ -52,7 +53,7 @@ export async function handleGoogleCallback(req: any, res: any) {
 
     if (error) {
       // Typical: invalid_grant if verifier mismatches or code reused/expired
-      console.error("[OAuth ERROR]", {
+      logError("[OAuth ERROR]", {
         error: error.message,
         code: error.code,
         status: error.status,
@@ -65,7 +66,7 @@ export async function handleGoogleCallback(req: any, res: any) {
     // Optionally: set your own httpOnly cookies here if you want server-managed auth
     // const { session } = data;
 
-    console.log("[OAuth SUCCESS]", {
+    logInfo("[OAuth SUCCESS]", {
       hasSession: !!data.session,
       hasUser: !!data.user,
       sessionExpiresAt: data.session?.expires_at,
@@ -74,7 +75,7 @@ export async function handleGoogleCallback(req: any, res: any) {
 
     return res.json(data);
   } catch (err: any) {
-    console.error("[OAuth Exception]", {
+    logError("[OAuth Exception]", {
       message: err.message,
       stack: err.stack,
       authCodePreview: authCode.slice(0, 12) + "...",

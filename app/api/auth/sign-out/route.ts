@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -22,7 +23,7 @@ export async function POST() {
     
     return response;
   } catch (error) {
-    console.error('[AUTH] Sign-out error:', error);
+    logError('[AUTH] Sign-out error:', error);
     return NextResponse.json({ ok: true }); // Always return success to avoid client errors
   }
 }

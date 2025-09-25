@@ -25,7 +25,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { logger } from "@/lib/logger";
+import { logInfo, logError } from "@/lib/logger";
 
 interface Feedback {
   id: string;
@@ -87,7 +87,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
         setQuestions(data.questions || []);
       }
     } catch (error) {
-      console.error('Error fetching questions:', error);
+      logError('Error fetching questions:', error);
     }
   }, [venueId]);
 
@@ -99,7 +99,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       const supabase = createClient();
       if (!supabase) throw new Error('Supabase client not available');
 
-      console.log('[FEEDBACK] Fetching feedback for venue:', venueId);
+      logInfo('[FEEDBACK] Fetching feedback for venue:', venueId);
       let query = supabase
         .from('feedback')
         .select('*')
@@ -604,7 +604,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                         onClick={() => {
                           setCreatingQuestion(true);
                           // In a real app, you'd send this to your backend to save
-                          console.log('Creating question:', newQuestion);
+                          logInfo('Creating question:', newQuestion);
                           setNewQuestion({ prompt: '', type: 'stars', choices: [], is_active: true });
                           setCreatingQuestion(false);
                         }}

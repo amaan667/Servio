@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -44,7 +45,7 @@ export async function GET(req: Request) {
       .order('label');
 
     if (tablesError) {
-      console.error('[TABLES GET] Tables error:', tablesError);
+      logError('[TABLES GET] Tables error:', tablesError);
       return NextResponse.json({ ok: false, error: tablesError.message }, { status: 500 });
     }
 
@@ -57,7 +58,7 @@ export async function GET(req: Request) {
       .is('closed_at', null); // Only get active sessions
 
     if (sessionsError) {
-      console.error('[TABLES GET] Sessions error:', sessionsError);
+      logError('[TABLES GET] Sessions error:', sessionsError);
       return NextResponse.json({ ok: false, error: sessionsError.message }, { status: 500 });
     }
 
@@ -96,7 +97,7 @@ export async function GET(req: Request) {
         block_window_mins: 0
       };
       
-      console.log('[TABLES API DEBUG] Table processed:', {
+      logInfo('[TABLES API DEBUG] Table processed:', {
         id: table.id,
         label: table.label,
         hasSession: !!session,
@@ -112,7 +113,7 @@ export async function GET(req: Request) {
     const tablesWithoutSessions = tablesWithSessions.filter(t => !t.session_id);
     
     if (tablesWithoutSessions.length > 0) {
-      console.log('[TABLES API DEBUG] Creating missing sessions for tables:', tablesWithoutSessions.map(t => t.id));
+      logInfo('[TABLES API DEBUG] Creating missing sessions for tables:', tablesWithoutSessions.map(t => t.id));
       
       for (const table of tablesWithoutSessions) {
         const { error: sessionError } = await adminSupabase
@@ -126,9 +127,9 @@ export async function GET(req: Request) {
           });
 
         if (sessionError) {
-          console.error('[TABLES API DEBUG] Error creating session for table:', table.id, sessionError);
+          logError('[TABLES API DEBUG] Error creating session for table:', table.id, sessionError);
         } else {
-          console.log('[TABLES API DEBUG] Created session for table:', table.id);
+          logInfo('[TABLES API DEBUG] Created session for table:', table.id);
         }
       }
       
@@ -153,7 +154,7 @@ export async function GET(req: Request) {
       });
     }
 
-    console.log('[TABLES API DEBUG] Final tables data:', {
+    logInfo('[TABLES API DEBUG] Final tables data:', {
       tablesCount: tablesWithSessions.length,
       sessionsCount: sessions?.length || 0,
       tableStatuses: tablesWithSessions.map(t => ({ id: t.id, label: t.label, status: t.status }))
@@ -165,7 +166,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[TABLES GET] Unexpected error:', error);
+    logError('[TABLES GET] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -176,8 +177,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { venue_id, label, seat_count, area } = body;
 
-    console.log('[TABLES POST] Request body:', body);
-    console.log('[TABLES POST] Extracted values:', { venue_id, label, seat_count, area });
+    logInfo('[TABLES POST] Request body:', body);
+    logInfo('[TABLES POST] Extracted values:', { venue_id, label, seat_count, area });
 
     if (!venue_id || !label) {
       return NextResponse.json({ ok: false, error: 'venue_id and label are required' }, { status: 400 });
@@ -216,7 +217,7 @@ export async function POST(req: Request) {
       .single();
 
     if (tableError) {
-      console.error('[TABLES POST] Table creation error:', tableError);
+      logError('[TABLES POST] Table creation error:', tableError);
       return NextResponse.json({ ok: false, error: tableError.message }, { status: 500 });
     }
 
@@ -241,7 +242,7 @@ export async function POST(req: Request) {
         });
 
       if (sessionError) {
-        console.error('[TABLES POST] Session creation error:', sessionError);
+        logError('[TABLES POST] Session creation error:', sessionError);
         return NextResponse.json({ ok: false, error: sessionError.message }, { status: 500 });
       }
     }
@@ -252,7 +253,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[TABLES POST] Unexpected error:', error);
+    logError('[TABLES POST] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

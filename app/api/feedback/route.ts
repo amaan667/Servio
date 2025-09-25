@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -28,25 +29,25 @@ export async function POST(req: Request) {
       comment: trimmedComment
     };
 
-    console.log('[AUTH DEBUG] Submitting feedback:', feedbackData);
+    logInfo('[AUTH DEBUG] Submitting feedback:', feedbackData);
 
     const { error } = await admin
       .from('order_feedback')
       .insert(feedbackData);
 
     if (error) {
-      console.error('[AUTH DEBUG] Feedback submission error:', error);
+      logError('[AUTH DEBUG] Feedback submission error:', error);
       return NextResponse.json({ 
         ok: false, 
         error: error.message 
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Feedback submitted successfully');
+    logInfo('[AUTH DEBUG] Feedback submitted successfully');
     return NextResponse.json({ ok: true });
     
   } catch (e: any) {
-    console.error('[AUTH DEBUG] Feedback submission exception:', e);
+    logError('[AUTH DEBUG] Feedback submission exception:', e);
     return NextResponse.json({ 
       ok: false, 
       error: e.message 

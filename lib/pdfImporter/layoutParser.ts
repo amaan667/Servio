@@ -3,7 +3,8 @@
 // =====================================================
 // Implements two-pass, layout-aware parsing for maximum accuracy
 
-import { 
+import { logInfo } from "@/lib/logger";
+import {
   TextBlock, 
   PriceToken, 
   TitleCandidate, 
@@ -22,31 +23,31 @@ export async function parseLayout(
   blocks: TextBlock[], 
   options: ProcessingOptions
 ): Promise<{ categories: ParsedCategory[], coverage: any }> {
-  console.log('[LAYOUT_PARSE] Starting layout-aware parsing...');
-  console.log('[LAYOUT_PARSE] Processing', blocks.length, 'text blocks');
+  logInfo('[LAYOUT_PARSE] Starting layout-aware parsing...');
+  logInfo('[LAYOUT_PARSE] Processing', blocks.length, 'text blocks');
   
   // Step 1: Page layout & reading order
   const readingOrder = analyzePageLayout(blocks);
-  console.log('[LAYOUT_PARSE] Detected', readingOrder.columns.length, 'columns');
+  logInfo('[LAYOUT_PARSE] Detected', readingOrder.columns.length, 'columns');
   
   // Step 2: Structural detection
   const sections = detectSections(readingOrder.lines);
-  console.log('[LAYOUT_PARSE] Detected', sections.length, 'sections');
+  logInfo('[LAYOUT_PARSE] Detected', sections.length, 'sections');
   
   // Step 3: Extract price tokens and title candidates
   const priceTokens = extractPriceTokens(readingOrder.lines);
   const titleCandidates = detectTitleCandidates(readingOrder.lines);
   
-  console.log('[LAYOUT_PARSE] Found', priceTokens.length, 'price tokens');
-  console.log('[LAYOUT_PARSE] Found', titleCandidates.length, 'title candidates');
+  logInfo('[LAYOUT_PARSE] Found', priceTokens.length, 'price tokens');
+  logInfo('[LAYOUT_PARSE] Found', titleCandidates.length, 'title candidates');
   
   // Step 4: Title↔Price pairing (layout-aware)
   const pairedItems = pairTitlesWithPrices(titleCandidates, priceTokens, options);
-  console.log('[LAYOUT_PARSE] Paired', pairedItems.length, 'items');
+  logInfo('[LAYOUT_PARSE] Paired', pairedItems.length, 'items');
   
   // Step 5: Build categories
   const categories = buildCategories(pairedItems, sections);
-  console.log('[LAYOUT_PARSE] Built', categories.length, 'categories');
+  logInfo('[LAYOUT_PARSE] Built', categories.length, 'categories');
   
   // Step 6: Generate coverage report
   const coverage = generateCoverageReport(priceTokens, pairedItems, sections);

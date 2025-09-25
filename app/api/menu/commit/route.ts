@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
     const { upload_id } = await req.json();
     if (!upload_id) return NextResponse.json({ ok: false, error: 'upload_id required' }, { status: 400 });
     const { data: row, error } = await supa.from('menu_uploads').select('*').eq('id', upload_id).maybeSingle();
-    if (error || !row) { console.error('[MENU_COMMIT] fetch upload error', error); return NextResponse.json({ ok: false, error: error?.message || 'upload not found' }, { status: 404 }); }
+    if (error || !row) { logError('[MENU_COMMIT] fetch upload error', error); return NextResponse.json({ ok: false, error: error?.message || 'upload not found' }, { status: 404 }); }
 
     const parsed = row.parsed_json as any;
     if (!parsed?.categories) return NextResponse.json({ ok: false, error: 'no parsed categories' }, { status: 400 });
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
       .from('menu_items')
       .insert(toInsert)
       .select('id');
-    if (insErr) { console.error('[MENU_COMMIT] insert error', insErr); return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 }); }
+    if (insErr) { logError('[MENU_COMMIT] insert error', insErr); return NextResponse.json({ ok: false, error: insErr.message }, { status: 400 }); }
 
     // Update the upload record with committed status and store the original category order
     await supa.from('menu_uploads').update({ 
@@ -53,10 +54,10 @@ export async function POST(req: Request) {
       category_order: categoryOrder
     }).eq('id', upload_id);
     
-    console.log('[MENU_COMMIT] Stored category order:', categoryOrder);
+    logInfo('[MENU_COMMIT] Stored category order:', categoryOrder);
     return NextResponse.json({ ok: true, count: inserted?.length || 0, categoryOrder });
   } catch (e: any) {
-    console.error('[MENU_COMMIT] fatal', e);
+    logError('[MENU_COMMIT] fatal', e);
     return NextResponse.json({ ok: false, error: e?.message || 'commit failed' }, { status: 500 });
   }
 }

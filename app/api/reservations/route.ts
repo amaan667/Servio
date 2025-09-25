@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
@@ -62,7 +63,7 @@ export async function GET(req: Request) {
     const { data: reservations, error } = await query;
 
     if (error) {
-      console.error('[RESERVATIONS GET] Error:', error);
+      logError('[RESERVATIONS GET] Error:', error);
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
@@ -72,7 +73,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error('[RESERVATIONS GET] Unexpected error:', error);
+    logError('[RESERVATIONS GET] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -134,7 +135,7 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      console.error('[RESERVATIONS POST] Error:', error);
+      logError('[RESERVATIONS POST] Error:', error);
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
@@ -144,7 +145,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[RESERVATIONS POST] Unexpected error:', error);
+    logError('[RESERVATIONS POST] Unexpected error:', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
   }
 }

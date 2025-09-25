@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { parseMenuBulletproof, applyKnownFixes } from '@/lib/improvedMenuParser';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -59,9 +60,9 @@ export async function POST(req: NextRequest) {
         const extractedText = await extractTextFromPDF(fileBuffer);
         
         // Parse using bulletproof parser
-        console.log('[CATALOG REPLACE] Starting menu parsing...');
+        logInfo('[CATALOG REPLACE] Starting menu parsing...');
         const parsedPayload = await parseMenuBulletproof(extractedText);
-        console.log('[CATALOG REPLACE] Parsed payload:', {
+        logInfo('[CATALOG REPLACE] Parsed payload:', {
           itemsCount: parsedPayload.items?.length || 0,
           categoriesCount: parsedPayload.categories?.length || 0
         });
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
           items: applyKnownFixes(parsedPayload.items || [])
         };
 
-        console.log('[CATALOG REPLACE] Fixed payload:', {
+        logInfo('[CATALOG REPLACE] Fixed payload:', {
           itemsCount: fixedPayload.items?.length || 0,
           categoriesCount: fixedPayload.categories?.length || 0
         });
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
       try {
         requestBody = await req.json();
       } catch (jsonError) {
-        console.error('[CATALOG REPLACE] JSON parsing error:', jsonError);
+        logError('[CATALOG REPLACE] JSON parsing error:', jsonError);
         return NextResponse.json({ 
           ok: false, 
           error: 'Invalid JSON in request body' 
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[CATALOG REPLACE] Starting catalog replacement for venue:', venueId);
+    logInfo('[CATALOG REPLACE] Starting catalog replacement for venue:', venueId);
 
     const supabase = await createAdminClient();
 
@@ -181,7 +182,7 @@ export async function POST(req: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('[CATALOG REPLACE] Unexpected error:', error);
+    logError('[CATALOG REPLACE] Unexpected error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: 'Unexpected error: ' + error.message 
@@ -191,8 +192,8 @@ export async function POST(req: NextRequest) {
 
 // Helper function to replace catalog
 async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any) {
-  console.log('[CATALOG REPLACE] Starting catalog replacement...');
-  console.log('[CATALOG REPLACE] Payload summary:', {
+  logInfo('[CATALOG REPLACE] Starting catalog replacement...');
+  logInfo('[CATALOG REPLACE] Payload summary:', {
     itemsCount: fixedPayload.items?.length || 0,
     categoriesCount: fixedPayload.categories?.length || 0,
     venueId
@@ -202,19 +203,19 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
   // Just try to insert items directly
   try {
     // Clear existing menu items for this venue
-    console.log('[CATALOG REPLACE] Clearing existing menu items...');
+    logInfo('[CATALOG REPLACE] Clearing existing menu items...');
     const { error: deleteError } = await supabase
       .from('menu_items')
       .delete()
       .eq('venue_id', venueId);
 
     if (deleteError) {
-      console.warn('[CATALOG REPLACE] Warning: Could not clear existing items:', deleteError.message);
+      logWarn('[CATALOG REPLACE] Warning: Could not clear existing items:', deleteError.message);
     }
 
     // Insert new items
     if (fixedPayload.items && fixedPayload.items.length > 0) {
-      console.log('[CATALOG REPLACE] Inserting', fixedPayload.items.length, 'new items...');
+      logInfo('[CATALOG REPLACE] Inserting', fixedPayload.items.length, 'new items...');
       
       const itemsToInsert = fixedPayload.items.map((item: any, index: number) => ({
         venue_id: venueId,
@@ -231,7 +232,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
         .select('id, name, price, category');
 
       if (insertError) {
-        console.error('[CATALOG REPLACE] Insert error:', insertError);
+        logError('[CATALOG REPLACE] Insert error:', insertError);
         return NextResponse.json({ 
           ok: false, 
           error: 'Failed to insert menu items: ' + insertError.message,
@@ -239,7 +240,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
         }, { status: 500 });
       }
 
-      console.log('[CATALOG REPLACE] Successfully inserted', insertedItems?.length || 0, 'items');
+      logInfo('[CATALOG REPLACE] Successfully inserted', insertedItems?.length || 0, 'items');
 
       return NextResponse.json({
         ok: true,
@@ -250,7 +251,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
         }
       });
     } else {
-      console.log('[CATALOG REPLACE] No items to insert');
+      logInfo('[CATALOG REPLACE] No items to insert');
       return NextResponse.json({
         ok: true,
         message: 'Catalog cleared (no items found)',
@@ -262,7 +263,7 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
     }
 
   } catch (error: any) {
-    console.error('[CATALOG REPLACE] Unexpected error:', error);
+    logError('[CATALOG REPLACE] Unexpected error:', error);
     return NextResponse.json({ 
       ok: false, 
       error: 'Unexpected error: ' + error.message 
@@ -273,11 +274,11 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
 // Extract text from PDF using the same logic as the existing process-pdf route
 async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
   try {
-    console.log('[OCR] Starting PDF text extraction...');
+    logInfo('[OCR] Starting PDF text extraction...');
     
     // Check if Google Vision credentials are available
     if (!process.env.GOOGLE_CREDENTIALS_B64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      console.log('[OCR] No Google Vision credentials found, using fallback text extraction');
+      logInfo('[OCR] No Google Vision credentials found, using fallback text extraction');
       
       // Fallback to basic text extraction for development
       const mockText = `
@@ -302,23 +303,23 @@ BEVERAGES
 3. Soft Drinks - £3.00
       `.trim();
 
-      console.log('[OCR] Text extraction completed (fallback), length:', mockText.length);
+      logInfo('[OCR] Text extraction completed (fallback), length:', mockText.length);
       return mockText;
     }
     
     // Use real Google Vision OCR
-    console.log('[OCR] Using Google Vision OCR...');
+    logInfo('[OCR] Using Google Vision OCR...');
     const { extractTextFromPdf } = await import('@/lib/googleVisionOCR');
     const pdfBuffer = Buffer.from(buffer);
     const extractedText = await extractTextFromPdf(pdfBuffer, 'uploaded-menu.pdf');
     
-    console.log('[OCR] Text extraction completed (Google Vision), length:', extractedText.length);
-    console.log('[OCR] Text preview:', extractedText.substring(0, 200));
+    logInfo('[OCR] Text extraction completed (Google Vision), length:', extractedText.length);
+    logInfo('[OCR] Text preview:', extractedText.substring(0, 200));
     
     return extractedText;
     
   } catch (error: any) {
-    console.error('[OCR] Text extraction failed:', error);
+    logError('[OCR] Text extraction failed:', error);
     throw new Error(`OCR failed: ${error.message}`);
   }
 }

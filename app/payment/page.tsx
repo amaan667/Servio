@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { CustomerFeedbackForm } from "@/components/customer-feedback-form";
 import { OrderTimeline } from "@/components/order-timeline";
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 interface CheckoutData {
   venueId: string;
@@ -57,30 +58,30 @@ export default function PaymentPage() {
   useEffect(() => {
     // Get checkout data from localStorage
     const storedData = localStorage.getItem("servio-checkout-data");
-    console.log('[PAYMENT DEBUG] Loading checkout data from localStorage:', storedData);
+    logInfo('[PAYMENT DEBUG] Loading checkout data from localStorage:', storedData);
     
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        console.log('[PAYMENT DEBUG] Parsed checkout data:', data);
+        logInfo('[PAYMENT DEBUG] Parsed checkout data:', data);
         setCheckoutData(data);
         setIsDemo(data.isDemo || false); // Set demo flag from checkout data
       } catch (error) {
-        console.error('[PAYMENT DEBUG] Error parsing checkout data:', error);
+        logError('[PAYMENT DEBUG] Error parsing checkout data:', error);
         router.push("/order");
       }
     } else {
-      console.log('[PAYMENT DEBUG] No checkout data found, redirecting to order page');
+      logInfo('[PAYMENT DEBUG] No checkout data found, redirecting to order page');
       // Redirect back if no checkout data
       router.push("/order");
     }
   }, [router]);
 
   const handlePayment = async (action: PaymentAction) => {
-    console.log('[PAYMENT DEBUG] ===== PAYMENT HANDLER STARTED =====', action);
+    logInfo('[PAYMENT DEBUG] ===== PAYMENT HANDLER STARTED =====', action);
     
     if (!checkoutData) {
-      console.log('[PAYMENT DEBUG] ERROR: Missing checkout data');
+      logInfo('[PAYMENT DEBUG] ERROR: Missing checkout data');
       setError('Missing order information. Please try again.');
       return;
     }
@@ -92,7 +93,7 @@ export default function PaymentPage() {
     try {
       // Handle different payment types
       if (action === 'stripe') {
-        console.log('[PAYMENT DEBUG] Processing Stripe payment - order will be created after payment succeeds');
+        logInfo('[PAYMENT DEBUG] Processing Stripe payment - order will be created after payment succeeds');
         
         // Store checkout data for webhook to create order after successful payment
         const stripeCheckoutData = {
@@ -144,7 +145,7 @@ export default function PaymentPage() {
       }
 
       // For non-Stripe payments (Pay Later, Pay at Till), create the order immediately with UNPAID status
-      console.log('[PAYMENT DEBUG] Creating order for non-Stripe payment...');
+      logInfo('[PAYMENT DEBUG] Creating order for non-Stripe payment...');
       
       const orderPayload = {
         venue_id: checkoutData.venueId,
@@ -166,7 +167,7 @@ export default function PaymentPage() {
         notes: `${action} payment order`
       };
 
-      console.log('[PAYMENT DEBUG] Order payload:', orderPayload);
+      logInfo('[PAYMENT DEBUG] Order payload:', orderPayload);
 
       const orderResponse = await fetch('/api/orders', {
         method: 'POST',
@@ -178,14 +179,14 @@ export default function PaymentPage() {
 
       if (!orderResponse.ok) {
         const errorText = await orderResponse.text();
-        console.error('[PAYMENT DEBUG] Order creation failed with status:', orderResponse.status);
-        console.error('[PAYMENT DEBUG] Error response:', errorText);
+        logError('[PAYMENT DEBUG] Order creation failed with status:', orderResponse.status);
+        logError('[PAYMENT DEBUG] Error response:', errorText);
         throw new Error(`Failed to create order: ${orderResponse.status} - ${errorText}`);
       }
 
       const orderData = await orderResponse.json();
-      console.log('[PAYMENT DEBUG] Order creation response:', orderData);
-      console.log('[PAYMENT DEBUG] Response structure check:', {
+      logInfo('[PAYMENT DEBUG] Order creation response:', orderData);
+      logInfo('[PAYMENT DEBUG] Response structure check:', {
         hasOrder: !!orderData.order,
         orderId: orderData.order?.id,
         orderStatus: orderData.order?.order_status,
@@ -197,7 +198,7 @@ export default function PaymentPage() {
       
       // Additional debugging for the order object
       if (orderData.order) {
-        console.log('[PAYMENT DEBUG] Order object details:', {
+        logInfo('[PAYMENT DEBUG] Order object details:', {
           orderType: typeof orderData.order,
           orderKeys: Object.keys(orderData.order),
           orderId: orderData.order.id,
@@ -208,8 +209,8 @@ export default function PaymentPage() {
 
       // Check if we have a valid order ID
       if (!orderData.order?.id) {
-        console.error('[PAYMENT DEBUG] ERROR: No order ID in response');
-        console.error('[PAYMENT DEBUG] Response structure:', {
+        logError('[PAYMENT DEBUG] ERROR: No order ID in response');
+        logError('[PAYMENT DEBUG] Response structure:', {
           ok: orderData.ok,
           hasOrder: !!orderData.order,
           orderKeys: orderData.order ? Object.keys(orderData.order) : 'no order object',
@@ -219,24 +220,24 @@ export default function PaymentPage() {
         // If the order was created but we can't get the ID, try to continue anyway
         // This might be a response parsing issue
         if (orderData.ok && orderData.order) {
-          console.warn('[PAYMENT DEBUG] Order created but ID missing, attempting to continue...');
+          logWarn('[PAYMENT DEBUG] Order created but ID missing, attempting to continue...');
           // Try to extract ID from other fields or use a fallback
           const fallbackId = orderData.order.id || orderData.order.order_id || `temp-${Date.now()}`;
-          console.log('[PAYMENT DEBUG] Using fallback order ID:', fallbackId);
+          logInfo('[PAYMENT DEBUG] Using fallback order ID:', fallbackId);
           orderData.order.id = fallbackId;
         } else {
           // Even if we can't get the order ID, if the response is ok, the order was created
           // We can still proceed with payment processing
-          console.warn('[PAYMENT DEBUG] Order creation response is ok but no order object, proceeding anyway...');
+          logWarn('[PAYMENT DEBUG] Order creation response is ok but no order object, proceeding anyway...');
           orderData.order = { id: `temp-${Date.now()}` };
         }
       }
 
-      console.log('[PAYMENT DEBUG] Order created successfully with ID:', orderData.order.id);
+      logInfo('[PAYMENT DEBUG] Order created successfully with ID:', orderData.order.id);
 
       // Handle demo payment
       if (action === 'demo') {
-        console.log('[PAYMENT DEBUG] Processing demo payment for order:', orderData.order.id);
+        logInfo('[PAYMENT DEBUG] Processing demo payment for order:', orderData.order.id);
         
         const paymentResponse = await fetch('/api/pay/demo', {
           method: 'POST',
@@ -254,7 +255,7 @@ export default function PaymentPage() {
           throw new Error(paymentResult.error || 'Payment failed');
         }
 
-        console.log('[PAYMENT DEBUG] Demo payment successful:', paymentResult);
+        logInfo('[PAYMENT DEBUG] Demo payment successful:', paymentResult);
       }
       
       // Only redirect to success page for non-Stripe payments (Stripe redirects to checkout)
@@ -263,14 +264,14 @@ export default function PaymentPage() {
         
         // Redirect to payment success page with order ID and additional data
         const successUrl = `/payment/success?orderId=${orderData.order.id}&demo=${isDemo ? '1' : '0'}&paymentMethod=${action}`;
-        console.log('[PAYMENT DEBUG] Redirecting to success page:', successUrl);
+        logInfo('[PAYMENT DEBUG] Redirecting to success page:', successUrl);
         router.push(successUrl);
         
         localStorage.removeItem("servio-checkout-data");
       }
 
     } catch (error) {
-      console.error('[PAYMENT DEBUG] Payment error:', error);
+      logError('[PAYMENT DEBUG] Payment error:', error);
       setError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
     } finally {
       setIsProcessing(false);

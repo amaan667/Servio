@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
+import { logError } from "@/lib/logger";
+import {
   Split, 
   Plus, 
   Minus, 
@@ -169,7 +170,7 @@ export function BillSplittingDialog({
         onClose();
       }
     } catch (error) {
-      console.error('Error creating bill splits:', error);
+      logError('Error creating bill splits:', error);
     } finally {
       setLoading(false);
     }

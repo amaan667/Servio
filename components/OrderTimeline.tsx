@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle, XCircle, RefreshCw, Truck, ChefHat, Utensils } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { logInfo, logError } from "@/lib/logger";
 
 interface OrderTimelineProps {
   orderId: string;
@@ -165,7 +166,7 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
       setLoading(true);
       setError(null);
 
-      console.log('[ORDER TIMELINE] Fetching order:', orderId);
+      logInfo('[ORDER TIMELINE] Fetching order:', orderId);
 
       const { data, error } = await supabase
         .from('orders')
@@ -174,16 +175,16 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
         .single();
 
       if (error) {
-        console.error('[ORDER TIMELINE] Failed to fetch order:', error);
+        logError('[ORDER TIMELINE] Failed to fetch order:', error);
         setError('Order not found or access denied');
         return;
       }
 
-      console.log('[ORDER TIMELINE] Order fetched successfully:', data);
+      logInfo('[ORDER TIMELINE] Order fetched successfully:', data);
       setOrder(data);
       setLastUpdate(new Date());
     } catch (err) {
-      console.error('[ORDER TIMELINE] Error fetching order:', err);
+      logError('[ORDER TIMELINE] Error fetching order:', err);
       setError('Failed to load order details');
     } finally {
       setLoading(false);
@@ -194,7 +195,7 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
     fetchOrder();
 
     // Set up real-time subscription for order updates
-    console.log('[ORDER TIMELINE] Setting up real-time subscription for order:', orderId);
+    logInfo('[ORDER TIMELINE] Setting up real-time subscription for order:', orderId);
     
     const channel = supabase
       .channel(`order-timeline-${orderId}`)
@@ -207,7 +208,7 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
           filter: `id=eq.${orderId}`,
         },
         (payload: any) => {
-          console.log('[ORDER TIMELINE] Real-time update received:', payload);
+          logInfo('[ORDER TIMELINE] Real-time update received:', payload);
           if (payload.new) {
             setOrder(payload.new);
             setLastUpdate(new Date());
@@ -217,7 +218,7 @@ export default function OrderTimeline({ orderId, venueId, className = "" }: Orde
       .subscribe();
 
     return () => {
-      console.log('[ORDER TIMELINE] Cleaning up real-time subscription');
+      logInfo('[ORDER TIMELINE] Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [orderId, supabase]);

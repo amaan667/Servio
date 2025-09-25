@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { logInfo } from "@/lib/logger";
 
 export function useTableRealtime(venueId: string, onTableChange?: () => void) {
   const supabase = createClient()
@@ -12,7 +13,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
   useEffect(() => {
     if (!venueId) return
 
-    console.log('[TABLE_REALTIME] Setting up real-time subscription for venue:', venueId)
+    logInfo('[TABLE_REALTIME] Setting up real-time subscription for venue:', venueId)
 
     const channel = supabase
       .channel(`tables-${venueId}`)
@@ -22,7 +23,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
         table: 'table_sessions',
         filter: `venue_id=eq.${venueId}`,
       }, (payload: any) => {
-        console.log('[TABLE_REALTIME] Table session changed:', payload.event, payload.new?.id)
+        logInfo('[TABLE_REALTIME] Table session changed:', payload.event, payload.new?.id)
         if (onTableChangeRef.current) {
           onTableChangeRef.current()
         }
@@ -33,7 +34,7 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
         table: 'tables',
         filter: `venue_id=eq.${venueId}`,
       }, (payload: any) => {
-        console.log('[TABLE_REALTIME] Table changed:', payload.event, payload.new?.id)
+        logInfo('[TABLE_REALTIME] Table changed:', payload.event, payload.new?.id)
         if (onTableChangeRef.current) {
           onTableChangeRef.current()
         }
@@ -44,17 +45,17 @@ export function useTableRealtime(venueId: string, onTableChange?: () => void) {
         table: 'reservations',
         filter: `venue_id=eq.${venueId}`,
       }, (payload: any) => {
-        console.log('[TABLE_REALTIME] Reservation changed:', payload.event, payload.new?.id)
+        logInfo('[TABLE_REALTIME] Reservation changed:', payload.event, payload.new?.id)
         if (onTableChangeRef.current) {
           onTableChangeRef.current()
         }
       })
       .subscribe((status: any) => {
-        console.log('[TABLE_REALTIME] Subscription status:', status)
+        logInfo('[TABLE_REALTIME] Subscription status:', status)
       })
 
     return () => { 
-      console.log('[TABLE_REALTIME] Cleaning up channel')
+      logInfo('[TABLE_REALTIME] Cleaning up channel')
       supabase.removeChannel(channel) 
     }
   }, [venueId])

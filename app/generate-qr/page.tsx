@@ -6,35 +6,36 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
 import GenerateQRClient from './GenerateQRClient';
+import { logInfo, logError } from "@/lib/logger";
 
 export default async function GenerateQRPage() {
   try {
-    console.log('🔍 [QR PAGE] ===== STARTING QR PAGE LOAD =====');
-    console.log('🔍 [QR PAGE] Timestamp:', new Date().toISOString());
+    logInfo('🔍 [QR PAGE] ===== STARTING QR PAGE LOAD =====');
+    logInfo('🔍 [QR PAGE] Timestamp:', new Date().toISOString());
     
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
-    console.log('🔍 [QR PAGE] Has auth cookie:', hasAuthCookie);
+    logInfo('🔍 [QR PAGE] Has auth cookie:', hasAuthCookie);
     if (!hasAuthCookie) {
-      console.log('🔍 [QR PAGE] No auth cookie, redirecting to sign-in');
+      logInfo('🔍 [QR PAGE] No auth cookie, redirecting to sign-in');
       redirect('/sign-in');
     }
 
     const supabase = await createServerSupabase();
-    console.log('🔍 [QR PAGE] Supabase client created successfully');
+    logInfo('🔍 [QR PAGE] Supabase client created successfully');
 
     const { data: { user } } = await supabase.auth.getUser();
-    console.log('🔍 [QR PAGE] User authentication result:', {
+    logInfo('🔍 [QR PAGE] User authentication result:', {
       hasUser: !!user,
       userId: user?.id,
       userEmail: user?.email
     });
     if (!user) {
-      console.log('🔍 [QR PAGE] No user found, redirecting to sign-in');
+      logInfo('🔍 [QR PAGE] No user found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
-    console.log('🔍 [QR PAGE] Fetching venue data for user:', user.id);
+    logInfo('🔍 [QR PAGE] Fetching venue data for user:', user.id);
     const { data: venue, error } = await supabase
       .from('venues')
       .select('venue_id, name')
@@ -42,7 +43,7 @@ export default async function GenerateQRPage() {
       .limit(1)
       .maybeSingle();
 
-    console.log('🔍 [QR PAGE] Venue query result:', {
+    logInfo('🔍 [QR PAGE] Venue query result:', {
       hasVenue: !!venue,
       venueId: venue?.venue_id,
       venueName: venue?.name,
@@ -54,8 +55,8 @@ export default async function GenerateQRPage() {
     let activeTablesError = null;
     
     try {
-      console.log('🔍 [QR PAGE] Getting active tables count...');
-      console.log('🔍 [QR PAGE] Function parameters:', {
+      logInfo('🔍 [QR PAGE] Getting active tables count...');
+      logInfo('🔍 [QR PAGE] Function parameters:', {
         p_venue_id: venue.venue_id,
         p_tz: 'Europe/London',
         p_live_window_mins: 30
@@ -68,34 +69,34 @@ export default async function GenerateQRPage() {
         });
       
       if (countsError) {
-        console.error('🔍 [QR PAGE] Dashboard counts error:', countsError);
+        logError('🔍 [QR PAGE] Dashboard counts error:', countsError);
         activeTablesError = countsError;
       } else {
         // api_table_counters returns a single object, not an array
         const result = Array.isArray(countsData) ? countsData[0] : countsData;
-        console.log('🔍 [QR PAGE] Raw countsData:', countsData);
-        console.log('🔍 [QR PAGE] Processed result:', result);
-        console.log('🔍 [QR PAGE] total_tables value:', result?.total_tables);
+        logInfo('🔍 [QR PAGE] Raw countsData:', countsData);
+        logInfo('🔍 [QR PAGE] Processed result:', result);
+        logInfo('🔍 [QR PAGE] total_tables value:', result?.total_tables);
         activeTablesCount = result?.total_tables || 0;
-        console.log('🔍 [QR PAGE] Final activeTablesCount:', activeTablesCount);
+        logInfo('🔍 [QR PAGE] Final activeTablesCount:', activeTablesCount);
       }
     } catch (queryError) {
-      console.error('🔍 [QR PAGE] Active tables query failed:', queryError);
+      logError('🔍 [QR PAGE] Active tables query failed:', queryError);
       activeTablesError = queryError;
     }
     
     if (error) {
-      console.error('🔍 [QR PAGE] Database error:', error);
+      logError('🔍 [QR PAGE] Database error:', error);
       redirect('/complete-profile');
     }
     
     if (!venue) {
-      console.log('🔍 [QR PAGE] No venue found, redirecting to complete-profile');
+      logInfo('🔍 [QR PAGE] No venue found, redirecting to complete-profile');
       redirect('/complete-profile');
     }
 
-    console.log('🔍 [QR PAGE] ===== RENDERING QR PAGE COMPONENT =====');
-    console.log('🔍 [QR PAGE] Props being passed to GenerateQRClient:', {
+    logInfo('🔍 [QR PAGE] ===== RENDERING QR PAGE COMPONENT =====');
+    logInfo('🔍 [QR PAGE] Props being passed to GenerateQRClient:', {
       venueId: venue.venue_id,
       venueName: venue.name,
       activeTablesCount: activeTablesCount,
@@ -104,7 +105,7 @@ export default async function GenerateQRPage() {
     
     // Continue even if active tables query failed - we can still show QR codes
     if (activeTablesError) {
-      console.log('🔍 [QR PAGE] Active tables query had error, but continuing with default count:', activeTablesError.message);
+      logInfo('🔍 [QR PAGE] Active tables query had error, but continuing with default count:', activeTablesError.message);
     }
 
   return (
@@ -130,7 +131,7 @@ export default async function GenerateQRPage() {
     </div>
   );
   } catch (error: any) {
-    console.error('[QR PAGE] Error in GenerateQRPage:', error);
+    logError('[QR PAGE] Error in GenerateQRPage:', error);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

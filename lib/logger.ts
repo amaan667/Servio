@@ -1,14 +1,14 @@
-export const log = (...a: any[]) => { 
-  if (process.env.NODE_ENV !== "production") console.log(...a); 
+export const isDev = () => process.env.NODE_ENV !== 'production';
+
+type Level = 'info' | 'warn' | 'error';
+
+const emit = (level: Level, event: string, payload?: unknown) => {
+  if (isDev()) {
+    // eslint-disable-next-line no-console
+    (console as any)[level]?.(`[${event}]`, payload ?? '');
+  }
 };
 
-export const warn = (...a: any[]) => { 
-  if (process.env.NODE_ENV !== "production") console.warn(...a); 
-};
-
-export const error = (...a: any[]) => { 
-  console.error(...a); 
-};
-
-// Legacy export for backward compatibility
-export const logger = { log, warn, error };
+export const logInfo = (e: string, p?: unknown) => emit('info', e, p);
+export const logWarn = (e: string, p?: unknown) => emit('warn', e, p);
+export const logError = (e: string, p?: unknown) => emit('error', e, p);

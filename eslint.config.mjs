@@ -10,8 +10,9 @@ export default [
   ...pluginReact.configs.flat.recommended,
   {
     rules: {
-      "no-console": ["error", { "allow": ["error"] }],
+      "no-console": ["error", { "allow": [] }],
       "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/no-explicit-any": "warn",
       "react-hooks/exhaustive-deps": "warn",
     },
   },

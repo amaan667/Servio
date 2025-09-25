@@ -27,6 +27,7 @@ import { useTabCounts } from "@/hooks/use-tab-counts";
 import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-utils";
 import { OrderCard } from '@/components/orders/OrderCard';
 import { mapOrderToCardData } from '@/lib/orders/mapOrderToCardData';
+import { logInfo, logWarn, logError } from "@/lib/logger";
 
 
 interface Order {
@@ -153,7 +154,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Handle RPC function errors by using fallback logic
   useEffect(() => {
     if (countsError) {
-      console.error('[LIVE_ORDERS] RPC function error, using fallback logic:', countsError);
+      logError('[LIVE_ORDERS] RPC function error, using fallback logic:', countsError);
       // If RPC fails, we'll rely on local counts calculation
       recalcLocalCounts();
     }
@@ -208,7 +209,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
       setLocalCounts({ live_count, earlier_today_count, history_count });
     } catch (err) {
-      console.error('[LIVE ORDERS] Failed to recalc local counts', err);
+      logError('[LIVE ORDERS] Failed to recalc local counts', err);
     }
   };
 
@@ -232,7 +233,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   useEffect(() => {
     const loadingTimeout = setTimeout(() => {
       if (loading) {
-        console.warn('[LIVE_ORDERS] Loading timeout reached, setting loading to false');
+        logWarn('[LIVE_ORDERS] Loading timeout reached, setting loading to false');
         setLoading(false);
       }
     }, 10000); // 10 second timeout
@@ -243,7 +244,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Force loading to false if RPC function fails
   useEffect(() => {
     if (countsError && loading) {
-      console.warn('[LIVE_ORDERS] RPC function failed, forcing loading to false');
+      logWarn('[LIVE_ORDERS] RPC function failed, forcing loading to false');
       setLoading(false);
     }
   }, [countsError, loading]);
@@ -342,13 +343,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
       
       if (liveError) {
-        console.error('[LIVE ORDERS DEBUG] Live orders error:', liveError);
+        logError('[LIVE ORDERS DEBUG] Live orders error:', liveError);
       }
       if (allError) {
-        console.error('[LIVE ORDERS DEBUG] Earlier today orders error:', allError);
+        logError('[LIVE ORDERS DEBUG] Earlier today orders error:', allError);
       }
       if (historyError) {
-        console.error('[LIVE ORDERS DEBUG] History orders error:', historyError);
+        logError('[LIVE ORDERS DEBUG] History orders error:', historyError);
       }
 
       if (!liveError && liveData) {
@@ -372,11 +373,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         }).map((order: any) => {
           // Keep orders in their original status - don't auto-complete them
           // Only mark as completed/paid if they are from previous days (history)
-          console.log('[LIVE ORDERS DEBUG] Processing earlier today order - keeping original status:', order.id, order.order_status);
+          logInfo('[LIVE ORDERS DEBUG] Processing earlier today order - keeping original status:', order.id, order.order_status);
           return order;
         });
         
-        console.log('[LIVE ORDERS DEBUG] Filtered all today orders (excluding live orders):', {
+        logInfo('[LIVE ORDERS DEBUG] Filtered all today orders (excluding live orders):', {
           originalCount: allData.length,
           filteredCount: allTodayFiltered.length,
           liveOrderIds: Array.from(liveOrderIds)
@@ -387,7 +388,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       if (!historyError && historyData) {
         // Mark all historical orders as PAID and COMPLETED
         const processedHistory = (historyData as Order[]).map((order: Order) => {
-          console.log('[LIVE ORDERS DEBUG] Processing historical order - marking as PAID and COMPLETED:', order.id);
+          logInfo('[LIVE ORDERS DEBUG] Processing historical order - marking as PAID and COMPLETED:', order.id);
           return {
             ...order,
             payment_status: 'PAID',
@@ -439,7 +440,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           filter: `venue_id=eq.${venueId}`
         }, 
         (payload: any) => {
-          console.log('[LIVE ORDERS DEBUG] Real-time change detected:', {
+          logInfo('[LIVE ORDERS DEBUG] Real-time change detected:', {
             eventType: payload.eventType,
             orderId: payload.new?.id || payload.old?.id,
             oldStatus: payload.old?.order_status,
@@ -451,7 +452,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           const oldOrder = payload.old as Order;
           
           if (payload.eventType === 'INSERT') {
-            console.log('[LIVE ORDERS DEBUG] New order inserted:', {
+            logInfo('[LIVE ORDERS DEBUG] New order inserted:', {
               orderId: newOrder.id,
               orderStatus: newOrder.order_status,
               orderData: newOrder
@@ -464,7 +465,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             
             // Show orders with live window statuses in live orders (including recent completed orders)
             if (isLiveOrder && isRecentOrder) {
-              console.log('[LIVE ORDERS DEBUG] Adding to live orders - recent order with live window status');
+              logInfo('[LIVE ORDERS DEBUG] Adding to live orders - recent order with live window status');
               setOrders(prev => [newOrder, ...prev]);
             }
             
@@ -476,14 +477,14 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             if (isInTodayWindow) {
               // Only add to all today if it's NOT already in live orders
               if (!(isLiveOrder && isRecentOrder)) {
-                console.log('[LIVE ORDERS DEBUG] Adding to all today orders - keeping original status');
+                logInfo('[LIVE ORDERS DEBUG] Adding to all today orders - keeping original status');
                 // Keep original status - don't auto-complete orders
                 setAllTodayOrders(prev => [newOrder, ...prev]);
               } else {
                 setAllTodayOrders(prev => [newOrder, ...prev]);
               }
             } else {
-              console.log('[LIVE ORDERS DEBUG] Adding to history orders - not from today, marking as PAID and COMPLETED');
+              logInfo('[LIVE ORDERS DEBUG] Adding to history orders - not from today, marking as PAID and COMPLETED');
               // Mark historical orders as PAID and COMPLETED
               const processedOrder = {
                 ...newOrder,
@@ -510,7 +511,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           refetchCounts();
           recalcLocalCounts();
           } else if (payload.eventType === 'UPDATE') {
-            console.log('[LIVE ORDERS DEBUG] Order updated:', {
+            logInfo('[LIVE ORDERS DEBUG] Order updated:', {
               orderId: newOrder.id,
               oldStatus: oldOrder?.order_status,
               newStatus: newOrder.order_status,
@@ -539,7 +540,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               // Only remove from live orders if it's not recent (older than live window)
               // Keep COMPLETED orders in live orders if they're within live window
               if (!isRecentOrder) {
-                console.log('[LIVE ORDERS DEBUG] Removing order from live orders - not recent:', {
+                logInfo('[LIVE ORDERS DEBUG] Removing order from live orders - not recent:', {
                   orderId: newOrder.id,
                   newStatus: newOrder.order_status,
                   isLiveOrder,
@@ -549,7 +550,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 setOrders(prev => prev.filter(order => order.id !== newOrder.id));
               } else {
                 // Order is recent, keep it in live orders even if status changed
-                console.log('[LIVE ORDERS DEBUG] Keeping recent order in live orders despite status change:', {
+                logInfo('[LIVE ORDERS DEBUG] Keeping recent order in live orders despite status change:', {
                   orderId: newOrder.id,
                   newStatus: newOrder.order_status,
                   isLiveOrder,
@@ -560,7 +561,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               
               // Add to all today orders if it's from today and not recent
               if (todayWindow && orderCreatedAt >= new Date(todayWindow.startUtcISO) && orderCreatedAt < new Date(todayWindow.endUtcISO)) {
-                console.log('[LIVE ORDERS DEBUG] Adding order to all today orders - keeping original status:', {
+                logInfo('[LIVE ORDERS DEBUG] Adding order to all today orders - keeping original status:', {
                   orderId: newOrder.id,
                   newStatus: newOrder.order_status
                 });
@@ -586,7 +587,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             recalcLocalCounts();
           } else if (payload.eventType === 'DELETE') {
             const deletedOrder = payload.old as Order;
-            console.log('[LIVE ORDERS DEBUG] Order deleted:', {
+            logInfo('[LIVE ORDERS DEBUG] Order deleted:', {
               orderId: deletedOrder.id
             });
             
@@ -624,7 +625,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           
           // Log completed orders specifically
           if (order.order_status === 'COMPLETED') {
-            console.log('[LIVE ORDERS DEBUG] Checking COMPLETED order:', {
+            logInfo('[LIVE ORDERS DEBUG] Checking COMPLETED order:', {
               orderId: order.id,
               orderStatus: order.order_status,
               orderCreatedAt: order.created_at,
@@ -647,7 +648,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         
         // Move aged-out or completed orders to all today
         if (movedToAllToday.length > 0) {
-          console.log('[LIVE ORDERS DEBUG] Moving orders from live to all today - keeping original status:', movedToAllToday.length);
+          logInfo('[LIVE ORDERS DEBUG] Moving orders from live to all today - keeping original status:', movedToAllToday.length);
           
           // Keep original status - don't auto-complete orders
           setAllTodayOrders(prev => [...movedToAllToday, ...prev]);
@@ -689,7 +690,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   // Helper function to update orders to COMPLETED and PAID when they're not in live orders
   const updateOrderToCompletedAndPaid = async (orderId: string) => {
     try {
-      console.log('[LIVE ORDERS DEBUG] Updating order to COMPLETED and PAID:', orderId);
+      logInfo('[LIVE ORDERS DEBUG] Updating order to COMPLETED and PAID:', orderId);
       const { error } = await createClient()
         .from('orders')
         .update({ 
@@ -701,12 +702,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .eq('venue_id', venueId);
 
       if (error) {
-        console.error('[LIVE ORDERS DEBUG] Failed to update order to COMPLETED and PAID:', error);
+        logError('[LIVE ORDERS DEBUG] Failed to update order to COMPLETED and PAID:', error);
       } else {
-        console.log('[LIVE ORDERS DEBUG] Successfully updated order to COMPLETED and PAID:', orderId);
+        logInfo('[LIVE ORDERS DEBUG] Successfully updated order to COMPLETED and PAID:', orderId);
       }
     } catch (error) {
-      console.error('[LIVE ORDERS DEBUG] Exception updating order to COMPLETED and PAID:', error);
+      logError('[LIVE ORDERS DEBUG] Exception updating order to COMPLETED and PAID:', error);
     }
   };
 
@@ -731,7 +732,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       const confirmed = confirm(`Are you sure you want to complete all ${activeOrders.length} active orders? This will also remove any automatically created tables.`);
       if (!confirmed) return;
       
-      console.log('[BULK COMPLETE] Starting bulk completion for', activeOrders.length, 'orders');
+      logInfo('[BULK COMPLETE] Starting bulk completion for', activeOrders.length, 'orders');
       
       const response = await fetch('/api/orders/bulk-complete', {
         method: 'POST',
@@ -747,7 +748,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       const result = await response.json();
       
       if (response.ok && result.success) {
-        console.log('[BULK COMPLETE] Successfully completed orders:', result.completedCount);
+        logInfo('[BULK COMPLETE] Successfully completed orders:', result.completedCount);
         
         // Immediately update local state to remove completed orders
         const activeOrderIds = activeOrders.map(order => order.id);
@@ -808,7 +809,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             refetchCounts();
             
           } catch (error) {
-            console.error('[BULK COMPLETE] Error refreshing data:', error);
+            logError('[BULK COMPLETE] Error refreshing data:', error);
           } finally {
             setLoading(false);
           }
@@ -817,12 +818,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         await refreshData();
         
       } else {
-        console.error('[BULK COMPLETE] Error:', result.error);
+        logError('[BULK COMPLETE] Error:', result.error);
         alert(`Error completing orders: ${result.error || 'Unknown error'}`);
       }
       
     } catch (error) {
-      console.error('[BULK COMPLETE] Exception:', error);
+      logError('[BULK COMPLETE] Exception:', error);
       alert('Error completing orders. Please try again.');
     } finally {
       setIsBulkCompleting(false);
@@ -977,7 +978,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
 
   // Function to refresh orders - can be called from OrderCard
   const refreshOrders = async () => {
-    console.log('[LiveOrdersClient DEBUG] refreshOrders called - fetching fresh data from database');
+    logInfo('[LiveOrdersClient DEBUG] refreshOrders called - fetching fresh data from database');
     
     // Add a small delay to ensure database has been updated
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -997,11 +998,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false });
 
       if (liveError) {
-        console.error('[LiveOrdersClient DEBUG] Error fetching fresh live orders:', liveError);
+        logError('[LiveOrdersClient DEBUG] Error fetching fresh live orders:', liveError);
         return;
       }
 
-      console.log('[LiveOrdersClient DEBUG] Fresh live orders fetched:', liveData?.length || 0);
+      logInfo('[LiveOrdersClient DEBUG] Fresh live orders fetched:', liveData?.length || 0);
       setOrders(liveData || []);
       
       // Also refresh all today orders
@@ -1015,15 +1016,15 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         .order('created_at', { ascending: false });
 
       if (allError) {
-        console.error('[LiveOrdersClient DEBUG] Error fetching fresh all today orders:', allError);
+        logError('[LiveOrdersClient DEBUG] Error fetching fresh all today orders:', allError);
         return;
       }
 
-      console.log('[LiveOrdersClient DEBUG] Fresh all today orders fetched:', allData?.length || 0);
+      logInfo('[LiveOrdersClient DEBUG] Fresh all today orders fetched:', allData?.length || 0);
       setAllTodayOrders(allData || []);
       
     } catch (error) {
-      console.error('[LiveOrdersClient DEBUG] Error in refreshOrders:', error);
+      logError('[LiveOrdersClient DEBUG] Error in refreshOrders:', error);
     }
   };
 
