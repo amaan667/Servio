@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, X, Check, MessageSquare } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, X, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,7 +20,7 @@ interface QuestionsClientProps {
   mode?: 'form-only' | 'list-only' | 'full';
 }
 
-export default function QuestionsClient({ venueId, venueName, mode = 'full' }: QuestionsClientProps) {
+export default function QuestionsClient({ venueId, mode = 'full' }: QuestionsClientProps) {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -99,7 +99,7 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    logInfo('[FEEDBACK DEBUG] Form submission started', { formData, venueId });
+    logInfo(`'[FEEDBACK DEBUG] Form submission started' { formData venueId }`);
     
     if (!formData.prompt.trim()) {
       toast({

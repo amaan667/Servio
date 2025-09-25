@@ -116,7 +116,7 @@ function CallbackContent() {
           addDebugLog('[AUTH CALLBACK] Session already exists, checking for venues');
           // Check if user has venues and redirect appropriately
           try {
-            const { data: venues, error: venueError } = await supabaseBrowser()
+            const { data: venues } = await supabaseBrowser()
               .from('venues')
               .select('venue_id')
               .eq('owner_id', existingSession.user.id)
@@ -228,7 +228,7 @@ function CallbackContent() {
               addDebugLog('[AUTH CALLBACK] Fallback authentication successful, checking venues');
               // Check if this is a new user who needs to complete their profile
               try {
-                const { data: venues, error: venueError } = await supabaseBrowser()
+                const { data: venues } = await supabaseBrowser()
                   .from('venues')
                   .select('venue_id')
                   .eq('owner_id', retryData.session.user.id)

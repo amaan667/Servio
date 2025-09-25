@@ -127,7 +127,7 @@ export async function GET(req: Request) {
           });
 
         if (sessionError) {
-          logError('[TABLES API DEBUG] Error creating session for table:', table.id, sessionError);
+          logError(`[TABLES API DEBUG] Error creating session for table: ${table.id}`, sessionError);
         } else {
           logInfo('[TABLES API DEBUG] Created session for table:', table.id);
         }
@@ -178,7 +178,7 @@ export async function POST(req: Request) {
     const { venue_id, label, seat_count, area } = body;
 
     logInfo('[TABLES POST] Request body:', body);
-    logInfo('[TABLES POST] Extracted values:', { venue_id, label, seat_count, area });
+    logInfo(`'[TABLES POST] Extracted values:' { venue_id label, seat_count, area }`);
 
     if (!venue_id || !label) {
       return NextResponse.json({ ok: false, error: 'venue_id and label are required' }, { status: 400 });

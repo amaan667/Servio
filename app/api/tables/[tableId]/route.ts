@@ -41,7 +41,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
   }
 }
 
-export async function DELETE(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
+export async function DELETE(_req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
     const { tableId } = await context.params;
     logInfo('[TABLES API] DELETE request for tableId:', tableId);
@@ -63,7 +63,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     logInfo('[TABLES API] Found table to delete:', existingTable);
 
     // Check if the table has any active orders
-    logInfo('[TABLES API] Checking for active orders...', { tableId, venueId: existingTable.venue_id });
+    logInfo(`'[TABLES API] Checking for active orders...' { tableId venueId: existingTable.venue_id }`);
     
     let activeOrders: { id: string }[] = [];
     let ordersError: any = null;
@@ -79,7 +79,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       activeOrders = ordersResult.data || [];
       ordersError = ordersResult.error;
       
-      logInfo('[TABLES API] Active orders check result:', { activeOrders, ordersError });
+      logInfo(`'[TABLES API] Active orders check result:' { activeOrders ordersError }`);
     } catch (error) {
       logError('[TABLES API] Exception during active orders check:', error);
       ordersError = error;
@@ -108,7 +108,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     // Check if the table has any active reservations
-    logInfo('[TABLES API] Checking for active reservations...', { tableId, venueId: existingTable.venue_id });
+    logInfo(`'[TABLES API] Checking for active reservations...' { tableId venueId: existingTable.venue_id }`);
     
     let activeReservations: { id: string }[] = [];
     let reservationsError: any = null;
@@ -124,7 +124,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       activeReservations = reservationsResult.data || [];
       reservationsError = reservationsResult.error;
       
-      logInfo('[TABLES API] Active reservations check result:', { activeReservations, reservationsError });
+      logInfo(`'[TABLES API] Active reservations check result:' { activeReservations reservationsError }`);
     } catch (error) {
       logError('[TABLES API] Exception during active reservations check:', error);
       reservationsError = error;

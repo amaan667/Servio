@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/lib/supabase/client";
-import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar, CalendarIcon, Target, Award, TrendingDown } from "lucide-react";
+import { BarChart, Clock, ShoppingBag, DollarSign, Calendar, CalendarIcon, Award, TrendingDown } from "lucide-react";
 import { logInfo, logError } from "@/lib/logger";
 
 interface AnalyticsData {
@@ -34,7 +33,7 @@ interface AnalyticsData {
 
 type TimePeriod = '7d' | '30d' | '3m' | '1y';
 
-export default function AnalyticsClient({ venueId, venueName }: { venueId: string; venueName: string }) {
+export default function AnalyticsClient({ venueId }: { venueId: string; venueName: string }) {
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30d');
   const [customDateRange, setCustomDateRange] = useState<{ start: string; end: string } | null>(null);
@@ -51,7 +50,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     lowestDay: { date: '', revenue: 0 }
   });
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  // const router = useRouter(); // TODO: Implement navigation if needed
 
   const getDateRange = (period: TimePeriod) => {
     const endDate = new Date();
@@ -77,7 +76,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
-      logInfo('🔍 [ANALYTICS] Fetching analytics data for venue:', venueId, 'period:', timePeriod);
+      logInfo(`🔍 [ANALYTICS] Fetching analytics data for venue: ${venueId} period: ${timePeriod}`);
       setLoading(true);
       setError(null);
 
@@ -220,7 +219,7 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         periodOrders = periodOrdersList.length;
         
         // Debug logging for revenue calculation (kept minimal to avoid noise)
-        // logInfo('🔍 [ANALYTICS REVENUE] Period calculation:', { dateStr, periodRevenue });
+        // logInfo(`'🔍 [ANALYTICS REVENUE] Period calculation:' { dateStr periodRevenue }`);
         
         revenueOverTime.push({
           date: dateStr,
@@ -350,15 +349,15 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
     }
   };
 
-  const getPeriodDisplayName = (period: TimePeriod) => {
-    switch (period) {
-      case '7d': return 'day';
-      case '30d': return 'day';
-      case '3m': return 'week';
-      case '1y': return 'month';
-      default: return 'day';
-    }
-  };
+  // const getPeriodDisplayName = (period: TimePeriod) => {
+  //   switch (period) {
+  //     case '7d': return 'day';
+  //     case '30d': return 'day';
+  //     case '3m': return 'week';
+  //     case '1y': return 'month';
+  //     default: return 'day';
+  //   }
+  // };
 
   const formatTooltipDate = (dateStr: string, period: TimePeriod) => {
     const date = new Date(dateStr);

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import type { FeedbackAnswer } from '@/types/feedback';
 import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';

@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    logInfo('[CATEGORIES DELETE] Deleting category:', categoryName, 'for venue:', venueId);
+    logInfo(`'[CATEGORIES DELETE] Deleting category' { categoryName venueId }`);
 
     const supabase = await createAdminClient();
 

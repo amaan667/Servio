@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     logInfo('🔄 [DAILY RESET] Daily reset endpoint called');
     
     const { venueId, force = false } = await request.json();
-    logInfo('🔄 [DAILY RESET] Request data:', { venueId, force });
+    logInfo(`'🔄 [DAILY RESET] Request data:' { venueId force }`);
 
     if (!venueId) {
       logInfo('🔄 [DAILY RESET] Missing venueId');
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      logInfo('🔄 [DAILY RESET] Completed', activeOrders.length, 'active orders');
+      logInfo('🔄 [DAILY RESET] Completed active orders', { count: activeOrders.length });
     }
 
     // Step 2: Cancel all active reservations
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      logInfo('🔄 [DAILY RESET] Canceled', activeReservations.length, 'active reservations');
+      logInfo('🔄 [DAILY RESET] Canceled active reservations', { count: activeReservations.length });
     }
 
     // Step 3: Delete all tables for the venue (complete reset)
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      logInfo('🔄 [DAILY RESET] Deleted', tables.length, 'tables completely');
+      logInfo('🔄 [DAILY RESET] Deleted tables completely', { count: tables.length });
     }
 
     // Step 4: Clear any table runtime state
@@ -237,21 +237,21 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
 
     // Check for active orders
-    const { data: activeOrders, error: ordersError } = await supabase
+    const { data: activeOrders } = await supabase
       .from('orders')
       .select('id')
       .eq('venue_id', venueId)
       .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'SERVING']);
 
     // Check for active reservations
-    const { data: activeReservations, error: reservationsError } = await supabase
+    const { data: activeReservations } = await supabase
       .from('reservations')
       .select('id')
       .eq('venue_id', venueId)
       .eq('status', 'BOOKED');
 
     // Check for occupied tables by looking at table_sessions instead
-    const { data: occupiedTables, error: tablesError } = await supabase
+    const { data: occupiedTables } = await supabase
       .from('table_sessions')
       .select('table_id')
       .eq('venue_id', venueId)

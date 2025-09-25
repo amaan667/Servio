@@ -1,3 +1,5 @@
+import { logInfo } from './logger';
+
 // Determine the app URL based on environment
 export const APP_URL = (() => {
   // In development, always use localhost to avoid OAuth redirect issues

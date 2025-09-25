@@ -25,11 +25,11 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    logInfo('[CATEGORIES API] Upload data for venue', venueId, ':', uploadData);
-    logInfo('[CATEGORIES API] Upload error:', uploadError);
+    logInfo(`'[CATEGORIES API] Upload data for venue' { venueId uploadData }`);
+    logInfo('[CATEGORIES API] Upload error', { uploadError });
 
     if (uploadError) {
-      logError('[CATEGORIES API] Error fetching category order:', uploadError);
+      logError('[CATEGORIES API] Error fetching category order', { uploadError });
       return NextResponse.json(
         { error: 'Failed to fetch category order' },
         { status: 500 }
@@ -100,7 +100,7 @@ export async function PUT(request: NextRequest) {
     const supabase = await createClient();
 
     // Update or create menu upload record with new category order
-    const { data: existingUpload, error: fetchError } = await supabase
+    const { error: fetchError } = await supabase
       .from('menu_uploads')
       .select('id')
       .eq('venue_id', venueId)

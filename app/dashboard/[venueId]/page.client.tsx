@@ -182,7 +182,7 @@ export default function VenueDashboardClient({
           filter: `venue_id=eq.${venueId}`
         }, 
         async (payload: any) => {
-          logInfo('[DASHBOARD] Real-time order change detected:', payload.event, payload.new?.id);
+          logInfo(`'[DASHBOARD] Real-time order change detected:' payload.event payload.new?.id`);
           
           // Get the order date from the payload with proper type checking
           const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;

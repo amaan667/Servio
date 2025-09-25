@@ -3,6 +3,8 @@
 // =====================================================
 // Fixes common JSON parsing errors from GPT menu extraction
 
+import { logInfo, logError } from '../logger';
+
 /**
  * Repairs malformed JSON from GPT output
  */

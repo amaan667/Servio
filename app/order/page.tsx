@@ -356,7 +356,7 @@ export default function CustomerOrderPage() {
         // Ensure image property is properly set
         image: item.image || undefined,
       }));
-      logInfo('demo.menu Mapped demo items with images:', mappedItems.map(item => ({ name: item.name, image: item.image })));
+      logInfo(`demo.menu Mapped demo items with images: ${mappedItems.map(item => ({ name: item.name, image: item.image }))}`);
       setMenuItems(mappedItems);
       setLoadingMenu(false);
       return;
@@ -699,7 +699,7 @@ export default function CustomerOrderPage() {
 
       // Create the order immediately via API
       logInfo('order.submit Calling orders API...');
-      logInfo('order.submit Order data being sent:', JSON.stringify(orderData, null, 2));
+      logInfo(`order.submit Order data being sent: ${JSON.stringify(orderData, null, 2)}`);
       logInfo('order.submit Validation check - venueSlug:', venueSlug);
       logInfo('order.submit Validation check - customerName:', customerInfo.name.trim());
       logInfo('order.submit Validation check - customerPhone:', customerInfo.phone.trim());

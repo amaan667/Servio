@@ -44,7 +44,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(_request: Request) {
   try {
     // SECURE: Use getUser() for authentication check
     const { user, error } = await getAuthUserForAPI();
@@ -56,7 +56,7 @@ export async function PUT(request: Request) {
       );
     }
     
-    const body = await request.json();
+    // const body = await request.json(); // TODO: Implement profile update logic
     
     // Here you would typically update user metadata or profile data
     // For this example, we'll just return the current user data

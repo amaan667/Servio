@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 // POST /api/tables/[tableId]/close - Close a table
 export async function POST(
-  req: Request,
+  _req: Request,
   context: { params: Promise<{ tableId: string }> }
 ) {
   try {

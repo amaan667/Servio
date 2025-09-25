@@ -28,7 +28,7 @@ export default async function AnalyticsPage({
     const supabase = await createServerSupabase();
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    log('ANALYTICS SSR user', { hasUser: !!user, error: userError?.message });
+    logInfo(`'ANALYTICS SSR user' { hasUser: !!user error: userError?.message }`);
     
     if (userError) {
       logError('[ANALYTICS] Auth error:', userError);

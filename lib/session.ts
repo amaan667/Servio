@@ -1,3 +1,5 @@
+import { logError } from './logger';
+
 // Session management utilities for QR rescan and order resume functionality
 
 export interface SessionData {

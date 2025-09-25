@@ -31,7 +31,7 @@ export default async function OrdersPage({
     redirect('/sign-in');
   }
 
-  log('ORDERS SSR user', { hasUser: !!user });
+  logInfo('RDERS SSR user', { hasUser: !!user });
 
   const supabase = await createServerSupabase();
 

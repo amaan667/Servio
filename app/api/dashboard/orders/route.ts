@@ -97,7 +97,7 @@ export async function GET(req: Request) {
     orders.slice(0, 3).forEach((order, index) => {
       const orderDate = new Date(order.created_at);
       const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-      logInfo(`[DASHBOARD_ORDERS]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.order_status}, Table=${order.table_number}`);
+      logInfo(`[DASHBOARD_ORDERS]   Order ${index + 1}: ID=${order.id} Created=${order.created_at} Age=${ageMinutes}min, Status=${order.order_status}, Table=${order.table_number}`);
     });
     
     // Age distribution analysis

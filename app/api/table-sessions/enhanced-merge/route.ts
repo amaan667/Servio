@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
  */
 async function mergeFreeTables(supabase: any, sourceTable: any, targetTable: any) {
   try {
-    logInfo('[ENHANCED MERGE] Merging free tables:', sourceTable.id, targetTable.id);
+    logInfo(`[ENHANCED MERGE] Merging free tables: ${sourceTable.id} -> ${targetTable.id}`);
     
     // Create a new combined session for both tables
     const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
@@ -342,7 +342,7 @@ async function expandReservedTable(supabase: any, sourceTable: any, targetTable:
  */
 async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable: any) {
   try {
-    logInfo('[ENHANCED MERGE] Merging occupied tables:', sourceTable.id, targetTable.id);
+    logInfo(`[ENHANCED MERGE] Merging occupied tables: ${sourceTable.id} -> ${targetTable.id}`);
     
     // Get both sessions
     const { data: sessions, error: sessionsError } = await supabase
@@ -444,7 +444,7 @@ async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable:
  */
 async function mergeReservedTables(supabase: any, sourceTable: any, targetTable: any) {
   try {
-    logInfo('[ENHANCED MERGE] Merging reserved tables:', sourceTable.id, targetTable.id);
+    logInfo(`[ENHANCED MERGE] Merging reserved tables: ${sourceTable.id} -> ${targetTable.id}`);
     
     // Update table labels
     const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;

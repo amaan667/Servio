@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { logInfo, logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!action || !table_id || !venue_id) {
-      logInfo('[TABLE ACTIONS API] Missing required fields:', { action, table_id, venue_id });
+      logInfo(`'[TABLE ACTIONS API] Missing required fields:' { action table_id, venue_id }`);
       return NextResponse.json({ error: 'action, table_id, and venue_id are required' }, { status: 400 });
     }
 
@@ -291,7 +291,7 @@ async function handleCloseTable(supabase: any, table_id: string) {
 }
 
 async function handleReserveTable(supabase: any, table_id: string, customer_name: string, reservation_time: string, reservation_duration: number = 60) {
-  logInfo('[TABLE ACTIONS] Starting reserve table for:', { table_id, customer_name, reservation_time });
+  logInfo(`'[TABLE ACTIONS] Starting reserve table for:' { table_id customer_name, reservation_time }`);
   
   try {
     // Get venue_id from table
@@ -306,7 +306,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     
     if (tableError.code === 'PGRST116') {
       // Let's see what tables actually exist
-      const { data: allTables, error: allTablesError } = await supabase
+      const { data: allTables } = await supabase
         .from('tables')
         .select('id, label, venue_id')
         .limit(10);
@@ -452,7 +452,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
 
   if (currentSession) {
     // Update existing session
-    logInfo('[TABLE ACTIONS] Updating existing session:', currentSession.id, 'from status:', currentSession.status);
+    logInfo(`[TABLE ACTIONS] Updating existing session: ${currentSession.id} from status: ${currentSession.status}`);
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .update({ 
@@ -477,7 +477,7 @@ async function handleReserveTable(supabase: any, table_id: string, customer_name
     logInfo('[TABLE ACTIONS] Successfully updated session:', currentSession.id);
   } else {
     // Create new session
-    logInfo('[TABLE ACTIONS] No existing session found, creating new session for table:', table_id);
+    logInfo(`'[TABLE ACTIONS] No existing session found creating new session for table:' table_id`);
     const { error: sessionError } = await supabase
       .from('table_sessions')
       .insert({
@@ -531,7 +531,7 @@ async function handleOccupyTable(supabase: any, table_id: string) {
 
   if (existingSession) {
     // Update existing session to ORDERING
-    logInfo('[TABLE ACTIONS] Updating existing session:', existingSession.id, 'to ORDERING');
+    logInfo(`[TABLE ACTIONS] Updating existing session: ${existingSession.id} to ORDERING`);
     const { error: updateError } = await supabase
       .from('table_sessions')
       .update({ 
@@ -560,7 +560,7 @@ async function handleOccupyTable(supabase: any, table_id: string) {
       logError('[TABLE ACTIONS] Error getting table info:', tableError);
       if (tableError.code === 'PGRST116') {
         // Let's see what tables actually exist
-        const { data: allTables, error: allTablesError } = await supabase
+        const { data: allTables } = await supabase
           .from('tables')
           .select('id, label, venue_id')
           .limit(10);
@@ -569,7 +569,7 @@ async function handleOccupyTable(supabase: any, table_id: string) {
         logInfo('[TABLE ACTIONS] Looking for table ID:', table_id);
         
         // Also check what venues exist
-        const { data: allVenues, error: venuesError } = await supabase
+        const { data: allVenues } = await supabase
           .from('venues')
           .select('venue_id, name')
           .limit(10);
@@ -688,7 +688,7 @@ async function handleMergeTable(supabase: any, venue_id: string, table_id: strin
       p_table_b: destination_table_id
     });
 
-    logInfo('[TABLE ACTIONS] RPC call result:', { data, error });
+    logInfo(`'[TABLE ACTIONS] RPC call result:' { data error }`);
 
     if (error) {
       logError('[TABLE ACTIONS] Error merging tables:', error);
@@ -758,7 +758,7 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
     }
 
     if (secondaryTable) {
-      logInfo('[TABLE ACTIONS] Found secondary table, using RPC function:', secondaryTable);
+      logInfo(`'[TABLE ACTIONS] Found secondary table using RPC function:' secondaryTable`);
       
       // Use the database RPC function for unmerge with the secondary table ID
       const { data, error } = await supabase.rpc('api_unmerge_table', {
@@ -787,7 +787,7 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
       const firstTableNum = parts[0].replace(/\D/g, '');
       const secondTableNum = parts[1].replace(/\D/g, '');
       
-      logInfo('[TABLE ACTIONS] Parsed table numbers:', { firstTableNum, secondTableNum });
+      logInfo(`'[TABLE ACTIONS] Parsed table numbers:' { firstTableNum secondTableNum }`);
       
       // Look for tables with these numbers in the same venue
       const { data: allTables, error: allTablesError } = await supabase
@@ -806,7 +806,7 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
       const secondTable = allTables?.find((t: any) => t.label.includes(secondTableNum) && t.id !== table_id);
       
       if (firstTable && secondTable) {
-        logInfo('[TABLE ACTIONS] Found potential original tables:', { firstTable, secondTable });
+        logInfo(`'[TABLE ACTIONS] Found potential original tables:' { firstTable secondTable }`);
         
         // Restore the current table to the first table's original state
         const { error: updateError } = await supabase
@@ -860,7 +860,7 @@ async function handleUnmergeTable(supabase: any, table_id: string) {
 
 async function handleCancelReservation(supabase: any, table_id: string, reservation_id: string) {
   try {
-    logInfo('[TABLE ACTIONS] Starting cancel reservation for:', { table_id, reservation_id });
+    logInfo(`'[TABLE ACTIONS] Starting cancel reservation for:' { table_id reservation_id }`);
     
     // First, cancel the reservation in the reservations table (if it exists)
     const { error: reservationError } = await supabase

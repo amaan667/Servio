@@ -3,8 +3,6 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { todayWindowForTZ } from '@/lib/time';
-import { liveOrdersWindow, earlierTodayWindow, historyWindow } from '@/lib/dates';
 import { cookieAdapter } from '@/lib/server/supabase';
 import { logInfo } from "@/lib/logger";
 
@@ -97,7 +95,7 @@ export async function GET(req: Request) {
       data.slice(0, 3).forEach((order, index) => {
         const orderDate = new Date(order.created_at);
         const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-        logInfo(`[TAB_FILTERING]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.order_status}`);
+        logInfo(`[TAB_FILTERING]   Order ${index + 1}: ID=${order.id} Created=${order.created_at} Age=${ageMinutes}min, Status=${order.order_status}`);
       });
       
       // Age distribution analysis

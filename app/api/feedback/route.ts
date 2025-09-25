@@ -7,8 +7,6 @@ export const runtime = 'nodejs';
 export async function POST(req: Request) {
   try {
     const { order_id, rating, comment } = await req.json();
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const admin = await createClient();
     
     // Validate required fields

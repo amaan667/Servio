@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      logInfo('🔄 [MANUAL DAILY RESET] Completed', activeOrders.length, 'active orders');
+      logInfo('🔄 [MANUAL DAILY RESET] Completed active orders', { count: activeOrders.length });
     }
 
     // Step 2: Cancel all active reservations
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      logInfo('🔄 [MANUAL DAILY RESET] Canceled', activeReservations.length, 'active reservations');
+      logInfo('🔄 [MANUAL DAILY RESET] Canceled active reservations', { count: activeReservations.length });
     }
 
     // Step 3: Delete all tables for complete reset
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      logInfo('🔄 [MANUAL DAILY RESET] Deleted', tables.length, 'tables completely');
+      logInfo('🔄 [MANUAL DAILY RESET] Deleted tables completely', { count: tables.length });
     }
 
     // Step 4: Clear any table runtime state
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     const today = new Date();
     const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
-    const { error: logError } = await supabase
+    const { error: logInsertError } = await supabase
       .from('daily_reset_log')
       .upsert({
         venue_id: venueId,
@@ -228,8 +228,8 @@ export async function POST(request: NextRequest) {
         onConflict: 'venue_id,reset_date'
       });
 
-    if (logError) {
-      logError('🔄 [MANUAL DAILY RESET] Error logging reset:', logError);
+    if (logInsertError) {
+      logError('🔄 [MANUAL DAILY RESET] Error logging reset:', logInsertError);
       // Don't fail the operation for this
       logWarn('🔄 [MANUAL DAILY RESET] Continuing despite log error');
     } else {

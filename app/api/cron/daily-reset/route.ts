@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
-    logInfo('🕛 [CRON DAILY RESET] Current time:', currentTime, { currentHour, currentMinute });
+    logInfo(`'🕛 [CRON DAILY RESET] Current time' { currentTime currentHour, currentMinute }`);
 
     const supabase = createAdminClient();
     

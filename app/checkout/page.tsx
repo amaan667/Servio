@@ -34,7 +34,6 @@ import {
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/client";
 import { RealTimeOrderTimeline } from "@/components/real-time-order-timeline";
 import { logInfo, logError } from "@/lib/logger";
 // import OrderFeedbackForm from "@/components/OrderFeedbackForm";
@@ -45,7 +44,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 // Debug Stripe initialization
 if (typeof window !== 'undefined') {
   logInfo('[STRIPE DEBUG] Publishable key available:', !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-  logInfo('[STRIPE DEBUG] Publishable key starts with:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 7));
+  logInfo(`[STRIPE DEBUG] Publishable key starts with: ${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 7)}`);
 }
 
 interface CartItem {
@@ -464,7 +463,7 @@ function StripePaymentForm({
       });
 
       const endTime = Date.now();
-      logInfo('[STRIPE PAYMENT INTENT] API call completed in:', endTime - startTime, 'ms');
+      logInfo(`[STRIPE PAYMENT INTENT] API call completed in: ${endTime - startTime}ms`);
       logInfo('[STRIPE PAYMENT INTENT] Response status:', response.status);
       logInfo('[STRIPE PAYMENT INTENT] Response ok:', response.ok);
 
@@ -523,7 +522,7 @@ function StripePaymentForm({
       });
       const confirmationEndTime = Date.now();
       
-      logInfo('[STRIPE PAYMENT CONFIRMATION] Confirmation completed in:', confirmationEndTime - confirmationStartTime, 'ms');
+      logInfo(`[STRIPE PAYMENT CONFIRMATION] Confirmation completed in: ${confirmationEndTime - confirmationStartTime}ms`);
 
       if (stripeError) {
         logError('[STRIPE PAYMENT CONFIRMATION] Payment error occurred:', {
@@ -584,7 +583,7 @@ function StripePaymentForm({
       });
 
       const orderEndTime = Date.now();
-      logInfo('[STRIPE ORDER CREATION] Order API call completed in:', orderEndTime - orderStartTime, 'ms');
+      logInfo(`[STRIPE ORDER CREATION] Order API call completed in: ${orderEndTime - orderStartTime}ms`);
       logInfo('[STRIPE ORDER CREATION] Order response status:', orderResponse.status);
       logInfo('[STRIPE ORDER CREATION] Order response ok:', orderResponse.ok);
 
@@ -930,7 +929,7 @@ export default function CheckoutPage() {
     if (method === 'stripe') {
       logInfo('[STRIPE PAYMENT SELECTED] Real payment method chosen');
       logInfo('[STRIPE PAYMENT SELECTED] Stripe publishable key available:', !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-      logInfo('[STRIPE PAYMENT SELECTED] Stripe publishable key prefix:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 7));
+      logInfo(`[STRIPE PAYMENT SELECTED] Stripe publishable key prefix: ${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 7)}`);
     } else {
       logInfo('[SIMULATION PAYMENT SELECTED] Demo mode chosen');
     }
@@ -967,7 +966,7 @@ export default function CheckoutPage() {
     // Clear stored data since order is now created in database
     localStorage.removeItem('pending-order-data');
     localStorage.removeItem('servio-checkout-data');
-    logInfo('[STRIPE PAYMENT SUCCESS] Payment flow complete, order created in database, now showing feedback form');
+    logInfo(`'[STRIPE PAYMENT SUCCESS] Payment flow complete order created in database now showing feedback form'`);
   };
 
   const handleStripePaymentError = (error: string) => {

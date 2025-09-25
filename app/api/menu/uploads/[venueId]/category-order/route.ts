@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logInfo, logError } from "@/lib/logger";
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ venueId: string }> }
 ) {
   try {

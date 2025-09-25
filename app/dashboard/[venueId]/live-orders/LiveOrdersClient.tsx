@@ -373,7 +373,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         }).map((order: any) => {
           // Keep orders in their original status - don't auto-complete them
           // Only mark as completed/paid if they are from previous days (history)
-          logInfo('[LIVE ORDERS DEBUG] Processing earlier today order - keeping original status:', order.id, order.order_status);
+          logInfo(`'[LIVE ORDERS DEBUG] Processing earlier today order - keeping original status:' order.id order.order_status`);
           return order;
         });
         
@@ -732,7 +732,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
       const confirmed = confirm(`Are you sure you want to complete all ${activeOrders.length} active orders? This will also remove any automatically created tables.`);
       if (!confirmed) return;
       
-      logInfo('[BULK COMPLETE] Starting bulk completion for', activeOrders.length, 'orders');
+      logInfo(`'[BULK COMPLETE] Starting bulk completion for' activeOrders.length 'orders'`);
       
       const response = await fetch('/api/orders/bulk-complete', {
         method: 'POST',

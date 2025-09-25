@@ -155,7 +155,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       calculateStats(filteredFeedback);
 
     } catch (err: any) {
-      logger.error('Failed to fetch feedback', { error: err.message, venueId });
+      logError('Failed to fetch feedback', { error: err.message, venueId });
       setError(err.message);
     } finally {
       setLoading(false);

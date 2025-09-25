@@ -105,7 +105,7 @@ export default async function GenerateQRPage() {
     
     // Continue even if active tables query failed - we can still show QR codes
     if (activeTablesError) {
-      logInfo('🔍 [QR PAGE] Active tables query had error, but continuing with default count:', activeTablesError.message);
+      logInfo(`'🔍 [QR PAGE] Active tables query had error but continuing with default count:' activeTablesError.message`);
     }
 
   return (

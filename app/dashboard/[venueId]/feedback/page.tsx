@@ -7,7 +7,7 @@ import { hasServerAuthCookie } from '@/lib/server-utils';
 // import { log } from '@/lib/debug'; // Removed debug import
 import { EnhancedFeedbackSystem } from '@/components/enhanced-feedback-system';
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
-import { logError } from "@/lib/logger";
+import { logInfo, logError } from "@/lib/logger";
 
 export default async function FeedbackPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
@@ -21,7 +21,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ venue
     const supabase = await createServerSupabase();
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    log('FEEDBACK PAGE SSR user', { hasUser: !!user, error: userError?.message });
+    logInfo(`'FEEDBACK PAGE SSR user' { hasUser: !!user error: userError?.message }`);
     
     if (userError) {
       logError('Auth error:', userError);

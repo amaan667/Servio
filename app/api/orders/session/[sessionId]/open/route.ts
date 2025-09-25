@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { logInfo, logError } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
@@ -19,18 +17,6 @@ export async function GET(
       }, { status: 400 });
     }
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          get(name: string) { return cookieStore.get(name)?.value; },
-          set(name: string, value: string, options: any) { },
-          remove(name: string, options: any) { },
-        },
-      }
-    );
 
     logInfo('[ORDERS SESSION] Looking for open order with session:', sessionId);
 

@@ -34,7 +34,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
         const { data: adminUser, error: adminError } = await adminClient.auth.admin.getUserById(user.id);
         if (!adminError && adminUser.user) {
           fullUserData = adminUser.user;
-          log('SETTINGS SSR admin user data', { 
+          logInfo('SETTINGS SSR admin user data', { 
             hasIdentities: !!adminUser.user.identities,
             identities: adminUser.user.identities,
             userMetadata: adminUser.user.user_metadata,
@@ -46,7 +46,7 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
       }
     }
     
-    log('SETTINGS SSR user', { 
+    logInfo('SETTINGS SSR user', { 
       hasUser: !!user, 
       error: userError?.message, 
       hasIdentities: !!fullUserData?.identities,

@@ -1251,12 +1251,12 @@ export function LiveOrders({ venueId, session }: LiveOrdersProps) {
                 if (activeTab === 'live') {
                   // Live tab: Only show live orders (active orders within 30 minutes)
                   ordersToShow = orders;
-                  logInfo("🔍 [TAB RENDER] LIVE tab rendering with", ordersToShow.length, "orders:", ordersToShow.map(o => ({
+                  logInfo(`🔍 [TAB RENDER] LIVE tab rendering with ${ordersToShow.length} orders: ${JSON.stringify(ordersToShow.map(o => ({
                     id: o.id,
                     status: o.order_status,
                     customer: o.customer_name,
                     created: o.created_at
-                  })));
+                  })))}`);
                 } else if (activeTab === 'today') {
                   // Today tab: Show all today's orders (including completed ones)
                   ordersToShow = allOrders;

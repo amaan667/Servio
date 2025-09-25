@@ -13,7 +13,6 @@ import { deriveEntityKind } from "@/lib/orders/entity-types";
 import { logInfo, logError } from "@/lib/logger";
 import { useTabCounts } from '@/hooks/use-tab-counts';
 import { useCountsRealtime } from '@/hooks/use-counts-realtime';
-import { logInfo, logError } from "@/lib/logger";
 
 interface Order {
   id: string;

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logError } from "@/lib/logger";
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ reservationId: string }> }
 ) {
   try {

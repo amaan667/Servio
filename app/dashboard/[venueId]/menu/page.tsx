@@ -30,7 +30,7 @@ export default async function MenuPage({
     redirect('/sign-in');
   }
 
-  log('MENU SSR user', { hasUser: !!user });
+  logInfo('ENU SSR user', { hasUser: !!user });
 
   const supabase = await createServerSupabase();
 

@@ -28,7 +28,7 @@ export default function HomePage() {
         logInfo('[HOME PAGE] Checking authentication...');
         const { data: { user }, error } = await supabase.auth.getUser();
         
-        logInfo('[HOME PAGE] Auth check result:', { user: !!user, error });
+        logInfo(`'[HOME PAGE] Auth check result:' { user: !!user error }`);
         
         if (error || !user) {
           // If no authenticated user, show public home page
@@ -53,7 +53,7 @@ export default function HomePage() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-      logInfo('[HOME PAGE] Auth state changed:', event, session?.user?.email);
+      logInfo(`'[HOME PAGE] Auth state changed:' event session?.user?.email`);
       if (session?.user) {
         setUser(session.user);
       } else {

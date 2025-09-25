@@ -62,16 +62,7 @@ export async function POST(req: NextRequest) {
       customerName,
     });
 
-    // Store cart data for later retrieval
-    const cartData = {
-      cartId,
-      venueId,
-      tableNumber,
-      customerName,
-      customerPhone,
-      items,
-      totalAmount,
-    };
+    // Cart data is available in the request body for later retrieval
 
     // Store cart data in localStorage equivalent (client-side) or database
     // For now, we'll pass it in metadata (limited size)

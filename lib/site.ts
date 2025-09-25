@@ -1,3 +1,5 @@
+import { logInfo } from './logger';
+
 export function siteOrigin(): string {
   logInfo('[AUTH DEBUG] siteOrigin() called');
   logInfo('[AUTH DEBUG] NODE_ENV:', process.env.NODE_ENV);

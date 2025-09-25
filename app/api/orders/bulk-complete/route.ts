@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     logInfo('[BULK COMPLETE] Completing orders:', targetOrderIds);
     
     // Get order details before updating to handle table cleanup
-    const { data: ordersToComplete, error: fetchOrdersError } = await supabase
+    const { error: fetchOrdersError } = await supabase
       .from('orders')
       .select('id, table_id, table_number, source, venue_id')
       .in('id', targetOrderIds)
@@ -183,11 +183,11 @@ export async function POST(req: Request) {
               code: deleteTableError.code
             });
           } else {
-            logInfo('[BULK COMPLETE] Successfully deleted table:', tableId);
+            logInfo('[BULK COMPLETE] Successfully deleted table', { tableId });
           }
           
         } catch (tableError) {
-          logError('[BULK COMPLETE] Error handling table cleanup for table:', tableId, tableError);
+          logError('[BULK COMPLETE] Error handling table cleanup for table', { tableId, error: tableError });
         }
       }
     }

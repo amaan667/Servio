@@ -1,5 +1,4 @@
 "use client";
-import { logger } from "./logger";
 import { supabase } from "./supabase/client";
 import { getAuthRedirectUrl } from "./auth";
 import { logInfo, logError } from "@/lib/logger";
@@ -95,7 +94,7 @@ export async function signUpUser(
   venueType: string,
 ) {
   try {
-    logger.log("Attempting sign up", { email, fullName });
+    logInfo("Attempting sign up", { email, fullName });
 
     // Use normalized site origin
     const emailRedirectTo = `${(process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app').replace(/[;\s]+$/g, '').replace(/\/+$/g, '')}/dashboard`;
@@ -112,7 +111,7 @@ export async function signUpUser(
     });
 
     if (error || !data.user) {
-      logger.error("Failed to sign up user", { error });
+      logError("Failed to sign up user", { error });
       return {
         success: false,
         message: error?.message || "Failed to create account",
@@ -153,7 +152,7 @@ export async function signUpUser(
         .single();
 
       if (createVenueError) {
-        logger.error("Failed to create venue", { error: createVenueError });
+        logError("Failed to create venue", { error: createVenueError });
         return {
           success: false,
           message: "Account created but failed to set up venue. Please contact support.",
@@ -162,14 +161,14 @@ export async function signUpUser(
       venueData = newVenue;
     }
 
-    logger.log("User signed up successfully", { userId, venueId });
+    logInfo("User signed up successfully", { userId, venueId });
     return {
       success: true,
       message: "Account created successfully! Welcome to Servio.",
       data: { user: data.user, venue: venueData },
     };
   } catch (error) {
-    logger.error("Sign up error", { error });
+    logError("Sign up error", { error });
     return {
       success: false,
       message: "An unexpected error occurred. Please try again.",
@@ -179,25 +178,25 @@ export async function signUpUser(
 
 export async function signInUser(email: string, password: string) {
   try {
-    logger.log("Attempting sign in", { email });
+    logInfo("Attempting sign in", { email });
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error || !data.user) {
-      logger.error("Sign in failed", { error });
+      logError("Sign in failed", { error });
       return {
         success: false,
         message: error?.message || "Invalid email or password",
       };
     }
     
-    logger.log("Sign in successful", { userId: data.user.id });
+    logInfo("Sign in successful", { userId: data.user.id });
     
     // Ensure user is properly authenticated
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
-      logger.error("No user after sign in");
+      logError("No user after sign in");
       return {
         success: false,
         message: "Authentication failed - user not authenticated",
@@ -206,7 +205,7 @@ export async function signInUser(email: string, password: string) {
     
     return { success: true };
   } catch (error) {
-    logger.error("Sign in error", { error });
+    logError("Sign in error", { error });
     return { success: false, message: "An unexpected error occurred" };
   }
 }
@@ -271,12 +270,12 @@ export async function signOutUser() {
     });
     
     if (response.ok) {
-      logger.log("User signed out");
+      logInfo("User signed out");
     } else {
-      logger.error("Server signout failed", { status: response.status });
+      logError("Server signout failed", { status: response.status });
     }
   } catch (error) {
-    logger.error("Sign out error", { error });
+    logError("Sign out error", { error });
   }
 }
 
@@ -298,14 +297,14 @@ export async function createMenuItem(
     if (error) {
     logInfo('[OAUTH FLOW] Step 4: OAuth error occurred');
     logInfo('[OAUTH FLOW] Error details: ', error);
-      logger.error("Failed to create menu item", { error, venueId });
+      logError("Failed to create menu item", { error, venueId });
       return { success: false, message: "Failed to create menu item" };
     }
 
-    logger.log("Menu item created", { itemId: data.id, venueId });
+    logInfo("Menu item created", { itemId: data.id, venueId });
     return { success: true, data };
   } catch (error) {
-    logger.error("Create menu item error", { error });
+    logError("Create menu item error", { error });
     return { success: false, message: "An unexpected error occurred" };
   }
 }
@@ -325,14 +324,14 @@ export async function updateMenuItem(
     if (error) {
     logInfo('[OAUTH FLOW] Step 4: OAuth error occurred');
     logInfo('[OAUTH FLOW] Error details: ', error);
-      logger.error("Failed to update menu item", { error, itemId });
+      logError("Failed to update menu item", { error, itemId });
       return { success: false, message: "Failed to update menu item" };
     }
 
-    logger.log("Menu item updated", { itemId });
+    logInfo("Menu item updated", { itemId });
     return { success: true, data };
   } catch (error) {
-    logger.error("Update menu item error", { error });
+    logError("Update menu item error", { error });
     return { success: false, message: "An unexpected error occurred" };
   }
 }
@@ -347,14 +346,14 @@ export async function deleteMenuItem(itemId: string) {
     if (error) {
     logInfo('[OAUTH FLOW] Step 4: OAuth error occurred');
     logInfo('[OAUTH FLOW] Error details: ', error);
-      logger.error("Failed to delete menu item", { error, itemId });
+      logError("Failed to delete menu item", { error, itemId });
       return { success: false, message: "Failed to delete menu item" };
     }
 
-    logger.log("Menu item deleted", { itemId });
+    logInfo("Menu item deleted", { itemId });
     return { success: true };
   } catch (error) {
-    logger.error("Delete menu item error", { error });
+    logError("Delete menu item error", { error });
     return { success: false, message: "An unexpected error occurred" };
   }
 }

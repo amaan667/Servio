@@ -24,8 +24,8 @@ export async function POST(req: Request) {
       {
         cookies: {
           get(name: string) { return cookieStore.get(name)?.value; },
-          set(name: string, value: string, options: any) { },
-          remove(name: string, options: any) { },
+          set(_name: string, _value: string, _options: any) { },
+          remove(_name: string, _options: any) { },
         },
       }
     );

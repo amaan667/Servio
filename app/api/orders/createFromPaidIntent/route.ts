@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
       table_number,
       customer_name,
       customer_phone,
-      item_count,
+      item_count: _item_count,
       items_summary,
-      total_amount,
+      total_amount: _total_amount,
     } = paymentIntent.metadata;
 
     if (!venue_id || !table_number || !customer_name) {

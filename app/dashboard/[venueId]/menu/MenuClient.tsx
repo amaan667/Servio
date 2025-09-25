@@ -67,7 +67,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
 
       // If no items found with transformed ID, try with original ID
       if (!data || data.length === 0) {
-        logInfo('[MENU CLIENT] No items found with transformed ID, trying original ID:', originalVenueId);
+        logInfo(`'[MENU CLIENT] No items found with transformed ID trying original ID:' originalVenueId`);
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('menu_items')
           .select('*')
@@ -77,13 +77,13 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         if (fallbackData && fallbackData.length > 0) {
           data = fallbackData;
           error = fallbackError;
-          logInfo('[MENU CLIENT] Found', fallbackData.length, 'items with original venue ID');
+          logInfo(`'[MENU CLIENT] Found' fallbackData.length 'items with original venue ID'`);
         }
       }
 
       if (!error && data) {
         setMenuItems(data);
-        logInfo('[MENU CLIENT] Successfully loaded', data.length, 'menu items');
+        logInfo(`'[MENU CLIENT] Successfully loaded' data.length 'menu items'`);
         
         // Auto-show categories if there are menu items with categories
         const hasCategories = data.some((item: MenuItem) => item.category && item.category.trim());

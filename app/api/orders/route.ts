@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { logInfo } from "@/lib/logger";
 
@@ -42,7 +41,7 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Partial<OrderPayload>;
     logInfo('[ORDERS POST] ===== ORDER SUBMISSION API CALLED =====');
     logInfo('[ORDERS POST] Request received at:', new Date().toISOString());
-    logInfo('[ORDERS POST] Raw request body:', JSON.stringify(body, null, 2));
+    logInfo(`[ORDERS POST] Raw request body: ${JSON.stringify(body, null, 2)}`);
     logInfo('[ORDERS POST] Request headers:', {
       'user-agent': req.headers.get('user-agent'),
       'referer': req.headers.get('referer'),
@@ -175,10 +174,10 @@ export async function POST(req: Request) {
             seatCount = groupSession.total_group_size;
             logInfo('[ORDERS POST] Using group size for seat count:', seatCount);
           } else {
-            logInfo('[ORDERS POST] No group session found, using default seat count:', seatCount);
+            logInfo(`'[ORDERS POST] No group session found using default seat count:' seatCount`);
           }
         } catch (groupError) {
-          logInfo('[ORDERS POST] Error fetching group session, using default seat count:', groupError);
+          logInfo(`'[ORDERS POST] Error fetching group session using default seat count:' groupError`);
         }
         
         // Insert new table - check for existing first to avoid duplicates
@@ -272,13 +271,13 @@ export async function POST(req: Request) {
 
     // Final validation before insertion
     logInfo('[ORDERS POST] Final payload validation:');
-    logInfo('[ORDERS POST] - venue_id:', payload.venue_id, '(type:', typeof payload.venue_id, ')');
-    logInfo('[ORDERS POST] - customer_name:', payload.customer_name, '(length:', payload.customer_name.length, ')');
-    logInfo('[ORDERS POST] - customer_phone:', payload.customer_phone, '(length:', payload.customer_phone.length, ')');
-    logInfo('[ORDERS POST] - total_amount:', payload.total_amount, '(type:', typeof payload.total_amount, ')');
-    logInfo('[ORDERS POST] - items count:', payload.items.length);
-    logInfo('[ORDERS POST] - order_status:', payload.order_status);
-    logInfo('[ORDERS POST] - payment_status:', payload.payment_status);
+    logInfo(`'[ORDERS POST] - venue_id' { venue_id: payload.venue_id type: typeof payload.venue_id }`);
+    logInfo(`'[ORDERS POST] - customer_name' { name: payload.customer_name length: payload.customer_name.length }`);
+    logInfo(`'[ORDERS POST] - customer_phone' { phone: payload.customer_phone length: payload.customer_phone.length }`);
+    logInfo(`'[ORDERS POST] - total_amount' { amount: payload.total_amount type: typeof payload.total_amount }`);
+    logInfo('[ORDERS POST] - items count', { count: payload.items.length });
+    logInfo('[ORDERS POST] - order_status', { status: payload.order_status });
+    logInfo('[ORDERS POST] - payment_status', { status: payload.payment_status });
     logInfo('[ORDERS POST] inserting order', {
       venue_id: payload.venue_id,
       table_number: payload.table_number,
@@ -290,7 +289,7 @@ export async function POST(req: Request) {
     });
 
     logInfo('[ORDERS POST] Attempting database insertion...');
-    logInfo('[ORDERS POST] Payload for insertion:', JSON.stringify(payload, null, 2));
+    logInfo(`[ORDERS POST] Payload for insertion: ${JSON.stringify(payload, null, 2)}`);
     logInfo('[ORDERS POST] Using admin client with service role key to bypass RLS');
     
     const { data: inserted, error: insertErr } = await supabase
@@ -315,7 +314,7 @@ export async function POST(req: Request) {
       logInfo('[ORDERS POST] Error message:', insertErr.message);
       logInfo('[ORDERS POST] Error details:', insertErr.details);
       logInfo('[ORDERS POST] Error hint:', insertErr.hint);
-      logInfo('[ORDERS POST] Full error object:', JSON.stringify(insertErr, null, 2));
+      logInfo(`[ORDERS POST] Full error object: ${JSON.stringify(insertErr, null, 2)}`);
       
       // Try to provide more specific error messages
       let errorMessage = insertErr.message;
@@ -434,12 +433,12 @@ export async function POST(req: Request) {
       display_name: orderSource === 'counter' ? `Counter ${table_number}` : `Table ${table_number}` // Include display name for UI
     };
     logInfo('[ORDERS POST] ===== ORDER SUBMISSION COMPLETED SUCCESSFULLY =====');
-    logInfo('[ORDERS POST] Final response:', JSON.stringify(response, null, 2));
+    logInfo(`[ORDERS POST] Final response: ${JSON.stringify(response, null, 2)}`);
     logInfo('[ORDERS POST] Response sent at:', new Date().toISOString());
     
     // Log that real-time updates should be triggered
     logInfo('[ORDERS POST] Real-time updates will be triggered automatically via Supabase subscriptions');
-    logInfo('[ORDERS POST] Dashboard, analytics, and live orders components will update instantly');
+    logInfo(`'[ORDERS POST] Dashboard analytics and live orders components will update instantly'`);
     logInfo('[ORDERS POST] Table management will show OCCUPIED status for the table');
     
     return NextResponse.json(response);

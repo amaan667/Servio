@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { logInfo, logError } from "@/lib/logger";
 import {
   CheckCircle,
   AlertTriangle,
@@ -52,7 +53,7 @@ export function AccountMigrator() {
 
   useEffect(() => {
     loadLocalAccounts();
-    logger.log("ACCOUNT_MIGRATOR: Component initialized", {
+    logInfo("ACCOUNT_MIGRATOR: Component initialized", {
       hasSupabase: hasSupabaseConfig,
       timestamp: new Date().toISOString(),
     });
@@ -63,11 +64,11 @@ export function AccountMigrator() {
       const stored = localStorage.getItem("servio-accounts");
       const accounts = stored ? JSON.parse(stored) : [];
       setLocalAccounts(accounts);
-      logger.log("ACCOUNT_MIGRATOR: Local accounts loaded", {
+      logInfo("ACCOUNT_MIGRATOR: Local accounts loaded", {
         count: accounts.length,
       });
     } catch (error) {
-      logger.error(
+      logError(
         "ACCOUNT_MIGRATOR: Failed to load local accounts",
         error as any,
       );
@@ -79,7 +80,7 @@ export function AccountMigrator() {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = `[${timestamp}] ${message}`;
     setLogs((prev: string[]) => [...prev, logEntry]);
-    logger.log("MIGRATION_LOG: " + message);
+    logInfo("MIGRATION_LOG: " + message);
   };
 
   const migrateAccount = async (account: LocalAccount): Promise<boolean> => {
@@ -109,7 +110,7 @@ export function AccountMigrator() {
       }
     } catch (error: any) {
       addLog(`❌ Error migrating ${account.contactEmail}: ${error.message}`);
-      logger.error("ACCOUNT_MIGRATOR: Migration error", {
+      logError("ACCOUNT_MIGRATOR: Migration error", {
         email: account.contactEmail,
         error,
       } as any);
@@ -173,7 +174,7 @@ export function AccountMigrator() {
       setLocalAccounts([]);
       setMigrationStatus({});
       addLog("🗑️ Local accounts cleared");
-      logger.log("ACCOUNT_MIGRATOR: Local accounts cleared");
+      logInfo("ACCOUNT_MIGRATOR: Local accounts cleared");
     }
   };
 
@@ -206,7 +207,7 @@ export function AccountMigrator() {
         }
       } catch (error) {
         addLog("❌ Failed to import accounts");
-        logger.error("ACCOUNT_MIGRATOR: Import error", error as any);
+        logError("ACCOUNT_MIGRATOR: Import error", error as any);
       }
     };
     reader.readAsText(file);

@@ -220,13 +220,13 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
   const removeTable = (tableNumber: string) => {
     const newTables = selectedTables.filter(t => t !== tableNumber);
     updateSelectedTables(newTables);
-    logInfo('🔍 [QR CLIENT] Removed table', tableNumber, 'remaining tables:', newTables);
+    logInfo(`'🔍 [QR CLIENT] Removed table' tableNumber 'remaining tables:', newTables`);
   };
 
   const removeCounter = (counterNumber: string) => {
     const newCounters = selectedCounters.filter(c => c !== counterNumber);
     updateSelectedCounters(newCounters);
-    logInfo('🔍 [QR CLIENT] Removed counter', counterNumber, 'remaining counters:', newCounters);
+    logInfo(`'🔍 [QR CLIENT] Removed counter' counterNumber 'remaining counters:', newCounters`);
   };
 
   const updateTableNumber = (oldTableNumber: string, newTableNumber: string) => {
@@ -704,7 +704,7 @@ export default function GenerateQRClient({ venueId, venueName, activeTablesCount
           logInfo('🔍 [QR CLIENT] Empty tables from localStorage, not creating any default tables');
         } else {
           // Tables were specified in URL or localStorage, keep them
-          logInfo('🔍 [QR CLIENT] Using tables from URL/localStorage:', currentSelectedTables.join(', '));
+          logInfo(`🔍 [QR CLIENT] Using tables from URL/localStorage: ${currentSelectedTables.join(' ')}`);
           setSelectedTables(currentSelectedTables);
         }
         

@@ -91,7 +91,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       }
 
-      logInfo('[ANALYTICS] Calculating stats for time range:', timeRange, 'from:', startDate.toISOString());
+      logInfo(`[ANALYTICS] Calculating stats for time range: ${timeRange} from: ${startDate.toISOString()}`);
 
       // Fetch orders from database
       const { data: ordersData, error: ordersError } = await supabase
@@ -270,7 +270,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
           filter: `venue_id=eq.${venueId}`
         }, 
         (payload: any) => {
-          logInfo('[ANALYTICS] Real-time order change detected:', payload.event, payload.new?.id);
+          logInfo(`[ANALYTICS] Real-time order change detected: ${payload.event} ${payload.new?.id}`);
           
           // Check if the order is within the current time range
           const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;

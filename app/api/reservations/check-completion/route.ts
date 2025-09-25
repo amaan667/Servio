@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    logInfo('[CHECK COMPLETION] Successfully completed', updatedReservations?.length || 0, 'reservations for table', tableId);
+    logInfo(`[CHECK COMPLETION] Successfully completed ${updatedReservations?.length || 0} reservations for table ${tableId}`);
 
     return NextResponse.json({
       ok: true,

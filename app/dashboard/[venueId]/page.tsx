@@ -7,7 +7,7 @@ import { hasServerAuthCookie } from '@/lib/server-utils';
 // import { log } from '@/lib/debug'; // Removed debug import
 import DashboardClient from './page.client';
 import { todayWindowForTZ } from '@/lib/time';
-import { logError } from "@/lib/logger";
+import { logInfo, logError } from "@/lib/logger";
 
 export default async function VenuePage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
@@ -21,7 +21,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueId:
     const supabase = await createServerSupabase();
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    log('VENUE PAGE SSR user', { hasUser: !!user, error: userError?.message });
+    logInfo(`'ENUE PAGE SSR user' { hasUser: !!user error: userError?.message }`);
     
     if (userError) {
       logError('Auth error:', userError);

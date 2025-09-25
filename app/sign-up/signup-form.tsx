@@ -104,7 +104,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
 
       if (data.user) {
         // Log the sign-up result for debugging
-        logInfo('Sign-up successful, user data:', data.user);
+        logInfo(`'Sign-up successful user data:' data.user`);
         
         // Check if this is actually a new user or an existing user
         // If the user has identities but we're trying to sign up with email, they might already exist

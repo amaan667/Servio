@@ -73,7 +73,7 @@ export default function StaffClient({
         const res = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
         const j = await res.json().catch(() => ({}));
         if (res.ok && !j?.error) {
-          logInfo('[AUTH DEBUG] Staff loaded:', j.staff?.length || 0, 'members');
+          logInfo(`'[AUTH DEBUG] Staff loaded:' j.staff?.length || 0 'members'`);
           setStaff(j.staff || []);
           setStaffLoaded(true);
         } else {
@@ -98,7 +98,7 @@ export default function StaffClient({
       const j = await res.json().catch(() => ({}));
       if (res.ok && !j?.error) {
         const shifts = j.shifts || [];
-        logInfo('[AUTH DEBUG] Shifts loaded:', shifts.length, 'shifts');
+        logInfo(`'[AUTH DEBUG] Shifts loaded:' shifts.length 'shifts'`);
         setAllShifts(shifts);
         setShiftsLoaded(true);
       } else {

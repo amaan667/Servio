@@ -30,7 +30,7 @@ export default async function StaffPage({
     const supabase = await createServerSupabase();
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    log('STAFF SSR user', { hasUser: !!user, error: userError?.message });
+    logInfo(`'TAFF SSR user' { hasUser: !!user error: userError?.message }`);
     
     if (userError) {
       logError('[STAFF] Auth error:', userError);
