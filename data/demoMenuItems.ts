@@ -6,7 +6,7 @@ export const demoMenuItems = [
     description: "Rich espresso with steamed milk and foam",
     price: 3.50,
     category: "Coffee",
-    image: "/images/menu/cappuccino.svg",
+    image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "2", 
@@ -14,7 +14,7 @@ export const demoMenuItems = [
     description: "Smooth espresso with steamed milk",
     price: 4.00,
     category: "Coffee",
-    image: "/images/menu/latte.svg",
+    image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "3",
@@ -22,7 +22,7 @@ export const demoMenuItems = [
     description: "Espresso with hot water for a clean, bold taste",
     price: 3.00,
     category: "Coffee",
-    image: "/images/menu/americano.svg",
+    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "4",
@@ -30,7 +30,7 @@ export const demoMenuItems = [
     description: "Espresso with chocolate and steamed milk",
     price: 4.50,
     category: "Coffee",
-    image: "/images/menu/mocha.svg",
+    image: "https://images.unsplash.com/photo-1511920170033-f8396924c348?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "5",
@@ -38,7 +38,7 @@ export const demoMenuItems = [
     description: "Double espresso with microfoam milk",
     price: 4.25,
     category: "Coffee",
-    image: "/images/menu/flat-white.svg",
+    image: "https://images.unsplash.com/photo-1522992319-0365e5f11656?w=200&h=200&fit=crop&crop=center",
   },
 
   // Cold Beverages
@@ -48,7 +48,7 @@ export const demoMenuItems = [
     description: "Cold brew coffee served over ice",
     price: 3.75,
     category: "Cold Drinks",
-    image: "/images/menu/iced-coffee.svg",
+    image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "7",
@@ -56,7 +56,7 @@ export const demoMenuItems = [
     description: "Freshly squeezed orange juice",
     price: 3.50,
     category: "Cold Drinks",
-    image: "/images/menu/orange-juice.svg",
+    image: "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "8",
@@ -64,7 +64,7 @@ export const demoMenuItems = [
     description: "Refreshing sparkling water with lemon",
     price: 2.50,
     category: "Cold Drinks",
-    image: "/images/menu/sparkling-water.svg",
+    image: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "9",
@@ -72,7 +72,7 @@ export const demoMenuItems = [
     description: "Premium green tea with antioxidants",
     price: 2.75,
     category: "Cold Drinks",
-    image: "/images/menu/green-tea.svg",
+    image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "10",
@@ -80,7 +80,7 @@ export const demoMenuItems = [
     description: "Acai bowl with fresh berries and granola",
     price: 7.50,
     category: "Cold Drinks",
-    image: "/images/menu/smoothie-bowl.svg",
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200&h=200&fit=crop&crop=center",
   },
 
   // Breakfast & Pastries
@@ -90,7 +90,7 @@ export const demoMenuItems = [
     description: "Buttery, flaky pastry",
     price: 2.50,
     category: "Pastries",
-    image: "/images/menu/croissant.svg",
+    image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "12",
@@ -98,7 +98,7 @@ export const demoMenuItems = [
     description: "Chocolate-filled croissant",
     price: 3.25,
     category: "Pastries",
-    image: "/images/menu/pain-au-chocolat.svg",
+    image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "13",
@@ -106,7 +106,7 @@ export const demoMenuItems = [
     description: "Fresh baked muffin with blueberries",
     price: 3.00,
     category: "Pastries",
-    image: "/images/menu/blueberry-muffin.svg",
+    image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "14",
@@ -114,7 +114,7 @@ export const demoMenuItems = [
     description: "Sweet roll with cinnamon and cream cheese frosting",
     price: 4.50,
     category: "Pastries",
-    image: "/images/menu/cinnamon-roll.svg",
+    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "15",
@@ -122,7 +122,7 @@ export const demoMenuItems = [
     description: "Smashed avocado on sourdough with sea salt",
     price: 6.50,
     category: "Pastries",
-    image: "/images/menu/avocado-toast.svg",
+    image: "https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=200&h=200&fit=crop&crop=center",
   },
 
   // Main Food
@@ -132,7 +132,7 @@ export const demoMenuItems = [
     description: "Triple-decker with turkey, bacon, lettuce, and tomato",
     price: 8.50,
     category: "Food",
-    image: "/images/menu/club-sandwich.svg",
+    image: "https://images.unsplash.com/photo-1551782450-17144efb9c50?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "17",
@@ -140,7 +140,7 @@ export const demoMenuItems = [
     description: "Fresh romaine with parmesan, croutons, and caesar dressing",
     price: 7.50,
     category: "Food",
-    image: "/images/menu/caesar-salad.svg",
+    image: "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "18",
@@ -148,7 +148,7 @@ export const demoMenuItems = [
     description: "Classic quiche with bacon, cheese, and cream",
     price: 6.75,
     category: "Food",
-    image: "/images/menu/quiche-lorraine.svg",
+    image: "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "19",
@@ -156,7 +156,7 @@ export const demoMenuItems = [
     description: "Grilled chicken with mozzarella and pesto",
     price: 7.25,
     category: "Food",
-    image: "/images/menu/chicken-panini.svg",
+    image: "https://images.unsplash.com/photo-1529042410759-befb1204b468?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "20",
@@ -164,7 +164,7 @@ export const demoMenuItems = [
     description: "Chef's daily selection of homemade soup",
     price: 5.50,
     category: "Food",
-    image: "/images/menu/soup-of-day.svg",
+    image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=200&fit=crop&crop=center",
   },
 
   // Desserts
@@ -174,7 +174,7 @@ export const demoMenuItems = [
     description: "Rich chocolate cake with ganache frosting",
     price: 4.75,
     category: "Desserts",
-    image: "/images/menu/chocolate-cake.svg",
+    image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "22",
@@ -182,7 +182,7 @@ export const demoMenuItems = [
     description: "Classic Italian dessert with coffee and mascarpone",
     price: 5.25,
     category: "Desserts",
-    image: "/images/menu/tiramisu.svg",
+    image: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "23",
@@ -190,7 +190,7 @@ export const demoMenuItems = [
     description: "New York style cheesecake with berry compote",
     price: 4.50,
     category: "Desserts",
-    image: "/images/menu/cheesecake.svg",
+    image: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "24",
@@ -198,7 +198,7 @@ export const demoMenuItems = [
     description: "Homemade apple pie with vanilla ice cream",
     price: 5.00,
     category: "Desserts",
-    image: "/images/menu/apple-pie.svg",
+    image: "https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=200&h=200&fit=crop&crop=center",
   },
   {
     id: "25",
@@ -206,6 +206,6 @@ export const demoMenuItems = [
     description: "Three scoops with chocolate sauce and whipped cream",
     price: 4.25,
     category: "Desserts",
-    image: "/images/menu/ice-cream-sundae.svg",
+    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=200&h=200&fit=crop&crop=center",
   },
 ];
