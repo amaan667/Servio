@@ -97,6 +97,16 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const [editItemDraft, setEditItemDraft] = useState<Partial<MenuItem> | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showCategoriesManagement, setShowCategoriesManagement] = useState(false);
+  
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('[CATEGORIES DEBUG] showCategoriesManagement state changed:', showCategoriesManagement);
+  }, [showCategoriesManagement]);
+  
+  // Debug: Log initial state
+  useEffect(() => {
+    console.log('[CATEGORIES DEBUG] Component mounted, initial showCategoriesManagement:', showCategoriesManagement);
+  }, []);
   const [newCategoryName, setNewCategoryName] = useState("");
 
   // Handle venue ID format - the actual venue_id in database has 'venue-' prefix
@@ -578,7 +588,8 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
   const resetToPdfOrder = () => {
     if (categoryOrder && Array.isArray(categoryOrder)) {
       setExpandedCategories(new Set(categoryOrder));
-      setShowCategoriesManagement(true);
+      // Don't automatically expand the categories management section
+      // setShowCategoriesManagement(true);
     }
   };
   const toggleSelectItem = (id: string) => {
@@ -722,7 +733,10 @@ export function MenuManagement({ venueId, session, refreshTrigger }: MenuManagem
             <span>Categories Management</span>
             <Button
               variant="outline"
-              onClick={() => setShowCategoriesManagement(!showCategoriesManagement)}
+              onClick={() => {
+                console.log('[CATEGORIES DEBUG] Button clicked, current state:', showCategoriesManagement);
+                setShowCategoriesManagement(!showCategoriesManagement);
+              }}
             >
               {showCategoriesManagement ? (
                 <>
