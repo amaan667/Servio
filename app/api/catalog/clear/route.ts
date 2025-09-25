@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[CATALOG CLEAR] Clearing catalog for venue:', venueId);
 
     const supabase = await createAdminClient();
 
@@ -62,10 +61,8 @@ export async function POST(req: NextRequest) {
       results[operation.table] = deletedCount;
       totalDeleted += deletedCount;
       
-      console.log(`[CATALOG CLEAR] Cleared ${deletedCount} ${operation.description}`);
     }
 
-    console.log('[CATALOG CLEAR] Successfully cleared catalog:', results);
 
     return NextResponse.json({
       ok: true,

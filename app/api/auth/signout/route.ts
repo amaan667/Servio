@@ -3,7 +3,6 @@ import { createServerSupabase } from '@/lib/supabase/server';
 
 export async function POST() {
   try {
-    console.log('[SIGNOUT API] Starting signout process');
     
     const supabase = await createServerSupabase();
     
@@ -11,11 +10,8 @@ export async function POST() {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError) {
-      console.log('[SIGNOUT API] Error getting user:', userError.message);
     } else if (user) {
-      console.log('[SIGNOUT API] Signing out user:', user.id);
     } else {
-      console.log('[SIGNOUT API] No authenticated user found');
     }
     
     // Perform the signout
@@ -29,7 +25,6 @@ export async function POST() {
       }, { status: 500 });
     }
     
-    console.log('[SIGNOUT API] Signout successful');
     
     // Create a response that clears cookies
     const response = NextResponse.json({ ok: true });

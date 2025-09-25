@@ -27,7 +27,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:PUBLIC] Fetched ${questions?.length || 0} active questions for venue ${venueId}`);
     
     return NextResponse.json({ 
       questions: questions || [],

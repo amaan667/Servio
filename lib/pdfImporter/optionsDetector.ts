@@ -20,10 +20,8 @@ export function detectOptionsAndVariants(
   blocks: TextBlock[], 
   options: ProcessingOptions
 ): { items: ParsedItem[], optionGroups: OptionGroup[] } {
-  console.log('[OPTIONS_DETECT] Starting options detection...');
   
   if (!options.enableOptionDetection) {
-    console.log('[OPTIONS_DETECT] Option detection disabled');
     return { items, optionGroups: [] };
   }
   
@@ -58,8 +56,6 @@ export function detectOptionsAndVariants(
     }
   }
   
-  console.log('[OPTIONS_DETECT] Found', optionGroups.length, 'option groups');
-  console.log('[OPTIONS_DETECT] Found', processedItems.reduce((sum, item) => sum + (item.variants?.length || 0), 0), 'variants');
   
   return { items: processedItems, optionGroups };
 }
@@ -274,7 +270,6 @@ export function filterModifierBlocks(blocks: TextBlock[]): TextBlock[] {
   return blocks.filter(block => {
     // Skip blocks that are clearly modifiers
     if (isModifierBlock(block, blocks)) {
-      console.log('[OPTIONS_DETECT] Filtering out modifier block:', block.text);
       return false;
     }
     

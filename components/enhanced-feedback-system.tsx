@@ -99,7 +99,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
       const supabase = createClient();
       if (!supabase) throw new Error('Supabase client not available');
 
-      console.log('[FEEDBACK] Fetching feedback for venue:', venueId);
       let query = supabase
         .from('feedback')
         .select('*')
@@ -604,7 +603,6 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                         onClick={() => {
                           setCreatingQuestion(true);
                           // In a real app, you'd send this to your backend to save
-                          console.log('Creating question:', newQuestion);
                           setNewQuestion({ prompt: '', type: 'stars', choices: [], is_active: true });
                           setCreatingQuestion(false);
                         }}

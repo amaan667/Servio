@@ -37,7 +37,6 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       const storedOrder = localStorage.getItem(`category-order-${venueId}`);
       if (storedOrder) {
         const parsedOrder = JSON.parse(storedOrder);
-        console.log('[CATEGORIES] Loaded from localStorage:', parsedOrder);
         setCategories(parsedOrder);
       }
 
@@ -49,7 +48,6 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         // Set original categories from PDF upload
         if (data.originalCategories && data.originalCategories.length > 0) {
           setOriginalCategories(data.originalCategories);
-          console.log('[CATEGORIES] Loaded original categories from PDF:', data.originalCategories);
         }
         
         // If no stored order, use the original categories or current categories
@@ -344,8 +342,6 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
 
     setSaving(true);
     try {
-      console.log('[CATEGORIES RESET] Starting reset for venue:', venueId);
-      console.log('[CATEGORIES RESET] Current categories before reset:', categories);
       
       // Always call the reset API to get the original categories from PDF
       const response = await fetch('/api/menu/categories/reset', {
@@ -354,14 +350,11 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         body: JSON.stringify({ venueId })
       });
 
-      console.log('[CATEGORIES RESET] API response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('[CATEGORIES RESET] API response data:', data);
         
         if (data.originalCategories && data.originalCategories.length > 0) {
-          console.log('[CATEGORIES RESET] Setting categories to:', data.originalCategories);
           
           // Reset to original categories from PDF
           setCategories(data.originalCategories);
@@ -375,7 +368,6 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
           onCategoriesUpdate?.(data.originalCategories);
         } else {
           // No original categories found
-          console.log('[CATEGORIES RESET] No original categories in response');
           toast({
             title: "No Original Categories",
             description: "No original categories found from PDF upload to reset to.",
@@ -384,7 +376,6 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
         }
       } else {
         const errorData = await response.json();
-        console.log('[CATEGORIES RESET] API error response:', errorData);
         
         if (response.status === 404) {
           // No original categories found

@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
-    console.log('🔍 Debug table 10 order API called');
     
     const supabase = createAdminClient();
     
@@ -23,7 +22,6 @@ export async function GET() {
       }, { status: 500 });
     }
 
-    console.log('📋 Found orders for table 10:', orders);
 
     // Check if any orders need fixing
     const ordersToFix = orders?.filter(order => 
@@ -32,7 +30,6 @@ export async function GET() {
       order.order_status === 'COMPLETED'
     ) || [];
 
-    console.log('🔧 Orders that need fixing:', ordersToFix);
 
     // Fix orders that need it
     if (ordersToFix.length > 0) {
@@ -58,7 +55,6 @@ export async function GET() {
         }
 
         if (Object.keys(updates).length > 0) {
-          console.log(`🔧 Fixing order ${order.id}:`, updates);
           
           const { error: updateError } = await supabase
             .from('orders')
@@ -68,7 +64,6 @@ export async function GET() {
           if (updateError) {
             console.error(`❌ Error updating order ${order.id}:`, updateError);
           } else {
-            console.log(`✅ Successfully updated order ${order.id}`);
           }
         }
       }

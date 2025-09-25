@@ -51,15 +51,6 @@ export function todayWindowForTZ(tz?: string) {
   };
 }
 
-export function liveOrdersWindow() {
-  // Live orders: last 30 minutes from current time
-  const now = DateTime.now().toUTC();
-  const thirtyMinutesAgo = now.minus({ minutes: 30 });
-  
-  return {
-    startUtcISO: thirtyMinutesAgo.toISO(),
-    endUtcISO: now.toISO(),
-  };
-}
+// liveOrdersWindow function removed - use lib/dates.ts instead
 
 

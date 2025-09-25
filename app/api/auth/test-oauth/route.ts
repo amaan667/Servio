@@ -47,12 +47,10 @@ export async function GET(request: NextRequest) {
       }
     };
     
-    console.log('[AUTH DEBUG] OAuth test results:', testResults);
     
     return NextResponse.json(testResults);
     
   } catch (error: any) {
-    console.log('[AUTH DEBUG] OAuth test error:', error.message);
     return NextResponse.json({ 
       error: error.message,
       timestamp: new Date().toISOString()

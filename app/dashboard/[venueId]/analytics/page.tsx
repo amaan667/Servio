@@ -14,13 +14,11 @@ export default async function AnalyticsPage({
   params: Promise<{ venueId: string }>;
 }) {
   const { venueId } = await params;
-  console.log('[ANALYTICS] Page mounted for venue', venueId);
   
   try {
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
     if (!hasAuthCookie) {
-      console.log('[ANALYTICS] No auth cookie found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -35,7 +33,6 @@ export default async function AnalyticsPage({
     }
     
     if (!user) {
-      console.log('[ANALYTICS] No user found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -53,7 +50,6 @@ export default async function AnalyticsPage({
     }
 
     if (!venue) {
-      console.log('[ANALYTICS] Venue not found or user does not own it');
       redirect('/dashboard');
     }
 

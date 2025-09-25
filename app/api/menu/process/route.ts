@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
       const supa = await createClient();
     const { uploadId } = await req.json();
     
-    console.log('[AUTH DEBUG] Processing menu upload:', uploadId);
 
     // Get upload record
     const { data: row, error: fetchErr } = await supa
@@ -25,11 +24,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Upload not found' }, { status: 404 });
     }
 
-    console.log('[AUTH DEBUG] Found upload:', { id: row.id, filename: row.filename, status: row.status });
 
     // Download PDF from Supabase Storage
     const storagePath = row.filename || `${row.venue_id}/${row.sha256}.pdf`;
-    console.log('[AUTH DEBUG] Downloading from storage path:', storagePath);
     
     const { data: file, error: dlErr } = await supa.storage.from('menus').download(storagePath);
     if (dlErr) {
@@ -37,14 +34,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Failed to download file' }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Downloaded file, size:', file.size, 'bytes');
 
     // Extract PDF pages using pdf-lib
     const pdfBytes = await file.arrayBuffer();
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const pageCount = pdfDoc.getPageCount();
     
-    console.log('[AUTH DEBUG] PDF has', pageCount, 'pages');
 
     const pdfPages: string[] = [];
     const maxPages = Math.min(pageCount, 6); // Limit to first 6 pages
@@ -59,7 +54,6 @@ export async function POST(req: NextRequest) {
       const base64 = Buffer.from(singlePageBytes).toString('base64');
       pdfPages.push(`data:application/pdf;base64,${base64}`);
       
-      console.log('[AUTH DEBUG] Extracted page', i + 1, 'size:', singlePageBytes.length, 'bytes');
     }
 
     // Try to extract text from first page for menu-likeness check
@@ -81,7 +75,6 @@ export async function POST(req: NextRequest) {
       });
       
       rawText = visionResponse.choices[0]?.message?.content || '';
-      console.log('[AUTH DEBUG] Extracted text length:', rawText.length);
     } catch (textErr) {
       console.error('[AUTH DEBUG] Failed to extract text:', textErr);
       rawText = 'Failed to extract text';
@@ -89,10 +82,8 @@ export async function POST(req: NextRequest) {
 
     // Check if text is menu-like
     const isMenuLikeResult = isMenuLike(rawText);
-    console.log('[AUTH DEBUG] Menu-likeness result:', isMenuLikeResult);
 
     if (!isMenuLikeResult) {
-      console.log('[AUTH DEBUG] Text not menu-like');
       
       // Update status to needs_review
       await supa
@@ -113,7 +104,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Process all PDF pages with OpenAI Vision
-    console.log('[AUTH DEBUG] Processing', pdfPages.length, 'PDF pages with OpenAI Vision');
     
     const allMenuItems: any[] = [];
     let totalTokens = 0;
@@ -167,11 +157,8 @@ export async function POST(req: NextRequest) {
     results.forEach(result => {
       allMenuItems.push(...result.items);
       totalTokens += result.tokens;
-      console.log('[AUTH DEBUG] Processed page', result.page, 'tokens:', result.tokens);
     });
 
-    console.log('[AUTH DEBUG] Total items extracted:', allMenuItems.length);
-    console.log('[AUTH DEBUG] Total tokens used:', totalTokens);
 
     // Save results
     const { error: updateErr } = await supa

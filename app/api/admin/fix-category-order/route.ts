@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
 
-    console.log(`[FIX CATEGORY ORDER] Starting for venue: ${venueId}`);
     
     // Get current menu items to derive the correct category order
     const { data: menuItems, error: itemsError } = await supabase
@@ -31,7 +30,6 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log(`[FIX CATEGORY ORDER] Found ${menuItems.length} menu items`);
 
     // Derive category order from the order items appear in the database
     const categoryFirstAppearance: { [key: string]: number } = {};
@@ -47,7 +45,6 @@ export async function POST(req: NextRequest) {
       categoryFirstAppearance[a] - categoryFirstAppearance[b]
     );
 
-    console.log('[FIX CATEGORY ORDER] Derived correct category order:', correctCategoryOrder);
 
     // Update the most recent menu upload with the correct category order
     const { data: uploads, error: fetchError } = await supabase
@@ -66,7 +63,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!uploads || uploads.length === 0) {
-      console.log('[FIX CATEGORY ORDER] No menu uploads found for this venue');
       return NextResponse.json({ 
         ok: false, 
         error: 'No menu uploads found for this venue' 
@@ -74,7 +70,6 @@ export async function POST(req: NextRequest) {
     }
 
     const latestUpload = uploads[0];
-    console.log('[FIX CATEGORY ORDER] Found latest upload:', latestUpload.id);
 
     // Update the category order
     const { data: updateData, error: updateError } = await supabase
@@ -93,7 +88,6 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log('[FIX CATEGORY ORDER] Successfully updated category order!');
     
     return NextResponse.json({ 
       ok: true, 

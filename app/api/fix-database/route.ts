@@ -3,12 +3,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST() {
   try {
-    console.log('🔧 Applying database fix...');
     
     const supabase = createAdminClient();
     
     // 1. Fix dashboard counts to include UNPAID orders
-    console.log('Fixing dashboard counts to include UNPAID orders...');
     const { error: dashboardError } = await supabase.rpc('exec_sql', {
       sql: `
         -- Drop the existing function
@@ -123,11 +121,9 @@ export async function POST() {
     if (dashboardError) {
       console.error('Dashboard fix error:', dashboardError);
     } else {
-      console.log('✅ Dashboard counts fixed to include UNPAID orders');
     }
     
     // 2. Apply aggressive table reset for new day
-    console.log('Applying aggressive table reset for new day...');
     const fs = require('fs');
     const path = require('path');
     const sqlPath = path.join(process.cwd(), 'reset-all-tables-new-day.sql');
@@ -140,17 +136,14 @@ export async function POST() {
     if (tableResetError) {
       console.error('Table reset error:', tableResetError);
     } else {
-      console.log('✅ All tables reset for new day (counts should be 0)');
     }
     
     // 3. Add missing column
-    console.log('Adding reservation_duration_minutes column...');
     const { error: columnError } = await supabase.rpc('exec_sql', {
       sql: 'ALTER TABLE table_sessions ADD COLUMN IF NOT EXISTS reservation_duration_minutes INTEGER DEFAULT 60;'
     });
     
     // 2. Add missing enum values
-    console.log('Adding missing enum values...');
     const enumValues = ['RESERVED', 'ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL', 'CLOSED'];
     
     for (const value of enumValues) {
@@ -158,21 +151,17 @@ export async function POST() {
         await supabase.rpc('exec_sql', {
           sql: `ALTER TYPE table_status ADD VALUE IF NOT EXISTS '${value}';`
         });
-        console.log(`Added enum value: ${value}`);
       } catch (error) {
-        console.log(`Enum value ${value} might already exist`);
       }
     }
     
     // 3. Update existing data
-    console.log('Updating existing data...');
     await supabase
       .from('table_sessions')
       .update({ status: 'FREE' })
       .is('status', null);
     
     // 4. Ensure all tables have sessions
-    console.log('Ensuring all tables have sessions...');
     const { data: tables } = await supabase
       .from('tables')
       .select('id, venue_id')
@@ -201,7 +190,6 @@ export async function POST() {
     }
     
     // 5. Recreate the view
-    console.log('Recreating view...');
     await supabase.rpc('exec_sql', {
       sql: `
         DROP VIEW IF EXISTS tables_with_sessions;
@@ -222,7 +210,6 @@ export async function POST() {
       `
     });
     
-    console.log('✅ Database fix completed successfully!');
     
     return NextResponse.json({
       success: true,

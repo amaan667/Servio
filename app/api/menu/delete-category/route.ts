@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[CATEGORIES DELETE] Deleting category:', categoryName, 'for venue:', venueId);
 
     const supabase = await createAdminClient();
 
@@ -32,7 +31,6 @@ export async function POST(request: NextRequest) {
     }
 
     const itemsToDelete = menuItems || [];
-    console.log('[CATEGORIES DELETE] Found items to delete:', itemsToDelete.length);
 
     // Delete all menu items in this category
     if (itemsToDelete.length > 0) {
@@ -86,7 +84,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[CATEGORIES DELETE] Successfully deleted category:', categoryName);
 
     return NextResponse.json({ 
       ok: true, 

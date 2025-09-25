@@ -13,14 +13,6 @@ export async function POST(req: NextRequest) {
       confirmed = false
     } = body;
 
-    console.log('[ENHANCED MERGE] Request received:', {
-      source_table_id,
-      target_table_id,
-      venue_id,
-      requires_confirmation,
-      confirmed,
-      timestamp: new Date().toISOString()
-    });
 
     if (!source_table_id || !target_table_id || !venue_id) {
       return NextResponse.json({ 
@@ -84,12 +76,6 @@ export async function POST(req: NextRequest) {
     const targetState = getTableState(targetTable);
     const mergeScenario = getMergeScenario(sourceTable, targetTable);
 
-    console.log('[ENHANCED MERGE] Table states:', {
-      sourceState: sourceState.state,
-      targetState: targetState.state,
-      mergeScenario: mergeScenario.type,
-      allowed: mergeScenario.allowed
-    });
 
     // Validate merge scenario
     if (!mergeScenario.allowed) {
@@ -135,7 +121,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    console.log('[ENHANCED MERGE] Merge completed successfully:', result.data);
     return NextResponse.json({ 
       success: true, 
       data: result.data,
@@ -154,7 +139,6 @@ export async function POST(req: NextRequest) {
  */
 async function mergeFreeTables(supabase: any, sourceTable: any, targetTable: any) {
   try {
-    console.log('[ENHANCED MERGE] Merging free tables:', sourceTable.id, targetTable.id);
     
     // Create a new combined session for both tables
     const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;
@@ -221,10 +205,6 @@ async function expandOccupiedTable(supabase: any, sourceTable: any, targetTable:
     const freeTable = sourceIsFree ? sourceTable : targetTable;
     const occupiedTable = sourceIsFree ? targetTable : sourceTable;
     
-    console.log('[ENHANCED MERGE] Expanding occupied table:', {
-      occupiedTable: occupiedTable.id,
-      freeTable: freeTable.id
-    });
 
     // Get the occupied table's session
     const { data: occupiedSession, error: sessionError } = await supabase
@@ -289,10 +269,6 @@ async function expandReservedTable(supabase: any, sourceTable: any, targetTable:
     const freeTable = sourceIsFree ? sourceTable : targetTable;
     const reservedTable = sourceIsFree ? targetTable : sourceTable;
     
-    console.log('[ENHANCED MERGE] Expanding reserved table:', {
-      reservedTable: reservedTable.id,
-      freeTable: freeTable.id
-    });
 
     // Update reserved table label to include the free table
     const newLabel = `${reservedTable.label} + ${freeTable.label}`;
@@ -341,7 +317,6 @@ async function expandReservedTable(supabase: any, sourceTable: any, targetTable:
  */
 async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable: any) {
   try {
-    console.log('[ENHANCED MERGE] Merging occupied tables:', sourceTable.id, targetTable.id);
     
     // Get both sessions
     const { data: sessions, error: sessionsError } = await supabase
@@ -443,7 +418,6 @@ async function mergeOccupiedTables(supabase: any, sourceTable: any, targetTable:
  */
 async function mergeReservedTables(supabase: any, sourceTable: any, targetTable: any) {
   try {
-    console.log('[ENHANCED MERGE] Merging reserved tables:', sourceTable.id, targetTable.id);
     
     // Update table labels
     const combinedLabel = `${sourceTable.label} + ${targetTable.label}`;

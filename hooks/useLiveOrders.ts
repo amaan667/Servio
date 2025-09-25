@@ -103,13 +103,13 @@ export function useLiveOrders(venueId: string) {
     fetchOrders()
   }, [fetchOrders])
 
-  // Auto-refresh every 15 seconds
+  // Auto-refresh every 2 minutes
   useEffect(() => {
     if (!venueId) return
 
     const interval = setInterval(() => {
       fetchOrders()
-    }, 15000)
+    }, 120000)
 
     return () => clearInterval(interval)
   }, [venueId, fetchOrders])

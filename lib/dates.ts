@@ -53,12 +53,6 @@ export function liveOrdersWindow() {
     endUtcISO: now.toISOString(),
   };
   
-  console.log('[DEBUG] liveOrdersWindow calculation:', {
-    now: now.toISOString(),
-    thirtyMinutesAgo: thirtyMinutesAgo.toISOString(),
-    result
-  });
-  
   return result;
 }
 
@@ -73,14 +67,6 @@ export function earlierTodayWindow(tz?: string) {
     startUtcISO: startUtcISO, // Start of today
     endUtcISO: liveWindow.startUtcISO, // Start of live window (exclusive)
   };
-  
-  console.log('[DEBUG] earlierTodayWindow calculation:', {
-    tz,
-    todayStart: startUtcISO,
-    todayEnd: endUtcISO,
-    liveWindowStart: liveWindow.startUtcISO,
-    result
-  });
   
   return result;
 }

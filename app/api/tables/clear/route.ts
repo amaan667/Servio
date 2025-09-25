@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
-    console.log('[AUTH DEBUG] Clearing table runtime state for venue:', venue_id);
 
     const supabase = await createAdminClient();
 
@@ -45,7 +44,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Table runtime state cleared successfully for venue:', venue_id);
 
     return NextResponse.json({ 
       ok: true, 

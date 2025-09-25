@@ -3,14 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
   try {
-    console.log('[MARK PAID] ===== MARK ORDER AS PAID API CALLED =====');
-    console.log('[MARK PAID] Request received at:', new Date().toISOString());
     
     const { orderId } = await req.json();
-    console.log('[MARK PAID] Order ID:', orderId);
     
     if (!orderId) {
-      console.log('[MARK PAID] ERROR: Order ID is required');
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
@@ -58,7 +54,6 @@ export async function POST(req: Request) {
 
         if (completionResponse.ok) {
           const completionResult = await completionResponse.json();
-          console.log('[MARK PAID] Auto-completion check result:', completionResult);
         }
       } catch (completionError) {
         console.error('[MARK PAID] Error checking reservation completion:', completionError);
@@ -66,8 +61,6 @@ export async function POST(req: Request) {
       }
     }
 
-    console.log('[MARK PAID] Successfully marked order as paid:', orderId);
-    console.log('[MARK PAID] ===== MARK ORDER AS PAID COMPLETED SUCCESSFULLY =====');
     
     return NextResponse.json({ 
       success: true,

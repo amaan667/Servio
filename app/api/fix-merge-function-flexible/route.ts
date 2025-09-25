@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('[FIX MERGE FUNCTION FLEXIBLE] Starting flexible merge function fix...');
     
     const supabase = createAdminClient();
     
@@ -13,7 +12,6 @@ export async function POST(req: NextRequest) {
     const sqlPath = path.join(process.cwd(), 'fix-merge-function-flexible.sql');
     const sql = fs.readFileSync(sqlPath, 'utf8');
     
-    console.log('[FIX MERGE FUNCTION FLEXIBLE] SQL content loaded, length:', sql.length);
     
     // Split the SQL into individual statements
     const statements = sql
@@ -21,14 +19,11 @@ export async function POST(req: NextRequest) {
       .map((stmt: string) => stmt.trim())
       .filter((stmt: string) => stmt.length > 0 && !stmt.startsWith('--'));
     
-    console.log('[FIX MERGE FUNCTION FLEXIBLE] Found', statements.length, 'SQL statements');
     
     // Execute each statement
     for (let i = 0; i < statements.length; i++) {
       const statement = statements[i];
       if (statement.trim()) {
-        console.log(`[FIX MERGE FUNCTION FLEXIBLE] Executing statement ${i + 1}/${statements.length}`);
-        console.log(`[FIX MERGE FUNCTION FLEXIBLE] Statement:`, statement.substring(0, 100) + '...');
         
         try {
           const { data, error } = await supabase.rpc('exec_sql', { 
@@ -39,7 +34,6 @@ export async function POST(req: NextRequest) {
             console.error(`[FIX MERGE FUNCTION FLEXIBLE] Error in statement ${i + 1}:`, error);
             // Continue with other statements
           } else {
-            console.log(`[FIX MERGE FUNCTION FLEXIBLE] Statement ${i + 1} executed successfully`);
           }
         } catch (err) {
           console.error(`[FIX MERGE FUNCTION FLEXIBLE] Exception in statement ${i + 1}:`, err);
@@ -49,14 +43,12 @@ export async function POST(req: NextRequest) {
     }
     
     // Test the updated function
-    console.log('[FIX MERGE FUNCTION FLEXIBLE] Testing updated function...');
     
     // Test with the specific tables that were failing
     const testTableA = '68192cab-8658-4d45-bcc3-c52cf94f9917';
     const testTableB = '419c6d0a-8df2-4d95-a83f-6593eb74df10';
     const testVenueId = 'venue-1e02af4d';
     
-    console.log('[FIX MERGE FUNCTION FLEXIBLE] Testing with tables:', { testTableA, testTableB, testVenueId });
     
     // First check the current status of these tables
     const { data: tableAInfo, error: tableAError } = await supabase
@@ -71,8 +63,6 @@ export async function POST(req: NextRequest) {
       .eq('id', testTableB)
       .single();
     
-    console.log('[FIX MERGE FUNCTION FLEXIBLE] Table A info:', tableAInfo);
-    console.log('[FIX MERGE FUNCTION FLEXIBLE] Table B info:', tableBInfo);
     
     // Check sessions
     const { data: sessionA, error: sessionAError } = await supabase
@@ -89,8 +79,6 @@ export async function POST(req: NextRequest) {
       .is('closed_at', null)
       .maybeSingle();
     
-    console.log('[FIX MERGE FUNCTION FLEXIBLE] Session A:', sessionA);
-    console.log('[FIX MERGE FUNCTION FLEXIBLE] Session B:', sessionB);
     
     return NextResponse.json({ 
       success: true, 

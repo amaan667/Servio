@@ -28,7 +28,6 @@ export async function POST(req: Request) {
       comment: trimmedComment
     };
 
-    console.log('[AUTH DEBUG] Submitting feedback:', feedbackData);
 
     const { error } = await admin
       .from('order_feedback')
@@ -42,7 +41,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Feedback submitted successfully');
     return NextResponse.json({ ok: true });
     
   } catch (e: any) {

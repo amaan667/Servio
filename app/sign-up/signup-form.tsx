@@ -82,7 +82,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
 
       if (error) {
         // Log the actual error message for debugging
-        console.log('Sign-up error:', error.message);
         
         // Check if the error is due to email already existing
         const errorMessage = error.message.toLowerCase();
@@ -103,7 +102,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
 
       if (data.user) {
         // Log the sign-up result for debugging
-        console.log('Sign-up successful, user data:', data.user);
         
         // Check if this is actually a new user or an existing user
         // If the user has identities but we're trying to sign up with email, they might already exist
@@ -126,7 +124,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
         
         if (currentUser) {
           // User is immediately authenticated, redirect to home
-          console.log('User immediately authenticated, redirecting to home');
           router.push('/');
         } else {
           // User is not authenticated after sign-up attempt
@@ -135,7 +132,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           // 2. Existing account (Supabase doesn't return error for existing emails)
           
           // Check if this is an existing account by attempting to sign in
-          console.log('User not authenticated after sign-up, checking if account exists...');
           const { data: signInData, error: signInError } = await supabaseBrowser().auth.signInWithPassword({
             email: formData.email,
             password: formData.password,
@@ -143,14 +139,12 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           
           if (signInData.user && !signInError) {
             // Account already exists - sign them out and show error message
-            console.log('Account already exists, signing out and showing error message');
             await supabaseBrowser().auth.signOut();
             setError('You already have an account with this email. Please sign in instead.');
             setLoading(false);
             return;
           } else {
             // This is a new account, email confirmation is required
-            console.log('Email confirmation required, redirecting to sign-in');
             router.push('/sign-in?message=' + encodeURIComponent('Please check your email to confirm your account before signing in.'));
           }
         }
@@ -166,7 +160,6 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
     setError(null);
     
     try {
-      console.log('[SIGN-UP] Starting Google OAuth sign-up process');
       await onGoogleSignIn();
       // The redirect will happen automatically
     } catch (err: any) {

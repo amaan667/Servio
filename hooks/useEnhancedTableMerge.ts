@@ -42,7 +42,7 @@ export function useEnhancedTableMerge() {
       setIsLoading(true);
       setError(null);
 
-      console.log('[ENHANCED MERGE HOOK] Starting merge:', {
+      console.log('[ENHANCED_TABLE_MERGE] Performing merge:', {
         sourceTableId,
         targetTableId,
         venueId,
@@ -75,7 +75,6 @@ export function useEnhancedTableMerge() {
         };
       }
 
-      console.log('[ENHANCED MERGE HOOK] Merge successful:', result);
       return {
         success: true,
         data: result.data,

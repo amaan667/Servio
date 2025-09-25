@@ -51,26 +51,18 @@ export async function importPDFToMenu(
   const warnings: string[] = [];
   
   try {
-    console.log('[PDF_IMPORT] Starting PDF import process...');
-    console.log('[PDF_IMPORT] Venue ID:', venueId);
-    console.log('[PDF_IMPORT] Options:', options);
     
     // Step 0: Detect PDF source type
-    console.log('[PDF_IMPORT] Step 0: Detecting PDF source type...');
     const sourceInfo = await detectPDFSource(pdfBuffer);
-    console.log('[PDF_IMPORT] Source type:', sourceInfo.type, 'Confidence:', sourceInfo.confidence);
     
     // Step 1: Extract text with bounding boxes
-    console.log('[PDF_IMPORT] Step 1: Extracting text with bounding boxes...');
     let blocks = await extractTextWithBoxes(pdfBuffer);
-    console.log('[PDF_IMPORT] Extracted', blocks.length, 'text blocks');
     
     if (blocks.length === 0) {
       throw new Error('No text blocks could be extracted from PDF');
     }
     
     // Step 2: Normalize and clean text
-    console.log('[PDF_IMPORT] Step 2: Normalizing and cleaning text...');
     blocks = blocks.map(block => ({
       ...block,
       text: normalizeText(block.text)
@@ -78,11 +70,9 @@ export async function importPDFToMenu(
     
     // Merge hyphenated words
     blocks = mergeHyphenatedWords(blocks);
-    console.log('[PDF_IMPORT] Text normalization completed');
     
     // Step 3: Determine processing mode
     const processingMode = determineProcessingMode(options.mode, sourceInfo, blocks.length);
-    console.log('[PDF_IMPORT] Processing mode:', processingMode);
     
     let catalog: ParsedCatalog;
     let coverage: CoverageReport;
@@ -91,7 +81,6 @@ export async function importPDFToMenu(
     try {
       if (processingMode === 'high_recall') {
         // Step 4a: Run high-recall mode
-        console.log('[PDF_IMPORT] Step 4a: Running high-recall mode...');
         const highRecallOptions = { ...HIGH_RECALL_OPTIONS, ...options.customOptions };
         const highRecallResult = await runHighRecallMode(blocks, highRecallOptions);
         
@@ -100,7 +89,6 @@ export async function importPDFToMenu(
         warnings.push(...highRecallResult.warnings);
         
         // Step 5a: Run precision mode on high-recall results
-        console.log('[PDF_IMPORT] Step 5a: Running precision mode...');
         const precisionOptions = { ...PRECISION_OPTIONS, ...options.customOptions };
         const precisionResult = await runPrecisionMode(blocks, highRecallResult, precisionOptions);
         
@@ -110,7 +98,6 @@ export async function importPDFToMenu(
         
       } else {
         // Step 4b: Run precision mode directly
-        console.log('[PDF_IMPORT] Step 4b: Running precision mode...');
         const precisionOptions = { ...PRECISION_OPTIONS, ...options.customOptions };
         const precisionResult = await runPrecisionMode(blocks, undefined, precisionOptions);
         
@@ -183,12 +170,10 @@ export async function importPDFToMenu(
     }
     
     // Step 6: Apply post-processing
-    console.log('[PDF_IMPORT] Step 6: Applying post-processing...');
     catalog = applyPostProcessing(catalog, options);
     
     // Step 7: Validate results
     if (options.enableValidation !== false) {
-      console.log('[PDF_IMPORT] Step 7: Validating results...');
       validation = validateParsedCatalog(catalog);
       
       if (!validation.valid) {
@@ -201,7 +186,6 @@ export async function importPDFToMenu(
     }
     
     // Step 8: Generate final coverage report
-    console.log('[PDF_IMPORT] Step 8: Generating coverage report...');
     coverage = generateCoverageReport(
       [], // Price tokens will be extracted from catalog
       catalog.categories.flatMap(cat => cat.items),
@@ -217,7 +201,6 @@ export async function importPDFToMenu(
     }
     
     // Step 10: Replace catalog atomically
-    console.log('[PDF_IMPORT] Step 10: Replacing catalog atomically...');
     const replaceResult = await replaceCatalogAtomically(venueId, catalog, supabaseClient);
     
     if (!replaceResult.success) {
@@ -228,10 +211,6 @@ export async function importPDFToMenu(
     const totalItems = catalog.categories.reduce((sum, cat) => sum + cat.items.length, 0);
     const coverageRate = coverage.pricesFound > 0 ? (coverage.pricesAttached / coverage.pricesFound) * 100 : 0;
     
-    console.log('[PDF_IMPORT] Import completed successfully');
-    console.log('[PDF_IMPORT] Processing time:', processingTime, 'ms');
-    console.log('[PDF_IMPORT] Items processed:', totalItems);
-    console.log('[PDF_IMPORT] Coverage rate:', coverageRate.toFixed(1), '%');
     
     return {
       success: true,
@@ -296,7 +275,6 @@ function determineProcessingMode(
  * Applies post-processing to the catalog
  */
 function applyPostProcessing(catalog: ParsedCatalog, options: any): ParsedCatalog {
-  console.log('[POST_PROCESS] Applying post-processing...');
   
   // Sanitize item data
   const sanitizedCategories = catalog.categories.map(category => ({

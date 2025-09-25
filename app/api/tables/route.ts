@@ -96,14 +96,6 @@ export async function GET(req: Request) {
         block_window_mins: 0
       };
       
-      console.log('[TABLES API DEBUG] Table processed:', {
-        id: table.id,
-        label: table.label,
-        hasSession: !!session,
-        status: result.status,
-        sessionStatus: session?.status
-      });
-      
       return result;
     }) || [];
 
@@ -112,7 +104,6 @@ export async function GET(req: Request) {
     const tablesWithoutSessions = tablesWithSessions.filter(t => !t.session_id);
     
     if (tablesWithoutSessions.length > 0) {
-      console.log('[TABLES API DEBUG] Creating missing sessions for tables:', tablesWithoutSessions.map(t => t.id));
       
       for (const table of tablesWithoutSessions) {
         const { error: sessionError } = await adminSupabase
@@ -128,7 +119,6 @@ export async function GET(req: Request) {
         if (sessionError) {
           console.error('[TABLES API DEBUG] Error creating session for table:', table.id, sessionError);
         } else {
-          console.log('[TABLES API DEBUG] Created session for table:', table.id);
         }
       }
       
@@ -153,12 +143,6 @@ export async function GET(req: Request) {
       });
     }
 
-    console.log('[TABLES API DEBUG] Final tables data:', {
-      tablesCount: tablesWithSessions.length,
-      sessionsCount: sessions?.length || 0,
-      tableStatuses: tablesWithSessions.map(t => ({ id: t.id, label: t.label, status: t.status }))
-    });
-
     return NextResponse.json({
       ok: true,
       tables: tablesWithSessions
@@ -176,8 +160,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { venue_id, label, seat_count, area } = body;
 
-    console.log('[TABLES POST] Request body:', body);
-    console.log('[TABLES POST] Extracted values:', { venue_id, label, seat_count, area });
 
     if (!venue_id || !label) {
       return NextResponse.json({ ok: false, error: 'venue_id and label are required' }, { status: 400 });

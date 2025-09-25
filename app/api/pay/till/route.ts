@@ -29,7 +29,6 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log('[PAY TILL] Processing pay at till for order:', order_id);
 
     // Update order payment status to till
     const { data: order, error: updateError } = await supabase
@@ -51,7 +50,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[PAY TILL] Pay at till order created for order:', order_id);
 
     return NextResponse.json({
       success: true,

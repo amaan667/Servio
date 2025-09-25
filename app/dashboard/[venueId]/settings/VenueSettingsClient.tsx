@@ -86,20 +86,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
   const isGmailUser = user?.email?.endsWith('@gmail.com') || false;
   const isLikelyOAuthUser = isOAuthUser || (isGmailUser && !hasPasswordSet);
   
-  // Debug logging
-  console.log('[AUTH DEBUG] User data:', {
-    hasIdentities: !!user?.identities,
-    identities: user?.identities,
-    appMetadata: user?.app_metadata,
-    hasGoogleIdentity,
-    hasGoogleProvider,
-    isOAuthUser,
-    isGmailUser,
-    isLikelyOAuthUser,
-    hasPasswordSet,
-    userMetadata: user?.user_metadata,
-    email: user?.email
-  });
+  // Debug logging removed for performance
   
   // Determine if we should show "Set Password" or "Change Password"
   // Show "Set Password" only for OAuth users who haven't set a password yet
@@ -160,7 +147,6 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
     setSuccess(null);
 
     try {
-      console.log('[AUTH DEBUG] Starting password update for user:', user.id);
       
       // Update password
       const { error } = await createClient().auth.updateUser({
@@ -172,7 +158,6 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         throw new Error(error.message);
       }
 
-      console.log('[AUTH DEBUG] Password updated successfully');
 
       // If this is an OAuth user setting their first password, mark it in metadata
       if (shouldShowSetPassword) {
@@ -183,7 +168,6 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         if (metadataError) {
           console.error('[AUTH DEBUG] Error updating password metadata:', metadataError);
         } else {
-          console.log('[AUTH DEBUG] Successfully marked password as set in metadata');
         }
       }
 
@@ -268,12 +252,9 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         });
         
         if (!response.ok) {
-          console.log('[AUTH DEBUG] Server-side sign out failed');
         } else {
-          console.log('[AUTH DEBUG] Server-side sign out successful');
         }
       } catch (error) {
-        console.log('[AUTH DEBUG] Sign out error:', error);
       }
       
       // Clear client-side storage
@@ -281,7 +262,6 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
         const { clearAuthStorage } = await import('@/lib/sb-client');
         clearAuthStorage();
       } catch (error) {
-        console.log('[AUTH DEBUG] Error clearing client storage:', error);
       }
       
       router.push('/');

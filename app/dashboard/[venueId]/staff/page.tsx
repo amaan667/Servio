@@ -16,13 +16,11 @@ export default async function StaffPage({
   params: Promise<{ venueId: string }>;
 }) {
   const { venueId } = await params;
-  console.log('[STAFF] Page mounted for venue', venueId);
   
   try {
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
     if (!hasAuthCookie) {
-      console.log('[STAFF] No auth cookie found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -37,7 +35,6 @@ export default async function StaffPage({
     }
     
     if (!user) {
-      console.log('[STAFF] No user found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -55,7 +52,6 @@ export default async function StaffPage({
     }
 
     if (!venue) {
-      console.log('[STAFF] Venue not found or user does not own it');
       redirect('/dashboard');
     }
 
@@ -74,16 +70,11 @@ export default async function StaffPage({
 
     // Calculate staff counts server-side
     const staffData = initialStaff || [];
-    console.log('[STAFF SERVER DEBUG] initialStaff:', initialStaff);
-    console.log('[STAFF SERVER DEBUG] staffData:', staffData);
     
     const totalStaff = staffData.length;
     const activeStaff = staffData.filter((s: any) => s.active === true).length;
     const uniqueRoles = new Set(staffData.map((s: any) => s.role)).size;
     
-    console.log('[STAFF SERVER DEBUG] totalStaff:', totalStaff);
-    console.log('[STAFF SERVER DEBUG] activeStaff:', activeStaff);
-    console.log('[STAFF SERVER DEBUG] uniqueRoles:', uniqueRoles);
     
     // Get active shifts count
     const now = new Date();
@@ -96,7 +87,6 @@ export default async function StaffPage({
       console.error('[STAFF] Error fetching shifts for counts:', shiftsError);
     }
     
-    console.log('[STAFF SERVER DEBUG] allShifts:', allShifts);
     
     const activeShiftsCount = (allShifts || []).filter((shift: any) => {
       const start = new Date(shift.start_time);
@@ -104,7 +94,6 @@ export default async function StaffPage({
       return now >= start && now <= end;
     }).length;
     
-    console.log('[STAFF SERVER DEBUG] activeShiftsCount:', activeShiftsCount);
     
     const initialCounts = {
       total_staff: totalStaff,
@@ -113,7 +102,6 @@ export default async function StaffPage({
       active_shifts_count: activeShiftsCount
     };
     
-    console.log('[STAFF SERVER DEBUG] final initialCounts:', initialCounts);
 
     return (
       <div className="min-h-screen bg-background">

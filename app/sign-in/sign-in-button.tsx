@@ -7,7 +7,6 @@ export default function SignInButton() {
   
   const onGoogle = async () => {
     try {
-      console.log('[AUTH DEBUG] SignInButton: Redirecting to sign-in page');
       router.push('/sign-in');
     } catch (error) {
       console.error('[AUTH DEBUG] SignInButton error:', error);

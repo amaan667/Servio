@@ -84,19 +84,11 @@ export async function GET(req: Request) {
   })) || [];
 
   // Detailed logging for Railway deployment monitoring
-  console.log('[DASHBOARD_ORDERS] ===== DASHBOARD ORDERS DEBUG =====');
-  console.log('[DASHBOARD_ORDERS] Scope:', scope.toUpperCase());
-  console.log('[DASHBOARD_ORDERS] Venue ID:', venueId);
-  console.log('[DASHBOARD_ORDERS] Status Filter:', status);
-  console.log('[DASHBOARD_ORDERS] Limit:', limit);
-  console.log('[DASHBOARD_ORDERS] Order Count:', orders?.length || 0);
   
   if (orders && orders.length > 0) {
-    console.log('[DASHBOARD_ORDERS] Sample Orders (first 3):');
     orders.slice(0, 3).forEach((order, index) => {
       const orderDate = new Date(order.created_at);
       const ageMinutes = Math.round((Date.now() - orderDate.getTime()) / (1000 * 60));
-      console.log(`[DASHBOARD_ORDERS]   Order ${index + 1}: ID=${order.id}, Created=${order.created_at}, Age=${ageMinutes}min, Status=${order.order_status}, Table=${order.table_number}`);
     });
     
     // Age distribution analysis
@@ -110,7 +102,6 @@ export async function GET(req: Request) {
       return acc;
     }, {} as Record<string, number>);
     
-    console.log('[DASHBOARD_ORDERS] Age Distribution:', ageDistribution);
     
     // Status distribution
     const statusDistribution = orders.reduce((acc, order) => {
@@ -118,11 +109,8 @@ export async function GET(req: Request) {
       return acc;
     }, {} as Record<string, number>);
     
-    console.log('[DASHBOARD_ORDERS] Status Distribution:', statusDistribution);
   } else {
-    console.log('[DASHBOARD_ORDERS] No orders found for this scope');
   }
-  console.log('[DASHBOARD_ORDERS] ===== END DASHBOARD ORDERS DEBUG =====');
 
   // Get active tables count based on scope
   let activeTablesQuery = supabase

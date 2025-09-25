@@ -9,7 +9,6 @@ import Providers from "./providers";
 import ThemeToggleFloat from "@/components/ThemeToggleFloat";
 import ConditionalHeader from "@/components/ConditionalHeader";
 import { ErrorBoundary } from "@/components/error-boundary";
-// import DashboardDebugPanel from "@/components/dashboard-debug-panel";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -53,7 +52,6 @@ export default async function RootLayout({
               <ConditionalHeader />
               {children}
               <ThemeToggleFloat />
-              {/* <DashboardDebugPanel /> */}
             </Providers>
           </AuthProvider>
         </ErrorBoundary>

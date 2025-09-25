@@ -160,7 +160,6 @@ export async function POST(req: Request) {
           customerName = orderData.customer_name;
         }
       } catch (error) {
-        console.log('[FEEDBACK] Could not fetch customer name from order:', error);
       }
     }
 
@@ -193,7 +192,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK][R] insert venue=${venue_id} count=${data?.length || 0}`);
     return NextResponse.json({
       success: true,
       saved_count: data?.length || 0

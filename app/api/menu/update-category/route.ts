@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`[UPDATE CATEGORY] Successfully updated ${updatedItems?.length || 0} items from "${oldCategory}" to "${newCategory}"`);
 
     return NextResponse.json({ 
       success: true, 

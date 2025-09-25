@@ -55,7 +55,6 @@ export async function GET(req: Request) {
     const totalCount = questions?.length || 0;
     const activeCount = questions?.filter(q => q.is_active).length || 0;
 
-    console.log(`[FEEDBACK:Q] list venue=${venueId} count=${questions?.length || 0} total=${totalCount} active=${activeCount}`);
     return NextResponse.json({ 
       questions: questions || [],
       totalCount: totalCount,
@@ -157,7 +156,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create question' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:Q] add venue=${venue_id} type=${type} id=${question.id}`);
     return NextResponse.json({ question });
 
   } catch (error: any) {
@@ -245,7 +243,6 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'Failed to update question' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:Q] update id=${id}`);
     return NextResponse.json({ question });
 
   } catch (error: any) {
@@ -295,7 +292,6 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Failed to delete question' }, { status: 500 });
     }
 
-    console.log(`[FEEDBACK:Q] delete id=${id}`);
     return NextResponse.json({ success: true });
 
   } catch (error: any) {

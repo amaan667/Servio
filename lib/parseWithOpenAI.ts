@@ -27,7 +27,6 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
 
   const user = `OCR TEXT:\n${extractedText}`;
 
-  console.log('[MENU PARSE] Attempting strict JSON extraction...');
 
   // 1) Try strict JSON from the model
   const resp = await openai.chat.completions.create({
@@ -42,14 +41,11 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
   });
 
   const raw = resp.choices[0]?.message?.content ?? "";
-  console.log('[MENU PARSE] Raw response length:', raw.length);
-  console.log('[MENU PARSE] Raw response preview:', raw.substring(0, 500));
 
   try {
     // Should be valid JSON by contract
     const parsed = JSON.parse(raw);
     const validated = MenuPayload.parse(parsed);
-    console.log('[MENU PARSE] Successfully parsed and validated:', validated.items.length, 'items');
     return validated;
   } catch (e) {
     console.error('[MENU PARSE] Initial parse failed, attempting repair:', e);
@@ -59,13 +55,11 @@ export async function parseMenuStrict(extractedText: string): Promise<MenuPayloa
 }
 
 function coarseFix(jsonish: string): string {
-  console.log('[MENU PARSE] Attempting coarse fix...');
   
   // Trim junk around JSON and remove BOMs
   const start = jsonish.indexOf("{");
   const end = jsonish.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) {
-    console.log('[MENU PARSE] No valid JSON braces found');
     return jsonish;
   }
   let s = jsonish.slice(start, end + 1);
@@ -77,22 +71,18 @@ function coarseFix(jsonish: string): string {
   // Remove dangling commas before closing brackets/braces
   s = s.replace(/,\s*([}\]])/g, "$1");
   
-  console.log('[MENU PARSE] Coarse fix result length:', s.length);
   return s;
 }
 
 async function repairMenuJson(modelOutput: string) {
-  console.log('[MENU PARSE] Starting repair process...');
   const openai = getOpenAI();
   
   const fixedAttempt = coarseFix(modelOutput);
   try {
     const parsed = JSON.parse(fixedAttempt);
     const validated = MenuPayload.parse(parsed);
-    console.log('[MENU PARSE] Repair successful with coarse fix:', validated.items.length, 'items');
     return validated;
   } catch (e) {
-    console.log('[MENU PARSE] Coarse fix failed, asking model to repair...');
     
     // Ask the model to repair to valid JSON exactly matching schema
     const repair = await openai.chat.completions.create({
@@ -113,12 +103,10 @@ async function repairMenuJson(modelOutput: string) {
     });
     
     const content = repair.choices[0]?.message?.content ?? "{}";
-    console.log('[MENU PARSE] Model repair response length:', content.length);
     
     try {
       const parsed = JSON.parse(content);
       const validated = MenuPayload.parse(parsed);
-      console.log('[MENU PARSE] Model repair successful:', validated.items.length, 'items');
       return validated;
     } catch (finalError) {
       console.error('[MENU PARSE] All repair attempts failed:', finalError);

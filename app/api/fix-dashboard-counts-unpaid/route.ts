@@ -26,7 +26,6 @@ export async function POST() {
       return NextResponse.json({ ok: false, error: `Function test failed: ${testError.message}` }, { status: 500 });
     }
 
-    console.log('Current dashboard_counts result:', testResult);
 
     return NextResponse.json({ 
       ok: true, 

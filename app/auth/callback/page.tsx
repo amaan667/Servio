@@ -17,7 +17,6 @@ function CallbackContent() {
   const addDebugLog = useCallback((message: string) => {
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}`;
-    console.log(logEntry);
     setDebugLogs(prev => [...prev, logEntry]);
   }, []);
 

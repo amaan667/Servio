@@ -24,8 +24,6 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    console.log('[CATEGORIES API] Upload data for venue', venueId, ':', uploadData);
-    console.log('[CATEGORIES API] Upload error:', uploadError);
 
     if (uploadError) {
       console.error('[CATEGORIES API] Error fetching category order:', uploadError);
@@ -63,12 +61,6 @@ export async function GET(request: NextRequest) {
       orderedCategories = [...storedOrder, ...newCategories];
     }
 
-    console.log('[CATEGORIES API] Returning data:', {
-      categories: orderedCategories,
-      originalCategories: uploadData?.category_order || [],
-      hasStoredOrder: !!uploadData?.category_order,
-      menuItemsCount: menuItems?.length || 0
-    });
 
     return NextResponse.json({
       categories: orderedCategories,
@@ -118,7 +110,6 @@ export async function PUT(request: NextRequest) {
     // For now, just return success without persisting to database
     // The category order will be maintained in the frontend state
     // TODO: Implement proper database persistence when schema is confirmed
-    console.log('[CATEGORIES API] Category order updated (in memory only):', categories);
 
     return NextResponse.json({ 
       success: true, 
@@ -196,7 +187,6 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // For now, just return success without persisting to database
-      console.log('[CATEGORIES API] New category added (in memory only):', categoryName);
     }
 
     return NextResponse.json({ 

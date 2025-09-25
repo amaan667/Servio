@@ -23,11 +23,9 @@ export default async function POSPage({ params }: POSPageProps) {
   }
   
   if (!user) {
-    console.log('[POS PAGE] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
 
-  console.log('[POS PAGE] User authenticated:', user.id);
 
   const supabase = await createServerSupabase();
 
@@ -45,7 +43,6 @@ export default async function POSPage({ params }: POSPageProps) {
   }
 
   if (!venue) {
-    console.log('[POS PAGE] Venue not found or not owned by user, redirecting to dashboard');
     redirect('/dashboard');
   }
 

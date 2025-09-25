@@ -11,9 +11,6 @@ export default function TestCallbackPage() {
   useEffect(() => {
     setIsClient(true);
     setCurrentUrl(window.location.href);
-    console.log('[AUTH DEBUG] === TEST CALLBACK PAGE LOADED ===');
-    console.log('[AUTH DEBUG] Test callback page is accessible');
-    console.log('[AUTH DEBUG] Current URL:', window.location.href);
   }, []);
   
   return (

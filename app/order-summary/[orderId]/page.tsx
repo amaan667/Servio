@@ -233,7 +233,6 @@ export default function OrderSummaryPage() {
   useEffect(() => {
     // Set up real-time subscription for order updates
     if (supabase && orderId) {
-      console.log('Setting up real-time subscription for order:', orderId);
       
       const channel = supabase
         .channel(`order-summary-${orderId}`)
@@ -246,14 +245,7 @@ export default function OrderSummaryPage() {
             filter: `id=eq.${orderId}`,
           },
           (payload: any) => {
-            console.log('Order update detected:', payload);
-            
             if (payload.eventType === 'UPDATE') {
-              console.log('Order status updated:', {
-                oldStatus: payload.old?.order_status,
-                newStatus: payload.new?.order_status,
-                orderId: payload.new?.id
-              });
               
               setOrder(prevOrder => {
                 if (!prevOrder) return null;
@@ -262,7 +254,6 @@ export default function OrderSummaryPage() {
               
               setLastUpdate(new Date());
             } else if (payload.eventType === 'DELETE') {
-              console.log('Order deleted:', payload.old);
               setError('This order has been cancelled or deleted');
             }
           }
@@ -270,7 +261,6 @@ export default function OrderSummaryPage() {
         .subscribe();
 
       return () => {
-        console.log('Cleaning up real-time subscription');
         supabase.removeChannel(channel);
       };
     }

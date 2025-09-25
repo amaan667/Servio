@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('[FIX UNMERGE FUNCTION] Starting unmerge function fix...');
     
     const supabase = createAdminClient();
     
@@ -13,7 +12,6 @@ export async function POST(req: NextRequest) {
     const sqlPath = path.join(process.cwd(), 'fix-unmerge-function.sql');
     const sql = fs.readFileSync(sqlPath, 'utf8');
     
-    console.log('[FIX UNMERGE FUNCTION] SQL content loaded, length:', sql.length);
     
     // Split the SQL into individual statements
     const statements = sql
@@ -21,14 +19,11 @@ export async function POST(req: NextRequest) {
       .map((stmt: string) => stmt.trim())
       .filter((stmt: string) => stmt.length > 0 && !stmt.startsWith('--'));
     
-    console.log('[FIX UNMERGE FUNCTION] Found', statements.length, 'SQL statements');
     
     // Execute each statement
     for (let i = 0; i < statements.length; i++) {
       const statement = statements[i];
       if (statement.trim()) {
-        console.log(`[FIX UNMERGE FUNCTION] Executing statement ${i + 1}/${statements.length}`);
-        console.log(`[FIX UNMERGE FUNCTION] Statement:`, statement.substring(0, 100) + '...');
         
         try {
           const { data, error } = await supabase.rpc('exec_sql', { 
@@ -39,7 +34,6 @@ export async function POST(req: NextRequest) {
             console.error(`[FIX UNMERGE FUNCTION] Error in statement ${i + 1}:`, error);
             // Continue with other statements
           } else {
-            console.log(`[FIX UNMERGE FUNCTION] Statement ${i + 1} executed successfully`);
           }
         } catch (err) {
           console.error(`[FIX UNMERGE FUNCTION] Exception in statement ${i + 1}:`, err);
@@ -49,7 +43,6 @@ export async function POST(req: NextRequest) {
     }
     
     // Test the updated function
-    console.log('[FIX UNMERGE FUNCTION] Testing updated function...');
     
     // First, let's see if we can find a merged table to test with
     const { data: tables, error: tablesError } = await supabase
@@ -61,12 +54,9 @@ export async function POST(req: NextRequest) {
     if (tablesError) {
       console.error('[FIX UNMERGE FUNCTION] Error finding merged tables:', tablesError);
     } else if (tables && tables.length > 0) {
-      console.log('[FIX UNMERGE FUNCTION] Found merged table for testing:', tables[0]);
       
       // Test the unmerge function (but don't actually execute it)
-      console.log('[FIX UNMERGE FUNCTION] Function should now handle + format labels correctly');
     } else {
-      console.log('[FIX UNMERGE FUNCTION] No merged tables found for testing');
     }
     
     return NextResponse.json({ 

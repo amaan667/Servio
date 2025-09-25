@@ -76,7 +76,6 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
-      console.log('🔍 [ANALYTICS] Fetching analytics data for venue:', venueId, 'period:', timePeriod);
       setLoading(true);
       setError(null);
 
@@ -86,11 +85,6 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         endDate: new Date(customDateRange.end)
       } : getDateRange(timePeriod);
 
-      console.log('🔍 [ANALYTICS] Date range:', {
-        period: timePeriod,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      });
 
       // Fetch orders from selected period
       const { data: orders, error: ordersError } = await supabase
@@ -112,7 +106,6 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         throw new Error(`Failed to fetch orders: ${ordersError.message}`);
       }
 
-      console.log('🔍 [ANALYTICS] Orders fetched:', orders?.length || 0);
 
       // Fetch menu items count
       const { data: menuItems, error: menuError } = await supabase
@@ -134,13 +127,6 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       const totalRevenue = validOrders.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
       const menuItemsCount = menuItems?.length || 0;
-
-      console.log('🔍 [ANALYTICS] Calculated stats:', {
-        totalOrders,
-        totalRevenue,
-        averageOrderValue,
-        menuItemsCount
-      });
 
       // Generate revenue over time data based on selected period
       const revenueOverTime = [];
@@ -219,7 +205,6 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
         periodOrders = periodOrdersList.length;
         
         // Debug logging for revenue calculation (kept minimal to avoid noise)
-        // console.log('🔍 [ANALYTICS REVENUE] Period calculation:', { dateStr, periodRevenue });
         
         revenueOverTime.push({
           date: dateStr,
@@ -304,16 +289,6 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
       });
 
 
-      console.log('🔍 [ANALYTICS] Generated charts data:', {
-        revenueOverTimeDays: revenueOverTime.length,
-        topSellingItemsCount: topSellingItems.length,
-        revenueOverTimeSample: revenueOverTime.slice(0, 5),
-        validOrdersSample: validOrders.slice(0, 3).map((o: any) => ({
-          created_at: o.created_at,
-          total_amount: o.total_amount,
-          order_status: o.order_status
-        }))
-      });
 
       setAnalyticsData({
         totalOrders,

@@ -3,13 +3,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 [DAILY RESET CHECK] Checking if daily reset is needed');
     
     const { venueId } = await request.json();
-    console.log('🔄 [DAILY RESET CHECK] Request data:', { venueId });
 
     if (!venueId) {
-      console.log('🔄 [DAILY RESET CHECK] Missing venueId');
       return NextResponse.json(
         { error: 'Venue ID is required' },
         { status: 400 }
@@ -26,10 +23,8 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    console.log('🔄 [DAILY RESET CHECK] Admin Supabase client created');
 
     // Check if venue exists
-    console.log('🔄 [DAILY RESET CHECK] Checking if venue exists...');
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('venue_id, name')
@@ -45,7 +40,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!venue) {
-      console.log('🔄 [DAILY RESET CHECK] Venue not found for ID:', venueId);
       return NextResponse.json(
         { error: 'Venue not found' },
         { status: 404 }
@@ -75,7 +69,6 @@ export async function POST(request: NextRequest) {
         `
       });
     } catch (error) {
-      console.log('🔧 [DAILY RESET CHECK] Table creation skipped (may already exist):', error);
     }
     
     // Check if there's a reset record for today
@@ -87,13 +80,11 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (resetError) {
-      console.log('🔄 [DAILY RESET CHECK] Error checking reset record:', resetError);
       // Continue anyway - don't fail if table doesn't exist
     }
 
     // If we already reset today, return success
     if (resetRecord) {
-      console.log('🔄 [DAILY RESET CHECK] Already reset today:', todayString);
       return NextResponse.json({
         success: true,
         message: 'Already reset today',
@@ -115,7 +106,6 @@ export async function POST(request: NextRequest) {
       console.error('🔄 [DAILY RESET CHECK] Error checking recent orders:', recentOrdersError);
       // Continue with reset if we can't check
     } else if (recentOrders && recentOrders.length > 0) {
-      console.log('🔄 [DAILY RESET CHECK] Found recent orders, skipping reset to avoid disrupting active orders');
       return NextResponse.json({
         success: true,
         message: 'Skipping reset due to recent orders',
@@ -126,7 +116,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log('🔄 [DAILY RESET CHECK] Daily reset needed for venue:', venue.name);
 
     // Perform the reset
     let resetSummary = {
@@ -136,7 +125,6 @@ export async function POST(request: NextRequest) {
     };
 
     // Step 1: Complete all active orders
-    console.log('🔄 [DAILY RESET CHECK] Step 1: Completing all active orders...');
     const { data: activeOrders, error: activeOrdersError } = await supabase
       .from('orders')
       .select('id, order_status, table_number')
@@ -151,7 +139,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [DAILY RESET CHECK] Found active orders:', activeOrders?.length || 0);
 
     if (activeOrders && activeOrders.length > 0) {
       const { error: completeOrdersError } = await supabase
@@ -172,11 +159,9 @@ export async function POST(request: NextRequest) {
       }
 
       resetSummary.completedOrders = activeOrders.length;
-      console.log('🔄 [DAILY RESET CHECK] Completed', activeOrders.length, 'active orders');
     }
 
     // Step 2: Cancel all active reservations
-    console.log('🔄 [DAILY RESET CHECK] Step 2: Canceling all active reservations...');
     const { data: activeReservations, error: activeReservationsError } = await supabase
       .from('reservations')
       .select('id, status')
@@ -191,7 +176,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [DAILY RESET CHECK] Found active reservations:', activeReservations?.length || 0);
 
     if (activeReservations && activeReservations.length > 0) {
       const { error: cancelReservationsError } = await supabase
@@ -212,11 +196,9 @@ export async function POST(request: NextRequest) {
       }
 
       resetSummary.canceledReservations = activeReservations.length;
-      console.log('🔄 [DAILY RESET CHECK] Canceled', activeReservations.length, 'active reservations');
     }
 
     // Step 3: Delete all tables for complete reset
-    console.log('🔄 [DAILY RESET CHECK] Step 3: Deleting all tables for complete reset...');
     const { data: tables, error: tablesError } = await supabase
       .from('tables')
       .select('id, label')
@@ -230,11 +212,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [DAILY RESET CHECK] Found tables to delete:', tables?.length || 0);
 
     if (tables && tables.length > 0) {
       // Step 3a: Clear table references from all orders to avoid foreign key constraint
-      console.log('🔄 [DAILY RESET CHECK] Step 3a: Clearing table references from orders...');
       const { error: clearTableRefsError } = await supabase
         .from('orders')
         .update({ table_id: null })
@@ -247,7 +227,6 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-      console.log('🔄 [DAILY RESET CHECK] Cleared table references from all orders');
 
       // Step 3b: Delete all table sessions first (if they exist)
       const { error: deleteSessionsError } = await supabase
@@ -275,11 +254,9 @@ export async function POST(request: NextRequest) {
       }
 
       resetSummary.resetTables = tables.length;
-      console.log('🔄 [DAILY RESET CHECK] Deleted', tables.length, 'tables completely');
     }
 
     // Step 4: Clear any table runtime state
-    console.log('🔄 [DAILY RESET CHECK] Step 4: Clearing table runtime state...');
     const { error: clearRuntimeError } = await supabase
       .from('table_runtime_state')
       .delete()
@@ -290,11 +267,9 @@ export async function POST(request: NextRequest) {
       // Don't fail the entire operation for this
       console.warn('🔄 [DAILY RESET CHECK] Continuing despite runtime state clear error');
     } else {
-      console.log('🔄 [DAILY RESET CHECK] Cleared table runtime state');
     }
 
     // Step 5: Record the reset in the log
-    console.log('🔄 [DAILY RESET CHECK] Step 5: Recording reset in log...');
     const { error: logError } = await supabase
       .from('daily_reset_log')
       .insert({
@@ -311,10 +286,8 @@ export async function POST(request: NextRequest) {
       // Don't fail the operation for this
       console.warn('🔄 [DAILY RESET CHECK] Continuing despite log error');
     } else {
-      console.log('🔄 [DAILY RESET CHECK] Reset logged successfully');
     }
 
-    console.log('🔄 [DAILY RESET CHECK] Daily reset completed successfully for venue:', venue.name);
 
     return NextResponse.json({
       success: true,

@@ -13,7 +13,6 @@ export function MenuManagementWrapper({ venueId, session }: MenuManagementWrappe
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleUploadSuccess = () => {
-    console.log('[MENU MANAGEMENT WRAPPER] Upload successful, triggering refresh');
     setRefreshTrigger(prev => prev + 1);
   };
 

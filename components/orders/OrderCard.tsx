@@ -59,12 +59,6 @@ export function OrderCard({
   // Get appropriate label and icon
   const getEntityDisplay = () => {
     if (isTableVariant) {
-      // Debug logging to see what data we have
-      console.log(`[OrderCard DEBUG] Table order ${order.id}:`, {
-        table_label: order.table_label,
-        table_id: order.table_id,
-        entityKind: deriveEntityKind(order)
-      });
       
       const label = order.table_label || 'Table Order';
       if (!order.table_label) {
@@ -142,12 +136,6 @@ export function OrderCard({
   const handleStatusUpdate = async (newStatus: string) => {
     if (!venueId) return;
     
-    console.log('[OrderCard DEBUG] Starting status update:', {
-      orderId: order.id,
-      currentStatus: order.order_status,
-      newStatus: newStatus,
-      venueId: venueId
-    });
     
     try {
       setIsProcessing(true);
@@ -160,11 +148,6 @@ export function OrderCard({
         }),
       });
 
-      console.log('[OrderCard DEBUG] API response:', {
-        status: response.status,
-        ok: response.ok,
-        orderId: order.id
-      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -172,7 +155,6 @@ export function OrderCard({
         throw new Error('Failed to update order status');
       }
       
-      console.log('[OrderCard DEBUG] Status update successful, calling onActionComplete');
       await onActionComplete?.();
     } catch (error) {
       console.error('[OrderCard DEBUG] Error updating order status:', error);

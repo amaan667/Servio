@@ -13,10 +13,8 @@ export async function GET(req: Request) {
     const sessionId = searchParams.get("sessionId")!;
     if (!orderId || !sessionId) return NextResponse.json({ error: "Missing params" }, { status: 400 });
 
-    console.log('[VERIFY] Checking payment for orderId:', orderId, 'sessionId:', sessionId);
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    console.log('[VERIFY] Stripe session status:', session.payment_status);
     const paid = session.payment_status === "paid";
 
     if (paid) {
@@ -33,7 +31,6 @@ export async function GET(req: Request) {
       );
       
       // Find the order by session ID
-      console.log("[VERIFY] Looking for order with session ID:", sessionId);
       let { data: order, error: orderError } = await supabase
         .from("orders")
         .select("id, stripe_session_id, payment_status")
@@ -42,12 +39,10 @@ export async function GET(req: Request) {
 
       // If not found by session ID, wait for webhook to create order
       if (orderError) {
-        console.log("Error finding order by session ID:", orderError);
         return NextResponse.json({ paid: false, error: "Database error" }, { status: 500 });
       }
 
       if (!order) {
-        console.log("Order not found by session ID, waiting for webhook to create order...");
         
         // Wait a bit for the webhook to create the order, then try again with retry logic
         let retryCount = 0;
@@ -55,7 +50,6 @@ export async function GET(req: Request) {
         let orderFound = false;
         
         while (retryCount < maxRetries && !orderFound) {
-          console.log(`[VERIFY] Retry attempt ${retryCount + 1}/${maxRetries} for session:`, sessionId);
           await new Promise(resolve => setTimeout(resolve, 2000));
           
           const { data: retryOrder, error: retryError } = await supabase
@@ -65,14 +59,11 @@ export async function GET(req: Request) {
             .maybeSingle();
 
           if (retryError) {
-            console.log(`[VERIFY] Retry ${retryCount + 1} failed with error:`, retryError.message);
             retryCount++;
           } else if (retryOrder) {
-            console.log("Found order on retry:", retryOrder.id);
             order = retryOrder;
             orderFound = true;
           } else {
-            console.log(`[VERIFY] Retry ${retryCount + 1} failed: No order found`);
             retryCount++;
           }
         }

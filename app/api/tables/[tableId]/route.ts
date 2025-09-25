@@ -43,7 +43,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
 export async function DELETE(req: NextRequest, context: { params: Promise<{ tableId: string }> }) {
   try {
     const { tableId } = await context.params;
-    console.log('[TABLES API] DELETE request for tableId:', tableId);
 
     const supabase = await createClient();
 
@@ -59,10 +58,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
 
-    console.log('[TABLES API] Found table to delete:', existingTable);
 
     // Check if the table has any active orders
-    console.log('[TABLES API] Checking for active orders...', { tableId, venueId: existingTable.venue_id });
     
     let activeOrders: { id: string }[] = [];
     let ordersError: any = null;
@@ -78,7 +75,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       activeOrders = ordersResult.data || [];
       ordersError = ordersResult.error;
       
-      console.log('[TABLES API] Active orders check result:', { activeOrders, ordersError });
     } catch (error) {
       console.error('[TABLES API] Exception during active orders check:', error);
       ordersError = error;
@@ -107,7 +103,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     // Check if the table has any active reservations
-    console.log('[TABLES API] Checking for active reservations...', { tableId, venueId: existingTable.venue_id });
     
     let activeReservations: { id: string }[] = [];
     let reservationsError: any = null;
@@ -123,7 +118,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       activeReservations = reservationsResult.data || [];
       reservationsError = reservationsResult.error;
       
-      console.log('[TABLES API] Active reservations check result:', { activeReservations, reservationsError });
     } catch (error) {
       console.error('[TABLES API] Exception during active reservations check:', error);
       reservationsError = error;
@@ -137,16 +131,9 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     // If there are active orders or reservations, prevent deletion
-    console.log('[TABLES API] Checking if table can be removed...', {
-      activeOrdersCount: activeOrders?.length || 0,
-      activeReservationsCount: activeReservations?.length || 0,
-      ordersCheckFailed: !!ordersError,
-      reservationsCheckFailed: !!reservationsError
-    });
 
     // Only prevent deletion if we successfully checked and found active orders/reservations
     if (!ordersError && activeOrders && activeOrders.length > 0) {
-      console.log('[TABLES API] Table has active orders, preventing removal');
       return NextResponse.json(
         { 
           error: 'Cannot remove table with active orders. Please close all orders first.',
@@ -157,7 +144,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     if (!reservationsError && activeReservations && activeReservations.length > 0) {
-      console.log('[TABLES API] Table has active reservations, preventing removal');
       return NextResponse.json(
         { 
           error: 'Cannot remove table with active reservations. Please cancel all reservations first.',
@@ -173,7 +159,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
     }
 
     // Clear table_id references in orders to avoid foreign key constraint issues
-    console.log('[TABLES API] Clearing table_id references in orders...');
     const { error: clearTableRefsError } = await supabase
       .from('orders')
       .update({ table_id: null })
@@ -185,11 +170,9 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       // Continue with deletion anyway - this might be due to RLS or other issues
       console.warn('[TABLES API] Proceeding with table deletion despite table reference clear failure');
     } else {
-      console.log('[TABLES API] Successfully cleared table references in orders');
     }
 
     // Delete table sessions first (if they exist)
-    console.log('[TABLES API] Deleting table sessions...');
     const { error: deleteSessionsError } = await supabase
       .from('table_sessions')
       .delete()
@@ -201,15 +184,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       // Continue with table deletion anyway
       console.warn('[TABLES API] Proceeding with table deletion despite session deletion failure');
     } else {
-      console.log('[TABLES API] Successfully deleted table sessions');
     }
 
     // Note: table_runtime_state is a view that aggregates data from table_sessions and tables
     // Since we already deleted table_sessions above, the runtime state will be automatically updated
-    console.log('[TABLES API] Table runtime state will be automatically updated after table_sessions deletion');
 
     // Delete group sessions for this table
-    console.log('[TABLES API] Deleting group sessions...');
     const { error: deleteGroupSessionError } = await supabase
       .from('table_group_sessions')
       .delete()
@@ -221,11 +201,9 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       // Continue with table deletion anyway
       console.warn('[TABLES API] Proceeding with table deletion despite group session deletion failure');
     } else {
-      console.log('[TABLES API] Successfully deleted group sessions');
     }
 
     // Finally, delete the table itself
-    console.log('[TABLES API] Attempting to delete table...');
     const { error } = await supabase
       .from('tables')
       .delete()
@@ -243,7 +221,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ tabl
       return NextResponse.json({ error: 'Failed to delete table' }, { status: 500 });
     }
 
-    console.log('[TABLES API] Table deleted successfully:', tableId);
     return NextResponse.json({ success: true, deletedTable: existingTable });
   } catch (error) {
     console.error('[TABLES API] Unexpected error:', error);

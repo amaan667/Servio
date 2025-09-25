@@ -15,11 +15,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { venueId, resetType = 'all' } = body;
 
-    console.log('[AUTH DEBUG] Table reset request:', { 
-      userId: user.id, 
-      venueId, 
-      resetType 
-    });
 
     let result;
     
@@ -49,7 +44,6 @@ export async function POST(req: NextRequest) {
       result = data;
     }
 
-    console.log('[AUTH DEBUG] Table reset successful:', result);
 
     return NextResponse.json({
       success: true,

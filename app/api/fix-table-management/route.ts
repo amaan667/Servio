@@ -21,7 +21,6 @@ export async function POST(req: Request) {
         sql: `ALTER TABLE table_sessions ADD COLUMN IF NOT EXISTS reservation_duration_minutes INTEGER DEFAULT 60;`
       });
       if (columnError) {
-        console.log('[FIX] Column already exists or error:', columnError.message);
       } else {
         results.push('Added reservation_duration_minutes column');
       }
@@ -37,7 +36,6 @@ export async function POST(req: Request) {
         .is('status', null);
       
       if (updateError) {
-        console.log('[FIX] Update error:', updateError.message);
       } else {
         results.push('Updated null statuses to FREE');
       }

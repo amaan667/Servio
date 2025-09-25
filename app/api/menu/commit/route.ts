@@ -53,7 +53,6 @@ export async function POST(req: Request) {
       category_order: categoryOrder
     }).eq('id', upload_id);
     
-    console.log('[MENU_COMMIT] Stored category order:', categoryOrder);
     return NextResponse.json({ ok: true, count: inserted?.length || 0, categoryOrder });
   } catch (e: any) {
     console.error('[MENU_COMMIT] fatal', e);

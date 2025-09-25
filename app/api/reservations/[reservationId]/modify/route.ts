@@ -83,7 +83,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ reserva
       }, { status: 500 });
     }
 
-    console.log('[MODIFY RESERVATION] Successfully modified reservation:', reservationId);
 
     return NextResponse.json({
       ok: true,

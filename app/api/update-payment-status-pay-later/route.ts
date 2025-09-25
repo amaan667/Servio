@@ -18,7 +18,6 @@ export async function POST() {
     );
 
     // Step 1: Update existing orders that have payment_method = 'later' to use PAY_LATER status
-    console.log('Updating existing orders with payment_method = "later" to PAY_LATER status...');
     const { data: updateResult, error: updateError } = await supabase
       .from('orders')
       .update({ payment_status: 'PAY_LATER' })
@@ -34,10 +33,8 @@ export async function POST() {
       }, { status: 500 });
     }
 
-    console.log('Updated orders:', updateResult);
 
     // Step 2: Update the dashboard_counts function to include PAY_LATER status
-    console.log('Updating dashboard_counts function to include PAY_LATER status...');
     
     const createFunctionSQL = `
       DROP FUNCTION IF EXISTS dashboard_counts(text, text, integer);

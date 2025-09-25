@@ -41,13 +41,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[CART STORE] Storing cart:', {
-      cartId,
-      venueId,
-      tableNumber,
-      itemCount: items.length,
-      total,
-    });
 
     // Store cart data in a temporary table or use a simple approach
     // For now, we'll use a simple JSON storage approach

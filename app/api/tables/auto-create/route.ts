@@ -29,7 +29,6 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log('[AUTO CREATE TABLE] Creating table for QR scan:', { venue_id, table_number, table_label });
 
     // Check if table already exists first
     const { data: existingTable } = await supabase
@@ -67,7 +66,6 @@ export async function POST(req: Request) {
       table = newTable;
     }
 
-    console.log('[AUTO CREATE TABLE] Table created/updated successfully:', table.id);
 
     // Check if session already exists for this table
     const { data: existingSession } = await supabase

@@ -5,7 +5,6 @@ export const runtime = 'nodejs';
 
 export async function POST() {
   try {
-    console.log('[FIX TABLE 10 ORDER] Starting to fix table 10 order...');
     
     // Create admin client to bypass RLS
     const supabase = createServerClient(
@@ -21,18 +20,15 @@ export async function POST() {
     );
 
     // First, ensure the source column exists
-    console.log('[FIX TABLE 10 ORDER] Ensuring source column exists...');
     const { error: alterError } = await supabase.rpc('exec_sql', {
       sql: `ALTER TABLE orders 
             ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'qr' CHECK (source IN ('qr', 'counter'));`
     });
 
     if (alterError) {
-      console.log('[FIX TABLE 10 ORDER] Alter table result:', alterError.message);
     }
 
     // Fix the most recent order on table 10 that's incorrectly marked as counter
-    console.log('[FIX TABLE 10 ORDER] Fixing table 10 order...');
     const { data: updateResult, error: updateError } = await supabase
       .from('orders')
       .update({ source: 'qr' })
@@ -77,8 +73,6 @@ export async function POST() {
       created_at: order.created_at
     })) || [];
 
-    console.log('[FIX TABLE 10 ORDER] ✅ Successfully fixed table 10 order');
-    console.log('[FIX TABLE 10 ORDER] Results:', results);
 
     return NextResponse.json({
       success: true,

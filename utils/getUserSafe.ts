@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { hasSbAuthCookie } from './hasSbAuthCookie'
+import { hasServerAuthCookie } from '@/lib/server-utils'
 
 export async function getUserSafe(context?: string) {
-  if (!(await hasSbAuthCookie())) {
+  if (!(await hasServerAuthCookie())) {
     if (process.env.NODE_ENV !== 'production') {
       console.warn(`[AUTH GUARD] ${context ?? ''}: No auth cookie, skipping getUser()`)
     }
@@ -24,7 +24,6 @@ export async function getUserSafe(context?: string) {
       }
       
       if (refreshData.session) {
-        console.log(`[AUTH GUARD] ${context ?? ''}: Session refreshed successfully`)
         return refreshData.user
       }
     } catch (refreshErr) {

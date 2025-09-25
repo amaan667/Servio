@@ -78,7 +78,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, message: 'No duplicates found', duplicates_removed: 0 });
     }
 
-    console.log(`[CLEANUP DUPLICATES] Found ${duplicatesToRemove.length} duplicate tables to remove`);
 
     // Check for active orders and reservations before removing duplicates
     const { data: activeOrders, error: ordersError } = await supabase
@@ -122,7 +121,6 @@ export async function POST(req: Request) {
     }
 
     if (safeToRemove.length < duplicatesToRemove.length) {
-      console.log(`[CLEANUP DUPLICATES] Skipping ${duplicatesToRemove.length - safeToRemove.length} tables with active orders/reservations`);
     }
 
     // Remove duplicate tables that are safe to remove

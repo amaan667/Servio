@@ -18,10 +18,6 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
 export async function POST(req: Request) {
   const supa = admin();
   try {
-    console.log('[MENU_UPLOAD] start', {
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    });
     const form = await req.formData();
     const file = form.get('file') as File | null;
     const venueId = (form.get('venue_id') as string) || (form.get('venueId') as string) || '';

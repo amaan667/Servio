@@ -17,7 +17,6 @@ export default function SignUpPage() {
     
     try {
       setIsSigningUp(true);
-      console.log('[AUTH DEBUG] SignUpPage: Starting Google OAuth sign-up');
 
       // Use stable redirect URL helper
       const redirectTo = getAuthRedirectUrl('/auth/callback');
@@ -45,7 +44,6 @@ export default function SignUpPage() {
       
       // The redirect should happen automatically, but if it doesn't, we'll handle it
       if (data.url) {
-        console.log('[AUTH DEBUG] SignUpPage: Redirecting to OAuth URL');
         window.location.href = data.url;
       }
     } catch (error) {

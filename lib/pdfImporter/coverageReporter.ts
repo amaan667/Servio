@@ -22,7 +22,6 @@ export function generateCoverageReport(
   blocks: TextBlock[],
   processingWarnings: string[] = []
 ): CoverageReport {
-  console.log('[COVERAGE_REPORT] Generating coverage report...');
   
   // Track which prices have been attached to items
   const attachedPriceLineIds = new Set<string>();
@@ -97,14 +96,6 @@ export function generateCoverageReport(
     })),
     processingWarnings
   };
-  
-  console.log('[COVERAGE_REPORT] Report generated:', {
-    pricesFound: report.pricesFound,
-    pricesAttached: report.pricesAttached,
-    unattachedCount: report.unattachedPrices.length,
-    emptySections: report.sectionsWithZeroItems.length,
-    optionGroups: report.optionGroupsCreated.length
-  });
   
   return report;
 }

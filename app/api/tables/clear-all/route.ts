@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
-    console.log('[AUTH DEBUG] Clearing ALL tables and sessions for venue:', venue_id);
 
     const supabase = await createAdminClient();
 
@@ -27,7 +26,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Table sessions deleted successfully');
 
     // Step 2: Delete all tables for this venue
     const { error: tablesError } = await supabase
@@ -43,13 +41,10 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] All tables deleted successfully');
 
     // Step 3: Table runtime state is a view and will update automatically
     // when we delete the base tables and sessions above
-    console.log('[AUTH DEBUG] Table runtime state will update automatically (it\'s a view)');
 
-    console.log('[AUTH DEBUG] All tables and sessions cleared successfully for venue:', venue_id);
 
     return NextResponse.json({ 
       ok: true, 

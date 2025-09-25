@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[GROUP SESSION] Checking for existing group session:', { venueId, tableNumber });
 
     const supabase = await createAdminClient();
 
@@ -32,7 +31,6 @@ export async function GET(request: NextRequest) {
 
       if (error) {
         if (error.message.includes('does not exist')) {
-          console.log('[GROUP SESSION] Table does not exist yet, returning no session');
           return NextResponse.json({ 
             ok: true, 
             groupSessionId: null,
@@ -47,7 +45,6 @@ export async function GET(request: NextRequest) {
       }
 
       if (existingSession) {
-        console.log('[GROUP SESSION] Found existing group session:', existingSession);
         return NextResponse.json({ 
           ok: true, 
           groupSessionId: existingSession.id,
@@ -63,7 +60,6 @@ export async function GET(request: NextRequest) {
       });
 
     } catch (tableError) {
-      console.log('[GROUP SESSION] Table not available, using fallback mode');
       return NextResponse.json({ 
         ok: true, 
         groupSessionId: null,
@@ -91,7 +87,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[GROUP SESSION] Creating/updating group session:', { venueId, tableNumber, groupSize });
 
     const supabase = await createAdminClient();
 
@@ -109,7 +104,6 @@ export async function POST(request: NextRequest) {
 
       if (fetchError) {
         if (fetchError.message.includes('does not exist')) {
-          console.log('[GROUP SESSION] Table does not exist yet, using fallback mode');
           return NextResponse.json({ 
             ok: true, 
             groupSessionId: `fallback_${venueId}_${tableNumber}`,
@@ -149,7 +143,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log('[GROUP SESSION] Updated existing group session:', updatedSession);
 
       // Update table seat count to match new total group size
       await supabase
@@ -192,7 +185,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log('[GROUP SESSION] Created new group session:', newSession);
 
       // Update table seat count to match group size (if table exists)
       await supabase
@@ -214,7 +206,6 @@ export async function POST(request: NextRequest) {
     }
 
     } catch (tableError) {
-      console.log('[GROUP SESSION] Table not available, using fallback mode');
       return NextResponse.json({ 
         ok: true, 
         groupSessionId: `fallback_${venueId}_${tableNumber}`,

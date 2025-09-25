@@ -75,7 +75,6 @@ export function useTableCounters(venueId: string) {
   return useQuery({
     queryKey: ['tables', 'counters', venueId],
     queryFn: async () => {
-      console.log('[TABLE COUNTERS] Fetching counters for venue:', venueId);
       const { data, error } = await supabase.rpc('api_table_counters', { 
         p_venue_id: venueId 
       });
@@ -83,15 +82,10 @@ export function useTableCounters(venueId: string) {
         console.error('[TABLE COUNTERS] Error:', error);
         throw error;
       }
-      console.log('[TABLE COUNTERS] Raw data:', data);
-      console.log('[TABLE COUNTERS] Raw data type:', typeof data, 'Array?', Array.isArray(data));
       
       // The function returns a single JSON object, not an array
       const result = Array.isArray(data) ? data[0] : data;
-      console.log('[TABLE COUNTERS] Processed data:', result);
-      console.log('[TABLE COUNTERS] Result keys:', result ? Object.keys(result) : 'No data');
-      console.log('[TABLE COUNTERS] Processed result:', result);
-      console.log('[TABLE COUNTERS] Field mapping check:', {
+      console.log('[TABLE_RUNTIME_STATE] Fetched table counts:', {
         total_tables: result?.total_tables,
         available: result?.available,
         occupied: result?.occupied,
@@ -136,7 +130,6 @@ export function useSeatParty() {
       reservationId?: string; 
       serverId?: string; 
     }) => {
-      console.log('[TABLE HOOK] Seating party:', { tableId, venueId, reservationId, serverId });
       const { error } = await supabase.rpc('api_seat_party', {
         p_table_id: tableId,
         p_venue_id: venueId,
@@ -147,7 +140,6 @@ export function useSeatParty() {
         console.error('[TABLE HOOK] api_seat_party error:', error);
         throw error;
       }
-      console.log('[TABLE HOOK] api_seat_party success');
     },
     onSuccess: (_, { tableId }) => {
       // Invalidate all table-related queries
@@ -162,7 +154,6 @@ export function useCloseTable() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ tableId, venueId }: { tableId: string; venueId: string }) => {
-      console.log('[TABLE HOOK] Closing table:', tableId);
       const { error } = await supabase.rpc('api_close_table', { 
         p_table_id: tableId,
         p_venue_id: venueId
@@ -171,7 +162,6 @@ export function useCloseTable() {
         console.error('[TABLE HOOK] api_close_table error:', error);
         throw error;
       }
-      console.log('[TABLE HOOK] api_close_table success');
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tables'] });
@@ -242,7 +232,6 @@ export function useRemoveTable() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ tableId, venueId }: { tableId: string; venueId: string }) => {
-      console.log('[TABLE HOOK] Removing table:', tableId, 'from venue:', venueId);
       
       const response = await fetch(`/api/tables/${tableId}`, {
         method: 'DELETE',
@@ -251,8 +240,6 @@ export function useRemoveTable() {
         },
       });
 
-      console.log('[TABLE HOOK] Delete response status:', response.status);
-      console.log('[TABLE HOOK] Delete response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -261,11 +248,8 @@ export function useRemoveTable() {
       }
 
       const responseData = await response.json();
-      console.log('[TABLE HOOK] Delete response data:', responseData);
-      console.log('[TABLE HOOK] Table deleted successfully');
     },
     onSuccess: (data, variables) => {
-      console.log('[TABLE HOOK] onSuccess called, invalidating queries');
       qc.invalidateQueries({ queryKey: ['tables'] });
       qc.invalidateQueries({ queryKey: ['tables', 'runtime-state'] });
       qc.invalidateQueries({ queryKey: ['tables', 'counters'] });
@@ -283,7 +267,6 @@ export function useClearAllTables() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ venueId }: { venueId: string }) => {
-      console.log('[TABLE HOOK] Clearing all table runtime state for venue:', venueId);
       
       const response = await fetch('/api/tables/clear', {
         method: 'POST',
@@ -300,11 +283,8 @@ export function useClearAllTables() {
       }
 
       const responseData = await response.json();
-      console.log('[TABLE HOOK] Clear tables response:', responseData);
-      console.log('[TABLE HOOK] All tables cleared successfully');
     },
     onSuccess: (data, variables) => {
-      console.log('[TABLE HOOK] Clear tables onSuccess called, invalidating queries');
       qc.invalidateQueries({ queryKey: ['tables'] });
       qc.invalidateQueries({ queryKey: ['tables', 'runtime-state'] });
       qc.invalidateQueries({ queryKey: ['tables', 'counters'] });

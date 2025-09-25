@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('[FIX MERGE FUNCTIONS] Providing SQL fix statements...');
     
     // The SQL statements to fix the merge functions conflict
     const fixStatements = [

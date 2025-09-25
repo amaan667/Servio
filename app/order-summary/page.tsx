@@ -48,23 +48,16 @@ export default function OrderSummaryPage() {
   useEffect(() => {
     // Get order data from localStorage
     const storedData = localStorage.getItem('servio-pending-order');
-    console.log('[ORDER SUMMARY DEBUG] Loading order data from localStorage:', storedData);
     
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        console.log('[ORDER SUMMARY DEBUG] Parsed order data:', data);
-        console.log('[ORDER SUMMARY DEBUG] Customer info:', {
-          name: data.customerName,
-          phone: data.customerPhone
-        });
         setOrderData(data);
       } catch (error) {
         console.error('Error parsing stored order data:', error);
         router.push('/order');
       }
     } else {
-      console.log('[ORDER SUMMARY DEBUG] No pending order data found, redirecting to order page');
       router.push('/order');
     }
     setLoading(false);
@@ -76,7 +69,6 @@ export default function OrderSummaryPage() {
     setLoading(true);
     try {
       // First, create the order in the database
-      console.log('[ORDER SUMMARY DEBUG] Creating order first...');
       
       const orderPayload = {
         venue_id: orderData.venueId,
@@ -110,7 +102,6 @@ export default function OrderSummaryPage() {
       }
 
       const orderResult = await orderResponse.json();
-      console.log('[ORDER SUMMARY DEBUG] Order created:', orderResult);
       
       if (!orderResult.order?.id) {
         console.error('[ORDER SUMMARY DEBUG] ERROR: No order ID in response:', orderResult);

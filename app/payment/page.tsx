@@ -57,12 +57,10 @@ export default function PaymentPage() {
   useEffect(() => {
     // Get checkout data from localStorage
     const storedData = localStorage.getItem("servio-checkout-data");
-    console.log('[PAYMENT DEBUG] Loading checkout data from localStorage:', storedData);
     
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        console.log('[PAYMENT DEBUG] Parsed checkout data:', data);
         setCheckoutData(data);
         setIsDemo(data.isDemo || false); // Set demo flag from checkout data
       } catch (error) {
@@ -70,17 +68,14 @@ export default function PaymentPage() {
         router.push("/order");
       }
     } else {
-      console.log('[PAYMENT DEBUG] No checkout data found, redirecting to order page');
       // Redirect back if no checkout data
       router.push("/order");
     }
   }, [router]);
 
   const handlePayment = async (action: PaymentAction) => {
-    console.log('[PAYMENT DEBUG] ===== PAYMENT HANDLER STARTED =====', action);
     
     if (!checkoutData) {
-      console.log('[PAYMENT DEBUG] ERROR: Missing checkout data');
       setError('Missing order information. Please try again.');
       return;
     }
@@ -92,7 +87,6 @@ export default function PaymentPage() {
     try {
       // Handle different payment types
       if (action === 'stripe') {
-        console.log('[PAYMENT DEBUG] Processing Stripe payment - order will be created after payment succeeds');
         
         // Store checkout data for webhook to create order after successful payment
         const stripeCheckoutData = {
@@ -144,7 +138,6 @@ export default function PaymentPage() {
       }
 
       // For non-Stripe payments (Pay Later, Pay at Till), create the order immediately with UNPAID status
-      console.log('[PAYMENT DEBUG] Creating order for non-Stripe payment...');
       
       const orderPayload = {
         venue_id: checkoutData.venueId,
@@ -166,7 +159,6 @@ export default function PaymentPage() {
         notes: `${action} payment order`
       };
 
-      console.log('[PAYMENT DEBUG] Order payload:', orderPayload);
 
       const orderResponse = await fetch('/api/orders', {
         method: 'POST',
@@ -184,26 +176,10 @@ export default function PaymentPage() {
       }
 
       const orderData = await orderResponse.json();
-      console.log('[PAYMENT DEBUG] Order creation response:', orderData);
-      console.log('[PAYMENT DEBUG] Response structure check:', {
-        hasOrder: !!orderData.order,
-        orderId: orderData.order?.id,
-        orderStatus: orderData.order?.order_status,
-        responseOk: orderData.ok,
-        responseType: typeof orderData,
-        responseKeys: Object.keys(orderData),
-        fullResponse: JSON.stringify(orderData, null, 2)
-      });
       
       // Additional debugging for the order object
       if (orderData.order) {
-        console.log('[PAYMENT DEBUG] Order object details:', {
-          orderType: typeof orderData.order,
-          orderKeys: Object.keys(orderData.order),
-          orderId: orderData.order.id,
-          orderIdType: typeof orderData.order.id,
-          orderIdValue: orderData.order.id
-        });
+        // Debug logging removed for performance
       }
 
       // Check if we have a valid order ID
@@ -222,7 +198,6 @@ export default function PaymentPage() {
           console.warn('[PAYMENT DEBUG] Order created but ID missing, attempting to continue...');
           // Try to extract ID from other fields or use a fallback
           const fallbackId = orderData.order.id || orderData.order.order_id || `temp-${Date.now()}`;
-          console.log('[PAYMENT DEBUG] Using fallback order ID:', fallbackId);
           orderData.order.id = fallbackId;
         } else {
           // Even if we can't get the order ID, if the response is ok, the order was created
@@ -232,11 +207,9 @@ export default function PaymentPage() {
         }
       }
 
-      console.log('[PAYMENT DEBUG] Order created successfully with ID:', orderData.order.id);
 
       // Handle demo payment
       if (action === 'demo') {
-        console.log('[PAYMENT DEBUG] Processing demo payment for order:', orderData.order.id);
         
         const paymentResponse = await fetch('/api/pay/demo', {
           method: 'POST',
@@ -254,7 +227,6 @@ export default function PaymentPage() {
           throw new Error(paymentResult.error || 'Payment failed');
         }
 
-        console.log('[PAYMENT DEBUG] Demo payment successful:', paymentResult);
       }
       
       // Only redirect to success page for non-Stripe payments (Stripe redirects to checkout)
@@ -263,7 +235,6 @@ export default function PaymentPage() {
         
         // Redirect to payment success page with order ID and additional data
         const successUrl = `/payment/success?orderId=${orderData.order.id}&demo=${isDemo ? '1' : '0'}&paymentMethod=${action}`;
-        console.log('[PAYMENT DEBUG] Redirecting to success page:', successUrl);
         router.push(successUrl);
         
         localStorage.removeItem("servio-checkout-data");

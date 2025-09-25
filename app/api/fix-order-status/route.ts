@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to check order status' }, { status: 500 })
     }
 
-    console.log('Current order status:', currentOrder)
 
     // Update the order to a proper workflow status so action buttons appear
     const { data: updatedOrder, error: updateError } = await supabase
@@ -40,7 +39,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 })
     }
 
-    console.log('Updated order status:', updatedOrder)
 
     return NextResponse.json({ 
       success: true, 

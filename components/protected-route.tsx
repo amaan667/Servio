@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthContext } from './auth-provider';
+import { useAuth } from '@/app/auth/AuthProvider';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,12 +15,11 @@ export function ProtectedRoute({
   redirectTo = '/sign-in',
   fallback = <div>Loading...</div>
 }: ProtectedRouteProps) {
-  const { user, loading } = useAuthContext();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && !user) {
-      console.log('[PROTECTED ROUTE] User not authenticated, redirecting to:', redirectTo);
       router.push(redirectTo);
     }
   }, [user, loading, router, redirectTo]);

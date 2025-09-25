@@ -7,26 +7,21 @@
  * Repairs malformed JSON from GPT output
  */
 export function repairMenuJSON(brokenJSON: string): string {
-  console.log('[JSON_REPAIR] Starting JSON repair...');
   
   try {
     // First, try to parse as-is
     JSON.parse(brokenJSON);
-    console.log('[JSON_REPAIR] JSON is already valid');
     return brokenJSON;
   } catch (error) {
-    console.log('[JSON_REPAIR] JSON needs repair, error:', (error as any).message);
   }
   
   // Try the new robust reconstruction approach first
   try {
     const reconstructed = reconstructJSONFromMalformed(brokenJSON);
     if (reconstructed) {
-      console.log('[JSON_REPAIR] Successfully reconstructed JSON');
       return reconstructed;
     }
   } catch (error) {
-    console.log('[JSON_REPAIR] Reconstruction failed, trying traditional repair');
   }
   
   let repaired = brokenJSON;
@@ -55,7 +50,6 @@ export function repairMenuJSON(brokenJSON: string): string {
   // Step 8: Validate and clean items
   repaired = validateAndCleanItems(repaired);
   
-  console.log('[JSON_REPAIR] JSON repair completed');
   return repaired;
 }
 
@@ -63,7 +57,6 @@ export function repairMenuJSON(brokenJSON: string): string {
  * Reconstructs JSON by extracting valid properties and rebuilding the structure
  */
 function reconstructJSONFromMalformed(json: string): string | null {
-  console.log('[JSON_REPAIR] Attempting JSON reconstruction...');
   
   try {
     // First, try to fix truncated JSON
@@ -179,7 +172,6 @@ function reconstructJSONFromMalformed(json: string): string | null {
     return JSON.stringify(reconstructed, null, 2);
     
   } catch (error) {
-    console.log('[JSON_REPAIR] Reconstruction failed:', error);
     return null;
   }
 }
@@ -188,7 +180,6 @@ function reconstructJSONFromMalformed(json: string): string | null {
  * Fixes truncated JSON by completing incomplete structures
  */
 function fixTruncatedJSON(json: string): string {
-  console.log('[JSON_REPAIR] Fixing truncated JSON...');
   
   let fixed = json.trim();
   
@@ -258,7 +249,6 @@ function cleanValue(value: string): string {
  * Fixes complex malformations like orphaned properties and incomplete objects
  */
 function fixComplexMalformations(json: string): string {
-  console.log('[JSON_REPAIR] Fixing complex malformations...');
   
   let fixed = json;
   
@@ -292,7 +282,6 @@ function fixComplexMalformations(json: string): string {
  * Fixes duplicate properties within individual objects
  */
 function fixDuplicatePropertiesInObjects(json: string): string {
-  console.log('[JSON_REPAIR] Fixing duplicate properties in objects...');
   
   // Find all objects and fix duplicates within each
   const objectPattern = /{\s*([^}]*?)\s*}/g;
@@ -332,7 +321,6 @@ function fixDuplicatePropertiesInObjects(json: string): string {
  * Fixes duplicate keys by keeping the last occurrence
  */
 function fixDuplicateKeys(json: string): string {
-  console.log('[JSON_REPAIR] Fixing duplicate keys...');
   
   // Pattern to match duplicate keys within objects
   const duplicateKeyPattern = /"([^"]+)":\s*([^,}]+),\s*"([^"]+)":\s*([^,}]+)/g;
@@ -347,7 +335,6 @@ function fixDuplicateKeys(json: string): string {
       // Duplicate key found, keep the last one
       const replacement = `"${key2}": ${value2}`;
       fixed = fixed.replace(fullMatch, replacement);
-      console.log(`[JSON_REPAIR] Fixed duplicate key: ${key1}`);
     }
   }
   
@@ -358,7 +345,6 @@ function fixDuplicateKeys(json: string): string {
  * Fixes missing commas between array elements and object properties
  */
 function fixMissingCommas(json: string): string {
-  console.log('[JSON_REPAIR] Fixing missing commas...');
   
   let fixed = json;
   
@@ -381,7 +367,6 @@ function fixMissingCommas(json: string): string {
  * Fixes unterminated strings
  */
 function fixUnterminatedStrings(json: string): string {
-  console.log('[JSON_REPAIR] Fixing unterminated strings...');
   
   let fixed = json;
   
@@ -439,7 +424,6 @@ function fixUnterminatedStrings(json: string): string {
  * Fixes malformed object structures
  */
 function fixMalformedObjects(json: string): string {
-  console.log('[JSON_REPAIR] Fixing malformed objects...');
   
   let fixed = json;
   
@@ -459,7 +443,6 @@ function fixMalformedObjects(json: string): string {
  * Removes trailing commas
  */
 function removeTrailingCommas(json: string): string {
-  console.log('[JSON_REPAIR] Removing trailing commas...');
   
   let fixed = json;
   
@@ -476,7 +459,6 @@ function removeTrailingCommas(json: string): string {
  * Fixes array structure
  */
 function fixArrayStructure(json: string): string {
-  console.log('[JSON_REPAIR] Fixing array structure...');
   
   let fixed = json;
   
@@ -491,7 +473,6 @@ function fixArrayStructure(json: string): string {
  * Validates and cleans individual items
  */
 function validateAndCleanItems(json: string): string {
-  console.log('[JSON_REPAIR] Validating and cleaning items...');
   
   try {
     const parsed = JSON.parse(json);
@@ -505,13 +486,11 @@ function validateAndCleanItems(json: string): string {
       .filter((item: any) => {
         // Remove items with missing required fields
         if (!item.title || !item.category || typeof item.price !== 'number') {
-          console.log('[JSON_REPAIR] Removing item with missing fields:', item);
           return false;
         }
         
         // Remove items with zero or negative prices
         if (item.price <= 0) {
-          console.log('[JSON_REPAIR] Removing item with invalid price:', item.title, item.price);
           return false;
         }
         
@@ -536,7 +515,6 @@ function validateAndCleanItems(json: string): string {
         seenTitles.add(normalizedTitle);
         uniqueItems.push(item);
       } else {
-        console.log('[JSON_REPAIR] Removing duplicate item:', item.title);
       }
     }
     
@@ -620,7 +598,6 @@ export function repairAndValidateMenuJSON(brokenJSON: string): {
   items?: any[];
   errors?: string[];
 } {
-  console.log('[JSON_REPAIR] Starting complete repair pipeline...');
   
   try {
     // Step 1: Repair the JSON
@@ -630,7 +607,6 @@ export function repairAndValidateMenuJSON(brokenJSON: string): {
     const validation = validateMenuJSON(repaired);
     
     if (validation.valid) {
-      console.log('[JSON_REPAIR] Repair successful:', validation.items.length, 'items');
       return {
         success: true,
         json: repaired,

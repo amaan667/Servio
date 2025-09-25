@@ -18,7 +18,6 @@ export async function POST() {
       }
     );
 
-    console.log('[FIX TABLE ASSIGNMENTS] Starting to fix table assignments...');
 
     const venueId = 'venue-1e02af4d';
     const results: any = {
@@ -27,7 +26,6 @@ export async function POST() {
     };
 
     // Fix 1: Update Hamza's £133.50 order from table 1 to table 9
-    console.log('[FIX TABLE ASSIGNMENTS] Looking for Hamza £133.50 order...');
     const { data: hamzaOrders, error: hamzaError } = await supabase
       .from('orders')
       .select('id, table_number, customer_name, total_amount, created_at')
@@ -39,7 +37,6 @@ export async function POST() {
     if (!hamzaError && hamzaOrders && hamzaOrders.length > 0) {
       for (const order of hamzaOrders) {
         if (order.customer_name?.toLowerCase().includes('hamza') && order.table_number === 1) {
-          console.log('[FIX TABLE ASSIGNMENTS] Updating Hamza order from table 1 to table 9...');
           const { error: updateError } = await supabase
             .from('orders')
             .update({ 
@@ -58,7 +55,6 @@ export async function POST() {
               changed_to: 'Table 9',
               success: true
             });
-            console.log('[FIX TABLE ASSIGNMENTS] Successfully updated Hamza order to Table 9');
           } else {
             results.fixes_applied.push({
               type: 'hamza_table_fix',
@@ -73,7 +69,6 @@ export async function POST() {
     }
 
     // Fix 2: Ensure Donald's £47.70 order is correctly marked as counter order
-    console.log('[FIX TABLE ASSIGNMENTS] Looking for Donald £47.70 order...');
     const { data: donaldOrders, error: donaldError } = await supabase
       .from('orders')
       .select('id, table_number, customer_name, total_amount, source, items, created_at')
@@ -85,7 +80,6 @@ export async function POST() {
     if (!donaldError && donaldOrders && donaldOrders.length > 0) {
       for (const order of donaldOrders) {
         if (order.customer_name?.toLowerCase().includes('donald') && order.table_number === 9) {
-          console.log('[FIX TABLE ASSIGNMENTS] Ensuring Donald order is marked as counter...');
           const { error: updateError } = await supabase
             .from('orders')
             .update({ 
@@ -103,7 +97,6 @@ export async function POST() {
               changed_to: 'Counter 9',
               success: true
             });
-            console.log('[FIX TABLE ASSIGNMENTS] Successfully marked Donald order as counter');
           } else {
             results.fixes_applied.push({
               type: 'donald_source_fix',
@@ -118,7 +111,6 @@ export async function POST() {
     }
 
     // Verify the changes
-    console.log('[FIX TABLE ASSIGNMENTS] Verifying changes...');
     const { data: verifyOrders, error: verifyError } = await supabase
       .from('orders')
       .select('id, table_number, customer_name, total_amount, source, created_at')
@@ -132,7 +124,6 @@ export async function POST() {
       orders: verifyOrders || []
     };
 
-    console.log('[FIX TABLE ASSIGNMENTS] Table assignment fixes completed');
     return NextResponse.json({
       success: true,
       message: 'Table assignments fixed successfully',

@@ -5,7 +5,6 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     
-    console.log('[FIX ORDER SOURCE] Starting order source fix...');
     
     // Step 1: Ensure source column exists
     const { error: alterError } = await supabase.rpc('exec_sql', {
@@ -14,9 +13,7 @@ export async function POST(request: NextRequest) {
     });
     
     if (alterError) {
-      console.log('[FIX ORDER SOURCE] Alter table result:', alterError.message);
     } else {
-      console.log('[FIX ORDER SOURCE] ✓ Source column ensured');
     }
 
     // Step 2: Fix orders that should be table orders but are marked as counter orders
@@ -30,7 +27,6 @@ export async function POST(request: NextRequest) {
       console.error('[FIX ORDER SOURCE] Update error:', updateError);
       return NextResponse.json({ error: 'Failed to update orders' }, { status: 500 });
     } else {
-      console.log(`[FIX ORDER SOURCE] ✓ Updated orders successfully`);
     }
 
     // Step 3: Verify the fix
@@ -56,8 +52,6 @@ export async function POST(request: NextRequest) {
       created_at: order.created_at
     })) || [];
 
-    console.log('[FIX ORDER SOURCE] ✅ Order source fix completed successfully!');
-    console.log('[FIX ORDER SOURCE] Results:', results);
 
     return NextResponse.json({ 
       success: true, 

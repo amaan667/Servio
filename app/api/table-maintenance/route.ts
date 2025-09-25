@@ -3,12 +3,10 @@ import { createAdminClient, getAuthenticatedUser } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('[TABLE MAINTENANCE] Starting table maintenance...');
     
     // Check authentication
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError || !user) {
-      console.log('[TABLE MAINTENANCE] Authentication failed:', authError);
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
@@ -23,7 +21,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to run table maintenance' }, { status: 500 });
     }
 
-    console.log('[TABLE MAINTENANCE] Table maintenance completed successfully');
     return NextResponse.json({ 
       success: true, 
       message: 'Table maintenance completed successfully',
@@ -38,12 +35,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[TABLE MAINTENANCE] Checking table maintenance status...');
     
     // Check authentication
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError || !user) {
-      console.log('[TABLE MAINTENANCE] Authentication failed:', authError);
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 

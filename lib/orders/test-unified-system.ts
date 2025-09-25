@@ -6,7 +6,6 @@ import { mapCounterOrderToCardData } from './mapCounterOrderToCardData';
 import type { LegacyOrder } from '@/types/orders';
 import type { CounterOrder } from '@/hooks/useCounterOrders';
 
-console.log('🧪 Testing Unified OrderCard System');
 
 // Test 1: Table order (has table_id and is_configured: true)
 const tableOrder: LegacyOrder = {
@@ -30,8 +29,7 @@ const tableOrder: LegacyOrder = {
 };
 
 const tableCardData = mapOrderToCardData(tableOrder);
-console.log('✅ Table Order Entity Kind:', deriveEntityKind(tableCardData)); // Should be 'table'
-console.log('✅ Table Order Card Data:', {
+console.log('[TEST] Table card data:', {
   id: tableCardData.short_id,
   table_label: tableCardData.table_label,
   counter_label: tableCardData.counter_label,
@@ -56,8 +54,7 @@ const counterOrder: CounterOrder = {
 };
 
 const counterCardData = mapCounterOrderToCardData(counterOrder);
-console.log('✅ Counter Order Entity Kind:', deriveEntityKind(counterCardData)); // Should be 'counter'
-console.log('✅ Counter Order Card Data:', {
+console.log('[TEST] Counter card data:', {
   id: counterCardData.short_id,
   table_label: counterCardData.table_label,
   counter_label: counterCardData.counter_label,
@@ -73,11 +70,9 @@ const unassignedOrder: LegacyOrder = {
 };
 
 const unassignedCardData = mapOrderToCardData(unassignedOrder);
-console.log('✅ Unassigned Order Entity Kind:', deriveEntityKind(unassignedCardData)); // Should be 'counter'
-console.log('✅ Unassigned Order Card Data:', {
+console.log('[TEST] Unassigned card data:', {
   id: unassignedCardData.short_id,
   table_label: unassignedCardData.table_label,
   counter_label: unassignedCardData.counter_label
 });
 
-console.log('🎉 All tests completed! The unified OrderCard system is working correctly.');

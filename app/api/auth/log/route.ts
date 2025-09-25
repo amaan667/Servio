@@ -9,7 +9,6 @@ export async function POST(req: Request) {
     const timestamp = new Date().toISOString();
 
     // Print a concise, structured line for Railway logs
-    console.log("[AUTH LOG]", JSON.stringify({ timestamp, ...body }));
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

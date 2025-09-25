@@ -62,14 +62,11 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
 
   const fetchQuestions = async () => {
     try {
-      console.log('[FEEDBACK DEBUG] Fetching questions for venue:', venueId);
       
       const response = await fetch(`/api/feedback/questions?venueId=${venueId}`);
-      console.log('[FEEDBACK DEBUG] Fetch response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[FEEDBACK DEBUG] Fetched questions:', data);
         setQuestions(data.questions || []);
         setTotalCount(data.totalCount || 0);
       } else {
@@ -98,7 +95,6 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('[FEEDBACK DEBUG] Form submission started', { formData, venueId });
     
     if (!formData.prompt.trim()) {
       toast({
@@ -129,7 +125,6 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         is_active: formData.is_active
       };
 
-      console.log('[FEEDBACK DEBUG] Sending payload:', payload);
 
       const response = await fetch('/api/feedback/questions', {
         method: 'POST',
@@ -137,12 +132,9 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         body: JSON.stringify(payload)
       });
 
-      console.log('[FEEDBACK DEBUG] Response status:', response.status);
-      console.log('[FEEDBACK DEBUG] Response ok:', response.ok);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('[FEEDBACK DEBUG] Success response:', result);
         
         toast({
           title: "Success",
@@ -152,7 +144,6 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
         fetchQuestions();
       } else {
         const error = await response.json();
-        console.log('[FEEDBACK DEBUG] Error response:', error);
         
         toast({
           title: "Error",

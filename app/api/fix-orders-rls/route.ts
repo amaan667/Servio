@@ -5,7 +5,6 @@ export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    console.log('[FIX ORDERS RLS] Starting RLS fix for orders table...');
     
     const supabase = createAdminClient();
     
@@ -13,10 +12,8 @@ export async function POST(req: Request) {
     const { data: rlsStatus, error: rlsError } = await supabase
       .rpc('check_rls_status', { table_name: 'orders' });
     
-    console.log('[FIX ORDERS RLS] Current RLS status:', rlsStatus);
     
     if (rlsError) {
-      console.log('[FIX ORDERS RLS] Error checking RLS status:', rlsError);
     }
     
     // Try to disable RLS on orders table (this should work with service role)
@@ -26,7 +23,6 @@ export async function POST(req: Request) {
       });
     
     if (disableError) {
-      console.log('[FIX ORDERS RLS] Error disabling RLS:', disableError);
       // Try alternative approach - create a permissive policy
       const { data: policyResult, error: policyError } = await supabase
         .rpc('exec_sql', { 
@@ -38,7 +34,6 @@ export async function POST(req: Request) {
         });
       
       if (policyError) {
-        console.log('[FIX ORDERS RLS] Error creating permissive policy:', policyError);
         return NextResponse.json({ 
           success: false, 
           error: 'Failed to fix RLS policies',
@@ -46,9 +41,7 @@ export async function POST(req: Request) {
         }, { status: 500 });
       }
       
-      console.log('[FIX ORDERS RLS] Created permissive policy successfully');
     } else {
-      console.log('[FIX ORDERS RLS] Disabled RLS successfully');
     }
     
     return NextResponse.json({ 

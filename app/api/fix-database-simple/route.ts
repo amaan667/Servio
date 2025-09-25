@@ -3,12 +3,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST() {
   try {
-    console.log('🔧 Applying simple database fix...');
     
     const supabase = createAdminClient();
     
     // 1. Test if we can access the tables
-    console.log('Testing database access...');
     const { data: tables, error: tablesError } = await supabase
       .from('tables')
       .select('id, venue_id, label')
@@ -22,7 +20,6 @@ export async function POST() {
       }, { status: 500 });
     }
     
-    console.log(`Found ${tables?.length || 0} tables`);
     
     // 2. Test table_sessions access
     const { data: sessions, error: sessionsError } = await supabase
@@ -38,10 +35,8 @@ export async function POST() {
       }, { status: 500 });
     }
     
-    console.log(`Found ${sessions?.length || 0} sessions`);
     
     // 3. Ensure all tables have sessions
-    console.log('Ensuring all tables have sessions...');
     let sessionsCreated = 0;
     
     if (tables) {
@@ -66,14 +61,12 @@ export async function POST() {
           if (!insertError) {
             sessionsCreated++;
           } else {
-            console.log(`Error creating session for table ${table.id}:`, insertError.message);
           }
         }
       }
     }
     
     // 4. Test the tables_with_sessions view
-    console.log('Testing tables_with_sessions view...');
     const { data: viewData, error: viewError } = await supabase
       .from('tables_with_sessions')
       .select('id, label, status')
@@ -93,7 +86,6 @@ export async function POST() {
       }, { status: 500 });
     }
     
-    console.log(`View accessible, found ${viewData?.length || 0} records`);
     
     return NextResponse.json({
       success: true,

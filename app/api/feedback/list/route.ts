@@ -41,7 +41,6 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (venueError || !venue) {
-      console.log('[AUTH DEBUG] Venue access denied:', venueError?.message);
       return NextResponse.json({ 
         ok: false, 
         error: 'Access denied to this venue' 

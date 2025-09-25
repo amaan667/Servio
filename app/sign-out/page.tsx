@@ -11,7 +11,6 @@ export default function SignOutPage() {
   useEffect(() => {
     const performSignOut = async () => {
       try {
-        console.log('[AUTH DEBUG] SignOutPage: Starting sign out');
         
         // Call server-side sign out
         const response = await fetch('/api/auth/signout', {
@@ -20,9 +19,7 @@ export default function SignOutPage() {
         });
         
         if (!response.ok) {
-          console.log('[AUTH DEBUG] Server-side sign out failed');
         } else {
-          console.log('[AUTH DEBUG] Server-side sign out successful');
         }
         
         // Clear client storage
@@ -30,7 +27,6 @@ export default function SignOutPage() {
           const { clearAuthStorage } = await import('@/lib/sb-client');
           clearAuthStorage();
         } catch (error) {
-          console.log('[AUTH DEBUG] Error clearing client storage:', error);
         }
         
         // Use auth provider's signOut method
@@ -39,7 +35,6 @@ export default function SignOutPage() {
         // Redirect to home page
         router.replace('/');
         
-        console.log('[AUTH DEBUG] SignOutPage: Sign out completed');
       } catch (error) {
         console.error('[AUTH DEBUG] SignOutPage: Sign out error:', error);
         router.replace('/');

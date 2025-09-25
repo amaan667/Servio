@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[GROUP SESSIONS] Fetching group sessions for venue:', venueId);
 
     const supabase = await createAdminClient();
 
@@ -28,7 +27,6 @@ export async function GET(request: NextRequest) {
 
       if (error) {
         if (error.message.includes('does not exist')) {
-          console.log('[GROUP SESSIONS] Table does not exist yet, returning empty array');
           return NextResponse.json({ 
             ok: true, 
             groupSessions: [],
@@ -42,7 +40,6 @@ export async function GET(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log('[GROUP SESSIONS] Found group sessions:', groupSessions?.length || 0);
 
       return NextResponse.json({ 
         ok: true, 
@@ -51,7 +48,6 @@ export async function GET(request: NextRequest) {
       });
 
     } catch (tableError) {
-      console.log('[GROUP SESSIONS] Table not available, returning empty array');
       return NextResponse.json({ 
         ok: true, 
         groupSessions: [],

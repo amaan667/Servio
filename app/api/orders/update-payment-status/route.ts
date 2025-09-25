@@ -39,7 +39,6 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    console.log('[UPDATE PAYMENT STATUS] Payment status updated successfully:', data);
     return NextResponse.json({ success: true, data });
     
   } catch (error: any) {

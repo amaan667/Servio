@@ -25,7 +25,6 @@ export function useDailyReset(venueId: string) {
 
     try {
       setIsChecking(true);
-      console.log('🔄 [DAILY RESET HOOK] Checking for daily reset needed...');
 
       const response = await fetch('/api/daily-reset/check-and-reset', {
         method: 'POST',
@@ -39,7 +38,6 @@ export function useDailyReset(venueId: string) {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('🔄 [DAILY RESET HOOK] Reset check result:', result);
         setResetResult(result);
         
         if (result.resetDate) {
@@ -51,11 +49,6 @@ export function useDailyReset(venueId: string) {
           const { completedOrders, canceledReservations, deletedTables } = result.summary;
           
           if (completedOrders > 0 || canceledReservations > 0 || deletedTables > 0) {
-            console.log('🔄 [DAILY RESET HOOK] Daily reset performed:', {
-              completedOrders,
-              canceledReservations,
-              deletedTables
-            });
             
             // You could show a toast notification here
             // toast.success(`Daily reset completed: ${completedOrders} orders completed, ${deletedTables} tables deleted`);

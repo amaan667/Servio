@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'venue_id is required' }, { status: 400 });
     }
 
-    console.log('[AUTH DEBUG] Clearing menu items for venue:', venue_id);
 
     const supabase = await createAdminClient();
 
@@ -45,10 +44,8 @@ export async function POST(request: NextRequest) {
       results[operation.table] = deletedCount;
       totalDeleted += deletedCount;
       
-      console.log(`[AUTH DEBUG] Cleared ${deletedCount} ${operation.description}`);
     }
 
-    console.log('[AUTH DEBUG] Successfully cleared all catalog data for venue:', venue_id, 'Total deleted:', totalDeleted);
 
     return NextResponse.json({
       ok: true,

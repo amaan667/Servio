@@ -109,19 +109,15 @@ export default function UnifiedFeedbackForm({
         const ownerQuestions = data.questions || [];
         
         if (ownerQuestions.length > 0) {
-          console.log('[FEEDBACK] Using owner-created questions:', ownerQuestions.length);
           setQuestions(ownerQuestions);
         } else {
-          console.log('[FEEDBACK] No owner questions found, using generic questions');
           setQuestions(genericQuestions);
         }
       } else {
-        console.log('[FEEDBACK] Failed to fetch owner questions, using generic questions');
         setQuestions(genericQuestions);
       }
     } catch (error) {
       console.error('[FEEDBACK] Error fetching questions:', error);
-      console.log('[FEEDBACK] Using generic questions as fallback');
       setQuestions(genericQuestions);
     } finally {
       setLoading(false);

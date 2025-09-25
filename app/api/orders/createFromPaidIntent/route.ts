@@ -30,10 +30,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[ORDER CREATION] Processing payment intent:', {
-      paymentIntentId,
-      cartId,
-    });
 
     // Handle demo mode
     if (paymentIntentId.startsWith('demo-')) {
@@ -43,11 +39,6 @@ export async function POST(req: NextRequest) {
     // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    console.log('[ORDER CREATION] Payment intent status:', {
-      id: paymentIntent.id,
-      status: paymentIntent.status,
-      amount: paymentIntent.amount,
-    });
 
     // Verify payment succeeded
     if (paymentIntent.status !== 'succeeded') {
@@ -68,7 +59,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (existingOrder) {
-      console.log('[ORDER CREATION] Order already exists:', existingOrder.id);
       return NextResponse.json({
         ok: true,
         order: existingOrder,
@@ -126,12 +116,6 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    console.log('[ORDER CREATION] Creating order:', {
-      id: orderData.id,
-      venue_id: orderData.venue_id,
-      table_number: orderData.table_number,
-      total_amount: orderData.total_amount,
-    });
 
     // Create order in database
     const { data: order, error: orderError } = await supabase
@@ -151,10 +135,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[ORDER CREATION] Order created successfully:', {
-      id: order.id,
-      order_number: order.id,
-    });
 
     // Publish realtime event for live orders
     try {
@@ -171,7 +151,6 @@ export async function POST(req: NextRequest) {
             venue_id: venue_id,
           },
         });
-      console.log('[ORDER CREATION] Realtime event published');
     } catch (realtimeError) {
       console.error('[ORDER CREATION] Failed to publish realtime event:', realtimeError);
       // Don't fail the order creation if realtime fails
@@ -210,7 +189,6 @@ export async function POST(req: NextRequest) {
 
 async function createDemoOrder(cartId: string) {
   try {
-    console.log('[DEMO ORDER] Creating demo order for cart:', cartId);
 
     // Create a demo order
     const demoOrderData = {
@@ -262,7 +240,6 @@ async function createDemoOrder(cartId: string) {
       );
     }
 
-    console.log('[DEMO ORDER] Demo order created successfully:', order.id);
 
     // Publish realtime event for live orders
     try {
@@ -279,7 +256,6 @@ async function createDemoOrder(cartId: string) {
             venue_id: 'demo-cafe',
           },
         });
-      console.log('[DEMO ORDER] Realtime event published');
     } catch (realtimeError) {
       console.error('[DEMO ORDER] Failed to publish realtime event:', realtimeError);
       // Don't fail the order creation if realtime fails

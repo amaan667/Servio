@@ -14,7 +14,6 @@ export async function POST(req: Request) {
     
     try {
       rawBodyText = await req.text();
-      console.log('[AUTH DEBUG] Raw request body preview:', rawBodyText.substring(0, 200));
       
       requestBody = JSON.parse(rawBodyText);
     } catch (parseError: any) {
@@ -42,9 +41,6 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    console.log('[AUTH DEBUG] Process-text API called with:', { venue_id, filename, textLength: text.length });
-    console.log('[AUTH DEBUG] Processing text menu for venue:', venue_id, 'length:', text.length);
-    console.log('[AUTH DEBUG] Text preview:', text.substring(0, 200));
 
     // Parse menu using function-calling with chunking
     let rawPayload;
@@ -58,7 +54,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Menu parsing completed successfully');
 
     // Normalize for database insertion
     let normalized;
@@ -72,7 +67,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Normalized items:', normalized.items.length);
 
     // Validate against schema
     let validated;
@@ -86,7 +80,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[AUTH DEBUG] Schema validation successful');
 
     // Use UPSERT instead of individual INSERTs
     const itemsToUpsert = validated.items.map(item => ({
@@ -98,7 +91,6 @@ export async function POST(req: Request) {
       available: item.available
     }));
 
-    console.log('[DB] about_to_insert', itemsToUpsert.length);
 
     const supabase = await createAdminClient();
 
@@ -121,7 +113,6 @@ export async function POST(req: Request) {
     }
 
     const inserted = upsertedItems?.length || 0;
-    console.log('[AUTH DEBUG] Final result - Inserted:', inserted, 'Total processed:', validated.items.length);
 
     return NextResponse.json({
       ok: true,

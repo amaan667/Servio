@@ -26,28 +26,16 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[ERROR BOUNDARY] Caught error:', error, errorInfo);
-    
-    // Log additional context for debugging
-    console.log('[ERROR BOUNDARY] Error context:', {
-      errorMessage: error.message,
-      errorStack: error.stack,
-      componentStack: errorInfo.componentStack,
-      timestamp: new Date().toISOString(),
-      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown',
-      url: typeof window !== 'undefined' ? window.location.href : 'unknown'
-    });
 
     this.setState({ error, errorInfo });
   }
 
   handleRetry = () => {
-    console.log('[ERROR BOUNDARY] Retrying after error');
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
   handleClearAuth = async () => {
     try {
-      console.log('[ERROR BOUNDARY] Clearing auth state and reloading');
       clearAuthStorage();
       window.location.reload();
     } catch (err) {

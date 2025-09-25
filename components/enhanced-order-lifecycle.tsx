@@ -178,7 +178,7 @@ export function EnhancedOrderLifecycle({ venueId, order, onUpdate }: OrderLifecy
     };
 
     updateTime();
-    const interval = setInterval(updateTime, 60000); // Update every minute
+    const interval = setInterval(updateTime, 120000); // Update every 2 minutes
 
     return () => clearInterval(interval);
   }, [order.updated_at]);

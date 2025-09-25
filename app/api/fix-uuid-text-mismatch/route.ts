@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('[FIX UUID TEXT MISMATCH] Starting fix for UUID vs TEXT type mismatch...');
     
     // Use admin client for database operations
     const supabase = createAdminClient();
@@ -262,11 +261,9 @@ $$;`,
       const statement = fixStatements[i];
       
       try {
-        console.log(`[FIX UUID TEXT MISMATCH] Executing statement ${i + 1}/${fixStatements.length}...`);
         
         // For now, we'll just log the statement since we can't execute SQL directly
         // In production, this would need to be executed via a database connection
-        console.log(`[FIX UUID TEXT MISMATCH] Would execute: ${statement.substring(0, 100)}...`);
         
         results.push({
           statement: i + 1,

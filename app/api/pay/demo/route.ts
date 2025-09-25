@@ -29,7 +29,6 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log('[PAY DEMO] Processing demo payment for order:', order_id);
 
     // Update order payment status to paid with demo method
     const { data: order, error: updateError } = await supabase
@@ -51,7 +50,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[PAY DEMO] Demo payment successful for order:', order_id);
 
     return NextResponse.json({
       success: true,

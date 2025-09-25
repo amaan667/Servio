@@ -31,7 +31,6 @@ export async function GET(
       }
     );
 
-    console.log('[ORDERS SESSION] Looking for open order with session:', sessionId);
 
     // Since session_id column doesn't exist in database yet, we'll use localStorage approach
     // For now, return null to indicate no session-based order found
@@ -39,7 +38,6 @@ export async function GET(
     const order = null;
 
     if (!order) {
-      console.log('[ORDERS SESSION] No open order found for session:', sessionId);
       return NextResponse.json({
         success: true,
         data: null

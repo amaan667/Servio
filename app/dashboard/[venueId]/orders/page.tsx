@@ -15,7 +15,6 @@ export default async function OrdersPage({
   params: Promise<{ venueId: string }>;
 }) {
   const { venueId } = await params;
-  console.log('[ORDERS] Page mounted for venue', venueId);
   
   // Safe auth check that only calls getUser if auth cookies exist
   const { data: { user }, error } = await safeGetUser();
@@ -26,7 +25,6 @@ export default async function OrdersPage({
   }
   
   if (!user) {
-    console.log('[ORDERS] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
 
@@ -51,17 +49,6 @@ export default async function OrdersPage({
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false });
 
-  console.log('[ORDERS SSR] Fetched orders:', {
-    venueId,
-    ordersCount: ordersData?.length || 0,
-    error: ordersError?.message,
-    sampleOrders: ordersData?.slice(0, 3).map((o: any) => ({
-      id: o.id,
-      created_at: o.created_at,
-      order_status: o.order_status,
-      customer_name: o.customer_name
-    })) || []
-  });
 
   // Calculate stats server-side (for live orders only)
   const timeWindow = liveOrdersWindow();

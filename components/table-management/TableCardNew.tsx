@@ -200,20 +200,9 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
 
   const handleRemoveTable = async () => {
     try {
-      console.log('🔍 [REMOVE TABLE] Starting removal process:', {
-        tableId: table.id,
-        tableLabel: table.label,
-        venueId: venueId
-      });
       
       setIsLoading(true);
       setRemoveError(null);
-      
-      console.log('🔍 [REMOVE TABLE] Removing table:', {
-        tableId: table.id,
-        tableLabel: table.label,
-        venueId: venueId
-      });
       
       const response = await fetch(`/api/tables/${table.id}`, {
         method: 'DELETE',
@@ -223,11 +212,8 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         credentials: 'include', // Include cookies for authentication
       });
 
-      console.log('🔍 [REMOVE TABLE] Response status:', response.status);
-      console.log('🔍 [REMOVE TABLE] Response ok:', response.ok);
 
       const responseData = await response.json();
-      console.log('🔍 [REMOVE TABLE] Response data:', responseData);
 
       if (!response.ok) {
         // Handle specific error cases with more user-friendly messages
@@ -242,7 +228,6 @@ export function TableCardNew({ table, venueId, onActionComplete, availableTables
         }
       }
 
-      console.log('🔍 [REMOVE TABLE] Table removed successfully');
       onActionComplete?.();
       setShowRemoveDialog(false);
       setForceRemove(false);

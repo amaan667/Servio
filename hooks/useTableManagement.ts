@@ -21,7 +21,6 @@ export function useTableManagement() {
 
   const createTable = async (params: CreateTableParams) => {
     try {
-      console.log('[TABLE MANAGEMENT HOOK] Starting table creation:', params);
       setLoading(true);
       setError(null);
 
@@ -33,9 +32,7 @@ export function useTableManagement() {
         body: JSON.stringify(params),
       });
 
-      console.log('[TABLE MANAGEMENT HOOK] API response status:', response.status);
       const data = await response.json();
-      console.log('[TABLE MANAGEMENT HOOK] API response data:', data);
 
       if (!response.ok) {
         const errorMessage = data.error || 'Failed to create table';
@@ -50,7 +47,6 @@ export function useTableManagement() {
         throw error;
       }
 
-      console.log('[TABLE MANAGEMENT HOOK] Table created successfully:', data.table);
       return data.table;
     } catch (err) {
       console.error('[TABLE MANAGEMENT HOOK] Error creating table:', err);

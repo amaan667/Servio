@@ -49,7 +49,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[UPDATE SESSION] Order updated with session ID:', order.id);
     return NextResponse.json({ success: true, orderId: order.id });
 
   } catch (error) {

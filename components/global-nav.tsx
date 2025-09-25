@@ -21,14 +21,6 @@ export default function GlobalNav() {
   const pathname = usePathname();
   const supabase = createClient();
 
-  // Debug logging (only in development)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[GLOBAL NAV] Component rendering:', { 
-      loading, 
-      hasSession: !!session, 
-      pathname
-    });
-  }
 
   // Show authenticated navigation if we have a session, even if still loading
   // This prevents the flash of unauthenticated content
@@ -59,19 +51,6 @@ export default function GlobalNav() {
     ? "bg-primary hover:bg-primary/90 text-primary-foreground"
     : "bg-purple-600 hover:bg-purple-700 text-white";
 
-  // Debug logging for authentication state
-  useEffect(() => {
-    console.log('[NAV DEBUG] Authentication state changed:', {
-      loading,
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      hasAccessToken: !!session?.access_token,
-      userId: session?.user?.id,
-      isAuthenticated,
-      pathname,
-      timestamp: new Date().toISOString()
-    });
-  }, [loading, session, isAuthenticated, pathname]);
 
   // Determine if we're on dashboard pages
   const isOnDashboard = pathname?.startsWith('/dashboard');

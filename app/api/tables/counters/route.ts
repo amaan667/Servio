@@ -61,7 +61,6 @@ export async function GET(req: Request) {
     if (realtimeError) {
       console.error('[TABLES COUNTERS] Realtime error:', realtimeError);
     } else {
-      console.log('[TABLES COUNTERS] Realtime verification:', realtimeCounts);
     }
 
     return NextResponse.json({

@@ -33,7 +33,6 @@ export function useStaffCounts(venueId: string) {
         return;
       }
       
-      console.log('[STAFF_COUNTS] RPC result:', result);
       setData(result);
     } catch (err) {
       console.error('[STAFF_COUNTS] Fetch error:', err);

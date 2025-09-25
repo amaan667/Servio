@@ -11,13 +11,11 @@ import VenueSettingsClient from './VenueSettingsClient';
 
 export default async function VenueSettings({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  console.log('[SETTINGS] Page mounted for venue', venueId);
   
   try {
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
     if (!hasAuthCookie) {
-      console.log('[SETTINGS] No auth cookie found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -61,7 +59,6 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     }
     
     if (!user) {
-      console.log('[SETTINGS] No user found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
@@ -79,7 +76,6 @@ export default async function VenueSettings({ params }: { params: Promise<{ venu
     }
 
     if (!venue) {
-      console.log('[SETTINGS] Venue not found or user does not own it');
       redirect('/dashboard');
     }
 

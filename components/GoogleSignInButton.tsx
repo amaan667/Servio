@@ -5,7 +5,6 @@ export function GoogleSignInButton() {
   const router = useRouter();
 
   async function handleSignIn() {
-    console.log('[AUTH DEBUG] GoogleSignInButton: Redirecting to sign-in page');
     router.push('/sign-in');
   }
 

@@ -113,7 +113,6 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
 
     // Set up real-time subscription for order updates
     if (supabase && orderId) {
-      console.log('[REAL-TIME TIMELINE] Setting up real-time subscription for order:', orderId);
       
       const channel = supabase
         .channel(`order-timeline-${orderId}`)
@@ -126,43 +125,38 @@ export function RealTimeOrderTimeline({ orderId, venueId, className }: RealTimeO
             filter: `id=eq.${orderId}`,
           },
           (payload: any) => {
-            console.log('[REAL-TIME TIMELINE] Order update detected:', payload);
+            console.log('[REAL-TIME TIMELINE] Order update received:', {
+              eventType: payload.eventType,
+              oldStatus: payload.old?.order_status,
+              newStatus: payload.new?.order_status,
+              orderId: payload.new?.id
+            });
             
             if (payload.eventType === 'UPDATE') {
-              console.log('[REAL-TIME TIMELINE] Order status updated:', {
-                oldStatus: payload.old?.order_status,
-                newStatus: payload.new?.order_status,
-                orderId: payload.new?.id
-              });
               
               // Update the order with new data
               setOrder(prevOrder => {
                 if (!prevOrder) return null;
                 
                 const updatedOrder = { ...prevOrder, ...payload.new };
-                console.log('[REAL-TIME TIMELINE] Updated order:', updatedOrder);
                 return updatedOrder;
               });
               
               setLastUpdate(new Date());
             } else if (payload.eventType === 'DELETE') {
-              console.log('[REAL-TIME TIMELINE] Order deleted:', payload.old);
               setError('This order has been cancelled or deleted');
             }
           }
         )
         .subscribe((status: any) => {
-          console.log('[REAL-TIME TIMELINE] Real-time subscription status:', status);
           
           if (status === 'SUBSCRIBED') {
-            console.log('[REAL-TIME TIMELINE] Successfully subscribed to order updates');
           } else if (status === 'CHANNEL_ERROR') {
             console.error('[REAL-TIME TIMELINE] Real-time subscription error');
           }
         });
 
       return () => {
-        console.log('[REAL-TIME TIMELINE] Cleaning up real-time subscription');
         supabase.removeChannel(channel);
       };
     }

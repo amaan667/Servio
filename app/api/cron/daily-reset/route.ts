@@ -5,14 +5,12 @@ import { createAdminClient } from '@/lib/supabase/server';
 // to automatically perform daily reset at midnight
 export async function POST(request: NextRequest) {
   try {
-    console.log('🕛 [CRON DAILY RESET] Automatic daily reset triggered');
     
     // Verify this is a legitimate cron request (you can add authentication here)
     const authHeader = request.headers.get('authorization');
     const expectedAuth = process.env.CRON_SECRET || 'default-cron-secret';
     
     if (authHeader !== `Bearer ${expectedAuth}`) {
-      console.log('🕛 [CRON DAILY RESET] Unauthorized cron request');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -25,7 +23,6 @@ export async function POST(request: NextRequest) {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
-    console.log('🕛 [CRON DAILY RESET] Current time:', currentTime, { currentHour, currentMinute });
 
     const supabase = createAdminClient();
     
@@ -44,7 +41,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!venues || venues.length === 0) {
-      console.log('🕛 [CRON DAILY RESET] No venues found');
       return NextResponse.json({
         success: true,
         message: 'No venues found for daily reset',
@@ -64,7 +60,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (venuesToReset.length === 0) {
-      console.log('🕛 [CRON DAILY RESET] No venues scheduled for reset at this time');
       return NextResponse.json({
         success: true,
         message: 'No venues scheduled for reset at this time',
@@ -73,13 +68,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`🕛 [CRON DAILY RESET] Found ${venuesToReset.length} venues to reset at ${currentTime}`);
 
     const resetResults = [];
 
     for (const venue of venuesToReset) {
       try {
-        console.log(`🕛 [CRON DAILY RESET] Processing venue: ${venue.name} (${venue.venue_id})`);
 
         // Check if this venue needs reset
         const { data: activeOrders } = await supabase
@@ -106,7 +99,6 @@ export async function POST(request: NextRequest) {
                           (occupiedTables?.length || 0) > 0;
 
         if (!needsReset) {
-          console.log(`🕛 [CRON DAILY RESET] Venue ${venue.name} doesn't need reset`);
           resetResults.push({
             venueId: venue.venue_id,
             venueName: venue.name,
@@ -117,7 +109,6 @@ export async function POST(request: NextRequest) {
         }
 
         // Perform the reset
-        console.log(`🕛 [CRON DAILY RESET] Resetting venue: ${venue.name}`);
 
         // Complete all active orders
         if (activeOrders && activeOrders.length > 0) {
@@ -178,7 +169,6 @@ export async function POST(request: NextRequest) {
           deletedTables: venueTables?.length || 0
         });
 
-        console.log(`🕛 [CRON DAILY RESET] Successfully reset venue: ${venue.name}`);
 
       } catch (error) {
         console.error(`🕛 [CRON DAILY RESET] Error resetting venue ${venue.name}:`, error);
@@ -194,7 +184,6 @@ export async function POST(request: NextRequest) {
     const successfulResets = resetResults.filter(r => r.reset).length;
     const totalVenues = venuesToReset.length;
 
-    console.log(`🕛 [CRON DAILY RESET] Daily reset completed: ${successfulResets}/${totalVenues} venues reset`);
 
     return NextResponse.json({
       success: true,

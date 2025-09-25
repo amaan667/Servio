@@ -42,14 +42,10 @@ export function AddTableDialog({ venueId, onTableAdded }: AddTableDialogProps) {
       seat_count: seatCount,
     };
 
-    console.log('[ADD TABLE DIALOG] Creating table with data:', tableData);
-    console.log('[ADD TABLE DIALOG] Original label input:', label);
-    console.log('[ADD TABLE DIALOG] Trimmed label:', label.trim());
 
     try {
       const result = await createTable(tableData);
       
-      console.log('[ADD TABLE DIALOG] Table created successfully:', result);
       
       setLabel('');
       setSeatCount(2);

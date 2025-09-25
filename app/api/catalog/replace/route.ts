@@ -59,12 +59,7 @@ export async function POST(req: NextRequest) {
         const extractedText = await extractTextFromPDF(fileBuffer);
         
         // Parse using bulletproof parser
-        console.log('[CATALOG REPLACE] Starting menu parsing...');
         const parsedPayload = await parseMenuBulletproof(extractedText);
-        console.log('[CATALOG REPLACE] Parsed payload:', {
-          itemsCount: parsedPayload.items?.length || 0,
-          categoriesCount: parsedPayload.categories?.length || 0
-        });
         
         // Apply known fixes
         const fixedPayload = {
@@ -72,10 +67,6 @@ export async function POST(req: NextRequest) {
           items: applyKnownFixes(parsedPayload.items || [])
         };
 
-        console.log('[CATALOG REPLACE] Fixed payload:', {
-          itemsCount: fixedPayload.items?.length || 0,
-          categoriesCount: fixedPayload.categories?.length || 0
-        });
 
         // Validate and replace catalog
         return await replaceCatalog(supabase, venueId, fixedPayload);
@@ -115,7 +106,6 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[CATALOG REPLACE] Starting catalog replacement for venue:', venueId);
 
     const supabase = await createAdminClient();
 
@@ -191,18 +181,11 @@ export async function POST(req: NextRequest) {
 
 // Helper function to replace catalog
 async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any) {
-  console.log('[CATALOG REPLACE] Starting catalog replacement...');
-  console.log('[CATALOG REPLACE] Payload summary:', {
-    itemsCount: fixedPayload.items?.length || 0,
-    categoriesCount: fixedPayload.categories?.length || 0,
-    venueId
-  });
 
   // Skip validation for now to focus on maximum extraction
   // Just try to insert items directly
   try {
     // Clear existing menu items for this venue
-    console.log('[CATALOG REPLACE] Clearing existing menu items...');
     const { error: deleteError } = await supabase
       .from('menu_items')
       .delete()
@@ -214,7 +197,6 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
 
     // Insert new items
     if (fixedPayload.items && fixedPayload.items.length > 0) {
-      console.log('[CATALOG REPLACE] Inserting', fixedPayload.items.length, 'new items...');
       
       const itemsToInsert = fixedPayload.items.map((item: any, index: number) => ({
         venue_id: venueId,
@@ -239,7 +221,6 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
         }, { status: 500 });
       }
 
-      console.log('[CATALOG REPLACE] Successfully inserted', insertedItems?.length || 0, 'items');
 
       return NextResponse.json({
         ok: true,
@@ -250,7 +231,6 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
         }
       });
     } else {
-      console.log('[CATALOG REPLACE] No items to insert');
       return NextResponse.json({
         ok: true,
         message: 'Catalog cleared (no items found)',
@@ -273,11 +253,9 @@ async function replaceCatalog(supabase: any, venueId: string, fixedPayload: any)
 // Extract text from PDF using the same logic as the existing process-pdf route
 async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
   try {
-    console.log('[OCR] Starting PDF text extraction...');
     
     // Check if Google Vision credentials are available
     if (!process.env.GOOGLE_CREDENTIALS_B64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      console.log('[OCR] No Google Vision credentials found, using fallback text extraction');
       
       // Fallback to basic text extraction for development
       const mockText = `
@@ -302,18 +280,14 @@ BEVERAGES
 3. Soft Drinks - £3.00
       `.trim();
 
-      console.log('[OCR] Text extraction completed (fallback), length:', mockText.length);
       return mockText;
     }
     
     // Use real Google Vision OCR
-    console.log('[OCR] Using Google Vision OCR...');
     const { extractTextFromPdf } = await import('@/lib/googleVisionOCR');
     const pdfBuffer = Buffer.from(buffer);
     const extractedText = await extractTextFromPdf(pdfBuffer, 'uploaded-menu.pdf');
     
-    console.log('[OCR] Text extraction completed (Google Vision), length:', extractedText.length);
-    console.log('[OCR] Text preview:', extractedText.substring(0, 200));
     
     return extractedText;
     

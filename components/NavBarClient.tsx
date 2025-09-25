@@ -25,7 +25,6 @@ export default function NavBarClient() {
   const homeHref = venueId ? `/dashboard/${venueId}` : '/dashboard';
   const settingsHref = venueId ? `/dashboard/${venueId}/settings` : '/dashboard';
 
-  console.log('[NAV] NavBarClient mounted', { venueId, homeHref, settingsHref, pathname });
 
   return (
     <nav className="flex items-center justify-between h-20 sm:h-24 md:h-28 px-0 bg-white border-b shadow-lg sticky top-0 z-20">

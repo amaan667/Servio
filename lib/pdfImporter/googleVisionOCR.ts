@@ -14,11 +14,9 @@ const bucketName = process.env.GCS_BUCKET_NAME;
 let client: any, storage: any;
 
 try {
-  console.log('[OCR] Initializing Google Cloud clients...');
   
   // For Railway: handle base64 encoded credentials
   if (process.env.GOOGLE_CREDENTIALS_B64) {
-    console.log('[OCR] Using base64 encoded service account credentials');
     const credentialsJson = Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, 'base64').toString('utf8');
     const credentials = JSON.parse(credentialsJson);
     
@@ -31,7 +29,6 @@ try {
       projectId: process.env.GOOGLE_PROJECT_ID 
     });
   } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    console.log('[OCR] Using service account credentials from environment variable');
     const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
     
     client = new vision.ImageAnnotatorClient({ 
@@ -43,7 +40,6 @@ try {
       projectId: process.env.GOOGLE_PROJECT_ID 
     });
   } else {
-    console.log('[OCR] No credentials found, using default credentials');
     client = new vision.ImageAnnotatorClient({
       projectId: process.env.GOOGLE_PROJECT_ID
     });
@@ -52,7 +48,6 @@ try {
     });
   }
   
-  console.log('[OCR] Google Cloud clients initialized successfully');
 } catch (error) {
   console.error('[OCR] Failed to initialize Google Cloud clients:', error);
   throw new Error(`Google Cloud credentials not properly configured: ${(error as any).message}`);
@@ -73,15 +68,10 @@ export async function extractTextBlocksFromPdf(pdfBuffer: Buffer, fileName: stri
   const tempFileName = `${uuidv4()}-${fileName}`;
   const gcsUri = `gs://${bucketName}/${tempFileName}`;
 
-  console.log('[OCR] Starting Google Vision OCR with bounding boxes...');
-  console.log('[OCR] Project ID:', process.env.GOOGLE_PROJECT_ID);
-  console.log('[OCR] Bucket:', bucketName);
-  console.log('[OCR] File:', tempFileName);
 
   try {
     // Upload to GCS
     await storage.bucket(bucketName).file(tempFileName).save(pdfBuffer);
-    console.log(`[OCR] Uploaded PDF to ${gcsUri}`);
 
     // Run OCR on the PDF with detailed text detection
     const [operation] = await client.asyncBatchAnnotateFiles({
@@ -100,9 +90,7 @@ export async function extractTextBlocksFromPdf(pdfBuffer: Buffer, fileName: stri
       ]
     });
 
-    console.log(`[OCR] Processing started...`);
     await operation.promise();
-    console.log(`[OCR] Processing complete.`);
 
     // Download OCR JSON output
     const [files] = await storage.bucket(bucketName).getFiles({
@@ -124,13 +112,10 @@ export async function extractTextBlocksFromPdf(pdfBuffer: Buffer, fileName: stri
       });
     }
 
-    console.log(`[OCR] Extracted ${allBlocks.length} text blocks`);
-    console.log(`[OCR] Sample blocks:`, allBlocks.slice(0, 3).map(b => ({ text: b.text, bbox: b.bbox })));
 
     // Clean up temporary files
     try {
       await storage.bucket(bucketName).file(tempFileName).delete();
-      console.log(`[OCR] Cleaned up temporary file: ${tempFileName}`);
     } catch (cleanupError) {
       console.warn(`[OCR] Failed to cleanup temporary file:`, (cleanupError as any).message);
     }

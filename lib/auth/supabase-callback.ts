@@ -15,8 +15,6 @@ export async function handleGoogleCallback(req: any, res: any) {
   const codeVerifier = Array.isArray(rawVerifier) ? rawVerifier[0] : rawVerifier;
 
   // Add the suggested debugging logs
-  console.log("authCode typeof/value:", typeof authCode, authCode?.slice(0, 12), "...");
-  console.log("codeVerifier typeof/len:", typeof codeVerifier, codeVerifier?.length);
 
   if (!authCode || typeof authCode !== "string") {
     console.error('[OAuth Backend] Missing or invalid code', { 
@@ -65,7 +63,7 @@ export async function handleGoogleCallback(req: any, res: any) {
     // Optionally: set your own httpOnly cookies here if you want server-managed auth
     // const { session } = data;
 
-    console.log("[OAuth SUCCESS]", {
+    console.log("[OAuth Success]", {
       hasSession: !!data.session,
       hasUser: !!data.user,
       sessionExpiresAt: data.session?.expires_at,

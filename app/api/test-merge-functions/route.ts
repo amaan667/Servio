@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('[TEST MERGE FUNCTIONS] Testing database merge functions...');
     
     // Use admin client for database operations
     const supabase = createAdminClient();

@@ -29,7 +29,6 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log('[PAY LATER] Processing pay later for order:', order_id);
 
     // Update order to keep unpaid status but mark as pay later
     const { data: order, error: updateError } = await supabase
@@ -51,7 +50,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[PAY LATER] Pay later order created for order:', order_id);
 
     return NextResponse.json({
       success: true,

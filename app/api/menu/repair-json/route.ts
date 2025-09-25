@@ -10,7 +10,6 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    console.log('[JSON_REPAIR_API] Starting JSON repair...');
     
     const { json } = await req.json();
     
@@ -21,15 +20,9 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    console.log('[JSON_REPAIR_API] Input JSON length:', json.length);
 
     // First, validate the original JSON
     const originalValidation = validateMenuJSON(json);
-    console.log('[JSON_REPAIR_API] Original validation:', {
-      valid: originalValidation.valid,
-      errors: originalValidation.errors.length,
-      items: originalValidation.items.length
-    });
 
     // If already valid, return as-is
     if (originalValidation.valid) {
@@ -46,9 +39,6 @@ export async function POST(req: Request) {
     const repairResult = repairAndValidateMenuJSON(json);
     
     if (repairResult.success) {
-      console.log('[JSON_REPAIR_API] Repair successful:', {
-        items: repairResult.items?.length || 0
-      });
       
       return NextResponse.json({
         success: true,

@@ -9,13 +9,6 @@ export async function GET(
     const { venueId } = await context.params;
     
     // Enhanced logging for customer menu access
-    console.log('🍕 MENU API CALLED 🍕');
-    console.log('[MENU API] ===== MENU REQUEST RECEIVED =====');
-    console.log('[MENU API] Timestamp:', new Date().toISOString());
-    console.log('[MENU API] Venue ID:', venueId);
-    console.log('[MENU API] Request URL:', request.url);
-    console.log('[MENU API] User Agent:', request.headers.get('user-agent'));
-    console.log('[MENU API] Referer:', request.headers.get('referer'));
     
     if (!venueId) {
       return NextResponse.json(
@@ -68,7 +61,6 @@ export async function GET(
       totalItems: menuItems?.length || 0
     };
 
-    console.log(`[MENU API] Successfully fetched ${response.totalItems} menu items for venue ${venueId}`);
     
     return NextResponse.json(response);
 

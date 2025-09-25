@@ -44,7 +44,6 @@ export function useAuth() {
   // Sign out function that works on both desktop and mobile
   const signOut = useCallback(async () => {
     try {
-      console.log('[AUTH HOOK] Starting sign out process');
       
       // First, call the server-side signout API to clear cookies
       const response = await fetch('/api/auth/signout', {
@@ -57,7 +56,6 @@ export function useAuth() {
       if (!response.ok) {
         console.error('[AUTH HOOK] Server signout failed:', response.status);
       } else {
-        console.log('[AUTH HOOK] Server signout successful');
       }
 
       // Then, call the client-side signout to clear local state
@@ -71,7 +69,6 @@ export function useAuth() {
       // Clear local state
       setAuthState({ user: null, loading: false, error: null });
       
-      console.log('[AUTH HOOK] Sign out completed successfully');
     } catch (error) {
       console.error('[AUTH HOOK] Sign out error:', error);
       setAuthState(prev => ({ 
@@ -89,7 +86,6 @@ export function useAuth() {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: any, session: any) => {
-        console.log('[AUTH HOOK] Auth state change:', event, session?.user?.id);
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           // SECURE: Use getUser() to get the latest user data

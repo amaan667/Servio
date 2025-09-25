@@ -139,7 +139,6 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    console.log('[CHECK COMPLETION] Successfully completed', updatedReservations?.length || 0, 'reservations for table', tableId);
 
     return NextResponse.json({
       ok: true,

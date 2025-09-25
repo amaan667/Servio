@@ -123,14 +123,12 @@ export default function VenueDashboardClient({
         const lastDay = new Date(todayWindow.startUtcISO).toDateString();
         
         if (currentDay !== lastDay) {
-          console.log('[DASHBOARD] Day changed, resetting stats cache and clearing tables');
           setStatsLoaded(false);
           setStats({ revenue: 0, menuItems: 0, unpaid: 0 });
           
           // Clear all tables and sessions for new day
           if (venue) {
             try {
-              console.log('[DASHBOARD] Clearing all tables and sessions for new day');
               const response = await fetch('/api/tables/clear-all', {
                 method: 'POST',
                 headers: {
@@ -140,7 +138,6 @@ export default function VenueDashboardClient({
               });
 
               if (response.ok) {
-                console.log('[DASHBOARD] All tables and sessions cleared successfully');
               } else {
                 console.error('[DASHBOARD] Failed to clear all tables and sessions:', response.status);
               }
@@ -157,7 +154,7 @@ export default function VenueDashboardClient({
       };
       
       // Check every minute for day change
-      const interval = setInterval(checkDayChange, 60000);
+      const interval = setInterval(checkDayChange, 120000);
       return () => clearInterval(interval);
     }
   }, [todayWindow, venue, venueTz]);
@@ -165,11 +162,9 @@ export default function VenueDashboardClient({
   // Set up real-time subscription for orders to update counts and revenue instantly
   useEffect(() => {
     if (!venue || !todayWindow) {
-      console.log('[DASHBOARD] Skipping subscription setup - venue or todayWindow not ready');
       return;
     }
 
-    console.log('[DASHBOARD] Setting up real-time subscription with window:', todayWindow);
     
     const channel = createClient()
       .channel('dashboard-orders')
@@ -181,7 +176,6 @@ export default function VenueDashboardClient({
           filter: `venue_id=eq.${venueId}`
         }, 
         async (payload: any) => {
-          console.log('[DASHBOARD] Real-time order change detected:', payload.event, payload.new?.id);
           
           // Get the order date from the payload with proper type checking
           const orderCreatedAt = (payload.new as any)?.created_at || (payload.old as any)?.created_at;
@@ -193,26 +187,21 @@ export default function VenueDashboardClient({
           const isInTodayWindow = orderCreatedAt >= todayWindow.startUtcISO && orderCreatedAt < todayWindow.endUtcISO;
           
           if (isInTodayWindow) {
-            console.log('[DASHBOARD] Order is within today window, updating counts and revenue');
             
             // Always refresh counts for any order change
             await refreshCounts();
             
             // Update revenue incrementally for new orders to prevent flickering
             if (payload.event === 'INSERT' && payload.new) {
-              console.log('[DASHBOARD] New order inserted, updating revenue incrementally');
               updateRevenueIncrementally(payload.new);
             } else if (payload.event === 'UPDATE' && payload.new) {
               // For order updates, we might need to recalculate revenue if order status changed
-              console.log('[DASHBOARD] Order updated, checking if revenue needs recalculation');
               // If order was cancelled or refunded, we should recalculate total revenue
               if (payload.new.order_status === 'CANCELLED' || payload.new.order_status === 'REFUNDED') {
-                console.log('[DASHBOARD] Order cancelled/refunded, recalculating total revenue');
                 await loadStats(venue.venue_id, todayWindow);
               }
             }
           } else {
-            console.log('[DASHBOARD] Order is outside today window, skipping updates');
           }
         }
       )
@@ -220,7 +209,6 @@ export default function VenueDashboardClient({
 
     // Also listen for custom order events from other components
     const handleOrderCreated = (event: CustomEvent) => {
-      console.log('[DASHBOARD] Custom order created event received:', event.detail);
       if (event.detail.venueId === venueId) {
         // Trigger immediate refresh of counts and revenue
         refreshCounts();
@@ -233,7 +221,6 @@ export default function VenueDashboardClient({
     window.addEventListener('orderCreated', handleOrderCreated as EventListener);
 
     return () => {
-      console.log('[DASHBOARD] Cleaning up real-time subscription and event listeners');
       createClient().removeChannel(channel);
       window.removeEventListener('orderCreated', handleOrderCreated as EventListener);
     };
@@ -325,7 +312,6 @@ export default function VenueDashboardClient({
         .gte("created_at", window.startUtcISO)
         .lt("created_at", window.endUtcISO);
 
-      console.log('[DASHBOARD] Found orders for today:', orders?.length || 0);
 
       const { data: menuItems } = await createClient()
         .from("menu_items")
@@ -507,12 +493,7 @@ export default function VenueDashboardClient({
             <Link 
               href={`/dashboard/${venueId}/tables`}
               onClick={() => {
-                console.log('[DASHBOARD] Table Management clicked:', {
-                  venueId,
-                  timestamp: new Date().toISOString(),
-                  userAgent: navigator.userAgent,
-                  url: window.location.href
-                });
+                // Track table management click
               }}
             >
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">

@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
 
-    console.log(`[FIX ORDER INDEX] Starting for venue: ${venueId}`);
     
     // Get current menu items ordered by ID (original insertion order)
     const { data: menuItems, error: itemsError } = await supabase
@@ -31,7 +30,6 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log(`[FIX ORDER INDEX] Found ${menuItems.length} menu items`);
 
     if (!menuItems || menuItems.length === 0) {
       return NextResponse.json({ 
@@ -46,7 +44,6 @@ export async function POST(req: NextRequest) {
       order_index: index
     }));
 
-    console.log('[FIX ORDER INDEX] Updating order_index for items:', updates.length);
 
     // Update items in batches to avoid hitting query limits
     const batchSize = 50;
@@ -70,7 +67,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(`[FIX ORDER INDEX] Successfully updated ${updatedCount} items`);
 
     // Create a menu upload record with the derived category order
     const categoryFirstAppearance: { [key: string]: number } = {};
@@ -86,7 +82,6 @@ export async function POST(req: NextRequest) {
       categoryFirstAppearance[a] - categoryFirstAppearance[b]
     );
 
-    console.log('[FIX ORDER INDEX] Derived category order:', correctCategoryOrder);
 
     // Insert menu upload record
     const { data: uploadData, error: uploadError } = await supabase
@@ -106,7 +101,6 @@ export async function POST(req: NextRequest) {
       console.error('[FIX ORDER INDEX] Error creating menu upload record:', uploadError);
       // Don't fail the whole operation for this
     } else {
-      console.log('[FIX ORDER INDEX] Created menu upload record:', uploadData[0]?.id);
     }
 
     return NextResponse.json({ 

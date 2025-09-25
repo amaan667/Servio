@@ -36,7 +36,6 @@ export const supabaseBrowser = () => {
       } as any;
     }
     
-    // console.log('[SUPABASE] Creating browser client with URL:', supabaseUrl);
     
     supabaseBrowserInstance = createBrowserClient(
       supabaseUrl,
@@ -95,7 +94,6 @@ export const supabaseBrowser = () => {
 // Function to clear Supabase auth state
 export const clearSupabaseAuth = async () => {
   try {
-    console.log('[SUPABASE] Clearing auth state...');
     
     // Use server-side signout API to properly clear cookies
     try {
@@ -107,12 +105,9 @@ export const clearSupabaseAuth = async () => {
       });
       
       if (response.ok) {
-        console.log('[SUPABASE] Server signout successful');
       } else {
-        console.log('[SUPABASE] Server signout failed:', response.status);
       }
     } catch (error) {
-      console.log('[SUPABASE] Server signout failed, continuing with local cleanup:', error);
     }
     
     // Clear any remaining auth-related storage
@@ -121,7 +116,6 @@ export const clearSupabaseAuth = async () => {
     );
     
     authKeys.forEach(key => {
-      console.log('[SUPABASE] Clearing auth key:', key);
       localStorage.removeItem(key);
     });
     
@@ -131,11 +125,9 @@ export const clearSupabaseAuth = async () => {
     );
     
     sessionAuthKeys.forEach(key => {
-      console.log('[SUPABASE] Clearing session auth key:', key);
       sessionStorage.removeItem(key);
     });
     
-    console.log('[SUPABASE] Auth state cleared successfully');
   } catch (error) {
     console.error('[SUPABASE] Error clearing auth state:', error);
   }

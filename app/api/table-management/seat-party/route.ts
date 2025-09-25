@@ -30,7 +30,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[SEAT PARTY API] Success:', data);
     return NextResponse.json(data);
 
   } catch (error) {

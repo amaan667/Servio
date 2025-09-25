@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 [FIX ORDERS] Starting to fix all orders payment status...');
     
     const { venueId } = await request.json();
     
@@ -15,10 +14,8 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    console.log('🔧 [FIX ORDERS] Admin client created');
 
     // First, let's see what orders we have and their current status
-    console.log('🔧 [FIX ORDERS] Checking current order statuses...');
     const { data: currentOrders, error: currentError } = await supabase
       .from('orders')
       .select('order_status, payment_status')
@@ -39,10 +36,8 @@ export async function POST(request: NextRequest) {
       return acc;
     }, {});
     
-    console.log('🔧 [FIX ORDERS] Current order statuses:', statusCounts);
     
     // Update all orders to be COMPLETED and PAID
-    console.log('🔧 [FIX ORDERS] Updating all orders to COMPLETED and PAID...');
     const { data: updatedOrders, error: updateError } = await supabase
       .from('orders')
       .update({
@@ -61,10 +56,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('🔧 [FIX ORDERS] Successfully updated orders:', updatedOrders.length);
     
     // Verify the update
-    console.log('🔧 [FIX ORDERS] Verifying update...');
     const { data: verifyOrders, error: verifyError } = await supabase
       .from('orders')
       .select('order_status, payment_status')
@@ -85,8 +78,6 @@ export async function POST(request: NextRequest) {
       return acc;
     }, {});
     
-    console.log('🔧 [FIX ORDERS] Order statuses after update:', newStatusCounts);
-    console.log('🔧 [FIX ORDERS] ✅ All orders have been updated to COMPLETED and PAID!');
     
     return NextResponse.json({
       success: true,

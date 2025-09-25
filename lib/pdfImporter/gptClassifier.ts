@@ -18,7 +18,6 @@ export async function classifyTextBlock(
   contextBlocks: TextBlock[]
 ): Promise<GPTClassificationResult> {
   try {
-    console.log('[GPT_CLASSIFY] Classifying block:', block.text.substring(0, 50));
     
     const openai = getOpenAI();
     
@@ -75,7 +74,6 @@ Return ONLY a JSON object with "type" and "confidence" (0-1).`
       throw new Error(`Invalid confidence value: ${result.confidence}`);
     }
     
-    console.log('[GPT_CLASSIFY] Classification result:', result);
     
     return {
       type: result.type,
@@ -164,7 +162,6 @@ export async function classifyOptionGroup(
   context: string
 ): Promise<OptionGroupResult | null> {
   try {
-    console.log('[GPT_OPTIONS] Classifying option group:', text.substring(0, 50));
     
     const openai = getOpenAI();
     
@@ -212,7 +209,6 @@ If this is not an option group, return null.`
       throw new Error('Invalid option group format');
     }
     
-    console.log('[GPT_OPTIONS] Option group result:', result);
     
     return {
       group: result.group,
@@ -321,7 +317,6 @@ export async function batchClassifyBlocks(
   blocks: TextBlock[],
   contextWindow: number = 3
 ): Promise<Array<{ block: TextBlock; classification: GPTClassificationResult }>> {
-  console.log('[GPT_BATCH] Batch classifying', blocks.length, 'blocks');
   
   const results: Array<{ block: TextBlock; classification: GPTClassificationResult }> = [];
   
@@ -349,6 +344,5 @@ export async function batchClassifyBlocks(
     }
   }
   
-  console.log('[GPT_BATCH] Batch classification completed:', results.length, 'results');
   return results;
 }

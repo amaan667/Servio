@@ -52,14 +52,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[PAYMENT INTENT] Creating payment intent:', {
-      cartId,
-      venueId,
-      tableNumber,
-      itemCount: items.length,
-      totalAmount,
-      customerName,
-    });
 
     // Store cart data for later retrieval
     const cartData = {
@@ -96,11 +88,6 @@ export async function POST(req: NextRequest) {
       idempotencyKey: `pi_${cartId}`,
     });
 
-    console.log('[PAYMENT INTENT] Created successfully:', {
-      id: paymentIntent.id,
-      amount: paymentIntent.amount,
-      status: paymentIntent.status,
-    });
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,

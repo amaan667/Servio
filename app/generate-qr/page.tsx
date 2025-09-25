@@ -9,32 +9,20 @@ import GenerateQRClient from './GenerateQRClient';
 
 export default async function GenerateQRPage() {
   try {
-    console.log('🔍 [QR PAGE] ===== STARTING QR PAGE LOAD =====');
-    console.log('🔍 [QR PAGE] Timestamp:', new Date().toISOString());
     
     // Check for auth cookies before making auth calls
     const hasAuthCookie = await hasServerAuthCookie();
-    console.log('🔍 [QR PAGE] Has auth cookie:', hasAuthCookie);
     if (!hasAuthCookie) {
-      console.log('🔍 [QR PAGE] No auth cookie, redirecting to sign-in');
       redirect('/sign-in');
     }
 
     const supabase = await createServerSupabase();
-    console.log('🔍 [QR PAGE] Supabase client created successfully');
 
     const { data: { user } } = await supabase.auth.getUser();
-    console.log('🔍 [QR PAGE] User authentication result:', {
-      hasUser: !!user,
-      userId: user?.id,
-      userEmail: user?.email
-    });
     if (!user) {
-      console.log('🔍 [QR PAGE] No user found, redirecting to sign-in');
       redirect('/sign-in');
     }
 
-    console.log('🔍 [QR PAGE] Fetching venue data for user:', user.id);
     const { data: venue, error } = await supabase
       .from('venues')
       .select('venue_id, name')
@@ -42,24 +30,11 @@ export default async function GenerateQRPage() {
       .limit(1)
       .maybeSingle();
 
-    console.log('🔍 [QR PAGE] Venue query result:', {
-      hasVenue: !!venue,
-      venueId: venue?.venue_id,
-      venueName: venue?.name,
-      error: error?.message
-    });
-
     // Get active tables count using the same logic as dashboard
     let activeTablesCount = 0;
     let activeTablesError = null;
     
     try {
-      console.log('🔍 [QR PAGE] Getting active tables count...');
-      console.log('🔍 [QR PAGE] Function parameters:', {
-        p_venue_id: venue.venue_id,
-        p_tz: 'Europe/London',
-        p_live_window_mins: 30
-      });
       
       // Use the api_table_counters function (same as table management page)
       const { data: countsData, error: countsError } = await supabase
@@ -73,11 +48,7 @@ export default async function GenerateQRPage() {
       } else {
         // api_table_counters returns a single object, not an array
         const result = Array.isArray(countsData) ? countsData[0] : countsData;
-        console.log('🔍 [QR PAGE] Raw countsData:', countsData);
-        console.log('🔍 [QR PAGE] Processed result:', result);
-        console.log('🔍 [QR PAGE] total_tables value:', result?.total_tables);
         activeTablesCount = result?.total_tables || 0;
-        console.log('🔍 [QR PAGE] Final activeTablesCount:', activeTablesCount);
       }
     } catch (queryError) {
       console.error('🔍 [QR PAGE] Active tables query failed:', queryError);
@@ -90,21 +61,11 @@ export default async function GenerateQRPage() {
     }
     
     if (!venue) {
-      console.log('🔍 [QR PAGE] No venue found, redirecting to complete-profile');
       redirect('/complete-profile');
     }
-
-    console.log('🔍 [QR PAGE] ===== RENDERING QR PAGE COMPONENT =====');
-    console.log('🔍 [QR PAGE] Props being passed to GenerateQRClient:', {
-      venueId: venue.venue_id,
-      venueName: venue.name,
-      activeTablesCount: activeTablesCount,
-      activeTablesError: activeTablesError?.message
-    });
     
     // Continue even if active tables query failed - we can still show QR codes
     if (activeTablesError) {
-      console.log('🔍 [QR PAGE] Active tables query had error, but continuing with default count:', activeTablesError.message);
     }
 
   return (

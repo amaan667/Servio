@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[AUTH DEBUG] Checking table creation dates...');
 
     const supabase = await createAdminClient();
 
@@ -23,7 +22,6 @@ export async function GET(request: NextRequest) {
     }
 
     const venue = venues[0];
-    console.log(`[AUTH DEBUG] Found venue: ${venue.name} (ID: ${venue.venue_id})`);
 
     // Check current tables and their creation dates
     const { data: tables, error: tablesError } = await supabase
@@ -74,7 +72,6 @@ export async function GET(request: NextRequest) {
       created_earlier: tablesWithDates.filter(t => t.is_older).length
     };
 
-    console.log('[AUTH DEBUG] Table dates check complete:', summary);
 
     return NextResponse.json({ 
       ok: true, 

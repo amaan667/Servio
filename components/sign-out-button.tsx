@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuthContext } from './auth-provider';
+import { useAuth } from '@/app/auth/AuthProvider';
 
 interface SignOutButtonProps {
   className?: string;
@@ -14,17 +14,15 @@ export function SignOutButton({
   children = 'Sign Out',
   variant = 'button'
 }: SignOutButtonProps) {
-  const { signOut } = useAuthContext();
+  const { signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignOut = async () => {
     try {
       setIsLoading(true);
-      console.log('[SIGN OUT BUTTON] Starting sign out');
       
       await signOut();
       
-      console.log('[SIGN OUT BUTTON] Sign out completed');
     } catch (error) {
       console.error('[SIGN OUT BUTTON] Sign out error:', error);
     } finally {

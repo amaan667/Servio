@@ -9,7 +9,6 @@ import { MenuManagementWrapper } from '@/components/MenuManagementWrapper';
 
 export default async function MenuManagementPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
-  console.log('[MENU MANAGEMENT] Page mounted for venue', venueId);
   
   // SECURE: Use the secure authentication utility
   const { user, error } = await getAuthenticatedUser();
@@ -20,11 +19,9 @@ export default async function MenuManagementPage({ params }: { params: Promise<{
   }
   
   if (!user) {
-    console.log('[MENU MANAGEMENT] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
 
-  console.log('[MENU MANAGEMENT] User authenticated:', user.id);
 
   const supabase = await createServerSupabase();
 
@@ -42,17 +39,9 @@ export default async function MenuManagementPage({ params }: { params: Promise<{
   }
 
   if (!venue) {
-    console.log('[MENU MANAGEMENT] Venue not found or user not owner, redirecting to dashboard');
     redirect('/dashboard');
   }
 
-  console.log('[MENU MANAGEMENT] Venue loaded:', venue.name);
-  console.log('[MENU MANAGEMENT] Venue details:', {
-    venue_id: venue.venue_id,
-    slug: venue.slug,
-    params_venueId: venueId,
-    name: venue.name
-  });
 
   return (
     <div className="min-h-screen bg-background">

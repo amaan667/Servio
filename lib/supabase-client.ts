@@ -50,7 +50,6 @@ if (supabaseUrl && supabaseAnonKey) {
   supabase.auth.onAuthStateChange = (callback: (event: AuthChangeEvent, session: Session | null) => void) => {
     return originalOnAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       // Don't trigger any cookie operations during auth state changes
-      console.log('[AUTH DEBUG] Auth state change (no cookie ops):', event, !!session);
       callback(event, session);
     });
   };

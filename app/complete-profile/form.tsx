@@ -34,14 +34,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
     identity.provider === 'google' || identity.provider === 'oauth'
   );
 
-  // Debug logging for user data
-  console.log("[COMPLETE-PROFILE] User data:", {
-    userId: user?.id,
-    email: user?.email,
-    userMetadata: user?.user_metadata,
-    identities: user?.identities,
-    isOAuthUser
-  });
 
   // Pre-populate form with Google data if available
   useEffect(() => {
@@ -56,11 +48,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         }));
       }
       
-      console.log("[COMPLETE-PROFILE] Pre-populated form data:", {
-        googleName,
-        googleEmail,
-        venueName: formData.venueName
-      });
     }
   }, [user, isOAuthUser]);
 
@@ -117,7 +104,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
 
       // Set password for OAuth users (now required)
       if (isOAuthUser) {
-        console.log("[COMPLETE-PROFILE] Setting password for OAuth user");
         const { error: passwordError } = await createClient().auth.updateUser({
           password: formData.password
         });
@@ -129,7 +115,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
         }
       }
 
-      console.log("[COMPLETE-PROFILE] Upserting venue via server route (service role)", user.id);
       
       // Ensure we have a valid venue name
       const venueName = formData.venueName.trim() || `${user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'My'}'s Business`;
@@ -150,7 +135,6 @@ export default function CompleteProfileForm({ user }: CompleteProfileFormProps) 
       });
       
       const j = await res.json().catch(()=>({}));
-      console.log("[COMPLETE-PROFILE] Venue upsert response:", j);
       
       if (!res.ok || !j?.ok) {
         console.error("[COMPLETE-PROFILE] Venue upsert failed:", j);

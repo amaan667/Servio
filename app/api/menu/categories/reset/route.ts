@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[CATEGORIES RESET] Resetting categories for venue:', venueId);
 
     const supabase = await createAdminClient();
 
@@ -41,7 +40,6 @@ export async function POST(request: NextRequest) {
     }
 
     const originalCategories = uploadData.category_order;
-    console.log('[CATEGORIES RESET] Found original categories:', originalCategories);
 
     // Get all current menu items
     const { data: menuItems, error: menuItemsError } = await supabase
@@ -59,7 +57,6 @@ export async function POST(request: NextRequest) {
 
     // Get all current categories from menu items
     const currentCategories = [...new Set(menuItems?.map(item => item.category) || [])];
-    console.log('[CATEGORIES RESET] Current categories:', currentCategories);
 
     // Find categories that were added manually (not in original PDF)
     const manuallyAddedCategories = currentCategories.filter(cat => 
@@ -68,7 +65,6 @@ export async function POST(request: NextRequest) {
       )
     );
 
-    console.log('[CATEGORIES RESET] Manually added categories to remove:', manuallyAddedCategories);
 
     // Delete menu items that belong to manually added categories
     if (manuallyAddedCategories.length > 0) {
@@ -86,7 +82,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      console.log('[CATEGORIES RESET] Deleted items from manual categories:', manuallyAddedCategories);
     }
 
     // Update the category_order in the most recent upload to reflect the reset
@@ -106,7 +101,6 @@ export async function POST(request: NextRequest) {
       console.warn('[CATEGORIES RESET] Continuing despite category order update error');
     }
 
-    console.log('[CATEGORIES RESET] Successfully reset categories to original order');
 
     return NextResponse.json({ 
       ok: true, 

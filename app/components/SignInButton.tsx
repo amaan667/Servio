@@ -13,7 +13,6 @@ export default function SignInButton() {
     
     setLoading(true);
     try {
-      console.log('[AUTH DEBUG] SignInButton: Redirecting to sign-in page');
       router.push('/sign-in');
     } catch (error) {
       console.error('[AUTH DEBUG] SignInButton error:', error);

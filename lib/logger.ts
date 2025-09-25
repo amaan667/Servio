@@ -1,5 +1,4 @@
 export const log = (...a: any[]) => { 
-  if (process.env.NODE_ENV !== "production") console.log(...a); 
 };
 
 export const warn = (...a: any[]) => { 

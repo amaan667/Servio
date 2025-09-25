@@ -73,7 +73,6 @@ export default function HomePage() {
 
   // Debug authentication state
   useEffect(() => {
-    console.log('[LANDING PAGE] Auth state:', { user: !!user, loading: authLoading, userId: user?.id });
   }, [user, authLoading]);
 
   const handleGetStarted = () => {

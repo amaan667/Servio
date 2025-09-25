@@ -59,7 +59,6 @@ export async function POST(req: Request) {
     // Use admin client for database operations
     const adminSupabase = createAdminClient();
 
-    console.log(`[TABLE REMOVAL] Starting removal of tables: ${tableNumbers.join(', ')} for venue: ${venueId}`);
 
     // Step 1: Update active orders to COMPLETED status
     const { data: updatedOrders, error: updateError } = await adminSupabase
@@ -206,7 +205,6 @@ export async function POST(req: Request) {
       }
     };
 
-    console.log(`[TABLE REMOVAL] Completed successfully:`, result.data);
 
     return NextResponse.json(result);
 

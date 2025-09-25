@@ -29,7 +29,6 @@ export async function POST(req: Request) {
       }
     );
 
-    console.log('[PAY STRIPE] Processing Stripe payment for order:', order_id);
 
     // In a real implementation, you would:
     // 1. Verify the payment intent with Stripe
@@ -66,7 +65,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[PAY STRIPE] Stripe payment successful for order:', order_id);
 
     return NextResponse.json({
       success: true,

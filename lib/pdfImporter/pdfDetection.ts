@@ -96,11 +96,9 @@ async function checkSelectableText(text: string): Promise<boolean> {
  */
 export async function extractTextWithBoxes(pdfBuffer: Buffer): Promise<TextBlock[]> {
   try {
-    console.log('[PDF_EXTRACT] Starting Google Vision OCR with bounding boxes...');
     
     // Check if Google Vision credentials are available
     if (!process.env.GOOGLE_CREDENTIALS_B64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      console.log('[PDF_EXTRACT] No Google Vision credentials, using mock data');
       return generateMockTextBlocks();
     }
     
@@ -108,7 +106,6 @@ export async function extractTextWithBoxes(pdfBuffer: Buffer): Promise<TextBlock
     const { extractTextBlocksFromPdf } = await import('./googleVisionOCR');
     const blocks = await extractTextBlocksFromPdf(pdfBuffer, 'uploaded-menu.pdf');
     
-    console.log('[PDF_EXTRACT] Extracted', blocks.length, 'text blocks');
     return blocks;
     
   } catch (error: any) {

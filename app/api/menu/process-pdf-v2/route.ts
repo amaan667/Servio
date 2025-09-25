@@ -27,7 +27,6 @@ export async function POST(req: Request) {
   const supa = getSupabaseClient();
   
   try {
-    console.log('[PDF_PROCESS_V2] Starting enhanced PDF processing...');
     
     // Parse FormData
     const formData = await req.formData();
@@ -43,16 +42,6 @@ export async function POST(req: Request) {
         error: 'file and venue_id are required' 
       }, { status: 400 });
     }
-
-    console.log('[PDF_PROCESS_V2] File received:', {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      venueId,
-      mode,
-      enableGPT,
-      enableValidation
-    });
 
     // Validate file
     if (!file.name.toLowerCase().endsWith('.pdf')) {
@@ -78,7 +67,6 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(arrayBuffer);
 
     // Store original PDF in Supabase Storage
-    console.log('[PDF_PROCESS_V2] Storing PDF in Supabase Storage...');
     const { error: storageError } = await supa.storage
       .from('menus')
       .upload(storagePath, buffer, {
@@ -94,10 +82,8 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[PDF_PROCESS_V2] PDF stored successfully at:', storagePath);
 
     // Process PDF using the comprehensive importer
-    console.log('[PDF_PROCESS_V2] Processing PDF with comprehensive importer...');
     const importResult = await importPDFToMenu(buffer, venueId, supa, {
       mode: mode || 'auto',
       enableGPT,
@@ -112,15 +98,12 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    console.log('[PDF_PROCESS_V2] Import completed successfully');
 
     // Generate comprehensive report
     const report = generateImportReport(importResult);
-    console.log('[PDF_PROCESS_V2] Import report generated');
 
     // Validate import quality
     const qualityCheck = validateImportResult(importResult);
-    console.log('[PDF_PROCESS_V2] Quality check:', qualityCheck.isHighQuality ? 'PASSED' : 'FAILED');
 
     // Store audit trail
     try {
@@ -183,12 +166,6 @@ export async function POST(req: Request) {
       report: report
     };
 
-    console.log('[PDF_PROCESS_V2] Response prepared:', {
-      success: response.success,
-      itemsProcessed: response.metadata.itemsProcessed,
-      coverageRate: response.metadata.coverageRate,
-      isHighQuality: response.quality.isHighQuality
-    });
 
     return NextResponse.json(response);
 

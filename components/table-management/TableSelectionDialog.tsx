@@ -50,17 +50,6 @@ export function TableSelectionDialog({
 
   // Filter available tables based on action
   const getAvailableTables = () => {
-    console.log('[TABLE MERGE DEBUG] Filtering tables for action:', action);
-    console.log('[TABLE MERGE DEBUG] Source table:', {
-      id: sourceTable.id,
-      label: sourceTable.label,
-      status: sourceTable.status
-    });
-    console.log('[TABLE MERGE DEBUG] Available tables:', availableTables.map(t => ({
-      id: t.id,
-      label: t.label,
-      status: t.status
-    })));
 
     if (action === 'move') {
       // For move, only show FREE tables
@@ -68,13 +57,11 @@ export function TableSelectionDialog({
         table.id !== sourceTable.id && 
         table.status === 'FREE'
       );
-      console.log('[TABLE MERGE DEBUG] Move filtered tables:', filtered.map(t => ({ id: t.id, label: t.label, status: t.status })));
       return filtered;
     } else {
       // For merge, apply strict eligibility rules
       const filtered = availableTables.filter(table => {
         if (table.id === sourceTable.id) {
-          console.log('[TABLE MERGE DEBUG] Skipping source table:', table.id);
           return false;
         }
         
@@ -82,83 +69,41 @@ export function TableSelectionDialog({
         if (sourceTable.status === 'FREE') {
           // FREE can only merge with other FREE tables
           const canMerge = table.status === 'FREE';
-          
-          console.log('[TABLE MERGE DEBUG] FREE table merge check:', {
-            targetTable: { id: table.id, label: table.label, status: table.status, statusType: typeof table.status },
-            sourceTable: { id: sourceTable.id, label: sourceTable.label, status: sourceTable.status, statusType: typeof sourceTable.status },
-            canMerge,
-            reason: canMerge ? 'Both tables are FREE' : 'Target table is not FREE'
-          });
           return canMerge;
         } else if (sourceTable.status === 'RESERVED') {
           // RESERVED can only merge with FREE
           const canMerge = table.status === 'FREE';
-          console.log('[TABLE MERGE DEBUG] RESERVED table merge check:', {
-            targetTable: { id: table.id, label: table.label, status: table.status },
-            canMerge,
-            reason: canMerge ? 'Target is FREE' : 'Target is not FREE'
-          });
           return canMerge;
         } else if (['ORDERING', 'IN_PREP', 'READY', 'SERVED', 'AWAITING_BILL'].includes(sourceTable.status)) {
           // OCCUPIED tables (any occupied status) can only merge with FREE
           const canMerge = table.status === 'FREE';
-          console.log('[TABLE MERGE DEBUG] OCCUPIED table merge check:', {
-            targetTable: { id: table.id, label: table.label, status: table.status },
-            canMerge,
-            reason: canMerge ? 'Target is FREE' : 'Target is not FREE'
-          });
           return canMerge;
         }
         
-        console.log('[TABLE MERGE DEBUG] Unknown source table status:', sourceTable.status);
         return false;
       });
-      console.log('[TABLE MERGE DEBUG] Merge filtered tables:', filtered.map(t => ({ id: t.id, label: t.label, status: t.status })));
       return filtered;
     }
   };
 
   const filteredTables = getAvailableTables();
   
-  // Additional debugging
-  console.log('[TABLE MERGE DEBUG] Final filtered tables result:', {
-    action,
-    sourceTableId: sourceTable.id,
-    sourceTableStatus: sourceTable.status,
-    availableTablesCount: availableTables.length,
-    filteredTablesCount: filteredTables.length,
-    filteredTableIds: filteredTables.map(t => t.id),
-    filteredTableStatuses: filteredTables.map(t => t.status)
-  });
 
   const handleConfirm = async () => {
     if (!selectedTableId) {
-      console.log('[TABLE MERGE] No table selected');
       return;
     }
 
-    console.log('[TABLE MERGE] Starting merge process:', {
-      action,
-      sourceTableId: sourceTable.id,
-      sourceTableLabel: sourceTable.label,
-      destinationTableId: selectedTableId,
-      venueId,
-      timestamp: new Date().toISOString()
-    });
 
     try {
       setIsLoading(true);
       
       if (action === 'move') {
-        console.log('[TABLE MERGE] Executing move table action');
         await moveTable(sourceTable.id, venueId, selectedTableId);
       } else {
-        console.log('[TABLE MERGE] Executing merge table action');
         const result = await mergeTable(sourceTable.id, venueId, selectedTableId);
-        console.log('[TABLE MERGE] Merge result:', result);
       }
       
-      console.log('[TABLE MERGE] Action completed successfully');
       onActionComplete?.();
       onClose();
     } catch (error) {

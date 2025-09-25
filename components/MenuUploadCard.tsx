@@ -55,7 +55,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     setIsProcessing(true);
 
     try {
-      console.log('[MENU UPLOAD] Starting PDF upload for venue:', venueId, 'mode:', isReplacing ? 'replace' : 'append');
       
       if (fileExtension === '.pdf') {
         if (isReplacing) {
@@ -64,7 +63,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           formData.append('file', file);
           formData.append('venue_id', venueId);
           
-          console.log('[MENU UPLOAD] Using catalog replace endpoint');
           
           const response = await fetch('/api/catalog/replace', {
             method: 'POST',
@@ -93,7 +91,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
           formData.append('file', file);
           formData.append('venue_id', venueId);
           
-          console.log('[MENU UPLOAD] Using legacy append endpoint');
           
           const response = await fetch('/api/menu/process-pdf', {
             method: 'POST',
@@ -201,7 +198,6 @@ export function MenuUploadCard({ venueId, onSuccess }: MenuUploadCardProps) {
     setIsClearing(true);
 
     try {
-      console.log('[CLEAR CATALOG] Clearing catalog for venue:', venueId);
 
       const response = await fetch('/api/catalog/clear', {
         method: 'POST',

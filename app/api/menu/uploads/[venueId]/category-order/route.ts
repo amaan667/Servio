@@ -33,9 +33,7 @@ export async function GET(
     if (uploadData?.parsed_json && uploadData.parsed_json.categories) {
       // Categories are stored as an array of strings in the correct PDF order
       categories = uploadData.parsed_json.categories;
-      console.log('[CATEGORY ORDER API] Retrieved categories:', categories);
     } else {
-      console.log('[CATEGORY ORDER API] No categories found in parsed_json:', uploadData?.parsed_json);
     }
 
     return NextResponse.json({

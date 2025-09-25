@@ -99,7 +99,6 @@ export async function signUpUser(
     // Use normalized site origin
     const emailRedirectTo = `${(process.env.NEXT_PUBLIC_SITE_URL || 'https://servio-production.up.railway.app').replace(/[;\s]+$/g, '').replace(/\/+$/g, '')}/dashboard`;
     
-    console.log("✅ Using Railway domain for email redirect:", emailRedirectTo);
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -295,8 +294,6 @@ export async function createMenuItem(
       .single();
 
     if (error) {
-    console.log('[OAUTH FLOW] Step 4: OAuth error occurred');
-    console.log('[OAUTH FLOW] Error details: ', error);
       logger.error("Failed to create menu item", { error, venueId });
       return { success: false, message: "Failed to create menu item" };
     }
@@ -322,8 +319,6 @@ export async function updateMenuItem(
       .single();
 
     if (error) {
-    console.log('[OAUTH FLOW] Step 4: OAuth error occurred');
-    console.log('[OAUTH FLOW] Error details: ', error);
       logger.error("Failed to update menu item", { error, itemId });
       return { success: false, message: "Failed to update menu item" };
     }
@@ -344,8 +339,6 @@ export async function deleteMenuItem(itemId: string) {
       .eq("id", itemId);
 
     if (error) {
-    console.log('[OAUTH FLOW] Step 4: OAuth error occurred');
-    console.log('[OAUTH FLOW] Error details: ', error);
       logger.error("Failed to delete menu item", { error, itemId });
       return { success: false, message: "Failed to delete menu item" };
     }
@@ -381,30 +374,14 @@ export async function createOrder(orderData: {
   source?: "qr" | "counter";
 }) {
   try {
-    console.log('[ORDER CREATION DEBUG] ===== CREATE ORDER FUNCTION CALLED =====');
-    console.log('[ORDER CREATION DEBUG] Raw order data received:', orderData);
-    console.log('[ORDER CREATION DEBUG] Data validation:');
-    console.log('[ORDER CREATION DEBUG] - venue_id:', orderData.venue_id, '(type:', typeof orderData.venue_id, ')');
-    console.log('[ORDER CREATION DEBUG] - table_number:', orderData.table_number, '(type:', typeof orderData.table_number, ')');
-    console.log('[ORDER CREATION DEBUG] - customer_name:', orderData.customer_name, '(type:', typeof orderData.customer_name, ')');
-    console.log('[ORDER CREATION DEBUG] - customer_phone:', orderData.customer_phone, '(type:', typeof orderData.customer_phone, ')');
-    console.log('[ORDER CREATION DEBUG] - items array length:', orderData.items.length);
-    console.log('[ORDER CREATION DEBUG] - total_amount:', orderData.total_amount, '(type:', typeof orderData.total_amount, ')');
-    console.log('[ORDER CREATION DEBUG] - notes:', orderData.notes);
 
     // Calculate total amount from items (always use this, not the passed total_amount)
-    console.log('[ORDER CREATION DEBUG] Calculating total from items...');
     const calculatedTotal = orderData.items.reduce((sum, item) => {
       const itemTotal = item.price * item.quantity;
-      console.log(`[ORDER CREATION DEBUG] Item: ${item.item_name}, price: ${item.price}, qty: ${item.quantity}, total: ${itemTotal}`);
       return sum + itemTotal;
     }, 0);
-    console.log('[ORDER CREATION DEBUG] Calculated total:', calculatedTotal);
-    console.log('[ORDER CREATION DEBUG] Passed total_amount:', orderData.total_amount);
-    console.log('[ORDER CREATION DEBUG] Total difference:', Math.abs(calculatedTotal - orderData.total_amount));
     
     // Create the order with items as JSONB
-    console.log('[ORDER CREATION DEBUG] Preparing database insertion...');
     const insertData = {
       venue_id: orderData.venue_id,
       table_number: orderData.table_number,
@@ -420,8 +397,6 @@ export async function createOrder(orderData: {
       session_id: orderData.session_id || null, // Optional session_id for non-table orders
       source: orderData.source || "qr", // Default to QR source
     };
-    console.log('[ORDER CREATION DEBUG] Insert data prepared:', insertData);
-    console.log('[ORDER CREATION DEBUG] Calling Supabase insert...');
     
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -429,9 +404,6 @@ export async function createOrder(orderData: {
       .select()
       .single();
     
-    console.log('[ORDER CREATION DEBUG] Supabase insert completed');
-    console.log('[ORDER CREATION DEBUG] Insert result - data:', order);
-    console.log('[ORDER CREATION DEBUG] Insert result - error:', orderError);
 
     if (orderError || !order) {
       console.error('[ORDER CREATION DEBUG] Failed to create order:', orderError);
@@ -461,7 +433,6 @@ export async function createOrder(orderData: {
 // Update payment status for existing orders (client-side)
 export async function updateOrderPaymentStatus(orderId: string, paymentStatus: 'paid' | 'unpaid' | 'till', paymentMethod?: string) {
   try {
-    console.log('[PAYMENT UPDATE DEBUG] Updating payment status:', { orderId, paymentStatus, paymentMethod });
     
     // Use API route for server-side operations
     const response = await fetch('/api/orders/update-payment-status', {
@@ -482,7 +453,6 @@ export async function updateOrderPaymentStatus(orderId: string, paymentStatus: '
     }
 
     const data = await response.json();
-    console.log('[PAYMENT UPDATE DEBUG] Payment status updated successfully:', data);
     return { success: true, data };
   } catch (error) {
     console.error('[PAYMENT UPDATE DEBUG] Update payment status error:', error);
@@ -523,13 +493,9 @@ export async function createVenueIfNotExists(venueId: string) {
 
 // Test function to verify OAuth redirect URLs
 export function testOAuthRedirects() {
-  console.log('[AUTH TEST] Testing OAuth redirect configuration...');
   
   // Test 1: Verify environment variables are set correctly
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://servio-production.up.railway.app';
-  console.log('[AUTH TEST] Environment URL:', envUrl);
-  console.log('[AUTH TEST] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
-  console.log('[AUTH TEST] NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL);
   
   // Test 2: Verify no localhost in environment URLs
   const envUrls = [
@@ -548,13 +514,11 @@ export function testOAuthRedirects() {
   
   // Test 3: Verify expected redirect URL format
   const expectedRedirectTo = `${envUrl.replace(/\/+$/, '')}/auth/callback`;
-  console.log('[AUTH TEST] Expected redirect URL:', expectedRedirectTo);
   
   if (expectedRedirectTo.includes('localhost') || expectedRedirectTo.includes('127.0.0.1')) {
     console.error('[AUTH TEST] ❌ FAILED: Expected redirect URL contains localhost!');
     return false;
   }
   
-  console.log('[AUTH TEST] ✅ PASSED: No localhost found in any URLs');
   return true;
 }

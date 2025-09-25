@@ -156,7 +156,6 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
     const supabase = createClient();
     if (!supabase) return;
 
-    console.log('Setting up real-time subscription for order:', order.id);
     
     const channel = supabase
       .channel(`order-summary-${order.id}`)
@@ -169,14 +168,8 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
           filter: `id=eq.${order.id}`,
         },
         (payload: any) => {
-          console.log('Order update detected in summary:', payload);
           
           if (payload.eventType === 'UPDATE') {
-            console.log('Order status updated in summary:', {
-              oldStatus: payload.old?.order_status,
-              newStatus: payload.new?.order_status,
-              orderId: payload.new?.id
-            });
             
             setOrder((prevOrder: any) => {
               if (!prevOrder) return null;
@@ -190,7 +183,6 @@ export default function OrderSummary({ orderId, sessionId, orderData, isDemo = f
       .subscribe();
 
     return () => {
-      console.log('Cleaning up order summary subscription');
       supabase.removeChannel(channel);
     };
   }, [order?.id]);

@@ -121,17 +121,6 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       }
       
       // Categorize orders
-      console.log('[ORDERS DEBUG] Processing orders:', {
-        totalOrders: allOrdersData.length,
-        thirtyMinutesAgo,
-        todayWindow,
-        sampleOrders: allOrdersData.slice(0, 3).map(o => ({
-          id: o.id,
-          created_at: o.created_at,
-          order_status: o.order_status,
-          customer_name: o.customer_name
-        }))
-      });
       
       const liveOrders = allOrdersData.filter((order: Order) => 
         new Date(order.created_at) >= new Date(thirtyMinutesAgo)
@@ -147,12 +136,6 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
       const historyOrders = allOrdersData.filter((order: Order) => 
         new Date(order.created_at) < new Date(todayWindow.startUtcISO)
       );
-      
-      console.log('[ORDERS DEBUG] Categorized orders:', {
-        liveOrders: liveOrders.length,
-        todayOrders: todayOrders.length,
-        historyOrders: historyOrders.length
-      });
       
       // Set live orders
       setOrders(liveOrders);
@@ -226,7 +209,6 @@ const OrdersClient: React.FC<OrdersClientProps> = ({ venueId, initialOrders = []
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('Orders real-time update:', payload);
           loadVenueAndOrders();
         }
       )

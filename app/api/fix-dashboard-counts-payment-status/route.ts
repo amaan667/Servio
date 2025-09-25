@@ -127,7 +127,6 @@ GRANT EXECUTE ON FUNCTION dashboard_counts(text, text, integer) TO authenticated
 GRANT EXECUTE ON FUNCTION dashboard_counts(text, text, integer) TO anon;
 `;
 
-    console.log('[FIX DASHBOARD COUNTS] Executing SQL to fix payment status filtering...');
 
     // Execute the SQL
     const { data, error } = await supabase.rpc('exec_sql', { sql: sqlContent });
@@ -137,7 +136,6 @@ GRANT EXECUTE ON FUNCTION dashboard_counts(text, text, integer) TO anon;
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    console.log('[FIX DASHBOARD COUNTS] SQL executed successfully:', data);
 
     return NextResponse.json({ 
       ok: true, 

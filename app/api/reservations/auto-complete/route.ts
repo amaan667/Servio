@@ -165,7 +165,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log('[AUTO COMPLETE] Successfully completed', updatedReservations?.length || 0, 'reservations');
 
     return NextResponse.json({
       ok: true,

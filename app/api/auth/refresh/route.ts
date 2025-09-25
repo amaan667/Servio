@@ -3,7 +3,6 @@ import { refreshSession } from '@/lib/supabase/server';
 
 export async function POST() {
   try {
-    console.log('[REFRESH API] Starting session refresh');
     
     const { session, error } = await refreshSession();
     
@@ -16,14 +15,12 @@ export async function POST() {
     }
     
     if (!session) {
-      console.log('[REFRESH API] No session returned from refresh');
       return NextResponse.json({ 
         ok: false, 
         error: 'No session available' 
       }, { status: 401 });
     }
     
-    console.log('[REFRESH API] Session refreshed successfully for user:', session.user.id);
     
     return NextResponse.json({ 
       ok: true, 

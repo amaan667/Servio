@@ -88,7 +88,6 @@ export async function POST(req: NextRequest) {
       // Don't fail the request, just log the error
     }
 
-    console.log('[CHECKIN] Successfully checked in reservation:', reservationId);
 
     return NextResponse.json({
       ok: true,

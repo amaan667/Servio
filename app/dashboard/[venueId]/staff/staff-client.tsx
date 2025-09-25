@@ -68,11 +68,9 @@ export default function StaffClient({
       if (staffLoaded) return; // Prevent multiple loads
       
       try {
-        console.log('[AUTH DEBUG] Loading staff for venue:', venueId);
         const res = await fetch(`/api/staff/check?venue_id=${encodeURIComponent(venueId)}`);
         const j = await res.json().catch(() => ({}));
         if (res.ok && !j?.error) {
-          console.log('[AUTH DEBUG] Staff loaded:', j.staff?.length || 0, 'members');
           setStaff(j.staff || []);
           setStaffLoaded(true);
         } else {
@@ -92,12 +90,10 @@ export default function StaffClient({
   // Load shifts on component mount (no need to wait for staff data)
   useEffect(() => {
     const loadShifts = async () => {
-      console.log('[AUTH DEBUG] Loading shifts for venue:', venueId);
       const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
       const j = await res.json().catch(() => ({}));
       if (res.ok && !j?.error) {
         const shifts = j.shifts || [];
-        console.log('[AUTH DEBUG] Shifts loaded:', shifts.length, 'shifts');
         setAllShifts(shifts);
         setShiftsLoaded(true);
       } else {
@@ -223,17 +219,12 @@ export default function StaffClient({
 
   // Memoize counts to prevent flickering - use real-time data when available
   const staffCounts = useMemo(() => {
-    console.log('[STAFF DEBUG] initialCounts:', initialCounts);
-    console.log('[STAFF DEBUG] initialStaff:', initialStaff);
-    console.log('[STAFF DEBUG] staff:', staff);
-    console.log('[STAFF DEBUG] allShifts:', allShifts);
     
     // Use real-time staff data if available, otherwise fall back to initial counts
     const currentStaff = staff.length > 0 ? staff : (initialStaff || []);
     const hasRealTimeData = staff.length > 0;
     
     if (hasRealTimeData) {
-      console.log('[STAFF DEBUG] Using real-time staff data');
       const totalStaff = currentStaff.length;
       const activeStaff = currentStaff.filter(s => s.active === true).length;
       const uniqueRoles = roles.length;
@@ -256,7 +247,6 @@ export default function StaffClient({
     
     // Fallback to initial counts from server if no real-time data
     if (initialCounts) {
-      console.log('[STAFF DEBUG] Using initialCounts from server');
       return {
         totalStaff: initialCounts.total_staff,
         activeStaff: initialCounts.active_staff,
@@ -266,7 +256,6 @@ export default function StaffClient({
     }
     
     // Final fallback - return zeros if no data available
-    console.log('[STAFF DEBUG] No data available, returning zeros');
     return {
       totalStaff: 0,
       activeStaff: 0,

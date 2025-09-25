@@ -81,7 +81,6 @@ Return ONLY the JSON object, no other text.`;
 
 ${extractedText}`;
 
-  console.log('[IMPROVED PARSER] Starting bulletproof menu parsing...');
 
   try {
     const response = await openai.chat.completions.create({
@@ -96,8 +95,6 @@ ${extractedText}`;
     });
 
     const rawResponse = response.choices[0]?.message?.content ?? "";
-    console.log('[IMPROVED PARSER] Raw response length:', rawResponse.length);
-    console.log('[IMPROVED PARSER] Raw response preview:', rawResponse.substring(0, 500));
 
     // Try to parse JSON with better error handling
     let parsed: ImprovedMenuPayload;
@@ -109,18 +106,15 @@ ${extractedText}`;
       
       // Try to fix common JSON issues
       const fixedJson = fixMalformedJson(rawResponse);
-      console.log('[IMPROVED PARSER] Attempting to fix JSON...');
       
       try {
         parsed = JSON.parse(fixedJson);
-        console.log('[IMPROVED PARSER] Successfully fixed and parsed JSON');
       } catch (fixError) {
         console.error('[IMPROVED PARSER] Could not fix JSON, trying alternative parsing...');
         
         // Try to extract items using regex as last resort
         const fallbackItems = extractItemsWithRegex(rawResponse);
         if (fallbackItems.length > 0) {
-          console.log('[IMPROVED PARSER] Using regex fallback, extracted', fallbackItems.length, 'items');
           return {
             items: fallbackItems,
             categories: [...new Set(fallbackItems.map(item => item.category))]
@@ -141,7 +135,6 @@ ${extractedText}`;
     // Convert to the expected format
     const converted = convertToMenuPayload(parsed);
     
-    console.log('[IMPROVED PARSER] Successfully parsed', converted.items.length, 'items');
     return converted;
 
   } catch (error: any) {
@@ -149,10 +142,8 @@ ${extractedText}`;
     
     // Try a simpler approach as fallback
     try {
-      console.log('[IMPROVED PARSER] Attempting simple extraction fallback...');
       const simpleItems = extractItemsWithRegex(extractedText);
       if (simpleItems.length > 0) {
-        console.log('[IMPROVED PARSER] Simple extraction found', simpleItems.length, 'items');
         return {
           items: simpleItems,
           categories: [...new Set(simpleItems.map(item => item.category))]
@@ -163,7 +154,6 @@ ${extractedText}`;
     }
     
     // Return empty result instead of throwing to prevent crashes
-    console.log('[IMPROVED PARSER] Returning empty result due to parsing error');
     return {
       items: [],
       categories: []
@@ -175,12 +165,10 @@ function validateParsedMenu(parsed: ImprovedMenuPayload): void {
   const errors: string[] = [];
   
   // RELAXED VALIDATION: Only log warnings, don't throw errors
-  console.log('[IMPROVED PARSER] Running relaxed validation...');
   
   // Check for £0.00 prices (warning only)
   const zeroPriceItems = parsed.items.filter(item => item.price === 0);
   if (zeroPriceItems.length > 0) {
-    console.log(`[IMPROVED PARSER] WARNING: Found ${zeroPriceItems.length} items with £0.00 prices: ${zeroPriceItems.map(i => i.title).join(', ')}`);
   }
   
   // Check for food items in COFFEE/TEA categories (warning only)
@@ -191,7 +179,6 @@ function validateParsedMenu(parsed: ImprovedMenuPayload): void {
   );
   
   if (misfiledItems.length > 0) {
-    console.log(`[IMPROVED PARSER] WARNING: Found ${misfiledItems.length} food items in COFFEE/TEA categories: ${misfiledItems.map(i => `${i.title} (${i.category})`).join(', ')}`);
   }
   
   // Check for modifier explosion (warning only)
@@ -202,12 +189,10 @@ function validateParsedMenu(parsed: ImprovedMenuPayload): void {
   
   Object.entries(categoryCounts).forEach(([category, count]) => {
     if (count > 25) {
-      console.log(`[IMPROVED PARSER] WARNING: Category ${category} has ${count} items (suspicious modifier explosion)`);
     }
   });
   
   // RELAXED: Don't throw errors, just log warnings
-  console.log(`[IMPROVED PARSER] Validation completed with ${errors.length} warnings`);
 }
 
 function convertToMenuPayload(parsed: any): MenuPayloadT {
@@ -252,7 +237,6 @@ function fixMalformedJson(jsonString: string): string {
     const { repairMenuJSON } = require('./pdfImporter/jsonRepair');
     fixed = repairMenuJSON(fixed);
   } catch (error) {
-    console.log('[IMPROVED PARSER] Could not use enhanced JSON repair, using basic fixes');
     
     // Fallback to basic fixes
     // Fix common issues with unterminated strings
@@ -277,7 +261,6 @@ function fixMalformedJson(jsonString: string): string {
  * Fallback regex-based extraction for when JSON parsing fails
  */
 function extractItemsWithRegex(text: string): any[] {
-  console.log('[IMPROVED PARSER] Using regex fallback extraction...');
   
   const items: any[] = [];
   
@@ -334,7 +317,6 @@ function extractItemsWithRegex(text: string): any[] {
     }
   }
   
-  console.log('[IMPROVED PARSER] Regex extraction found', items.length, 'items');
   return items;
 }
 
@@ -342,7 +324,6 @@ function extractItemsWithRegex(text: string): any[] {
  * Post-processing function to apply specific fixes based on known issues
  */
 export function applyKnownFixes(items: any[]): any[] {
-  console.log('[IMPROVED PARSER] Applying known fixes...');
   
   return items.map(item => {
     // Fix specific price issues

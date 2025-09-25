@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('[FIX MERGE FUNCTIONS] Starting merge functions fix...');
     
     // Use admin client for database operations
     const supabase = createAdminClient();
@@ -14,7 +13,6 @@ export async function POST(req: NextRequest) {
     const sqlPath = path.join(process.cwd(), 'fix-merge-functions.sql');
     const sqlContent = fs.readFileSync(sqlPath, 'utf8');
     
-    console.log('[FIX MERGE FUNCTIONS] SQL file size:', sqlContent.length, 'characters');
     
     // Split the SQL into individual statements
     const statements = sqlContent
@@ -22,7 +20,6 @@ export async function POST(req: NextRequest) {
       .map((stmt: string) => stmt.trim())
       .filter((stmt: string) => stmt.length > 0 && !stmt.startsWith('--'));
     
-    console.log(`[FIX MERGE FUNCTIONS] Found ${statements.length} SQL statements to execute`);
     
     const results = [];
     let successCount = 0;
@@ -33,14 +30,12 @@ export async function POST(req: NextRequest) {
       const statement = statements[i];
       
       if (statement.trim()) {
-        console.log(`[FIX MERGE FUNCTIONS] Executing statement ${i + 1}/${statements.length}...`);
         
         try {
           // Try to execute the SQL statement directly
           const { data, error } = await supabase.from('_sql').select('*').limit(0);
           
           // For now, let's just log the statement and assume it would work
-          console.log(`[FIX MERGE FUNCTIONS] Would execute: ${statement.substring(0, 100)}...`);
           successCount++;
           results.push({ statement: i + 1, status: 'success', message: 'Statement prepared for execution' });
           
@@ -52,7 +47,6 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    console.log(`[FIX MERGE FUNCTIONS] Execution Summary: ${successCount} successful, ${errorCount} errors`);
     
     return NextResponse.json({
       success: errorCount === 0,

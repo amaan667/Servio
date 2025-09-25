@@ -211,10 +211,6 @@ export async function replaceCatalogAtomically(
   supabaseClient: any
 ): Promise<{ success: boolean; result?: any; error?: string }> {
   try {
-    console.log('[CATALOG_REPLACE] Starting atomic catalog replacement...');
-    console.log('[CATALOG_REPLACE] Venue ID:', venueId);
-    console.log('[CATALOG_REPLACE] Categories:', catalog.categories.length);
-    console.log('[CATALOG_REPLACE] Total items:', catalog.metadata.totalItems);
     
     // Validate before replacement
     const validation = validateParsedCatalog(catalog);
@@ -236,7 +232,6 @@ export async function replaceCatalogAtomically(
       throw new Error(`Database replacement failed: ${error.message}`);
     }
     
-    console.log('[CATALOG_REPLACE] Atomic replacement successful:', data);
     
     return {
       success: true,
@@ -260,7 +255,6 @@ export async function validateCatalogPayload(
   supabaseClient: any
 ): Promise<ValidationResult> {
   try {
-    console.log('[CATALOG_VALIDATE] Validating catalog payload...');
     
     // Call the validation RPC
     const { data, error } = await supabaseClient.rpc('validate_catalog_payload', {
@@ -279,7 +273,6 @@ export async function validateCatalogPayload(
       };
     }
     
-    console.log('[CATALOG_VALIDATE] Validation result:', data);
     
     return {
       valid: data.valid,
@@ -347,7 +340,6 @@ export function deduplicateItems(categories: ParsedCategory[]): ParsedCategory[]
         seen.add(key);
         uniqueItems.push(item);
       } else {
-        console.log('[CATALOG_DEDUP] Skipping duplicate item:', item.title);
       }
     }
     
@@ -383,7 +375,6 @@ export function enforceCategoryGuards(categories: ParsedCategory[]): ParsedCateg
       const isAllowed = allowedItems.some(allowed => itemTitle.includes(allowed));
       
       if (!isAllowed) {
-        console.log('[CATALOG_GUARDS] Item may not belong in category:', item.title, '->', category.name);
         // For now, keep the item but log a warning
         // In production, you might want to reassign or flag for review
       }

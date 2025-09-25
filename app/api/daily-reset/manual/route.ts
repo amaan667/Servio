@@ -3,13 +3,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 [MANUAL DAILY RESET] Manual daily reset triggered');
     
     const { venueId } = await request.json();
-    console.log('🔄 [MANUAL DAILY RESET] Request data:', { venueId });
 
     if (!venueId) {
-      console.log('🔄 [MANUAL DAILY RESET] Missing venueId');
       return NextResponse.json(
         { error: 'Venue ID is required' },
         { status: 400 }
@@ -26,10 +23,8 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    console.log('🔄 [MANUAL DAILY RESET] Admin Supabase client created');
 
     // Check if venue exists
-    console.log('🔄 [MANUAL DAILY RESET] Checking if venue exists...');
     const { data: venue, error: venueError } = await supabase
       .from('venues')
       .select('venue_id, name')
@@ -45,14 +40,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!venue) {
-      console.log('🔄 [MANUAL DAILY RESET] Venue not found for ID:', venueId);
       return NextResponse.json(
         { error: 'Venue not found' },
         { status: 404 }
       );
     }
 
-    console.log('🔄 [MANUAL DAILY RESET] Starting manual reset for venue:', venue.name);
 
     // Check if there are any recent orders (within last 2 hours) - if so, warn user
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
@@ -67,11 +60,9 @@ export async function POST(request: NextRequest) {
       console.error('🔄 [MANUAL DAILY RESET] Error checking recent orders:', recentOrdersError);
       // Continue with reset if we can't check
     } else if (recentOrders && recentOrders.length > 0) {
-      console.log('🔄 [MANUAL DAILY RESET] Found recent orders, but proceeding with manual reset as requested');
     }
 
     // Step 1: Complete all active orders (mark as COMPLETED)
-    console.log('🔄 [MANUAL DAILY RESET] Step 1: Completing all active orders...');
     const { data: activeOrders, error: activeOrdersError } = await supabase
       .from('orders')
       .select('id, order_status, table_number')
@@ -86,7 +77,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [MANUAL DAILY RESET] Found active orders:', activeOrders?.length || 0);
 
     if (activeOrders && activeOrders.length > 0) {
       const { error: completeOrdersError } = await supabase
@@ -106,11 +96,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log('🔄 [MANUAL DAILY RESET] Completed', activeOrders.length, 'active orders');
     }
 
     // Step 2: Cancel all active reservations
-    console.log('🔄 [MANUAL DAILY RESET] Step 2: Canceling all active reservations...');
     const { data: activeReservations, error: activeReservationsError } = await supabase
       .from('reservations')
       .select('id, status')
@@ -125,7 +113,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [MANUAL DAILY RESET] Found active reservations:', activeReservations?.length || 0);
 
     if (activeReservations && activeReservations.length > 0) {
       const { error: cancelReservationsError } = await supabase
@@ -145,11 +132,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log('🔄 [MANUAL DAILY RESET] Canceled', activeReservations.length, 'active reservations');
     }
 
     // Step 3: Delete all tables for complete reset
-    console.log('🔄 [MANUAL DAILY RESET] Step 3: Deleting all tables for complete reset...');
     const { data: tables, error: tablesError } = await supabase
       .from('tables')
       .select('id, label')
@@ -163,7 +148,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [MANUAL DAILY RESET] Found tables to delete:', tables?.length || 0);
 
     if (tables && tables.length > 0) {
       // Delete all table sessions first (if they exist)
@@ -191,11 +175,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log('🔄 [MANUAL DAILY RESET] Deleted', tables.length, 'tables completely');
     }
 
     // Step 4: Clear any table runtime state
-    console.log('🔄 [MANUAL DAILY RESET] Step 4: Clearing table runtime state...');
     const { error: clearRuntimeError } = await supabase
       .from('table_runtime_state')
       .delete()
@@ -206,11 +188,9 @@ export async function POST(request: NextRequest) {
       // Don't fail the entire operation for this
       console.warn('🔄 [MANUAL DAILY RESET] Continuing despite runtime state clear error');
     } else {
-      console.log('🔄 [MANUAL DAILY RESET] Cleared table runtime state');
     }
 
     // Step 5: Record the manual reset in the log (but don't prevent future resets)
-    console.log('🔄 [MANUAL DAILY RESET] Step 5: Recording manual reset in log...');
     const today = new Date();
     const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
@@ -232,10 +212,8 @@ export async function POST(request: NextRequest) {
       // Don't fail the operation for this
       console.warn('🔄 [MANUAL DAILY RESET] Continuing despite log error');
     } else {
-      console.log('🔄 [MANUAL DAILY RESET] Manual reset logged successfully');
     }
 
-    console.log('🔄 [MANUAL DAILY RESET] Manual reset completed successfully for venue:', venue.name);
 
     return NextResponse.json({
       success: true,

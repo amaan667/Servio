@@ -3,7 +3,6 @@ import { createServerSupabase } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 [SETUP] Setting up daily reset log table');
     
     const supabase = await createServerSupabase();
 
@@ -59,7 +58,6 @@ export async function POST(request: NextRequest) {
       // Don't fail for RLS
     }
 
-    console.log('🔧 [SETUP] Daily reset log table setup completed');
 
     return NextResponse.json({
       success: true,

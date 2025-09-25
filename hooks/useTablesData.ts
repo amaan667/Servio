@@ -45,23 +45,20 @@ export function useTablesData(venueId: string) {
 
   const fetchTables = useCallback(async () => {
     if (!venueId) {
-      console.log('[TABLES HOOK] No venueId provided, skipping fetch');
       return;
     }
 
     try {
-      console.log('[TABLES HOOK] Starting fetch for venueId:', venueId);
       setLoading(true);
       setError(null);
 
       const startTime = Date.now();
       const url = `/api/tables?venue_id=${encodeURIComponent(venueId)}`;
-      console.log('[TABLES HOOK] Fetching from URL:', url);
       
       const response = await fetch(url);
       const fetchTime = Date.now() - startTime;
       
-      console.log('[TABLES HOOK] Fetch completed in:', fetchTime + 'ms', {
+      console.log('[TABLES HOOK] Fetch response:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok
@@ -78,7 +75,7 @@ export function useTablesData(venueId: string) {
       }
       
       const data = await response.json();
-      console.log('[TABLES HOOK] Response data:', {
+      console.log('[TABLES HOOK] Data received:', {
         tablesCount: data.tables?.length || 0,
         hasError: !!data.error,
         error: data.error
@@ -88,7 +85,6 @@ export function useTablesData(venueId: string) {
         throw new Error(data.error);
       }
 
-      console.log('[TABLES HOOK] Tables fetched successfully:', data.tables?.length || 0);
       setTables(data.tables || []);
     } catch (err) {
       console.error('[TABLES HOOK] Error fetching tables:', {
@@ -99,7 +95,6 @@ export function useTablesData(venueId: string) {
       });
       setError(err instanceof Error ? err.message : 'Failed to fetch tables');
     } finally {
-      console.log('[TABLES HOOK] Setting loading to false');
       setLoading(false);
     }
   }, [venueId]);
@@ -126,7 +121,6 @@ export function useTablesData(venueId: string) {
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('[TABLES HOOK] Realtime table_sessions update received:', payload);
           // Refetch tables when sessions change
           fetchTables();
         }
@@ -140,7 +134,6 @@ export function useTablesData(venueId: string) {
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('[TABLES HOOK] Realtime orders update received:', payload);
           // Refetch tables when orders change
           fetchTables();
         }
@@ -154,7 +147,6 @@ export function useTablesData(venueId: string) {
           filter: `venue_id=eq.${venueId}`,
         },
         (payload: any) => {
-          console.log('[TABLES HOOK] Realtime tables update received:', payload);
           // Refetch tables when tables change
           fetchTables();
         }
@@ -168,7 +160,7 @@ export function useTablesData(venueId: string) {
 
   // Add debugging to track table data changes
   useEffect(() => {
-    console.log('[TABLES HOOK] Tables data changed:', {
+    console.log('[TABLES HOOK] Table data changed:', {
       venueId,
       tablesCount: tables.length,
       tableIds: tables.map(t => t.id),

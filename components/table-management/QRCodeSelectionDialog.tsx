@@ -79,7 +79,7 @@ export function QRCodeSelectionDialog({
       const tableLabelsParam = tableLabels.join(',');
       const qrUrl = `/generate-qr?venue=${venueId}&tables=${tableLabelsParam}`;
       
-      console.log('[QR DIALOG] Generating QR for tables:', {
+      console.log('[QR CODE] Generating QR for selected tables:', {
         selectedTableIds: selectedTables,
         selectedTableLabels: tableLabels,
         qrUrl

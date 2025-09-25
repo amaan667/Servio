@@ -14,7 +14,6 @@ export default async function MenuPage({
   params: Promise<{ venueId: string }>;
 }) {
   const { venueId } = await params;
-  console.log('[MENU] Page mounted for venue', venueId);
   
   // Safe auth check that only calls getUser if auth cookies exist
   const { data: { user }, error } = await safeGetUser();
@@ -25,7 +24,6 @@ export default async function MenuPage({
   }
   
   if (!user) {
-    console.log('[MENU] No user found, redirecting to sign-in');
     redirect('/sign-in');
   }
 

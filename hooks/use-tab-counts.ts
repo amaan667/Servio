@@ -41,7 +41,6 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
         return
       }
       
-      console.log('[TAB_COUNTS] RPC result:', result)
       setData(result)
     } catch (err) {
       console.error('[TAB_COUNTS] Fetch error:', err)
