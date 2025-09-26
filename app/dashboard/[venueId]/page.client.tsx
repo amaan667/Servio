@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -27,7 +27,7 @@ interface DashboardStats {
   unpaid: number;
 }
 
-export default function VenueDashboardClient({ 
+const VenueDashboardClient = React.memo(function VenueDashboardClient({ 
   venueId, 
   userId, 
   venue: initialVenue, 
@@ -290,7 +290,7 @@ export default function VenueDashboardClient({
     }
   };
 
-  const loadStats = async (vId: string, window: any) => {
+  const loadStats = useCallback(async (vId: string, window: any) => {
     // If we have initial stats from SSR, use those and skip client-side calculation
     if (initialStats && initialStats.revenue > 0) {
       setStats(initialStats);
@@ -345,7 +345,7 @@ export default function VenueDashboardClient({
     } catch (error) {
       // Silent error handling
     }
-  };
+  }, [initialStats, statsLoaded]);
 
 
   if (!venue) {
@@ -605,6 +605,8 @@ export default function VenueDashboardClient({
       </div>
     </div>
   );
-}
+});
+
+export default VenueDashboardClient;
 
 

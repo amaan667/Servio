@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -9,10 +9,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LayoutDashboard, Users, QrCode, BarChart3 } from "lucide-react";
 
 // This component will show home page content for both authenticated and non-authenticated users
-export default function HomePage() {
+const HomePage = React.memo(function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const checkAuth = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error || !user) {
+        // If no authenticated user, show public home page
+        setUser(null);
+      } else {
+        // User is authenticated, show authenticated home page
+        setUser(user);
+      }
+    } catch (error) {
+      // On error, show public home page
+      console.error('[HOME PAGE] Auth check error:', error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     // Only run on client side
@@ -20,33 +41,11 @@ export default function HomePage() {
       return;
     }
 
-    const supabase = createClient();
-
-    async function checkAuth() {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        
-        if (error || !user) {
-          // If no authenticated user, show public home page
-          setUser(null);
-        } else {
-          // User is authenticated, show authenticated home page
-          setUser(user);
-        }
-      } catch (error) {
-        // On error, show public home page
-        console.error('[HOME PAGE] Auth check error:', error);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
     // Initial auth check
     checkAuth();
 
     // Listen for auth state changes
+    const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       if (session?.user) {
         setUser(session.user);
@@ -230,4 +229,6 @@ export default function HomePage() {
       </div>
     </div>
   );
-}
+});
+
+export default HomePage;

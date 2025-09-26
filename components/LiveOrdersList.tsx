@@ -1,8 +1,9 @@
 "use client";
 
+import React from 'react';
 import { useLiveOrders } from '@/hooks/useLiveOrders'
 
-export default function LiveOrdersList({ venueId }: { venueId: string }) {
+const LiveOrdersList = React.memo(function LiveOrdersList({ venueId }: { venueId: string }) {
   const { data, isLoading, isError, error } = useLiveOrders(venueId)
 
   // Remove loading state - render immediately with empty state if needed
@@ -46,4 +47,6 @@ export default function LiveOrdersList({ venueId }: { venueId: string }) {
       </div>
     </div>
   )
-}
+});
+
+export default LiveOrdersList;

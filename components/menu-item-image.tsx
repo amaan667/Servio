@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { UtensilsCrossed, ImageOff } from "lucide-react";
 
 interface MenuItemImageProps {
@@ -11,7 +11,7 @@ interface MenuItemImageProps {
   showLoadingState?: boolean;
 }
 
-export default function MenuItemImage({ 
+const MenuItemImage = memo(function MenuItemImage({ 
   src, 
   alt, 
   className = "w-20 h-20 rounded-lg object-cover border border-gray-200",
@@ -66,4 +66,6 @@ export default function MenuItemImage({
       }}
     />
   );
-}
+});
+
+export default MenuItemImage;
