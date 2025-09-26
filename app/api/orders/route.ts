@@ -150,38 +150,71 @@ export async function POST(req: Request) {
         } catch (groupError) {
         }
         
-        // Insert new table - check for existing first to avoid duplicates
+        // Use UPSERT to prevent duplicate table creation
         const { data: newTable, error: tableCreateErr } = await supabase
           .from('tables')
-          .insert({
+          .upsert({
             venue_id: body.venue_id,
             label: body.table_number.toString(),
             seat_count: seatCount, // Use group size or default
             area: null,
             is_active: true
+          }, {
+            onConflict: 'venue_id,label',
+            ignoreDuplicates: false
           })
           .select('id, label')
           .single();
 
         if (tableCreateErr) {
-          return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
+          // If it's a duplicate key error, try to fetch the existing table
+          if (tableCreateErr.code === '23505') {
+            const { data: existingTableAfterError } = await supabase
+              .from('tables')
+              .select('id, label')
+              .eq('venue_id', body.venue_id)
+              .eq('label', body.table_number.toString())
+              .eq('is_active', true)
+              .single();
+            
+            if (existingTableAfterError) {
+              tableId = existingTableAfterError.id;
+            } else {
+              return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
+            }
+          } else {
+            return bad(`Failed to create table: ${tableCreateErr.message}`, 500);
+          }
+        } else {
+          tableId = newTable.id;
         }
 
-        tableId = newTable.id;
+        // Only create session if we have a valid tableId
+        if (tableId) {
+          // Check if session already exists to prevent duplicates
+          const { data: existingSession } = await supabase
+            .from('table_sessions')
+            .select('id')
+            .eq('venue_id', body.venue_id)
+            .eq('table_id', tableId)
+            .is('closed_at', null)
+            .maybeSingle();
 
-        // Create a table session for the new table
-        const { error: sessionErr } = await supabase
-          .from('table_sessions')
-          .insert({
-            venue_id: body.venue_id,
-            table_id: newTable.id,
-            status: 'FREE',
-            opened_at: new Date().toISOString(),
-            closed_at: null
-          });
+          if (!existingSession) {
+            const { error: sessionErr } = await supabase
+              .from('table_sessions')
+              .insert({
+                venue_id: body.venue_id,
+                table_id: tableId,
+                status: 'FREE',
+                opened_at: new Date().toISOString(),
+                closed_at: null
+              });
 
-        if (sessionErr) {
-          // Don't fail the request if session creation fails
+            if (sessionErr) {
+              // Don't fail the request if session creation fails
+            }
+          }
         }
       }
     }

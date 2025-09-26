@@ -207,7 +207,12 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
   const groupedTableOrders = useMemo(() => {
     const groups: { [key: string]: any[] } = {};
     
-    tableOrders.forEach(order => {
+    // Filter out duplicate orders by ID to prevent double counting
+    const uniqueOrders = tableOrders.filter((order, index, self) => 
+      index === self.findIndex(o => o.id === order.id)
+    );
+    
+    uniqueOrders.forEach(order => {
       const tableKey = order.table_label || `Table ${order.table_number}`;
       if (!groups[tableKey]) {
         groups[tableKey] = [];
@@ -446,7 +451,7 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
           <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-2">Table Orders (Active Only)</h2>
             <p className="text-sm text-gray-600">
-              Dine-in orders requiring staff attention - grouped by table ({tableOrders.length} active orders)
+              Dine-in orders requiring staff attention - grouped by table ({Object.values(groupedTableOrders).flat().length} active orders)
             </p>
           </div>
           
