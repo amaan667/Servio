@@ -531,6 +531,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
                                     variant="ghost"
                                     onClick={handleSaveEdit}
                                     disabled={saving}
+                                    className="btn-enhanced-ghost"
                                   >
                                     <Save className="h-3 w-3" />
                                   </Button>
@@ -539,6 +540,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
                                     variant="ghost"
                                     onClick={handleCancelEdit}
                                     disabled={saving}
+                                    className="btn-enhanced-ghost"
                                   >
                                     <X className="h-3 w-3" />
                                   </Button>
@@ -550,6 +552,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
                                     variant="ghost"
                                     onClick={() => handleEditCategory(category)}
                                     disabled={saving}
+                                    className="btn-enhanced-ghost"
                                   >
                                     <Edit className="h-3 w-3" />
                                   </Button>
@@ -558,7 +561,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
                                     variant="ghost"
                                     onClick={() => handleDeleteCategory(category)}
                                     disabled={saving}
-                                    className="text-red-600 hover:text-red-700"
+                                    className="btn-enhanced-ghost text-red-600 hover:text-red-700 hover:bg-red-50"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
