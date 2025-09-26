@@ -14,14 +14,15 @@ export default function ConditionalBottomNav() {
     notifications: 0
   });
 
-  // Don't show bottom nav on customer-facing pages
+  // Don't show bottom nav on customer-facing pages or home page
   const isCustomerOrderPage = pathname?.startsWith('/order');
   const isCheckoutPage = pathname?.startsWith('/checkout');
   const isPaymentPage = pathname?.startsWith('/payment');
   const isOrderSummaryPage = pathname?.startsWith('/order-summary');
   const isOrderTrackingPage = pathname?.startsWith('/order-tracking');
+  const isHomePage = pathname === '/';
   
-  if (isCustomerOrderPage || isCheckoutPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage) {
+  if (isCustomerOrderPage || isCheckoutPage || isPaymentPage || isOrderSummaryPage || isOrderTrackingPage || isHomePage) {
     return null;
   }
 

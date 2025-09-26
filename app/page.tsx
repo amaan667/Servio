@@ -113,7 +113,7 @@ export default function HomePage() {
               <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                 QR Code Ordering
                 <br />
-                <span className="text-purple-900">Made Simple</span>
+                <span className="text-white">Made Simple</span>
               </h1>
               <p className="text-xl text-purple-100 mb-8 leading-relaxed">
                 Streamline your business operations with contactless QR code
