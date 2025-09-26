@@ -6,7 +6,20 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { hasServerAuthCookie } from '@/lib/server-utils';
 import { log } from '@/lib/debug';
 import NavigationBreadcrumb from '@/components/navigation-breadcrumb';
-import AnalyticsClient from './AnalyticsClient';
+import dynamicImport from 'next/dynamic';
+
+// Lazy load the analytics component with charts
+const AnalyticsClient = dynamicImport(() => import('./AnalyticsClient'), {
+  loading: () => (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Analytics</h2>
+        <p className="text-gray-600">Preparing your analytics dashboard...</p>
+      </div>
+    </div>
+  )
+});
 
 export default async function AnalyticsPage({
   params,

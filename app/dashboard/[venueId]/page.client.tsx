@@ -9,6 +9,7 @@ import { Clock, Users, TrendingUp, ShoppingBag, BarChart, QrCode, Settings, Plus
 import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
+import { useDashboardPrefetch } from '@/hooks/usePrefetch';
 
 interface DashboardCounts {
   live_count: number;
@@ -60,6 +61,9 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [todayWindow, setTodayWindow] = useState<any>(null);
   const router = useRouter();
+  
+  // Enable intelligent prefetching for dashboard routes
+  useDashboardPrefetch(venueId);
 
   useEffect(() => {
     const loadVenueAndStats = async () => {
