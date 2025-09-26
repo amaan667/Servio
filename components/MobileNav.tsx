@@ -76,7 +76,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
   const navItems: NavItem[] = [
     {
       id: 'dashboard',
-      label: 'Home',
+      label: 'Dashboard',
       href: `/dashboard/${venueId}`,
       icon: Home,
       description: 'Overview and quick stats',

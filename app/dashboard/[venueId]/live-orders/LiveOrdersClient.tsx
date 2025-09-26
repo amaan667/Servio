@@ -27,6 +27,7 @@ import { useTabCounts } from "@/hooks/use-tab-counts";
 import { calculateOrderTotal, formatPrice, normalizePrice } from "@/lib/pricing-utils";
 import { OrderCard } from '@/components/orders/OrderCard';
 import { mapOrderToCardData } from '@/lib/orders/mapOrderToCardData';
+import MobileNav from '@/components/MobileNav';
 
 
 interface Order {
@@ -1621,6 +1622,17 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
             </div>
           )}
         </main>
+        
+        {/* Mobile Navigation */}
+        <MobileNav 
+          venueId={venueId}
+          venueName={venueName}
+          counts={{
+            live_orders: getDisplayCount('live'),
+            total_orders: getDisplayCount('all'),
+            notifications: 0
+          }}
+        />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createClient } from "@/lib/supabase/client";
 import { User, Building, Mail, Phone, MapPin, Lock, Trash2, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import MobileNav from '@/components/MobileNav';
 
 interface Venue {
   venue_id: string;
@@ -552,6 +553,17 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
           </Dialog>
         </CardContent>
       </Card>
+      
+      {/* Mobile Navigation */}
+      <MobileNav 
+        venueId={venue.venue_id}
+        venueName={venue.name}
+        counts={{
+          live_orders: 0,
+          total_orders: 0,
+          notifications: 0
+        }}
+      />
     </div>
   );
 }
