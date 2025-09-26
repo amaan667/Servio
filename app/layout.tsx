@@ -16,14 +16,41 @@ export const metadata: Metadata = {
   title: "Servio - QR Code Ordering Made Simple",
   description:
     "Streamline your business operations with contactless QR code ordering. Customers scan, order, and pay - all from their phones.",
+  manifest: "/manifest.json",
+  themeColor: "#7c3aed",
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Servio',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'Servio',
+    title: 'Servio - QR Code Ordering Made Simple',
+    description: 'Streamline your business operations with contactless QR code ordering',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Servio - QR Code Ordering Made Simple',
+    description: 'Streamline your business operations with contactless QR code ordering',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/images/icon-192.png',
+  },
 };
 
-export const viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
-};
+// Viewport is now defined in metadata above
 
 // Force dynamic rendering to prevent static generation errors with cookies
 export const dynamic = 'force-dynamic';

@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
 import { useDashboardPrefetch } from '@/hooks/usePrefetch';
+import MobileNav from '@/components/MobileNav';
+import PullToRefresh from '@/components/PullToRefresh';
 
 interface DashboardCounts {
   live_count: number;
@@ -374,9 +376,16 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
     );
   }
 
+  const handleRefresh = async () => {
+    // Refresh dashboard data
+    await loadStats(venueId, todayWindow);
+    await refreshCounts();
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Simple breadcrumb for main dashboard */}
         <NavigationBreadcrumb venueId={venueId} />
         
@@ -607,7 +616,19 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
           </Card>
         </div>
       </div>
+      
+      {/* Mobile Navigation */}
+      <MobileNav 
+        venueId={venueId}
+        venueName={venue?.name}
+        counts={{
+          live_orders: counts.live_count,
+          total_orders: counts.today_orders_count,
+          notifications: 0 // You can add notification count logic here
+        }}
+      />
     </div>
+    </PullToRefresh>
   );
 });
 

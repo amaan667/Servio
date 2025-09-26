@@ -259,33 +259,62 @@
   /* Prevent horizontal scroll on mobile */
   body {
     overflow-x: hidden;
+    /* Add safe area padding for devices with notches */
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   
   /* Better tap highlighting */
   * {
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    -webkit-tap-highlight-color: rgba(124, 58, 237, 0.2); /* Purple theme */
+    -webkit-touch-callout: none; /* Disable iOS callout */
   }
   
   /* Improve form inputs on mobile */
   input, textarea, select {
     font-size: 16px; /* Prevent zoom on iOS */
+    -webkit-appearance: none; /* Remove iOS styling */
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    outline: none;
   }
   
   /* Ensure minimum readable text sizes */
   html {
     -webkit-text-size-adjust: 100%; /* Prevent iOS font scaling */
     text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   /* Improve readability of very small text on mobile */
   .text-xs {
     font-size: max(12px, 0.75rem); /* Ensure minimum 12px */
+    line-height: 1.4;
   }
   
   /* Better button spacing for mobile */
   button {
     min-height: 44px;
     min-width: 44px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Enhanced button states */
+  button:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
   }
   
   /* Ensure interactive elements meet touch target requirements */
@@ -305,6 +334,218 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+  
+  /* Enhanced scrolling */
+  * {
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  }
+  
+  /* Better focus indicators for accessibility */
+  *:focus-visible {
+    outline: 2px solid #7c3aed;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  
+  /* Improved card shadows and spacing */
+  .card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  
+  /* Better grid layouts for mobile */
+  .grid {
+    gap: 16px;
+  }
+  
+  /* Enhanced modal and overlay behavior */
+  .modal-overlay {
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Swipe gesture visual feedback */
+  .swipeable {
+    transition: transform 0.2s ease;
+  }
+  
+  .swipeable:active {
+    transform: scale(0.98);
+  }
+  
+  /* Pull-to-refresh visual feedback */
+  .pull-to-refresh {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Improved table responsiveness */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  
+  .table-responsive::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .table-responsive::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
+  }
+  
+  /* Better navigation spacing */
+  .nav-item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  .nav-item:active {
+    background-color: rgba(124, 58, 237, 0.1);
+    transform: scale(0.98);
+  }
+  
+  /* Enhanced loading states */
+  .loading-skeleton {
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: loading-shimmer 1.5s infinite;
+  }
+  
+  @keyframes loading-shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  /* Better error states */
+  .error-state {
+    padding: 24px;
+    text-align: center;
+    border-radius: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+  }
+  
+  /* Improved empty states */
+  .empty-state {
+    padding: 48px 24px;
+    text-align: center;
+    color: #6b7280;
+  }
+  
+  /* Enhanced toast notifications */
+  .toast {
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Better image handling */
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  
+  /* Improved list items */
+  .list-item {
+    padding: 16px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s ease;
+  }
+  
+  .list-item:active {
+    background-color: #f9fafb;
+  }
+  
+  /* Enhanced form validation */
+  .form-error {
+    color: #dc2626;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  
+  .form-success {
+    color: #059669;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+}
+
+/* Extra small devices (phones in portrait) */
+@media (max-width: 480px) {
+  /* Even more compact spacing */
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  /* Smaller text for very small screens */
+  .text-sm {
+    font-size: 13px;
+  }
+  
+  /* More compact buttons */
+  button {
+    padding: 10px 16px;
+  }
+  
+  /* Tighter grid spacing */
+  .grid {
+    gap: 12px;
+  }
+}
+
+/* Large mobile devices and small tablets */
+@media (min-width: 481px) and (max-width: 768px) {
+  /* Slightly more generous spacing */
+  .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  
+  /* Better use of available space */
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Dark mode mobile optimizations */
+@media (max-width: 768px) and (prefers-color-scheme: dark) {
+  /* Better tap highlighting for dark mode */
+  * {
+    -webkit-tap-highlight-color: rgba(124, 58, 237, 0.3);
+  }
+  
+  /* Enhanced dark mode inputs */
+  input, textarea, select {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  }
+  
+  /* Better dark mode cards */
+  .card {
+    background-color: #1f2937;
+    border: 1px solid #374151;
+  }
+  
+  /* Enhanced dark mode buttons */
+  button {
+    color: #f9fafb;
   }
 }
 

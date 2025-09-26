@@ -3,6 +3,7 @@ import { ThemeProvider } from 'next-themes';
 import { usePathname } from 'next/navigation';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -31,7 +32,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          {children}
+          <ServiceWorkerRegistration>
+            {children}
+          </ServiceWorkerRegistration>
         </ThemeProvider>
       </QueryClientProvider>
     );
@@ -40,7 +43,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   // For homepage and other public pages, render with QueryClient but without theme provider
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <ServiceWorkerRegistration>
+        {children}
+      </ServiceWorkerRegistration>
     </QueryClientProvider>
   );
 }
