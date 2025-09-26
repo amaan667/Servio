@@ -385,7 +385,7 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 pb-24 md:pb-8">
         {/* Simple breadcrumb for main dashboard */}
         <NavigationBreadcrumb venueId={venueId} />
         

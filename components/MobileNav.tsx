@@ -162,10 +162,10 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 transition-transform duration-300 ${
+      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 transition-transform duration-300 safe-bottom ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
       }`}>
-        <div className="grid grid-cols-4 h-16">
+        <div className="grid grid-cols-4 h-16 pb-safe">
           {navItems.slice(0, 4).map((item) => (
             <button
               key={item.id}
@@ -279,38 +279,6 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
         </div>
       </div>
 
-      {/* Floating Action Button for Quick Actions */}
-      <div className={`fixed bottom-20 right-4 z-40 transition-transform duration-300 ${
-        isVisible ? 'translate-y-0' : 'translate-y-full'
-      }`}>
-        <div className="flex flex-col space-y-2">
-          {/* Quick Order Button */}
-          <Button
-            size="lg"
-            className="h-14 w-14 rounded-full shadow-lg bg-green-600 hover:bg-green-700"
-            onClick={() => router.push(`/dashboard/${venueId}/live-orders`)}
-          >
-            <Clock className="h-6 w-6" />
-          </Button>
-          
-          {/* Notifications Button */}
-          {counts.notifications && counts.notifications > 0 && (
-            <Button
-              size="lg"
-              className="h-12 w-12 rounded-full shadow-lg bg-red-600 hover:bg-red-700 relative"
-              onClick={() => router.push(`/dashboard/${venueId}/feedback`)}
-            >
-              <Bell className="h-5 w-5" />
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-2 -right-2 h-6 w-6 p-0 text-xs flex items-center justify-center"
-              >
-                {counts.notifications > 99 ? '99+' : counts.notifications}
-              </Badge>
-            </Button>
-          )}
-        </div>
-      </div>
 
       {/* Page Indicator for Active Section */}
       {activeItem && (

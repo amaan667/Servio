@@ -51,9 +51,9 @@ export default function ThemeToggleFloat() {
       // On order page, only show when scrolled and position in top-right
       return showOnScroll ? "fixed top-4 right-4" : "hidden";
     }
-    // Default positioning for dashboard pages - move higher to avoid FAB overlap
+    // Default positioning for dashboard pages - can move back to right side since FAB is removed
     if (pathname?.startsWith('/dashboard')) {
-      return "fixed bottom-24 right-6";
+      return "fixed bottom-6 right-6 safe-bottom";
     }
     // Default positioning for other pages
     return "fixed bottom-6 right-6";
