@@ -325,6 +325,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
             <Button 
               variant="outline" 
               onClick={() => setShowCategories(!showCategories)}
+              className="btn-enhanced-outline"
             >
               <Edit className="h-4 w-4 mr-2" />
               {showCategories ? 'Hide Categories' : 'Manage Categories'}
@@ -553,6 +554,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                                 size="sm"
                                 variant="outline"
                                 onClick={() => openEditModal(item)}
+                                className="btn-enhanced-outline"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -560,6 +562,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleDelete(item.id)}
+                                className="btn-enhanced-outline text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
