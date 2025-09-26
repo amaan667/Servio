@@ -58,6 +58,10 @@ export default function GlobalNav() {
   const isOnSettings = pathname?.includes('/settings');
   const isOnQRPage = pathname?.includes('/generate-qr');
   
+  // Check if we're on the dashboard root page (not a feature page)
+  const isDashboardRoot = pathname?.match(/^\/dashboard\/(?:[^/]+)\/?$/);
+  const isOnFeaturePage = isOnDashboard && !isDashboardRoot;
+  
   // Extract venueId from pathname for venue-specific navigation
   const venueId = pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
@@ -137,8 +141,8 @@ export default function GlobalNav() {
             {isAuthenticated ? (
               // Signed in navigation - modern SaaS style
               <div className="flex items-center space-x-2">
-                {(isOnDashboard || isOnQRPage) ? (
-                  // On dashboard pages and QR pages: Home, Settings, Sign Out
+                {isDashboardRoot ? (
+                  // On dashboard root page: Home, Settings, Sign Out
                   <>
                     <Link
                       href="/"
@@ -146,6 +150,24 @@ export default function GlobalNav() {
                     >
                       <Home className="mr-3 h-5 w-5" />
                       Home
+                    </Link>
+                    <Link
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                    >
+                      <Settings className="mr-3 h-5 w-5" />
+                      Settings
+                    </Link>
+                  </>
+                ) : (isOnFeaturePage || isOnQRPage) ? (
+                  // On feature pages (Live Orders, Menu, etc.) and QR pages: Dashboard, Settings, Sign Out
+                  <>
+                    <Link
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
+                    >
+                      <LayoutDashboard className="mr-3 h-5 w-5" />
+                      Dashboard
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
@@ -258,7 +280,7 @@ export default function GlobalNav() {
             {isAuthenticated ? (
               // Signed in mobile navigation
               <>
-                {(isOnDashboard || isOnQRPage) ? (
+                {isDashboardRoot ? (
                   <>
                     <Link
                       href="/"
@@ -267,6 +289,25 @@ export default function GlobalNav() {
                     >
                       <Home className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span>Home</span>
+                    </Link>
+                    <Link
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
+                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Settings className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <span>Settings</span>
+                    </Link>
+                  </>
+                ) : (isOnFeaturePage || isOnQRPage) ? (
+                  <>
+                    <Link
+                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <span>Dashboard</span>
                     </Link>
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}

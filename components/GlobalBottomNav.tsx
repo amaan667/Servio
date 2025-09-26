@@ -8,7 +8,8 @@ import {
   Home, 
   Clock, 
   ShoppingBag, 
-  QrCode
+  QrCode,
+  LayoutDashboard
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { createClient } from '@/lib/supabase/client';
@@ -105,6 +106,10 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   const isOnDashboard = pathname?.startsWith('/dashboard');
   const isOnHomePage = pathname === '/';
   const isOnQRPage = pathname?.includes('/generate-qr');
+  
+  // Check if we're on the dashboard root page (not a feature page)
+  const isDashboardRoot = pathname?.match(/^\/dashboard\/(?:[^/]+)\/?$/);
+  const isOnFeaturePage = isOnDashboard && !isDashboardRoot;
 
   // Extract venueId from pathname if not provided
   const currentVenueId = venueId || pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
@@ -112,9 +117,9 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   const navItems: NavItem[] = [
     {
       id: 'home',
-      label: isOnDashboard ? 'Home' : 'Dashboard',
-      href: isOnDashboard ? '/' : (currentVenueId ? `/dashboard/${currentVenueId}` : '/dashboard'),
-      icon: Home,
+      label: isDashboardRoot ? 'Home' : 'Dashboard',
+      href: isDashboardRoot ? '/' : (currentVenueId ? `/dashboard/${currentVenueId}` : '/dashboard'),
+      icon: isDashboardRoot ? Home : LayoutDashboard,
       isActive: isOnHomePage || (isOnDashboard && pathname === `/dashboard/${currentVenueId}`)
     },
     {
