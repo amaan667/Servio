@@ -1421,7 +1421,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
         )}
 
         {/* Content */}
-        <main className="mt-4 space-y-4">
+        <main className="mt-4 space-y-6 pb-20">
 
           {/* Content based on active tab */}
           {activeTab === 'live' && (
@@ -1436,11 +1436,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 <>
                   {/* Bulk Complete All Button */}
                   {orders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length > 0 && (
-                    <div className="flex justify-center mb-6">
+                    <div className="flex justify-center mb-8">
                       <Button
                         onClick={bulkCompleteAllOrders}
                         disabled={isBulkCompleting}
-                        className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg text-sm shadow-md hover:shadow-lg transition-all duration-200"
+                        className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg text-sm shadow-md hover:shadow-lg transition-all duration-200 w-full max-w-sm"
                       >
                         {isBulkCompleting ? (
                           <>
@@ -1464,7 +1464,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                         Counter Orders ({orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                       </h3>
-                      <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                         {orders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).map((order) => renderOrderCard(order, true))}
                       </div>
                     </div>
@@ -1493,7 +1493,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({sortedTableOrders.length})
                         </h3>
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                           {sortedTableOrders.map(order => renderOrderCard(order, true))}
                         </div>
                       </div>
@@ -1516,11 +1516,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                 <>
                   {/* Bulk Complete All Button for Earlier Today */}
                   {allTodayOrders.filter(order => ['PLACED', 'IN_PREP', 'READY', 'SERVING'].includes(order.order_status)).length > 0 && (
-                    <div className="flex justify-center mb-6">
+                    <div className="flex justify-center mb-8">
                       <Button
                         onClick={bulkCompleteAllOrders}
                         disabled={isBulkCompleting}
-                        className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg text-sm shadow-md hover:shadow-lg transition-all duration-200"
+                        className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg text-sm shadow-md hover:shadow-lg transition-all duration-200 w-full max-w-sm"
                       >
                         {isBulkCompleting ? (
                           <>
@@ -1543,7 +1543,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                         Counter Orders ({allTodayOrders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).length})
                       </h3>
-                      <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                         {allTodayOrders.filter(order => isCounterOrder(order) && (!parsedTableFilter || order.table_number?.toString() === parsedTableFilter)).map((order) => renderOrderCard(order, true))}
                       </div>
                     </div>
@@ -1563,7 +1563,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                           Table Orders ({earlierTableOrders.length})
                         </h3>
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                           {earlierTableOrders.map(order => renderOrderCard(order, true))}
                         </div>
                       </div>
