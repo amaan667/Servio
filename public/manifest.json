@@ -3,7 +3,7 @@
   "short_name": "Servio",
   "description": "Streamline your business operations with contactless QR code ordering",
   "start_url": "/",
-  "display": "standalone",
+  "display": "browser",
   "background_color": "#ffffff",
   "theme_color": "#7c3aed",
   "orientation": "portrait-primary",
@@ -88,11 +88,5 @@
     }
   ],
   "related_applications": [],
-  "prefer_related_applications": false,
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
-  "launch_handler": {
-    "client_mode": "navigate-existing"
-  }
+  "prefer_related_applications": false
 }

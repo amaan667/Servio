@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
 
 interface ServiceWorkerRegistrationProps {
   children: React.ReactNode;
@@ -87,13 +87,6 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
     }
   };
 
-  const handleInstall = () => {
-    // Trigger the install prompt
-    if ('serviceWorker' in navigator && swRegistration) {
-      // This would typically trigger a PWA install prompt
-      console.log('[SW] Triggering install prompt');
-    }
-  };
 
   return (
     <>
@@ -150,81 +143,7 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
         </div>
       )}
 
-      {/* Install Prompt */}
-      {isOnline && !updateAvailable && (
-        <div className="fixed bottom-4 left-4 z-40">
-          <Card className="bg-white shadow-lg border border-gray-200 max-w-xs">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center space-x-2">
-                <Download className="h-4 w-4 text-purple-600" />
-                <span>Install App</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-xs text-gray-600 mb-3">
-                Install Servio for a better experience with offline access and push notifications.
-              </p>
-              <Button
-                onClick={handleInstall}
-                size="sm"
-                className="w-full bg-purple-600 hover:bg-purple-700"
-              >
-                Install Now
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </>
   );
 }
 
-// Hook for PWA installation
-export function usePWAInstall() {
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-    };
-
-    const handleAppInstalled = () => {
-      console.log('[PWA] App was installed');
-      setIsInstallable(false);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
-
-  const install = async () => {
-    if (!deferredPrompt) return false;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('[PWA] User accepted the install prompt');
-    } else {
-      console.log('[PWA] User dismissed the install prompt');
-    }
-    
-    setDeferredPrompt(null);
-    setIsInstallable(false);
-    return outcome === 'accepted';
-  };
-
-  return {
-    isInstallable,
-    install
-  };
-}
