@@ -14,6 +14,7 @@ import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, Chevron
 import { MenuUploadCard } from "@/components/MenuUploadCard";
 import { CategoriesManagement } from "@/components/CategoriesManagement";
 import { useToast } from "@/hooks/use-toast";
+import MobileNav from '@/components/MobileNav';
 
 interface MenuItem {
   id: string;
@@ -576,6 +577,17 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
           )}
         </div>
       </div>
+      
+      {/* Mobile Navigation */}
+      <MobileNav 
+        venueId={venueId}
+        venueName={venueName}
+        counts={{
+          live_orders: 0,
+          total_orders: 0,
+          notifications: 0
+        }}
+      />
     </div>
   );
 }

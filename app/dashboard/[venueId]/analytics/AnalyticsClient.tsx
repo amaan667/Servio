@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/lib/supabase/client";
 import { ArrowLeft, BarChart, TrendingUp, Clock, ShoppingBag, DollarSign, Calendar, CalendarIcon, Target, Award, TrendingDown } from "lucide-react";
+import MobileNav from '@/components/MobileNav';
 
 interface AnalyticsData {
   totalOrders: number;
@@ -791,6 +792,17 @@ export default function AnalyticsClient({ venueId, venueName }: { venueId: strin
           </CardContent>
         </Card>
       )}
+      
+      {/* Mobile Navigation */}
+      <MobileNav 
+        venueId={venueId}
+        venueName={venueName}
+        counts={{
+          live_orders: 0,
+          total_orders: 0,
+          notifications: 0
+        }}
+      />
     </div>
   );
 }

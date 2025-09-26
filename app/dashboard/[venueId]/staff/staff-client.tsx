@@ -12,6 +12,7 @@ import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import { Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import SimpleStaffGrid from '@/components/staff/SimpleStaffGrid';
+import MobileNav from '@/components/MobileNav';
 
 
 type StaffRow = {
@@ -723,6 +724,17 @@ export default function StaffClient({
           </div>
         )}
       </div>
+      
+      {/* Mobile Navigation */}
+      <MobileNav 
+        venueId={venueId}
+        venueName={venueName}
+        counts={{
+          live_orders: 0,
+          total_orders: 0,
+          notifications: 0
+        }}
+      />
     </div>
   );
 }
