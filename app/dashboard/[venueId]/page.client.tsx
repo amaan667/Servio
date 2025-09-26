@@ -10,7 +10,6 @@ import { createClient } from "@/lib/supabase/client";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { todayWindowForTZ } from "@/lib/time";
 import { useDashboardPrefetch } from '@/hooks/usePrefetch';
-import MobileNav from '@/components/MobileNav';
 import PullToRefresh from '@/components/PullToRefresh';
 
 interface DashboardCounts {
@@ -617,16 +616,6 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         </div>
       </div>
       
-      {/* Mobile Navigation */}
-      <MobileNav 
-        venueId={venueId}
-        venueName={venue?.name}
-        counts={{
-          live_orders: counts.live_count,
-          total_orders: counts.today_orders_count,
-          notifications: 0 // You can add notification count logic here
-        }}
-      />
     </div>
     </PullToRefresh>
   );
