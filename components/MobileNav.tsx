@@ -76,7 +76,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
   const navItems: NavItem[] = [
     {
       id: 'dashboard',
-      label: 'Dashboard',
+      label: 'Home',
       href: `/dashboard/${venueId}`,
       icon: Home,
       description: 'Overview and quick stats',
@@ -162,21 +162,21 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 transition-transform duration-300 safe-bottom ${
+      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 transition-transform duration-300 ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
-      }`}>
-        <div className="grid grid-cols-4 h-16 pb-safe">
+      }`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="grid grid-cols-4 h-20">
           {navItems.slice(0, 4).map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-2 relative ${
+              className={`flex flex-col items-center justify-center p-1 relative ${
                 item.isActive 
                   ? 'text-purple-600 bg-purple-50' 
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              <div className="relative">
+              <div className="relative mb-1">
                 <item.icon className="h-5 w-5" />
                 {item.badge && item.badge > 0 && (
                   <Badge 
@@ -187,7 +187,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                   </Badge>
                 )}
               </div>
-              <span className="text-xs mt-1 truncate max-w-full px-1">
+              <span className="text-xs leading-tight text-center px-1" style={{ lineHeight: '1.2' }}>
                 {item.label}
               </span>
             </button>
@@ -297,7 +297,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
       )}
 
       {/* Bottom Padding for Fixed Navigation */}
-      <div className="h-16" />
+      <div className="h-20" />
     </>
   );
 }

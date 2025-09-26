@@ -15,10 +15,8 @@ export default function ThemeToggleFloat() {
     setMounted(true);
   }, []);
 
-  // Handle scroll detection for order pages
+  // Handle scroll detection for all pages
   useEffect(() => {
-    if (!pathname?.startsWith('/order')) return;
-
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       setShowOnScroll(scrollTop > 100); // Show when scrolled down more than 100px
@@ -26,7 +24,7 @@ export default function ThemeToggleFloat() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [pathname]);
+  }, []);
 
   // Only show theme toggle on dashboard, settings, and order pages
   const shouldShowToggle = pathname?.startsWith('/dashboard') || 
@@ -51,12 +49,12 @@ export default function ThemeToggleFloat() {
       // On order page, only show when scrolled and position in top-right
       return showOnScroll ? "fixed top-4 right-4" : "hidden";
     }
-    // Default positioning for dashboard pages - can move back to right side since FAB is removed
+    // For dashboard pages, only show when scrolled and position in top-right to avoid bottom nav overlap
     if (pathname?.startsWith('/dashboard')) {
-      return "fixed bottom-6 right-6 safe-bottom";
+      return showOnScroll ? "fixed top-4 right-4" : "hidden";
     }
-    // Default positioning for other pages
-    return "fixed bottom-6 right-6";
+    // Default positioning for other pages - only show when scrolled
+    return showOnScroll ? "fixed top-4 right-4" : "hidden";
   };
 
   return (
