@@ -170,7 +170,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-1 relative ${
+              className={`flex flex-col items-center justify-center p-2 relative ${
                 item.isActive 
                   ? 'text-purple-600 bg-purple-50' 
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -187,7 +187,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                   </Badge>
                 )}
               </div>
-              <span className="text-xs leading-tight text-center px-1" style={{ lineHeight: '1.2' }}>
+              <span className="text-xs leading-tight text-center px-1" style={{ lineHeight: '1.1', fontSize: '11px' }}>
                 {item.label}
               </span>
             </button>
@@ -213,7 +213,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">
-                        {venueName || 'Dashboard'}
+                        {venueName || 'Home'}
                       </h2>
                       <p className="text-sm text-gray-600">Quick navigation</p>
                     </div>
@@ -269,7 +269,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                 <div className="p-4 border-t border-gray-200">
                   <div className="text-center">
                     <p className="text-xs text-gray-500">
-                      Servio Dashboard
+                      Servio Home
                     </p>
                   </div>
                 </div>
