@@ -45,15 +45,7 @@ export default function ThemeToggleFloat() {
 
   // Adjust positioning based on the page to avoid conflicts
   const getPositionClasses = () => {
-    if (pathname?.startsWith('/order')) {
-      // On order page, only show when scrolled and position in top-right
-      return showOnScroll ? "fixed top-4 right-4" : "hidden";
-    }
-    // For dashboard pages, only show when scrolled and position in top-right to avoid bottom nav overlap
-    if (pathname?.startsWith('/dashboard')) {
-      return showOnScroll ? "fixed top-4 right-4" : "hidden";
-    }
-    // Default positioning for other pages - only show when scrolled
+    // Only show when scrolled on all pages
     return showOnScroll ? "fixed top-4 right-4" : "hidden";
   };
 
