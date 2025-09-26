@@ -185,6 +185,45 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
+    // Check if a table with the same label already exists
+    const { data: existingTable } = await adminSupabase
+      .from('tables')
+      .select('id, label')
+      .eq('venue_id', venue_id)
+      .eq('label', label)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (existingTable) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Table "${label}" already exists. Please choose a different label.` 
+      }, { status: 400 });
+    }
+
+    // Check if there are any active orders for a table with the same label
+    // This handles cases where the table might have been deleted but orders still exist
+    const { data: activeOrders } = await adminSupabase
+      .from('orders')
+      .select('id, table_number, customer_name, order_status')
+      .eq('venue_id', venue_id)
+      .in('order_status', ['PLACED', 'ACCEPTED', 'IN_PREP', 'READY', 'OUT_FOR_DELIVERY', 'SERVING'])
+      .not('table_number', 'is', null);
+
+    // Check if any active orders have a table number that matches the label
+    const tableNumber = parseInt(label.replace(/\D/g, '')); // Extract number from label
+    const hasActiveOrders = activeOrders?.some(order => {
+      // Check if the order's table number matches the extracted number from the label
+      return order.table_number === tableNumber;
+    });
+
+    if (hasActiveOrders) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Cannot create table "${label}" - there are active orders for this table. Please complete or cancel the existing orders first.` 
+      }, { status: 400 });
+    }
+
     // Create table using admin client to bypass RLS
     const { data: table, error: tableError } = await adminSupabase
       .from('tables')
