@@ -316,7 +316,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
               disabled
               className="bg-gray-50"
             />
-            <p className="text-sm text-gray-500 mt-1">Email address cannot be changed</p>
+            <p className="text-sm text-gray-700 mt-1 font-medium">Email address cannot be changed</p>
           </div>
           
           <div>
@@ -400,7 +400,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
             <Lock className="h-5 w-5" />
             {shouldShowSetPassword ? 'Set Password' : 'Change Password'}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-700 font-medium">
             {shouldShowSetPassword 
               ? 'Set a password so you can also sign in with your email and password'
               : 'Update your account password'
@@ -417,7 +417,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{shouldShowSetPassword ? 'Set Password' : 'Change Password'}</DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-gray-700 font-medium">
                   {shouldShowSetPassword 
                     ? 'Create a password for your account so you can sign in with email and password in the future.'
                     : 'Enter your new password below.'
@@ -500,7 +500,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-700 mb-4 font-medium">
             This action cannot be undone. This will permanently delete your account and all associated data.
           </p>
           
@@ -515,7 +515,7 @@ export default function VenueSettingsClient({ user, venue, venues }: VenueSettin
                 <DialogTitle>Delete Account</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-700 font-medium">
                   This action cannot be undone. This will permanently delete your account and all associated data.
                 </p>
                 

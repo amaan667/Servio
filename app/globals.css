@@ -292,6 +292,107 @@
 
 /* Mobile-specific improvements */
 @media (max-width: 768px) {
+  /* Enhanced text visibility on mobile */
+  .text-muted-foreground {
+    color: #374151 !important; /* Darker gray for better visibility */
+  }
+  
+  .text-gray-500 {
+    color: #374151 !important; /* Darker gray for better visibility */
+  }
+  
+  .text-gray-400 {
+    color: #4b5563 !important; /* Darker gray for better visibility */
+  }
+  
+  .text-gray-300 {
+    color: #6b7280 !important; /* Darker gray for better visibility */
+  }
+  
+  /* Enhanced card text visibility */
+  .card .text-muted-foreground {
+    color: #374151 !important;
+  }
+  
+  /* Enhanced label visibility */
+  label {
+    color: #1f2937 !important; /* Very dark for maximum visibility */
+    font-weight: 600 !important;
+    font-size: 14px !important;
+  }
+  
+  /* Enhanced input text visibility */
+  input, textarea, select {
+    color: #1f2937 !important; /* Dark text */
+    font-weight: 500 !important;
+  }
+  
+  /* Enhanced input placeholder visibility */
+  input::placeholder, textarea::placeholder {
+    color: #6b7280 !important; /* Darker placeholder text */
+    font-weight: 400 !important;
+  }
+  
+  /* Enhanced button text visibility */
+  button {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Enhanced navigation text visibility */
+  .mobile-nav-text {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Enhanced description text visibility */
+  .description-text {
+    color: #374151 !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Enhanced form field visibility */
+  .form-field {
+    background-color: #ffffff !important;
+    border: 2px solid #d1d5db !important;
+    color: #1f2937 !important;
+  }
+  
+  .form-field:focus {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1) !important;
+    outline: none !important;
+  }
+  
+  /* Enhanced disabled field visibility */
+  input:disabled, textarea:disabled, select:disabled {
+    background-color: #f9fafb !important;
+    color: #6b7280 !important;
+    border-color: #e5e7eb !important;
+  }
+  
+  /* Enhanced card text visibility */
+  .card p, .card span, .card div {
+    color: #374151 !important;
+  }
+  
+  /* Enhanced alert text visibility */
+  .alert p, .alert span, .alert div {
+    color: #374151 !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Enhanced dialog text visibility */
+  .dialog p, .dialog span, .dialog div {
+    color: #374151 !important;
+  }
+  
+  /* Enhanced breadcrumb text visibility */
+  .breadcrumb-text {
+    color: #374151 !important;
+    font-weight: 500 !important;
+  }
+
   /* Ensure touch targets are at least 44px */
   .touch-target {
     min-height: 44px;
@@ -1115,6 +1216,31 @@
     -webkit-tap-highlight-color: rgba(124, 58, 237, 0.3);
   }
   
+  /* Enhanced dark mode text visibility */
+  .text-muted-foreground {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .text-gray-500 {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .text-gray-400 {
+    color: #9ca3af !important; /* Medium gray for dark mode */
+  }
+  
+  .text-gray-300 {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .text-gray-700 {
+    color: #f3f4f6 !important; /* Very light gray for dark mode */
+  }
+  
+  .text-gray-800 {
+    color: #f9fafb !important; /* Almost white for dark mode */
+  }
+  
   /* Enhanced dark mode inputs */
   input, textarea, select {
     background-color: #1f2937;
@@ -1127,10 +1253,20 @@
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
   }
   
+  /* Enhanced dark mode labels */
+  label {
+    color: #f9fafb !important; /* White labels in dark mode */
+  }
+  
   /* Better dark mode cards */
   .card {
     background-color: #1f2937;
     border: 1px solid #374151;
+  }
+  
+  /* Enhanced dark mode card text */
+  .card p, .card span, .card div {
+    color: #d1d5db !important;
   }
   
   /* Enhanced dark mode buttons */
@@ -1158,6 +1294,18 @@
   button[class*="ghost"]:hover {
     color: #f9fafb !important;
     background-color: #374151 !important;
+  }
+  
+  /* Enhanced dark mode navigation */
+  .mobile-nav-text {
+    color: #f9fafb !important;
+  }
+  
+  /* Enhanced dark mode disabled fields */
+  input:disabled, textarea:disabled, select:disabled {
+    background-color: #374151 !important;
+    color: #9ca3af !important;
+    border-color: #4b5563 !important;
   }
 }
 
