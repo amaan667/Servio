@@ -25,7 +25,7 @@ export default async function TableManagementPage({ params }: TableManagementPag
   const { venueId } = await params;
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
         <NavigationBreadcrumb venueId={venueId} />
         <Suspense fallback={<div className="text-center py-8 text-gray-600">Loading tables...</div>}>
           <TableManagementClientNew venueId={venueId} />

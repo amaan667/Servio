@@ -8,6 +8,7 @@ import AuthProvider from '@/app/auth/AuthProvider';
 import Providers from "./providers";
 import ThemeToggleFloat from "@/components/ThemeToggleFloat";
 import ConditionalHeader from "@/components/ConditionalHeader";
+import ConditionalBottomNav from "@/components/ConditionalBottomNav";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -79,6 +80,7 @@ export default async function RootLayout({
               <ConditionalHeader />
               {children}
               <ThemeToggleFloat />
+              <ConditionalBottomNav />
             </Providers>
           </AuthProvider>
         </ErrorBoundary>

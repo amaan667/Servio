@@ -12,6 +12,7 @@ import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import { Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import SimpleStaffGrid from '@/components/staff/SimpleStaffGrid';
+import MobileNav from '@/components/MobileNav';
 
 
 type StaffRow = {
@@ -610,8 +611,8 @@ export default function StaffClient({
             ) : (
               <div className="space-y-6">
                 {roles.map((role) => (
-                  <Card key={role} className="border-0 shadow-sm">
-                    <CardHeader className="pb-4">
+                  <Card key={role} className="staff-card border-0 shadow-sm">
+                    <CardHeader className="staff-role-header pb-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -628,7 +629,7 @@ export default function StaffClient({
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid gap-3">
+                      <div className="staff-grid grid gap-3">
                         {grouped[role].map((row) => (
                           <div key={row.id}>
                             <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg transition-colors gap-4 ${
@@ -636,8 +637,8 @@ export default function StaffClient({
                                 ? 'bg-gray-50 hover:bg-gray-100' 
                                 : 'bg-gray-100 hover:bg-gray-200 opacity-60'
                             }`}>
-                              <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
+                              <div className="staff-member-info staff-info flex items-center gap-3">
+                                <div className={`staff-member-avatar w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
                                   row.active ? 'bg-white' : 'bg-gray-200'
                                 }`}>
                                   <span className={`text-sm font-medium ${
@@ -647,13 +648,13 @@ export default function StaffClient({
                                   </span>
                                 </div>
                                 <div>
-                                  <p className={`font-medium ${
+                                  <p className={`staff-member-name font-medium ${
                                     row.active ? 'text-foreground' : 'text-muted-foreground'
                                   }`}>
                                     {row.name}
                                     {!row.active && <span className="ml-2 text-xs text-gray-400">(Inactive)</span>}
                                   </p>
-                                  <p className="text-sm text-muted-foreground">{role}</p>
+                                  <p className="staff-member-role text-sm text-muted-foreground">{role}</p>
                                 </div>
                               </div>
                               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2">
@@ -662,7 +663,7 @@ export default function StaffClient({
                                   <Switch
                                     checked={row.active}
                                     onCheckedChange={() => onToggleActive(row)}
-                                    className="data-[state=checked]:bg-green-500"
+                                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-300"
                                   />
                                 </div>
                                 <div className="flex gap-2">
@@ -725,6 +726,17 @@ export default function StaffClient({
           </div>
         )}
       </div>
+      
+      {/* Mobile Navigation */}
+      <MobileNav 
+        venueId={venueId}
+        venueName={venueName}
+        counts={{
+          live_orders: 0,
+          total_orders: 0,
+          notifications: 0
+        }}
+      />
     </div>
   );
 }

@@ -83,6 +83,48 @@
   }
 }
 
+/* Enhanced Button Visibility */
+.btn-enhanced-outline {
+  @apply border-2 border-gray-400 bg-white text-gray-800 font-semibold shadow-sm;
+  @apply hover:bg-gray-50 hover:border-gray-500 hover:text-gray-900;
+  @apply focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  @apply dark:border-gray-500 dark:bg-gray-800 dark:text-gray-200;
+  @apply dark:hover:bg-gray-700 dark:hover:border-gray-400 dark:hover:text-white;
+  @apply transition-all duration-200;
+}
+
+.btn-enhanced-ghost {
+  @apply text-gray-700 font-semibold;
+  @apply hover:bg-gray-100 hover:text-gray-900;
+  @apply focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  @apply dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white;
+  @apply transition-all duration-200;
+}
+
+.btn-enhanced-icon {
+  @apply text-gray-600 hover:text-gray-900 hover:bg-gray-100;
+  @apply focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  @apply dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800;
+  @apply transition-all duration-200;
+}
+
+/* Mobile-specific button improvements */
+@media (max-width: 768px) {
+  .btn-enhanced-outline {
+    @apply border-2 border-gray-500 text-gray-900 font-semibold;
+    @apply hover:bg-gray-100 hover:border-gray-600;
+  }
+  
+  .btn-enhanced-ghost {
+    @apply text-gray-800 font-semibold;
+    @apply hover:bg-gray-200 hover:text-gray-900;
+  }
+  
+  .btn-enhanced-icon {
+    @apply text-gray-700 hover:text-gray-900 hover:bg-gray-200;
+  }
+}
+
 /* Custom Servio styles */
 .text-servio-purple {
   color: hsl(var(--servio-purple));
@@ -250,10 +292,647 @@
 
 /* Mobile-specific improvements */
 @media (max-width: 768px) {
+  /* Enhanced text visibility on mobile - ensure proper contrast */
+  .text-muted-foreground {
+    color: #374151 !important; /* Darker gray for better visibility */
+  }
+  
+  .text-gray-500 {
+    color: #374151 !important; /* Darker gray for better visibility */
+  }
+  
+  .text-gray-400 {
+    color: #4b5563 !important; /* Darker gray for better visibility */
+  }
+  
+  .text-gray-300 {
+    color: #6b7280 !important; /* Darker gray for better visibility */
+  }
+  
+  /* Enhanced mobile text contrast for card descriptions */
+  .text-gray-700 {
+    color: #374151 !important; /* Darker for better mobile visibility */
+  }
+  
+  .text-gray-600 {
+    color: #4b5563 !important; /* Darker for better mobile visibility */
+  }
+  
+  /* Dark mode text fixes for better readability */
+  .dark .text-muted-foreground {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .dark .text-gray-500 {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .dark .text-gray-400 {
+    color: #9ca3af !important; /* Medium gray for dark mode */
+  }
+  
+  .dark .text-gray-300 {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .dark .text-gray-700 {
+    color: #f3f4f6 !important; /* Very light gray for dark mode */
+  }
+  
+  .dark .text-gray-800 {
+    color: #f9fafb !important; /* Almost white for dark mode */
+  }
+  
+  /* Enhanced card text visibility */
+  .card .text-muted-foreground {
+    color: #374151 !important;
+  }
+  
+  /* Dashboard card text visibility fixes */
+  .card p, .card span, .card div {
+    color: #374151 !important;
+  }
+  
+  .dark .card p, .dark .card span, .dark .card div {
+    color: #d1d5db !important;
+  }
+  
+  /* Dashboard card labels and descriptions */
+  .card .text-gray-700 {
+    color: #374151 !important;
+  }
+  
+  .dark .card .text-gray-700 {
+    color: #d1d5db !important;
+  }
+  
+  /* Enhanced label visibility */
+  label {
+    color: #1f2937 !important; /* Very dark for maximum visibility */
+    font-weight: 600 !important;
+    font-size: 14px !important;
+  }
+  
+  /* Enhanced input text visibility */
+  input, textarea, select {
+    color: #1f2937 !important; /* Dark text */
+    font-weight: 500 !important;
+  }
+  
+  /* Enhanced input placeholder visibility */
+  input::placeholder, textarea::placeholder {
+    color: #6b7280 !important; /* Darker placeholder text */
+    font-weight: 400 !important;
+  }
+  
+  /* Enhanced button text visibility */
+  button {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Enhanced navigation text visibility */
+  .mobile-nav-text {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Enhanced description text visibility */
+  .description-text {
+    color: #374151 !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Enhanced card text visibility for mobile */
+  .card p, .card span, .card div {
+    color: #374151 !important;
+  }
+  
+  .card .text-gray-700 {
+    color: #374151 !important;
+  }
+  
+  .card .text-gray-600 {
+    color: #4b5563 !important;
+  }
+  
+  /* Enhanced mobile text visibility for all components */
+  .text-gray-500 {
+    color: #4b5563 !important; /* Darker for better mobile visibility */
+  }
+  
+  .text-gray-400 {
+    color: #6b7280 !important; /* Darker for better mobile visibility */
+  }
+  
+  .text-gray-300 {
+    color: #9ca3af !important; /* Darker for better mobile visibility */
+  }
+  
+  /* Enhanced form field visibility */
+  .form-field {
+    background-color: #ffffff !important;
+    border: 2px solid #d1d5db !important;
+    color: #1f2937 !important;
+  }
+  
+  .form-field:focus {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1) !important;
+    outline: none !important;
+  }
+  
+  /* Enhanced disabled field visibility */
+  input:disabled, textarea:disabled, select:disabled {
+    background-color: #f9fafb !important;
+    color: #6b7280 !important;
+    border-color: #e5e7eb !important;
+  }
+  
+  /* Enhanced card text visibility */
+  .card p, .card span, .card div {
+    color: #374151 !important;
+  }
+  
+  /* Enhanced alert text visibility */
+  .alert p, .alert span, .alert div {
+    color: #374151 !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Enhanced dialog text visibility */
+  .dialog p, .dialog span, .dialog div {
+    color: #374151 !important;
+  }
+  
+  /* Enhanced breadcrumb text visibility */
+  .breadcrumb-text {
+    color: #374151 !important;
+    font-weight: 500 !important;
+  }
+
   /* Ensure touch targets are at least 44px */
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+  
+  /* Mobile-optimized switch component */
+  [data-radix-switch-root] {
+    height: 20px !important;
+    width: 36px !important;
+    min-height: 20px !important;
+    min-width: 36px !important;
+    border-radius: 10px !important;
+  }
+  
+  [data-radix-switch-thumb] {
+    height: 16px !important;
+    width: 16px !important;
+    transform: translateX(0) !important;
+    border-radius: 8px !important;
+  }
+  
+  [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
+    transform: translateX(16px) !important;
+  }
+  
+  /* Better mobile button spacing for staff management */
+  .staff-actions {
+    gap: 8px !important;
+  }
+  
+  .staff-actions button {
+    min-height: 36px !important;
+    min-width: 36px !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+  }
+  
+  /* Improved mobile layout for staff rows */
+  .staff-row {
+    padding: 12px 16px !important;
+    gap: 12px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  
+  .staff-row .flex {
+    gap: 8px !important;
+  }
+  
+  /* Better mobile staff actions layout */
+  .staff-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .staff-actions > div:first-child {
+    order: 1 !important;
+  }
+  
+  .staff-actions button {
+    flex: 1 !important;
+    min-width: 80px !important;
+    min-height: 40px !important;
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+  }
+  
+  /* Mobile staff info layout */
+  .staff-info {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Better mobile switch styling */
+  .staff-actions [data-radix-switch-root] {
+    height: 18px !important;
+    width: 32px !important;
+  }
+  
+  .staff-actions [data-radix-switch-thumb] {
+    height: 14px !important;
+    width: 14px !important;
+  }
+  
+  .staff-actions [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
+    transform: translateX(14px) !important;
+  }
+  
+  /* Mobile staff card improvements */
+  .staff-card {
+    margin-bottom: 12px !important;
+    border-radius: 8px !important;
+  }
+  
+  .staff-card .card-header {
+    padding: 12px 16px !important;
+  }
+  
+  .staff-card .card-content {
+    padding: 8px 16px 16px 16px !important;
+  }
+  
+  /* Better mobile grid layout for staff */
+  .staff-grid {
+    gap: 8px !important;
+  }
+  
+  .staff-grid > div {
+    margin-bottom: 8px !important;
+  }
+  
+  /* Mobile-friendly staff role headers */
+  .staff-role-header {
+    padding: 8px 12px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .staff-role-header h3 {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+  
+  .staff-role-header p {
+    font-size: 13px !important;
+  }
+  
+  /* Better mobile staff member info */
+  .staff-member-info {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  
+  .staff-member-info .flex {
+    gap: 8px !important;
+  }
+  
+  /* Mobile-friendly staff member name */
+  .staff-member-name {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+  
+  .staff-member-role {
+    font-size: 14px !important;
+    color: #6b7280 !important;
+  }
+  
+  /* Better mobile staff actions layout */
+  .staff-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  
+  .staff-actions > div:first-child {
+    order: 1 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  .staff-actions button {
+    width: 100% !important;
+    margin-bottom: 4px !important;
+  }
+  
+  /* Mobile-friendly switch container */
+  .switch-container {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 8px !important;
+    background: #f9fafb !important;
+    border-radius: 6px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Better mobile button layout */
+  .mobile-button-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+  
+  .mobile-button-group button {
+    width: 100% !important;
+    min-height: 40px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Better mobile staff row layout */
+  .staff-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  
+  .staff-row .staff-member-info {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .staff-row .staff-actions {
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+  
+  /* Better mobile staff card spacing */
+  .staff-card {
+    margin-bottom: 16px !important;
+  }
+  
+  .staff-card .card-header {
+    padding: 16px !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  
+  .staff-card .card-content {
+    padding: 16px !important;
+  }
+  
+  /* Mobile-friendly staff grid */
+  .staff-grid {
+    gap: 12px !important;
+  }
+  
+  .staff-grid > div {
+    margin-bottom: 12px !important;
+  }
+  
+  /* Better mobile staff member avatar */
+  .staff-member-avatar {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Better mobile staff member text */
+  .staff-member-name {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+  
+  .staff-member-role {
+    font-size: 15px !important;
+    color: #6b7280 !important;
+    margin-top: 2px !important;
+  }
+  
+  /* Better mobile switch styling */
+  .switch-container {
+    background: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+  }
+  
+  .switch-container span {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+  }
+  
+  /* Better mobile button styling */
+  .mobile-button-group button {
+    border-radius: 8px !important;
+    border-width: 2px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .mobile-button-group button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* Better mobile staff row spacing */
+  .staff-row {
+    padding: 16px !important;
+    margin-bottom: 8px !important;
+    border-radius: 12px !important;
+    border: 1px solid #e5e7eb !important;
+  }
+  
+  .staff-row:hover {
+    border-color: #d1d5db !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Better mobile staff card header */
+  .staff-role-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+  }
+  
+  .staff-role-header h3 {
+    color: #1e293b !important;
+    font-weight: 700 !important;
+  }
+  
+  .staff-role-header p {
+    color: #64748b !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Better mobile staff card content */
+  .staff-card .card-content {
+    padding: 20px !important;
+  }
+  
+  /* Better mobile staff grid spacing */
+  .staff-grid {
+    gap: 16px !important;
+  }
+  
+  .staff-grid > div {
+    margin-bottom: 16px !important;
+  }
+  
+  /* Better mobile staff member info layout */
+  .staff-member-info {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+  
+  .staff-member-info .flex {
+    gap: 12px !important;
+  }
+  
+  /* Better mobile staff actions layout */
+  .staff-actions {
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-top: 12px !important;
+  }
+  
+  .staff-actions .switch-container {
+    order: 1 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  .staff-actions .mobile-button-group {
+    order: 2 !important;
+    width: 100% !important;
+  }
+  
+  /* Better mobile staff member avatar */
+  .staff-member-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Better mobile staff member text */
+  .staff-member-name {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    color: #1e293b !important;
+  }
+  
+  .staff-member-role {
+    font-size: 16px !important;
+    color: #64748b !important;
+    margin-top: 4px !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Better mobile switch container */
+  .switch-container {
+    background: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .switch-container span {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+  }
+  
+  /* Better mobile button group styling */
+  .mobile-button-group {
+    gap: 8px !important;
+  }
+  
+  .mobile-button-group button {
+    min-height: 44px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    border-width: 2px !important;
+  }
+  
+  .mobile-button-group button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  /* Better mobile staff row hover effects */
+  .staff-row:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* Better mobile staff card hover effects */
+  .staff-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  }
+  
+  /* Better mobile staff role header styling */
+  .staff-role-header {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+    border-bottom: 3px solid #cbd5e1 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  .staff-role-header h3 {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .staff-role-header p {
+    color: #475569 !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Better mobile staff grid layout */
+  .staff-grid {
+    gap: 20px !important;
+  }
+  
+  .staff-grid > div {
+    margin-bottom: 20px !important;
+  }
+  
+  /* Better mobile staff member info spacing */
+  .staff-member-info {
+    gap: 16px !important;
+    padding: 4px 0 !important;
+  }
+  
+  .staff-member-info .flex {
+    gap: 16px !important;
   }
   
   /* Prevent horizontal scroll on mobile */
@@ -276,15 +955,32 @@
     font-size: 16px; /* Prevent zoom on iOS */
     -webkit-appearance: none; /* Remove iOS styling */
     border-radius: 8px;
-    border: 1px solid #d1d5db;
+    border: 2px solid #d1d5db;
     padding: 12px 16px;
     transition: all 0.2s ease;
+    background-color: #ffffff;
+    color: #374151;
+    font-weight: 500;
   }
   
   input:focus, textarea:focus, select:focus {
     border-color: #7c3aed;
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     outline: none;
+    background-color: #ffffff;
+  }
+  
+  /* Enhanced label visibility */
+  label {
+    color: #374151 !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+  }
+  
+  /* Better placeholder text */
+  input::placeholder, textarea::placeholder {
+    color: #6b7280 !important;
+    font-weight: 400 !important;
   }
   
   /* Ensure minimum readable text sizes */
@@ -309,6 +1005,47 @@
     font-weight: 500;
     transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Enhanced mobile button visibility */
+  button[class*="outline"] {
+    border-width: 2px !important;
+    border-color: #6b7280 !important;
+    color: #374151 !important;
+    font-weight: 600 !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  button[class*="outline"]:hover {
+    border-color: #4b5563 !important;
+    color: #111827 !important;
+    background-color: #f9fafb !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  button[class*="ghost"] {
+    color: #374151 !important;
+    font-weight: 600 !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+  
+  button[class*="ghost"]:hover {
+    color: #111827 !important;
+    background-color: #f3f4f6 !important;
+  }
+  
+  /* Enhanced icon visibility */
+  button svg {
+    stroke-width: 2 !important;
+  }
+  
+  /* Better touch targets for small buttons */
+  button[class*="sm"] {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 12px !important;
   }
   
   /* Enhanced button states */
@@ -502,6 +1239,38 @@
   .grid {
     gap: 12px;
   }
+  
+  /* Extra small mobile staff layout */
+  .staff-row {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+  }
+  
+  .staff-actions {
+    gap: 6px !important;
+  }
+  
+  .staff-actions button {
+    min-width: 70px !important;
+    min-height: 36px !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  
+  /* Even smaller switch for very small screens */
+  .staff-actions [data-radix-switch-root] {
+    height: 16px !important;
+    width: 28px !important;
+  }
+  
+  .staff-actions [data-radix-switch-thumb] {
+    height: 12px !important;
+    width: 12px !important;
+  }
+  
+  .staff-actions [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
+    transform: translateX(12px) !important;
+  }
 }
 
 /* Large mobile devices and small tablets */
@@ -525,6 +1294,31 @@
     -webkit-tap-highlight-color: rgba(124, 58, 237, 0.3);
   }
   
+  /* Enhanced dark mode text visibility */
+  .text-muted-foreground {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .text-gray-500 {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .text-gray-400 {
+    color: #9ca3af !important; /* Medium gray for dark mode */
+  }
+  
+  .text-gray-300 {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .text-gray-700 {
+    color: #f3f4f6 !important; /* Very light gray for dark mode */
+  }
+  
+  .text-gray-800 {
+    color: #f9fafb !important; /* Almost white for dark mode */
+  }
+  
   /* Enhanced dark mode inputs */
   input, textarea, select {
     background-color: #1f2937;
@@ -537,15 +1331,59 @@
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
   }
   
+  /* Enhanced dark mode labels */
+  label {
+    color: #f9fafb !important; /* White labels in dark mode */
+  }
+  
   /* Better dark mode cards */
   .card {
     background-color: #1f2937;
     border: 1px solid #374151;
   }
   
+  /* Enhanced dark mode card text */
+  .card p, .card span, .card div {
+    color: #d1d5db !important;
+  }
+  
   /* Enhanced dark mode buttons */
   button {
     color: #f9fafb;
+  }
+  
+  /* Enhanced dark mode button visibility */
+  button[class*="outline"] {
+    border-color: #6b7280 !important;
+    color: #d1d5db !important;
+    background-color: #1f2937 !important;
+  }
+  
+  button[class*="outline"]:hover {
+    border-color: #9ca3af !important;
+    color: #f9fafb !important;
+    background-color: #374151 !important;
+  }
+  
+  button[class*="ghost"] {
+    color: #d1d5db !important;
+  }
+  
+  button[class*="ghost"]:hover {
+    color: #f9fafb !important;
+    background-color: #374151 !important;
+  }
+  
+  /* Enhanced dark mode navigation */
+  .mobile-nav-text {
+    color: #f9fafb !important;
+  }
+  
+  /* Enhanced dark mode disabled fields */
+  input:disabled, textarea:disabled, select:disabled {
+    background-color: #374151 !important;
+    color: #9ca3af !important;
+    border-color: #4b5563 !important;
   }
 }
 

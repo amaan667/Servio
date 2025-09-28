@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import type { FeedbackQuestion, FeedbackType } from '@/types/feedback';
+import MobileNav from '@/components/MobileNav';
 
 interface QuestionsClientProps {
   venueId: string;
@@ -621,6 +622,17 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
           )}
         </div>
       )}
+      
+      {/* Mobile Navigation */}
+      <MobileNav 
+        venueId={venueId}
+        venueName={venueName}
+        counts={{
+          live_orders: 0,
+          total_orders: 0,
+          notifications: 0
+        }}
+      />
     </div>
   );
 }

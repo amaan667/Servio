@@ -162,10 +162,10 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 transition-transform duration-300 safe-bottom ${
+      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 transition-transform duration-300 ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
-      }`}>
-        <div className="grid grid-cols-4 h-16 pb-safe">
+      }`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="grid grid-cols-4 h-20">
           {navItems.slice(0, 4).map((item) => (
             <button
               key={item.id}
@@ -173,10 +173,10 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
               className={`flex flex-col items-center justify-center p-2 relative ${
                 item.isActive 
                   ? 'text-purple-600 bg-purple-50' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50 font-medium'
               }`}
             >
-              <div className="relative">
+              <div className="relative mb-1">
                 <item.icon className="h-5 w-5" />
                 {item.badge && item.badge > 0 && (
                   <Badge 
@@ -187,7 +187,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                   </Badge>
                 )}
               </div>
-              <span className="text-xs mt-1 truncate max-w-full px-1">
+              <span className="text-xs leading-tight text-center px-1" style={{ lineHeight: '1.1', fontSize: '11px' }}>
                 {item.label}
               </span>
             </button>
@@ -213,9 +213,9 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">
-                        {venueName || 'Dashboard'}
+                        {venueName || 'Home'}
                       </h2>
-                      <p className="text-sm text-gray-600">Quick navigation</p>
+                      <p className="text-sm text-gray-700 font-medium">Quick navigation</p>
                     </div>
                     <Button
                       variant="ghost"
@@ -237,13 +237,13 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                         className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${
                           item.isActive 
                             ? 'bg-purple-50 text-purple-700 border border-purple-200' 
-                            : 'hover:bg-gray-50 text-gray-700'
+                            : 'hover:bg-gray-50 text-gray-700 font-medium'
                         }`}
                       >
                         <div className="flex items-center space-x-4">
                           <div className="relative">
                             <item.icon className={`h-6 w-6 ${
-                              item.isActive ? 'text-purple-600' : 'text-gray-500'
+                              item.isActive ? 'text-purple-600' : 'text-gray-600'
                             }`} />
                             {item.badge && item.badge > 0 && (
                               <Badge 
@@ -256,10 +256,10 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                           </div>
                           <div className="text-left">
                             <div className="font-medium">{item.label}</div>
-                            <div className="text-sm text-gray-500">{item.description}</div>
+                            <div className="text-sm text-gray-600 font-medium">{item.description}</div>
                           </div>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                        <ChevronRight className="h-5 w-5 text-gray-600" />
                       </button>
                     ))}
                   </div>
@@ -268,8 +268,8 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                 {/* Footer */}
                 <div className="p-4 border-t border-gray-200">
                   <div className="text-center">
-                    <p className="text-xs text-gray-500">
-                      Servio Dashboard
+                    <p className="text-xs text-gray-600 font-medium">
+                      Servio Home
                     </p>
                   </div>
                 </div>
@@ -297,7 +297,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
       )}
 
       {/* Bottom Padding for Fixed Navigation */}
-      <div className="h-16" />
+      <div className="h-20" />
     </>
   );
 }

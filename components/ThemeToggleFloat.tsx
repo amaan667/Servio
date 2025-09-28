@@ -15,10 +15,8 @@ export default function ThemeToggleFloat() {
     setMounted(true);
   }, []);
 
-  // Handle scroll detection for order pages
+  // Handle scroll detection for all pages
   useEffect(() => {
-    if (!pathname?.startsWith('/order')) return;
-
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       setShowOnScroll(scrollTop > 100); // Show when scrolled down more than 100px
@@ -26,7 +24,7 @@ export default function ThemeToggleFloat() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [pathname]);
+  }, []);
 
   // Only show theme toggle on dashboard, settings, and order pages
   const shouldShowToggle = pathname?.startsWith('/dashboard') || 
@@ -47,16 +45,8 @@ export default function ThemeToggleFloat() {
 
   // Adjust positioning based on the page to avoid conflicts
   const getPositionClasses = () => {
-    if (pathname?.startsWith('/order')) {
-      // On order page, only show when scrolled and position in top-right
-      return showOnScroll ? "fixed top-4 right-4" : "hidden";
-    }
-    // Default positioning for dashboard pages - can move back to right side since FAB is removed
-    if (pathname?.startsWith('/dashboard')) {
-      return "fixed bottom-6 right-6 safe-bottom";
-    }
-    // Default positioning for other pages
-    return "fixed bottom-6 right-6";
+    // Only show when scrolled on all pages, positioned in center-right to avoid header overlap
+    return showOnScroll ? "fixed top-20 right-1/2 transform translate-x-1/2 z-50" : "hidden";
   };
 
   return (
@@ -64,7 +54,7 @@ export default function ThemeToggleFloat() {
       type="button"
       onClick={toggle}
       aria-label="Toggle theme"
-      className={`${getPositionClasses()} z-50 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 dark:shadow-gray-900/50`}
+      className={`${getPositionClasses()} z-50 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 dark:shadow-gray-900/50 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90`}
     >
       <div className="flex items-center justify-center">
         {currentTheme === 'dark' ? (

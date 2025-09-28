@@ -30,6 +30,7 @@ import { ReservationsPanel } from '@/components/table-management/ReservationsPan
 import { DailyResetModal } from '@/components/daily-reset/DailyResetModal';
 import { toast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
+import MobileNav from '@/components/MobileNav';
 
 interface TableManagementClientNewProps {
   venueId: string;
@@ -766,6 +767,17 @@ export function TableManagementClientNew({ venueId }: TableManagementClientNewPr
         onConfirm={handleConfirmReset}
         isResetting={isManualResetting}
         venueName="this venue"
+      />
+      
+      {/* Mobile Navigation */}
+      <MobileNav 
+        venueId={venueId}
+        venueName={undefined}
+        counts={{
+          live_orders: 0,
+          total_orders: 0,
+          notifications: 0
+        }}
       />
     </div>
   );
