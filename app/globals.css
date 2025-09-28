@@ -298,6 +298,99 @@
     min-width: 44px;
   }
   
+  /* Better feedback tabs spacing */
+  .feedback-tabs {
+    margin-bottom: 2rem !important;
+    gap: 0.5rem !important;
+  }
+  
+  .feedback-tabs [data-radix-tabs-trigger] {
+    padding: 0.75rem 1rem !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .feedback-tabs [data-radix-tabs-trigger][data-state="active"] {
+    background-color: #7c3aed !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3) !important;
+  }
+  
+  .feedback-tabs [data-radix-tabs-trigger]:not([data-state="active"]) {
+    background-color: #f3f4f6 !important;
+    color: #6b7280 !important;
+    border: 1px solid #e5e7eb !important;
+  }
+  
+  .feedback-tabs [data-radix-tabs-trigger]:not([data-state="active"]):hover {
+    background-color: #e5e7eb !important;
+    color: #374151 !important;
+  }
+  
+  /* Better spacing between feedback tabs and content */
+  .feedback-content {
+    margin-top: 1.5rem !important;
+    padding-top: 1rem !important;
+  }
+  
+  /* Improved staff toggle button */
+  .staff-toggle {
+    height: 18px !important;
+    width: 32px !important;
+    border-radius: 9px !important;
+    background-color: #d1d5db !important;
+    transition: all 0.2s ease !important;
+    border: none !important;
+    cursor: pointer !important;
+  }
+  
+  .staff-toggle[data-state="checked"] {
+    background-color: #10b981 !important;
+  }
+  
+  .staff-toggle-thumb {
+    height: 14px !important;
+    width: 14px !important;
+    border-radius: 7px !important;
+    background-color: white !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    transition: transform 0.2s ease !important;
+  }
+  
+  .staff-toggle[data-state="checked"] .staff-toggle-thumb {
+    transform: translateX(14px) !important;
+  }
+  
+  /* Override Radix Switch styles for mobile */
+  [data-radix-switch-root].staff-toggle {
+    height: 18px !important;
+    width: 32px !important;
+    border-radius: 9px !important;
+    background-color: #d1d5db !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  [data-radix-switch-root].staff-toggle[data-state="checked"] {
+    background-color: #10b981 !important;
+  }
+  
+  [data-radix-switch-thumb] {
+    height: 14px !important;
+    width: 14px !important;
+    border-radius: 7px !important;
+    background-color: white !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    transition: transform 0.2s ease !important;
+  }
+  
+  [data-radix-switch-root].staff-toggle[data-state="checked"] [data-radix-switch-thumb] {
+    transform: translateX(14px) !important;
+  }
+  
   /* Mobile-optimized switch component */
   [data-radix-switch-root] {
     height: 20px !important;
@@ -639,10 +732,166 @@
     margin-top: 12px !important;
   }
   
+  /* Better mobile staff row layout */
+  .staff-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+    border: 1px solid #e5e7eb !important;
+    background: white !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .staff-row:hover {
+    border-color: #d1d5db !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-1px) !important;
+  }
+  
+  /* Better mobile staff member info */
+  .staff-member-info {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Better mobile staff member avatar */
+  .staff-member-avatar {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border: 2px solid #f3f4f6 !important;
+  }
+  
+  /* Better mobile staff member text */
+  .staff-member-name {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    color: #1e293b !important;
+  }
+  
+  .staff-member-role {
+    font-size: 15px !important;
+    color: #64748b !important;
+    margin-top: 2px !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Better mobile switch container */
+  .switch-container {
+    background: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    padding: 12px 16px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  
+  .switch-container span {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+  }
+  
+  /* Better mobile button group */
+  .mobile-button-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  
+  .mobile-button-group button {
+    width: 100% !important;
+    min-height: 44px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    border-width: 2px !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .mobile-button-group button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+  }
+  
   .staff-actions .switch-container {
     order: 1 !important;
     width: 100% !important;
     justify-content: center !important;
+  }
+  
+  /* Better mobile staff card header */
+  .staff-role-header {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+    border-bottom: 3px solid #cbd5e1 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    padding: 16px !important;
+    border-radius: 12px 12px 0 0 !important;
+  }
+  
+  /* Better mobile staff role header content */
+  .staff-role-header .flex {
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+  
+  .staff-role-header .flex > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+  
+  .staff-role-header .flex > div:first-child > div {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+  
+  .staff-role-header .flex > div:first-child > div > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+  }
+  
+  .staff-role-header h3 {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+  }
+  
+  .staff-role-header p {
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+  }
+  
+  /* Better mobile badge positioning */
+  .staff-role-header .badge {
+    background-color: #7c3aed !important;
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3) !important;
   }
   
   .staff-actions .mobile-button-group {
