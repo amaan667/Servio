@@ -393,7 +393,7 @@ export default function StaffClient({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Team Management</h1>
-              <p className="text-muted-foreground mt-1">Manage your staff, roles, and schedules</p>
+              <p className="text-gray-700 mt-1">Manage your staff, roles, and schedules</p>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-3">
               <Button 
@@ -510,7 +510,7 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">Add Team Member</h3>
-                    <p className="text-sm text-muted-foreground">Add new staff members to your team</p>
+                    <p className="text-sm text-gray-700">Add new staff members to your team</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button 
@@ -592,7 +592,7 @@ export default function StaffClient({
                       <Users className="h-8 w-8 text-gray-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">No team members yet</h3>
-                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    <p className="text-gray-700 mb-6 max-w-md mx-auto">
                       Start building your team by adding staff members above. You'll be able to assign shifts and manage schedules once you have team members.
                     </p>
                     <Button 
@@ -620,7 +620,7 @@ export default function StaffClient({
                           </div>
                           <div>
                             <h3 className="text-lg font-semibold text-foreground">{role}</h3>
-                            <p className="text-sm text-muted-foreground">{grouped[role].length} team member{grouped[role].length !== 1 ? 's' : ''}</p>
+                            <p className="text-sm text-gray-700">{grouped[role].length} team member{grouped[role].length !== 1 ? 's' : ''}</p>
                           </div>
                         </div>
                         <Badge variant="secondary" className="px-3 py-1">
@@ -654,12 +654,12 @@ export default function StaffClient({
                                     {row.name}
                                     {!row.active && <span className="ml-2 text-xs text-gray-400">(Inactive)</span>}
                                   </p>
-                                  <p className="staff-member-role text-sm text-muted-foreground">{role}</p>
+                                  <p className="staff-member-role text-sm text-gray-700">{role}</p>
                                 </div>
                               </div>
                               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm text-muted-foreground font-medium">Active:</span>
+                                  <span className="text-sm text-gray-700 font-medium">Active:</span>
                                   <Switch
                                     checked={row.active}
                                     onCheckedChange={() => onToggleActive(row)}
@@ -718,7 +718,7 @@ export default function StaffClient({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-foreground">Schedule Management</h2>
-                <p className="text-muted-foreground mt-1">Manage shifts and schedules for your team</p>
+                <p className="text-gray-700 mt-1">Manage shifts and schedules for your team</p>
               </div>
             </div>
             
