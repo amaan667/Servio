@@ -267,9 +267,9 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
+    <div className="space-y-8">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-6">
           <CardTitle className="flex items-center justify-between">
             <span>Customer Feedback System</span>
             <Button variant="outline" size="sm" onClick={fetchFeedback}>
@@ -277,11 +277,11 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               Refresh
             </Button>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-700">
             Monitor customer satisfaction and respond to feedback
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "create" | "feedback" | "overview")}>
             <TabsList className="grid w-full grid-cols-3 gap-1">
               <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -289,15 +289,15 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               <TabsTrigger value="create">Create Questions</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="overview" className="space-y-8 mt-6">
               {stats && (
                 <>
                   {/* Key Metrics */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card>
-                      <CardContent className="p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Card className="shadow-sm">
+                      <CardContent className="p-6">
                         <div className="flex items-center justify-between">
-                          <div>
+                          <div className="space-y-1">
                             <p className="text-sm text-gray-700 font-medium">Total Feedback</p>
                             <p className="text-2xl font-bold text-gray-900">{stats.totalFeedback}</p>
                           </div>
@@ -306,10 +306,10 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                       </CardContent>
                     </Card>
 
-                    <Card>
-                      <CardContent className="p-4">
+                    <Card className="shadow-sm">
+                      <CardContent className="p-6">
                         <div className="flex items-center justify-between">
-                          <div>
+                          <div className="space-y-1">
                             <p className="text-sm text-gray-700 font-medium">Average Rating</p>
                             <div className="flex items-center">
                               <span className="text-2xl font-bold text-gray-900">{stats.averageRating.toFixed(1)}</span>
@@ -322,10 +322,10 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                     </Card>
 
 
-                    <Card>
-                      <CardContent className="p-4">
+                    <Card className="shadow-sm">
+                      <CardContent className="p-6">
                         <div className="flex items-center justify-between">
-                          <div>
+                          <div className="space-y-2">
                             <p className="text-sm text-gray-700 font-medium">Sentiment</p>
                             <div className="flex items-center space-x-2">
                               <Badge variant="outline" className="bg-green-100 text-green-800">
@@ -343,7 +343,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   </div>
 
                   {/* Rating Distribution */}
-                  <Card>
+                  <Card className="shadow-sm">
                     <CardHeader>
                       <CardTitle>Rating Distribution</CardTitle>
                     </CardHeader>
@@ -366,7 +366,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   </Card>
 
                   {/* Top Categories */}
-                  <Card>
+                  <Card className="shadow-sm">
                     <CardHeader>
                       <CardTitle>Top Feedback Categories</CardTitle>
                     </CardHeader>
@@ -391,7 +391,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               )}
 
               {/* Questions Section */}
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <MessageSquare className="h-5 w-5 mr-2" />
@@ -449,7 +449,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="feedback" className="space-y-4">
+            <TabsContent value="feedback" className="space-y-6 mt-6">
               {/* Filters and Search */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
@@ -497,10 +497,10 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               </div>
 
               {/* Feedback List */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {feedback.map((item) => (
-                  <Card key={item.id}>
-                    <CardContent className="p-4">
+                  <Card key={item.id} className="shadow-sm">
+                    <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
@@ -547,7 +547,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               </div>
             </TabsContent>
 
-            <TabsContent value="create" className="space-y-4">
+            <TabsContent value="create" className="space-y-6 mt-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Create New Question</CardTitle>
