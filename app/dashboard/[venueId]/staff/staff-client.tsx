@@ -327,12 +327,12 @@ export default function StaffClient({
         )}
         {showEditor && (
           <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
                 <input 
                   type="date" 
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                  className="w-full rounded-md border border-gray-300 px-3 py-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
                   value={date} 
                   onChange={(e)=>setDate(e.target.value)} 
                 />
@@ -348,7 +348,7 @@ export default function StaffClient({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
                 <select 
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                  className="w-full rounded-md border border-gray-300 px-3 py-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
                   value={area} 
                   onChange={(e)=>setArea(e.target.value)}
                 >
@@ -359,11 +359,11 @@ export default function StaffClient({
                 </select>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <Button 
                 onClick={save} 
                 disabled={saving} 
-                className="px-6 py-2 rounded-md bg-purple-600 text-white font-medium disabled:opacity-60 hover:bg-purple-700"
+                className="px-6 py-3 rounded-md bg-purple-600 text-white font-medium disabled:opacity-60 hover:bg-purple-700 min-h-[44px]"
               >
                 {saving ? 'Saving…' : 'Save Shift'}
               </Button>
@@ -371,7 +371,7 @@ export default function StaffClient({
                 <Button 
                   variant="outline" 
                   onClick={onClose}
-                  className="px-6 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="px-6 py-3 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px]"
                 >
                   Cancel
                 </Button>
@@ -631,7 +631,7 @@ export default function StaffClient({
                       <div className="grid gap-3">
                         {grouped[role].map((row) => (
                           <div key={row.id}>
-                            <div className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                            <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg transition-colors gap-4 ${
                               row.active 
                                 ? 'bg-gray-50 hover:bg-gray-100' 
                                 : 'bg-gray-100 hover:bg-gray-200 opacity-60'
@@ -656,34 +656,36 @@ export default function StaffClient({
                                   <p className="text-sm text-muted-foreground">{role}</p>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground">Active:</span>
+                                  <span className="text-sm text-muted-foreground font-medium">Active:</span>
                                   <Switch
                                     checked={row.active}
                                     onCheckedChange={() => onToggleActive(row)}
                                     className="data-[state=checked]:bg-green-500"
                                   />
                                 </div>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setEditingShiftFor(editingShiftFor === row.id ? null : row.id);
-                                  }}
-                                  className="text-blue-600 hover:text-blue-700"
-                                >
-                                  <Clock className="w-4 h-4 mr-1" />
-                                  {editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => onDelete(row)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  Delete
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingShiftFor(editingShiftFor === row.id ? null : row.id);
+                                    }}
+                                    className="text-blue-600 hover:text-blue-700 min-h-[36px]"
+                                  >
+                                    <Clock className="w-4 h-4 mr-1" />
+                                    {editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => onDelete(row)}
+                                    className="text-red-600 hover:text-red-700 min-h-[36px]"
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                             

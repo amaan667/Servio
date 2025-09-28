@@ -283,7 +283,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "create" | "feedback" | "overview")}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-3 gap-1">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="feedback">All Feedback</TabsTrigger>
               <TabsTrigger value="create">Create Questions</TabsTrigger>
@@ -293,13 +293,13 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               {stats && (
                 <>
                   {/* Key Metrics */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Card>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-gray-600">Total Feedback</p>
-                            <p className="text-2xl font-bold">{stats.totalFeedback}</p>
+                            <p className="text-sm text-gray-700 font-medium">Total Feedback</p>
+                            <p className="text-2xl font-bold text-gray-900">{stats.totalFeedback}</p>
                           </div>
                           <MessageSquare className="h-8 w-8 text-blue-500" />
                         </div>
@@ -310,9 +310,9 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-gray-600">Average Rating</p>
+                            <p className="text-sm text-gray-700 font-medium">Average Rating</p>
                             <div className="flex items-center">
-                              <span className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</span>
+                              <span className="text-2xl font-bold text-gray-900">{stats.averageRating.toFixed(1)}</span>
                               <Star className="h-5 w-5 text-yellow-500 ml-1" />
                             </div>
                           </div>
@@ -326,7 +326,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-gray-600">Sentiment</p>
+                            <p className="text-sm text-gray-700 font-medium">Sentiment</p>
                             <div className="flex items-center space-x-2">
                               <Badge variant="outline" className="bg-green-100 text-green-800">
                                 {stats.positiveSentiment}
@@ -451,20 +451,20 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
 
             <TabsContent value="feedback" className="space-y-4">
               {/* Filters and Search */}
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <Input
                     placeholder="Search feedback..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full"
+                    className="w-full h-11"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <select
                     value={filters.rating}
                     onChange={(e) => setFilters(prev => ({ ...prev, rating: parseInt(e.target.value) }))}
-                    className="border rounded px-3 py-2 text-sm"
+                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px]"
                   >
                     <option value={0}>All Ratings</option>
                     <option value={5}>5 Stars</option>
@@ -476,7 +476,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   <select
                     value={filters.sentiment}
                     onChange={(e) => setFilters(prev => ({ ...prev, sentiment: e.target.value }))}
-                    className="border rounded px-3 py-2 text-sm"
+                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px]"
                   >
                     <option value="all">All Sentiments</option>
                     <option value="positive">Positive</option>
@@ -486,7 +486,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
                   <select
                     value={filters.dateRange}
                     onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-                    className="border rounded px-3 py-2 text-sm"
+                    className="border rounded px-3 py-2 text-sm h-11 min-w-[120px]"
                   >
                     <option value="7d">Last 7 days</option>
                     <option value="30d">Last 30 days</option>
