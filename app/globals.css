@@ -292,7 +292,7 @@
 
 /* Mobile-specific improvements */
 @media (max-width: 768px) {
-  /* Enhanced text visibility on mobile */
+  /* Enhanced text visibility on mobile - ensure proper contrast */
   .text-muted-foreground {
     color: #374151 !important; /* Darker gray for better visibility */
   }
@@ -309,9 +309,52 @@
     color: #6b7280 !important; /* Darker gray for better visibility */
   }
   
+  /* Dark mode text fixes for better readability */
+  .dark .text-muted-foreground {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .dark .text-gray-500 {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .dark .text-gray-400 {
+    color: #9ca3af !important; /* Medium gray for dark mode */
+  }
+  
+  .dark .text-gray-300 {
+    color: #d1d5db !important; /* Light gray for dark mode */
+  }
+  
+  .dark .text-gray-700 {
+    color: #f3f4f6 !important; /* Very light gray for dark mode */
+  }
+  
+  .dark .text-gray-800 {
+    color: #f9fafb !important; /* Almost white for dark mode */
+  }
+  
   /* Enhanced card text visibility */
   .card .text-muted-foreground {
     color: #374151 !important;
+  }
+  
+  /* Dashboard card text visibility fixes */
+  .card p, .card span, .card div {
+    color: #374151 !important;
+  }
+  
+  .dark .card p, .dark .card span, .dark .card div {
+    color: #d1d5db !important;
+  }
+  
+  /* Dashboard card labels and descriptions */
+  .card .text-gray-700 {
+    color: #374151 !important;
+  }
+  
+  .dark .card .text-gray-700 {
+    color: #d1d5db !important;
   }
   
   /* Enhanced label visibility */

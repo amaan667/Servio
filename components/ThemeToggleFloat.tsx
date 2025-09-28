@@ -45,8 +45,8 @@ export default function ThemeToggleFloat() {
 
   // Adjust positioning based on the page to avoid conflicts
   const getPositionClasses = () => {
-    // Only show when scrolled on all pages
-    return showOnScroll ? "fixed top-4 right-4" : "hidden";
+    // Only show when scrolled on all pages, positioned in center-right to avoid header overlap
+    return showOnScroll ? "fixed top-20 right-1/2 transform translate-x-1/2 z-50" : "hidden";
   };
 
   return (
@@ -54,7 +54,7 @@ export default function ThemeToggleFloat() {
       type="button"
       onClick={toggle}
       aria-label="Toggle theme"
-      className={`${getPositionClasses()} z-50 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 dark:shadow-gray-900/50`}
+      className={`${getPositionClasses()} z-50 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 dark:shadow-gray-900/50 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90`}
     >
       <div className="flex items-center justify-center">
         {currentTheme === 'dark' ? (
