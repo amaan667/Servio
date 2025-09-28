@@ -15,7 +15,7 @@ const MenuClient = dynamicImport(() => import('./MenuClient'), {
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Menu</h2>
-        <p className="text-gray-600">Setting up your menu management...</p>
+        <p className="text-gray-700">Setting up your menu management...</p>
       </div>
     </div>
   )
@@ -63,9 +63,9 @@ export default async function MenuPage({
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Menu for {venue.name}
           </h1>
-          <p className="text-lg text-muted-foreground mt-2">
-            Manage your menu items and categories
-          </p>
+        <p className="text-lg text-gray-700 mt-2">
+          Manage your menu items and categories
+        </p>
         </div>
         
         <MenuClient venueId={venueId} venueName={venue.name} />
