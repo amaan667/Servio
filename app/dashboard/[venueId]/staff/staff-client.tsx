@@ -611,8 +611,8 @@ export default function StaffClient({
             ) : (
               <div className="space-y-6">
                 {roles.map((role) => (
-                  <Card key={role} className="border-0 shadow-sm">
-                    <CardHeader className="pb-4">
+                  <Card key={role} className="staff-card border-0 shadow-sm">
+                    <CardHeader className="staff-role-header pb-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -629,16 +629,16 @@ export default function StaffClient({
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid gap-3">
+                      <div className="staff-grid grid gap-3">
                         {grouped[role].map((row) => (
                           <div key={row.id}>
-                            <div className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                            <div className={`staff-row flex items-center justify-between p-4 rounded-lg transition-colors ${
                               row.active 
                                 ? 'bg-gray-50 hover:bg-gray-100' 
                                 : 'bg-gray-100 hover:bg-gray-200 opacity-60'
                             }`}>
-                              <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
+                              <div className="staff-member-info staff-info flex items-center gap-3">
+                                <div className={`staff-member-avatar w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
                                   row.active ? 'bg-white' : 'bg-gray-200'
                                 }`}>
                                   <span className={`text-sm font-medium ${
@@ -648,43 +648,45 @@ export default function StaffClient({
                                   </span>
                                 </div>
                                 <div>
-                                  <p className={`font-medium ${
+                                  <p className={`staff-member-name font-medium ${
                                     row.active ? 'text-foreground' : 'text-muted-foreground'
                                   }`}>
                                     {row.name}
                                     {!row.active && <span className="ml-2 text-xs text-gray-400">(Inactive)</span>}
                                   </p>
-                                  <p className="text-sm text-muted-foreground">{role}</p>
+                                  <p className="staff-member-role text-sm text-muted-foreground">{role}</p>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-2">
+                              <div className="staff-actions flex items-center gap-2">
+                                <div className="switch-container flex items-center gap-2">
                                   <span className="text-xs text-muted-foreground">Active:</span>
                                   <Switch
                                     checked={row.active}
                                     onCheckedChange={() => onToggleActive(row)}
-                                    className="data-[state=checked]:bg-green-500"
+                                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-300"
                                   />
                                 </div>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setEditingShiftFor(editingShiftFor === row.id ? null : row.id);
-                                  }}
-                                  className="text-blue-600 hover:text-blue-700"
-                                >
-                                  <Clock className="w-4 h-4 mr-1" />
-                                  {editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => onDelete(row)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  Delete
-                                </Button>
+                                <div className="mobile-button-group">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingShiftFor(editingShiftFor === row.id ? null : row.id);
+                                    }}
+                                    className="text-blue-600 hover:text-blue-700"
+                                  >
+                                    <Clock className="w-4 h-4 mr-1" />
+                                    {editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => onDelete(row)}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                             
