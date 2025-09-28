@@ -309,6 +309,15 @@
     color: #6b7280 !important; /* Darker gray for better visibility */
   }
   
+  /* Enhanced mobile text contrast for card descriptions */
+  .text-gray-700 {
+    color: #374151 !important; /* Darker for better mobile visibility */
+  }
+  
+  .text-gray-600 {
+    color: #4b5563 !important; /* Darker for better mobile visibility */
+  }
+  
   /* Dark mode text fixes for better readability */
   .dark .text-muted-foreground {
     color: #d1d5db !important; /* Light gray for dark mode */
@@ -392,6 +401,32 @@
   .description-text {
     color: #374151 !important;
     font-weight: 500 !important;
+  }
+  
+  /* Enhanced card text visibility for mobile */
+  .card p, .card span, .card div {
+    color: #374151 !important;
+  }
+  
+  .card .text-gray-700 {
+    color: #374151 !important;
+  }
+  
+  .card .text-gray-600 {
+    color: #4b5563 !important;
+  }
+  
+  /* Enhanced mobile text visibility for all components */
+  .text-gray-500 {
+    color: #4b5563 !important; /* Darker for better mobile visibility */
+  }
+  
+  .text-gray-400 {
+    color: #6b7280 !important; /* Darker for better mobile visibility */
+  }
+  
+  .text-gray-300 {
+    color: #9ca3af !important; /* Darker for better mobile visibility */
   }
   
   /* Enhanced form field visibility */

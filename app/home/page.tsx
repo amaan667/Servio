@@ -110,7 +110,7 @@ const HomePage = React.memo(function HomePage() {
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             Welcome to Servio
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
             The complete restaurant management solution with QR code ordering, 
             real-time analytics, and seamless customer experience.
           </p>
@@ -212,7 +212,7 @@ const HomePage = React.memo(function HomePage() {
         )}
 
         <div className="text-center mt-12">
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-700 dark:text-gray-300 mb-4">
             Ready to transform your restaurant experience?
           </p>
           {!user && (

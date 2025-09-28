@@ -1067,7 +1067,7 @@ export default function CustomerOrderPage() {
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               size="sm"
                               variant="outline"
-                              className="h-7 w-7 p-0 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-300"
+                              className="h-7 w-7 p-0 border-gray-300 dark:border-gray-500 text-gray-600 dark:text-gray-200"
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
@@ -1284,7 +1284,7 @@ export default function CustomerOrderPage() {
             <CardContent className="flex-1 overflow-y-auto space-y-4 sm:space-y-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-200 mb-2">
                     Name *
                   </label>
                   <Input
@@ -1299,7 +1299,7 @@ export default function CustomerOrderPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-200 mb-2">
                     Phone Number *
                   </label>
                   <Input
