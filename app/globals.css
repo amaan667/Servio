@@ -298,6 +298,464 @@
     min-width: 44px;
   }
   
+  /* Mobile-optimized switch component */
+  [data-radix-switch-root] {
+    height: 20px !important;
+    width: 36px !important;
+    min-height: 20px !important;
+    min-width: 36px !important;
+    border-radius: 10px !important;
+  }
+  
+  [data-radix-switch-thumb] {
+    height: 16px !important;
+    width: 16px !important;
+    transform: translateX(0) !important;
+    border-radius: 8px !important;
+  }
+  
+  [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
+    transform: translateX(16px) !important;
+  }
+  
+  /* Better mobile button spacing for staff management */
+  .staff-actions {
+    gap: 8px !important;
+  }
+  
+  .staff-actions button {
+    min-height: 36px !important;
+    min-width: 36px !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+  }
+  
+  /* Improved mobile layout for staff rows */
+  .staff-row {
+    padding: 12px 16px !important;
+    gap: 12px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  
+  .staff-row .flex {
+    gap: 8px !important;
+  }
+  
+  /* Better mobile staff actions layout */
+  .staff-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .staff-actions > div:first-child {
+    order: 1 !important;
+  }
+  
+  .staff-actions button {
+    flex: 1 !important;
+    min-width: 80px !important;
+    min-height: 40px !important;
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+  }
+  
+  /* Mobile staff info layout */
+  .staff-info {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Better mobile switch styling */
+  .staff-actions [data-radix-switch-root] {
+    height: 18px !important;
+    width: 32px !important;
+  }
+  
+  .staff-actions [data-radix-switch-thumb] {
+    height: 14px !important;
+    width: 14px !important;
+  }
+  
+  .staff-actions [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
+    transform: translateX(14px) !important;
+  }
+  
+  /* Mobile staff card improvements */
+  .staff-card {
+    margin-bottom: 12px !important;
+    border-radius: 8px !important;
+  }
+  
+  .staff-card .card-header {
+    padding: 12px 16px !important;
+  }
+  
+  .staff-card .card-content {
+    padding: 8px 16px 16px 16px !important;
+  }
+  
+  /* Better mobile grid layout for staff */
+  .staff-grid {
+    gap: 8px !important;
+  }
+  
+  .staff-grid > div {
+    margin-bottom: 8px !important;
+  }
+  
+  /* Mobile-friendly staff role headers */
+  .staff-role-header {
+    padding: 8px 12px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .staff-role-header h3 {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+  
+  .staff-role-header p {
+    font-size: 13px !important;
+  }
+  
+  /* Better mobile staff member info */
+  .staff-member-info {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  
+  .staff-member-info .flex {
+    gap: 8px !important;
+  }
+  
+  /* Mobile-friendly staff member name */
+  .staff-member-name {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+  
+  .staff-member-role {
+    font-size: 14px !important;
+    color: #6b7280 !important;
+  }
+  
+  /* Better mobile staff actions layout */
+  .staff-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  
+  .staff-actions > div:first-child {
+    order: 1 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  .staff-actions button {
+    width: 100% !important;
+    margin-bottom: 4px !important;
+  }
+  
+  /* Mobile-friendly switch container */
+  .switch-container {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 8px !important;
+    background: #f9fafb !important;
+    border-radius: 6px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Better mobile button layout */
+  .mobile-button-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+  
+  .mobile-button-group button {
+    width: 100% !important;
+    min-height: 40px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Better mobile staff row layout */
+  .staff-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  
+  .staff-row .staff-member-info {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .staff-row .staff-actions {
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+  
+  /* Better mobile staff card spacing */
+  .staff-card {
+    margin-bottom: 16px !important;
+  }
+  
+  .staff-card .card-header {
+    padding: 16px !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  
+  .staff-card .card-content {
+    padding: 16px !important;
+  }
+  
+  /* Mobile-friendly staff grid */
+  .staff-grid {
+    gap: 12px !important;
+  }
+  
+  .staff-grid > div {
+    margin-bottom: 12px !important;
+  }
+  
+  /* Better mobile staff member avatar */
+  .staff-member-avatar {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Better mobile staff member text */
+  .staff-member-name {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+  
+  .staff-member-role {
+    font-size: 15px !important;
+    color: #6b7280 !important;
+    margin-top: 2px !important;
+  }
+  
+  /* Better mobile switch styling */
+  .switch-container {
+    background: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+  }
+  
+  .switch-container span {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+  }
+  
+  /* Better mobile button styling */
+  .mobile-button-group button {
+    border-radius: 8px !important;
+    border-width: 2px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .mobile-button-group button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* Better mobile staff row spacing */
+  .staff-row {
+    padding: 16px !important;
+    margin-bottom: 8px !important;
+    border-radius: 12px !important;
+    border: 1px solid #e5e7eb !important;
+  }
+  
+  .staff-row:hover {
+    border-color: #d1d5db !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Better mobile staff card header */
+  .staff-role-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+  }
+  
+  .staff-role-header h3 {
+    color: #1e293b !important;
+    font-weight: 700 !important;
+  }
+  
+  .staff-role-header p {
+    color: #64748b !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Better mobile staff card content */
+  .staff-card .card-content {
+    padding: 20px !important;
+  }
+  
+  /* Better mobile staff grid spacing */
+  .staff-grid {
+    gap: 16px !important;
+  }
+  
+  .staff-grid > div {
+    margin-bottom: 16px !important;
+  }
+  
+  /* Better mobile staff member info layout */
+  .staff-member-info {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+  
+  .staff-member-info .flex {
+    gap: 12px !important;
+  }
+  
+  /* Better mobile staff actions layout */
+  .staff-actions {
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-top: 12px !important;
+  }
+  
+  .staff-actions .switch-container {
+    order: 1 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  .staff-actions .mobile-button-group {
+    order: 2 !important;
+    width: 100% !important;
+  }
+  
+  /* Better mobile staff member avatar */
+  .staff-member-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Better mobile staff member text */
+  .staff-member-name {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    color: #1e293b !important;
+  }
+  
+  .staff-member-role {
+    font-size: 16px !important;
+    color: #64748b !important;
+    margin-top: 4px !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Better mobile switch container */
+  .switch-container {
+    background: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .switch-container span {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+  }
+  
+  /* Better mobile button group styling */
+  .mobile-button-group {
+    gap: 8px !important;
+  }
+  
+  .mobile-button-group button {
+    min-height: 44px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    border-width: 2px !important;
+  }
+  
+  .mobile-button-group button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  /* Better mobile staff row hover effects */
+  .staff-row:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* Better mobile staff card hover effects */
+  .staff-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  }
+  
+  /* Better mobile staff role header styling */
+  .staff-role-header {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+    border-bottom: 3px solid #cbd5e1 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  .staff-role-header h3 {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .staff-role-header p {
+    color: #475569 !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Better mobile staff grid layout */
+  .staff-grid {
+    gap: 20px !important;
+  }
+  
+  .staff-grid > div {
+    margin-bottom: 20px !important;
+  }
+  
+  /* Better mobile staff member info spacing */
+  .staff-member-info {
+    gap: 16px !important;
+    padding: 4px 0 !important;
+  }
+  
+  .staff-member-info .flex {
+    gap: 16px !important;
+  }
+  
   /* Prevent horizontal scroll on mobile */
   body {
     overflow-x: hidden;
@@ -601,6 +1059,38 @@
   /* Tighter grid spacing */
   .grid {
     gap: 12px;
+  }
+  
+  /* Extra small mobile staff layout */
+  .staff-row {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+  }
+  
+  .staff-actions {
+    gap: 6px !important;
+  }
+  
+  .staff-actions button {
+    min-width: 70px !important;
+    min-height: 36px !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  
+  /* Even smaller switch for very small screens */
+  .staff-actions [data-radix-switch-root] {
+    height: 16px !important;
+    width: 28px !important;
+  }
+  
+  .staff-actions [data-radix-switch-thumb] {
+    height: 12px !important;
+    width: 12px !important;
+  }
+  
+  .staff-actions [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
+    transform: translateX(12px) !important;
   }
 }
 
