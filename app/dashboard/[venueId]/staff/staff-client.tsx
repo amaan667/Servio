@@ -663,7 +663,7 @@ export default function StaffClient({
                                   <Switch
                                     checked={row.active}
                                     onCheckedChange={() => onToggleActive(row)}
-                                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-300"
+                                    className="staff-toggle data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-300"
                                   />
                                 </div>
                                 <div className="mobile-button-group">

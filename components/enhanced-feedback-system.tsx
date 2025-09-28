@@ -283,13 +283,13 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "create" | "feedback" | "overview")}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="feedback-tabs grid w-full grid-cols-3 mb-8">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="feedback">All Feedback</TabsTrigger>
               <TabsTrigger value="create">Create Questions</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="overview" className="feedback-content space-y-6 mt-6">
               {stats && (
                 <>
                   {/* Key Metrics */}
@@ -449,7 +449,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="feedback" className="space-y-4">
+            <TabsContent value="feedback" className="feedback-content space-y-4">
               {/* Filters and Search */}
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
@@ -547,7 +547,7 @@ export function EnhancedFeedbackSystem({ venueId }: FeedbackSystemProps) {
               </div>
             </TabsContent>
 
-            <TabsContent value="create" className="space-y-4">
+            <TabsContent value="create" className="feedback-content space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Create New Question</CardTitle>
