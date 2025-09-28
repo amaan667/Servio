@@ -174,7 +174,7 @@ export default function HomePage() {
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">
                     Table 5
                   </h3>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-gray-800 mb-4">
                     Scan to view menu & order
                   </p>
                   <Badge className="bg-green-100 text-green-800">
@@ -194,7 +194,7 @@ export default function HomePage() {
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
               Everything You Need to Modernize Your Business
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-800 max-w-3xl mx-auto">
               From QR code generation to real-time order management, Servio
               provides all the tools you need to create a seamless dining
               experience.
@@ -210,7 +210,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   QR Code Generation
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-800">
                   Generate unique QR codes for each table. Customers scan to
                   instantly access your menu and start ordering.
                 </p>
@@ -225,7 +225,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   Mobile-First Design
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-800">
                   Beautiful, responsive interface optimized for mobile devices.
                   Your customers will love the smooth ordering experience.
                 </p>
@@ -240,7 +240,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   Real-Time Orders
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-800">
                   Receive orders instantly in your dashboard. Track order status
                   and manage your kitchen workflow efficiently.
                 </p>
@@ -255,7 +255,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   Payment Integration
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-800">
                   Secure payment processing built-in. Accept all major credit
                   cards and digital wallets seamlessly.
                 </p>
@@ -270,7 +270,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   Analytics & Insights
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-800">
                   Detailed analytics on sales, popular items, and customer
                   behavior to help you make data-driven decisions.
                 </p>
@@ -285,7 +285,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   Staff Management
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-800">
                   Manage your team with role-based access. Kitchen staff,
                   servers, and managers each get the tools they need.
                 </p>
@@ -302,7 +302,7 @@ export default function HomePage() {
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
               Loved by Businesses Everywhere
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-800">
               See what business owners are saying about Servio
             </p>
           </div>
@@ -318,7 +318,7 @@ export default function HomePage() {
                     />
                   ))}
                 </div>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-800 mb-6">
                   "Servio transformed our cafe completely. Orders are faster,
                   more accurate, and our customers love the convenience. Revenue
                   is up 30%!"
@@ -331,7 +331,7 @@ export default function HomePage() {
                     <p className="font-semibold text-gray-900">
                       Sarah Mitchell
                     </p>
-                    <p className="text-gray-600">Owner, Corner Cafe</p>
+                    <p className="text-gray-800">Owner, Corner Cafe</p>
                   </div>
                 </div>
               </CardContent>
@@ -347,7 +347,7 @@ export default function HomePage() {
                     />
                   ))}
                 </div>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-800 mb-6">
                   "The setup was incredibly easy. Within an hour, we had QR
                   codes on all our tables. The real-time order management is a
                   game-changer."
@@ -360,7 +360,7 @@ export default function HomePage() {
                     <p className="font-semibold text-gray-900">
                       Mike Rodriguez
                     </p>
-                    <p className="text-gray-600">Manager, Pizza Palace</p>
+                    <p className="text-gray-800">Manager, Pizza Palace</p>
                   </div>
                 </div>
               </CardContent>
@@ -376,7 +376,7 @@ export default function HomePage() {
                     />
                   ))}
                 </div>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-800 mb-6">
                   "Our staff can focus on food quality instead of taking orders.
                   Customer satisfaction has improved dramatically since we
                   started using Servio."
@@ -387,7 +387,7 @@ export default function HomePage() {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">Lisa Chen</p>
-                    <p className="text-gray-600">Chef, Bistro 42</p>
+                    <p className="text-gray-800">Chef, Bistro 42</p>
                   </div>
                 </div>
               </CardContent>

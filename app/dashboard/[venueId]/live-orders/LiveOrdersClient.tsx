@@ -1019,12 +1019,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   }`} />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Order Time</div>
+                  <div className="text-sm font-medium text-gray-800">Order Time</div>
                   <div className="text-lg font-semibold text-gray-900">
                     {formatTime(earliestOrder.created_at)}
                   </div>
                   {orders.length > 1 && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-800">
                       Latest: {formatTime(latestOrder.created_at)}
                     </div>
                   )}
@@ -1046,7 +1046,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   </span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500">
+                  <div className="text-sm font-medium text-gray-800">
                     {isCounterOrder(earliestOrder) ? 'Counter Number' : 'Table Number'}
                   </div>
                   <div className="text-2xl font-bold text-gray-900">
@@ -1071,12 +1071,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                     <User className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-500">Customer</div>
+                    <div className="text-sm font-medium text-gray-800">Customer</div>
                     <div className="text-lg font-semibold text-gray-900">
                       {earliestOrder.customer_name}
                     </div>
                     {earliestOrder.customer_phone && (
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-800">
                         {earliestOrder.customer_phone}
                       </div>
                     )}
@@ -1089,7 +1089,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   <span className="text-lg font-bold text-orange-600">#</span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Orders</div>
+                  <div className="text-sm font-medium text-gray-800">Orders</div>
                   <div className="text-lg font-semibold text-gray-900">
                     {summary.orderCount} order{summary.orderCount > 1 ? 's' : ''}
                   </div>
@@ -1104,7 +1104,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                   <span className="text-lg font-bold text-emerald-600">£</span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Total Amount</div>
+                  <div className="text-sm font-medium text-gray-800">Total Amount</div>
                   <div className="text-3xl font-bold text-gray-900">
                     £{formatPrice(summary.total)}
                   </div>
@@ -1113,10 +1113,10 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <span className="text-lg font-bold text-gray-600">✓</span>
+                  <span className="text-lg font-bold text-gray-800">✓</span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Status</div>
+                  <div className="text-sm font-medium text-gray-800">Status</div>
                   <div className="flex items-center gap-2">
                     <Badge className={`${getStatusColor(summary.overallStatus)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
                       {summary.overallStatus.replace('_', ' ').toLowerCase()}
@@ -1134,7 +1134,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
           <div className="mt-6 pt-4 border-t border-gray-100">
             <button
               onClick={() => toggleTableExpansion(tableNumber)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-800 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               <span>{isExpanded ? 'Hide' : 'Show'} individual orders</span>
               <svg
@@ -1167,11 +1167,11 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <span className="text-sm font-bold text-blue-600">#{index + 1}</span>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-500">Order Time</div>
+                        <div className="text-sm font-medium text-gray-800">Order Time</div>
                         <div className="text-lg font-semibold text-gray-900">
                           {formatTime(order.created_at)}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-800">
                           Order #{getShortOrderNumber(order.id)}
                         </div>
                       </div>
@@ -1184,12 +1184,12 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                           <User className="h-5 w-5 text-purple-600" />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-500">Customer</div>
+                          <div className="text-sm font-medium text-gray-800">Customer</div>
                           <div className="text-lg font-semibold text-gray-900">
                             {order.customer_name}
                           </div>
                           {order.customer_phone && (
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-800">
                               {order.customer_phone}
                             </div>
                           )}
@@ -1203,7 +1203,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                         <span className="text-sm font-bold text-emerald-600">£</span>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-500">Total</div>
+                        <div className="text-sm font-medium text-gray-800">Total</div>
                         <div className="text-2xl font-bold text-gray-900">
                           £{formatPrice(calculateOrderTotal({ total_amount: order.total_amount, items: order.items }))}
                         </div>
@@ -1233,7 +1233,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
                       {order.items.map((item, itemIndex) => (
                         <div key={itemIndex} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
                           <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-gray-600 border border-gray-200">
+                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-gray-800 border border-gray-200">
                               {item.quantity}
                             </div>
                             <span className="text-gray-900 font-medium text-base">{item.item_name}</span>
@@ -1291,7 +1291,7 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
   {/* NavBar is rendered by the server component */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
-            <div className="text-gray-500">Loading orders...</div>
+            <div className="text-gray-800">Loading orders...</div>
           </div>
         </div>
       </div>

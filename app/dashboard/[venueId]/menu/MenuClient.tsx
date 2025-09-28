@@ -288,7 +288,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-700">Loading menu items...</div>
+          <div className="text-gray-800">Loading menu items...</div>
         </div>
         </div>
       </div>
@@ -302,11 +302,11 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <ShoppingBag className="h-5 w-5 text-gray-600" />
-              <span className="text-sm text-gray-700">{menuItems.length} menu items</span>
+              <ShoppingBag className="h-5 w-5 text-gray-800" />
+              <span className="text-sm text-gray-800">{menuItems.length} menu items</span>
             </div>
-            <span className="text-sm text-gray-600">•</span>
-            <span className="text-sm text-gray-700">
+            <span className="text-sm text-gray-800">•</span>
+            <span className="text-sm text-gray-800">
               {menuItems.filter(item => item.available).length} available
             </span>
           </div>
@@ -422,7 +422,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
               <CardContent className="p-8 text-center">
                 <ShoppingBag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Menu Items</h3>
-                <p className="text-gray-700 mb-4">Add your first menu item to get started</p>
+                <p className="text-gray-800 mb-4">Add your first menu item to get started</p>
                 <Button onClick={() => setIsAddModalOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add First Item
@@ -512,12 +512,12 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                     >
                       <div className="flex items-center space-x-2">
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-gray-700" />
+                          <ChevronDown className="h-4 w-4 text-gray-800" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-gray-700" />
+                          <ChevronRight className="h-4 w-4 text-gray-800" />
                         )}
                         <h2 className="text-xl font-semibold text-gray-900">{category}</h2>
-                        <span className="text-sm text-gray-700">({items.length} items)</span>
+                        <span className="text-sm text-gray-800">({items.length} items)</span>
                       </div>
                     </div>
                     
@@ -535,7 +535,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                                 </span>
                               </div>
                               {item.description && (
-                                <p className="text-gray-700 text-sm mb-2">{item.description}</p>
+                                <p className="text-gray-800 text-sm mb-2">{item.description}</p>
                               )}
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center space-x-2">
@@ -543,7 +543,7 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                                     checked={item.available}
                                     onCheckedChange={(checked) => handleToggleAvailable(item.id, checked)}
                                   />
-                                  <span className="text-sm text-gray-700">
+                                  <span className="text-sm text-gray-800">
                                     {item.available ? 'Available' : 'Unavailable'}
                                   </span>
                                 </div>

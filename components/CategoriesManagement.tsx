@@ -470,12 +470,12 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-gray-800 mb-4">
             Drag and drop to reorder categories. This order will be reflected in both menu management and customer ordering.
           </p>
           
           {categories.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-gray-800">
               No categories found. Add your first category to get started.
             </div>
           ) : (
@@ -565,7 +565,7 @@ export function CategoriesManagement({ venueId, onCategoriesUpdate }: Categories
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className="text-xs text-gray-800">
                                     {index + 1}
                                   </span>
                                 </>

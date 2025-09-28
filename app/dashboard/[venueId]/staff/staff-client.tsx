@@ -642,7 +642,7 @@ export default function StaffClient({
                                   row.active ? 'bg-white' : 'bg-gray-200'
                                 }`}>
                                   <span className={`text-sm font-medium ${
-                                    row.active ? 'text-gray-600' : 'text-gray-400'
+                                    row.active ? 'text-gray-800' : 'text-gray-600'
                                   }`}>
                                     {row.name.charAt(0).toUpperCase()}
                                   </span>

@@ -317,7 +317,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className="h-4 w-4 text-gray-800" />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">
@@ -365,7 +365,7 @@ export function AnalyticsDashboard({ venueId }: AnalyticsDashboardProps) {
             {timeRange === 'today' ? "Today's Analytics" : 
              timeRange === 'week' ? "Last 7 Days Analytics" : "This Month's Analytics"}
             <RefreshCw
-              className={`h-4 w-4 text-muted-foreground cursor-pointer ${loading ? "animate-spin" : ""}`}
+              className={`h-4 w-4 text-gray-800 cursor-pointer ${loading ? "animate-spin" : ""}`}
               onClick={calculateStats}
             />
           </CardTitle>
