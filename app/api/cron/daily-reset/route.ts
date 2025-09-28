@@ -27,13 +27,35 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
     
     // Get all venues that need daily reset at the current time (within 5 minutes)
-    const { data: venues, error: venuesError } = await supabase
-      .from('venues')
-      .select('venue_id, name, daily_reset_time')
-      .not('daily_reset_time', 'is', null);
-
-    if (venuesError) {
-      console.error('🕛 [CRON DAILY RESET] Error fetching venues:', venuesError);
+    // First check if daily_reset_time column exists
+    let venues;
+    try {
+      const { data: venuesData, error: venuesError } = await supabase
+        .from('venues')
+        .select('venue_id, name, daily_reset_time')
+        .not('daily_reset_time', 'is', null);
+      
+      if (venuesError) {
+        console.error('🕛 [CRON DAILY RESET] Error fetching venues:', venuesError);
+        // If column doesn't exist, try without the column filter
+        const { data: allVenues, error: allVenuesError } = await supabase
+          .from('venues')
+          .select('venue_id, name');
+        
+        if (allVenuesError) {
+          return NextResponse.json(
+            { error: 'Failed to fetch venues' },
+            { status: 500 }
+          );
+        }
+        
+        // If no daily_reset_time column, reset all venues at midnight
+        venues = allVenues?.map(v => ({ ...v, daily_reset_time: '00:00:00' })) || [];
+      } else {
+        venues = venuesData;
+      }
+    } catch (error) {
+      console.error('🕛 [CRON DAILY RESET] Error in venue query:', error);
       return NextResponse.json(
         { error: 'Failed to fetch venues' },
         { status: 500 }
