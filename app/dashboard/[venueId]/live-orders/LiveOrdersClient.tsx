@@ -20,6 +20,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
+import { ToggleSwitch } from '@/components/ui/toggle-switch';
 import { createClient } from "@/lib/supabase/client";
 import { Clock, ArrowLeft, User } from "lucide-react";
 import { todayWindowForTZ } from "@/lib/time";
@@ -1328,22 +1329,13 @@ export default function LiveOrdersClient({ venueId, venueName: venueNameProp }: 
               {/* Switch */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-600 font-medium">Enable:</span>
-                <button
-                  onClick={toggleAutoRefresh}
-                  className={`
-                    relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-violet-200 focus:ring-offset-2
-                    ${autoRefreshEnabled ? 'bg-violet-600' : 'bg-slate-300'}
-                  `}
-                  aria-pressed={autoRefreshEnabled}
-                  aria-label={`Auto-refresh ${autoRefreshEnabled ? 'enabled' : 'disabled'}`}
-                >
-                    <span
-                      className={`
-                        inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-all duration-200 ease-in-out
-                        ${autoRefreshEnabled ? 'translate-x-7' : 'translate-x-1'}
-                      `}
-                    />
-                  </button>
+                <ToggleSwitch
+                  checked={autoRefreshEnabled}
+                  onCheckedChange={toggleAutoRefresh}
+                  showLabels={true}
+                  onLabel="On"
+                  offLabel="Off"
+                />
               </div>
             </div>
           </div>

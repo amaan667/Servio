@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
 import { ToggleSwitch } from '@/components/ui/toggle-switch';
 import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
