@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ToggleSwitch } from '@/components/ui/toggle-switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import type { FeedbackQuestion, FeedbackType } from '@/types/feedback';
@@ -495,12 +496,13 @@ export default function QuestionsClient({ venueId, venueName, mode = 'full' }: Q
                   )}
 
                   <div className="flex items-center space-x-2">
-                    <Switch
-                      id="is_active"
+                    <ToggleSwitch
                       checked={formData.is_active}
                       onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                      showLabels={true}
+                      onLabel="Active"
+                      offLabel="Inactive"
                     />
-                    <Label htmlFor="is_active" className="text-sm font-medium">Active</Label>
                   </div>
 
                   <div className="flex gap-2 pt-2">

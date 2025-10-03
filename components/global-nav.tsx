@@ -361,10 +361,10 @@ export default function GlobalNav() {
                 <Button
                   variant="destructive"
                   onClick={handleSignOut}
-                  className="flex items-center w-full px-4 py-4 text-base font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors min-h-[48px] justify-start"
+                  className="flex items-center w-full px-4 py-4 text-base font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors min-h-[48px] justify-start text-white"
                 >
-                  <LogOut className="mr-3 h-5 w-5 flex-shrink-0" />
-                  <span>Sign Out</span>
+                  <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                  <span className="text-white">Sign Out</span>
                 </Button>
               </>
             ) : (

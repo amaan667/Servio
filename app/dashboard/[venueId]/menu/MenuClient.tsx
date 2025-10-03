@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Plus, Edit, Trash2, ShoppingBag, Trash, ChevronDown, ChevronRight } from "lucide-react";
@@ -385,12 +386,13 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                   />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch
-                    id="available"
+                  <ToggleSwitch
                     checked={formData.available}
                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, available: checked }))}
+                    showLabels={true}
+                    onLabel="Available"
+                    offLabel="Unavailable"
                   />
-                  <Label htmlFor="available">Available</Label>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
@@ -539,13 +541,13 @@ export default function MenuClient({ venueId, venueName }: { venueId: string; ve
                               )}
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center space-x-2">
-                                  <Switch
+                                  <ToggleSwitch
                                     checked={item.available}
                                     onCheckedChange={(checked) => handleToggleAvailable(item.id, checked)}
+                                    showLabels={true}
+                                    onLabel="Available"
+                                    offLabel="Unavailable"
                                   />
-                                  <span className="text-sm text-gray-800">
-                                    {item.available ? 'Available' : 'Unavailable'}
-                                  </span>
                                 </div>
                               </div>
                             </div>

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { ToggleSwitch } from '@/components/ui/toggle-switch';
 import TimeField24, { TimeValue24 } from '@/components/inputs/TimeField24';
 import { buildIsoFromLocal, isOvernight, addDaysISO } from '@/lib/time';
 import { Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -660,10 +661,12 @@ export default function StaffClient({
                               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-foreground/80 font-medium">Active:</span>
-                                  <Switch
+                                  <ToggleSwitch
                                     checked={row.active}
                                     onCheckedChange={() => onToggleActive(row)}
-                                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-300"
+                                    showLabels={true}
+                                    onLabel="On"
+                                    offLabel="Off"
                                   />
                                 </div>
                                 <div className="flex gap-2">
