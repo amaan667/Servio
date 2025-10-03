@@ -679,7 +679,7 @@ export default function StaffClient({
                                     onClick={() => {
                                       setEditingShiftFor(editingShiftFor === row.id ? null : row.id);
                                     }}
-                                    className="text-blue-600 hover:text-blue-700 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                                    className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border-blue-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                   >
                                     <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                     <span className="hidden sm:inline">{editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}</span>
@@ -689,7 +689,7 @@ export default function StaffClient({
                                     size="sm"
                                     variant="outline"
                                     onClick={() => onDelete(row)}
-                                    className="text-red-600 hover:text-red-700 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                                    className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
                                   >
                                     Delete
                                   </Button>
