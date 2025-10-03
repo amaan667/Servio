@@ -875,8 +875,9 @@ export default function CustomerOrderPage() {
             {/* Mobile Cart Button */}
             <Button
               onClick={() => setShowMobileCart(!showMobileCart)}
-              className="md:hidden ml-2 flex-shrink-0 min-h-[44px] min-w-[44px] bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white"
-              size="sm"
+              className="md:hidden ml-2 flex-shrink-0"
+              variant="servio"
+              size="default"
             >
               <ShoppingCart className="h-4 w-4" />
               <span className="ml-1 text-sm font-medium">{getTotalItems()}</span>
@@ -1123,7 +1124,9 @@ export default function CustomerOrderPage() {
         <div className="lg:hidden fixed bottom-4 right-4 z-40">
           <Button
             onClick={() => setShowMobileCart(true)}
-            className="rounded-full w-14 h-14 shadow-lg relative min-h-[56px] min-w-[56px]"
+            className="rounded-full w-14 h-14 shadow-lg relative"
+            variant="servio"
+            size="icon"
             disabled={cart.length === 0}
           >
             <ShoppingCart className="h-6 w-6" />

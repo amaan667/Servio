@@ -226,7 +226,8 @@ export default function ClientNavBar() {
                   </Link>
                   <Button
                     onClick={() => router.push('/sign-in')}
-                    className="bg-servio-purple text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-servio-purple/90 transition-colors"
+                    variant="servio"
+                    size="default"
                   >
                     Sign In
                   </Button>

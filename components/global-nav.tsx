@@ -248,7 +248,8 @@ export default function GlobalNav() {
                 <div className={`w-px h-8 mx-2 ${borderClasses}`}></div>
                 <Button
                   onClick={() => router.push('/sign-in')}
-                  className={`px-6 py-3 text-base font-medium rounded-md transition-all duration-200 shadow-sm ${primaryButtonClasses}`}
+                  variant="servio"
+                  size="lg"
                 >
                   Sign In
                 </Button>
@@ -397,7 +398,9 @@ export default function GlobalNav() {
                     setMobileMenuOpen(false);
                     router.push('/sign-in');
                   }}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-4 text-base font-medium rounded-lg transition-all duration-200 shadow-sm min-h-[48px]"
+                  variant="servio"
+                  size="mobile"
+                  className="w-full"
                 >
                   Sign In
                 </Button>
