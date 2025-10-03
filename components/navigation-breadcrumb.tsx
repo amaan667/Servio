@@ -79,7 +79,7 @@ export default function NavigationBreadcrumb({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-900 hover:text-gray-900 font-medium">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
               <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
@@ -88,8 +88,8 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-800">←</li>
-          <li className="text-gray-900 font-medium">Demo</li>
+          <li className="text-foreground/60">←</li>
+          <li className="text-foreground font-medium">Demo</li>
         </ol>
       </nav>
     );
@@ -101,7 +101,7 @@ export default function NavigationBreadcrumb({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-900 hover:text-gray-900 font-medium">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
               <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
@@ -110,7 +110,7 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-800">←</li>
+          <li className="text-foreground/60">←</li>
           <li className="text-gray-900 font-medium">{pageTitle}</li>
         </ol>
       </nav>
@@ -123,7 +123,7 @@ export default function NavigationBreadcrumb({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-900 hover:text-gray-900 font-medium">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
               <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
@@ -132,8 +132,8 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-800">←</li>
-          <li className="text-gray-900 font-medium">Dashboard</li>
+          <li className="text-foreground/60">←</li>
+          <li className="text-foreground font-medium">Dashboard</li>
         </ol>
       </nav>
     );
@@ -145,7 +145,7 @@ export default function NavigationBreadcrumb({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-900 hover:text-gray-900 font-medium">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
               <Link href={homeLink}>
                 <>
                   <Home className="h-4 w-4" />
@@ -154,9 +154,9 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-800">←</li>
+          <li className="text-foreground/60">←</li>
           <li>
-            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-900 hover:text-gray-900 font-medium">
+            <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
               <Link href={dashboardLink}>
                 <>
                   <LayoutDashboard className="h-4 w-4" />
@@ -165,7 +165,7 @@ export default function NavigationBreadcrumb({
               </Link>
             </Button>
           </li>
-          <li className="text-gray-800">←</li>
+          <li className="text-foreground/60">←</li>
           <li className="text-gray-900 font-medium">{pageTitle}</li>
         </ol>
       </nav>
@@ -177,7 +177,7 @@ export default function NavigationBreadcrumb({
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center gap-2 text-sm">
         <li>
-          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-900 hover:text-gray-900 font-medium">
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
             <Link href={homeLink}>
               <>
                 <Home className="h-4 w-4" />
@@ -186,9 +186,9 @@ export default function NavigationBreadcrumb({
             </Link>
           </Button>
         </li>
-        <li className="text-gray-400">←</li>
+        <li className="text-foreground/40">←</li>
         <li>
-          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-gray-900 hover:text-gray-900 font-medium">
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-foreground font-medium">
             <Link href={dashboardLink}>
               <>
                 <LayoutDashboard className="h-4 w-4" />
@@ -197,8 +197,8 @@ export default function NavigationBreadcrumb({
             </Link>
           </Button>
         </li>
-        <li className="text-gray-400">←</li>
-        <li className="text-gray-900 font-medium">{pageTitle}</li>
+        <li className="text-foreground/40">←</li>
+        <li className="text-foreground font-medium">{pageTitle}</li>
       </ol>
     </nav>
   );

@@ -41,7 +41,7 @@ export default function GlobalNav() {
 
   const textClasses = isAuthenticatedRoute
     ? "text-foreground hover:text-primary hover:bg-accent"
-    : "text-gray-700 hover:text-gray-900 hover:bg-gray-50";
+    : "text-foreground/80 hover:text-foreground hover:bg-accent";
 
   const borderClasses = isAuthenticatedRoute
     ? "border-border"

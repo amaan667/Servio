@@ -24,8 +24,8 @@ export default async function NavBar({ showActions = true, venueId }: { showActi
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-        <Link href={homeHref} className="text-gray-600 hover:text-gray-900">Home</Link>
-        <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link>
+        <Link href={homeHref} className="text-foreground/80 hover:text-foreground">Home</Link>
+        <Link href="/dashboard" className="text-foreground/80 hover:text-foreground">Dashboard</Link>
         {showActions && (
           <>
             <Link href={'/dashboard'}>

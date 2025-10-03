@@ -85,43 +85,39 @@
 
 /* Enhanced Button Visibility */
 .btn-enhanced-outline {
-  @apply border-2 border-gray-400 bg-white text-gray-800 font-semibold shadow-sm;
-  @apply hover:bg-gray-50 hover:border-gray-500 hover:text-gray-900;
-  @apply focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
-  @apply dark:border-gray-500 dark:bg-gray-800 dark:text-gray-200;
-  @apply dark:hover:bg-gray-700 dark:hover:border-gray-400 dark:hover:text-white;
+  @apply border-2 border-border bg-background text-foreground font-semibold shadow-sm;
+  @apply hover:bg-accent hover:border-border hover:text-foreground;
+  @apply focus:ring-2 focus:ring-ring focus:ring-offset-2;
   @apply transition-all duration-200;
 }
 
 .btn-enhanced-ghost {
-  @apply text-gray-700 font-semibold;
-  @apply hover:bg-gray-100 hover:text-gray-900;
-  @apply focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
-  @apply dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white;
+  @apply text-foreground/80 font-semibold;
+  @apply hover:bg-accent hover:text-foreground;
+  @apply focus:ring-2 focus:ring-ring focus:ring-offset-2;
   @apply transition-all duration-200;
 }
 
 .btn-enhanced-icon {
-  @apply text-gray-600 hover:text-gray-900 hover:bg-gray-100;
-  @apply focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
-  @apply dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800;
+  @apply text-foreground/70 hover:text-foreground hover:bg-accent;
+  @apply focus:ring-2 focus:ring-ring focus:ring-offset-2;
   @apply transition-all duration-200;
 }
 
 /* Mobile-specific button improvements */
 @media (max-width: 768px) {
   .btn-enhanced-outline {
-    @apply border-2 border-gray-500 text-gray-900 font-semibold;
-    @apply hover:bg-gray-100 hover:border-gray-600;
+    @apply border-2 border-border text-foreground font-semibold;
+    @apply hover:bg-accent hover:border-border;
   }
   
   .btn-enhanced-ghost {
-    @apply text-gray-800 font-semibold;
-    @apply hover:bg-gray-200 hover:text-gray-900;
+    @apply text-foreground font-semibold;
+    @apply hover:bg-accent hover:text-foreground;
   }
   
   .btn-enhanced-icon {
-    @apply text-gray-700 hover:text-gray-900 hover:bg-gray-200;
+    @apply text-foreground/80 hover:text-foreground hover:bg-accent;
   }
 }
 
@@ -136,6 +132,44 @@
 
 .border-servio-purple {
   border-color: hsl(var(--servio-purple));
+}
+
+/* Enhanced text visibility */
+.text-enhanced {
+  @apply text-foreground;
+}
+
+.text-enhanced-muted {
+  @apply text-foreground/80;
+}
+
+.text-enhanced-subtle {
+  @apply text-foreground/60;
+}
+
+/* Ensure all headings are visible */
+h1, h2, h3, h4, h5, h6 {
+  @apply text-foreground;
+}
+
+/* Ensure all paragraphs and text are visible */
+p, span, div {
+  @apply text-foreground;
+}
+
+/* Mobile text size improvements */
+@media (max-width: 768px) {
+  .text-enhanced {
+    @apply text-base;
+  }
+  
+  .text-enhanced-muted {
+    @apply text-sm;
+  }
+  
+  .text-enhanced-subtle {
+    @apply text-xs;
+  }
 }
 
 .hover\:bg-servio-purple:hover {

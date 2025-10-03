@@ -393,7 +393,7 @@ export default function StaffClient({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Team Management</h1>
-              <p className="text-gray-700 mt-1">Manage your staff, roles, and schedules</p>
+              <p className="text-foreground/80 mt-1">Manage your staff, roles, and schedules</p>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-3">
               <Button 
@@ -424,7 +424,7 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-blue-600">Total Staff</p>
-                    <p className="text-2xl font-bold text-blue-900">
+                    <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-blue-200 h-8 w-12 rounded"></div>
                       ) : (
@@ -444,7 +444,7 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-green-600">Active Staff</p>
-                    <p className="text-2xl font-bold text-green-900">
+                    <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-green-200 h-8 w-12 rounded"></div>
                       ) : (
@@ -464,7 +464,7 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-purple-600">Roles</p>
-                    <p className="text-2xl font-bold text-purple-900">
+                    <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-purple-200 h-8 w-12 rounded"></div>
                       ) : (
@@ -484,7 +484,7 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-orange-600">Active Shifts</p>
-                    <p className="text-2xl font-bold text-orange-900">
+                    <p className="text-2xl font-bold text-foreground">
                       {loading && !initialCounts && staff.length === 0 && (!initialStaff || initialStaff.length === 0) ? (
                         <div className="animate-pulse bg-orange-200 h-8 w-12 rounded"></div>
                       ) : (
@@ -510,7 +510,7 @@ export default function StaffClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">Add Team Member</h3>
-                    <p className="text-sm text-gray-700">Add new staff members to your team</p>
+                    <p className="text-sm text-foreground/80">Add new staff members to your team</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button 
@@ -592,7 +592,7 @@ export default function StaffClient({
                       <Users className="h-8 w-8 text-gray-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">No team members yet</h3>
-                    <p className="text-gray-700 mb-6 max-w-md mx-auto">
+                    <p className="text-foreground/80 mb-6 max-w-md mx-auto">
                       Start building your team by adding staff members above. You'll be able to assign shifts and manage schedules once you have team members.
                     </p>
                     <Button 
@@ -620,7 +620,7 @@ export default function StaffClient({
                           </div>
                           <div>
                             <h3 className="text-lg font-semibold text-foreground">{role}</h3>
-                            <p className="text-sm text-gray-700">{grouped[role].length} team member{grouped[role].length !== 1 ? 's' : ''}</p>
+                            <p className="text-sm text-foreground/80">{grouped[role].length} team member{grouped[role].length !== 1 ? 's' : ''}</p>
                           </div>
                         </div>
                         <Badge variant="secondary" className="px-3 py-1">
@@ -654,12 +654,12 @@ export default function StaffClient({
                                     {row.name}
                                     {!row.active && <span className="ml-2 text-xs text-gray-400">(Inactive)</span>}
                                   </p>
-                                  <p className="staff-member-role text-sm text-gray-700">{role}</p>
+                                  <p className="staff-member-role text-sm text-foreground/80">{role}</p>
                                 </div>
                               </div>
                               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm text-gray-700 font-medium">Active:</span>
+                                  <span className="text-sm text-foreground/80 font-medium">Active:</span>
                                   <Switch
                                     checked={row.active}
                                     onCheckedChange={() => onToggleActive(row)}
@@ -718,7 +718,7 @@ export default function StaffClient({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-foreground">Schedule Management</h2>
-                <p className="text-gray-700 mt-1">Manage shifts and schedules for your team</p>
+                <p className="text-foreground/80 mt-1">Manage shifts and schedules for your team</p>
               </div>
             </div>
             
