@@ -183,11 +183,6 @@ export default function ClientNavBar() {
                     <>
                       <Link
                         href="/dashboard"
-                        onClick={() => {
-                          console.log('[NAV DEBUG] ClientNavBar Dashboard link clicked - navigating to /dashboard');
-                          console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
-                          console.log('[NAV DEBUG] Venue ID:', venueId);
-                        }}
                         className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                       >
                         Dashboard
