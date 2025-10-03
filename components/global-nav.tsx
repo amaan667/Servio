@@ -163,7 +163,7 @@ export default function GlobalNav() {
                   // On feature pages (Live Orders, Menu, etc.) and QR pages: Dashboard, Settings, Sign Out
                   <>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      href="/dashboard"
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
@@ -181,7 +181,7 @@ export default function GlobalNav() {
                   // On settings pages: Dashboard, Home, Sign Out
                   <>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      href="/dashboard"
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
@@ -199,7 +199,7 @@ export default function GlobalNav() {
                   // On home page only: Dashboard, Settings, Sign Out
                   <>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      href="/dashboard"
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
@@ -302,7 +302,7 @@ export default function GlobalNav() {
                 ) : (isOnFeaturePage || isOnQRPage) ? (
                   <>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      href="/dashboard"
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -321,7 +321,7 @@ export default function GlobalNav() {
                 ) : isOnSettings ? (
                   <>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      href="/dashboard"
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -340,7 +340,7 @@ export default function GlobalNav() {
                 ) : (
                   <>
                     <Link
-                      href={primaryVenueId ? `/dashboard/${primaryVenueId}` : '/dashboard'}
+                      href="/dashboard"
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
                       onClick={() => setMobileMenuOpen(false)}
                     >

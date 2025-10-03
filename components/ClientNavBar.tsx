@@ -165,7 +165,7 @@ export default function ClientNavBar() {
                     // On dashboard pages: Home, Settings, Sign Out
                     <>
                       <Link
-                        href={venueId ? `/dashboard/${venueId}` : "/dashboard"}
+                        href="/dashboard"
                         className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                       >
                         Home
@@ -263,7 +263,7 @@ export default function ClientNavBar() {
                   // On dashboard pages: Home, Settings, Sign Out
                   <>
                     <Link
-                      href={venueId ? `/dashboard/${venueId}` : "/dashboard"}
+                      href="/dashboard"
                       className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
