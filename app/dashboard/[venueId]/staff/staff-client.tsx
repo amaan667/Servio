@@ -59,6 +59,11 @@ export default function StaffClient({
   const [error, setError] = useState<string | null>(null);
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
   const [activeTab, setActiveTab] = useState('staff');
+  
+  // Debug logging for tab state
+  useEffect(() => {
+    console.log('[STAFF DEBUG] Active tab changed to:', activeTab);
+  }, [activeTab]);
   const [staffLoaded, setStaffLoaded] = useState(!!initialStaff && initialStaff.length > 0);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
   const [loading, setLoading] = useState(!initialStaff || initialStaff.length === 0);
@@ -398,18 +403,26 @@ export default function StaffClient({
             </div>
             <div className="flex items-center space-x-2 sm:space-x-3">
               <Button 
-                onClick={() => setActiveTab('staff')} 
+                onClick={() => {
+                  console.log('[STAFF DEBUG] Switching to staff tab');
+                  setActiveTab('staff');
+                }} 
                 variant={activeTab === 'staff' ? 'default' : 'outline'}
-                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none"
+                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none hover:bg-accent hover:text-accent-foreground transition-colors"
+                disabled={loading}
               >
                 <Users className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Staff</span>
                 <span className="sm:hidden">Team</span>
               </Button>
               <Button 
-                onClick={() => setActiveTab('calendar')} 
+                onClick={() => {
+                  console.log('[STAFF DEBUG] Switching to calendar tab');
+                  setActiveTab('calendar');
+                }} 
                 variant={activeTab === 'calendar' ? 'default' : 'outline'}
-                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none"
+                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none hover:bg-accent hover:text-accent-foreground transition-colors"
+                disabled={loading}
               >
                 <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Schedule</span>
