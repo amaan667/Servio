@@ -4,21 +4,28 @@ import { hasServerAuthCookie } from '@/lib/server-utils';
 import { redirect } from 'next/navigation';
 
 export default async function DashboardPage() {
+  console.log('[DASHBOARD DEBUG] Dashboard page loading...');
+  
   // Check for auth cookies before making auth calls
   const hasAuthCookie = await hasServerAuthCookie();
+  console.log('[DASHBOARD DEBUG] Has auth cookie:', hasAuthCookie);
   
   if (!hasAuthCookie) {
+    console.log('[DASHBOARD DEBUG] No auth cookie, redirecting to sign-in');
     redirect('/sign-in');
   }
 
   const supabase = await createServerSupabase();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
+  console.log('[DASHBOARD DEBUG] User:', user?.id, 'Error:', userError);
   
   if (userError) {
+    console.log('[DASHBOARD DEBUG] User error, redirecting to sign-in');
     redirect('/sign-in');
   }
   
   if (!user) {
+    console.log('[DASHBOARD DEBUG] No user, redirecting to sign-in');
     redirect('/sign-in');
   }
 
@@ -30,11 +37,15 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: true })
     .limit(1);
 
+  console.log('[DASHBOARD DEBUG] Venues:', venues, 'Error:', venueError);
+
   if (venueError) {
+    console.log('[DASHBOARD DEBUG] Venue error, redirecting to complete-profile');
     redirect('/complete-profile');
   }
 
   if (!venues || venues.length === 0) {
+    console.log('[DASHBOARD DEBUG] No venues found, checking OAuth user');
     // Check if user is a Google OAuth user
     const isOAuthUser = user.identities?.some((identity: any) => 
       identity.provider === 'google' || identity.provider === 'oauth'
@@ -66,6 +77,7 @@ export default async function DashboardPage() {
           console.error('Error creating venue for email user:', createError);
           redirect('/complete-profile');
         } else {
+          console.log('[DASHBOARD DEBUG] Created venue, redirecting to:', `/dashboard/${venueId}`);
           redirect(`/dashboard/${venueId}`);
         }
       } else {
@@ -76,6 +88,7 @@ export default async function DashboardPage() {
   }
 
   const venueId = venues[0].venue_id;
+  console.log('[DASHBOARD DEBUG] Found venue, redirecting to:', `/dashboard/${venueId}`);
   
   // Redirect to the primary venue's dashboard
   redirect(`/dashboard/${venueId}`);

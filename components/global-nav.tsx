@@ -200,6 +200,11 @@ export default function GlobalNav() {
                   <>
                     <Link
                       href="/dashboard"
+                      onClick={() => {
+                        console.log('[NAV DEBUG] Desktop Dashboard link clicked - navigating to /dashboard');
+                        console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
+                        console.log('[NAV DEBUG] Primary venue ID:', primaryVenueId);
+                      }}
                       className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-md transition-all duration-200"
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5" />
@@ -285,7 +290,12 @@ export default function GlobalNav() {
                     <Link
                       href="/"
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        console.log('[NAV DEBUG] Mobile Dashboard link clicked - navigating to /dashboard');
+                        console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
+                        console.log('[NAV DEBUG] Primary venue ID:', primaryVenueId);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       <Home className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span>Home</span>
@@ -293,7 +303,12 @@ export default function GlobalNav() {
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        console.log('[NAV DEBUG] Mobile Dashboard link clicked - navigating to /dashboard');
+                        console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
+                        console.log('[NAV DEBUG] Primary venue ID:', primaryVenueId);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       <Settings className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span>Settings</span>
@@ -304,7 +319,12 @@ export default function GlobalNav() {
                     <Link
                       href="/dashboard"
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        console.log('[NAV DEBUG] Mobile Dashboard link clicked - navigating to /dashboard');
+                        console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
+                        console.log('[NAV DEBUG] Primary venue ID:', primaryVenueId);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span>Dashboard</span>
@@ -312,7 +332,12 @@ export default function GlobalNav() {
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        console.log('[NAV DEBUG] Mobile Dashboard link clicked - navigating to /dashboard');
+                        console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
+                        console.log('[NAV DEBUG] Primary venue ID:', primaryVenueId);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       <Settings className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span>Settings</span>
@@ -323,7 +348,12 @@ export default function GlobalNav() {
                     <Link
                       href="/dashboard"
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        console.log('[NAV DEBUG] Mobile Dashboard link clicked - navigating to /dashboard');
+                        console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
+                        console.log('[NAV DEBUG] Primary venue ID:', primaryVenueId);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span>Dashboard</span>
@@ -331,7 +361,12 @@ export default function GlobalNav() {
                     <Link
                       href="/"
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        console.log('[NAV DEBUG] Mobile Dashboard link clicked - navigating to /dashboard');
+                        console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
+                        console.log('[NAV DEBUG] Primary venue ID:', primaryVenueId);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       <Home className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span>Home</span>
@@ -342,7 +377,12 @@ export default function GlobalNav() {
                     <Link
                       href="/dashboard"
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        console.log('[NAV DEBUG] Mobile Dashboard link clicked - navigating to /dashboard');
+                        console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
+                        console.log('[NAV DEBUG] Primary venue ID:', primaryVenueId);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       <LayoutDashboard className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span>Dashboard</span>
@@ -350,7 +390,12 @@ export default function GlobalNav() {
                     <Link
                       href={primaryVenueId ? `/dashboard/${primaryVenueId}/settings` : '/dashboard'}
                       className="flex items-center px-4 py-4 text-base font-medium text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors min-h-[48px]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        console.log('[NAV DEBUG] Mobile Dashboard link clicked - navigating to /dashboard');
+                        console.log('[NAV DEBUG] Current pathname:', window.location.pathname);
+                        console.log('[NAV DEBUG] Primary venue ID:', primaryVenueId);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       <Settings className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span>Settings</span>
