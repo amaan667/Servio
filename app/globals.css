@@ -511,25 +511,8 @@ p, span, div {
     min-width: 44px;
   }
   
-  /* Mobile-optimized switch component */
-  [data-radix-switch-root] {
-    height: 20px !important;
-    width: 36px !important;
-    min-height: 20px !important;
-    min-width: 36px !important;
-    border-radius: 10px !important;
-  }
-  
-  [data-radix-switch-thumb] {
-    height: 16px !important;
-    width: 16px !important;
-    transform: translateX(0) !important;
-    border-radius: 8px !important;
-  }
-  
-  [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
-    transform: translateX(16px) !important;
-  }
+  /* Remove hard overrides of Radix switch on mobile.
+     Switch dimensions/styles are unified in components/ui/switch.tsx */
   
   /* Better mobile button spacing for staff management */
   .staff-actions {
@@ -581,20 +564,7 @@ p, span, div {
     margin-bottom: 8px !important;
   }
   
-  /* Better mobile switch styling */
-  .staff-actions [data-radix-switch-root] {
-    height: 18px !important;
-    width: 32px !important;
-  }
-  
-  .staff-actions [data-radix-switch-thumb] {
-    height: 14px !important;
-    width: 14px !important;
-  }
-  
-  .staff-actions [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
-    transform: translateX(14px) !important;
-  }
+  /* Remove staff-specific switch size overrides; use unified component styles */
   
   /* Mobile staff card improvements */
   .staff-card {
@@ -1291,20 +1261,7 @@ p, span, div {
     padding: 6px 10px !important;
   }
   
-  /* Even smaller switch for very small screens */
-  .staff-actions [data-radix-switch-root] {
-    height: 16px !important;
-    width: 28px !important;
-  }
-  
-  .staff-actions [data-radix-switch-thumb] {
-    height: 12px !important;
-    width: 12px !important;
-  }
-  
-  .staff-actions [data-radix-switch-root][data-state="checked"] [data-radix-switch-thumb] {
-    transform: translateX(12px) !important;
-  }
+  /* Remove tiny switch overrides for very small screens; keep consistency */
 }
 
 /* Large mobile devices and small tablets */
