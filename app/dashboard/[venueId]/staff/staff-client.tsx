@@ -506,7 +506,7 @@ export default function StaffClient({
 
         {/* Modern Tab Content */}
         {activeTab === 'staff' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Add Staff Section */}
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-4">
@@ -587,6 +587,7 @@ export default function StaffClient({
             </Card>
 
             {/* Staff List */}
+            <div className="w-full max-w-6xl mx-auto">
             {roles.length === 0 ? (
               <Card className="border-0 shadow-sm">
                 <CardContent className="py-16">
@@ -612,30 +613,30 @@ export default function StaffClient({
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {roles.map((role) => (
-                  <Card key={role} className="staff-card border-0 shadow-sm">
-                    <CardHeader className="staff-role-header pb-4">
+                  <Card key={role} className="staff-card border-0 shadow-sm w-full max-w-4xl mx-auto">
+                    <CardHeader className="staff-role-header pb-3 sm:pb-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <Users className="h-5 w-5 text-white" />
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">{role}</h3>
-                            <p className="text-sm text-foreground/80">{grouped[role].length} team member{grouped[role].length !== 1 ? 's' : ''}</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">{role}</h3>
+                            <p className="text-xs sm:text-sm text-foreground/80">{grouped[role].length} team member{grouped[role].length !== 1 ? 's' : ''}</p>
                           </div>
                         </div>
-                        <Badge variant="secondary" className="px-3 py-1">
+                        <Badge variant="secondary" className="px-2 py-1 sm:px-3 text-xs sm:text-sm">
                           {grouped[role].length}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="staff-grid grid gap-3">
+                      <div className="staff-grid grid gap-2 sm:gap-3">
                         {grouped[role].map((row) => (
                           <div key={row.id}>
-                            <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg transition-colors gap-4 ${
+                            <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg transition-colors gap-3 sm:gap-4 ${
                               row.active 
                                 ? 'bg-gray-50 hover:bg-gray-100' 
                                 : 'bg-gray-100 hover:bg-gray-200 opacity-60'
@@ -660,9 +661,9 @@ export default function StaffClient({
                                   <p className="staff-member-role text-sm text-foreground/80">{role}</p>
                                 </div>
                               </div>
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2">
+                              <div className="flex flex-row items-center justify-between sm:justify-end gap-2 sm:gap-3">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm text-foreground/80 font-medium">Active:</span>
+                                  <span className="text-xs sm:text-sm text-foreground/80 font-medium">Active:</span>
                                   <ToggleSwitch
                                     checked={row.active}
                                     onCheckedChange={() => onToggleActive(row)}
@@ -671,23 +672,24 @@ export default function StaffClient({
                                     offLabel="Off"
                                   />
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-1 sm:gap-2">
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => {
                                       setEditingShiftFor(editingShiftFor === row.id ? null : row.id);
                                     }}
-                                    className="text-blue-600 hover:text-blue-700 min-h-[36px]"
+                                    className="text-blue-600 hover:text-blue-700 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
                                   >
-                                    <Clock className="w-4 h-4 mr-1" />
-                                    {editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}
+                                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                    <span className="hidden sm:inline">{editingShiftFor === row.id ? 'Cancel' : 'Add Shift'}</span>
+                                    <span className="sm:hidden">{editingShiftFor === row.id ? 'Cancel' : 'Shift'}</span>
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => onDelete(row)}
-                                    className="text-red-600 hover:text-red-700 min-h-[36px]"
+                                    className="text-red-600 hover:text-red-700 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
                                   >
                                     Delete
                                   </Button>
@@ -713,6 +715,7 @@ export default function StaffClient({
                 ))}
               </div>
             )}
+            </div>
           </div>
         )}
 
