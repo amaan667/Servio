@@ -303,7 +303,7 @@ export default function ClientNavBar() {
                     handleSignOut();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full text-left transition-colors"
+                  className="w-full text-left transition-colors bg-red-600 hover:bg-red-700 text-white font-medium px-3 py-2 rounded-md"
                 >
                   Sign Out
                 </Button>
