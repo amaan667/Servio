@@ -12,11 +12,13 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm hover:shadow-md",
+        // Higher-contrast outline that respects theme tokens
         outline:
-          "border-2 border-gray-300 bg-background text-gray-600 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:border-gray-500 dark:hover:text-gray-100 shadow-sm hover:shadow-md",
+          "border-2 border-border bg-background text-foreground/80 hover:bg-accent hover:text-foreground dark:text-foreground/90 shadow-sm hover:shadow-md",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm hover:shadow-md",
-        ghost: "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-gray-100",
+        // Ghost uses foreground with subtle hover
+        ghost: "text-foreground/80 hover:bg-accent hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         servio: "bg-servio-purple text-white hover:bg-servio-purple-dark shadow-sm hover:shadow-md",
       },
