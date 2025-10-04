@@ -33,8 +33,9 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Use Servio brand purple for primary so default buttons aren't near-black */
+    --primary: var(--servio-purple);
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96%;
@@ -70,8 +71,9 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Keep primary as brand purple in dark mode for consistent CTA styling */
+    --primary: var(--servio-purple);
+    --primary-foreground: 0 0% 100%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -1023,8 +1025,10 @@ p, span, div {
     min-width: 44px !important;
   }
   
-  /* Improve form inputs on mobile */
-  input, textarea, select {
+  /* Improve form inputs on mobile (exclude checkbox/radio/range) */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
     font-size: 16px; /* Prevent zoom on iOS */
     -webkit-appearance: none; /* Remove iOS styling */
     border-radius: 8px;
@@ -1036,11 +1040,23 @@ p, span, div {
     font-weight: 500;
   }
   
-  input:focus, textarea:focus, select:focus {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):focus,
+  textarea:focus,
+  select:focus {
     border-color: #7c3aed;
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     outline: none;
     background-color: #ffffff;
+  }
+
+  /* Accessible, consistent checkboxes and radios on mobile */
+  input[type='checkbox'],
+  input[type='radio'] {
+    -webkit-appearance: auto; /* Keep native for reliability */
+    appearance: auto;
+    height: 20px;
+    width: 20px;
+    accent-color: hsl(var(--servio-purple));
   }
   
   /* Enhanced label visibility */
