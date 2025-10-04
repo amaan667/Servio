@@ -38,7 +38,8 @@
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 25%;
+    /* Increase contrast for muted text for better readability */
+    --muted-foreground: 215.4 20% 22%;
     --accent: 210 40% 96%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
@@ -102,7 +103,7 @@
 
 /* Enhanced Button Visibility */
 .btn-enhanced-outline {
-  @apply border-2 border-border bg-background text-foreground font-semibold shadow-sm;
+  @apply border-2 border-border bg-background text-foreground/90 font-semibold shadow-sm;
   @apply hover:bg-accent hover:border-border hover:text-foreground;
   @apply focus:ring-2 focus:ring-ring focus:ring-offset-2;
   @apply transition-all duration-200;
@@ -1360,105 +1361,12 @@ p, span, div {
   }
 }
 
-/* Dark mode mobile optimizations */
-@media (max-width: 768px) and (prefers-color-scheme: dark) {
-  /* Better tap highlighting for dark mode */
-  * {
-    -webkit-tap-highlight-color: rgba(124, 58, 237, 0.3);
-  }
-  
-  /* Enhanced dark mode text visibility */
-  .text-muted-foreground {
-    color: #d1d5db !important; /* Light gray for dark mode */
-  }
-  
-  .text-gray-500 {
-    color: #d1d5db !important; /* Light gray for dark mode */
-  }
-  
-  .text-gray-400 {
-    color: #9ca3af !important; /* Medium gray for dark mode */
-  }
-  
-  .text-gray-300 {
-    color: #d1d5db !important; /* Light gray for dark mode */
-  }
-  
-  .text-gray-700 {
-    color: #f3f4f6 !important; /* Very light gray for dark mode */
-  }
-  
-  .text-gray-800 {
-    color: #f9fafb !important; /* Almost white for dark mode */
-  }
-  
-  /* Enhanced dark mode inputs */
-  input, textarea, select {
-    background-color: #1f2937;
-    border-color: #374151;
-    color: #f9fafb;
-  }
-  
-  input:focus, textarea:focus, select:focus {
-    border-color: #7c3aed;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
-  }
-  
-  /* Enhanced dark mode labels */
-  label {
-    color: #f9fafb !important; /* White labels in dark mode */
-  }
-  
-  /* Better dark mode cards */
-  .card {
-    background-color: #1f2937;
-    border: 1px solid #374151;
-  }
-  
-  /* Enhanced dark mode card text */
-  .card p, .card span, .card div {
-    color: #d1d5db !important;
-  }
-  
-  /* Enhanced dark mode buttons */
-  button {
-    color: #f9fafb;
-  }
-  
-  /* Enhanced dark mode button visibility */
-  button[class*="outline"] {
-    border-color: #6b7280 !important;
-    color: #d1d5db !important;
-    background-color: #1f2937 !important;
-  }
-  
-  button[class*="outline"]:hover {
-    border-color: #9ca3af !important;
-    color: #f9fafb !important;
-    background-color: #374151 !important;
-  }
-  
-  button[class*="ghost"] {
-    color: #d1d5db !important;
-  }
-  
-  button[class*="ghost"]:hover {
-    color: #f9fafb !important;
-    background-color: #374151 !important;
-  }
-  
-  /* Enhanced dark mode navigation */
-  .mobile-nav-text {
-    color: #f9fafb !important;
-  }
-  
-  /* Enhanced dark mode disabled fields */
-  input:disabled, textarea:disabled, select:disabled {
-    background-color: #374151 !important;
-    color: #9ca3af !important;
-    border-color: #4b5563 !important;
-  }
-}
+/* Dark mode on mobile is controlled by the `.dark` class via next-themes.
+   The previous media-query based overrides using `prefers-color-scheme: dark`
+   caused a mismatch when the site theme was light but the device was in
+   dark mode, resulting in gray text and black outline buttons on white
+   backgrounds. We remove those overrides and rely on the `.dark` class
+   styles defined above to ensure consistent theming across devices. */
 
 /* Line clamp utility */
 .line-clamp-1 {
