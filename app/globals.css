@@ -139,6 +139,70 @@
 }
 
 /* Custom Servio styles */
+
+  /* QR Generation Page Mobile Fixes */
+@media (max-width: 768px) {
+  /* Force proper text contrast in QR generation cards */
+  #qr-generation-page .card,
+  #qr-generation-page .card * {
+    color: #1f2937 !important;
+  }
+
+  /* Ensure QR generation buttons are visible */
+  #qr-generation-page button {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+    border: 2px solid #374151 !important;
+    font-weight: 700 !important;
+  }
+
+  #qr-generation-page button:hover {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+  }
+
+  /* Override shadcn/ui button variants for mobile */
+  #qr-generation-page .btn {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+    border: 2px solid #374151 !important;
+  }
+
+  #qr-generation-page .btn-outline {
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border: 2px solid #d1d5db !important;
+  }
+
+  #qr-generation-page .btn-ghost {
+    background-color: transparent !important;
+    color: #1f2937 !important;
+    border: 1px solid transparent !important;
+  }
+
+  /* Fix QR generation form elements */
+  #qr-generation-page input,
+  #qr-generation-page select,
+  #qr-generation-page textarea {
+    background-color: #ffffff !important;
+    border: 2px solid #d1d5db !important;
+    color: #1f2937 !important;
+  }
+
+  /* Ensure labels are readable */
+  #qr-generation-page label {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
+  }
+
+  /* Fix badge visibility */
+  #qr-generation-page .badge {
+    background-color: #f3f4f6 !important;
+    color: #1f2937 !important;
+  }
+}
+
 .text-servio-purple {
   color: hsl(var(--servio-purple));
 }
@@ -1081,32 +1145,44 @@ p, span, div {
   }
   
   /* Enhanced mobile button visibility */
-  button[class*="outline"] {
-    border-width: 2px !important;
-    border-color: #6b7280 !important;
-    color: #374151 !important;
-    font-weight: 600 !important;
-    background-color: #ffffff !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-  }
-  
-  button[class*="outline"]:hover {
-    border-color: #4b5563 !important;
-    color: #111827 !important;
-    background-color: #f9fafb !important;
+  button {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+    border: 2px solid #374151 !important;
+    font-weight: 700 !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+    min-height: 44px !important;
   }
-  
+
+  button:hover {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  button[class*="outline"] {
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border: 2px solid #d1d5db !important;
+    font-weight: 700 !important;
+  }
+
+  button[class*="outline"]:hover {
+    background-color: #f9fafb !important;
+    border-color: #9ca3af !important;
+    color: #0f172a !important;
+  }
+
   button[class*="ghost"] {
-    color: #374151 !important;
-    font-weight: 600 !important;
-    min-width: 48px !important;
-    min-height: 48px !important;
+    background-color: transparent !important;
+    color: #1f2937 !important;
+    font-weight: 700 !important;
+    border: 1px solid transparent !important;
   }
-  
+
   button[class*="ghost"]:hover {
-    color: #111827 !important;
     background-color: #f3f4f6 !important;
+    color: #0f172a !important;
   }
   
   /* Enhanced icon visibility */
@@ -1426,25 +1502,41 @@ p, span, div {
   }
   
   /* Enhanced dark mode button visibility */
-  button[class*="outline"] {
-    border-color: #6b7280 !important;
-    color: #d1d5db !important;
-    background-color: #1f2937 !important;
+  button {
+    background-color: #f9fafb !important;
+    color: #1f2937 !important;
+    border: 2px solid #d1d5db !important;
+    font-weight: 700 !important;
   }
-  
+
+  button:hover {
+    background-color: #f3f4f6 !important;
+    border-color: #9ca3af !important;
+  }
+
+  button[class*="outline"] {
+    background-color: #1f2937 !important;
+    color: #f9fafb !important;
+    border: 2px solid #6b7280 !important;
+    font-weight: 700 !important;
+  }
+
   button[class*="outline"]:hover {
     border-color: #9ca3af !important;
-    color: #f9fafb !important;
     background-color: #374151 !important;
+    color: #ffffff !important;
   }
-  
+
   button[class*="ghost"] {
-    color: #d1d5db !important;
-  }
-  
-  button[class*="ghost"]:hover {
+    background-color: transparent !important;
     color: #f9fafb !important;
+    font-weight: 700 !important;
+    border: 1px solid transparent !important;
+  }
+
+  button[class*="ghost"]:hover {
     background-color: #374151 !important;
+    color: #ffffff !important;
   }
   
   /* Enhanced dark mode navigation */
