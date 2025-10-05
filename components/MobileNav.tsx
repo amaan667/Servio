@@ -172,8 +172,8 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
               onClick={() => handleNavigation(item.href)}
               className={`flex flex-col items-center justify-center p-2 relative ${
                 item.isActive 
-                  ? 'text-servio-purple bg-servio-purple/15' 
-                  : 'text-black hover:text-servio-purple hover:bg-gray-50 font-bold'
+                  ? 'text-white bg-purple-600' 
+                  : 'text-black hover:text-purple-600 hover:bg-gray-50 font-bold'
               }`}
             >
               <div className="relative mb-1">
@@ -187,7 +187,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                   </Badge>
                 )}
               </div>
-              <span className="text-xs leading-tight text-center px-1 font-bold" style={{ lineHeight: '1.4', fontSize: '11px' }}>
+              <span className="text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate" style={{ lineHeight: '1.2', fontSize: '10px' }}>
                 {item.label}
               </span>
             </button>
@@ -236,14 +236,14 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                         onClick={() => handleNavigation(item.href)}
                         className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${
                           item.isActive 
-                            ? 'bg-servio-purple/15 text-servio-purple border-2 border-servio-purple/30' 
+                            ? 'bg-purple-100 text-purple-600 border-2 border-purple-300' 
                             : 'hover:bg-gray-50 text-black font-bold'
                         }`}
                       >
                         <div className="flex items-center space-x-4">
                           <div className="relative">
                             <item.icon className={`h-6 w-6 ${
-                              item.isActive ? 'text-servio-purple' : 'text-black'
+                              item.isActive ? 'text-purple-600' : 'text-black'
                             }`} />
                             {item.badge && item.badge > 0 && (
                               <Badge 
@@ -285,10 +285,10 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-30 transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}>
-          <div className="bg-servio-purple/10 backdrop-blur-md border-2 border-servio-purple/30 rounded-full px-4 py-2 shadow-lg">
+          <div className="bg-purple-100 backdrop-blur-md border-2 border-purple-300 rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center space-x-2">
-              <activeItem.icon className="h-4 w-4 text-servio-purple" />
-              <span className="text-sm font-bold text-servio-purple">
+              <activeItem.icon className="h-4 w-4 text-purple-600" />
+              <span className="text-sm font-bold text-purple-600">
                 {activeItem.label}
               </span>
             </div>
