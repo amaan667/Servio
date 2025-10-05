@@ -167,12 +167,12 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               onClick={() => handleNavigation(item.href)}
               className={`flex flex-col items-center justify-center p-2 relative transition-all duration-200 ${
                 item.isActive 
-                  ? 'text-servio-purple bg-servio-purple/10' 
-                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50/80'
+                  ? 'text-servio-purple bg-servio-purple/15' 
+                  : 'text-black hover:text-servio-purple hover:bg-gray-50/80'
               }`}
             >
               <div className="relative mb-1">
-                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-servio-purple' : 'text-gray-700'}`} />
+                <item.icon className={`h-5 w-5 transition-colors ${item.isActive ? 'text-servio-purple' : 'text-black'}`} />
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -182,8 +182,8 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                   </Badge>
                 )}
               </div>
-              <span className={`text-xs leading-tight text-center px-1 font-semibold transition-colors ${
-                item.isActive ? 'text-servio-purple' : 'text-gray-700'
+              <span className={`text-xs leading-tight text-center px-1 font-bold transition-colors ${
+                item.isActive ? 'text-servio-purple' : 'text-black'
               }`} style={{ lineHeight: '1.2', fontSize: '11px' }}>
                 {item.label}
               </span>
@@ -197,10 +197,10 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-30 transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}>
-          <div className="bg-white/95 backdrop-blur-md border border-gray-100 rounded-full px-4 py-2 shadow-lg">
+          <div className="bg-servio-purple/10 backdrop-blur-md border-2 border-servio-purple/30 rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center space-x-2">
               <activeItem.icon className="h-4 w-4 text-servio-purple" />
-              <span className="text-sm font-semibold text-gray-800">
+              <span className="text-sm font-bold text-servio-purple">
                 {activeItem.label}
               </span>
             </div>

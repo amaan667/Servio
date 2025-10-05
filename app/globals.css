@@ -1472,6 +1472,30 @@ p, span, div {
     border-top: 1px solid #e5e7eb !important;
   }
   
+  /* Force mobile navigation text visibility */
+  .mobile-nav span,
+  .mobile-nav button span,
+  .mobile-nav .text-xs {
+    color: #000000 !important;
+    font-weight: 700 !important;
+  }
+  
+  .mobile-nav button[class*="active"] span,
+  .mobile-nav .text-servio-purple {
+    color: hsl(var(--servio-purple)) !important;
+    font-weight: 700 !important;
+  }
+  
+  /* Force mobile navigation icon visibility */
+  .mobile-nav svg {
+    color: #000000 !important;
+  }
+  
+  .mobile-nav button[class*="active"] svg,
+  .mobile-nav .text-servio-purple svg {
+    color: hsl(var(--servio-purple)) !important;
+  }
+  
   /* Enhanced mobile card styling with Servio theme */
   .mobile-card {
     background: #ffffff !important;
@@ -1489,6 +1513,31 @@ p, span, div {
   .mobile-text-muted {
     color: #4b5563 !important;
     font-weight: 400 !important;
+  }
+
+  /* Mobile navigation text visibility fixes */
+  .mobile-nav-text {
+    color: #000000 !important;
+    font-weight: 700 !important;
+  }
+  
+  .mobile-nav-text-inactive {
+    color: #000000 !important;
+    font-weight: 600 !important;
+  }
+  
+  .mobile-nav-text-active {
+    color: hsl(var(--servio-purple)) !important;
+    font-weight: 700 !important;
+  }
+  
+  /* Ensure mobile navigation icons are visible */
+  .mobile-nav-icon {
+    color: #000000 !important;
+  }
+  
+  .mobile-nav-icon-active {
+    color: hsl(var(--servio-purple)) !important;
   }
   
   /* Improved list items */
