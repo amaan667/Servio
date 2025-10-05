@@ -400,7 +400,11 @@ export default function StaffClient({
               <Button 
                 onClick={() => setActiveTab('staff')} 
                 variant={activeTab === 'staff' ? 'default' : 'outline'}
-                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none hover:bg-accent hover:text-accent-foreground transition-colors"
+                className={`px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none transition-colors ${
+                  activeTab === 'staff' 
+                    ? 'bg-servio-purple text-white hover:bg-servio-purple/90' 
+                    : 'hover:bg-accent hover:text-accent-foreground'
+                }`}
                 disabled={loading}
               >
                 <Users className="w-4 h-4 mr-1 sm:mr-2" />
@@ -410,7 +414,11 @@ export default function StaffClient({
               <Button 
                 onClick={() => setActiveTab('calendar')} 
                 variant={activeTab === 'calendar' ? 'default' : 'outline'}
-                className="px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none hover:bg-accent hover:text-accent-foreground transition-colors"
+                className={`px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none transition-colors ${
+                  activeTab === 'calendar' 
+                    ? 'bg-servio-purple text-white hover:bg-servio-purple/90' 
+                    : 'hover:bg-accent hover:text-accent-foreground'
+                }`}
                 disabled={loading}
               >
                 <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
