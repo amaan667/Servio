@@ -182,9 +182,11 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                   </Badge>
                 )}
               </div>
-              <span className={`text-xs leading-tight text-center px-1 font-bold transition-colors ${
-                item.isActive ? 'text-servio-purple' : 'text-gray-900'
-              }`} style={{ lineHeight: '1.4', fontSize: '11px', fontWeight: '700' }}>
+              <span
+                className={`${item.isActive ? 'text-servio-purple' : 'text-gray-900'} 
+                  font-semibold text-center px-1 transition-colors 
+                  leading-[1.1] text-[10px] max-w-[72px] whitespace-nowrap truncate`}
+              >
                 {item.label}
               </span>
             </button>
