@@ -12,3 +12,8 @@ restartPolicyType = "on_failure"
 [[cron]]
 schedule = "0 0 * * *"
 command = "curl -X POST -H 'Authorization: Bearer $CRON_SECRET' $RAILWAY_PUBLIC_DOMAIN/api/cron/daily-reset"
+
+# Additional cron job for every hour to check for venue-specific reset times
+[[cron]]
+schedule = "0 * * * *"
+command = "curl -X POST -H 'Authorization: Bearer $CRON_SECRET' $RAILWAY_PUBLIC_DOMAIN/api/cron/daily-reset"
