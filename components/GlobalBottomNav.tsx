@@ -114,6 +114,15 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   // Extract venueId from pathname if not provided
   const currentVenueId = venueId || pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
+  // Debug logging
+  console.log('[GlobalBottomNav] Debug:', {
+    pathname,
+    isOnDashboard,
+    isDashboardRoot,
+    isOnFeaturePage,
+    currentVenueId
+  });
+
   const navItems: NavItem[] = [
     {
       id: 'home',
@@ -185,7 +194,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               <span
                 className={`${item.isActive ? 'text-servio-purple' : 'text-gray-900'} 
                   font-semibold text-center px-1 transition-colors 
-                  leading-[1.1] text-[10px] max-w-[72px] whitespace-nowrap truncate`}
+                  leading-[1.2] text-[11px] max-w-[80px] whitespace-nowrap truncate`}
               >
                 {item.label}
               </span>
