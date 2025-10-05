@@ -114,14 +114,6 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   // Extract venueId from pathname if not provided
   const currentVenueId = venueId || pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
-  // Debug logging
-  console.log('[GlobalBottomNav] Debug:', {
-    pathname,
-    isOnDashboard,
-    isDashboardRoot,
-    isOnFeaturePage,
-    currentVenueId
-  });
 
   const navItems: NavItem[] = [
     {
