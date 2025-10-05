@@ -115,12 +115,14 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   const currentVenueId = venueId || pathname?.match(/\/dashboard\/([^/]+)/)?.[1];
 
 
+  const showDashboardForHome = (isOnFeaturePage || isOnQRPage);
+
   const navItems: NavItem[] = [
     {
       id: 'home',
-      label: isOnFeaturePage ? 'Dashboard' : 'Home',
-      href: isOnFeaturePage ? (currentVenueId ? `/dashboard/${currentVenueId}` : '/dashboard') : '/',
-      icon: isOnFeaturePage ? LayoutDashboard : Home,
+      label: showDashboardForHome ? 'Dashboard' : 'Home',
+      href: showDashboardForHome ? (currentVenueId ? `/dashboard/${currentVenueId}` : '/dashboard') : '/',
+      icon: showDashboardForHome ? LayoutDashboard : Home,
       isActive: isOnHomePage || (isOnDashboard && pathname === `/dashboard/${currentVenueId}`)
     },
     {
@@ -184,9 +186,9 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
                 )}
               </div>
               <span
-                className={`${item.isActive ? 'text-servio-purple' : 'text-gray-900'} 
-                  font-semibold text-center px-1 transition-colors 
-                  leading-[1.2] text-[11px] max-w-[80px] whitespace-nowrap truncate`}
+                className={`${item.isActive ? 'text-servio-purple' : 'text-gray-950'} 
+                  font-bold text-center px-1 transition-colors 
+                  leading-snug text-[12px] sm:text-[13px] max-w-[92px] whitespace-nowrap`}
               >
                 {item.label}
               </span>
