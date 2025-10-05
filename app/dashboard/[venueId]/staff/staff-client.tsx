@@ -402,7 +402,7 @@ export default function StaffClient({
                 variant={activeTab === 'staff' ? 'default' : 'outline'}
                 className={`px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none transition-colors ${
                   activeTab === 'staff' 
-                    ? 'bg-servio-purple text-white hover:bg-servio-purple/90' 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
                     : 'hover:bg-accent hover:text-accent-foreground'
                 }`}
                 disabled={loading}
@@ -416,7 +416,7 @@ export default function StaffClient({
                 variant={activeTab === 'calendar' ? 'default' : 'outline'}
                 className={`px-3 sm:px-6 text-sm sm:text-base flex-1 sm:flex-none transition-colors ${
                   activeTab === 'calendar' 
-                    ? 'bg-servio-purple text-white hover:bg-servio-purple/90' 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
                     : 'hover:bg-accent hover:text-accent-foreground'
                 }`}
                 disabled={loading}
