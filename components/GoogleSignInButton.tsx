@@ -8,5 +8,5 @@ export function GoogleSignInButton() {
     router.push('/sign-in');
   }
 
-  return <button onClick={handleSignIn}>Sign in with Google</button>
+  return <button onClick={handleSignIn} className="bg-white border border-gray-300 text-black hover:bg-gray-50 px-4 py-2 rounded-md font-medium">Sign in with Google</button>
 }

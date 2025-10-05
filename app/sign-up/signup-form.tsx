@@ -199,7 +199,7 @@ export default function SignUpForm({ onGoogleSignIn, isSigningUp = false }: Sign
           <Button
             onClick={handleGoogleSignUp}
             disabled={loading || isSigningUp}
-            className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+            className="w-full bg-white border border-gray-300 text-black hover:bg-gray-50 flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 48 48">
               <g>
