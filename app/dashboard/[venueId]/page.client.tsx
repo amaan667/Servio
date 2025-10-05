@@ -271,15 +271,20 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         })
       );
 
-      if (!tableCountersError && tableCounters?.[0]) {
-        const tableCounter = tableCounters[0];
-        // Override table counts with consistent data
-        newCounts.tables_set_up = Number(tableCounter.total_tables) || 0;
-        newCounts.tables_in_use = Number(tableCounter.occupied) || 0;
-        newCounts.active_tables_count = Number(tableCounter.total_tables) || 0;
+      // Ensure newCounts is properly typed
+      if (newCounts && typeof newCounts === 'object') {
+        const counts = newCounts as DashboardCounts;
+        
+        if (!tableCountersError && tableCounters && Array.isArray(tableCounters) && tableCounters.length > 0) {
+          const tableCounter = tableCounters[0] as any;
+          // Override table counts with consistent data
+          counts.tables_set_up = Number(tableCounter.total_tables) || 0;
+          counts.tables_in_use = Number(tableCounter.occupied) || 0;
+          counts.active_tables_count = Number(tableCounter.total_tables) || 0;
+        }
+        
+        setCounts(counts);
       }
-      
-      setCounts(newCounts);
     } catch (error) {
       // Silent error handling
     }
@@ -356,7 +361,8 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
       }
 
       // Calculate revenue from today's paid orders only (robust amount fallback)
-      const todayRevenue = (orders ?? []).reduce((sum: number, order: any) => {
+      const ordersArray = Array.isArray(orders) ? orders : [];
+      const todayRevenue = ordersArray.reduce((sum: number, order: any) => {
         let amount = Number(order.total_amount) || parseFloat(order.total_amount as any) || 0;
         if (!Number.isFinite(amount) || amount <= 0) {
           if (Array.isArray(order.items)) {
@@ -371,9 +377,10 @@ const VenueDashboardClient = React.memo(function VenueDashboardClient({
         return sum + amount;
       }, 0);
 
+      const menuItemsArray = Array.isArray(menuItems) ? menuItems : [];
       setStats({
         revenue: todayRevenue,
-        menuItems: menuItems?.length || 0,
+        menuItems: menuItemsArray.length,
         unpaid: 0, // All orders are now paid since they only appear after payment
       });
       

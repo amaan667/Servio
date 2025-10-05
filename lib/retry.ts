@@ -54,7 +54,7 @@ export async function withRetry<T>(
         config.maxDelay
       );
 
-      console.warn(`[RETRY] Attempt ${attempt} failed, retrying in ${delay}ms:`, error?.message);
+      console.warn(`[RETRY] Attempt ${attempt} failed, retrying in ${delay}ms:`, (error as any)?.message);
       
       // Add jitter to prevent thundering herd
       const jitter = Math.random() * 0.1 * delay;
