@@ -187,7 +187,7 @@ export default function MobileNav({ venueId, venueName, counts = {} }: MobileNav
                   </Badge>
                 )}
               </div>
-              <span className="text-xs leading-tight text-center px-1 font-bold" style={{ lineHeight: '1.1', fontSize: '11px' }}>
+              <span className="text-xs leading-tight text-center px-1 font-bold" style={{ lineHeight: '1.4', fontSize: '11px' }}>
                 {item.label}
               </span>
             </button>

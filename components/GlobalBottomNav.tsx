@@ -117,9 +117,9 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
   const navItems: NavItem[] = [
     {
       id: 'home',
-      label: isDashboardRoot ? 'Home' : 'Dashboard',
-      href: isDashboardRoot ? '/' : (currentVenueId ? `/dashboard/${currentVenueId}` : '/dashboard'),
-      icon: isDashboardRoot ? Home : LayoutDashboard,
+      label: isOnFeaturePage ? 'Dashboard' : 'Home',
+      href: isOnFeaturePage ? (currentVenueId ? `/dashboard/${currentVenueId}` : '/dashboard') : '/',
+      icon: isOnFeaturePage ? LayoutDashboard : Home,
       isActive: isOnHomePage || (isOnDashboard && pathname === `/dashboard/${currentVenueId}`)
     },
     {
@@ -184,7 +184,7 @@ export default function GlobalBottomNav({ venueId, counts = {} }: GlobalBottomNa
               </div>
               <span className={`text-xs leading-tight text-center px-1 font-bold transition-colors ${
                 item.isActive ? 'text-servio-purple' : 'text-gray-900'
-              }`} style={{ lineHeight: '1.2', fontSize: '11px', fontWeight: '700' }}>
+              }`} style={{ lineHeight: '1.4', fontSize: '11px', fontWeight: '700' }}>
                 {item.label}
               </span>
             </button>
